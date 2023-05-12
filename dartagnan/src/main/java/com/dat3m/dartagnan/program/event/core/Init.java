@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 /**
@@ -16,7 +16,7 @@ public class Init extends MemEvent {
 	private final MemoryObject base;
 	private final int offset;
 	
-	public Init(MemoryObject b, int o, IExpr address) {
+	public Init(MemoryObject b, int o, Expression address) {
 		super(address, "");
 		base = b;
 		offset = o;

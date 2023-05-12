@@ -97,11 +97,11 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-		IExpr expectedAddr = e.getExpectedAddr();
+		Expression expectedAddr = e.getExpectedAddr();
 		Type type = resultRegister.getType();
 		IValue one = expressions.makeOne(type);
 
@@ -138,7 +138,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
@@ -149,7 +149,7 @@ class VisitorIMM extends VisitorBase {
         return eventSequence(
 				optionalFenceBefore,
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, (IExpr) e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
 				optionalFenceAfter,
                 newRMWStore(load, address, dummyReg, extractStoreMo(mo))
         );
@@ -182,7 +182,7 @@ class VisitorIMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
@@ -217,7 +217,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
 		Expression value = e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
@@ -236,8 +236,8 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
@@ -263,7 +263,7 @@ class VisitorIMM extends VisitorBase {
 		IValue one = expressions.makeOne(resultRegister.getType());
 
 		Expression value = e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 		Expression expectedValue = e.getExpectedValue();
 

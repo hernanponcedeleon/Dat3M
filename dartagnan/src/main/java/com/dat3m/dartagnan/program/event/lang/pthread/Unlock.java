@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
@@ -13,7 +13,7 @@ public class Unlock extends Store {
 	private final String name;
 	private final Register reg;
 
-	public Unlock(String name, IExpr address, Register reg){
+	public Unlock(String name, Expression address, Register reg){
 		super(address, IValue.ZERO, MO_SC);
 		this.name = name;
         this.reg = reg;

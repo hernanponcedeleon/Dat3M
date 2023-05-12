@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -17,7 +16,7 @@ public class AtomicStore extends MemEvent implements RegReaderData {
 
     private Expression value;
 
-    public AtomicStore(IExpr address, Expression value, String mo){
+    public AtomicStore(Expression address, Expression value, String mo){
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),

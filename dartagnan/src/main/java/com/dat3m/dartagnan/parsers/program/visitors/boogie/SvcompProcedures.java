@@ -54,7 +54,7 @@ public class SvcompProcedures {
                 visitor.thread.append(EventFactory.Svcomp.newSpinEnd());
                 break;
             case "__VERIFIER_assert":
-                visitor.addAssertion((IExpr)ctx.call_params().exprs().accept(visitor));
+                visitor.addAssertion((Expression)ctx.call_params().exprs().accept(visitor));
                 break;
             case "__VERIFIER_assume":
                 __VERIFIER_assume(visitor, ctx);

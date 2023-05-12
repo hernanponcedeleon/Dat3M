@@ -155,7 +155,7 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
 		Expression value = e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
@@ -179,8 +179,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
@@ -211,7 +211,7 @@ class VisitorRISCV extends VisitorBase {
 		Register resultRegister = e.getStructRegister(1);
 
 		Expression value = e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 		Expression expectedValue = e.getExpectedValue();
 
@@ -260,10 +260,10 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
-		IExpr expectedAddr = e.getExpectedAddr();
+		Expression expectedAddr = e.getExpectedAddr();
 		Type type = resultRegister.getType();
 
 		Register regExpected = e.getThread().newRegister(type);
@@ -304,8 +304,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
@@ -382,7 +382,7 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		Register resultRegister = e.getResultRegister();
 		Expression value = e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
@@ -478,7 +478,7 @@ class VisitorRISCV extends VisitorBase {
 
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
@@ -517,7 +517,7 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
 		Expression value = e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -549,8 +549,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -580,8 +580,8 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -616,8 +616,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -652,7 +652,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
 		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		Type type = resultRegister.getType();
@@ -661,7 +661,7 @@ class VisitorRISCV extends VisitorBase {
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
 
 		Load load = newRMWLoadExclusive(regValue, address, "");
-        Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(regValue, IOpBin.PLUS, (IExpr) value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(regValue, IOpBin.PLUS, value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");
@@ -696,8 +696,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());

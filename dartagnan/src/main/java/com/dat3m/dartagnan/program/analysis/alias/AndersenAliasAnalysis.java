@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -103,7 +102,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processLocs(MemEvent e) {
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         // Collect for each v events of form: p = *v, *v = q
         if (address instanceof Register) {
             addEvent((Register) address, e);
@@ -223,7 +222,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             base = ((IExprBin) base).getLHS();
         }
         if (base instanceof MemoryObject) {
-            IExpr rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst) {
                 addTarget(reg, new Location((MemoryObject) base, ((IConst) rhs).getValueAsInt()));
@@ -237,7 +236,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            IExpr rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst) {
                 int o = target.offset + ((IConst) rhs).getValueAsInt();
@@ -251,7 +250,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processResults(MemEvent e) {
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         Set<Location> addresses;
         if (address instanceof Register) {
             Set<Location> target = targets.get(address);
@@ -287,8 +286,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 return;
             }
             if (x instanceof IExprBin && ((IExprBin) x).getOp() == PLUS) {
-                IExpr lhs = ((IExprBin) x).getLHS();
-                IExpr rhs = ((IExprBin) x).getRHS();
+                Expression lhs = ((IExprBin) x).getLHS();
+                Expression rhs = ((IExprBin) x).getRHS();
                 if (lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
                     location = new Location((MemoryObject) lhs, ((IConst) rhs).getValueAsInt());
                     failed = false;

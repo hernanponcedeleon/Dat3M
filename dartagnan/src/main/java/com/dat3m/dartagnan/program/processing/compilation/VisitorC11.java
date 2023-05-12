@@ -45,7 +45,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        IExpr zero = expressions.makeZero(resultRegister.getType());
+        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
 
@@ -57,7 +57,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        IExpr one = expressions.makeOne(resultRegister.getType());
+        Expression one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
@@ -86,9 +86,9 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
-        IExpr expectedAddr = e.getExpectedAddr();
+        Expression expectedAddr = e.getExpectedAddr();
         Type type = resultRegister.getType();
 
         Register regExpected = e.getThread().newRegister(type);
@@ -121,7 +121,7 @@ public class VisitorC11 extends VisitorBase {
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
         IOpBin op = e.getOp();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(resultRegister, address, mo);
@@ -129,7 +129,7 @@ public class VisitorC11 extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, (IExpr) e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
                 store
         ));
     }
@@ -156,7 +156,7 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitAtomicXchg(AtomicXchg e) {
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load load = newRMWLoad(e.getResultRegister(), address, mo);
@@ -188,7 +188,7 @@ public class VisitorC11 extends VisitorBase {
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression value = e.getMemValue();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusive(resultRegister, address, mo);
@@ -203,8 +203,8 @@ public class VisitorC11 extends VisitorBase {
     public List<Event> visitLlvmRMW(LlvmRMW e) {
         Register resultRegister = e.getResultRegister();
         IOpBin op = e.getOp();
-        IExpr value = (IExpr) e.getMemValue();
-        IExpr address = e.getAddress();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
@@ -225,7 +225,7 @@ public class VisitorC11 extends VisitorBase {
         Register resultRegister = e.getStructRegister(1);
 
         Expression value = e.getMemValue();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
 

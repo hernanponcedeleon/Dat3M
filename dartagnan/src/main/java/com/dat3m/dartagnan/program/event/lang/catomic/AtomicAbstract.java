@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -17,7 +16,7 @@ public abstract class AtomicAbstract extends MemEvent implements RegWriter, RegR
     protected final Register resultRegister;
     protected Expression value;
 
-    AtomicAbstract(IExpr address, Register register, IExpr value, String mo) {
+    AtomicAbstract(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         this.resultRegister = register;

@@ -78,7 +78,7 @@ public class VisitorLKMM extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Expression cmp = e.getCmp();
         Expression value = e.getMemValue();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
 
         Label success = newLabel("RMW_success");
         Label end = newLabel("RMW_end");
@@ -92,7 +92,7 @@ public class VisitorLKMM extends VisitorBase {
                     Linux.newMemoryBarrier(),
                     rmwLoad = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE),
                     newAssume(expressions.makeBinary(dummy, NEQ, cmp)),
-                    newRMWStore(rmwLoad, address, expressions.makeBinary(dummy, IOpBin.PLUS, (IExpr) value), Tag.Linux.MO_ONCE),
+                    newRMWStore(rmwLoad, address, expressions.makeBinary(dummy, IOpBin.PLUS, value), Tag.Linux.MO_ONCE),
                     Linux.newMemoryBarrier(),
                 end,
                 newLocal(resultRegister, expressions.makeBinary(dummy, NEQ, cmp))
@@ -104,7 +104,7 @@ public class VisitorLKMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression cmp = e.getCmp();
         Expression value = e.getMemValue();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Label success = newLabel("CAS_success");
@@ -131,7 +131,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWFetchOp(RMWFetchOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         Expression value = e.getMemValue();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -142,7 +142,7 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newRMWStore(load, address, expressions.makeBinary(dummy, e.getOp(), (IExpr) value), Tag.Linux.storeMO(mo)),
+                newRMWStore(load, address, expressions.makeBinary(dummy, e.getOp(), value), Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
@@ -150,7 +150,7 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitRMWOp(RMWOp e) {
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -159,14 +159,14 @@ public class VisitorLKMM extends VisitorBase {
         
         return eventSequence(
                 load,
-                newRMWStore(load, address, expressions.makeBinary(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE)
+                newRMWStore(load, address, expressions.makeBinary(dummy, e.getOp(), e.getMemValue()), Tag.Linux.MO_ONCE)
         );
     }
 
     @Override
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         Type type = resultRegister.getType();
 
         Register dummy = e.getThread().newRegister(type);
@@ -175,7 +175,7 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 Linux.newMemoryBarrier(),
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), (IExpr) e.getMemValue())),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), e.getMemValue())),
                 newRMWStore(load, address, dummy, Tag.Linux.MO_ONCE),
                 newLocal(resultRegister, expressions.makeBinary(dummy, EQ, expressions.makeZero(type))),
                 Linux.newMemoryBarrier()
@@ -185,7 +185,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWOpReturn(RMWOpReturn e) {
         Register resultRegister = e.getResultRegister();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -196,7 +196,7 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), (IExpr) e.getMemValue())),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), e.getMemValue())),
                 newRMWStore(load, address, dummy, Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
@@ -207,7 +207,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWXchg(RMWXchg e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
@@ -226,7 +226,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
         Register dummy = e.getThread().newRegister(archType);
-        IExpr zero = expressions.makeZero(dummy.getType());
+        Expression zero = expressions.makeZero(dummy.getType());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?

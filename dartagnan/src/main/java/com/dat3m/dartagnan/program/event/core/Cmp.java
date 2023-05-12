@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 public class Cmp extends Skip {
 
-    private final IExpr left;
-    private final IExpr right;
+    private final Expression left;
+    private final Expression right;
 
-    public Cmp(IExpr left, IExpr right){
+    public Cmp(Expression left, Expression right){
         this.left = left;
         this.right = right;
     }
@@ -19,11 +19,11 @@ public class Cmp extends Skip {
         this.right = other.right;
     }
 
-    public IExpr getLeft(){
+    public Expression getLeft(){
         return left;
     }
 
-    public IExpr getRight(){
+    public Expression getRight(){
         return right;
     }
 

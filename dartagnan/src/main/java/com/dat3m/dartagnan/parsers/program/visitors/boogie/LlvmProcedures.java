@@ -59,20 +59,20 @@ public class LlvmProcedures {
         String mo;
 
         // For intrinsics
-        IExpr i1;
-        IExpr i2;
+        Expression i1;
+        Expression i2;
         Expression cond;
 
         switch (name) {
             case "__llvm_atomic32_load":
             case "__llvm_atomic64_load":
                 mo = C11.intToMo(((IConst) p1).getValueAsInt());
-                visitor.append(Llvm.newLoad(reg, (IExpr) p0, mo));
+                visitor.append(Llvm.newLoad(reg, (Expression) p0, mo));
                 return;
             case "__llvm_atomic32_store":
             case "__llvm_atomic64_store":
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
-                visitor.append(Llvm.newStore((IExpr) p0, (Expression) p1, mo));
+                visitor.append(Llvm.newStore((Expression) p0, (Expression) p1, mo));
                 return;
             case "__llvm_atomic_fence":
                 mo = C11.intToMo(((IConst) p0).getValueAsInt());
@@ -92,7 +92,7 @@ public class LlvmProcedures {
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());
-                visitor.append(Llvm.newCompareExchange(oldValueRegister, cmpRegister, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true));
+                visitor.append(Llvm.newCompareExchange(oldValueRegister, cmpRegister, (Expression) p0, (Expression) p1, (Expression) p2, mo, true));
                 return;
             case "__llvm_atomic32_rmw":
             case "__llvm_atomic64_rmw":
@@ -100,7 +100,7 @@ public class LlvmProcedures {
                 IOpBin op;
                 switch (((IConst) p3).getValueAsInt()) {
                     case 0:
-                        visitor.append(Llvm.newExchange(reg, (IExpr) p0, (IExpr) p1, mo));
+                        visitor.append(Llvm.newExchange(reg, (Expression) p0, (Expression) p1, mo));
                         return;
                     case 1:
                         op = IOpBin.PLUS;
@@ -120,14 +120,14 @@ public class LlvmProcedures {
                     default:
                         throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
                 }
-                visitor.append(Llvm.newRMW(reg, (IExpr) p0, (IExpr) p1, op, mo));
+                visitor.append(Llvm.newRMW(reg, (Expression) p0, (Expression) p1, op, mo));
                 return;
             case "llvm.smax.i32":
             case "llvm.smax.i64":
             case "llvm.umax.i32":
             case "llvm.umax.i64":
-                i1 = (IExpr) p0;
-                i2 = (IExpr) p1;
+                i1 = (Expression) p0;
+                i2 = (Expression) p1;
                 cond = name.contains("smax") ? factory.makeBinary(i1, COpBin.GTE, i2) : factory.makeBinary(i1, COpBin.UGTE, i2);
                 visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, i1, i2)));
                 return;
@@ -135,15 +135,15 @@ public class LlvmProcedures {
             case "llvm.smin.i64":
             case "llvm.umin.i32":
             case "llvm.umin.i64":
-                i1 = (IExpr) p0;
-                i2 = (IExpr) p1;
+                i1 = (Expression) p0;
+                i2 = (Expression) p1;
                 cond = name.contains("smin") ? factory.makeBinary(i1, COpBin.LTE, i2) : factory.makeBinary(i1, COpBin.ULTE, i2);
                 visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, i1, i2)));
                 return;
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
-                i1 = (IExpr) p0;
-                i2 = (IExpr) p1;
+                i1 = (Expression) p0;
+                i2 = (Expression) p1;
                 visitor.append(EventFactory.newLocal(reg, factory.makeUnary(IOpUn.CTLZ, i1)));
                 return;
             default:

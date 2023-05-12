@@ -3,16 +3,17 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.collect.ImmutableSet;
 
-public class IExprUn extends IExpr {
+public class IExprUn implements Expression {
 
-    private final IExpr b;
+    private final Expression b;
     private final IOpUn op;
 
-    public IExprUn(IOpUn op, IExpr b) {
+    public IExprUn(IOpUn op, Expression b) {
         this.b = b;
         this.op = op;
     }
@@ -21,7 +22,7 @@ public class IExprUn extends IExpr {
         return op;
     }
 
-    public IExpr getInner() {
+    public Expression getInner() {
         return b;
     }
 

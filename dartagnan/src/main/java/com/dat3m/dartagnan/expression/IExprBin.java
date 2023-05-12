@@ -3,19 +3,20 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 
-public class IExprBin extends IExpr {
+public class IExprBin implements Expression {
 
-    private final IExpr lhs;
-    private final IExpr rhs;
+    private final Expression lhs;
+    private final Expression rhs;
     private final IOpBin op;
 
-    public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
+    public IExprBin(Expression lhs, IOpBin op, Expression rhs) {
     	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
                 "The types of %s and %s does not match", lhs, rhs);
         this.lhs = lhs;
@@ -42,11 +43,11 @@ public class IExprBin extends IExpr {
 		return op;
 	}
 	
-	public IExpr getRHS() {
+	public Expression getRHS() {
 		return rhs;
 	}
 
-	public IExpr getLHS() {
+	public Expression getLHS() {
 		return lhs;
 	}
 

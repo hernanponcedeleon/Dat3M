@@ -1,15 +1,16 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
+
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class End extends Store {
 
-    public End(IExpr address){
+    public End(Expression address){
     	super(address, IValue.ZERO, MO_SC);
     	addFilters(Tag.C11.PTHREAD);
     }

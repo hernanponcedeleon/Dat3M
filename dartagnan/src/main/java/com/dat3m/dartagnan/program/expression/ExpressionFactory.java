@@ -65,7 +65,7 @@ public final class ExpressionFactory {
         return new BExprUn(operator, inner);
     }
 
-    public IExpr makeUnary(IOpUn operator, IExpr inner) {
+    public Expression makeUnary(IOpUn operator, Expression inner) {
         Type type = inner.getType();
         if (inner instanceof IValue) {
             BigInteger value = ((IValue) inner).getValue();
@@ -133,7 +133,7 @@ public final class ExpressionFactory {
         return new Atom(left, comparator, right);
     }
 
-    public IExpr makeBinary(IExpr left, IOpBin operator, IExpr right) {
+    public Expression makeBinary(Expression left, IOpBin operator, Expression right) {
         checkTypes(left, operator, right);
         if (left instanceof IValue && right instanceof IValue) {
             BigInteger result = operator.combine(((IValue) left).getValue(), ((IValue) right).getValue());
@@ -164,7 +164,7 @@ public final class ExpressionFactory {
         return new IExprBin(left, operator, right);
     }
 
-    public IExpr makeConditional(Expression condition, IExpr ifTrue, IExpr ifFalse) {
+    public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
         if (!condition.isBoolean()) {
             logger.warn("Non-boolean guard for {} ? {} : {}.", condition, ifTrue, ifFalse);
         }

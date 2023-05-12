@@ -8,13 +8,13 @@ import com.google.common.collect.ImmutableSet;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class IfExpr extends IExpr {
+public class IfExpr implements Expression {
 
 	private final Expression guard;
-	private final IExpr tbranch;
-	private final IExpr fbranch;
+	private final Expression tbranch;
+	private final Expression fbranch;
 	
-	public IfExpr(Expression guard, IExpr tbranch, IExpr fbranch) {
+	public IfExpr(Expression guard, Expression tbranch, Expression fbranch) {
 		checkArgument(guard.isBoolean(),
 				"Expected boolean type for %s.", guard);
     	checkArgument(tbranch.getType().equals(fbranch.getType()),
@@ -38,11 +38,11 @@ public class IfExpr extends IExpr {
 		return guard;
 	}
 
-	public IExpr getTrueBranch() {
+	public Expression getTrueBranch() {
 		return tbranch;
 	}
 
-	public IExpr getFalseBranch() {
+	public Expression getFalseBranch() {
 		return fbranch;
 	}
 

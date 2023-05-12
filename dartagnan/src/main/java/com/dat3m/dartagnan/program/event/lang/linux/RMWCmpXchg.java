@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -11,7 +10,7 @@ public class RMWCmpXchg extends RMWAbstract {
 
     private final Expression cmp;
 
-    public RMWCmpXchg(IExpr address, Register register, Expression cmp, IExpr value, String mo) {
+    public RMWCmpXchg(Expression address, Register register, Expression cmp, Expression value, String mo) {
         super(address, register, value, mo);
         this.cmp = cmp;
     }

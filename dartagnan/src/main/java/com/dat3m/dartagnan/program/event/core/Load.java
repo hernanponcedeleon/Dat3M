@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -11,7 +10,7 @@ public class Load extends MemEvent implements RegWriter {
 
     protected final Register resultRegister;
 
-    public Load(Register register, IExpr address, String mo) {
+    public Load(Register register, Expression address, String mo) {
         super(address, mo);
         this.resultRegister = register;
         addFilters(Tag.READ);

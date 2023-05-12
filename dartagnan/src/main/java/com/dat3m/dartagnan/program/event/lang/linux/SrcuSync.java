@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
@@ -9,7 +8,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class SrcuSync extends MemEvent {
 
-	public SrcuSync(IExpr address) {
+	public SrcuSync(Expression address) {
 		super(address, Tag.Linux.SRCU_SYNC);
 	}
 

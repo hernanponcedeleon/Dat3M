@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
-public class Register extends IExpr {
+public class Register implements Expression {
 
 	public static final int NO_THREAD = -1;
 

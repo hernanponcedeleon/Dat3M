@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.expression.Expression;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -109,7 +109,7 @@ public class StdProcedures {
 
     private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
         //Uniquely identify the allocated storage in the entire program
-        final IExpr sizeExpr = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor));
+        final Expression sizeExpr = ((Expression) ctx.call_params().exprs().expr(0).accept(visitor));
         final String ptrName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
         //FIXME Perhaps this should require existence
         final Register reg = visitor.thread.getRegister(ptrName).orElse(null);
@@ -118,7 +118,7 @@ public class StdProcedures {
     }
 
     private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-        IExpr expr = (IExpr) ctx.call_params().exprs().accept(visitor);
+        Expression expr = (Expression) ctx.call_params().exprs().accept(visitor);
         visitor.addAssertion(expr);
     }
 

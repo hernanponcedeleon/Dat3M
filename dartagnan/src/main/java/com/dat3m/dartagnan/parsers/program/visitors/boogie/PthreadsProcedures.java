@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
@@ -73,7 +72,7 @@ public class PthreadsProcedures {
         Expression callingValue = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
         visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 
-        IExpr pointer = (IExpr) ctx.call_params().exprs().expr(0).accept(visitor);
+        Expression pointer = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         String threadName = ctx.call_params().exprs().expr().get(2).getText();
         visitor.pool.add(pointer, threadName, visitor.thread.getId());
 
@@ -90,8 +89,8 @@ public class PthreadsProcedures {
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprContext lock = ctx.call_params().exprs().expr(0);
-        IExpr lockAddress = (IExpr) lock.accept(visitor);
-        IExpr value = (IExpr) ctx.call_params().exprs().expr(1).accept(visitor);
+        Expression lockAddress = (Expression) lock.accept(visitor);
+        Expression value = (Expression) ctx.call_params().exprs().expr(1).accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newInitLock(lock.getText(), lockAddress, value));
         }
@@ -100,7 +99,7 @@ public class PthreadsProcedures {
     private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprsContext lock = ctx.call_params().exprs();
         Register register = visitor.thread.newRegister(visitor.types.getPointerType());
-        IExpr lockAddress = (IExpr) lock.accept(visitor);
+        Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
         }
@@ -109,7 +108,7 @@ public class PthreadsProcedures {
     private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprsContext lock = ctx.call_params().exprs();
         Register register = visitor.thread.newRegister(visitor.types.getPointerType());
-        IExpr lockAddress = (IExpr) lock.accept(visitor);
+        Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));
         }

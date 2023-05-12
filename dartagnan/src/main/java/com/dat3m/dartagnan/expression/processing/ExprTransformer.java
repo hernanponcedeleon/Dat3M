@@ -51,29 +51,29 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public IExpr visit(IExprBin iBin) {
-        IExpr l = (IExpr) iBin.getLHS().visit(this);
-        IExpr r = (IExpr) iBin.getRHS().visit(this);
+    public Expression visit(IExprBin iBin) {
+        Expression l = iBin.getLHS().visit(this);
+        Expression r = iBin.getRHS().visit(this);
         return iBin.getLHS().equals(l) && iBin.getRHS().equals(r) ? iBin : factory.makeBinary(l, iBin.getOp(), r);
     }
 
     @Override
-    public IExpr visit(IExprUn iUn) {
-        IExpr i = (IExpr) iUn.getInner().visit(this);
+    public Expression visit(IExprUn iUn) {
+        Expression i = iUn.getInner().visit(this);
         return iUn.getInner().equals(i) ? iUn : factory.makeUnary(iUn.getOp(), i);
     }
 
     @Override
     public Expression visit(IfExpr ifExpr) {
         Expression g = ifExpr.getGuard().visit(this);
-        IExpr t = (IExpr) ifExpr.getTrueBranch().visit(this);
-        IExpr f = (IExpr) ifExpr.getFalseBranch().visit(this);
+        Expression t = ifExpr.getTrueBranch().visit(this);
+        Expression f = ifExpr.getFalseBranch().visit(this);
         return ifExpr.getGuard().equals(g) && ifExpr.getTrueBranch().equals(t) && ifExpr.getFalseBranch().equals(f) ?
                 ifExpr : factory.makeConditional(g, t, f);
     }
 
     @Override
-    public IExpr visit(INonDet iNonDet) {
+    public Expression visit(INonDet iNonDet) {
         return iNonDet;
     }
 

@@ -129,7 +129,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitMov(MovContext ctx) {
         Register register = thread.getOrNewRegister(ctx.rD, type);
-        IExpr expr = ctx.expr32() != null ? (IExpr) ctx.expr32().accept(this) : (IExpr) ctx.expr64().accept(this);
+        Expression expr = ctx.expr32() != null ? (Expression) ctx.expr32().accept(this) : (Expression) ctx.expr64().accept(this);
         thread.append(EventFactory.newLocal(register, expr));
         return null;
     }
@@ -137,7 +137,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitCmp(CmpContext ctx) {
         Register register = thread.getOrNewRegister(ctx.rD, type);
-        IExpr expr = ctx.expr32() != null ? (IExpr) ctx.expr32().accept(this) : (IExpr) ctx.expr64().accept(this);
+        Expression expr = ctx.expr32() != null ? (Expression) ctx.expr32().accept(this) : (Expression) ctx.expr64().accept(this);
         thread.append(EventFactory.newCompare(register, expr));
         return null;
     }
@@ -146,7 +146,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitArithmetic(ArithmeticContext ctx) {
         Register rD = thread.getOrNewRegister(ctx.rD, type);
         Register r1 = thread.getRegister(ctx.rV).orElseThrow();
-        IExpr expr = ctx.expr32() != null ? (IExpr) ctx.expr32().accept(this) : (IExpr) ctx.expr64().accept(this);
+        Expression expr = ctx.expr32() != null ? (Expression) ctx.expr32().accept(this) : (Expression) ctx.expr64().accept(this);
         thread.append(EventFactory.newLocal(rD, expressions.makeBinary(r1, ctx.arithmeticInstruction().op, expr)));
         return null;
     }
@@ -237,8 +237,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public IExpr visitExpressionRegister64(ExpressionRegister64Context ctx) {
-        IExpr expr = thread.getOrNewRegister(ctx.register64().id, type);
+    public Expression visitExpressionRegister64(ExpressionRegister64Context ctx) {
+        Expression expr = thread.getOrNewRegister(ctx.register64().id, type);
         if (ctx.shift() != null) {
             IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
@@ -247,8 +247,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public IExpr visitExpressionRegister32(ExpressionRegister32Context ctx) {
-        IExpr expr = thread.getOrNewRegister(ctx.register32().id, type);
+    public Expression visitExpressionRegister32(ExpressionRegister32Context ctx) {
+        Expression expr = thread.getOrNewRegister(ctx.register32().id, type);
         if (ctx.shift() != null) {
             IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
@@ -257,8 +257,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public IExpr visitExpressionImmediate(ExpressionImmediateContext ctx) {
-        IExpr expr = expressions.parseValue(ctx.immediate().constant().getText(), type);
+    public Expression visitExpressionImmediate(ExpressionImmediateContext ctx) {
+        Expression expr = expressions.parseValue(ctx.immediate().constant().getText(), type);
         if (ctx.shift() != null) {
             IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
@@ -267,14 +267,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public IExpr visitExpressionConversion(ExpressionConversionContext ctx) {
+    public Expression visitExpressionConversion(ExpressionConversionContext ctx) {
         // TODO: Implement when adding support for mixed-size accesses
         return thread.getOrNewRegister(ctx.register32().id, type);
     }
 
     private Register visitOffset(OffsetContext ctx, Register register) {
         Register result = thread.newRegister(type);
-        IExpr expr = ctx.immediate() == null
+        Expression expr = ctx.immediate() == null
                 ? thread.getRegister(ctx.expressionConversion().register32().id).orElseThrow()
                 : expressions.parseValue(ctx.immediate().constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(register, IOpBin.PLUS, expr)));

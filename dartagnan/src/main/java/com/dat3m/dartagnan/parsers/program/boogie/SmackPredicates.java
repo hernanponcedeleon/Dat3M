@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 
 public class SmackPredicates {
@@ -24,7 +25,7 @@ public class SmackPredicates {
 	public static Object smackPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
 		String min = "0";
 		String max = "1";
-		IExpr var = (IExpr)callParams.get(0);
+		Expression var = (Expression) callParams.get(0);
 		if(name.startsWith("$tou.")) {
 			switch(name.substring(name.lastIndexOf(".")+1)) {
 			case "i1":

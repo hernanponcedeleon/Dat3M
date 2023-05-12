@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
@@ -8,7 +9,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 // TODO why is INonDet not a IConst?
-public class INonDet extends IExpr {
+public class INonDet implements Expression {
 
     private final String id;
     private final Type type;

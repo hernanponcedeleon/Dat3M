@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
@@ -9,6 +8,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.Linux;
+import com.dat3m.dartagnan.program.expression.Expression;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,46 +45,46 @@ public class LkmmProcedures {
 		switch (name) {
 		case "__LKMM_LOAD":
 			mo = Linux.intToMo(((IConst) p1).getValueAsInt());
-			visitor.append(EventFactory.Linux.newLKMMLoad(reg, (IExpr) p0, mo));
+			visitor.append(EventFactory.Linux.newLKMMLoad(reg, (Expression) p0, mo));
 	        return;
 		case "__LKMM_STORE":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
-			visitor.append(EventFactory.Linux.newLKMMStore((IExpr) p0, (IExpr) p1, mo.equals(Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
+			visitor.append(EventFactory.Linux.newLKMMStore((Expression) p0, (Expression) p1, mo.equals(Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
 	        if(mo.equals(Tag.Linux.MO_MB)){
 	            visitor.append(EventFactory.Linux.newMemoryBarrier());
 	        }
 	        return;
 		case "__LKMM_XCHG":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
-			visitor.append(EventFactory.Linux.newRMWExchange((IExpr) p0, reg, (IExpr) p1, mo));
+			visitor.append(EventFactory.Linux.newRMWExchange((Expression) p0, reg, (Expression) p1, mo));
 			return;
 		case "__LKMM_CMPXCHG":
 			mo = Linux.intToMo(((IConst) p3).getValueAsInt());
-			visitor.append(EventFactory.Linux.newRMWCompareExchange((IExpr) p0, reg, (IExpr) p1, (IExpr) p2, mo));
+			visitor.append(EventFactory.Linux.newRMWCompareExchange((Expression) p0, reg, (Expression) p1, (Expression) p2, mo));
 			return;
 		case "__LKMM_ATOMIC_FETCH_OP":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
-	        visitor.append(EventFactory.Linux.newRMWFetchOp((IExpr) p0, reg, (IExpr) p1, op, mo));
+	        visitor.append(EventFactory.Linux.newRMWFetchOp((Expression) p0, reg, (Expression) p1, op, mo));
 			return;
 		case "__LKMM_ATOMIC_OP_RETURN":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
-	        visitor.append(EventFactory.Linux.newRMWOpReturn((IExpr) p0, reg, (IExpr) p1, op, mo));
+	        visitor.append(EventFactory.Linux.newRMWOpReturn((Expression) p0, reg, (Expression) p1, op, mo));
 			return;
 		case "__LKMM_ATOMIC_OP":
 			op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
-	        visitor.append(EventFactory.Linux.newRMWOp((IExpr) p0, reg, (IExpr) p1, op));
+	        visitor.append(EventFactory.Linux.newRMWOp((Expression) p0, reg, (Expression) p1, op));
 			return;
 		case "__LKMM_FENCE":
 			String fence = Linux.intToMo(((IConst) p0).getValueAsInt());
 			visitor.append(EventFactory.Linux.newLKMMFence(fence));
 			return;
 		case "__LKMM_SPIN_LOCK":
-			visitor.append(EventFactory.Linux.newLock((IExpr) p0));
+			visitor.append(EventFactory.Linux.newLock((Expression) p0));
 			return;
 		case "__LKMM_SPIN_UNLOCK":
-			visitor.append(EventFactory.Linux.newUnlock((IExpr) p0));
+			visitor.append(EventFactory.Linux.newUnlock((Expression) p0));
 			return;
 		default:
 			throw new UnsupportedOperationException(name + " procedure is not part of LKMMPROCEDURES");

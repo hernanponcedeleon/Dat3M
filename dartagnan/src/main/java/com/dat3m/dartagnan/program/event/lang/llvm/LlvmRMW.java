@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 
@@ -11,7 +10,7 @@ public class LlvmRMW extends LlvmAbstractRMW {
 
     private final IOpBin op;
 
-    public LlvmRMW(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
+    public LlvmRMW(Register register, Expression address, Expression value, IOpBin op, String mo) {
         super(address, register, value, mo);
         this.op = op;
     }

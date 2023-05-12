@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
@@ -9,11 +8,11 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public abstract class MemEvent extends Event {
 
-    protected IExpr address;
+    protected Expression address;
     protected String mo;
 
     // The empty string means no memory order 
-    public MemEvent(IExpr address, String mo) {
+    public MemEvent(Expression address, String mo) {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
@@ -29,8 +28,8 @@ public abstract class MemEvent extends Event {
         this.mo = other.mo;
     }
 
-    public IExpr getAddress() { return address; }
-    public void setAddress(IExpr address) { this.address = address; }
+    public Expression getAddress() { return address; }
+    public void setAddress(Expression address) { this.address = address; }
 
     public Expression getMemValue() {
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());

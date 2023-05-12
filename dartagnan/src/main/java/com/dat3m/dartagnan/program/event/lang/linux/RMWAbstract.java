@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -16,7 +15,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
     protected final Register resultRegister;
     protected Expression value;
 
-    RMWAbstract(IExpr address, Register register, Expression value, String mo) {
+    RMWAbstract(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;

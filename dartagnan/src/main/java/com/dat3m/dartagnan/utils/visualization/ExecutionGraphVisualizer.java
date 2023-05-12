@@ -1,14 +1,13 @@
 package com.dat3m.dartagnan.utils.visualization;
 
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +39,7 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
+    private final Map<BigInteger, Expression> addresses = new HashMap<>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();

@@ -126,7 +126,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitLoad(LoadContext ctx) {
 		Register result = thread.getOrNewRegister(ctx.register().getText(), type);
-		IExpr address = (IExpr) ctx.expression().accept(this);
+		Expression address = (Expression) ctx.expression().accept(this);
 		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
 		thread.append(EventFactory.newLoad(result, address, mo));
 		return null;
@@ -142,8 +142,8 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitStore(StoreContext ctx) {
-		IExpr value = (IExpr) ctx.value().accept(this);
-		IExpr address = (IExpr) ctx.expression().accept(this);
+		Expression value = (Expression) ctx.value().accept(this);
+		Expression address = (Expression) ctx.expression().accept(this);
 		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
 		thread.append(EventFactory.newStore(address, value, mo));
 		return null;
@@ -153,8 +153,8 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitRmw(RmwContext ctx) {
 		Register result = thread.getOrNewRegister(ctx.register().getText(), type);
-		IExpr value = (IExpr) ctx.value().accept(this);
-		IExpr address = (IExpr) ctx.expression().accept(this);
+		Expression value = (Expression) ctx.value().accept(this);
+		Expression address = (Expression) ctx.expression().accept(this);
 		String mo = ctx.mo() != null ? ctx.mo().getText() : "";
 		thread.append(EventFactory.LISA.newRMW(address, result, value, mo));
 		return null;
@@ -203,36 +203,36 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitAdd(AddContext ctx) {
-		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
-		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, IOpBin.PLUS, e2);
 	}
 
 	@Override
 	public Object visitSub(SubContext ctx) {
-		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
-		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, IOpBin.MINUS, e2);
 	}
 
 	@Override
 	public Object visitXor(XorContext ctx) {
-		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
-		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, IOpBin.XOR, e2);
 	}
 
 	@Override
 	public Object visitOr(OrContext ctx) {
-		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
-		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, IOpBin.OR, e2);
 	}
 
 	@Override
 	public Object visitAnd(AndContext ctx) {
-		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
-		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeBinary(e1, IOpBin.AND, e2);
 	}
 
@@ -258,7 +258,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitArrayAccess(ArrayAccessContext ctx) {
 		MemoryObject base = (MemoryObject) ctx.location().accept(this);
-		IExpr offset = (IExpr) ctx.value().accept(this);
+		Expression offset = (Expression) ctx.value().accept(this);
 		return expressions.makeBinary(base, IOpBin.PLUS, offset);
 	}
 

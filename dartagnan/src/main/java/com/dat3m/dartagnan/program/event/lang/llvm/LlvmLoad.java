@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -16,7 +15,7 @@ public class LlvmLoad extends MemEvent implements RegWriter {
 
     private final Register resultRegister;
 
-    public LlvmLoad(Register register, IExpr address, String mo) {
+    public LlvmLoad(Register register, Expression address, String mo) {
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
     	Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),

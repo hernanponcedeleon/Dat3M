@@ -92,7 +92,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private final Map<String, Expression> constantsMap = new HashMap<>();
     private final Map<String, Type> constantsTypeMap = new HashMap<>();
 
-    protected final Set<IExpr> allocations = new HashSet<>();
+    protected final Set<Expression> allocations = new HashSet<>();
 
     protected Map<Integer, List<Expression>> threadCallingValues = new HashMap<>();
 
@@ -145,7 +145,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        IExpr next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getPointerType());
+        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getPointerType());
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
             next = pool.next();
@@ -269,7 +269,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             thread = program.newThread(name);
             if (threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
-                IExpr pointer = pool.getPtrFromInt(threadCount);
+                Expression pointer = pool.getPtrFromInt(threadCount);
                 Register reg = thread.newRegister(types.getPointerType());
                 thread.append(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
@@ -313,7 +313,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (create) {
             if (threadCount != 1) {
                 // Used to mark the end of the execution of a thread (used by pthread_join)
-                IExpr pointer = pool.getPtrFromInt(threadCount);
+                Expression pointer = pool.getPtrFromInt(threadCount);
                 thread.append(EventFactory.Pthread.newEnd(pointer));
             }
         }
@@ -321,7 +321,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
-        addAssertion((IExpr) ctx.proposition().expr().accept(this));
+        addAssertion((Expression) ctx.proposition().expr().accept(this));
         return null;
     }
 
@@ -442,9 +442,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     Event child;
                     if (allocations.contains(value)) {
                         // These loads corresponding to pthread_joins
-                        child = EventFactory.Pthread.newJoin(register.get(), (IExpr) value);
+                        child = EventFactory.Pthread.newJoin(register.get(), value);
                     } else {
-                        child = EventFactory.newLoad(register.get(), (IExpr) value, "");
+                        child = EventFactory.newLoad(register.get(), value, "");
                     }
                     append(child);
                     continue;
@@ -571,7 +571,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitMinus_expr(Minus_exprContext ctx) {
-        IExpr v = (IExpr) ctx.unary_expr().accept(this);
+        Expression v = (Expression) ctx.unary_expr().accept(this);
         return expressions.makeUnary(IOpUn.MINUS, v);
     }
 
@@ -620,7 +620,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         Expression v2;
         for (int i = 0; i < ctx.factor().size() - 1; i++) {
             v2 = (Expression) ctx.factor(i + 1).accept(this);
-            v1 = expressions.makeBinary((IExpr) v1, ctx.add_op(i).op, (IExpr) v2);
+            v1 = expressions.makeBinary(v1, ctx.add_op(i).op, v2);
         }
         return v1;
     }
@@ -631,7 +631,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         Expression v2;
         for (int i = 0; i < ctx.power().size() - 1; i++) {
             v2 = (Expression) ctx.power(i + 1).accept(this);
-            v1 = expressions.makeBinary((IExpr) v1, ctx.mul_op(i).op, (IExpr) v2);
+            v1 = expressions.makeBinary(v1, ctx.mul_op(i).op, v2);
         }
         return v1;
     }
@@ -680,8 +680,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (doIgnoreVariable(ctx.expr(1).getText())) {
                 return null;
             }
-            IExpr address = (IExpr) ctx.expr(1).accept(this);
-            IExpr value = (IExpr) ctx.expr(2).accept(this);
+            Expression address = (Expression) ctx.expr(1).accept(this);
+            Expression value = (Expression) ctx.expr(2).accept(this);
             // This improves the blow-up
             if (initMode && !(value instanceof MemoryObject)) {
                 Expression lhs = address;
@@ -737,8 +737,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitIf_then_else_expr(If_then_else_exprContext ctx) {
         Expression guard = (Expression) ctx.expr(0).accept(this);
-        IExpr tbranch = (IExpr) ctx.expr(1).accept(this);
-        IExpr fbranch = (IExpr) ctx.expr(2).accept(this);
+        Expression tbranch = (Expression) ctx.expr(1).accept(this);
+        Expression fbranch = (Expression) ctx.expr(2).accept(this);
         return expressions.makeConditional(guard, tbranch, fbranch);
     }
 
@@ -778,7 +778,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return null;
     }
 
-    protected void addAssertion(IExpr expr) {
+    protected void addAssertion(Expression expr) {
         Register ass = thread.getOrNewRegister("assert_" + assertionIndex, expr.getType());
         IValue one = expressions.makeOne(expr.getType());
         assertionIndex++;

@@ -135,6 +135,6 @@ public class LlvmUnary {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return factory.makeUnary(op, (IExpr)callParams.get(0));
+		return factory.makeUnary(op, (Expression)callParams.get(0));
 	}
 }

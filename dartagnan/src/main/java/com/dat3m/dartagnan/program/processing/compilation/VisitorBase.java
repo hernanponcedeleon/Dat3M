@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
@@ -24,6 +23,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
@@ -91,7 +91,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
 	public List<Event> visitUnlock(Unlock e) {
         Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
@@ -165,7 +165,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitRMW(RMW e) {
         Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Load load = newRMWLoad(dummyReg, address, mo);

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -12,7 +11,7 @@ public class Store extends MemEvent implements RegReaderData {
 
     protected Expression value;
 
-    public Store(IExpr address, Expression value, String mo){
+    public Store(Expression address, Expression value, String mo){
     	super(address, mo);
         this.value = value;
         addFilters(Tag.WRITE);

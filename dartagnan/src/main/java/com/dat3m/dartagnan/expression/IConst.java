@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.program.expression.Expression;
+
 import java.math.BigInteger;
 
 /**
  * Expressions whose results are known before an execution starts.
  */
-public abstract class IConst extends IExpr {
+public abstract class IConst implements Expression {
 
     /**
      * @return

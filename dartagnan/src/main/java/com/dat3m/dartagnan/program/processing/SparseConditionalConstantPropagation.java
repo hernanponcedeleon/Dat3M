@@ -187,7 +187,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitMemEvent(MemEvent e) {
-            e.setAddress((IExpr) e.getAddress().visit(propagator));
+            e.setAddress(e.getAddress().visit(propagator));
             return null;
         }
 
@@ -199,7 +199,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitMalloc(Malloc e) {
-            e.setSizeExpr((IExpr) e.getSizeExpr().visit(propagator));
+            e.setSizeExpr(e.getSizeExpr().visit(propagator));
             return null;
         }
     }

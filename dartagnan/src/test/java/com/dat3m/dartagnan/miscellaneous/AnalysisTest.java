@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
@@ -395,15 +396,15 @@ public class AnalysisTest {
         assertAlias(expect[5], a, me2, me3);
     }
 
-    private Load newLoad(Register value, IExpr address) {
+    private Load newLoad(Register value, Expression address) {
         return EventFactory.newLoad(value, address, "");
     }
 
-    private Store newStore(IExpr address) {
+    private Store newStore(Expression address) {
         return newStore(address, ZERO);
     }
 
-    private Store newStore(IExpr address, IExpr value) {
+    private Store newStore(Expression address, Expression value) {
         return EventFactory.newStore(address, value, "");
     }
 
@@ -411,11 +412,11 @@ public class AnalysisTest {
         return expressionFactory.makeValue(BigInteger.valueOf(v), type);
     }
 
-    private IExpr plus(IExpr lhs, long rhs) {
+    private Expression plus(Expression lhs, long rhs) {
         return expressionFactory.makeBinary(lhs, PLUS, value(rhs));
     }
 
-    private IExpr mult(IExpr lhs, long rhs) {
+    private Expression mult(Expression lhs, long rhs) {
         return expressionFactory.makeBinary(lhs, MULT, value(rhs));
     }
 
