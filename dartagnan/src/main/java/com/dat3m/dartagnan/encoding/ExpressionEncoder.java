@@ -176,11 +176,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(BNonDet bNonDet) {
-        return booleanFormulaManager.makeVariable(Integer.toString(bNonDet.hashCode()));
-    }
-
-    @Override
     public Formula visit(IValue iValue) {
         if (iValue.isBoolean()) {
             return booleanFormulaManager.makeBoolean(iValue.isTrue());
@@ -481,6 +476,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(INonDet iNonDet) {
         String name = iNonDet.getName();
+        if (iNonDet.isBoolean()) {
+            return booleanFormulaManager.makeVariable(name);
+        }
         Type type = iNonDet.getType();
         if (type instanceof NumberType) {
             return integerFormulaManager().makeVariable(name);

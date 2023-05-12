@@ -36,11 +36,6 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(BNonDet bNonDet) {
-        return bNonDet;
-    }
-
-    @Override
     public IValue visit(IValue iValue) {
         return iValue;
     }

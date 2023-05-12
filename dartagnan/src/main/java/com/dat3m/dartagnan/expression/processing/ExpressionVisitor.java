@@ -9,7 +9,6 @@ public interface ExpressionVisitor<T> {
     default T visit(Atom atom) { return null; }
     default T visit(BExprBin bBin) { return null; }
     default T visit(BExprUn bUn) { return null; }
-    default T visit(BNonDet bNonDet) { return null; }
     default T visit(IValue iValue) { return null; }
     default T visit(IExprBin iBin) { return null; }
     default T visit(IExprUn iUn) { return null; }

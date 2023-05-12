@@ -169,7 +169,7 @@ public class SvcompProcedures {
     private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
         String registerName = ctx.call_params().Ident(0).getText();
         Optional<Register> register = visitor.thread.getRegister( visitor.currentScope.getID() + ":" + registerName);
-        register.ifPresent(value -> visitor.append(EventFactory.newLocal(value, new BNonDet())));
+        register.ifPresent(value -> visitor.append(EventFactory.newLocal(value, visitor.program.newConstant(visitor.types.getBooleanType(), false, null, null))));
 
     }
 

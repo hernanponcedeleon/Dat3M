@@ -60,7 +60,7 @@ public class AnalysisTest {
         Register r1 = thread.newRegister("r1", type);
         Register r2 = thread.newRegister("r2", type);
         Label alt = EventFactory.newLabel("alt");
-        thread.append(newJump(new BNonDet(), alt));
+        thread.append(newJump(program.newConstant(typeFactory.getBooleanType(), false ,null, null), alt));
         Local e0 = newLocal(r0, value(1));
         thread.append(e0);
         Local e1 = newLocal(r1, r0);
