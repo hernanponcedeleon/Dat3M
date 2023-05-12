@@ -6,18 +6,17 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
 import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
+import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
+import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
+import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
 
 public class VisitorPTX extends VisitorBase {
 
@@ -31,32 +30,22 @@ public class VisitorPTX extends VisitorBase {
         String mo = e.getMo();
         IExpr address = e.getAddress();
         ExprInterface value = e.getMemValue();
-
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
         Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
-        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
-        RMWStore store = newRMWStore(load, address, new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.Linux.storeMO(mo));
-
-        Set<String> scopeFilters = getScopeFilters(e);
-        optionalMbBefore.addFilters(scopeFilters);
-        optionalMbAfter.addFilters(scopeFilters);
-        load.addFilters(scopeFilters);
-        store.addFilters(scopeFilters);
-        Set<String> proxyFilters = getProxyFilters(e);
-        optionalMbBefore.addFilters(proxyFilters);
-        optionalMbAfter.addFilters(proxyFilters);
-        load.addFilters(proxyFilters);
-        store.addFilters(proxyFilters);
-        addSemFilters(e, load);
-        addSemFilters(e, store);
-
+        RMWStore store = newRMWStore(load, address,
+                new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.Linux.storeMO(mo));
+        for (String filter : e.getFilters()) {
+            load.addFilters(Tag.PTX.loadMO(filter));
+            load.addFilters(Tag.PTX.scopeMo(filter));
+            load.addFilters(Tag.PTX.proxyMo(filter));
+            store.addFilters(Tag.PTX.storeMO(filter));
+            store.addFilters(Tag.PTX.scopeMo(filter));
+            store.addFilters(Tag.PTX.proxyMo(filter));
+        }
         return eventSequence(
-                optionalMbBefore,
                 load,
                 store,
-                newLocal(resultRegister, dummy),
-                optionalMbAfter
+                newLocal(resultRegister, dummy)
         );
     }
 
@@ -64,66 +53,23 @@ public class VisitorPTX extends VisitorBase {
     public List<Event> visitRMWOp(RMWOp e) {
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
-
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
         load.addFilters(Tag.Linux.NORETURN);
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE);
-
-        Set<String> scopeFilters = getScopeFilters(e);
-        load.addFilters(scopeFilters);
-        store.addFilters(scopeFilters);
-        Set<String> proxyFilters = getProxyFilters(e);
-        load.addFilters(proxyFilters);
-        store.addFilters(proxyFilters);
-        addSemFilters(e, load);
-        addSemFilters(e, store);
-
+        for (String filter : e.getFilters()) {
+            load.addFilters(Tag.PTX.loadMO(filter));
+            load.addFilters(Tag.PTX.scopeMo(filter));
+            load.addFilters(Tag.PTX.proxyMo(filter));
+            store.addFilters(Tag.PTX.storeMO(filter));
+            store.addFilters(Tag.PTX.scopeMo(filter));
+            store.addFilters(Tag.PTX.proxyMo(filter));
+        }
         return eventSequence(
                 load,
                 store
         );
-    }
-
-    private Set<String> getScopeFilters(Event e) {
-        Set<String> filters = e.getFilters();
-        Set<String> scopeFilters = new HashSet<>();
-        for (String filter : filters) {
-            if (filter.contains(Tag.PTX.CTA) || filter.contains(Tag.PTX.GPU)
-                    || filter.contains(Tag.PTX.SYS)) {
-                scopeFilters.add(filter);
-            }
-        }
-        return scopeFilters;
-    }
-
-    private void addSemFilters(Event e, Load load) {
-        if (e.is(Tag.PTX.ACQ_REL)) {
-            load.addFilters(Tag.PTX.ACQ);
-        } else if (e.is(Tag.PTX.RLX)) {
-            load.addFilters(Tag.PTX.RLX);
-        }
-    }
-
-    private void addSemFilters(Event e, Store store) {
-        if (e.is(Tag.PTX.ACQ_REL)) {
-            store.addFilters(Tag.PTX.REL);
-        } else if (e.is(Tag.PTX.RLX)) {
-            store.addFilters(Tag.PTX.RLX);
-        }
-    }
-
-    private Set<String> getProxyFilters(Event e) {
-        Set<String> filters = e.getFilters();
-        Set<String> scopeFilters = new HashSet<>();
-        for (String filter : filters) {
-            if (filter.equals(Tag.PTX.GEN) || filter.equals(Tag.PTX.TEX) || filter.equals(Tag.PTX.SUR)
-                    || filter.equals(Tag.PTX.CON) || filter.contains(Tag.PTX.ALIAS)) {
-                scopeFilters.add(filter);
-            }
-        }
-        return scopeFilters;
     }
 
 }

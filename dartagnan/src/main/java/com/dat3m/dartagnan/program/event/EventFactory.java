@@ -628,9 +628,8 @@ public class EventFactory {
 
         public static RMWFetchOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
                                            IOpBin op, String mo, String scope) {
-            RMWFetchOp atom = new RMWFetchOp(address, register, value, op, Tag.Linux.MO_MB);
+            RMWFetchOp atom = new RMWFetchOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
             atom.addFilters(scope);
-            atom.addFilters(mo); // mo = ACQ_REL || RLX
             return atom;
         }
 
