@@ -3,12 +3,9 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.collect.ImmutableSet;
-
-import java.math.BigInteger;
 
 public class IExprUn extends IExpr {
 
@@ -36,38 +33,6 @@ public class IExprUn extends IExpr {
     @Override
     public String toString() {
         return "(" + op + b + ")";
-    }
-
-    @Override
-    public IConst reduce() {
-        IConst inner = b.reduce();
-        switch (op) {
-            case MINUS:
-            return new IValue(inner.getValue().negate(), b.getType());
-            case BV2UINT: case BV2INT:
-            case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
-            case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:
-            case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264: 
-            case SEXT18: case SEXT116: case SEXT132: case SEXT164: case SEXT816: case SEXT832: case SEXT864: case SEXT1632: case SEXT1664: case SEXT3264:
-                return inner;
-            case CTLZ:
-                int leading;
-                IntegerType type = (IntegerType) inner.getType();
-                switch (type.getBitWidth()) {
-                    case 32:
-                        leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
-                        break;
-                    case 64:
-                        leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
-                        break;
-                    default:
-                        throw new UnsupportedOperationException(
-                                "Reduce not supported for " + this + " with precision " + type.getBitWidth());
-                }
-                return new IValue(BigInteger.valueOf(leading), inner.getType());
-            default:
-                throw new UnsupportedOperationException("Reduce not supported for " + this);
-        }
     }
 
     @Override

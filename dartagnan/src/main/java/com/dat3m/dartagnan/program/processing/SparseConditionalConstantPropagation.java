@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -234,91 +233,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                 return retVal;
             }
         }
-
-        @Override
-        public Expression visit(Atom atom) {
-            Expression lhs = atom.getLHS().visit(this);
-            Expression rhs = atom.getRHS().visit(this);
-            if (lhs instanceof BConst) {
-                lhs = factory.makeValue(
-                        lhs.isTrue() ? BigInteger.ONE : BigInteger.ZERO,
-                        rhs instanceof IExpr ? rhs.getType() : types.getIntegerType(1));
-            }
-            if (rhs instanceof BConst) {
-                rhs = factory.makeValue(
-                        rhs.isTrue() ? BigInteger.ONE : BigInteger.ZERO,
-                        lhs instanceof IExpr ? lhs.getType() : types.getIntegerType(1));
-            }
-            if (lhs instanceof IValue && rhs instanceof IValue) {
-                IValue left = (IValue) lhs;
-                IValue right = (IValue) rhs;
-                return factory.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));
-            } else {
-                return factory.makeBinary(lhs, atom.getOp(), rhs);
-            }
-        }
-
-        @Override
-        public Expression visit(BExprBin bBin) {
-            Expression lhs = bBin.getLHS().visit(this);
-            Expression rhs = bBin.getRHS().visit(this);
-            if (lhs instanceof BConst && rhs instanceof BConst) {
-                BConst left = (BConst) lhs;
-                BConst right = (BConst) rhs;
-                return factory.makeValue(bBin.getOp().combine(left.getValue(), right.getValue()));
-            } else {
-                return factory.makeBinary(lhs, bBin.getOp(), rhs);
-            }
-        }
-
-        @Override
-        public Expression visit(BExprUn bUn) {
-            Expression inner = bUn.getInner().visit(this);
-            if (inner instanceof BConst) {
-                return factory.makeValue(bUn.getOp().combine(((BConst) inner).getValue()));
-            } else {
-                return factory.makeUnary(bUn.getOp(), inner);
-            }
-        }
-
-        @Override
-        public IExpr visit(IExprBin iBin) {
-            IExpr lhs = (IExpr) iBin.getLHS().visit(this);
-            IExpr rhs = (IExpr) iBin.getRHS().visit(this);
-            if (lhs instanceof IValue && rhs instanceof IValue) {
-                IValue left = (IValue) lhs;
-                IValue right = (IValue) rhs;
-                return factory.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
-            } else {
-                return factory.makeBinary(lhs, iBin.getOp(), rhs);
-            }
-        }
-
-        @Override
-        public IExpr visit(IExprUn iUn) {
-            IExpr inner = (IExpr) iUn.getInner().visit(this);
-            if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                return factory.makeValue(((IValue) inner).getValue().negate(), inner.getType());
-            } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
-                return factory.makeUnary(iUn.getOp(), inner).reduce();
-            } else {
-                return factory.makeUnary(iUn.getOp(), inner);
-            }
-        }
-
-        @Override
-        public Expression visit(IfExpr ifExpr) {
-            Expression guard = ifExpr.getGuard().visit(this);
-            IExpr trueBranch = (IExpr) ifExpr.getTrueBranch().visit(this);
-            IExpr falseBranch = (IExpr) ifExpr.getFalseBranch().visit(this);
-            if (guard instanceof BConst && trueBranch instanceof IValue && falseBranch instanceof IValue) {
-                // We optimize ITEs only if all subexpressions are constant to avoid messing up
-                // data dependencies
-                return guard.isTrue() ? trueBranch : falseBranch;
-            }
-            return factory.makeConditional(guard, trueBranch, falseBranch);
-        }
-
     }
 
 }

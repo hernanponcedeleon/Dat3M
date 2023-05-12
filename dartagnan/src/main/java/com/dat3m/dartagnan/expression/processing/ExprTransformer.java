@@ -29,12 +29,15 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visit(BExprBin bBin) {
-        return factory.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
+        Expression l = bBin.getLHS().visit(this);
+        Expression r = bBin.getRHS().visit(this);
+        return bBin.getLHS().equals(l) && bBin.getRHS().equals(r) ? bBin : factory.makeBinary(l, bBin.getOp(), r);
     }
 
     @Override
     public Expression visit(BExprUn bUn) {
-        return factory.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
+        Expression i = bUn.getInner().visit(this);
+        return bUn.getInner().equals(i) ? bUn : factory.makeUnary(bUn.getOp(), i);
     }
 
     @Override
@@ -49,20 +52,24 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public IExpr visit(IExprBin iBin) {
-        return factory.makeBinary((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
+        IExpr l = (IExpr) iBin.getLHS().visit(this);
+        IExpr r = (IExpr) iBin.getRHS().visit(this);
+        return iBin.getLHS().equals(l) && iBin.getRHS().equals(r) ? iBin : factory.makeBinary(l, iBin.getOp(), r);
     }
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return factory.makeUnary(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
+        IExpr i = (IExpr) iUn.getInner().visit(this);
+        return iUn.getInner().equals(i) ? iUn : factory.makeUnary(iUn.getOp(), i);
     }
 
     @Override
     public Expression visit(IfExpr ifExpr) {
-        return factory.makeConditional(
-                ifExpr.getGuard().visit(this),
-                (IExpr)ifExpr.getTrueBranch().visit(this),
-                (IExpr)ifExpr.getFalseBranch().visit(this));
+        Expression g = ifExpr.getGuard().visit(this);
+        IExpr t = (IExpr) ifExpr.getTrueBranch().visit(this);
+        IExpr f = (IExpr) ifExpr.getFalseBranch().visit(this);
+        return ifExpr.getGuard().equals(g) && ifExpr.getTrueBranch().equals(t) && ifExpr.getFalseBranch().equals(f) ?
+                ifExpr : factory.makeConditional(g, t, f);
     }
 
     @Override
