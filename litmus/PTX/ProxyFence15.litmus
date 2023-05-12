@@ -1,0 +1,14 @@
+PTX fence
+"A single thread example showing alias proxy fence usage"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ fence.proxy.texture              ;
+ ld.weak r0, x                    ;
+exists
+(P0:r0 != 1)
