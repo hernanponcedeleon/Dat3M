@@ -46,14 +46,18 @@ public interface AliasAnalysis {
     static boolean virtualLoc(MemEvent e1, MemEvent e2) {
         if (e1.getAddress() instanceof VirtualMemoryObject &&
                 e2.getAddress() instanceof VirtualMemoryObject) {
+            // two VirtualMemObj (of e1, e2) should virtually alias to the same MemObj
             return ((VirtualMemoryObject) e1.getAddress()).getAlias() != null &&
                     ((VirtualMemoryObject) e1.getAddress()).getAlias().equals(
                             ((VirtualMemoryObject) e2.getAddress()).getAlias());
         } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
+            // VirtualMemObj of e2 should virtually alias to MemObj of e1
             return e1.getAddress() == ((VirtualMemoryObject) e2.getAddress()).getAlias();
         } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
+            // VirtualMemObj of e1 should virtually alias to MemObj of e2
             return ((VirtualMemoryObject) e1.getAddress()).getAlias() == e2.getAddress();
         } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
+            // two MemObj (of e1, e2) should be the same
             return e1.getAddress() == e2.getAddress();
         } else {
             return false;
