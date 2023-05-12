@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.definition.Scopes.PTXScopes;
-import com.dat3m.dartagnan.wmm.definition.Scopes.PTXScopesSpecific;
+import com.dat3m.dartagnan.wmm.definition.Scopes.SameScope;
+import com.dat3m.dartagnan.wmm.definition.Scopes.SameSpecificScope;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
@@ -332,9 +332,9 @@ public class Wmm {
             case CTRLISB:
                 return intersection(r, getRelation(CTRL), getRelation(ISB));
             case SR:
-                return sameScope(r, Tag.PTX.PTX);
+                return new SameScope(r);
             case SCTA:
-                return sameSpecificScope(r, Tag.PTX.PTX, Tag.PTX.CTA);
+                return new SameSpecificScope(r, Tag.PTX.CTA);
             case ALIAS:
                 return new Alias(r);
             default:
@@ -356,21 +356,5 @@ public class Wmm {
 
     private Definition fence(Relation r0, String name) {
         return new Fences(r0, FilterBasic.get(name));
-    }
-    private Definition sameScope(Relation r, String Model) {
-        switch (Model) {
-            case Tag.PTX.PTX:
-                return new PTXScopes(r);
-            default:
-                return new PTXScopes(r);
-        }
-    }
-    private Definition sameSpecificScope(Relation r, String Model, String scope) {
-        switch (Model) {
-            case Tag.PTX.PTX:
-                return new PTXScopesSpecific(r, scope);
-            default:
-                return new PTXScopesSpecific(r, scope);
-        }
     }
 }

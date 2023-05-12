@@ -1,14 +1,10 @@
 package com.dat3m.dartagnan.wmm.definition.Scopes;
 
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-public class PTXScopes extends Definition {
-    public PTXScopes(Relation r) {
+public class SameScope extends Definition {
+    public SameScope(Relation r) {
         super(r);
     }
 
