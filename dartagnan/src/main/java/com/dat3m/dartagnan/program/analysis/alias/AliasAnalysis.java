@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -44,21 +43,25 @@ public interface AliasAnalysis {
     }
 
     static boolean virtualLoc(MemEvent e1, MemEvent e2) {
-        if (e1.getAddress() instanceof VirtualMemoryObject &&
-                e2.getAddress() instanceof VirtualMemoryObject) {
-            // two VirtualMemObj (of e1, e2) should virtually alias to the same MemObj
-            return ((VirtualMemoryObject) e1.getAddress()).getAlias() != null &&
-                    ((VirtualMemoryObject) e1.getAddress()).getAlias().equals(
-                            ((VirtualMemoryObject) e2.getAddress()).getAlias());
-        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
-            // VirtualMemObj of e2 should virtually alias to MemObj of e1
-            return e1.getAddress() == ((VirtualMemoryObject) e2.getAddress()).getAlias();
-        } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
-            // VirtualMemObj of e1 should virtually alias to MemObj of e2
-            return ((VirtualMemoryObject) e1.getAddress()).getAlias() == e2.getAddress();
-        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
-            // two MemObj (of e1, e2) should be the same
-            return e1.getAddress() == e2.getAddress();
+        if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
+            return false;
+        }
+        MemoryObject add1 = (MemoryObject) e1.getAddress();
+        MemoryObject add2 = (MemoryObject) e2.getAddress();
+        Boolean virtuality1 = add1.getVirtuality();
+        Boolean virtuality2 = add2.getVirtuality();
+        if (virtuality1 && virtuality2) {
+            // add1, add2 are virtual, and they should alias to the same physical Address
+            return (add1.getAlias() != null && add1.getAlias().equals(add2.getAlias()));
+        } else if (!virtuality1 && virtuality2) {
+            // add2 should virtually alias to add1
+            return add1 == add2.getAlias();
+        } else if (virtuality1 && !virtuality2) {
+            // add1 should virtually alias to add2
+            return add1.getAlias() == add2;
+        } else if (!virtuality1 && !virtuality2) {
+            // add1 and add2 should be the same
+            return add1 == add2;
         } else {
             return false;
         }

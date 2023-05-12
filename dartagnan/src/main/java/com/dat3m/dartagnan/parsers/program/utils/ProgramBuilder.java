@@ -136,14 +136,14 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewObject(String name) {
-        MemoryObject object = locations.computeIfAbsent(name, k -> memory.allocate(1, true));
+        MemoryObject object = locations.computeIfAbsent(name, k -> memory.allocate(1, true, false));
         object.setCVar(name);
         return object;
     }
 
     public MemoryObject newObject(String name, int size) {
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        MemoryObject result = memory.allocate(size, true);
+        MemoryObject result = memory.allocate(size, true, false);
         locations.put(name,result);
         return result;
     }
@@ -232,7 +232,7 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true));
+        MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true, false));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
         object.setAlias(rightLocation);
@@ -245,7 +245,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->memory.allocateVirtually(1, true));
+                leftName, k->memory.allocate(1, true, true));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
         object.setAlias(rightLocation);

@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -1603,21 +1602,27 @@ public class RelationAnalysis {
     }
 
     private Boolean directAlias(MemEvent e1, MemEvent e2) {
-        MemoryObject alias1 = ((MemoryObject) e1.getAddress()).getAlias();
-        MemoryObject alias2 = ((MemoryObject) e2.getAddress()).getAlias();
-        if (e1.getAddress() instanceof VirtualMemoryObject &&
-                e2.getAddress() instanceof VirtualMemoryObject) {
+        if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
+            return false;
+        }
+        MemoryObject add1 = (MemoryObject) e1.getAddress();
+        MemoryObject add2 = (MemoryObject) e2.getAddress();
+        Boolean virtuality1 = add1.getVirtuality();
+        Boolean virtuality2 = add2.getVirtuality();
+        MemoryObject alias1 = add1.getAlias();
+        MemoryObject alias2 = add2.getAlias();
+        if (virtuality1 && virtuality2) {
             return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(alias2)) ||
                     (alias1 != null && alias2 != null && alias1.equals(alias2.getAlias()));
-        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof VirtualMemoryObject) {
-            return (alias2 != null && e1.getAddress().equals(alias2.getAlias())) ||
+        } else if (!virtuality1 && virtuality2) {
+            return (alias2 != null && add1.equals(alias2.getAlias())) ||
                     (alias1 != null && alias1.equals(alias2));
-        } else if (e1.getAddress() instanceof VirtualMemoryObject && e2.getAddress() instanceof MemoryObject) {
-            return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(e2.getAddress())) ||
+        } else if (virtuality1 && !virtuality2) {
+            return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(add2)) ||
                     (alias1 != null && alias1.equals(alias2));
-        } else if (e1.getAddress() instanceof MemoryObject && e2.getAddress() instanceof MemoryObject) {
-            return e1.getAddress().equals(alias2) ||
-                    (alias1 != null && alias1.equals(e2.getAddress()));
+        } else if (!virtuality1 && !virtuality2) {
+            return add1.equals(alias2) ||
+                    (alias1 != null && alias1.equals(add2));
         } else {
             return false;
         }
