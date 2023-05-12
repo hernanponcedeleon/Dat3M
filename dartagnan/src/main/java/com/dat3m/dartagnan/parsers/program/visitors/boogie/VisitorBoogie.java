@@ -699,7 +699,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 if (!(value instanceof IConst)) {
                     throw new ParsingException("Expected constant value in " + ctx.getText() + ".");
                 }
-                program.getMemory().getOrNewObject(text).appendInitialValue(rhs, (IConst) value);
+                Optional<MemoryObject> object = program.getMemory().getObject(text);
+                if (object.isEmpty()) {
+                    throw new ParsingException("Undefined symbol " + text + ".");
+                }
+                object.get().appendInitialValue(rhs, (IConst) value);
                 return null;
             }
             append(EventFactory.newStore(address, value, ""));

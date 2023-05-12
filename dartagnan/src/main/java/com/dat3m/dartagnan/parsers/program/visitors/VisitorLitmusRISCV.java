@@ -88,7 +88,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register().getText(), type);
-        MemoryObject value = program.getMemory().getObject(ctx.location().getText()).orElseThrow();
+        MemoryObject value = program.getMemory().getOrNewObject(ctx.location().getText());
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
