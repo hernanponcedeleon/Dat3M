@@ -313,14 +313,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitFenceProxy(LitmusPTXParser.FenceProxyContext ctx) {
-        Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
+        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addFilters(ctx.proxyType().content);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
-        Fence fence = EventFactory.newFence(Tag.PTX.PROXY);
+        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addFilters(Tag.PTX.GEN);
         fence.addFilters(Tag.PTX.ALIAS);
         return programBuilder.addChild(mainThread, fence);

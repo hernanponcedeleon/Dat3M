@@ -279,7 +279,6 @@ public final class Tag {
         public static final String REL = "REL"; // RELEASE
         public static final String ACQ_REL = "ACQ_REL";
         public static final String SC = "SC";
-        public static final String PROXY = "PROXY";
         public static final String GEN = "GEN"; // GENERIC
         public static final String TEX = "TEX"; // TEXTURE
         public static final String SUR = "SUR"; // SURFACE
