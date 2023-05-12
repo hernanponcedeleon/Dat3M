@@ -30,7 +30,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
