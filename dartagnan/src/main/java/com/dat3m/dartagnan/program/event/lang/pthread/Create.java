@@ -1,25 +1,26 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Create extends Store {
 
-	private final String routine;
-	
+    private final String routine;
+
     public Create(Expression address, String routine) {
-    	super(address, IValue.ONE, MO_SC);
+        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getPointerType()), MO_SC);
         this.routine = routine;
         addFilters(Tag.C11.PTHREAD);
     }
 
     private Create(Create other){
-    	super(other);
+        super(other);
         this.routine = other.routine;
     }
 
@@ -27,7 +28,7 @@ public class Create extends Store {
     public String toString() {
         return "pthread_create(" + address + ", " + routine + ")";
     }
-	
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -36,11 +37,11 @@ public class Create extends Store {
         return new Create(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitCreate(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitCreate(this);
+    }
 }

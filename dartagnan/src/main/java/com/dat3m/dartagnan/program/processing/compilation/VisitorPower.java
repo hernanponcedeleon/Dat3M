@@ -60,7 +60,7 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitEnd(End e) {
         return eventSequence(
 				Power.newSyncBarrier(),
-				newStore(e.getAddress(), IValue.ZERO, e.getMo())
+				newStore(e.getAddress(), zero, e.getMo())
         );
 	}
 
@@ -116,8 +116,8 @@ public class VisitorPower extends VisitorBase {
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ""),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                Power.newRMWStoreConditional(e.getAddress(), IValue.ONE, "", true),
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                Power.newRMWStoreConditional(e.getAddress(), one, "", true),
                 // Fake dependency to guarantee acquire semantics
                 newFakeCtrlDep(dummy, label),
                 label,
@@ -128,7 +128,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), IValue.ZERO, ""));
+                newStore(e.getAddress(), zero, ""));
     }
     
     // =============================================================================================
@@ -314,7 +314,7 @@ public class VisitorPower extends VisitorBase {
 
 		Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, e.getExpectedValue()));
 		Label casEnd = newLabel("CAS_end");
-		CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casEnd);
+		CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casEnd);
 
 		Load load = newRMWLoadExclusive(oldValueRegister, address, "");
 		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "", true);
@@ -383,7 +383,7 @@ public class VisitorPower extends VisitorBase {
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         // Power does not have mo tags, thus we use the emptz string
@@ -914,7 +914,7 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getType());
 		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, IValue.ZERO), cauEnd);
+        CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, zero), cauEnd);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -951,7 +951,7 @@ public class VisitorPower extends VisitorBase {
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
         Register retReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, IValue.ZERO));
+        Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, zero));
 
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address, "");
@@ -984,8 +984,8 @@ public class VisitorPower extends VisitorBase {
     // Spinlock events are guaranteed to succeed, i.e. we can use assumes
 		return eventSequence(
 				newRMWLoadExclusive(dummy, e.getLock(), ""),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                Power.newRMWStoreConditional(e.getLock(), IValue.ONE, "", true),
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                Power.newRMWStoreConditional(e.getLock(), one, "", true),
 				// Fake dependency to guarantee acquire semantics
 				newFakeCtrlDep(dummy, label),
 				label,
@@ -997,7 +997,7 @@ public class VisitorPower extends VisitorBase {
 		public List<Event> visitLKMMUnlock(LKMMUnlock e) {
 			return eventSequence(
 					Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), IValue.ZERO, "")
+                newStore(e.getAddress(), zero, "")
         );
 		}
 

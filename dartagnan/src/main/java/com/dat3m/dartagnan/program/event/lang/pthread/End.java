@@ -5,13 +5,15 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class End extends Store {
 
     public End(Expression address){
-    	super(address, IValue.ZERO, MO_SC);
+    	super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_SC);
     	addFilters(Tag.C11.PTHREAD);
     }
 

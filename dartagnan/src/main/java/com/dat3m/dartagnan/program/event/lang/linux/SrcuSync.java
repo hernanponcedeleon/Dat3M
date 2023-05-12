@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 public class SrcuSync extends MemEvent {
 
@@ -26,7 +28,7 @@ public class SrcuSync extends MemEvent {
 	// irrelevant because this event does not contribute to any data flow.
 	@Override
 	public Expression getMemValue(){
-		return IValue.ZERO;
+		return ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType());
 	}
 
 	// Visitor

@@ -41,6 +41,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	protected static final TypeFactory types = TypeFactory.getInstance();
 	protected static final Type archType = types.getPointerType();
 	protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
+	protected final IValue zero = expressions.makeZero(types.getPointerType());
+	protected final IValue one = expressions.makeOne(types.getPointerType());
 
 	protected VisitorBase(boolean forceStart) {
 		this.forceStart = forceStart;
@@ -83,8 +85,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
-                newRMWStore(rmwLoad, e.getAddress(), IValue.ONE, mo)
+                newJump(expressions.makeBinary(resultRegister, NEQ, zero), (Label) e.getThread().getExit()),
+                newRMWStore(rmwLoad, e.getAddress(), one, mo)
         );
     }
     
@@ -97,8 +99,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
-                newRMWStore(rmwLoad, address, IValue.ZERO, mo)
+                newJump(expressions.makeBinary(resultRegister, NEQ, one), (Label) e.getThread().getExit()),
+                newRMWStore(rmwLoad, address, zero, mo)
         );
 	}
 

@@ -179,7 +179,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitJump(JumpContext ctx) {
 		Label label = labelMap.computeIfAbsent(ctx.labelName().getText(), EventFactory::newLabel);
 		Register left = (Register) ctx.register().accept(this);
-		Expression condition = expressions.makeBinary(left, COpBin.EQ, IValue.ONE);
+		Expression condition = expressions.makeBinary(left, COpBin.EQ, expressions.makeOne(type));
 		thread.append(EventFactory.newJump(condition, label));
 		return null;
 	}

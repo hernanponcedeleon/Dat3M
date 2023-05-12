@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -63,7 +62,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitEnd(End e) {
         return eventSequence(
-                newStore(e.getAddress(), IValue.ZERO, Tag.ARMv8.MO_REL)
+                newStore(e.getAddress(), zero, Tag.ARMv8.MO_REL)
         );
     }
 
@@ -75,7 +74,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit())
+                newJump(expressions.makeBinary(resultRegister, NEQ, zero), (Label) e.getThread().getExit())
         );
     }
 
@@ -88,7 +87,7 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit())
+                newJump(expressions.makeBinary(resultRegister, NEQ, one), (Label) e.getThread().getExit())
         );
     }
 
@@ -106,14 +105,14 @@ class VisitorArm8 extends VisitorBase {
         // because the load is an acquire one.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getAddress(), IValue.ONE, "", true));
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                newRMWStoreExclusive(e.getAddress(), one, "", true));
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStore(e.getAddress(), IValue.ZERO, ARMv8.MO_REL));
+                newStore(e.getAddress(), zero, ARMv8.MO_REL));
     }
 
     // =============================================================================================
@@ -195,7 +194,7 @@ class VisitorArm8 extends VisitorBase {
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casEnd);
 
         Load load = newRMWLoadExclusive(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
@@ -243,7 +242,7 @@ class VisitorArm8 extends VisitorBase {
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         Load loadValue = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
@@ -658,15 +657,15 @@ class VisitorArm8 extends VisitorBase {
         // because the load is an acquire one.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true)
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                newRMWStoreExclusive(e.getLock(), one, "", true)
         );
     }
 
     @Override
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
-                newStore(e.getAddress(), IValue.ZERO, ARMv8.MO_REL)
+                newStore(e.getAddress(), zero, ARMv8.MO_REL)
         );
     }
 

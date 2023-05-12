@@ -57,7 +57,7 @@ class VisitorTso extends VisitorBase {
     public List<Event> visitEnd(End e) {
         return tagList(eventSequence(
                 // Nothing comes after an End event thus no need for a fence
-                newStore(e.getAddress(), IValue.ZERO, "")));
+                newStore(e.getAddress(), zero, "")));
     }
 
     @Override
@@ -101,14 +101,14 @@ class VisitorTso extends VisitorBase {
         Load load = newRMWLoad(dummy, e.getAddress(), "");
         return eventSequence(
                 load,
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStore(load, e.getAddress(), IValue.ONE, ""));
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                newRMWStore(load, e.getAddress(), one, ""));
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStore(e.getAddress(), IValue.ZERO, ""),
+                newStore(e.getAddress(), zero, ""),
                 X86.newMemoryFence());
     }
 
@@ -166,7 +166,7 @@ class VisitorTso extends VisitorBase {
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casEnd);
 
         Load load = newRMWLoad(oldValueRegister, address, "");
         Store store = newRMWStore(load, address, value, "");
@@ -207,7 +207,7 @@ class VisitorTso extends VisitorBase {
         Load loadValue = newRMWLoad(regValue, address, mo);
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
         Label casFail = newLabel("CAS_fail");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casFail);
         Store storeValue = newRMWStore(loadValue, address, value, mo);
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);

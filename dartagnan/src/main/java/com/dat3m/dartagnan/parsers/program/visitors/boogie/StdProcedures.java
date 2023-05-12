@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -123,7 +125,7 @@ public class StdProcedures {
     }
 
     private static void __assert_fail(VisitorBoogie visitor) {
-        visitor.addAssertion(IValue.ZERO);
+        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getPointerType()));
     }
 
 }

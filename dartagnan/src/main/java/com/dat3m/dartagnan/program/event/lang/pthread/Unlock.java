@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
@@ -14,7 +16,7 @@ public class Unlock extends Store {
 	private final Register reg;
 
 	public Unlock(String name, Expression address, Register reg){
-		super(address, IValue.ZERO, MO_SC);
+		super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_SC);
 		this.name = name;
         this.reg = reg;
     }

@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
@@ -16,6 +16,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
+//TODO initial values are untyped
 public class MemoryObject extends IConst {
 
     private final int index;
@@ -39,7 +40,7 @@ public class MemoryObject extends IConst {
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
-            initialValues.put(0, IValue.ZERO);
+            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()));
         }
     }
 
@@ -71,7 +72,7 @@ public class MemoryObject extends IConst {
      */
     public IConst getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, IValue.ZERO);
+        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()));
     }
 
     /**

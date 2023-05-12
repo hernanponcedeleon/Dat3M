@@ -7,11 +7,13 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 public class LKMMUnlock extends Store {
 
 	public LKMMUnlock(Expression lock) {
-		super(lock, IValue.ZERO, MO_RELEASE);
+		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_RELEASE);
 		addFilters(Tag.Linux.UNLOCK);
 	}
 

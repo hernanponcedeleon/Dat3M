@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,8 +84,9 @@ public class PthreadsProcedures {
         visitor.allocations.add(pointer);
         visitor.append(EventFactory.Pthread.newCreate(pointer, threadName));
         String registerName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Register reg = visitor.thread.getOrNewRegister(registerName, visitor.types.getPointerType());
-        visitor.thread.append(EventFactory.newLocal(reg, IValue.ZERO));
+        Type type = visitor.types.getPointerType();
+        Register reg = visitor.thread.getOrNewRegister(registerName, type);
+        visitor.thread.append(EventFactory.newLocal(reg, visitor.expressions.makeZero(type)));
     }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

@@ -65,7 +65,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-				newStore(e.getAddress(), IValue.ZERO, Tag.RISCV.MO_REL));
+				newStore(e.getAddress(), zero, Tag.RISCV.MO_REL));
 	}
 
 	@Override
@@ -110,8 +110,8 @@ class VisitorRISCV extends VisitorBase {
         // because of the fence.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ""),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getAddress(), IValue.ONE, "", true),
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                newRMWStoreExclusive(e.getAddress(), one, "", true),
                 RISCV.newRRWFence());
     }
 
@@ -119,7 +119,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), IValue.ZERO, ""));
+                newStore(e.getAddress(), zero, ""));
     }
 
 	// =============================================================================================
@@ -217,7 +217,7 @@ class VisitorRISCV extends VisitorBase {
 
 		Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(oldValueRegister, EQ, expectedValue));
 		Label casEnd = newLabel("CAS_end");
-		CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casEnd);
+		CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casEnd);
 
 		Load load = newRMWLoadExclusive(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = newRMWStoreExclusive(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
@@ -273,7 +273,7 @@ class VisitorRISCV extends VisitorBase {
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, expressions.makeBinary(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, IValue.ONE), casFail);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeBinary(resultRegister, NEQ, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
@@ -491,7 +491,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, zero), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
@@ -528,7 +528,7 @@ class VisitorRISCV extends VisitorBase {
 		Store store = RISCV.newRMWStoreConditional(address, value, moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, zero), label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -561,7 +561,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, op, value), moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, zero), label);
 
         return eventSequence(
                 load,
@@ -591,7 +591,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, zero), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
@@ -627,7 +627,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeBinary(statusReg, EQ, zero), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
@@ -670,7 +670,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getType());
 		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, IValue.ZERO), cauEnd);
+        CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, zero), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -704,7 +704,7 @@ class VisitorRISCV extends VisitorBase {
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
         Register retReg = e.getThread().newRegister(resultRegister.getType());
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, IValue.ZERO));
+        Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, zero));
 
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -733,8 +733,8 @@ class VisitorRISCV extends VisitorBase {
 		// We replace AMO instructions with LL/SC
 		return eventSequence(
 				newRMWLoadExclusive(dummy, e.getLock(), ""),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true),
+                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
+                newRMWStoreExclusive(e.getLock(), one, "", true),
 				RISCV.newRRWFence()
         );
 	}
@@ -743,7 +743,7 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
 		return eventSequence(
 				RISCV.newRWWFence(),
-				newStore(e.getAddress(), IValue.ZERO, "")
+				newStore(e.getAddress(), zero, "")
         );
 	}
 }

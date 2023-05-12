@@ -33,8 +33,6 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.expression.IValue.ONE;
-import static com.dat3m.dartagnan.expression.IValue.ZERO;
 import static com.dat3m.dartagnan.expression.op.COpBin.GT;
 import static com.dat3m.dartagnan.expression.op.COpBin.LT;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
@@ -223,9 +221,9 @@ public class AnalysisTest {
         thread.append(newLocal(r0, program.newConstant(type, true, null, null)));
         Label l0 = EventFactory.newLabel("l0");
         thread.append(newJump(expressionFactory.makeBinary(
-                expressionFactory.makeBinary(r0, GT, ONE),
+                expressionFactory.makeBinary(r0, GT, expressionFactory.makeOne(type)),
                 BOpBin.OR,
-                expressionFactory.makeBinary(r0, LT, ZERO)), l0));
+                expressionFactory.makeBinary(r0, LT, expressionFactory.makeZero(type))), l0));
         Store e0 = newStore(x);
         thread.append(e0);
         Store e1 = newStore(plus(x, 1));
@@ -233,7 +231,7 @@ public class AnalysisTest {
         Store e2 = newStore(plus(x, 2));
         thread.append(e2);
         Register r1 = thread.newRegister("r1", type);
-        thread.append(newLocal(r1, ZERO));
+        thread.append(newLocal(r1, expressionFactory.makeZero(type)));
         Store e3 = newStore(expressionFactory.makeBinary(
                 expressionFactory.makeBinary(x, PLUS, mult(r0, 2)),
                 PLUS,
@@ -400,7 +398,7 @@ public class AnalysisTest {
     }
 
     private Store newStore(Expression address) {
-        return newStore(address, ZERO);
+        return newStore(address, expressionFactory.makeZero(type));
     }
 
     private Store newStore(Expression address, Expression value) {

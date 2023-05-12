@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -241,7 +240,7 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
-            return newFetchOp(register, address, IValue.ONE, IOpBin.PLUS, mo);
+            return newFetchOp(register, address, ExpressionFactory.getInstance().makeOne(register.getType()), IOpBin.PLUS, mo);
         }
 
         public static AtomicLoad newLoad(Register register, Expression address, String mo) {
