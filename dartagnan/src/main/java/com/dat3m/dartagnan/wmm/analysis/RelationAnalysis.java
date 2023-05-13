@@ -756,12 +756,6 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (MemEvent w2 : nonInitWrites) {
-                    if (w1.is(PTX.WEAK) && w2.is(PTX.WEAK)) {
-                        // In PTX memory model the coherence order (co) is defined as “a partial transitive order that
-                        // relates overlapping write operations, determined at runtime,” overlapping morally weak stores
-                        // are not related by co if they are not causally related.
-                        continue;
-                    }
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
                             && (alias.mayAlias((MemEvent) w1, w2) || directAlias((MemEvent) w1, w2))) {
                         may.add(new Tuple(w1, w2));
@@ -1600,8 +1594,8 @@ public class RelationAnalysis {
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        Boolean virtuality1 = add1.getVirtuality();
-        Boolean virtuality2 = add2.getVirtuality();
+        Boolean virtuality1 = add1.getVirtual();
+        Boolean virtuality2 = add2.getVirtual();
         MemoryObject alias1 = add1.getAlias();
         MemoryObject alias2 = add2.getAlias();
         if (virtuality1 && virtuality2) {

@@ -31,11 +31,11 @@ public class MemoryObject extends IConst {
     private boolean virtual;
     private MemoryObject alias;
 
-    public boolean getVirtuality() {
+    public boolean getVirtual() {
         return virtual;
     }
 
-    public void setVirtuality(boolean virtuality) {
+    public void setVirtual(boolean virtuality) {
         this.virtual = virtuality;
     }
     public MemoryObject getAlias() {

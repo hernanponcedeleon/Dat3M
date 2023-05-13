@@ -48,8 +48,8 @@ public interface AliasAnalysis {
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        Boolean virtuality1 = add1.getVirtuality();
-        Boolean virtuality2 = add2.getVirtuality();
+        Boolean virtuality1 = add1.getVirtual();
+        Boolean virtuality2 = add2.getVirtual();
         if (virtuality1 && virtuality2) {
             // add1, add2 are virtual, and they should alias to the same physical Address
             return (add1.getAlias() != null && add1.getAlias().equals(add2.getAlias()));
