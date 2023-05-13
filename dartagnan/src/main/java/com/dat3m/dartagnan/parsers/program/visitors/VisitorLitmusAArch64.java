@@ -13,21 +13,33 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.core.Cmp;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
+    private static class CmpInstruction {
+        private final IExpr left;
+        private final IExpr right;
+
+        public CmpInstruction(IExpr left, IExpr right) {
+            this.left = left;
+            this.right = right;
+        }
+    }
+
+
     private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
+    private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
 
     public VisitorLitmusAArch64(ProgramBuilder pb){
         this.programBuilder = pb;
@@ -121,7 +133,8 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitCmp(LitmusAArch64Parser.CmpContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.rD, getArchPrecision());
         IExpr expr = ctx.expr32() != null ? (IExpr)ctx.expr32().accept(this) : (IExpr)ctx.expr64().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newCompare(register, expr));
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(register, expr));
+        return null;
     }
 
     @Override
@@ -181,12 +194,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.branchCondition() == null){
             return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
         }
-        Event lastEvent = programBuilder.getLastEvent(mainThread);
-        if(!(lastEvent instanceof Cmp)){
+        CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
+        if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-        Cmp cmp = (Cmp)lastEvent;
-        Atom expr = new Atom(cmp.getLeft(), ctx.branchCondition().op, cmp.getRight());
+        Atom expr = new Atom(cmp.left, ctx.branchCondition().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

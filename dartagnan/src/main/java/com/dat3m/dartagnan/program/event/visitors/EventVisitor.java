@@ -21,7 +21,6 @@ public interface EventVisitor<T> {
 
 	// Basic events
 	default T visitAssume(Assume e) { return visitEvent(e); }
-	default T visitCmp(Cmp e) { return visitSkip(e); }
 	default T visitCondJump(CondJump e) { return visitEvent(e); }
 	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
 	default T visitFence(Fence e) { return visitEvent(e); }

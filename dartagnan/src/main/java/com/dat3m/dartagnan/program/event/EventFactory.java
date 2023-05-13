@@ -93,10 +93,6 @@ public class EventFactory {
 
     // ------------------------------------------ Local events ------------------------------------------
 
-    public static Cmp newCompare(IExpr left, IExpr right) {
-        return new Cmp(left, right);
-    }
-
     public static Skip newSkip() {
         return new Skip();
     }
