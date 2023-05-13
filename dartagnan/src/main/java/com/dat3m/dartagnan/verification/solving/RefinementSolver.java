@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -441,7 +442,7 @@ public class RefinementSolver extends ModelChecker {
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
-                .filter(e -> e.hasCLine() && e.hasOId()).collect(Collectors.toSet());
+                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasOId()).collect(Collectors.toSet());
         
         // Track (covered) events and branches via oId
         final Set<Integer> branches = new HashSet<>();

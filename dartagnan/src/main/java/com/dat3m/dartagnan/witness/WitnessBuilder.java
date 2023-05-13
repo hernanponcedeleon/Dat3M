@@ -8,11 +8,14 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Result;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -109,7 +112,6 @@ public class WitnessBuilder {
 			return graph;
 		}
 
-		FormulaManager m = context.getFormulaManager();
 		try (Model model = prover.getModel()) {
 			List<Event> execution = reOrderBasedOnAtomicity(context.getTask().getProgram(), getSCExecutionOrder(model));
 
@@ -117,14 +119,15 @@ public class WitnessBuilder {
 				Event e = execution.get(i);
 				if (i + 1 < execution.size()) {
 					Event next = execution.get(i + 1);
-					if (e.getCLine() == next.getCLine() && e.getThread() == next.getThread()) {
+					if (e.hasEqualMetadata(next, SourceLocation.class) && e.getThread() == next.getThread()) {
 						continue;
 					}
 				}
 
+				int cLine = e.hasMetadata(SourceLocation.class) ? e.getMetadata(SourceLocation.class).getLineNumber() : -1;
 				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
 				edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
-				edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
+				edge.addAttribute(STARTLINE.toString(), valueOf(cLine));
 				
 				// End is also WRITE and PTHREAD, but it does not have
 				// CLines and thus won't create an edge (as expected)
@@ -167,7 +170,8 @@ public class WitnessBuilder {
 	private List<Event> getSCExecutionOrder(Model model) {
 		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
-		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e))) &&  e.hasCLine();
+		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e)))
+				&& e.hasMetadata(SourceLocation.class);
 		execEvents.addAll(context.getTask().getProgram().getEvents(Init.class).stream().filter(executedCEvents).collect(Collectors.toList()));
 		execEvents.addAll(context.getTask().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
 		Map<Integer, List<Event>> map = new HashMap<>();

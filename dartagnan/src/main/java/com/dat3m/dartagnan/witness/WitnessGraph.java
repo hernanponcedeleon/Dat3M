@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -81,7 +82,8 @@ public class WitnessGraph extends ElemWithAttributes {
 		List<Event> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
 			List<Event> events = program.getEvents(MemEvent.class).stream()
-					.filter(e -> e.getCLine() == edge.getCline())
+					.filter(e -> e.hasMetadata(SourceLocation.class))
+					.filter(e -> e.getMetadata(SourceLocation.class).getLineNumber() == edge.getCline())
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
 				enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()

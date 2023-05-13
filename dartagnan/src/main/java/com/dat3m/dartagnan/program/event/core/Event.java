@@ -4,6 +4,9 @@ import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.metadata.Metadata;
+import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
@@ -24,15 +27,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected int uId = -1;		// Global ID right before unrolling
 	protected int cId = -1;		// Global ID right before compilation
 
-	protected int cLine = -1;				    // line in the original C program
-	protected String sourceCodeFilePath  = "";	// path of the original C program
-
 	protected Thread thread; // The thread this event belongs to
 
 	protected final Set<String> filter;
 
 	protected transient Event successor;
 	protected transient Event predecessor;
+
+	protected MetadataMap metadataMap = new MetadataMap();
 
 	protected Event(){
 		filter = new HashSet<>();
@@ -48,8 +50,26 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		this.oId = other.oId;
 		this.uId = other.uId;
 		this.cId = other.cId;
-		this.cLine = other.cLine;
-		this.sourceCodeFilePath = other.sourceCodeFilePath;
+		other.metadataMap.getAllMetadata().forEach(this.metadataMap::put);
+	}
+
+	public boolean hasMetadata(Class<? extends Metadata> metadataClass) {
+		return metadataMap != null && metadataMap.contains(metadataClass);
+	}
+
+	public <T extends Metadata> T getMetadata(Class<T> metadataClass) {
+		return metadataMap == null ? null : metadataMap.get(metadataClass);
+	}
+
+	public <T extends Metadata> T setMetadata(T metadata) {
+		if (metadataMap == null) {
+			metadataMap = new MetadataMap();
+		}
+		return metadataMap.put(metadata);
+	}
+
+	public <T extends Metadata> boolean hasEqualMetadata(Event other, Class<T> metadataClass) {
+		return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
 	}
 
 	public int getGlobalId() { return globalId; }
@@ -68,27 +88,12 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public void setCId(int id) { this.cId = id; }
 	public boolean hasCId() { return cId != -1; }
 
-	public int getCLine() { return cLine; }
-    public boolean hasCLine() { return cLine != -1; }
-
-	public String getSourceCodeFilePath() {
-		return sourceCodeFilePath ;
-	}
-
-	public String getSourceCodeFileName() {
-        return sourceCodeFilePath.contains("/") ? sourceCodeFilePath.substring(sourceCodeFilePath.lastIndexOf("/") + 1)
-                : sourceCodeFilePath;
-	}
-
 	public Event setCFileInformation(int line, String sourceCodeFilePath) {
-		this.cLine = line;
-		this.sourceCodeFilePath  = sourceCodeFilePath ;
+		this.metadataMap.put(new SourceLocation(sourceCodeFilePath, line));
 		return this;
 	}
 
-	public Event getSuccessor(){
-		return successor;
-	}
+	public Event getSuccessor() { return successor; }
 	public Event getPredecessor() { return predecessor; }
 
 	public void setSuccessor(Event event) {
@@ -170,7 +175,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public boolean hasFilter(String f) {
 		return filter.contains(f);
 	}
-	
+
 	@Override
 	public int compareTo(Event e){
 		if (e == this) {
