@@ -28,15 +28,15 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
-    private Boolean virtuality;
+    private boolean virtual;
     private MemoryObject alias;
 
-    public Boolean getVirtuality() {
-        return virtuality;
+    public boolean getVirtuality() {
+        return virtual;
     }
 
-    public void setVirtuality(Boolean virtuality) {
-        this.virtuality = virtuality;
+    public void setVirtuality(boolean virtuality) {
+        this.virtual = virtuality;
     }
     public MemoryObject getAlias() {
         return alias;
@@ -66,11 +66,11 @@ public class MemoryObject extends IConst {
 
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
-    MemoryObject(int index, int size, boolean isStaticallyAllocated, boolean virtuality) {
+    MemoryObject(int index, int size, boolean isStaticallyAllocated, boolean virtual) {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
-        this.virtuality = virtuality;
+        this.virtual = virtual;
         this.alias = null;
 
         if (isStaticallyAllocated) {

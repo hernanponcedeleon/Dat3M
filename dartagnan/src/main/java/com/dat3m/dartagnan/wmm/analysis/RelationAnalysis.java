@@ -1019,12 +1019,8 @@ public class RelationAnalysis {
         }
 
         private String getValidScope(Event event, ArrayList<String> scopes) {
-            for (String scope : scopes) {
-                if (event.is(scope)) {
-                    return scope;
-                }
-            }
-            return null;
+            Optional<String> scope = scopes.stream().filter(s -> event.is(s)).findFirst();
+            return scope.isPresent()? scope.get() : null;
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {
