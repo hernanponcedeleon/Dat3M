@@ -4,8 +4,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.definition.Scopes.SameScope;
-import com.dat3m.dartagnan.wmm.definition.Scopes.SameSpecificScope;
+import com.dat3m.dartagnan.wmm.definition.SameScope;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
@@ -334,7 +333,7 @@ public class Wmm {
             case SR:
                 return new SameScope(r);
             case SCTA:
-                return new SameSpecificScope(r, Tag.PTX.CTA);
+                return new SameScope(r, Tag.PTX.CTA);
             case ALIAS:
                 return new Alias(r);
             default:

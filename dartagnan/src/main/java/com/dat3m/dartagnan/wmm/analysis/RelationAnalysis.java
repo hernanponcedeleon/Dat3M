@@ -900,7 +900,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSameScope(Relation rel) {
+        public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = new ArrayList<>();
             events.addAll(program.getEvents(Load.class));
@@ -908,7 +908,7 @@ public class RelationAnalysis {
             events.addAll(program.getEvents(Fence.class));
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustSameScope(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (mustSameScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -930,21 +930,21 @@ public class RelationAnalysis {
             return new Knowledge(must, new HashSet<>(must));
         }
 
-        @Override
-        public Knowledge visitSameSpecificScope(Relation rel, String specificScope) {
-            Set<Tuple> must = new HashSet<>();
-            List<Event> events = new ArrayList<>();
-            events.addAll(program.getEvents(Load.class));
-            events.addAll(program.getEvents(Store.class));
-            events.addAll(program.getEvents(Fence.class));
-            for (Event e1 : events) {
-                for (Event e2 : events) {
-                    if (sameHigherScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
-                    }
-                }
+        private boolean mustSameScope(Event first, Event second, String specificScope) {
+            if (specificScope != null) { // scope specified
+                return sameHigherScope(first, second, specificScope);
             }
-            return new Knowledge(must, new HashSet<>(must));
+            // if scope not specified, use valid scope
+            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
+            String firstScope = getValidScope(first, scopes);
+            String secondScope = getValidScope(second, scopes);
+            if (firstScope == null || secondScope == null) {
+                return false; // proxy fence
+            }
+            if (!firstScope.equals(secondScope)) {
+                return false;
+            }
+            return sameHigherScope(first, second, firstScope);
         }
 
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
@@ -987,19 +987,6 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
-        private boolean mustSameScope(Event first, Event second) {
-            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
-            String firstScope = getValidScope(first, scopes);
-            String secondScope = getValidScope(second, scopes);
-            if (firstScope == null || secondScope == null) {
-                return false; // proxy fence
-            }
-            if (!firstScope.equals(secondScope)) {
-                return false;
-            }
-            return sameHigherScope(first, second, firstScope);
-        }
-
         private boolean sameHigherScope(Event first, Event second, String flag) {
             ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
             int validIndex = scopes.indexOf(flag);
@@ -1013,8 +1000,8 @@ public class RelationAnalysis {
         }
 
         private String getValidScope(Event event, ArrayList<String> scopes) {
-            Optional<String> scope = scopes.stream().filter(s -> event.is(s)).findFirst();
-            return scope.isPresent()? scope.get() : null;
+            Optional<String> scope = scopes.stream().filter(event::is).findFirst();
+            return scope.orElse(null);
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {
@@ -1588,30 +1575,28 @@ public class RelationAnalysis {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
     }
 
-    private Boolean directAlias(MemEvent e1, MemEvent e2) {
+    private boolean directAlias(MemEvent e1, MemEvent e2) {
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
             return false;
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        Boolean virtuality1 = add1.getVirtual();
-        Boolean virtuality2 = add2.getVirtual();
+        boolean virtual1 = add1.getVirtual();
+        boolean virtual2 = add2.getVirtual();
         MemoryObject alias1 = add1.getAlias();
         MemoryObject alias2 = add2.getAlias();
-        if (virtuality1 && virtuality2) {
+        if (virtual1 && virtual2) {
             return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(alias2)) ||
                     (alias1 != null && alias2 != null && alias1.equals(alias2.getAlias()));
-        } else if (!virtuality1 && virtuality2) {
+        } else if (!virtual1 && virtual2) {
             return (alias2 != null && add1.equals(alias2.getAlias())) ||
                     (alias1 != null && alias1.equals(alias2));
-        } else if (virtuality1 && !virtuality2) {
+        } else if (virtual1) { // virtual1 && !virtual2
             return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(add2)) ||
                     (alias1 != null && alias1.equals(alias2));
-        } else if (!virtuality1 && !virtuality2) {
+        } else { // !virtual1 && !virtual2
             return add1.equals(alias2) ||
                     (alias1 != null && alias1.equals(add2));
-        } else {
-            return false;
         }
     }
 }
