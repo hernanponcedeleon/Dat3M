@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -626,16 +628,16 @@ public class EventFactory {
             return fence;
         }
 
-        public static RMWFetchOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
-                                           IOpBin op, String mo, String scope) {
-            RMWFetchOp atom = new RMWFetchOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
+        public static AtomOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
+                                             IOpBin op, String mo, String scope) {
+            AtomOp atom = new AtomOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
             atom.addFilters(scope);
             return atom;
         }
 
-        public static RMWOp newTaggedRedOp(IExpr address, Register register, IExpr value,
-                                                    IOpBin op, String mo, String scope) {
-            RMWOp red = new RMWOp(address, register, value, op);
+        public static RedOp newTaggedRedOp(IExpr address, Register register, IExpr value,
+                                           IOpBin op, String mo, String scope) {
+            RedOp red = new RedOp(address, register, value, op);
             red.addFilters(scope);
             red.addFilters(mo); // mo = ACQ_REL || RLX
             return red;

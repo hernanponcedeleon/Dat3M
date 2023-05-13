@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
 
 import java.util.List;
 
@@ -25,15 +25,15 @@ public class VisitorPTX extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitPTXRMWFetchOp(AtomOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         IExpr address = e.getAddress();
         ExprInterface value = e.getMemValue();
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
+        Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStore(load, address,
-                new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.Linux.storeMO(mo));
+                new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.PTX.storeMO(mo));
         for (String filter : e.getFilters()) {
             load.addFilters(Tag.PTX.loadMO(filter));
             load.addFilters(Tag.PTX.scopeMo(filter));
@@ -50,14 +50,14 @@ public class VisitorPTX extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitPtxRMWOp(RedOp e) {
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
-        load.addFilters(Tag.Linux.NORETURN);
+        Load load = newRMWLoad(dummy, address, Tag.PTX.RMW);
+        load.addFilters(Tag.PTX.NO_RETURN);
         RMWStore store = newRMWStore(load, address,
-                new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.Linux.MO_ONCE);
+                new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.RMW);
         for (String filter : e.getFilters()) {
             load.addFilters(Tag.PTX.loadMO(filter));
             load.addFilters(Tag.PTX.scopeMo(filter));

@@ -10,11 +10,11 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWFetchOp;
-import com.dat3m.dartagnan.program.event.lang.linux.RMWOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -221,7 +221,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Atom instruction doesn't support sem: " + mo);
         }
-        RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, mo, scope);
+        AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -239,7 +239,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Atom instruction doesn't support sem: " + mo);
         }
-        RMWFetchOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, mo, scope);
+        AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -257,7 +257,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Red instruction doesn't support sem: " + mo);
         }
-        RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, mo, scope);
+        RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }
@@ -275,7 +275,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Red instruction doesn't support sem: " + mo);
         }
-        RMWOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, mo, scope);
+        RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }
