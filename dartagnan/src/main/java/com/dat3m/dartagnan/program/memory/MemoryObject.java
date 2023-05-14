@@ -61,12 +61,12 @@ public class MemoryObject extends IConst {
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated, boolean virtual, MemoryObject alias) {
+        checkArgument(!virtual || alias != null, "Virtual MemoryObject must have alias target");
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
         this.virtual = virtual;
         this.alias = alias;
-        checkArgument(!virtual || alias != null, "Virtual MemoryObject must have alias target");
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized

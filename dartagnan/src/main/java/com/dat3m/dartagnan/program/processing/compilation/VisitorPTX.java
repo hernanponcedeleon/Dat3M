@@ -34,10 +34,6 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.PTX.storeMO(mo));
-        for (String filter : e.getFilters()) {
-            load.addFilters(Tag.PTX.loadMO(filter));
-            store.addFilters(Tag.PTX.storeMO(filter));
-        }
         load.addFilters(getScopeMo(e));
         load.addFilters(getProxyMo(e));
         store.addFilters(getScopeMo(e));
@@ -57,10 +53,6 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
-        for (String filter : e.getFilters()) {
-            load.addFilters(Tag.PTX.loadMO(filter));
-            store.addFilters(Tag.PTX.storeMO(filter));
-        }
         load.addFilters(getScopeMo(e));
         load.addFilters(getProxyMo(e));
         store.addFilters(getScopeMo(e));
