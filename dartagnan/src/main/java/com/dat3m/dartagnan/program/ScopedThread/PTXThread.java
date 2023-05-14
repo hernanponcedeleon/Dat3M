@@ -11,11 +11,10 @@ import java.util.HashMap;
 public class PTXThread extends Thread implements ScopedThread {
     private final ArrayList<String> scopes =
             new ArrayList<>(Arrays.asList(Tag.PTX.SYS, Tag.PTX.GPU, Tag.PTX.CTA));
-    private final HashMap<String, Integer> scopeIds;
+    private final HashMap<String, Integer> scopeIds = new HashMap<>();
 
     public PTXThread(String name, int id, Event entry, int GpuId, int CtaId) {
         super(name, id, entry);
-        this.scopeIds = new HashMap<>();
         this.scopeIds.put(Tag.PTX.SYS, 0);
         this.scopeIds.put(Tag.PTX.GPU, GpuId);
         this.scopeIds.put(Tag.PTX.CTA, CtaId);
@@ -23,7 +22,6 @@ public class PTXThread extends Thread implements ScopedThread {
 
     public PTXThread(int id, Event entry, int GpuId, int CtaId) {
         super(id, entry);
-        this.scopeIds = new HashMap<>();
         this.scopeIds.put(Tag.PTX.SYS, 0);
         this.scopeIds.put(Tag.PTX.GPU, GpuId);
         this.scopeIds.put(Tag.PTX.CTA, CtaId);
