@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.event.arch.ptx;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.RMWAbstract;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -21,7 +20,7 @@ public class AtomOp extends RMWAbstract {
 
     @Override
     public String toString() {
-        return resultRegister + " := atom_" + op.toString() + Tag.PTX.RMWMO(mo) + "(" + value + ", " + address + ")";
+        return resultRegister + " := atom_" + op.toString() + mo + "(" + value + ", " + address + ")";
     }
 
     public IOpBin getOp() {
@@ -41,7 +40,7 @@ public class AtomOp extends RMWAbstract {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitPTXRMWFetchOp(this);
+        return visitor.visitPtxAtomOp(this);
     }
 
 }

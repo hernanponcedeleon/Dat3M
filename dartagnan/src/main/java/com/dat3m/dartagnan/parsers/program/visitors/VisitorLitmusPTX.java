@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
@@ -60,13 +61,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initLocEqConst(ctx.location().getText(),
-                new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
+                (IConst) ctx.constant().accept(this));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPTXParser.VariableDeclaratorRegisterContext ctx) {
-        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision()));
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(),
+                (IConst) ctx.constant().accept(this));
         return null;
     }
 
@@ -128,8 +130,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitStoreConstant(LitmusPTXParser.StoreConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
-        String mo = ctx.sem().content;
+        IConst constant = (IConst) ctx.constant().accept(this);
+        String mo = ctx.mo().content;
         String scope;
         switch (mo) {
             case Tag.PTX.WEAK:
@@ -143,9 +145,10 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
                 scope = ctx.scope().content;
                 break;
             default:
-                throw new ParsingException("Store instruction doesn't support sem: " + mo);
+                throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
-        Store store = EventFactory.PTX.newTaggedStore(object, constant, mo, scope);
+        Store store = EventFactory.newStore(object, constant, mo);
+        store.addFilters(scope);
         store.addFilters(ctx.store().storeProxy);
         store.addFilters(Tag.PTX.CON);
         return programBuilder.addChild(mainThread, store);
@@ -155,7 +158,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         switch (mo) {
             case Tag.PTX.WEAK:
@@ -169,9 +172,10 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
                 scope = ctx.scope().content;
                 break;
             default:
-                throw new ParsingException("Store instruction doesn't support sem: " + mo);
+                throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
-        Store store = EventFactory.PTX.newTaggedStore(object, register, mo, scope);
+        Store store = EventFactory.newStore(object, register, mo);
+        store.addFilters(scope);
         store.addFilters(ctx.store().storeProxy);
         return programBuilder.addChild(mainThread, store);
     }
@@ -179,7 +183,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitLocalConstant(LitmusPTXParser.LocalConstantContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
+        IConst constant = (IConst) ctx.constant().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
@@ -187,7 +191,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx) {
         Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         switch (mo) {
             case Tag.PTX.WEAK:
@@ -201,9 +205,10 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
                 scope = ctx.scope().content;
                 break;
             default:
-                throw new ParsingException("Load instruction doesn't support sem: " + mo);
+                throw new ParsingException("Load instruction doesn't support mo: " + mo);
         }
-        Load load = EventFactory.PTX.newTaggedLoad(register, location, mo, scope);
+        Load load = EventFactory.newLoad(register, location, mo);
+        load.addFilters(scope);
         load.addFilters(ctx.load().loadProxy);
         return programBuilder.addChild(mainThread, load);
     }
@@ -212,14 +217,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitAtomConstant(LitmusPTXParser.AtomConstantContext ctx) {
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
+        IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
-            throw new ParsingException("Atom instruction doesn't support sem: " + mo);
+            throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
         AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
@@ -232,12 +237,12 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().get(1).getText(), getArchPrecision());
         IOpBin op = ctx.operation().op;
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
-            throw new ParsingException("Atom instruction doesn't support sem: " + mo);
+            throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
         AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
@@ -247,15 +252,15 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitRedConstant(LitmusPTXParser.RedConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        IValue constant = new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
+        IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
-            throw new ParsingException("Red instruction doesn't support sem: " + mo);
+            throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
         RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
@@ -268,12 +273,12 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         IOpBin op = ctx.operation().op;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
-            throw new ParsingException("Red instruction doesn't support sem: " + mo);
+            throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
         RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
@@ -282,14 +287,16 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitFencePhysic(LitmusPTXParser.FencePhysicContext ctx) {
-        String mo = ctx.sem().content;
+        String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC)) {
             scope = ctx.scope().content;
         } else {
-            throw new ParsingException("Fence instruction doesn't support sem: " + mo);
+            throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
-        Fence fence = EventFactory.PTX.newTaggedFence(mo, scope);
+        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        fence.addFilters(mo);
+        fence.addFilters(scope);
         return programBuilder.addChild(mainThread, fence);
     }
 

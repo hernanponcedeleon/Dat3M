@@ -25,7 +25,7 @@ public class VisitorPTX extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitPTXRMWFetchOp(AtomOp e) {
+    public List<Event> visitPtxAtomOp(AtomOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         IExpr address = e.getAddress();
@@ -50,14 +50,13 @@ public class VisitorPTX extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitPtxRMWOp(RedOp e) {
+    public List<Event> visitPtxRedOp(RedOp e) {
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(dummy, address, Tag.PTX.RMW);
-        load.addFilters(Tag.PTX.NO_RETURN);
+        Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStore(load, address,
-                new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.RMW);
+                new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
         for (String filter : e.getFilters()) {
             load.addFilters(Tag.PTX.loadMO(filter));
             load.addFilters(Tag.PTX.scopeMo(filter));

@@ -3,17 +3,15 @@ package com.dat3m.dartagnan.program.event.arch.ptx;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.RMWAbstract;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class RedOp extends RMWAbstract {
 
     private final IOpBin op;
-    public RedOp(IExpr address, Register register, IExpr value, IOpBin op) {
-        super(address, register, value, Tag.PTX.RMW);
+    public RedOp(IExpr address, Register register, IExpr value, IOpBin op, String mo) {
+        super(address, register, value, mo);
         this.op = op;
-        addFilters(Tag.PTX.NO_RETURN);
     }
 
     protected RedOp(RedOp other) {
@@ -43,6 +41,6 @@ public class RedOp extends RMWAbstract {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitPtxRMWOp(this);
+        return visitor.visitPtxRedOp(this);
     }
 }

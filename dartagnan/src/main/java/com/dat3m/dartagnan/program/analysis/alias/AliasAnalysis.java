@@ -43,23 +43,24 @@ public interface AliasAnalysis {
     }
 
     static boolean virtualLoc(MemEvent e1, MemEvent e2) {
+        // TODO: Add virtual aliasing support for pointers
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
             return false;
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        Boolean virtuality1 = add1.getVirtual();
-        Boolean virtuality2 = add2.getVirtual();
-        if (virtuality1 && virtuality2) {
+        boolean isAdd1 = add1.getVirtual();
+        boolean isAdd2 = add2.getVirtual();
+        if (isAdd1 && isAdd2) {
             // add1, add2 are virtual, and they should alias to the same physical Address
             return (add1.getAlias() != null && add1.getAlias().equals(add2.getAlias()));
-        } else if (!virtuality1 && virtuality2) {
+        } else if (!isAdd1 && isAdd2) {
             // add2 should virtually alias to add1
             return add1 == add2.getAlias();
-        } else if (virtuality1 && !virtuality2) {
+        } else if (isAdd1 && !isAdd2) {
             // add1 should virtually alias to add2
             return add1.getAlias() == add2;
-        } else if (!virtuality1 && !virtuality2) {
+        } else if (!isAdd1 && !isAdd2) {
             // add1 and add2 should be the same
             return add1 == add2;
         } else {

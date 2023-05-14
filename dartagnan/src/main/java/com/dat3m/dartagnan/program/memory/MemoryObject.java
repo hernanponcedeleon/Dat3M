@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
@@ -28,22 +29,15 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
-    private boolean virtual;
-    private MemoryObject alias;
+    private final boolean virtual;
+    private final MemoryObject alias;
 
     public boolean getVirtual() {
         return virtual;
     }
 
-    public void setVirtual(boolean virtuality) {
-        this.virtual = virtuality;
-    }
     public MemoryObject getAlias() {
         return alias;
-    }
-
-    public void setAlias(MemoryObject alias) {
-        this.alias = alias;
     }
 
     @Override
@@ -66,12 +60,15 @@ public class MemoryObject extends IConst {
 
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
-    MemoryObject(int index, int size, boolean isStaticallyAllocated, boolean virtual) {
+    MemoryObject(int index, int size, boolean isStaticallyAllocated, boolean virtual, MemoryObject alias) {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
         this.virtual = virtual;
-        this.alias = null;
+        this.alias = alias;
+        if (virtual && alias == null) {
+            throw new ProgramProcessingException("Virtual MemoryObject must have alias target");
+        }
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized

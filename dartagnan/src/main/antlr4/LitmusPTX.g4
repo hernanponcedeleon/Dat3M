@@ -96,11 +96,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   store Period sem (Period scope)? location Comma constant
+    :   store Period mo (Period scope)? location Comma constant
     ;
 
 storeRegister
-    :   store Period sem (Period scope)? location Comma register
+    :   store Period mo (Period scope)? location Comma register
     ;
 
 loadInstruction
@@ -109,11 +109,11 @@ loadInstruction
     ;
 
 localConstant
-    :   load Period sem (Period scope)? register Comma constant
+    :   load Period mo (Period scope)? register Comma constant
     ;
 
 loadLocation
-    :   load Period sem (Period scope)? register Comma location
+    :   load Period mo (Period scope)? register Comma location
     ;
 
 
@@ -124,7 +124,7 @@ fenceInstruction
     ;
 
 fencePhysic
-    :   Fence Period sem Period scope
+    :   Fence Period mo Period scope
     ;
 
 fenceProxy
@@ -141,11 +141,11 @@ atomInstruction
     ;
 
 atomConstant
-    :   atom Period sem Period scope Period operation register Comma location Comma constant
+    :   atom Period mo Period scope Period operation register Comma location Comma constant
     ;
 
 atomRegister
-    :   atom Period sem Period scope Period operation register Comma location Comma register
+    :   atom Period mo Period scope Period operation register Comma location Comma register
     ;
 
 redInstruction
@@ -154,11 +154,11 @@ redInstruction
     ;
 
 redConstant
-    :   red Period sem Period scope Period operation location Comma constant
+    :   red Period mo Period scope Period operation location Comma constant
     ;
 
 redRegister
-    :   red Period sem Period scope Period operation location Comma register
+    :   red Period mo Period scope Period operation location Comma register
     ;
 
 
@@ -200,7 +200,7 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-sem returns [String content]
+mo returns [String content]
     :   Weak {$content = "WEAK";}
     |   Relaxed {$content = "RLX";}
     |   Acquire {$content = "ACQ";}

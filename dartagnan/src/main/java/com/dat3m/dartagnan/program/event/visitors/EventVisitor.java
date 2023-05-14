@@ -109,6 +109,6 @@ public interface EventVisitor<T> {
 	default T visitMalloc(Malloc e) { return visitEvent(e); }
 
 	// PTX Events
-	default T visitPtxRMWOp(RedOp e) { return visitRMWAbstract(e); }
-	default T visitPTXRMWFetchOp(AtomOp e) { return visitRMWAbstract(e); }
+	default T visitPtxRedOp(RedOp e) { return visitRMWAbstract(e); }
+	default T visitPtxAtomOp(AtomOp e) { return visitRMWAbstract(e); }
 }

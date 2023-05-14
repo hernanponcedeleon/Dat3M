@@ -610,24 +610,6 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static Store newTaggedStore(IExpr address, ExprInterface value, String mo,  String scope) {
-            Store store = new Store(address, value, mo); // mo = REL || RLX || WEAK
-            store.addFilters(scope); // scope = CTA || GPU || SYS
-            return store;
-        }
-
-        public static Load newTaggedLoad(Register register, IExpr address, String mo, String scope) {
-            Load load = new Load(register, address, mo); // mo = ACQ || RLX || WEAK
-            load.addFilters(scope); // scope =  CTA || GPU || SYS
-            return load;
-        }
-
-        public static Fence newTaggedFence(String mo, String scope) {
-            Fence fence = new Fence(mo); // mo = ACQ_REL || SC
-            fence.addFilters(scope);
-            return fence;
-        }
-
         public static AtomOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
                                              IOpBin op, String mo, String scope) {
             AtomOp atom = new AtomOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
@@ -637,9 +619,8 @@ public class EventFactory {
 
         public static RedOp newTaggedRedOp(IExpr address, Register register, IExpr value,
                                            IOpBin op, String mo, String scope) {
-            RedOp red = new RedOp(address, register, value, op);
+            RedOp red = new RedOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
             red.addFilters(scope);
-            red.addFilters(mo); // mo = ACQ_REL || RLX
             return red;
         }
     }

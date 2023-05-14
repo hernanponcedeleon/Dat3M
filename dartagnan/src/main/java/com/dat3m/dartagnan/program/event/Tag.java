@@ -281,20 +281,8 @@ public final class Tag {
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
         public static final String RMW = "PTX_RMW";
-        public static final String NO_RETURN = "NO_RETURN";
         public static final String ALIAS = "ALIAS";
         private PTX() {
-        }
-
-        public static String RMWMO(String mo) {
-            switch (mo) {
-                case RLX:
-                    return RLX;
-                case ACQ_REL:
-                    return ACQ_REL;
-                default:
-                    throw new IllegalArgumentException("Unrecognised memory order " + mo);
-            }
         }
 
         public static String loadMO(String mo) {
