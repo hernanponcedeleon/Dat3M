@@ -36,12 +36,12 @@ public class VisitorPTX extends VisitorBase {
                 new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.PTX.storeMO(mo));
         for (String filter : e.getFilters()) {
             load.addFilters(Tag.PTX.loadMO(filter));
-            load.addFilters(Tag.PTX.scopeMo(filter));
-            load.addFilters(Tag.PTX.proxyMo(filter));
             store.addFilters(Tag.PTX.storeMO(filter));
-            store.addFilters(Tag.PTX.scopeMo(filter));
-            store.addFilters(Tag.PTX.proxyMo(filter));
         }
+        load.addFilters(getScopeMo(e));
+        load.addFilters(getProxyMo(e));
+        store.addFilters(getScopeMo(e));
+        store.addFilters(getProxyMo(e));
         return eventSequence(
                 load,
                 store,
@@ -59,16 +59,45 @@ public class VisitorPTX extends VisitorBase {
                 new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
         for (String filter : e.getFilters()) {
             load.addFilters(Tag.PTX.loadMO(filter));
-            load.addFilters(Tag.PTX.scopeMo(filter));
-            load.addFilters(Tag.PTX.proxyMo(filter));
             store.addFilters(Tag.PTX.storeMO(filter));
-            store.addFilters(Tag.PTX.scopeMo(filter));
-            store.addFilters(Tag.PTX.proxyMo(filter));
         }
+        load.addFilters(getScopeMo(e));
+        load.addFilters(getProxyMo(e));
+        store.addFilters(getScopeMo(e));
+        store.addFilters(getProxyMo(e));
         return eventSequence(
                 load,
                 store
         );
+    }
+
+    private static String getScopeMo(Event e) {
+        if(e.is(Tag.PTX.SYS)) {
+            return Tag.PTX.SYS;
+        }
+        if(e.is(Tag.PTX.GPU)) {
+            return Tag.PTX.GPU;
+        }
+        if(e.is(Tag.PTX.CTA)) {
+            return Tag.PTX.CTA;
+        }
+        return "";
+    }
+
+    private static String getProxyMo(Event e) {
+        if(e.is(Tag.PTX.GEN)) {
+            return Tag.PTX.GEN;
+        }
+        if(e.is(Tag.PTX.TEX)) {
+            return Tag.PTX.TEX;
+        }
+        if(e.is(Tag.PTX.SUR)) {
+            return Tag.PTX.SUR;
+        }
+        if(e.is(Tag.PTX.CON)) {
+            return Tag.PTX.CON;
+        }
+        return "";
     }
 
 }

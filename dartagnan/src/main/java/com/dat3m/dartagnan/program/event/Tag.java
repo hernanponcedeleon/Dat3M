@@ -280,7 +280,6 @@ public final class Tag {
         public static final String TEX = "TEX"; // TEXTURE
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
-        public static final String RMW = "PTX_RMW";
         public static final String ALIAS = "ALIAS";
         private PTX() {
         }
@@ -302,36 +301,6 @@ public final class Tag {
                     return REL;
                 case RLX:
                     return RLX;
-                default:
-                    return "";
-            }
-        }
-
-        public static String scopeMo(String mo) {
-            switch (mo) {
-                case SYS:
-                    return SYS;
-                case GPU:
-                    return GPU;
-                case CTA:
-                    return CTA;
-                default:
-                    return "";
-            }
-        }
-
-        public static String proxyMo(String mo) {
-            switch (mo) {
-                case GEN:
-                    return GEN;
-                case TEX:
-                    return TEX;
-                case SUR:
-                    return SUR;
-                case CON:
-                    return CON;
-                case ALIAS:
-                    return ALIAS;
                 default:
                     return "";
             }

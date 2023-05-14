@@ -66,9 +66,7 @@ public class MemoryObject extends IConst {
         this.isStatic = isStaticallyAllocated;
         this.virtual = virtual;
         this.alias = alias;
-        if (virtual && alias == null) {
-            throw new ProgramProcessingException("Virtual MemoryObject must have alias target");
-        }
+        checkArgument(!virtual || alias != null, "Virtual MemoryObject must have alias target");
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
