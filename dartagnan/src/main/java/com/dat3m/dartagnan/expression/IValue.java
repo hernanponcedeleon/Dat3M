@@ -13,21 +13,14 @@ import java.math.BigInteger;
 public final class IValue extends IConst {
 
     private final BigInteger value;
-    private final Type type;
-
     public IValue(BigInteger value, Type type) {
+        super(type);
         this.value = checkNotNull(value);
-        this.type = checkNotNull(type);
     }
 
     @Override
     public BigInteger getValue() {
         return value;
-    }
-
-    @Override
-    public Type getType() {
-        return type;
     }
 
     @Override

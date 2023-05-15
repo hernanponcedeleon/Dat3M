@@ -3,17 +3,19 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.AbstractExpression;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.collect.ImmutableSet;
 
-public class IExprUn implements Expression {
+public class IExprUn extends AbstractExpression {
 
     private final Expression b;
     private final IOpUn op;
 
-    public IExprUn(IOpUn op, Expression b) {
+    public IExprUn(Type type, IOpUn op, Expression b) {
+        super(type);
         this.b = b;
         this.op = op;
     }
@@ -34,29 +36,6 @@ public class IExprUn implements Expression {
     @Override
     public String toString() {
         return "(" + op + b + ")";
-    }
-
-    @Override
-    public Type getType() {
-        TypeFactory types = TypeFactory.getInstance();
-        switch (op) {
-            case MINUS:
-                return b.getType();
-            case BV2UINT: case BV2INT:
-                return types.getPointerType();
-            case INT2BV1: case TRUNC321: case TRUNC641: case TRUNC161: case TRUNC81:
-                return types.getIntegerType(1);
-            case INT2BV8: case TRUNC648: case TRUNC328: case TRUNC168: case ZEXT18: case SEXT18:
-                return types.getIntegerType(8);
-            case INT2BV16: case TRUNC6416: case TRUNC3216: case ZEXT116: case ZEXT816: case SEXT116: case SEXT816:
-                return types.getIntegerType(16);
-            case INT2BV32: case TRUNC6432: case ZEXT132: case ZEXT832: case ZEXT1632: case SEXT132: case SEXT832: case SEXT1632:
-                return types.getIntegerType(32);
-            case INT2BV64: case ZEXT164: case ZEXT864: case ZEXT1664: case ZEXT3264: case SEXT164: case SEXT864: case SEXT1664: case SEXT3264:
-                return types.getIntegerType(64);
-            default:
-                throw new UnsupportedOperationException("getPrecision not supported for " + this);
-        }
     }
 
     @Override

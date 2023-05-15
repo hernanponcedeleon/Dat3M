@@ -3,25 +3,26 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.expression.AbstractExpression;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 
-public class IExprBin implements Expression {
+import static com.google.common.base.Preconditions.checkNotNull;
+
+public class IExprBin extends AbstractExpression {
 
     private final Expression lhs;
     private final Expression rhs;
     private final IOpBin op;
 
-    public IExprBin(Expression lhs, IOpBin op, Expression rhs) {
-    	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
-                "The types of %s and %s does not match", lhs, rhs);
-        this.lhs = lhs;
-        this.rhs = rhs;
-        this.op = op;
+    public IExprBin(Type type, Expression lhs, IOpBin op, Expression rhs) {
+        super(type);
+        this.lhs = checkNotNull(lhs);
+        this.rhs = checkNotNull(rhs);
+        this.op = checkNotNull(op);
     }
 
     @Override
@@ -33,11 +34,6 @@ public class IExprBin implements Expression {
     public String toString() {
         return "(" + lhs + " " + op + " " + rhs + ")";
     }
-
-	@Override
-	public Type getType() {
-		return lhs.getType();
-	}
 	
 	public IOpBin getOp() {
 		return op;

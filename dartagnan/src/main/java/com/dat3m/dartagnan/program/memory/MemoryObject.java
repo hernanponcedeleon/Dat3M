@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.memory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import java.math.BigInteger;
@@ -34,6 +33,7 @@ public class MemoryObject extends IConst {
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated) {
+        super(TypeFactory.getInstance().getPointerType());
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
@@ -113,11 +113,6 @@ public class MemoryObject extends IConst {
     @Override
     public BigInteger getValue() {
         return address != null ? address : BigInteger.valueOf(index);
-    }
-
-    @Override
-    public Type getType() {
-        return TypeFactory.getInstance().getPointerType();
     }
 
     @Override
