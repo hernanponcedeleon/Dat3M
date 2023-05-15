@@ -99,7 +99,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitVariableDeclaratorRegisterLocation(VariableDeclaratorRegisterLocationContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register64().id, type);
-        MemoryObject value = program.getMemory().getObject(ctx.location().getText()).orElseThrow();
+        MemoryObject value = program.getMemory().getOrNewObject(ctx.location().getText());
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -107,7 +107,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocationLocation(VariableDeclaratorLocationLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location(0).getText());
-        MemoryObject value = program.getMemory().getObject(ctx.location(1).getText()).orElseThrow();
+        MemoryObject value = program.getMemory().getOrNewObject(ctx.location(1).getText());
         object.setInitialValue(0, value);
         return null;
     }
