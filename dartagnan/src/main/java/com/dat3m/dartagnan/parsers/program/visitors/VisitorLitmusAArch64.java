@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Cmp;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
@@ -27,10 +25,23 @@ import java.util.Map;
 
 public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
+    private static class CmpInstruction {
+        private final Expression left;
+        private final Expression right;
+
+        public CmpInstruction(Expression left, Expression right) {
+            this.left = left;
+            this.right = right;
+        }
+    }
+
+
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type type = TypeFactory.getInstance().getPointerType();
+    private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private Thread[] threadList;
+    private int mainThread;
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();
 
@@ -120,6 +131,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitInstructionRow(InstructionRowContext ctx) {
         for (int i = 0; i < threadList.length; i++) {
+            mainThread = i;
             thread = threadList[i];
             visitInstruction(ctx.instruction(i));
         }
@@ -135,10 +147,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     }
 
     @Override
-    public Object visitCmp(CmpContext ctx) {
+    public Object visitCmp(LitmusAArch64Parser.CmpContext ctx) {
         Register register = thread.getOrNewRegister(ctx.rD, type);
         Expression expr = ctx.expr32() != null ? (Expression) ctx.expr32().accept(this) : (Expression) ctx.expr64().accept(this);
-        thread.append(EventFactory.newCompare(register, expr));
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(register, expr));
         return null;
     }
 
@@ -203,12 +215,11 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             thread.append(EventFactory.newGoto(label));
             return null;
         }
-        Event lastEvent = thread.getExit();
-        if (!(lastEvent instanceof Cmp)) {
+        CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
+        if (cmp == null) {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-        Cmp cmp = (Cmp) lastEvent;
-        Expression expr = expressions.makeBinary(cmp.getLeft(), ctx.branchCondition().op, cmp.getRight());
+        Expression expr = expressions.makeBinary(cmp.left, ctx.branchCondition().op, cmp.right);
         thread.append(EventFactory.newJump(expr, label));
         return null;
     }

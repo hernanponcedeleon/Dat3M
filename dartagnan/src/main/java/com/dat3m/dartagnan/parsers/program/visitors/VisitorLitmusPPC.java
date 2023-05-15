@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser.*;
@@ -11,8 +11,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Cmp;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
@@ -30,13 +28,25 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
+    private static class CmpInstruction {
+        private final Expression left;
+        private final Expression right;
+
+        public CmpInstruction(Register left, Expression comparand) {
+            this.left = left;
+            this.right = comparand;
+        }
+    }
+
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
+    private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type archPrecision = types.getPointerType();
     private Thread[] threadList;
+    private int mainThread;
     private Thread thread;
     private final Map<String, Label> labelMap = new HashMap<>();
 
@@ -127,6 +137,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitInstructionRow(InstructionRowContext ctx) {
         for (int i = 0; i < threadList.length; i++) {
+            mainThread = i;
             thread = threadList[i];
             visitInstruction(ctx.instruction(i));
         }
@@ -199,19 +210,18 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitCmpw(CmpwContext ctx) {
         Register left = thread.getRegister(ctx.register(0).getText()).orElseThrow();
         Register right = thread.getRegister(ctx.register(1).getText()).orElseThrow();
-        thread.append(EventFactory.newCompare(left, right));
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(left, right));
         return null;
     }
 
     @Override
     public Object visitBranchCond(BranchCondContext ctx) {
         Label label = labelMap.computeIfAbsent(ctx.Label().getText(), EventFactory::newLabel);
-        Event lastEvent = thread.getExit();
-        if (!(lastEvent instanceof Cmp)) {
+        CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
+        if (cmp == null) {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-        Cmp cmp = (Cmp) lastEvent;
-        Expression expr = expressions.makeBinary(cmp.getLeft(), ctx.cond().op, cmp.getRight());
+        Expression expr = expressions.makeBinary(cmp.left, ctx.cond().op, cmp.right);
         thread.append(EventFactory.newJump(expr, label));
         return null;
     }

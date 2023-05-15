@@ -88,10 +88,6 @@ public class EventFactory {
 
     // ------------------------------------------ Local events ------------------------------------------
 
-    public static Cmp newCompare(Expression left, Expression right) {
-        return new Cmp(left, right);
-    }
-
     public static FunCall newFunctionCall(String funName) {
         return new FunCall(funName);
     }
