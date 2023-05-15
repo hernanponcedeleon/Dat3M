@@ -145,7 +145,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getPointerType());
+        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getNumberType());
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
             next = pool.next();
@@ -270,7 +270,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 Expression pointer = pool.getPtrFromInt(threadCount);
-                Register reg = thread.newRegister(types.getPointerType());
+                Register reg = thread.newRegister(types.getNumberType());
                 thread.append(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
         }
@@ -351,7 +351,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
         if (name.equals("reach_error")) {
-            addAssertion(expressions.makeZero(types.getPointerType()));
+            addAssertion(expressions.makeZero(types.getNumberType()));
             return null;
         }
 
@@ -549,7 +549,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         String typeString = ctx.getText();
         return typeString.contains("bv") ?
                 types.getIntegerType(Integer.parseInt(typeString.split("bv")[1])) :
-                types.getPointerType();
+                types.getNumberType();
     }
 
     @Override

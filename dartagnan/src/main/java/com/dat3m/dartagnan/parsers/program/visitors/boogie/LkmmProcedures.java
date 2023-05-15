@@ -32,7 +32,7 @@ public class LkmmProcedures {
 		List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
 		String registerName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-		Register reg = visitor.thread.getOrNewRegister(registerName, visitor.types.getPointerType());
+		Register reg = visitor.thread.getOrNewRegister(registerName, visitor.types.getNumberType());
 		
 		Object p0 = params.get(0).accept(visitor);
 		Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;

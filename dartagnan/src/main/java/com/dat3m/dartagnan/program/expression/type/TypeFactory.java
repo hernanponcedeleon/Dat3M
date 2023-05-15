@@ -26,7 +26,7 @@ public final class TypeFactory {
         return booleanType;
     }
 
-    public Type getPointerType() {
+    public PointerType getPointerType() {
         return pointerType;
     }
 
