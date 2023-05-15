@@ -45,6 +45,8 @@ litmus/PTX/ProxyFence17.litmus,1
 litmus/PTX/ProxyFence18.litmus,1
 litmus/PTX/CoTotal1.litmus,1
 litmus/PTX/CoTotal2.litmus,1
+litmus/PTX/CoTotal3.litmus,1
+litmus/PTX/CoTotal4.litmus,1
 litmus/PTX/ProxyCoWR1.litmus,1
 litmus/PTX/ProxyCoWR2.litmus,1
 litmus/PTX/ProxyCoWR3.litmus,1

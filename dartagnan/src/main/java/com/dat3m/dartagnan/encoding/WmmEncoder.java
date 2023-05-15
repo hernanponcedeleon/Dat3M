@@ -569,7 +569,10 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula pairingCond = bmgr.and(execPair, sameAddress);
                     BooleanFormula coF = forwardPossible ? edge.encode(xz) : bmgr.makeFalse();
                     BooleanFormula coB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
-                    enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
+                    // Coherence is not total for weak stores in PTX
+                    if(!x.is(Tag.PTX.WEAK) || !z.is(Tag.PTX.WEAK)) {
+                        enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
+                    }
                     if (idl) {
                         enc.add(bmgr.implication(coF, x.is(INIT) || transCo.contains(xz) ? bmgr.makeTrue() :
                                 imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));

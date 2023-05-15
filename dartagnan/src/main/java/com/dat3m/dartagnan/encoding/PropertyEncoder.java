@@ -204,7 +204,20 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     Formula v2 = init.getBase().getLastMemValueExpr(fmgr, init.getOffset());
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
-                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                    BooleanFormula other = bmgr.makeFalse();
+                    // Coherence is not guaranteed to be total in all models (e.g., PTX),
+                    // but the final value of a location should always match that of some coLast event.
+                    // No need to iterate over Inits since they are always ordered wrt coherence.
+                    for (MemEvent w2 : program.getEvents(Store.class)) {
+                        if (!alias.mayAlias(w1, w2)) {
+                            continue;
+                        }
+                        BooleanFormula sameAddressOther = context.sameAddress(w1, w2);
+                        BooleanFormula lastCoExprOther = lastCoVar(w2);
+                        BooleanFormula sameValueOther = context.equal(context.value(w2), v2);
+                        other = bmgr.or(other, bmgr.and(lastCoExprOther, sameAddressOther, sameValueOther));
+                    }
+                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), bmgr.or(sameValue, other)));
                 }
             }
         }
