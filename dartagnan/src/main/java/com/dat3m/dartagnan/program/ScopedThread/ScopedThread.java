@@ -1,10 +1,32 @@
 package com.dat3m.dartagnan.program.ScopedThread;
 
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.core.Event;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 
-public interface ScopedThread {
+public class ScopedThread extends Thread {
 
-    ArrayList<String> getScopes();
+    protected final HashMap<String, Integer> scopeIds = new HashMap<>();
+    protected final ArrayList<String> scopes = new ArrayList<>();
 
-    int getScopeIds(String scope);
+    public ScopedThread(String name, int id, Event entry) {
+        super(name, id, entry);
+    }
+
+    public ScopedThread(int id, Event entry) {
+        super(id, entry);
+    }
+
+    public ArrayList<String> getScopes() {
+        return scopes;
+    }
+
+    public int getScopeIds(String scope) {
+        if (!this.scopeIds.containsKey(scope)) {
+            return -1;
+        }
+        return this.scopeIds.get(scope);
+    }
 }
