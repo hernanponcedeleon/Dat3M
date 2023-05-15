@@ -11,9 +11,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.expression.type.IntegerType;
-import com.dat3m.dartagnan.program.expression.type.NumberType;
-import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -29,6 +26,7 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
 import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
@@ -279,11 +277,11 @@ public final class EncodingContext {
             if (e instanceof RegWriter) {
                 Register register = ((RegWriter) e).getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                Type type = register.getType();
-                if (type instanceof NumberType) {
+                OptionalInt bitWidth = ExpressionEncoder.getBitWidthFromLeafType(register.getType());
+                if (bitWidth.isEmpty()) {
                     r = formulaManager.getIntegerFormulaManager().makeVariable(name);
                 } else {
-                    r = formulaManager.getBitvectorFormulaManager().makeVariable(((IntegerType) type).getBitWidth(), name);
+                    r = formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth.getAsInt(), name);
                 }
             } else {
                 r = null;

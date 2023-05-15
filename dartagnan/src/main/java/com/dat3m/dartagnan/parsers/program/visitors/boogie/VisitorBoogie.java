@@ -761,7 +761,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitInt_expr(Int_exprContext ctx) {
-        return expressions.parseValue(ctx.getText(), types.getPointerType());
+        return expressions.parseValue(ctx.getText(), types.getNumberType());
     }
 
     @Override

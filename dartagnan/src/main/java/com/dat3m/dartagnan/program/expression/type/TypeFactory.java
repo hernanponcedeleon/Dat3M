@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public final class TypeFactory {
@@ -28,11 +27,7 @@ public final class TypeFactory {
     }
 
     public Type getPointerType() {
-        int archPrecision = getArchPrecision();
-        if (archPrecision > 0) {
-            return integerTypeMap.computeIfAbsent(archPrecision, IntegerType::new);
-        }
-        return numberType;
+        return pointerType;
     }
 
     public NumberType getNumberType() {

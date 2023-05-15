@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.expression;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.expression.type.PointerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import org.apache.logging.log4j.LogManager;
@@ -184,6 +185,23 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression left, IOpBin operator, Expression right) {
+        if (left.getType() instanceof PointerType) {
+            boolean rightIsPointer = right.getType() instanceof PointerType;
+            Type type;
+            if (operator.equals(IOpBin.PLUS)) {
+                if (rightIsPointer) {
+                    logger.warn("Pointer addition is not allowed in {} + {}.", left, right);
+                }
+                type = left.getType();
+            } else if (operator.equals(IOpBin.MINUS)) {
+                int precision = getArchPrecision();
+                type = rightIsPointer ? precision < 0 ? types.getNumberType() : types.getIntegerType(precision) : left.getType();
+            } else {
+                logger.warn("Unsupported expression {} {} {}", left, operator, right);
+                type = left.getType();
+            }
+            return new IExprBin(type, left, operator, right);
+        }
         checkTypes(left, operator, right);
         if (left instanceof IValue && right instanceof IValue) {
             BigInteger result = operator.combine(((IValue) left).getValue(), ((IValue) right).getValue());

@@ -8,11 +8,14 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.NumberType;
+import com.dat3m.dartagnan.program.expression.type.PointerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.util.OptionalInt;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -180,11 +183,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         if (iValue.isBoolean()) {
             return booleanFormulaManager.makeBoolean(iValue.isTrue());
         }
-        Type type = iValue.getType();
-        if (type instanceof NumberType) {
+        OptionalInt bitWidth = getBitWidthFromLeafType(iValue.getType());
+        if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeNumber(iValue.getValue());
         }
-        return bitvectorFormulaManager().makeBitvector(((IntegerType) type).getBitWidth(), iValue.getValue());
+        return bitvectorFormulaManager().makeBitvector(bitWidth.getAsInt(), iValue.getValue());
     }
 
     @Override
@@ -479,11 +482,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         if (iNonDet.isBoolean()) {
             return booleanFormulaManager.makeVariable(name);
         }
-        Type type = iNonDet.getType();
-        if (type instanceof NumberType) {
+        OptionalInt bitWidth = getBitWidthFromLeafType(iNonDet.getType());
+        if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeVariable(name);
         }
-        return bitvectorFormulaManager().makeVariable(((IntegerType) type).getBitWidth(), name);
+        return bitvectorFormulaManager().makeVariable(bitWidth.getAsInt(), name);
     }
 
     @Override
@@ -491,25 +494,36 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         String name = event == null ?
                 reg.getName() + "_" + reg.getThreadId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
-        Type type = reg.getType();
-        if (type instanceof NumberType) {
+        OptionalInt bitWidth = getBitWidthFromLeafType(reg.getType());
+        if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeVariable(name);
         }
-        return bitvectorFormulaManager().makeVariable(((IntegerType) type).getBitWidth(), name);
+        return bitvectorFormulaManager().makeVariable(bitWidth.getAsInt(), name);
     }
 
     @Override
     public Formula visit(MemoryObject address) {
-        Type type = address.getType();
-        if (type instanceof NumberType) {
+        OptionalInt bitWidth = getBitWidthFromLeafType(address.getType());
+        if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeNumber(address.getValue());
         }
-        return bitvectorFormulaManager().makeBitvector(((IntegerType) type).getBitWidth(), address.getValue());
+        return bitvectorFormulaManager().makeBitvector(bitWidth.getAsInt(), address.getValue());
     }
 
     @Override
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
+    }
+
+    static OptionalInt getBitWidthFromLeafType(Type type) {
+        if (type instanceof PointerType) {
+            int archPrecision = getArchPrecision();
+            return archPrecision < 0 ? OptionalInt.empty() : OptionalInt.of(archPrecision);
+        }
+        if (type instanceof NumberType) {
+            return OptionalInt.empty();
+        }
+        return OptionalInt.of(((IntegerType) type).getBitWidth());
     }
 }
