@@ -104,9 +104,6 @@ public final class ExpressionFactory {
                 case MINUS:
                     v = value.negate();
                     break;
-                case BV2UINT: case BV2INT:
-                    v = value;
-                    break;
                 case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64:
                 case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:
                     v = value;
@@ -114,19 +111,19 @@ public final class ExpressionFactory {
                         v = v.clearBit(i);
                     }
                     break;
-                case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264:
+                case BV2UINT: case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264:
                     checkArgument(inner.getType() instanceof IntegerType, "Type mismatch for %s %s.", operator, inner);
                     bitWidth = ((IntegerType) inner.getType()).getBitWidth();
                     assert BigInteger.TWO.pow(bitWidth-1).negate().compareTo(value) <= 0;
                     assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
                     v = value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value);
                     break;
-                case SEXT18: case SEXT116: case SEXT132: case SEXT164: case SEXT816: case SEXT832: case SEXT864: case SEXT1632: case SEXT1664: case SEXT3264:
+                case BV2INT: case SEXT18: case SEXT116: case SEXT132: case SEXT164: case SEXT816: case SEXT832: case SEXT864: case SEXT1632: case SEXT1664: case SEXT3264:
                     checkArgument(inner.getType() instanceof IntegerType, "Type mismatch for %s %s.", operator, inner);
                     bitWidth = ((IntegerType) inner.getType()).getBitWidth();
                     assert BigInteger.TWO.pow(bitWidth-1).negate().compareTo(value) <= 0;
                     assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
-                    v = BigInteger.TWO.pow(bitWidth-1).compareTo(value) <= 0 ? value : BigInteger.TWO.pow(bitWidth).subtract(value);
+                    v = BigInteger.TWO.pow(bitWidth-1).compareTo(value) <= 0 ? value : value.subtract(BigInteger.TWO.pow(bitWidth));
                     break;
                 case CTLZ:
                     checkArgument(type instanceof IntegerType, "Type mismatch for %s %s.", operator, inner);
