@@ -34,6 +34,8 @@ public class ExprSimplifier extends ExprTransformer {
         			return BConst.FALSE;
         	}
         }
+
+
         if (lhs instanceof IConst && rhs instanceof  IConst) {
             IConst lc = (IConst) lhs;
             IConst rc = (IConst) rhs;
