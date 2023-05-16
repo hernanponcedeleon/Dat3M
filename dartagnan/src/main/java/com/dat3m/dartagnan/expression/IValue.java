@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.type.BooleanType;
+import com.dat3m.dartagnan.program.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.expression.type.NumberType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -40,6 +43,15 @@ public final class IValue extends IConst {
 
     @Override
     public String toString() {
-        return value.toString();
+        if (type instanceof BooleanType) {
+            return value.equals(BigInteger.ZERO) ? "false" : "true";
+        }
+        if (type instanceof NumberType) {
+            return value.toString();
+        }
+        if (type instanceof IntegerType) {
+            return value.toString() + "bv" + ((IntegerType) type).getBitWidth();
+        }
+        return type + "(" + value + ")";
     }
 }
