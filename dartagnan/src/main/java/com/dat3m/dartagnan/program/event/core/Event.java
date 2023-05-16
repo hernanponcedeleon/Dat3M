@@ -18,80 +18,54 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	// This id is dynamically changing during processing.
-	protected transient int globalId = -1;		// (Global) ID within a program
-
-	// The following three ids are snapshots of the global id at specific points in the processing.
-	// They are meant to be fixed once assigned.
-	protected int oId = -1; 	// Global ID after parsing (original), before any passes have been run
-	protected int uId = -1;		// Global ID right before unrolling
-	protected int cId = -1;		// Global ID right before compilation
-
 	protected Thread thread; // The thread this event belongs to
+	// This id is dynamically changing during processing.
+	protected transient int globalId = -1; // (Global) ID within a program
 
+	protected final MetadataMap metadataMap = new MetadataMap();
 	protected final Set<String> filter;
 
-	protected transient Event successor;
-	protected transient Event predecessor;
-
-	protected MetadataMap metadataMap = new MetadataMap();
+	private transient Event successor;
+	private transient Event predecessor;
 
 	protected Event(){
 		filter = new HashSet<>();
 	}
 
 	protected Event(Event other){
-		copyMetadataFrom(other);
+		copyAllMetadataFrom(other);
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
 
-	public void copyMetadataFrom(Event other) {
-		this.oId = other.oId;
-		this.uId = other.uId;
-		this.cId = other.cId;
+	public int getGlobalId() { return globalId; }
+	public void setGlobalId(int id) { this.globalId = id; }
+
+	// ============================================ Metadata ============================================
+
+	public void copyAllMetadataFrom(Event other) {
 		other.metadataMap.getAllMetadata().forEach(this.metadataMap::put);
 	}
 
-	public boolean hasMetadata(Class<? extends Metadata> metadataClass) {
-		return metadataMap != null && metadataMap.contains(metadataClass);
+	public void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass) {
+		other.setMetadata(other.getMetadata(metadataClass));
 	}
 
-	public <T extends Metadata> T getMetadata(Class<T> metadataClass) {
-		return metadataMap == null ? null : metadataMap.get(metadataClass);
-	}
+	public boolean hasMetadata(Class<? extends Metadata> metadataClass) { return metadataMap.contains(metadataClass); }
+	public <T extends Metadata> T getMetadata(Class<T> metadataClass) { return metadataMap.get(metadataClass); }
+	public <T extends Metadata> T setMetadata(T metadata) { return metadataMap.put(metadata); }
 
-	public <T extends Metadata> T setMetadata(T metadata) {
-		if (metadataMap == null) {
-			metadataMap = new MetadataMap();
-		}
-		return metadataMap.put(metadata);
-	}
-
-	public <T extends Metadata> boolean hasEqualMetadata(Event other, Class<T> metadataClass) {
+	public boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass) {
 		return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
 	}
 
-	public int getGlobalId() { return globalId; }
-	public void setGlobalId(int id) { this.globalId = id; }
-	public boolean hasGlobalId() { return globalId != -1; }
-
-	public int getOId() { return oId; }
-	public void setOId(int id) { this.oId = id; }
-	public boolean hasOId() { return oId != -1; }
-
-	public int getUId(){ return uId; }
-	public void setUId(int id) { this.uId = id; }
-	public boolean hasUId() { return uId != -1; }
-
-	public int getCId() { return cId; }
-	public void setCId(int id) { this.cId = id; }
-	public boolean hasCId() { return cId != -1; }
-
+	// TODO: Remove this
 	public Event setCFileInformation(int line, String sourceCodeFilePath) {
-		this.metadataMap.put(new SourceLocation(sourceCodeFilePath, line));
+		setMetadata(new SourceLocation(sourceCodeFilePath, line));
 		return this;
 	}
+
+	// ===============================================================================================
 
 	public Event getSuccessor() { return successor; }
 	public Event getPredecessor() { return predecessor; }
