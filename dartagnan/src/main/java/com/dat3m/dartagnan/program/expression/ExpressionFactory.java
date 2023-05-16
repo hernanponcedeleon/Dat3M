@@ -165,7 +165,7 @@ public final class ExpressionFactory {
         checkTypes(left, comparator, right);
         checkArgument(!left.isBoolean() || comparator.equals(COpBin.EQ) || comparator.equals(COpBin.NEQ),
                 "Incompatible types for %s %s %s.", left, comparator, right);
-        if (left.equals(right)) {
+        if (left.equals(right) && left.getRegs().isEmpty()) {
             switch (comparator) {
                 case EQ: case LTE: case ULTE: case GTE: case UGTE:
                     return makeTrue();
@@ -233,10 +233,11 @@ public final class ExpressionFactory {
         if (!condition.isBoolean()) {
             logger.warn("Non-boolean guard for {} ? {} : {}.", condition, ifTrue, ifFalse);
         }
-        if (ifTrue.equals(ifFalse) || condition.isFalse()) {
+        if (ifTrue.equals(ifFalse) && condition.getRegs().isEmpty() ||
+                condition.isFalse() && ifFalse.getRegs().containsAll(ifTrue.getRegs())) {
             return ifFalse;
         }
-        if (condition.isTrue()) {
+        if (condition.isTrue() && ifTrue.getRegs().containsAll(ifFalse.getRegs())) {
             return ifTrue;
         }
         return new IfExpr(condition, ifTrue, ifFalse);
