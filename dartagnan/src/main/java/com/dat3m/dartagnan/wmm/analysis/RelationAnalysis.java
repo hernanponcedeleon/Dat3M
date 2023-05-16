@@ -991,6 +991,7 @@ public class RelationAnalysis {
             ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
             int validIndex = scopes.indexOf(flag);
             for (int i = 1; i <= validIndex; i++) {
+                // i = 0 is SYS, every thread will always have the same id, so start from i = 1
                 String scope = scopes.get(i);
                 if (!onSameScope(first, second, scope)) {
                     return false;
