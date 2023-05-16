@@ -1,0 +1,81 @@
+PTX
+(* NVIDIA. Parallel Thread Execution ISA Version 7.5 *)
+
+(*******************)
+(*   Auxiliaries   *)
+(*******************)
+(* Events *)
+let strong-write = W & (RLX | REL)
+let strong-read = R & (RLX | ACQ)
+let strong-m = strong-write | strong-read
+let strong-operation = strong-write | strong-read | F
+
+(* Proxy *)
+let generic-proxy = GEN * GEN
+let surface-proxy = SUR * SUR
+let texture-proxy = TEX * TEX
+let constant-proxy = CON * CON
+let same-proxy = generic-proxy | surface-proxy | texture-proxy | constant-proxy
+
+(* Relations *)
+let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
+let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
+let sr-m = ([strong-m]; (sr & loc & same-proxy); [strong-m])
+let po-m = ([M]; (po & loc & same-proxy); [M])
+let morally-strong = sr-fence | po-fence | sr-m | po-m
+(*******************)
+let fence-sc = [F & SC] ; sr; [F & SC]
+let rec observation = (morally-strong & rf) | (observation; rmw; observation)
+let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
+let cause-base = (po*; (sw; po*)+) | po
+(*******************)
+(* Proxy-aware causality ordering *)
+let proxy-fence-ops = [F \ ALIAS]; (same-proxy & scta); [M]
+let proxy-ops-fence = [M]; (same-proxy & scta); [F \ ALIAS]
+let proxy-fence-ops-cause = cause-base & proxy-fence-ops
+let proxy-ops-fence-cause = cause-base & proxy-ops-fence
+(*******************)
+let alias-fence = cause-base; [F & ALIAS]; cause-base
+let constant-fence = cause-base; [F & CON]; cause-base
+(*******************)
+let cause-proxy = ([M & GEN]; (loc & cause-base); [M & GEN])
+                | ([M]; (same-proxy & scta & loc & cause-base); [M])
+                | loc & (proxy-ops-fence-cause; cause-base; [GEN])
+                | loc & ([GEN]; cause-base; proxy-fence-ops-cause)
+                | loc & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
+                | alias & ([M & CON]; constant-fence; [M & CON])
+                | alias & ([M & GEN]; alias-fence; [M & GEN])
+                | alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
+                | alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
+                | alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
+let cause = observation?; cause-proxy
+
+(******************************)
+(*  PTX Memory Model Axioms   *)
+(******************************)
+(* Axiom 1 Coherence *)
+let cause-write = [W]; (cause & loc); [W]
+empty (cause-write \ co) as axiom-Coherence
+
+(* Axiom 2 FenceSC *)
+irreflexive (fence-sc ; cause) as axiom-FenceSC
+
+(* Axiom 3 Atomicity *)
+empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
+
+(* Axiom 4 No-Thin-Air *)
+let dep = addr | data | ctrl
+acyclic (rf | dep) as axiom-NoThinAir
+
+(* Axiom 5 SC-per-Location *)
+acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
+
+(* Axiom 6 Causality *)
+irreflexive ((rf | fr); cause) as axiom-Causality
+
+// Definition of paper: A Formal Analysis of the NVIDIA PTX Memory Consistency Model (NVIDIA 2019)
+// let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+// let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
+// irreflexive ((rf | co | fr)?; cause) as axiom-Causality
