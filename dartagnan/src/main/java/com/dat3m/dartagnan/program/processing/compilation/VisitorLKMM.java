@@ -225,8 +225,9 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getThread().newRegister(archType);
-        Expression zero = expressions.makeZero(dummy.getType());
+        Type type = types.getIntegerType(1);
+        Register dummy = e.getThread().newRegister(type);
+        Expression zero = expressions.makeZero(type);
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?

@@ -12,7 +12,7 @@ import static com.dat3m.dartagnan.program.event.Tag.RMW;
 public class LKMMLockWrite extends RMWStore {
 
 	public LKMMLockWrite(Load lockRead, Expression lock) {
-		super(lockRead, lock, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getPointerType()), Linux.MO_ONCE);
+		super(lockRead, lock, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getIntegerType(1)), Linux.MO_ONCE);
 		addFilters(RMW, Linux.LOCK_WRITE);
 	}
 
