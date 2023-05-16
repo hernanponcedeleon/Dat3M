@@ -136,17 +136,17 @@ public class SvcompProcedures {
                 max = Long.MAX_VALUE;
                 break;
             case "__VERIFIER_nondet_ulong":
-                signed = true;
+                signed = false;
                 min = 0;
                 max = UnsignedLong.MAX_VALUE.longValue();
                 break;
             case "__VERIFIER_nondet_char":
-                signed = false;
+                signed = true;
                 min = -128;
                 max = 127;
                 break;
             case "__VERIFIER_nondet_uchar":
-                signed = true;
+                signed = false;
                 min = 0;
                 max = 255;
                 break;
