@@ -197,7 +197,7 @@ public final class ExpressionFactory {
                 logger.warn("Unsupported expression {} {} {}", left, operator, right);
                 type = left.getType();
             }
-            return new IExprBin(type, left, operator, right);
+            return new BinaryIntegerExpression(type, left, operator, right);
         }
         checkTypes(left, operator, right);
         if (left instanceof Literal && right instanceof Literal) {
@@ -227,7 +227,7 @@ public final class ExpressionFactory {
                     return left;
                 }
         }
-        return new IExprBin(left.getType(), left, operator, right);
+        return new BinaryIntegerExpression(left.getType(), left, operator, right);
     }
 
     public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {

@@ -41,7 +41,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(IExprBin iBin) {
+    public Expression visit(BinaryIntegerExpression iBin) {
         Expression l = iBin.getLHS().visit(this);
         Expression r = iBin.getRHS().visit(this);
         return iBin.getLHS().equals(l) && iBin.getRHS().equals(r) ? iBin : factory.makeBinary(l, iBin.getOp(), r);

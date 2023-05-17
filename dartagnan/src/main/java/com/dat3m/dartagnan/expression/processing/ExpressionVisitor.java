@@ -12,7 +12,7 @@ public interface ExpressionVisitor<T> {
     default T visit(BinaryBooleanExpression bBin) { return null; }
     default T visit(UnaryBooleanExpression bUn) { return null; }
     default T visit(Literal literal) { return null; }
-    default T visit(IExprBin iBin) { return null; }
+    default T visit(BinaryIntegerExpression iBin) { return null; }
     default T visit(IExprUn iUn) { return null; }
     default T visit(ConditionalExpression ifExpr) { return null; }
     default T visit(NondeterministicExpression iNonDet) { return null; }

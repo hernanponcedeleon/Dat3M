@@ -192,7 +192,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IExprBin iBin) {
+    public Formula visit(BinaryIntegerExpression iBin) {
         Formula lhs = encodeAsInteger(iBin.getLHS());
         Formula rhs = encodeAsInteger(iBin.getRHS());
         if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {

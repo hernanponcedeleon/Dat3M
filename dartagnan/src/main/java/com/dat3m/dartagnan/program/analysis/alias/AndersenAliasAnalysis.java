@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.program.expression.BinaryIntegerExpression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -152,10 +152,10 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IExprBin) {
-            Expression base = ((IExprBin) expr).getLHS();
-            while (base instanceof IExprBin) {
-                base = ((IExprBin) base).getLHS();
+        } else if (expr instanceof BinaryIntegerExpression) {
+            Expression base = ((BinaryIntegerExpression) expr).getLHS();
+            while (base instanceof BinaryIntegerExpression) {
+                base = ((BinaryIntegerExpression) base).getLHS();
             }
             if (base instanceof Register) {
                 addAllAddresses(register, maxAddressSet);
@@ -214,15 +214,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             addTarget(reg, new Location((MemoryObject) exp, 0));
             return;
         }
-        if (!(exp instanceof IExprBin)) {
+        if (!(exp instanceof BinaryIntegerExpression)) {
             return;
         }
-        Expression base = ((IExprBin) exp).getLHS();
-        while (base instanceof IExprBin) {
-            base = ((IExprBin) base).getLHS();
+        Expression base = ((BinaryIntegerExpression) exp).getLHS();
+        while (base instanceof BinaryIntegerExpression) {
+            base = ((BinaryIntegerExpression) base).getLHS();
         }
         if (base instanceof MemoryObject) {
-            Expression rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((BinaryIntegerExpression) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst) {
                 addTarget(reg, new Location((MemoryObject) base, ((IConst) rhs).getValueAsInt()));
@@ -236,7 +236,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            Expression rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((BinaryIntegerExpression) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst) {
                 int o = target.offset + ((IConst) rhs).getValueAsInt();
@@ -285,9 +285,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 failed = false;
                 return;
             }
-            if (x instanceof IExprBin && ((IExprBin) x).getOp() == PLUS) {
-                Expression lhs = ((IExprBin) x).getLHS();
-                Expression rhs = ((IExprBin) x).getRHS();
+            if (x instanceof BinaryIntegerExpression && ((BinaryIntegerExpression) x).getOp() == PLUS) {
+                Expression lhs = ((BinaryIntegerExpression) x).getLHS();
+                Expression rhs = ((BinaryIntegerExpression) x).getRHS();
                 if (lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
                     location = new Location((MemoryObject) lhs, ((IConst) rhs).getValueAsInt());
                     failed = false;

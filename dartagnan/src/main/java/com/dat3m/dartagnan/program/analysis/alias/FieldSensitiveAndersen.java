@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.BinaryIntegerExpression;
 import com.dat3m.dartagnan.program.expression.ConditionalExpression;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.Literal;
@@ -302,7 +303,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IExprBin x) {
+        public Result visit(BinaryIntegerExpression x) {
             Result l = x.getLHS().visit(this);
             Result r = x.getRHS().visit(this);
             if(l == null || r == null || x.getOp() == R_SHIFT) {

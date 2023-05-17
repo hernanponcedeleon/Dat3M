@@ -20,10 +20,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.expression.Comparison;
-import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.Literal;
+import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -688,9 +685,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (initMode && !(value instanceof MemoryObject)) {
                 Expression lhs = address;
                 int rhs = 0;
-                while (lhs instanceof IExprBin) {
-                    rhs += ((Literal) ((IExprBin) lhs).getRHS()).getValueAsInt();
-                    lhs = ((IExprBin) lhs).getLHS();
+                while (lhs instanceof BinaryIntegerExpression) {
+                    rhs += ((Literal) ((BinaryIntegerExpression) lhs).getRHS()).getValueAsInt();
+                    lhs = ((BinaryIntegerExpression) lhs).getLHS();
                 }
                 String text = ctx.expr(1).getText();
                 String[] split = text.split("add.ref");
