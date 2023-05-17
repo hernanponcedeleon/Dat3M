@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -205,7 +206,8 @@ public class SyntacticContextAnalysis {
     // ============================================================================
 
     public static String getSourceLocationString(Event ev) {
-        return ev.hasCLine() ? String.format("@%s#%s", ev.getSourceCodeFileName(), ev.getCLine()) : "@unknown";
+        SourceLocation loc = ev.getMetadata(SourceLocation.class);
+        return loc != null ? String.format("@%s#%s", loc.getSourceCodeFileName(), loc.getLineNumber()) : "@unknown";
     }
 
     public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {

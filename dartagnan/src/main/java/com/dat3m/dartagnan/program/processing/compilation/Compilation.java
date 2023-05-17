@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.metadata.CompilationId;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
@@ -101,7 +102,7 @@ public class Compilation implements ProgramProcessor {
                 throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
         }
 
-        program.getEvents().forEach(e -> e.setCId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new CompilationId(e.getGlobalId())));
         program.getThreads().forEach(thread -> this.compileThread(thread, visitor));
         program.setArch(target);
         program.markAsCompiled();
@@ -117,7 +118,7 @@ public class Compilation implements ProgramProcessor {
         while (toBeCompiled != null) {
             List<Event> compiledEvents = toBeCompiled.accept(visitor);
             for (Event e : compiledEvents) {
-                e.copyMetadataFrom(toBeCompiled);
+                e.copyAllMetadataFrom(toBeCompiled);
                 pred.setSuccessor(e);
                 pred = e;
             }

@@ -40,7 +40,7 @@ public class MemoryAllocation implements ProgramProcessor {
             final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
             local.addFilters(Tag.Std.MALLOC);
-            local.copyMetadataFrom(malloc);
+            local.copyAllMetadataFrom(malloc);
             malloc.replaceBy(local);
         }
     }

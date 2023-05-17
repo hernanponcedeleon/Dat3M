@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -67,7 +68,7 @@ public class LoopUnrolling implements ProgramProcessor {
             return;
         }
         final int defaultBound = this.bound;
-        program.getEvents().forEach(e -> e.setUId(e.getGlobalId())); // Track ids before unrolling
+        program.getEvents().forEach(e -> e.setMetadata(new UnrollingId(e.getGlobalId()))); // Track ids before unrolling
         program.getThreads().forEach(thread -> unrollLoopsInThread(thread, defaultBound));
         program.markAsUnrolled(defaultBound);
         EventIdReassignment.newInstance().run(program); // Reassign ids because of newly created events
@@ -137,8 +138,8 @@ public class LoopUnrolling implements ProgramProcessor {
                 endOfLoopMarker.addFilters(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
-                boundEvent.copyMetadataFrom(loopBackJump);
-                endOfLoopMarker.copyMetadataFrom(loopBackJump);    
+                boundEvent.copyAllMetadataFrom(loopBackJump);
+                endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
 
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();

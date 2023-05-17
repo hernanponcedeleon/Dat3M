@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -55,7 +56,7 @@ public class ProgramBuilder {
         program.setSpecification(ass);
         program.setFilterSpecification(assFilter);
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         return program;
     }
 

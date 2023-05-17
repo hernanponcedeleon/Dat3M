@@ -4,6 +4,9 @@ import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.metadata.Metadata;
+import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
@@ -15,80 +18,56 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
-	// This id is dynamically changing during processing.
-	protected transient int globalId = -1;		// (Global) ID within a program
-
-	// The following three ids are snapshots of the global id at specific points in the processing.
-	// They are meant to be fixed once assigned.
-	protected int oId = -1; 	// Global ID after parsing (original), before any passes have been run
-	protected int uId = -1;		// Global ID right before unrolling
-	protected int cId = -1;		// Global ID right before compilation
-
-	protected int cLine = -1;				    // line in the original C program
-	protected String sourceCodeFilePath  = "";	// path of the original C program
-
 	protected Thread thread; // The thread this event belongs to
+	// This id is dynamically changing during processing.
+	protected transient int globalId = -1; // (Global) ID within a program
 
+	protected final MetadataMap metadataMap = new MetadataMap();
 	protected final Set<String> filter;
 
-	protected transient Event successor;
-	protected transient Event predecessor;
+	private transient Event successor;
+	private transient Event predecessor;
 
 	protected Event(){
 		filter = new HashSet<>();
 	}
 
 	protected Event(Event other){
-		copyMetadataFrom(other);
+		copyAllMetadataFrom(other);
         this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
 
-	public void copyMetadataFrom(Event other) {
-		this.oId = other.oId;
-		this.uId = other.uId;
-		this.cId = other.cId;
-		this.cLine = other.cLine;
-		this.sourceCodeFilePath = other.sourceCodeFilePath;
-	}
-
 	public int getGlobalId() { return globalId; }
 	public void setGlobalId(int id) { this.globalId = id; }
-	public boolean hasGlobalId() { return globalId != -1; }
 
-	public int getOId() { return oId; }
-	public void setOId(int id) { this.oId = id; }
-	public boolean hasOId() { return oId != -1; }
+	// ============================================ Metadata ============================================
 
-	public int getUId(){ return uId; }
-	public void setUId(int id) { this.uId = id; }
-	public boolean hasUId() { return uId != -1; }
-
-	public int getCId() { return cId; }
-	public void setCId(int id) { this.cId = id; }
-	public boolean hasCId() { return cId != -1; }
-
-	public int getCLine() { return cLine; }
-    public boolean hasCLine() { return cLine != -1; }
-
-	public String getSourceCodeFilePath() {
-		return sourceCodeFilePath ;
+	public void copyAllMetadataFrom(Event other) {
+		other.metadataMap.getAllMetadata().forEach(this.metadataMap::put);
 	}
 
-	public String getSourceCodeFileName() {
-        return sourceCodeFilePath.contains("/") ? sourceCodeFilePath.substring(sourceCodeFilePath.lastIndexOf("/") + 1)
-                : sourceCodeFilePath;
+	public void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass) {
+		other.setMetadata(other.getMetadata(metadataClass));
 	}
 
+	public boolean hasMetadata(Class<? extends Metadata> metadataClass) { return metadataMap.contains(metadataClass); }
+	public <T extends Metadata> T getMetadata(Class<T> metadataClass) { return metadataMap.get(metadataClass); }
+	public <T extends Metadata> T setMetadata(T metadata) { return metadataMap.put(metadata); }
+
+	public boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass) {
+		return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
+	}
+
+	// TODO: Remove this
 	public Event setCFileInformation(int line, String sourceCodeFilePath) {
-		this.cLine = line;
-		this.sourceCodeFilePath  = sourceCodeFilePath ;
+		setMetadata(new SourceLocation(sourceCodeFilePath, line));
 		return this;
 	}
 
-	public Event getSuccessor(){
-		return successor;
-	}
+	// ===============================================================================================
+
+	public Event getSuccessor() { return successor; }
 	public Event getPredecessor() { return predecessor; }
 
 	public void setSuccessor(Event event) {
@@ -170,7 +149,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public boolean hasFilter(String f) {
 		return filter.contains(f);
 	}
-	
+
 	@Override
 	public int compareTo(Event e){
 		if (e == this) {
