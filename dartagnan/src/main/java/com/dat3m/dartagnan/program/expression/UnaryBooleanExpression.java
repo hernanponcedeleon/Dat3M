@@ -1,19 +1,22 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.type.BooleanType;
 import com.google.common.collect.ImmutableSet;
 
-public class BExprUn extends BExpr {
+import static com.google.common.base.Preconditions.checkNotNull;
+
+public final class UnaryBooleanExpression extends AbstractExpression {
 
     private final Expression b;
     private final BOpUn op;
 
-    public BExprUn(BOpUn op, Expression b) {
-        this.b = b;
-        this.op = op;
+    UnaryBooleanExpression(BooleanType type, BOpUn op, Expression b) {
+        super(type);
+        this.b = checkNotNull(b);
+        this.op = checkNotNull(op);
     }
 
     public BOpUn getOp() {
@@ -27,11 +30,6 @@ public class BExprUn extends BExpr {
     @Override
     public ImmutableSet<Register> getRegs() {
         return b.getRegs();
-    }
-
-    @Override
-    public String toString() {
-        return "(" + op + " " + b + ")";
     }
 
     @Override
@@ -51,7 +49,12 @@ public class BExprUn extends BExpr {
         } else if (obj == null || obj.getClass() != getClass()) {
             return false;
         }
-        BExprUn expr = (BExprUn) obj;
+        UnaryBooleanExpression expr = (UnaryBooleanExpression) obj;
         return expr.op == op && expr.b.equals(b);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + op + " " + b + ")";
     }
 }

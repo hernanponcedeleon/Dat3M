@@ -29,7 +29,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(BExprUn bUn) {
+    public Expression visit(UnaryBooleanExpression bUn) {
         Expression i = bUn.getInner().visit(this);
         return bUn.getInner().equals(i) ? bUn : factory.makeUnary(bUn.getOp(), i);
     }

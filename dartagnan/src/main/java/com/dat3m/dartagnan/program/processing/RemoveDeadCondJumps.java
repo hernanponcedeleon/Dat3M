@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.expression.Comparison;
-import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.program.expression.UnaryBooleanExpression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -118,8 +118,8 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
             return false;
         }
         final CondJump other = (CondJump) e;
-        if (jump.getGuard() instanceof BExprUn && ((BExprUn)jump.getGuard()).getInner().equals(other.getGuard())
-                || other.getGuard() instanceof BExprUn && ((BExprUn) other.getGuard()).getInner().equals(jump.getGuard())) {
+        if (jump.getGuard() instanceof UnaryBooleanExpression && ((UnaryBooleanExpression)jump.getGuard()).getInner().equals(other.getGuard())
+                || other.getGuard() instanceof UnaryBooleanExpression && ((UnaryBooleanExpression) other.getGuard()).getInner().equals(jump.getGuard())) {
             return true;
         }
         if (jump.getGuard() instanceof Comparison && other.getGuard() instanceof Comparison) {

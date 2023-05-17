@@ -62,11 +62,11 @@ public final class ExpressionFactory {
         if (inner instanceof Literal) {
             return makeValue(inner.isFalse());
         }
-        if (inner instanceof BExprUn) {
-            assert ((BExprUn) inner).getOp().equals(BOpUn.NOT);
-            return ((BExprUn) inner).getInner();
+        if (inner instanceof UnaryBooleanExpression) {
+            assert ((UnaryBooleanExpression) inner).getOp().equals(BOpUn.NOT);
+            return ((UnaryBooleanExpression) inner).getInner();
         }
-        return new BExprUn(operator, inner);
+        return new UnaryBooleanExpression(types.getBooleanType(), operator, inner);
     }
 
     public Expression makeUnary(IOpUn operator, Expression inner) {
