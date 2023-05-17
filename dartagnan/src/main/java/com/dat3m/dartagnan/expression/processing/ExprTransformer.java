@@ -53,7 +53,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(IfExpr ifExpr) {
+    public Expression visit(ConditionalExpression ifExpr) {
         Expression g = ifExpr.getGuard().visit(this);
         Expression t = ifExpr.getTrueBranch().visit(this);
         Expression f = ifExpr.getFalseBranch().visit(this);

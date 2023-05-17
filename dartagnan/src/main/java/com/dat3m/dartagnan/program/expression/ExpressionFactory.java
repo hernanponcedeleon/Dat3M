@@ -241,7 +241,7 @@ public final class ExpressionFactory {
         if (condition.isTrue() && ifTrue.getRegs().containsAll(ifFalse.getRegs())) {
             return ifTrue;
         }
-        return new IfExpr(condition, ifTrue, ifFalse);
+        return new ConditionalExpression(condition, ifTrue, ifFalse);
     }
 
     private void checkTypes(Expression left, Object operator, Expression right) {

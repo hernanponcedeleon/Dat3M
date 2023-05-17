@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.ConditionalExpression;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -341,7 +342,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IfExpr x) {
+        public Result visit(ConditionalExpression x) {
             x.getTrueBranch().visit(this);
             x.getFalseBranch().visit(this);
             return null;

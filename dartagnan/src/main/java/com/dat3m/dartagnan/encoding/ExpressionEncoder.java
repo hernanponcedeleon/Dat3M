@@ -469,7 +469,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IfExpr ifExpr) {
+    public Formula visit(ConditionalExpression ifExpr) {
         BooleanFormula guard = encodeAsBoolean(ifExpr.getGuard());
         Formula tBranch = encodeAsInteger(ifExpr.getTrueBranch());
         Formula fBranch = encodeAsInteger(ifExpr.getFalseBranch());
