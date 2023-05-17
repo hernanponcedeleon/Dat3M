@@ -42,28 +42,34 @@ public interface AliasAnalysis {
         return a;
     }
 
+    // This models same_alias_r from the Alloy model
     static boolean virtualLoc(MemEvent e1, MemEvent e2) {
-        // TODO: Add virtual aliasing support for pointers
+        // TODO: Add support for pointers
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
             return false;
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        boolean isAdd1 = add1.getVirtual();
-        boolean isAdd2 = add2.getVirtual();
-        if (isAdd1 && isAdd2) {
-            // add1, add2 are virtual, and they should alias to the same physical Address
-            return (add1.getAlias() != null && add1.getAlias().equals(add2.getAlias()));
-        } else if (!isAdd1 && isAdd2) {
-            // add2 should virtually alias to add1
+        boolean isAdd1Virtual = add1.getVirtual();
+        boolean isAdd2Virtual = add2.getVirtual();
+        if (isAdd1Virtual && isAdd2Virtual) {
+            // Virtual addresses always have an alias
+            assert(add1.getAlias() != null);
+            assert(add2.getAlias() != null);
+            // add1, add2 should virtually alias to the same physical Address
+            return (add1.getAlias().equals(add2.getAlias()));
+        } else if (!isAdd1Virtual && isAdd2Virtual) {
+            // Virtual addresses always have an alias
+            assert(add2.getAlias() != null);
+            // add2 should virtually alias to physical add1
             return add1 == add2.getAlias();
-        } else if (isAdd1 && !isAdd2) {
-            // add1 should virtually alias to add2
+        } else if (isAdd1Virtual && !isAdd2Virtual) {
+            // Virtual addresses always have an alias
+            assert(add1.getAlias() != null);
+            // add1 should virtually alias to physical add2
             return add1.getAlias() == add2;
-        } else if (!isAdd1 && !isAdd2) {
-            // add1 and add2 should be the same
-            return add1 == add2;
         } else {
+            // The normal AliasAnalysis handles the case where both addresses are physical 
             return false;
         }
     }

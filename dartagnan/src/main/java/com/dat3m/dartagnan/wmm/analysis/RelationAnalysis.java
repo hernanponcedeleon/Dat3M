@@ -1576,7 +1576,9 @@ public class RelationAnalysis {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
     }
 
+    // This models same_location_r from the Alloy model
     private boolean directAlias(MemEvent e1, MemEvent e2) {
+        // TODO: Add support for pointers
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
             return false;
         }
@@ -1587,14 +1589,19 @@ public class RelationAnalysis {
         MemoryObject alias1 = add1.getAlias();
         MemoryObject alias2 = add2.getAlias();
         if (virtual1 && virtual2) {
-            return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(alias2)) ||
-                    (alias1 != null && alias2 != null && alias1.equals(alias2.getAlias()));
+            // Virtual addresses always have an alias
+            assert (alias1 != null);
+            assert (alias2 != null);
+            return alias1.getAlias() != null && alias1.getAlias().equals(alias2) || alias1.equals(alias2.getAlias());
         } else if (!virtual1 && virtual2) {
-            return (alias2 != null && add1.equals(alias2.getAlias())) ||
-                    (alias1 != null && alias1.equals(alias2));
+            // Virtual addresses always have an alias
+            assert (alias2 != null);
+            return add1.equals(alias2.getAlias()) || alias2.equals(alias1);
         } else if (virtual1) { // virtual1 && !virtual2
-            return (alias1 != null && alias1.getAlias() != null && alias1.getAlias().equals(add2)) ||
-                    (alias1 != null && alias1.equals(alias2));
+            // Virtual addresses always have an alias
+            assert (alias1 != null);
+            return (alias1.getAlias() != null && alias1.getAlias().equals(add2)) ||
+                    alias1.equals(alias2);
         } else { // !virtual1 && !virtual2
             return add1.equals(alias2) ||
                     (alias1 != null && alias1.equals(add2));
