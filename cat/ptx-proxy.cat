@@ -8,14 +8,10 @@ PTX
 let strong-write = W & (RLX | REL)
 let strong-read = R & (RLX | ACQ)
 let strong-m = strong-write | strong-read
-let strong-operation = strong-write | strong-read | F
+let strong-operation = strong-m | F
 
 (* Proxy *)
-let generic-proxy = GEN * GEN
-let surface-proxy = SUR * SUR
-let texture-proxy = TEX * TEX
-let constant-proxy = CON * CON
-let same-proxy = generic-proxy | surface-proxy | texture-proxy | constant-proxy
+let same-proxy = GEN * GEN | SUR * SUR | TEX * TEX | CON * CON
 
 (* Relations *)
 let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
@@ -25,11 +21,11 @@ let po-m = ([M]; (po & loc & same-proxy); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 (*******************)
 let fence-sc = [F & SC] ; sr; [F & SC]
-let rec observation = (morally-strong & rf) | (observation; rmw; observation)
+let observation = (morally-strong & rf) | rmw
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
-let sw = morally-strong & (release-pattern; observation+; acquire-pattern) | fence-sc
-let cause-base = (po*; (sw; po*)+) | po
+let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
+let cause-base = (po*; ((sync | fence-sc); po*)+) | po
 (*******************)
 (* Proxy-aware causality ordering *)
 let proxy-fence-ops = [F \ ALIAS]; (same-proxy & scta); [M]
@@ -78,4 +74,8 @@ irreflexive ((rf | fr); cause) as axiom-Causality
 // Definition of paper: A Formal Analysis of the NVIDIA PTX Memory Consistency Model (NVIDIA 2019)
 // let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
 // let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
+
+// Definition of Alloy: https://github.com/NVlabs/mixedproxy
+// let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+// let acquire-pattern = ([R]; po-loc?; [R & ACQ])
 // irreflexive ((rf | co | fr)?; cause) as axiom-Causality
