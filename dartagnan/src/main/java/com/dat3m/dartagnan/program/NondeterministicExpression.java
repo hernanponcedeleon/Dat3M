@@ -1,30 +1,28 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.AbstractExpression;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.math.BigInteger;
 import java.util.Optional;
 
-// TODO why is INonDet not a IConst?
-public class INonDet implements Expression {
+public final class NondeterministicExpression extends AbstractExpression {
 
     private final String id;
-    private final Type type;
     private final boolean signed;
     private final BigInteger min;
     private final BigInteger max;
 
     // Should only be accessed from Program
-    public INonDet(int id, Type type, boolean signed, BigInteger min, BigInteger max) {
+    NondeterministicExpression(int id, Type type, boolean signed, BigInteger min, BigInteger max) {
+        super(type);
         if (!type.isLeafType()) {
             throw new UnsupportedOperationException("Nondeterministic expression of type " + type);
         }
         this.id = Integer.toString(id);
         this.signed = signed;
-        this.type = type;
         this.min = min;
         this.max = max;
     }
@@ -43,11 +41,6 @@ public class INonDet implements Expression {
 
     public Optional<BigInteger> getMax() {
         return Optional.ofNullable(max);
-    }
-
-    @Override
-    public Type getType() {
-        return type;
     }
 
     @Override

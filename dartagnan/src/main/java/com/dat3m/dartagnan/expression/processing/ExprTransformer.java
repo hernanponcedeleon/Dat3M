@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
@@ -62,7 +63,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(INonDet iNonDet) {
+    public Expression visit(NondeterministicExpression iNonDet) {
         return iNonDet;
     }
 

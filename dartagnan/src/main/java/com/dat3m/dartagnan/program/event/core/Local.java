@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
@@ -60,8 +60,8 @@ public class Local extends Event implements RegWriter, RegReaderData {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = super.encodeExec(context);
         Formula expression = context.encodeIntegerExpressionAt(expr, this);
-        if (expr instanceof INonDet) {
-            INonDet nonDet = (INonDet) expr;
+        if (expr instanceof NondeterministicExpression) {
+            NondeterministicExpression nonDet = (NondeterministicExpression) expr;
             if (expression instanceof BitvectorFormula) {
                 boolean signed = nonDet.isSigned();
                 BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();

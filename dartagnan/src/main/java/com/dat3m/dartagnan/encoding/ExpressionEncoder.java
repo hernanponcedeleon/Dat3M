@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.*;
@@ -477,7 +478,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(INonDet iNonDet) {
+    public Formula visit(NondeterministicExpression iNonDet) {
         String name = iNonDet.getName();
         if (iNonDet.isBoolean()) {
             return booleanFormulaManager.makeVariable(name);

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program;
 
 
-import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
@@ -26,7 +25,7 @@ public class Program {
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
     private final Memory memory;
-    private final Collection<INonDet> constants = new ArrayList<>();
+    private final Collection<NondeterministicExpression> constants = new ArrayList<>();
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
@@ -77,9 +76,9 @@ public class Program {
         return arch;
     }
 
-    public INonDet newConstant(Type type, boolean signed, BigInteger min, BigInteger max) {
+    public NondeterministicExpression newConstant(Type type, boolean signed, BigInteger min, BigInteger max) {
         int id = constants.size();
-        INonDet constant = new INonDet(id, type, signed, min, max);
+        NondeterministicExpression constant = new NondeterministicExpression(id, type, signed, min, max);
         constants.add(constant);
         return constant;
     }
