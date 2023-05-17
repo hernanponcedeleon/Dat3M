@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.AbstractExpression;
 import com.dat3m.dartagnan.program.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
-public class Register implements Expression {
+public class Register extends AbstractExpression {
 
 	public static final int NO_THREAD = -1;
 
@@ -13,12 +13,10 @@ public class Register implements Expression {
 	private String cVar;
     private final int threadId;
 
-    private final Type type;
-
 	public Register(String name, int threadId, Type type) {
+		super(type);
 		this.name = name;
 		this.threadId = threadId;
-		this.type = type;
 	}
 	
 	public String getName() {
@@ -38,8 +36,13 @@ public class Register implements Expression {
 	}
 
 	@Override
-	public String toString() {
-        return name;
+	public ImmutableSet<Register> getRegs() {
+		return ImmutableSet.of(this);
+	}
+
+	@Override
+	public <T> T visit(ExpressionVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
     @Override
@@ -60,17 +63,7 @@ public class Register implements Expression {
     }
 
 	@Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of(this);
-	}
-
-    @Override
-    public Type getType() {
-        return type;
-    }
-
-	@Override
-	public <T> T visit(ExpressionVisitor<T> visitor) {
-		return visitor.visit(this);
+	public String toString() {
+		return name;
 	}
 }
