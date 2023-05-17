@@ -158,7 +158,7 @@ public final class ExpressionFactory {
         if (left.isFalse() || right.isTrue()) {
             return isAnd ? left : right;
         }
-        return new BExprBin(left, operator, right);
+        return new BinaryBooleanExpression(types.getBooleanType(), left, operator, right);
     }
 
     public Expression makeBinary(Expression left, COpBin comparator, Expression right) {

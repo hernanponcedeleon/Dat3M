@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.expression.BinaryBooleanExpression;
 import com.dat3m.dartagnan.program.expression.Comparison;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.Literal;
@@ -162,7 +163,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(BExprBin bBin) {
+    public Formula visit(BinaryBooleanExpression bBin) {
         BooleanFormula lhs = encodeAsBoolean(bBin.getLHS());
         BooleanFormula rhs = encodeAsBoolean(bBin.getRHS());
         switch (bBin.getOp()) {

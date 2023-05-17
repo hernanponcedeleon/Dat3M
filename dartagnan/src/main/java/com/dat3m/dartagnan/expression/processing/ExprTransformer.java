@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.expression.Comparison;
-import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.Literal;
+import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -25,7 +22,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(BExprBin bBin) {
+    public Expression visit(BinaryBooleanExpression bBin) {
         Expression l = bBin.getLHS().visit(this);
         Expression r = bBin.getRHS().visit(this);
         return bBin.getLHS().equals(l) && bBin.getRHS().equals(r) ? bBin : factory.makeBinary(l, bBin.getOp(), r);
