@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.expression.AbstractExpression;
+import com.dat3m.dartagnan.program.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 

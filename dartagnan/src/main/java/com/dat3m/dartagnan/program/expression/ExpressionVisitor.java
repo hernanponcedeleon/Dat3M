@@ -1,8 +1,7 @@
-package com.dat3m.dartagnan.expression.processing;
+package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 

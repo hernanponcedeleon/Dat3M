@@ -1,18 +1,17 @@
-package com.dat3m.dartagnan.expression.processing;
+package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
+public abstract class ExpressionTransformer implements ExpressionVisitor<Expression> {
 
     protected static final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory factory;
 
-    protected ExprTransformer(ExpressionFactory factory) {
+    protected ExpressionTransformer(ExpressionFactory factory) {
         this.factory = factory;
     }
 

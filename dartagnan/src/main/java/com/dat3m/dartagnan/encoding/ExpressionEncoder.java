@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.op.COpBin;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;

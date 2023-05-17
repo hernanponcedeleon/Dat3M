@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -11,6 +10,7 @@ import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.ExpressionTransformer;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -206,7 +206,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating
      * any dependencies
      */
-    private static class ConstantPropagator extends ExprTransformer {
+    private static class ConstantPropagator extends ExpressionTransformer {
 
         private Map<Register, Expression> propagationMap = new HashMap<>();
 

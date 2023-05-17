@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.NumberType;

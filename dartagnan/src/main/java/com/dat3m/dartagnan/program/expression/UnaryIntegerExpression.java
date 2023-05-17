@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
