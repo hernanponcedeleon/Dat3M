@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.NondeterministicExpression;
@@ -317,7 +316,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IExprUn iUn) {
+    public Formula visit(UnaryIntegerExpression iUn) {
         Formula inner = encodeAsInteger(iUn.getInner());
         if (inner instanceof IntegerFormula) {
             IntegerFormula i = (IntegerFormula) inner;

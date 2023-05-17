@@ -1,20 +1,17 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.expression.AbstractExpression;
-import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.type.Type;
-import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.collect.ImmutableSet;
 
-public class IExprUn extends AbstractExpression {
+public final class UnaryIntegerExpression extends AbstractExpression {
 
     private final Expression b;
     private final IOpUn op;
 
-    public IExprUn(Type type, IOpUn op, Expression b) {
+    UnaryIntegerExpression(Type type, IOpUn op, Expression b) {
         super(type);
         this.b = b;
         this.op = op;
@@ -34,11 +31,6 @@ public class IExprUn extends AbstractExpression {
     }
 
     @Override
-    public String toString() {
-        return "(" + op + b + ")";
-    }
-
-    @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
     }
@@ -52,10 +44,15 @@ public class IExprUn extends AbstractExpression {
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj == null || obj.getClass() != getClass()) {
+        } else if (!(obj instanceof UnaryIntegerExpression)) {
             return false;
         }
-        IExprUn expr = (IExprUn) obj;
+        UnaryIntegerExpression expr = (UnaryIntegerExpression) obj;
         return expr.op == op && expr.b.equals(b);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + op + b + ")";
     }
 }

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression.processing;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.expression.*;
@@ -48,7 +47,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(IExprUn iUn) {
+    public Expression visit(UnaryIntegerExpression iUn) {
         Expression i = iUn.getInner().visit(this);
         return iUn.getInner().equals(i) ? iUn : factory.makeUnary(iUn.getOp(), i);
     }

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.expression;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.PointerType;
@@ -136,11 +135,11 @@ public final class ExpressionFactory {
             }
             return makeValue(v, type);
         }
-        if (inner instanceof IExprUn && operator.equals(IOpUn.MINUS) && ((IExprUn) inner).getOp().equals(IOpUn.MINUS)) {
-            return ((IExprUn) inner).getInner();
+        if (inner instanceof UnaryIntegerExpression && operator.equals(IOpUn.MINUS) && ((UnaryIntegerExpression) inner).getOp().equals(IOpUn.MINUS)) {
+            return ((UnaryIntegerExpression) inner).getInner();
         }
         //TODO expansion followed by truncation
-        return new IExprUn(type, operator, inner);
+        return new UnaryIntegerExpression(type, operator, inner);
     }
 
     public Expression makeBinary(Expression left, BOpBin operator, Expression right) {
