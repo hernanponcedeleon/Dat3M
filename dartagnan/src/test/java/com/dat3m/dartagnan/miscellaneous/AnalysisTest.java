@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
@@ -15,6 +14,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -405,7 +405,7 @@ public class AnalysisTest {
         return EventFactory.newStore(address, value, "");
     }
 
-    private IValue value(long v) {
+    private Literal value(long v) {
         return expressionFactory.makeValue(BigInteger.valueOf(v), type);
     }
 

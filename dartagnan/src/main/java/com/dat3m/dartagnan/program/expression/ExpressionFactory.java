@@ -26,32 +26,32 @@ public final class ExpressionFactory {
         return instance;
     }
 
-    public IValue makeTrue() {
+    public Literal makeTrue() {
         return makeValue(BigInteger.ONE, types.getBooleanType());
     }
 
-    public IValue makeFalse() {
+    public Literal makeFalse() {
         return makeValue(BigInteger.ZERO, types.getBooleanType());
     }
 
-    public IValue makeValue(boolean value) {
+    public Literal makeValue(boolean value) {
         return value ? makeTrue() : makeFalse();
     }
 
-    public IValue makeZero(Type type) {
+    public Literal makeZero(Type type) {
         return makeValue(BigInteger.ZERO, type);
     }
 
-    public IValue makeOne(Type type) {
+    public Literal makeOne(Type type) {
         return makeValue(BigInteger.ONE, type);
     }
 
-    public IValue parseValue(String text, Type type) {
+    public Literal parseValue(String text, Type type) {
         return makeValue(new BigInteger(text), type);
     }
 
-    public IValue makeValue(BigInteger value, Type type) {
-        return new IValue(value, type);
+    public Literal makeValue(BigInteger value, Type type) {
+        return new Literal(value, type);
     }
 
     public Expression makeUnary(BOpUn operator, Expression inner) {
@@ -59,7 +59,7 @@ public final class ExpressionFactory {
             logger.warn("Non-boolean operand for {} {}.", operator, inner);
         }
         assert operator.equals(BOpUn.NOT);
-        if (inner instanceof IValue) {
+        if (inner instanceof Literal) {
             return makeValue(inner.isFalse());
         }
         if (inner instanceof BExprUn) {
@@ -96,8 +96,8 @@ public final class ExpressionFactory {
             default:
                 throw new UnsupportedOperationException("Unsupported operator " + operator + ".");
         }
-        if (inner instanceof IValue) {
-            BigInteger value = ((IValue) inner).getValue();
+        if (inner instanceof Literal) {
+            BigInteger value = ((Literal) inner).getValue();
             int bitWidth;
             BigInteger v;
             switch (operator) {
@@ -200,30 +200,30 @@ public final class ExpressionFactory {
             return new IExprBin(type, left, operator, right);
         }
         checkTypes(left, operator, right);
-        if (left instanceof IValue && right instanceof IValue) {
-            BigInteger result = operator.combine(((IValue) left).getValue(), ((IValue) right).getValue());
+        if (left instanceof Literal && right instanceof Literal) {
+            BigInteger result = operator.combine(((Literal) left).getValue(), ((Literal) right).getValue());
             return makeValue(result, left.getType());
         }
         switch (operator) {
             case PLUS:
-                if (left instanceof IValue && ((IValue) left).getValue().equals(BigInteger.ZERO)) {
+                if (left instanceof Literal && ((Literal) left).getValue().equals(BigInteger.ZERO)) {
                     return right;
                 }
-                if (right instanceof IValue && ((IValue) right).getValue().equals(BigInteger.ZERO)) {
+                if (right instanceof Literal && ((Literal) right).getValue().equals(BigInteger.ZERO)) {
                     return left;
                 }
                 break;
             case MULT:
-                if (left instanceof IValue && ((IValue) left).getValue().equals(BigInteger.ZERO)) {
+                if (left instanceof Literal && ((Literal) left).getValue().equals(BigInteger.ZERO)) {
                     return left;
                 }
-                if (right instanceof IValue && ((IValue) right).getValue().equals(BigInteger.ZERO)) {
+                if (right instanceof Literal && ((Literal) right).getValue().equals(BigInteger.ZERO)) {
                     return right;
                 }
-                if (left instanceof IValue && ((IValue) left).getValue().equals(BigInteger.ONE)) {
+                if (left instanceof Literal && ((Literal) left).getValue().equals(BigInteger.ONE)) {
                     return right;
                 }
-                if (right instanceof IValue && ((IValue) right).getValue().equals(BigInteger.ONE)) {
+                if (right instanceof Literal && ((Literal) right).getValue().equals(BigInteger.ONE)) {
                     return left;
                 }
         }

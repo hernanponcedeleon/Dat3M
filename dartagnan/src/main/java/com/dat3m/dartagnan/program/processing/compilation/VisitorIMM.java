@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -11,12 +10,12 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -66,7 +65,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		IValue zero = expressions.makeZero(resultRegister.getType());
+		Literal zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addFilters(C11.PTHREAD);
         
@@ -79,7 +78,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		IValue one = expressions.makeOne(resultRegister.getType());
+		Literal one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addFilters(Tag.STARTLOAD);
 
@@ -103,7 +102,7 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Expression expectedAddr = e.getExpectedAddr();
 		Type type = resultRegister.getType();
-		IValue one = expressions.makeOne(type);
+		Literal one = expressions.makeOne(type);
 
 		Register regExpected = e.getThread().newRegister(type);
         Register regValue = e.getThread().newRegister(type);
@@ -260,7 +259,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
-		IValue one = expressions.makeOne(resultRegister.getType());
+		Literal one = expressions.makeOne(resultRegister.getType());
 
 		Expression value = e.getMemValue();
 		Expression address = e.getAddress();

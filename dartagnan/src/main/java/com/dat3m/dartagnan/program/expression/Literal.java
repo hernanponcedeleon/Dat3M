@@ -1,5 +1,6 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.program.expression;
 
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
@@ -13,10 +14,11 @@ import java.math.BigInteger;
 /**
  * Immutable constant integer values.
  */
-public final class IValue extends IConst {
+public final class Literal extends IConst {
 
     private final BigInteger value;
-    public IValue(BigInteger value, Type type) {
+
+    Literal(BigInteger value, Type type) {
         super(type);
         this.value = checkNotNull(value);
     }
@@ -38,7 +40,7 @@ public final class IValue extends IConst {
 
     @Override
     public boolean equals(Object o) {
-        return this == o || o instanceof IValue && value.equals(((IValue)o).value) && type.equals(((IValue)o).type);
+        return this == o || o instanceof Literal && value.equals(((Literal)o).value) && type.equals(((Literal)o).type);
     }
 
     @Override

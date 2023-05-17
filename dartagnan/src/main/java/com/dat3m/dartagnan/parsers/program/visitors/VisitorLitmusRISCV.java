@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusRISCVParser.*;
@@ -15,6 +14,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -70,7 +70,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         object.setInitialValue(0, value);
         return null;
     }
@@ -79,7 +79,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register().getText(), type);
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -130,7 +130,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitLi(LiContext ctx) {
         Register register = thread.getOrNewRegister(ctx.register().getText(), type);
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -175,7 +175,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     public Object visitXori(XoriContext ctx) {
         Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.XOR, value)));
         return null;
     }
@@ -184,7 +184,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     public Object visitAndi(AndiContext ctx) {
         Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.AND, value)));
         return null;
     }
@@ -194,7 +194,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         // Why not require that this register is already defined?
         Register left = thread.getOrNewRegister(ctx.register(1).getText(), type);
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.OR, value)));
         return null;
     }
@@ -204,7 +204,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Register result = thread.getOrNewRegister(ctx.register(0).getText(), type);
         // Why not require that this register is already defined?
         Register left = thread.getOrNewRegister(ctx.register(1).getText(), type);
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.PLUS, value)));
         return null;
     }

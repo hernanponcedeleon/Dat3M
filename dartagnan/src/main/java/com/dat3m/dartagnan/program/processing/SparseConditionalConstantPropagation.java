@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.sosy_lab.common.configuration.Configuration;
@@ -224,7 +225,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public Expression visit(Register reg) {
             final Expression retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof IValue && retVal.isBoolean()) {
+            if (retVal instanceof Literal && retVal.isBoolean()) {
                 // We only have integral registers, so we need to implicitly convert booleans to
                 // integers.
                 BigInteger value = retVal.isTrue() ? BigInteger.ONE : BigInteger.ZERO;

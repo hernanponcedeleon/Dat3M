@@ -2,11 +2,11 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
@@ -175,10 +175,10 @@ public class SvcompProcedures {
 
     private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
         Object boundObject = ctx.call_params().exprs().expr(0).accept(visitor);
-        if (!(boundObject instanceof IValue)) {
+        if (!(boundObject instanceof Literal)) {
             throw new ParsingException("Expected constant bound in " + ctx.getText() + ".");
         }
-        int bound = ((IValue) boundObject).getValueAsInt();
+        int bound = ((Literal) boundObject).getValueAsInt();
         visitor.append(EventFactory.Svcomp.newLoopBound(bound));
 
     }

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser.*;
@@ -14,6 +13,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -81,7 +81,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         object.setInitialValue(0, value);
         return null;
     }
@@ -90,7 +90,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register64().id, type);
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -227,7 +227,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranchRegister(BranchRegisterContext ctx) {
         Register register = thread.getRegister(ctx.rV).orElseThrow();
-        IValue zero = expressions.makeZero(register.getType());
+        Literal zero = expressions.makeZero(register.getType());
         Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = labelMap.computeIfAbsent(ctx.label().getText(), EventFactory::newLabel);
         thread.append(EventFactory.newJump(expr, label));
@@ -251,7 +251,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Expression visitExpressionRegister64(ExpressionRegister64Context ctx) {
         Expression expr = thread.getOrNewRegister(ctx.register64().id, type);
         if (ctx.shift() != null) {
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
+            Literal val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -261,7 +261,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Expression visitExpressionRegister32(ExpressionRegister32Context ctx) {
         Expression expr = thread.getOrNewRegister(ctx.register32().id, type);
         if (ctx.shift() != null) {
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
+            Literal val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -271,7 +271,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Expression visitExpressionImmediate(ExpressionImmediateContext ctx) {
         Expression expr = expressions.parseValue(ctx.immediate().constant().getText(), type);
         if (ctx.shift() != null) {
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
+            Literal val = expressions.parseValue(ctx.shift().immediate().constant().getText(), type);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;

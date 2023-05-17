@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser.*;
@@ -86,7 +86,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Literal value = expressions.parseValue(ctx.constant().getText(), archPrecision);
         object.setInitialValue(0, value);
         return null;
     }
@@ -95,7 +95,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Literal value = expressions.parseValue(ctx.constant().getText(), archPrecision);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -147,7 +147,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitLi(LiContext ctx) {
         Register register = thread.getOrNewRegister(ctx.register().getText(), archPrecision);
-        IValue value = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Literal value = expressions.parseValue(ctx.constant().getText(), archPrecision);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -192,7 +192,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitAddi(AddiContext ctx) {
         Register result = thread.getOrNewRegister(ctx.register(0).getText(), archPrecision);
         Register left = thread.getRegister(ctx.register(1).getText()).orElseThrow();
-        IValue right = expressions.parseValue(ctx.constant().getText(), archPrecision);
+        Literal right = expressions.parseValue(ctx.constant().getText(), archPrecision);
         thread.append(EventFactory.newLocal(result, expressions.makeBinary(left, IOpBin.PLUS, right)));
         return null;
     }

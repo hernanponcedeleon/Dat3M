@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser.*;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
@@ -67,7 +67,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         object.setInitialValue(0, value);
         return null;
     }
@@ -76,7 +76,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
         Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.register().getText(), type);
-        IValue value = expressions.parseValue(ctx.constant().getText(), type);
+        Literal value = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, value));
         return null;
     }
@@ -127,7 +127,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadValueToRegister(LoadValueToRegisterContext ctx) {
         Register register = thread.getOrNewRegister(ctx.register().getText(), type);
-        IValue constant = expressions.parseValue(ctx.constant().getText(), type);
+        Literal constant = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newLocal(register, constant));
         return null;
     }
@@ -143,7 +143,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitStoreValueToLocation(StoreValueToLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-        IValue constant = expressions.parseValue(ctx.constant().getText(), type);
+        Literal constant = expressions.parseValue(ctx.constant().getText(), type);
         thread.append(EventFactory.newStore(object, constant, "_rx"));
         return null;
     }

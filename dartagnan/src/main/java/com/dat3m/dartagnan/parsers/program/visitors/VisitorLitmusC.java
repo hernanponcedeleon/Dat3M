@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -89,7 +90,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             //TODO Unknown precision, defaults to unbound integer?
             Type type = types.getNumberType();
             Register register = thread.getOrNewRegister(ctx.varName().getText(), type);
-            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), type);
+            Literal value = expressions.parseValue(ctx.initConstantValue().constant().getText(), type);
             thread.append(EventFactory.newLocal(register, value));
         }
         return null;
@@ -409,7 +410,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Expression visitReConst(ReConstContext ctx) {
         Register register = getReturnRegister(false);
-        IValue result = expressions.parseValue(ctx.getText(), type);
+        Literal result = expressions.parseValue(ctx.getText(), type);
         return assignToReturnRegister(register, result);
     }
 

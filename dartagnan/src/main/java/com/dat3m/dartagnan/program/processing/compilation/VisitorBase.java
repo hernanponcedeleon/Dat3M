@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -41,8 +41,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	protected static final TypeFactory types = TypeFactory.getInstance();
 	protected static final Type archType = types.getPointerType();
 	protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
-	protected final IValue zero = expressions.makeZero(types.getPointerType());
-	protected final IValue one = expressions.makeOne(types.getPointerType());
+	protected final Literal zero = expressions.makeZero(types.getPointerType());
+	protected final Literal one = expressions.makeOne(types.getPointerType());
 
 	protected VisitorBase(boolean forceStart) {
 		this.forceStart = forceStart;

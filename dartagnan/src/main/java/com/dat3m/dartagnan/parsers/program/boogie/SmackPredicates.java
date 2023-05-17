@@ -8,10 +8,10 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
 import java.util.Arrays;
 import java.util.List;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 
 public class SmackPredicates {
 
@@ -110,7 +110,7 @@ public class SmackPredicates {
 				throw new ParsingException("Function " + name + " has no implementation");
 			}
 		}
-		IValue maxValue = factory.parseValue(max, var.getType());
+		Literal maxValue = factory.parseValue(max, var.getType());
 		return factory.makeConditional(
 				factory.makeBinary(
 						factory.makeBinary(var, GTE, factory.parseValue(min, var.getType())),

@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -687,7 +688,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 Expression lhs = address;
                 int rhs = 0;
                 while (lhs instanceof IExprBin) {
-                    rhs += ((IValue) ((IExprBin) lhs).getRHS()).getValueAsInt();
+                    rhs += ((Literal) ((IExprBin) lhs).getRHS()).getValueAsInt();
                     lhs = ((IExprBin) lhs).getLHS();
                 }
                 String text = ctx.expr(1).getText();
@@ -784,7 +785,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected void addAssertion(Expression expr) {
         Register ass = thread.getOrNewRegister("assert_" + assertionIndex, expr.getType());
-        IValue one = expressions.makeOne(expr.getType());
+        Literal one = expressions.makeOne(expr.getType());
         assertionIndex++;
         Event local = EventFactory.newLocal(ass, expr);
         append(local);

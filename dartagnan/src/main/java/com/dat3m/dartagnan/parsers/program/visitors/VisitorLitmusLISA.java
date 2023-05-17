@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
@@ -13,6 +12,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -66,7 +66,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitVariableDeclaratorLocation(VariableDeclaratorLocationContext ctx) {
 		MemoryObject object = program.getMemory().getOrNewObject(ctx.location().getText());
-		IValue value = expressions.parseValue(ctx.constant().getText(), type);
+		Literal value = expressions.parseValue(ctx.constant().getText(), type);
 		object.setInitialValue(0, value);
 		return null;
 	}
@@ -75,7 +75,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitVariableDeclaratorRegister(VariableDeclaratorRegisterContext ctx) {
 		Thread thread = program.getOrNewThread(Integer.toString(ctx.threadId().id));
 		Register register = thread.getOrNewRegister(ctx.register().getText(), type);
-		IValue value = expressions.parseValue(ctx.constant().getText(), type);
+		Literal value = expressions.parseValue(ctx.constant().getText(), type);
 		thread.append(EventFactory.newLocal(register, value));
 		return null;
 	}

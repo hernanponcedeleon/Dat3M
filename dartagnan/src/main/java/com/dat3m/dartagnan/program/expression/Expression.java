@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.expression;
 
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.expression.type.BooleanType;
@@ -16,11 +15,11 @@ public interface Expression {
     <T> T visit(ExpressionVisitor<T> visitor);
 
     default boolean isTrue() {
-        return this instanceof IValue && isBoolean() && !((IValue) this).getValue().equals(BigInteger.ZERO);
+        return this instanceof Literal && isBoolean() && !((Literal) this).getValue().equals(BigInteger.ZERO);
     }
 
     default boolean isFalse() {
-        return this instanceof IValue && isBoolean() && ((IValue) this).getValue().equals(BigInteger.ZERO);
+        return this instanceof Literal && isBoolean() && ((Literal) this).getValue().equals(BigInteger.ZERO);
     }
 
     default ImmutableSet<Register> getRegs() {

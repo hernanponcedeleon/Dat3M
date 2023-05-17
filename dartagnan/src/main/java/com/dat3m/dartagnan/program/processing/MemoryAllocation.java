@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -51,10 +51,10 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private int getSize(Malloc malloc) {
-        if (!(malloc.getSizeExpr() instanceof IValue)) {
+        if (!(malloc.getSizeExpr() instanceof Literal)) {
             throw new MalformedProgramException("Variable-sized malloc '" + malloc + "' is not supported");
         }
-        return ((IValue) malloc.getSizeExpr()).getValueAsInt();
+        return ((Literal) malloc.getSizeExpr()).getValueAsInt();
     }
 
     public void moveAndAlignMemoryObjects(Memory memory) {
@@ -92,7 +92,7 @@ public class MemoryAllocation implements ProgramProcessor {
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
-                IValue offset = expressionFactory.makeValue(BigInteger.valueOf(i), memObj.getType());
+                Literal offset = expressionFactory.makeValue(BigInteger.valueOf(i), memObj.getType());
                 Event init = new Init(memObj, i, expressionFactory.makeBinary(memObj, IOpBin.PLUS, offset));
                 final Thread thread = program.newThread(".INIT." + memObj + "." + i, init);
                 thread.append(EventFactory.newLabel(thread.getEndLabelName()));

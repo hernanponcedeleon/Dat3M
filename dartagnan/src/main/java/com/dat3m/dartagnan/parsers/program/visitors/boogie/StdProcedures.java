@@ -1,13 +1,11 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -50,7 +48,7 @@ public class StdProcedures {
         if (name.equals("get_my_tid")) {
             String registerName = ctx.call_params().Ident(0).getText();
             Register register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName).orElseThrow();
-            IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), visitor.types.getNumberType());
+            Literal tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), visitor.types.getNumberType());
             visitor.thread.append(EventFactory.newLocal(register, tid));
             return;
         }

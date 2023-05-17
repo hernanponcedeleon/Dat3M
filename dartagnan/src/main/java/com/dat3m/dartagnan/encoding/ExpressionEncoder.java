@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.expression.type.NumberType;
 import com.dat3m.dartagnan.program.expression.type.PointerType;
@@ -179,15 +180,15 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IValue iValue) {
-        if (iValue.isBoolean()) {
-            return booleanFormulaManager.makeBoolean(iValue.isTrue());
+    public Formula visit(Literal literal) {
+        if (literal.isBoolean()) {
+            return booleanFormulaManager.makeBoolean(literal.isTrue());
         }
-        OptionalInt bitWidth = getBitWidthFromLeafType(iValue.getType());
+        OptionalInt bitWidth = getBitWidthFromLeafType(literal.getType());
         if (bitWidth.isEmpty()) {
-            return integerFormulaManager().makeNumber(iValue.getValue());
+            return integerFormulaManager().makeNumber(literal.getValue());
         }
-        return bitvectorFormulaManager().makeBitvector(bitWidth.getAsInt(), iValue.getValue());
+        return bitvectorFormulaManager().makeBitvector(bitWidth.getAsInt(), literal.getValue());
     }
 
     @Override
