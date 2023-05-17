@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -12,15 +12,12 @@ import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.Literal;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -71,9 +68,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
     private void run(Thread thread, ExpressionFactory expressionFactory) {
         final EventSimplifier simplifier = new EventSimplifier(expressionFactory);
-        final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof IConst || expr instanceof Register)
-                : (expr -> expr instanceof IConst);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();
@@ -93,19 +87,21 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             }
 
             if (!isTraversingDeadBranch) {
-                simplifier.setPropagationMap(propagationMap);
+                simplifier.propagator.propagationMap = propagationMap;
                 // We only simplify non-dead code
                 cur.accept(simplifier);
                 reachableEvents.add(cur);
 
-                if (cur instanceof Local) {
-                    final Local local = (Local) cur;
-                    final Expression expr = local.getExpr();
-                    final Expression valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
-                    propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-                } else if (cur instanceof RegWriter) {
-                    // We treat all other register writers as non-constant
-                    propagationMap.remove(((RegWriter) cur).getResultRegister());
+                if (cur instanceof RegWriter) {
+                    Register register = ((RegWriter) cur).getResultRegister();
+                    // Loads may generate replacements for register expressions.
+                    // We treat all other register writers as non-constant.
+                    Expression expr = cur instanceof Local ? ((Local) cur).getExpr() : null;
+                    boolean doPropagate = expr instanceof IConst || propagateCopyAssignments && expr instanceof Register;
+                    propagationMap.compute(register, (k, v) -> doPropagate ? expr : null);
+                    if (propagateCopyAssignments) {
+                        propagationMap.values().remove(register);
+                    }
                 }
 
                 if (cur instanceof CondJump) {
@@ -165,10 +161,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             this.propagator = new ConstantPropagator(factory);
         }
 
-        public void setPropagationMap(Map<Register, Expression> propagationMap) {
-            this.propagator.propagationMap = propagationMap;
-        }
-
         @Override
         public Void visitEvent(Event e) {
             return null;
@@ -224,15 +216,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Expression visit(Register reg) {
-            final Expression retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof Literal && retVal.isBoolean()) {
-                // We only have integral registers, so we need to implicitly convert booleans to
-                // integers.
-                BigInteger value = retVal.isTrue() ? BigInteger.ONE : BigInteger.ZERO;
-                return factory.makeValue(value, reg.getType());
-            } else {
-                return retVal;
-            }
+            return propagationMap.getOrDefault(reg, reg);
         }
     }
 
