@@ -178,7 +178,7 @@ public final class ExpressionFactory {
         if (right.isTrue() || right.isFalse()) {
             return comparator.equals(COpBin.EQ) == right.isTrue() ? left : makeUnary(BOpUn.NOT, left);
         }
-        return new Atom(left, comparator, right);
+        return new Comparison(types.getBooleanType(), left, comparator, right);
     }
 
     public Expression makeBinary(Expression left, IOpBin operator, Expression right) {

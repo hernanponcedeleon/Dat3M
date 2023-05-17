@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.expression.Comparison;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.Literal;
@@ -184,9 +185,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitAxiom_decl(Axiom_declContext ctx) {
         Expression exp = (Expression) ctx.proposition().accept(this);
-        if (exp instanceof Atom && ((Atom) exp).getLHS() instanceof Register && ((Atom) exp).getOp().equals(EQ)) {
-            String name = ((Register) ((Atom) exp).getLHS()).getName();
-            Expression def = ((Atom) exp).getRHS();
+        if (exp instanceof Comparison && ((Comparison) exp).getLHS() instanceof Register && ((Comparison) exp).getOp().equals(EQ)) {
+            String name = ((Register) ((Comparison) exp).getLHS()).getName();
+            Expression def = ((Comparison) exp).getRHS();
             constantsMap.put(name, def);
         }
         return null;

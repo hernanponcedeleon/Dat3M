@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.program.expression.Comparison;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -122,9 +122,9 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
                 || other.getGuard() instanceof BExprUn && ((BExprUn) other.getGuard()).getInner().equals(jump.getGuard())) {
             return true;
         }
-        if (jump.getGuard() instanceof Atom && other.getGuard() instanceof Atom) {
-            final Atom a1 = (Atom) jump.getGuard();
-            final Atom a2 = (Atom) other.getGuard();
+        if (jump.getGuard() instanceof Comparison && other.getGuard() instanceof Comparison) {
+            final Comparison a1 = (Comparison) jump.getGuard();
+            final Comparison a2 = (Comparison) other.getGuard();
             return a1.getOp().inverted() == a2.getOp() && a1.getLHS().equals(a2.getLHS()) && a1.getRHS().equals(a2.getRHS());
         }
         return false;

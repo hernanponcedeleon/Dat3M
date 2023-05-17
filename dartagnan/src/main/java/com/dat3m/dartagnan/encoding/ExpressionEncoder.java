@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.expression.Comparison;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.IntegerType;
@@ -154,10 +155,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(Atom atom) {
-        Formula lhs = encodeAsInteger(atom.getLHS());
-        Formula rhs = encodeAsInteger(atom.getRHS());
-        return encodeComparison(atom.getOp(), lhs, rhs, formulaManager);
+    public Formula visit(Comparison comparison) {
+        Formula lhs = encodeAsInteger(comparison.getLHS());
+        Formula rhs = encodeAsInteger(comparison.getRHS());
+        return encodeComparison(comparison.getOp(), lhs, rhs, formulaManager);
     }
 
     @Override
