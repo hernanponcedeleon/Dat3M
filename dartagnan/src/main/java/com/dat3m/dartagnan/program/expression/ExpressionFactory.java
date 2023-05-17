@@ -212,6 +212,7 @@ public final class ExpressionFactory {
                 if (right instanceof IValue && ((IValue) right).getValue().equals(BigInteger.ZERO)) {
                     return left;
                 }
+                break;
             case MULT:
                 if (left instanceof IValue && ((IValue) left).getValue().equals(BigInteger.ZERO)) {
                     return left;
