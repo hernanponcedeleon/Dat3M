@@ -53,7 +53,7 @@ public class ExecutionStatus extends Event implements RegWriter {
         Formula zero = context.encodeFinalIntegerExpression(expressions.makeZero(register.getType()));
         Formula one = context.encodeFinalIntegerExpression(expressions.makeOne(register.getType()));
         return bmgr.and(super.encodeExec(context),
-                context.equal(context.result(this), bmgr.ifThenElse(context.execution(event), one, zero)));
+                context.equal(context.result(this), bmgr.ifThenElse(context.execution(event), zero, one)));
     }
 
     // Unrolling
