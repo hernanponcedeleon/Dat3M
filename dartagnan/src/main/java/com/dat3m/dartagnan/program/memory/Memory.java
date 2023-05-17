@@ -40,7 +40,11 @@ public class Memory {
     }
 
     public MemoryObject getOrNewObject(String name) {
-        return getOrNewObject(name, 1);
+        MemoryObject fetched = staticObjects.get(name);
+        if (fetched == null) {
+            return newObject(name, 1);
+        }
+        return fetched;
     }
 
     public MemoryObject getOrNewObject(String name, int size) {
