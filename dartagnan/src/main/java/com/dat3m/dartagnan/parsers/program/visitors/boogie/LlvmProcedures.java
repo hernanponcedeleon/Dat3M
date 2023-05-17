@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -12,6 +11,7 @@ import com.dat3m.dartagnan.program.event.EventFactory.Llvm;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.Arrays;
@@ -43,39 +43,43 @@ public class LlvmProcedures {
             "llvm.ctlz.i64");
 
     public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
+        String name = ctx.call_params().Ident(ctx.call_params().Define() == null ? 0 : 1).getText();
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
         Register reg = visitor.thread.getOrNewRegister(regName, visitor.types.getNumberType());
 
         Object p0 = params.get(0).accept(visitor);
+        int i0 = p0 instanceof Literal ? ((Literal) p0).getValueAsInt() : -1;
         Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;
+        int i1 = p1 instanceof Literal ? ((Literal) p1).getValueAsInt() : -1;
         Object p2 = params.size() > 2 ? params.get(2).accept(visitor) : null;
+        int i2 = p2 instanceof Literal ? ((Literal) p2).getValueAsInt() : -1;
         Object p3 = params.size() > 3 ? params.get(3).accept(visitor) : null;
+        int i3 = p3 instanceof Literal ? ((Literal) p3).getValueAsInt() : -1;
 
         ExpressionFactory factory = visitor.expressions;
 
         String mo;
 
         // For intrinsics
-        Expression i1;
-        Expression i2;
+        Expression left;
+        Expression right;
         Expression cond;
 
         switch (name) {
             case "__llvm_atomic32_load":
             case "__llvm_atomic64_load":
-                mo = C11.intToMo(((IConst) p1).getValueAsInt());
+                mo = C11.intToMo(i1);
                 visitor.append(Llvm.newLoad(reg, (Expression) p0, mo));
                 return;
             case "__llvm_atomic32_store":
             case "__llvm_atomic64_store":
-                mo = C11.intToMo(((IConst) p2).getValueAsInt());
+                mo = C11.intToMo(i2);
                 visitor.append(Llvm.newStore((Expression) p0, (Expression) p1, mo));
                 return;
             case "__llvm_atomic_fence":
-                mo = C11.intToMo(((IConst) p0).getValueAsInt());
+                mo = C11.intToMo(i0);
                 visitor.append(Llvm.newFence(mo));
                 return;
             case "__llvm_atomic32_cmpxchg":
@@ -91,14 +95,14 @@ public class LlvmProcedures {
                 Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", type);
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
-                mo = C11.intToMo(((IConst) p3).getValueAsInt());
+                mo = C11.intToMo(i3);
                 visitor.append(Llvm.newCompareExchange(oldValueRegister, cmpRegister, (Expression) p0, (Expression) p1, (Expression) p2, mo, true));
                 return;
             case "__llvm_atomic32_rmw":
             case "__llvm_atomic64_rmw":
-                mo = C11.intToMo(((IConst) p2).getValueAsInt());
+                mo = C11.intToMo(i2);
                 IOpBin op;
-                switch (((IConst) p3).getValueAsInt()) {
+                switch (i3) {
                     case 0:
                         visitor.append(Llvm.newExchange(reg, (Expression) p0, (Expression) p1, mo));
                         return;
@@ -126,25 +130,24 @@ public class LlvmProcedures {
             case "llvm.smax.i64":
             case "llvm.umax.i32":
             case "llvm.umax.i64":
-                i1 = (Expression) p0;
-                i2 = (Expression) p1;
-                cond = name.contains("smax") ? factory.makeBinary(i1, COpBin.GTE, i2) : factory.makeBinary(i1, COpBin.UGTE, i2);
-                visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, i1, i2)));
+                left = (Expression) p0;
+                right = (Expression) p1;
+                cond = factory.makeBinary(left, name.contains("smax") ? COpBin.GTE : COpBin.UGTE, right);
+                visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, left, right)));
                 return;
             case "llvm.smin.i32":
             case "llvm.smin.i64":
             case "llvm.umin.i32":
             case "llvm.umin.i64":
-                i1 = (Expression) p0;
-                i2 = (Expression) p1;
-                cond = name.contains("smin") ? factory.makeBinary(i1, COpBin.LTE, i2) : factory.makeBinary(i1, COpBin.ULTE, i2);
-                visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, i1, i2)));
+                left = (Expression) p0;
+                right = (Expression) p1;
+                cond = factory.makeBinary(left, name.contains("smin") ? COpBin.LTE : COpBin.ULTE, right);
+                visitor.append(EventFactory.newLocal(reg, factory.makeConditional(cond, left, right)));
                 return;
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
-                i1 = (Expression) p0;
-                i2 = (Expression) p1;
-                visitor.append(EventFactory.newLocal(reg, factory.makeUnary(IOpUn.CTLZ, i1)));
+                left = (Expression) p0;
+                visitor.append(EventFactory.newLocal(reg, factory.makeUnary(IOpUn.CTLZ, left)));
                 return;
             default:
                 throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -97,7 +96,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                     // Loads may generate replacements for register expressions.
                     // We treat all other register writers as non-constant.
                     Expression expr = cur instanceof Local ? ((Local) cur).getExpr() : null;
-                    boolean doPropagate = expr instanceof IConst || propagateCopyAssignments && expr instanceof Register;
+                    boolean doPropagate = expr != null && expr.getRegs().isEmpty() ||
+                            propagateCopyAssignments && expr instanceof Register;
                     propagationMap.compute(register, (k, v) -> doPropagate ? expr : null);
                     if (propagateCopyAssignments) {
                         propagationMap.values().remove(register);

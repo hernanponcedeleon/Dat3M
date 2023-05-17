@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.expression.BinaryIntegerExpression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -10,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -223,9 +223,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         if (base instanceof MemoryObject) {
             Expression rhs = ((BinaryIntegerExpression) exp).getRHS();
-            //FIXME Address extends IConst
-            if (rhs instanceof IConst) {
-                addTarget(reg, new Location((MemoryObject) base, ((IConst) rhs).getValueAsInt()));
+            if (rhs instanceof Literal) {
+                addTarget(reg, new Location((MemoryObject) base, ((Literal) rhs).getValueAsInt()));
             } else {
                 addTargetArray(reg, (MemoryObject) base);
             }
@@ -237,9 +236,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
             Expression rhs = ((BinaryIntegerExpression) exp).getRHS();
-            //FIXME Address extends IConst
-            if (rhs instanceof IConst) {
-                int o = target.offset + ((IConst) rhs).getValueAsInt();
+            if (rhs instanceof Literal) {
+                int o = target.offset + ((Literal) rhs).getValueAsInt();
                 if (o < target.base.size()) {
                     addTarget(reg, new Location(target.base, o));
                 }
@@ -280,16 +278,21 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          * Tries to match an expression as a constant address.
          */
         Constant(Expression x) {
-            if (x instanceof IConst) {
-                location = x instanceof MemoryObject ? new Location((MemoryObject) x, 0) : null;
+            if (x instanceof MemoryObject) {
+                location = new Location((MemoryObject) x, 0);
+                failed = false;
+                return;
+            }
+            if (x instanceof Literal) {
+                location = null;
                 failed = false;
                 return;
             }
             if (x instanceof BinaryIntegerExpression && ((BinaryIntegerExpression) x).getOp() == PLUS) {
                 Expression lhs = ((BinaryIntegerExpression) x).getLHS();
                 Expression rhs = ((BinaryIntegerExpression) x).getRHS();
-                if (lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
-                    location = new Location((MemoryObject) lhs, ((IConst) rhs).getValueAsInt());
+                if (lhs instanceof MemoryObject && rhs instanceof Literal) {
+                    location = new Location((MemoryObject) lhs, ((Literal) rhs).getValueAsInt());
                     failed = false;
                     return;
                 }

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
@@ -429,10 +428,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             if (initMode) {
                 MemoryObject object = program.getMemory().getOrNewObject(name);
-                if (!(value instanceof IConst)) {
+                try {
+                    object.setInitialValue(0, value);
+                } catch (IllegalArgumentException x) {
                     throw new ParsingException("Expected constant value in " + ctx.getText() + ".");
                 }
-                object.setInitialValue(0, (IConst) value);
                 continue;
             }
             Optional<Register> register = thread.getRegister(currentScope.getID() + ":" + name);
@@ -695,14 +695,15 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     text = split[split.length - 1];
                     text = text.substring(text.indexOf("(") + 1, text.indexOf(","));
                 }
-                if (!(value instanceof IConst)) {
-                    throw new ParsingException("Expected constant value in " + ctx.getText() + ".");
-                }
                 Optional<MemoryObject> object = program.getMemory().getObject(text);
                 if (object.isEmpty()) {
                     throw new ParsingException("Undefined symbol " + text + ".");
                 }
-                object.get().appendInitialValue(rhs, (IConst) value);
+                try {
+                    object.get().appendInitialValue(rhs, value);
+                } catch (IllegalArgumentException x) {
+                    throw new ParsingException("Expected constant value in " + ctx.getText() + ".");
+                }
                 return null;
             }
             append(EventFactory.newStore(address, value, ""));

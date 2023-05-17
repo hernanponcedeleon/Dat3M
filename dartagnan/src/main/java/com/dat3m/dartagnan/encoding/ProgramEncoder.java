@@ -123,13 +123,13 @@ public class ProgramEncoder implements Encoder {
         	final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             addrExprs = memory.getObjects().stream()
                     .map(addr -> bvmgr.equal((BitvectorFormula) context.encodeFinalIntegerExpression(addr),
-                    		bvmgr.makeBitvector(getArchPrecision(), addr.getValue().intValue())))
+                    		bvmgr.makeBitvector(getArchPrecision(), addr.getValue())))
                     .toArray(BooleanFormula[]::new);        	
         } else {
             final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
             addrExprs = memory.getObjects().stream()
                     .map(addr -> imgr.equal((IntegerFormula) context.encodeFinalIntegerExpression(addr),
-                    		imgr.makeNumber(addr.getValue().intValue())))
+                    		imgr.makeNumber(addr.getValue())))
                     .toArray(BooleanFormula[]::new);        	
         }
         return fmgr.getBooleanFormulaManager().and(addrExprs);

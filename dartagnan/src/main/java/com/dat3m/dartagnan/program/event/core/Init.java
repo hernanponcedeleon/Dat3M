@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
@@ -46,7 +45,7 @@ public class Init extends MemEvent {
 	 * @return
 	 * Content of the location at the start of each execution.
 	 */
-	public IConst getValue(){
+	public Expression getValue(){
 		return base.getInitialValue(offset);
 	}
 
@@ -56,7 +55,7 @@ public class Init extends MemEvent {
 	}
 
 	@Override
-	public IConst getMemValue(){
+	public Expression getMemValue(){
 		return getValue();
 	}
 

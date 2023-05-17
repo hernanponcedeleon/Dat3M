@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser.*;
@@ -100,18 +99,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitGlobalDeclaratorLocationLocation(GlobalDeclaratorLocationLocationContext ctx) {
         MemoryObject object = program.getMemory().getOrNewObject(ctx.varName(0).getText());
         String rightName = ctx.varName(1).getText();
-        IConst value;
-        if (ctx.Ast() == null) {
-            value = program.getMemory().getOrNewObject(rightName);
-        } else {
-            Optional<MemoryObject> v = program.getMemory().getObject(rightName);
-            // Is this really how it should work?
-            if (v.isPresent()) {
-                value = v.get();
-            } else {
-                value = program.getMemory().getOrNewObject(rightName).getInitialValue(0);
-            }
-        }
+        Expression value = getDeclaratorExpression(rightName, ctx.Ast() == null);
         object.setInitialValue(0, value);
         return null;
     }
@@ -121,19 +109,21 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Thread thread = program.newThread(Integer.toString(ctx.threadId().id));
         Register register = thread.getOrNewRegister(ctx.varName(0).getText(), type);
         String rightName = ctx.varName(1).getText();
-        IConst value;
-        if (ctx.Ast() == null) {
-            value = program.getMemory().getOrNewObject(rightName);
-        } else {
-            Optional<MemoryObject> v = program.getMemory().getObject(rightName);
-            if (v.isPresent()) {
-                value = v.get();
-            } else {
-                value = program.getMemory().getOrNewObject(rightName).getInitialValue(0);
-            }
-        }
+        Expression value = getDeclaratorExpression(rightName, ctx.Ast() == null);
         thread.append(EventFactory.newLocal(register, value));
         return null;
+    }
+
+    private Expression getDeclaratorExpression(String rightName, boolean isAddress) {
+        if (isAddress) {
+            return program.getMemory().getOrNewObject(rightName);
+        }
+        Optional<MemoryObject> v = program.getMemory().getObject(rightName);
+        // Is this really how it should work?
+        if (v.isPresent()) {
+            return v.get();
+        }
+        return program.getMemory().getOrNewObject(rightName).getInitialValue(0);
     }
 
     @Override
@@ -147,7 +137,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         }
         if (ctx.initArray() != null) {
             if (size == null || ctx.initArray().arrayElement().size() == size) {
-                List<IConst> values = new ArrayList<>();
+                List<Expression> values = new ArrayList<>();
                 for (ArrayElementContext elCtx : ctx.initArray().arrayElement()) {
                     if (elCtx.constant() != null) {
                         values.add(expressions.parseValue(elCtx.constant().getText(), type));

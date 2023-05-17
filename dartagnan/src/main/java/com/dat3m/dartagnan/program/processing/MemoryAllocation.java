@@ -18,8 +18,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.math.BigInteger;
 import java.util.stream.IntStream;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 /*
     This pass collects all Malloc events in the program and for each of them it:
         (1) allocates a MemoryObject of appropriate size

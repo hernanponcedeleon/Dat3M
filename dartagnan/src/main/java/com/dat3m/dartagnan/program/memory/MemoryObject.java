@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.program.expression.AbstractExpression;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
@@ -15,8 +16,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-//TODO initial values are untyped
-public class MemoryObject extends IConst {
+public class MemoryObject extends AbstractExpression {
 
     private final int index;
     private int size;
@@ -30,7 +30,7 @@ public class MemoryObject extends IConst {
 
     private final boolean isStatic;
 
-    private final HashMap<Integer, IConst> initialValues = new HashMap<>();
+    private final HashMap<Integer, Expression> initialValues = new HashMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated) {
         super(TypeFactory.getInstance().getPointerType());
@@ -70,7 +70,7 @@ public class MemoryObject extends IConst {
      * @param offset Non-negative number of fields before the target.
      * @return Readable value at the start of each execution.
      */
-    public IConst getInitialValue(int offset) {
+    public Expression getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
         return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()));
     }
@@ -81,8 +81,9 @@ public class MemoryObject extends IConst {
      * @param offset Non-negative number of fields before the target.
      * @param value  New value to be read at the start of each execution.
      */
-    public void setInitialValue(int offset, IConst value) {
-        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+    public void setInitialValue(int offset, Expression value) {
+        checkArgument(offset >= 0 && offset < size, "Array index %s out of bounds [0, %s) for %s.", offset, size, this);
+        checkArgument(value.getRegs().isEmpty(), "Non-constant initial value %s for %s.", value, this);
         initialValues.put(offset, value);
     }
 
@@ -93,8 +94,9 @@ public class MemoryObject extends IConst {
      * @param offset Non-negative number of fields before the target.
      * @param value  New value to be read at the start of each execution.
      */
-    public void appendInitialValue(int offset, IConst value) {
-        checkArgument(offset >= 0, "array index out of bounds");
+    public void appendInitialValue(int offset, Expression value) {
+        checkArgument(offset >= 0, "Array index %s out of bounds [0, inf) for %s.", offset, this);
+        checkArgument(value.getRegs().isEmpty(), "Non-constant initial value %s for %s.", value, this);
         //The current implementation of Smack does not provide proper size information on static arrays.
         //Instead, it indicates the size in the Boogie file by initializing each of the fields in a special procedure.
         if (size <= offset) {
@@ -110,7 +112,6 @@ public class MemoryObject extends IConst {
         this.atomic = true;
     }
 
-    @Override
     public BigInteger getValue() {
         return address != null ? address : BigInteger.valueOf(index);
     }
