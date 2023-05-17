@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.metadata.ParseId;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.MemoryAllocation;
@@ -427,7 +427,6 @@ public class AnalysisTest {
     }
 
     private Event findMatchingEventAfterProcessing(Program p, Event orig) {
-        return p.getEvents().stream().filter(e -> e.hasEqualMetadata(orig, ParseId.class)).findFirst().get();
-        //return p.getEvents().stream().filter(e -> e.getOId() == orig.getOId()).findFirst().get();
+        return p.getEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
     }
 }

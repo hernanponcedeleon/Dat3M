@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.metadata.ParseId;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
@@ -444,12 +444,12 @@ public class RefinementSolver extends ModelChecker {
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
                 // TODO: Can we have events with source information but without parse id?
-                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(ParseId.class))
+                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
                 .collect(Collectors.toSet());
         
         // Track (covered) events and branches via oId
-        final Set<ParseId> branches = new HashSet<>();
-        final Set<ParseId> coveredBranches = new HashSet<>();
+        final Set<OriginalId> branches = new HashSet<>();
+        final Set<OriginalId> coveredBranches = new HashSet<>();
 
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
@@ -459,7 +459,7 @@ public class RefinementSolver extends ModelChecker {
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
             Event symmRep = symm.map(e, clazz.getRepresentative());
-            ParseId branchRepId = cf.getRepresentative(symmRep).getMetadata(ParseId.class);
+            OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
             assert branchRepId != null;
 
             if(coveredEvents.contains(e)) {
