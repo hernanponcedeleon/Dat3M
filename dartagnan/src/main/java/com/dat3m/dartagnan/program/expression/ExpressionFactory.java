@@ -225,6 +225,12 @@ public final class ExpressionFactory {
                 if (right instanceof Literal && ((Literal) right).getValue().equals(BigInteger.ONE)) {
                     return left;
                 }
+                break;
+            case XOR:
+                if (right instanceof Literal && ((Literal) right).getValue().equals(BigInteger.ZERO)) {
+                    return left;
+                }
+                //TODO replace with complement if applicable
         }
         return new BinaryIntegerExpression(left.getType(), left, operator, right);
     }

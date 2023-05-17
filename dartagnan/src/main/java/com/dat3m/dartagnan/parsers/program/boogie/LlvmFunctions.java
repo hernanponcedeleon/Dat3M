@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.expression.Expression;
@@ -56,16 +54,6 @@ public class LlvmFunctions {
 		} else if(name.startsWith("$ashr.")) {
 			op = AR_SHIFT;
 		} else if(name.startsWith("$xor.")) {
-			//TODO: This is a temporary fix to parse xor.x1 as boolean negation.
-			// Once we have proper preprocessing code, we should remove this here!
-			if (name.startsWith("$xor.i1") && callParams.get(1) instanceof IConst) {
-				IConst c = (IConst) callParams.get(1);
-				if (c.getValueAsInt() == 0) {
-					return callParams.get(0);
-				} else if (c.getValueAsInt() == 1) {
-					return factory.makeUnary(BOpUn.NOT, (Expression) callParams.get(0));
-				}
-			}
 			op = XOR;
 		} else if(name.startsWith("$or.")) {
 			op = OR;
