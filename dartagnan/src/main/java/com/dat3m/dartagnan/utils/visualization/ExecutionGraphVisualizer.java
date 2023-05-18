@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -86,7 +87,7 @@ public class ExecutionGraphVisualizer {
     }
 
     private boolean ignore(EventData e) {
-        return !e.getEvent().hasCLine() && !e.isInit();
+        return !e.getEvent().hasMetadata(SourceLocation.class) && !e.isInit();
     }
 
 
@@ -192,7 +193,7 @@ public class ExecutionGraphVisualizer {
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
             return String.format("\"I(%s, %d)\"", addresses.get(e.getAccessedAddress()), e.getValue());
-        } else if (!e.getEvent().hasCLine()) {
+        } else if (!e.getEvent().hasMetadata(SourceLocation.class)) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
             if (e.getLocalId() <= threadSize / 2) {

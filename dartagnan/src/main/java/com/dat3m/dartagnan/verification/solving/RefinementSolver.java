@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
@@ -441,12 +443,13 @@ public class RefinementSolver extends ModelChecker {
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
         final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
-                .filter(e -> e.hasCLine() && e.hasOId()).collect(Collectors.toSet());
+                // TODO: Can we have events with source information but without parse id?
+                .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
+                .collect(Collectors.toSet());
         
         // Track (covered) events and branches via oId
-        final Set<Integer> branches = new HashSet<>();
-        final Set<Integer> coveredOIds = new HashSet<>();
-        final Set<Integer> coveredBranches = new HashSet<>();
+        final Set<OriginalId> branches = new HashSet<>();
+        final Set<OriginalId> coveredBranches = new HashSet<>();
 
         // Events not executed in any violating execution
         final Set<String> messageSet = new TreeSet<>(); // TreeSet to keep strings in order
@@ -456,9 +459,11 @@ public class RefinementSolver extends ModelChecker {
         for (Event e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
             Event symmRep = symm.map(e, clazz.getRepresentative());
+            OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
+            assert branchRepId != null;
+
             if(coveredEvents.contains(e)) {
-                coveredOIds.add(symmRep.getOId());
-                coveredBranches.add(cf.getRepresentative(symmRep).getOId());
+                coveredBranches.add(branchRepId);
             } else {
                 final String threads = clazz.stream().map(t -> "T" + t.getId())
                         .collect(Collectors.joining(" / "));
@@ -468,7 +473,7 @@ public class RefinementSolver extends ModelChecker {
                         callStack.isEmpty() ? callStack : callStack + " -> ",
                         getSourceLocationString(symmRep)));
             }
-            branches.add(cf.getRepresentative(symmRep).getOId());
+            branches.add(branchRepId);
         }
 
         // When using the % symbol, the value multiplied by 100 before applying the format string. 

@@ -41,7 +41,7 @@ public class EndAtomic extends Event {
     }
     
     public List<Event> getBlock(){
-    	Preconditions.checkState(cId >= 0, "The program needs to get compiled first");
+    	Preconditions.checkState(getThread().getProgram().isCompiled(), "The program needs to get compiled first");
     	return enclosedEvents;
     }
 

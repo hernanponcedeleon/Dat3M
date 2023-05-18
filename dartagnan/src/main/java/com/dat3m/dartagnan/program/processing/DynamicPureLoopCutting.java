@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
@@ -96,11 +97,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
     private AnalysisStats collectStats(List<IterationData> iterDataList) {
         int numPotentialSpinLoops = 0;
         int numStaticSpinLoops = 0;
-        Set<Integer> alreadyDetectedLoops = new HashSet<>(); // To avoid counting the same loop multiple times
+        Set<UnrollingId> alreadyDetectedLoops = new HashSet<>(); // To avoid counting the same loop multiple times
         for (IterationData data : iterDataList) {
             if (!data.isAlwaysSideEffectFull) {
                 // Potential spinning iteration
-                final int uIdOfLoop = data.iterationInfo.getIterationStart().getUId();
+                final UnrollingId uIdOfLoop = data.iterationInfo.getIterationStart().getMetadata(UnrollingId.class);
+                assert uIdOfLoop != null;
                 if (alreadyDetectedLoops.add(uIdOfLoop)) {
                     // A loop we did not count before
                     numPotentialSpinLoops++;
@@ -146,7 +148,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final CondJump assumeSideEffect = EventFactory.newJump(noSideEffect, (Label) thread.getExit());
         assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
-        assumeSideEffect.copyMetadataFrom(spinloopStart);
+        assumeSideEffect.copyAllMetadataFrom(spinloopStart);
         insertionPoint.insertAfter(assumeSideEffect);
     }
 
