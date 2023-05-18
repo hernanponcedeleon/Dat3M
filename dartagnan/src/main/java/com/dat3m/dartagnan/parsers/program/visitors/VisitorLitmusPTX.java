@@ -310,7 +310,6 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
         Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        fence.addFilters(Tag.PTX.GEN);
         fence.addFilters(Tag.PTX.ALIAS);
         return programBuilder.addChild(mainThread, fence);
     }

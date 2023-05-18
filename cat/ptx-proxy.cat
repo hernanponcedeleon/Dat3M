@@ -1,6 +1,10 @@
 PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 7.5 *)
 
+// Base relation:
+// sr: same-scope
+// scta: same-cta
+
 (*******************)
 (*   Auxiliaries   *)
 (*******************)
@@ -22,41 +26,39 @@ let morally-strong = sr-fence | po-fence | sr-m | po-m
 (*******************)
 let fence-sc = [F & SC] ; sr; [F & SC]
 let observation = (morally-strong & rf) | rmw
+// this is equivalent to let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+// The definition of alloy: let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+// The definition of alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
 let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
 let cause-base = (po*; ((sync | fence-sc); po*)+) | po
 (*******************)
 (* Proxy-aware causality ordering *)
-let proxy-fence-ops = [F \ ALIAS]; (same-proxy & scta); [M]
-let proxy-ops-fence = [M]; (same-proxy & scta); [F \ ALIAS]
-let proxy-fence-ops-cause = cause-base & proxy-fence-ops
-let proxy-ops-fence-cause = cause-base & proxy-ops-fence
-(*******************)
-let alias-fence = cause-base; [F & ALIAS]; cause-base
-let constant-fence = cause-base; [F & CON]; cause-base
-(*******************)
-let cause-proxy = ([M & GEN]; (loc & cause-base); [M & GEN])
+let proxy-fence-ops = [F]; (same-proxy & scta); [M]
+let proxy-preserved-cause-base
+                = ([GEN]; (loc & cause-base); [GEN])
                 | ([M]; (same-proxy & scta & loc & cause-base); [M])
-                | loc & (proxy-ops-fence-cause; cause-base; [GEN])
-                | loc & ([GEN]; cause-base; proxy-fence-ops-cause)
-                | loc & (proxy-ops-fence-cause; cause-base; proxy-fence-ops-cause)
-                | alias & ([M & CON]; constant-fence; [M & CON])
-                | alias & ([M & GEN]; alias-fence; [M & GEN])
-                | alias & (proxy-ops-fence-cause; alias-fence; [M & GEN])
-                | alias & ([M & GEN]; alias-fence; proxy-fence-ops-cause)
-                | alias & (proxy-ops-fence-cause; alias-fence; proxy-fence-ops-cause)
-let cause = observation?; cause-proxy
+                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [GEN])
+                | loc & ([GEN]; cause-base; cause-base & proxy-fence-ops)
+                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; cause-base & proxy-fence-ops)
+                | alias & ([M & CON]; cause-base; [F & CON]; cause-base; [M & CON]) // The alloy model does not support this
+                | alias & ([GEN]; cause-base; [F & ALIAS]; cause-base; [GEN])
+                | alias & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
+                | alias & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
+                | alias & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
+let cause = observation?; proxy-preserved-cause-base
 
 (******************************)
 (*  PTX Memory Model Axioms   *)
 (******************************)
 (* Axiom 1 Coherence *)
-let cause-write = [W]; (cause & loc); [W]
+let cause-write = ([W]; cause ; [W]) & loc
 empty (cause-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
-irreflexive (fence-sc ; cause) as axiom-FenceSC
+empty ([F & SC] ; cause; [F & SC] \ fence-sc) as axiom-FenceSC
+//this is equivalent to irreflexive (fence-sc ; cause) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
@@ -67,15 +69,16 @@ acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
 acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
+// The alloy tool doesn't have this axiom
 
 (* Axiom 6 Causality *)
 irreflexive ((rf | fr); cause) as axiom-Causality
 
-// Definition of paper: A Formal Analysis of the NVIDIA PTX Memory Consistency Model (NVIDIA 2019)
-// let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
-// let acquire-pattern = ([R]; po-loc?; [R & ACQ]) | ([R]; po; [F & ACQ_REL])
-
-// Definition of Alloy: https://github.com/NVlabs/mixedproxy
-// let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
-// let acquire-pattern = ([R]; po-loc?; [R & ACQ])
-// irreflexive ((rf | co | fr)?; cause) as axiom-Causality
+// Comparing to the model written in Alloy(https://github.com/NVlabs/mixedproxy)
+// 1. The proxy alloy model uses rf | fr | co in the axiom-Causality (irreflexive ((rf | co | fr)?; cause)),
+//    while both the original (proxy-less) alloy model and the documentation use rf | fr. We follow the documentation.
+// 2. acquire-pattern: There is a comment in the alloy saying A Read followed by an AcquireFence (or greater).
+//    But the model misses this. In contrast, the original (proxy-less) does include it in the acquire-pattern.
+//    However, both two alloy models does not align precisely with the documentation. The documentation specifies that
+//    the first Read in the pattern should be a strong Read, which is not explicitly enforced in both alloy models.
+//    We follow the documentation here.
