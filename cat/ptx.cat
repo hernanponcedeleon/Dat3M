@@ -23,17 +23,22 @@ let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 let fence-sc = [F & SC] ; sr; [F & SC]
 
-// this is equivalent to let rec observation = (morally-strong & rf) | (observation; rmw; observation)
+// The ASPLOS'19 paper uses the definition below
+// let rec observation = (morally-strong & rf) | (observation; rmw; observation)
+// but the ISCA'22 paper claims the one below is equivalent, thus we avoid the recursion
 let observation = (morally-strong & rf) | rmw
 
 // The definition of alloy: let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+// However the documentation states that the second store shall be strong one
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 
 // The definition of alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
+// However the documentation states that the first read shall be strong one
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
-let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
-let cause-base = (po*; ((sync | fence-sc); po*)+)
+// TODO: what about sync_barrier?
+let sw = (morally-strong & (release-pattern; observation; acquire-pattern)) | fence-sc 
+let cause-base = (po?; sw; po?)+
 let cause = cause-base | (observation; (cause-base | po-loc))
 
 (******************************)
