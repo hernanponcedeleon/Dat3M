@@ -12,12 +12,12 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
@@ -80,7 +80,7 @@ public class AnalysisTest {
         thread.append(e5);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -140,7 +140,7 @@ public class AnalysisTest {
         thread.append(e3);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -185,7 +185,7 @@ public class AnalysisTest {
         thread.append(e3);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -241,7 +241,7 @@ public class AnalysisTest {
         thread.append(l0);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -286,7 +286,7 @@ public class AnalysisTest {
         thread.append(e3);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         Compilation.newInstance().run(program);
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
@@ -334,7 +334,7 @@ public class AnalysisTest {
         thread.append(e3);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
@@ -379,7 +379,7 @@ public class AnalysisTest {
         thread.append(e3);
 
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         AliasAnalysis a = analyze(program, method);
         MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
         MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);

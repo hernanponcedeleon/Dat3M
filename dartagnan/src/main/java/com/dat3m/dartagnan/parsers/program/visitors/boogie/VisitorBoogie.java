@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
@@ -154,7 +155,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
         thread.append(labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel));
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         logger.info("Number of threads (including main): " + threadCount);
 
         return program;

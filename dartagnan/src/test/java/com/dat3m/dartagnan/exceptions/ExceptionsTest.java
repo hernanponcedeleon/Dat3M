@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.processing.BranchReordering;
@@ -38,7 +39,7 @@ public class ExceptionsTest {
         Program program = new Program(SourceLanguage.LITMUS);
         program.newThread("0");
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         LoopUnrolling.newInstance().run(program);
         // Reordering cannot be called after unrolling
         BranchReordering.newInstance().run(program);
@@ -49,7 +50,7 @@ public class ExceptionsTest {
         Program program = new Program(SourceLanguage.LITMUS);
         program.newThread("0");
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         Configuration config = Configuration.defaultConfiguration();
         // The program must be unrolled before being analyzed
         BranchEquivalence.fromConfig(program, config);

@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser.*;
-import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
-import com.dat3m.dartagnan.parsers.LitmusCParser.PointerTypeSpecifierContext;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -14,6 +12,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.Literal;
@@ -63,7 +62,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             thread.append(labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel));
         }
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         return program;
     }
 

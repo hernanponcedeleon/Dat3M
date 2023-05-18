@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser.*;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
@@ -10,7 +9,9 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -56,7 +57,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
             thread.append(EventFactory.newLabel(thread.getEndLabelName()));
         }
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         return program;
     }
 

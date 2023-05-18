@@ -2,10 +2,8 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.parsers.LLVMIRLexer;
 import com.dat3m.dartagnan.parsers.LLVMIRParser;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLlvm;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -20,13 +18,9 @@ class ParserLlvm implements ParserInterface {
 
         LLVMIRParser parser = new LLVMIRParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         ParserRuleContext parserEntryPoint = parser.compilationUnit();
-        VisitorLlvm visitor = new VisitorLlvm(pb);
+        VisitorLlvm visitor = new VisitorLlvm();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        // LLVM programs can be compiled to different targets,
-        // thus we don't set the architectures.
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }
