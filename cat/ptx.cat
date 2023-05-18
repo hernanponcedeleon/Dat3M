@@ -1,9 +1,19 @@
 PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 6.0 *)
 
+// Comparing to the model written in Alloy(https://github.com/NVlabs/mixedproxy)
+// 1. The proxy alloy model uses rf | fr | co in the axiom-Causality (irreflexive ((rf | co | fr)?; cause)),
+//    while both the original (proxy-less) alloy model and the documentation use rf | fr. We follow the documentation.
+// 2. acquire-pattern: There is a comment in the alloy saying A Read followed by an AcquireFence (or greater).
+//    But the model misses this. In contrast, the original (proxy-less) does include it in the acquire-pattern.
+//    However, both two alloy models does not align precisely with the documentation. The documentation specifies that
+//    the first Read in the pattern should be a strong Read, which is not explicitly enforced in both alloy models.
+//    We follow the documentation here.
+
 (*******************)
 (*   Auxiliaries   *)
 (*******************)
+
 (* Events *)
 let strong-write = W & (RLX | REL | IW)
 let strong-read = R & (RLX | ACQ)
@@ -16,14 +26,17 @@ let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
 let sr-m = ([strong-m]; (sr & loc); [strong-m])
 let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
-
 let fence-sc = [F & SC] ; sr; [F & SC]
-let observation = (morally-strong & rf) | rmw
+
 // this is equivalent to let rec observation = (morally-strong & rf) | (observation; rmw; observation)
-let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+let observation = (morally-strong & rf) | rmw
+
 // The definition of alloy: let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
-let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+
 // The definition of alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
+let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+
 let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
 let cause-base = (po*; ((sync | fence-sc); po*)+)
 let cause = cause-base | (observation; (cause-base | po-loc))
@@ -37,8 +50,8 @@ let cause-write = ([W]; cause ; [W]) & loc
 empty (cause-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
-empty ([F & SC] ; cause; [F & SC] \ fence-sc) as axiom-FenceSC
 //this is equivalent to irreflexive (fence-sc ; cause) as axiom-FenceSC
+empty ([F & SC] ; cause; [F & SC] \ fence-sc) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
@@ -48,17 +61,8 @@ let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 // The alloy tool doesn't have this axiom
+acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
 irreflexive ((rf | fr); cause) as axiom-Causality
-
-// Comparing to the model written in Alloy(https://github.com/NVlabs/mixedproxy)
-// 1. The proxy alloy model uses rf | fr | co in the axiom-Causality (irreflexive ((rf | co | fr)?; cause)),
-//    while both the original (proxy-less) alloy model and the documentation use rf | fr. We follow the documentation.
-// 2. acquire-pattern: There is a comment in the alloy saying A Read followed by an AcquireFence (or greater).
-//    But the model misses this. In contrast, the original (proxy-less) does include it in the acquire-pattern.
-//    However, both two alloy models does not align precisely with the documentation. The documentation specifies that
-//    the first Read in the pattern should be a strong Read, which is not explicitly enforced in both alloy models.
-//    We follow the documentation here.
