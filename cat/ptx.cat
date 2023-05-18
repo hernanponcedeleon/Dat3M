@@ -1,14 +1,9 @@
 PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 6.0 *)
 
-// Comparing to the model written in Alloy(https://github.com/NVlabs/mixedproxy)
-// 1. The proxy alloy model uses rf | fr | co in the axiom-Causality (irreflexive ((rf | co | fr)?; cause)),
-//    while both the original (proxy-less) alloy model and the documentation use rf | fr. We follow the documentation.
-// 2. acquire-pattern: There is a comment in the alloy saying A Read followed by an AcquireFence (or greater).
-//    But the model misses this. In contrast, the original (proxy-less) does include it in the acquire-pattern.
-//    However, both two alloy models does not align precisely with the documentation. The documentation specifies that
-//    the first Read in the pattern should be a strong Read, which is not explicitly enforced in both alloy models.
-//    We follow the documentation here.
+// Comparing to the model written in Alloy (https://github.com/NVlabs/ptxmemorymodel)
+// The alloy model does not align precisely with the documentation. The documentation specifies that
+// the first read in the pattern should be a strong one. We follow the documentation here.
 
 (*******************)
 (*   Auxiliaries   *)
