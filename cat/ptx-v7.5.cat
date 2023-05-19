@@ -5,13 +5,13 @@ PTX
 // sr: same-scope
 // scta: same-cta
 
-// Comparing to the model written in Alloy (https://github.com/NVlabs/mixedproxy)
-// 1. The proxy alloy model uses this Causality-axiom "irreflexive ((rf | co | fr)?; cause)".
-//    The original (proxy-less) alloy model uses "irreflexive ((rf | fr)?; cause)".
+// Comparing to the ptx-v7.5 model written in Alloy (https://github.com/NVlabs/mixedproxy)
+// 1. The ptx-v7.5 alloy model uses this Causality-axiom "irreflexive ((rf | co | fr)?; cause)".
+//    The ptx-v6.0 alloy model uses "irreflexive ((rf | fr)?; cause)".
 //    The ASPLOS'19 paper and the documentation refer to "rf | fr" (non-optional). 
 //    We follow the later.
-// 2. Acquire-pattern: There is a comment in the alloy model saying "A Read followed by an AcquireFence (or greater)".
-//    The model misses this. In contrast, the original (proxy-less) model does include it in the acquire-pattern.
+// 2. Acquire-pattern: There is a comment in the ptx-v7.5 alloy model saying "A Read followed by an AcquireFence (or
+//    greater)". The model misses this. In contrast, the ptx-v6.0 model does include it in the acquire-pattern.
 // 3. Acquire-pattern & Release-pattern: both alloy models do not align precisely with the documentation which specifies
 //    that in the Acquire-pattern "the first read in the pattern should be a strong one"; in the Release-pattern "the
 //    writing following the release operation or the memory fence should be a strong one". We follow the documentation
@@ -42,11 +42,11 @@ let fence-sc = [F & SC] ; sr; [F & SC]
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
 let observation = (morally-strong & rf) | rmw
 
-// The definition of alloy: let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
+// The definition of ptx-v7.5 alloy: let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
 // However the documentation states that the second store shall be strong one
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 
-// The definition of alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
+// The definition of ptx-v7.5 alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
 // However the documentation states that the first read shall be strong one
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
@@ -87,12 +87,11 @@ empty ([F & SC] ; cause; [F & SC] \ fence-sc) as axiom-FenceSC
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
 
 (* Axiom 4 No-Thin-Air *)
-// The alloy model does not support the dep used below
 let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-// The alloy model doesn't have this axiom
+// The ptx-v7.5 alloy model doesn't have this axiom
 acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
