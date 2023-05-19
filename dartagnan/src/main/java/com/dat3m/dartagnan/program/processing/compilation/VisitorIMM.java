@@ -4,12 +4,15 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +48,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
-        store.addFilters(C11.PTHREAD);
+        store.addTags(C11.PTHREAD);
         
         return eventSequence(
                 store
@@ -63,7 +66,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
         
         return eventSequence(
         		load,
@@ -75,7 +78,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
-        load.addFilters(Tag.STARTLOAD);
+        load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
         		load,
@@ -101,7 +104,7 @@ class VisitorIMM extends VisitorBase {
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
-        loadExpected.addFilters(Tag.IMM.CASDEPORIGIN);
+        loadExpected.addTags(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");

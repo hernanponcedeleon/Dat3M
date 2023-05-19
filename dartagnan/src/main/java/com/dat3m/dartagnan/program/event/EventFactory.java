@@ -83,7 +83,7 @@ public class EventFactory {
 
     public static Fence newFenceOpt(String name, String opt) {
         Fence fence = new Fence(name + "." + opt);
-        fence.addFilters(name);
+        fence.addTags(name);
         return fence;
     }
 
@@ -142,7 +142,7 @@ public class EventFactory {
 
     public static CondJump newFakeCtrlDep(Register reg, Label target) {
         CondJump jump = newJump(new Atom(reg, COpBin.EQ, reg), target);
-        jump.addFilters(Tag.NOOPT);
+        jump.addTags(Tag.NOOPT);
         return jump;
     }
 
@@ -154,7 +154,7 @@ public class EventFactory {
 
     public static Load newRMWLoad(Register reg, IExpr address, String mo) {
         Load load = newLoad(reg, address, mo);
-        load.addFilters(Tag.RMW);
+        load.addTags(Tag.RMW);
         return load;
     }
 
@@ -164,7 +164,7 @@ public class EventFactory {
 
     public static Load newRMWLoadExclusive(Register reg, IExpr address, String mo) {
         Load load = new Load(reg, address, mo);
-        load.addFilters(Tag.RMW, Tag.EXCL);
+        load.addTags(Tag.RMW, Tag.EXCL);
         return load;
     }
 
@@ -517,7 +517,7 @@ public class EventFactory {
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
-            store.addFilters(Tag.RISCV.STCOND);
+            store.addTags(Tag.RISCV.STCOND);
             return store;
         }
 

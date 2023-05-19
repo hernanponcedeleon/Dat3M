@@ -470,7 +470,7 @@ public class WmmEncoder implements Encoder {
             for (Tuple tuple : encodeSets.get(rmw)) {
                 MemEvent load = (MemEvent) tuple.getFirst();
                 MemEvent store = (MemEvent) tuple.getSecond();
-                if (!load.is(Tag.EXCL) || !(store instanceof RMWStoreExclusive)) {
+                if (!load.hasTag(Tag.EXCL) || !(store instanceof RMWStoreExclusive)) {
                     // Non-LL/SC type RMWs always hold
                     enc.add(bmgr.equivalence(edge.encode(tuple), context.execution(load, store)));
                 } else {
@@ -543,7 +543,7 @@ public class WmmEncoder implements Encoder {
         public Void visitCoherence(Relation co) {
             boolean idl = !context.useSATEncoding;
             List<MemEvent> allWrites = program.getEvents(MemEvent.class).stream()
-                    .filter(e -> e.is(WRITE))
+                    .filter(e -> e.hasTag(WRITE))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .collect(toList());
             EncodingContext.EdgeEncoder edge = context.edge(co);
@@ -555,7 +555,7 @@ public class WmmEncoder implements Encoder {
                 NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
                 for (MemEvent w : allWrites) {
                     NumeralFormula.IntegerFormula clock = context.memoryOrderClock(w);
-                    enc.add(w.is(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
+                    enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
                 }
             }
             // ---- Encode coherences ----
@@ -576,9 +576,9 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula coB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
                     enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
                     if (idl) {
-                        enc.add(bmgr.implication(coF, x.is(INIT) || transCo.contains(xz) ? bmgr.makeTrue() :
+                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(xz) ? bmgr.makeTrue() :
                                 imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));
-                        enc.add(bmgr.implication(coB, z.is(INIT) || transCo.contains(zx) ? bmgr.makeTrue() :
+                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(zx) ? bmgr.makeTrue() :
                                 imgr.lessThan(context.memoryOrderClock(z), context.memoryOrderClock(x))));
                     } else {
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));

@@ -23,18 +23,18 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected transient int globalId = -1; // (Global) ID within a program
 
 	protected final MetadataMap metadataMap = new MetadataMap();
-	protected final Set<String> filter;
+	protected final Set<String> tags;
 
 	private transient Event successor;
 	private transient Event predecessor;
 
 	protected Event(){
-		filter = new HashSet<>();
+		tags = new HashSet<>();
 	}
 
 	protected Event(Event other){
 		copyAllMetadataFrom(other);
-        this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
+        this.tags = other.tags; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
     }
 
@@ -67,8 +67,28 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	// ===============================================================================================
 
+	// ============================================ Tags =============================================
+
+	// The set of tags should not be modified directly.
+	public Set<String> getTags() { return tags; }
+	public boolean hasTag(String tag){ return tag != null && tags.contains(tag); }
+
+	public void addTags(Collection<? extends String> tags) { this.tags.addAll(tags); }
+	public void addTags(String... tags){ addTags(Arrays.asList(tags)); }
+	public void removeTags(Collection<? extends String> tags) { this.tags.removeAll(tags); }
+	public void removeTags(String... tags){  removeTags(Arrays.asList(tags)); }
+
+	// ===============================================================================================
+
+	// ======================================== Control-flow =========================================
+
 	public Event getSuccessor() { return successor; }
 	public Event getPredecessor() { return predecessor; }
+
+	public Thread getThread() { return thread; }
+	public void setThread(Thread thread) {
+		this.thread = Preconditions.checkNotNull(thread);
+	}
 
 	public void setSuccessor(Event event) {
 		if (successor != null) {
@@ -98,14 +118,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		predecessor = event;
 	}
 
-	public Thread getThread() {
-		return thread;
-	}
-	public void setThread(Thread thread) {
-		Preconditions.checkNotNull(thread);
-		this.thread = thread;
-	}
-
 	public final List<Event> getSuccessors(){
 		List<Event> events = new ArrayList<>();
 		Event cur = this;
@@ -128,43 +140,6 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return events;
 	}
 
-	public boolean is(String param){
-		return param != null && (filter.contains(param));
-	}
-
-	public void addFilters(Collection<? extends String> filters) { filter.addAll(filters); }
-	public void addFilters(String... params){
-		addFilters(Arrays.asList(params));
-	}
-	public void removeFilters(Collection<? extends String> filters) { filter.removeAll(filters); }
-	public void removeFilters(String... params){
-		removeFilters(Arrays.asList(params));
-	}
-
-	// The return value should not get modified directly.
-	public Set<String> getFilters() {
-		return filter;
-	}
-
-	public boolean hasFilter(String f) {
-		return filter.contains(f);
-	}
-
-	@Override
-	public int compareTo(Event e){
-		if (e == this) {
-			return 0;
-		}
-		int result = Integer.compare(this.getGlobalId(), e.getGlobalId());
-		if (result == 0) {
-			final String error = String.format("Events %s and %s are different but have the same global id %d",
-					this, e, e.getGlobalId());
-			throw new IllegalStateException(error);
-		}
-		return result;
-	}
-
-	// ============================ Utility methods ============================
 
 	public void delete() {
 		if (getPredecessor() != null) {
@@ -194,8 +169,23 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		this.delete();
 	}
 
-	// Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
+	// ===============================================================================================
+
+	// ======================================== Miscellaneous ========================================
+
+	@Override
+	public int compareTo(Event e){
+		if (e == this) {
+			return 0;
+		}
+		int result = Integer.compare(this.getGlobalId(), e.getGlobalId());
+		if (result == 0) {
+			final String error = String.format("Events %s and %s are different but have the same global id %d",
+					this, e, e.getGlobalId());
+			throw new IllegalStateException(error);
+		}
+		return result;
+	}
 
 	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
@@ -203,15 +193,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	public void updateReferences(Map<Event, Event> updateMapping) { }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
-
 	public <T> T accept(EventVisitor<T> visitor) {
 		return visitor.visitEvent(this);
 	}
-
-	// Encoding
-	// -----------------------------------------------------------------------------------------------------------------
 
 	public void runLocalAnalysis(Program program, Context context) { }
 

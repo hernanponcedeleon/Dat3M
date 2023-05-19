@@ -21,7 +21,7 @@ public class FilterBasic extends FilterAbstract {
 
     @Override
     public boolean filter(Event e){
-        return e.is(param);
+        return e.hasTag(param);
     }
 
     @Override

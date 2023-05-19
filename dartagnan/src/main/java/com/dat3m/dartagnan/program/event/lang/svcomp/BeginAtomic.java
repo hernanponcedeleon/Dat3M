@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 public class BeginAtomic extends Event {
 	
     public BeginAtomic() {
-        addFilters(Tag.RMW);
+        addTags(Tag.RMW);
     }
 
     protected BeginAtomic(BeginAtomic other){

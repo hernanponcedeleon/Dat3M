@@ -126,7 +126,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         for (Event e : thread.getEvents()) {
             if (reachableEvents.contains(e)) {
                 continue;
-            } else if (e instanceof Label && e.is(Tag.NOOPT)) {
+            } else if (e instanceof Label && e.hasTag(Tag.NOOPT)) {
                 // FIXME: This check is just to avoid deleting loop-related labels (especially
                 // the loop end marker) because those are used to find unrolled loops.
                 // There should be better ways that do not retain such dead code: for example,

@@ -17,11 +17,11 @@ public class RMWStoreExclusive extends Store {
     public RMWStoreExclusive(IExpr address, ExprInterface value, String mo,
                              boolean isStrong, boolean requiresMatchingAddresses) {
         super(address, value, mo);
-        addFilters(Tag.EXCL, Tag.RMW);
+        addTags(Tag.EXCL, Tag.RMW);
         this.isStrong = isStrong;
         this.requiresMatchingAddresses = requiresMatchingAddresses;
         if (isStrong) {
-            addFilters(Tag.STRONG);
+            addTags(Tag.STRONG);
         }
     }
 

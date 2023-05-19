@@ -404,7 +404,7 @@ public class ExecutionModel {
             addrDepMap.put(eventMap.get(e), deps);
         }
 
-        if (e.is(Tag.VISIBLE)) {
+        if (e.hasTag(Tag.VISIBLE)) {
             // ---- Track ctrl dependency ----
             // TODO: This may be done more efficiently, as many events share the same set of ctrldeps.
             ctrlDepMap.put(eventMap.get(e), new HashSet<>(curCtrlDeps));

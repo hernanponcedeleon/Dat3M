@@ -55,7 +55,7 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyEvent(Event next) {
-        if (next.is(Tag.NOOPT)) {
+        if (next.hasTag(Tag.NOOPT)) {
             return false;
         }
         boolean changed = false;

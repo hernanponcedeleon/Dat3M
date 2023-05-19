@@ -140,7 +140,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                 .map(reg -> (BExpr) new Atom(reg, COpBin.EQ, IValue.ZERO))
                 .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
-        assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
+        assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
         assumeSideEffect.copyAllMetadataFrom(spinloopStart);
         insertionPoint.insertAfter(assumeSideEffect);
@@ -181,7 +181,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Event cur = iterStart;
         do {
             if (cur instanceof MemEvent) {
-                if (cur.is(Tag.WRITE)) {
+                if (cur.hasTag(Tag.WRITE)) {
                     sideEffects.add(cur); // Writes always cause side effects
                     continue;
                 } else {
@@ -217,7 +217,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final Event start = iter.getIterationStart();
         final Event end = iter.getIterationEnd();
 
-        if (start.is(Tag.SPINLOOP)) {
+        if (start.hasTag(Tag.SPINLOOP)) {
             // If the iteration start is tagged as "SPINLOOP", we treat the iteration as side effect free
             data.isAlwaysSideEffectFull = false;
             data.sideEffects.clear();

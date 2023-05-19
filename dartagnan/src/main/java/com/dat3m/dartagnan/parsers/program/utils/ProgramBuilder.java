@@ -78,7 +78,7 @@ public class ProgramBuilder {
         threads.get(thread).append(child);
         // Every event in litmus tests is non-optimisable
         if(format.equals(LITMUS)) {
-            child.addFilters(Tag.NOOPT);
+            child.addTags(Tag.NOOPT);
         }
         return child;
     }

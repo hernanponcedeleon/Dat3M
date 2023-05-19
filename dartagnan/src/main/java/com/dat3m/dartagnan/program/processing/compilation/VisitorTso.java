@@ -45,7 +45,7 @@ class VisitorTso extends VisitorBase {
     @Override
         public List<Event> visitCreate(Create e) {
                 Store store = newStore(e.getAddress(), e.getMemValue(), "");
-                store.addFilters(C11.PTHREAD);
+                store.addTags(C11.PTHREAD);
 
                 return tagList(eventSequence(
                                 store,
@@ -63,7 +63,7 @@ class VisitorTso extends VisitorBase {
         public List<Event> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), "");
-                load.addFilters(C11.PTHREAD);
+                load.addTags(C11.PTHREAD);
 
                 return tagList(eventSequence(
                                 load,
@@ -75,7 +75,7 @@ class VisitorTso extends VisitorBase {
         public List<Event> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), "");
-                load.addFilters(Tag.STARTLOAD);
+                load.addTags(Tag.STARTLOAD);
 
                 return tagList(eventSequence(
                                 load,
@@ -280,7 +280,7 @@ class VisitorTso extends VisitorBase {
 
         private void tagEvent(Event e) {
                 if (e instanceof MemEvent) {
-                        e.addFilters(Tag.TSO.ATOM);
+                        e.addTags(Tag.TSO.ATOM);
                 }
         }
 

@@ -25,7 +25,7 @@ public class Malloc extends Event implements RegWriter, RegReaderData {
     public Malloc(Register register, IExpr sizeExpr) {
         this.register = register;
         this.sizeExpr = sizeExpr;
-        addFilters(Tag.Std.MALLOC);
+        addTags(Tag.Std.MALLOC);
     }
 
     protected Malloc(Malloc other) {

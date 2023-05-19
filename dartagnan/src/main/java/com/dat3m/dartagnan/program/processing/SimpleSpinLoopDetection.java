@@ -55,7 +55,7 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
     }
     private int detectAndMarkSpinLoops(Thread thread) {
         final List<Label> unmarkedLabels = thread.getEvents().stream()
-                .filter(e -> e instanceof Label && !e.is(Tag.SPINLOOP))
+                .filter(e -> e instanceof Label && !e.hasTag(Tag.SPINLOOP))
                 .map(Label.class::cast).collect(Collectors.toList());
 
         int spinloopCounter = 0;
@@ -69,8 +69,8 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
                 assert backjumps.size() == 1; // Invariant holds for all normalized loops
                 final CondJump backjump = backjumps.get(0);
                 if (isSideEffectFree(label, backjump)) {
-                    label.addFilters(Tag.SPINLOOP, Tag.NOOPT);
-                    backjump.addFilters(Tag.SPINLOOP, Tag.NOOPT);
+                    label.addTags(Tag.SPINLOOP, Tag.NOOPT);
+                    backjump.addTags(Tag.SPINLOOP, Tag.NOOPT);
                     spinloopCounter++;
                 }
             }
@@ -97,7 +97,7 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
 
         Event cur = loopBegin;
         while ((cur = cur.getSuccessor()) != loopEnd) {
-            if (cur.is(Tag.WRITE)) {
+            if (cur.hasTag(Tag.WRITE)) {
                 return false;// Writes always cause side effects
             }
 

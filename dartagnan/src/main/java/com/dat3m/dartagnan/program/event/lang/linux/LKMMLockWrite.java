@@ -12,7 +12,7 @@ public class LKMMLockWrite extends RMWStore {
 
 	public LKMMLockWrite(Load lockRead, IExpr lock) {
 		super(lockRead, lock, IValue.ONE, Linux.MO_ONCE);
-		addFilters(RMW, Linux.LOCK_WRITE);
+		addTags(RMW, Linux.LOCK_WRITE);
 	}
 
 	@Override

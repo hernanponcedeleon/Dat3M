@@ -432,7 +432,7 @@ public class RelationAnalysis {
                 defaultKnowledge = null;
             } else {
                 Set<Tuple> may = new HashSet<>();
-                List<Event> events = program.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+                List<Event> events = program.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
                 for (Event x : events) {
                     for (Event y : events) {
                         may.add(new Tuple(x, y));
@@ -595,7 +595,7 @@ public class RelationAnalysis {
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             for (Event e : program.getEvents()) {
-                if (e.is(IMM.CASDEPORIGIN)) {
+                if (e.hasTag(IMM.CASDEPORIGIN)) {
                     // The target of a CASDep is always the successor of the origin
                     must.add(new Tuple(e, e.getSuccessor()));
                 }
@@ -612,9 +612,9 @@ public class RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
-                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.is(Linux.RCU_LOCK)).collect(toList()));
+                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()));
                 for (Event unlock : thread.getEvents()) {
-                    if (!unlock.is(Linux.RCU_UNLOCK)) {
+                    if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
                         continue;
                     }
                     // iteration order assures that all intermediaries were already iterated
@@ -657,7 +657,7 @@ public class RelationAnalysis {
 
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getEvents(EndAtomic.class)) {
-                List<Event> block = end.getBlock().stream().filter(x -> x.is(VISIBLE)).collect(toList());
+                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).collect(toList());
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
@@ -671,7 +671,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
-                List<Event> events = thread.getEvents().stream().filter(e -> e.is(EXCL)).collect(toList());
+                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).collect(toList());
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
@@ -710,7 +710,7 @@ public class RelationAnalysis {
             List<Store> nonInitWrites = program.getEvents(Store.class);
             Set<Tuple> may = new HashSet<>();
             for (Event w1 : program.getEvents()) {
-                if (!w1.is(WRITE)) {
+                if (!w1.hasTag(WRITE)) {
                     continue;
                 }
                 for (MemEvent w2 : nonInitWrites) {
@@ -724,7 +724,7 @@ public class RelationAnalysis {
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
                 MemEvent w1 = (MemEvent) t.getFirst();
                 MemEvent w2 = (MemEvent) t.getSecond();
-                if (!w2.is(INIT) && alias.mustAlias(w1, w2) && w1.is(INIT)) {
+                if (!w2.hasTag(INIT) && alias.mustAlias(w1, w2) && w1.hasTag(INIT)) {
                     must.add(t);
                 }
             }
@@ -747,7 +747,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
             for (Event e1 : program.getEvents()) {
-                if (!e1.is(WRITE)) {
+                if (!e1.hasTag(WRITE)) {
                     continue;
                 }
                 for (Load e2 : loadEvents) {
@@ -769,9 +769,9 @@ public class RelationAnalysis {
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
                     List<MemEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
-                            .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
+                            .filter(e -> (e.getThread() == read.getThread() || e.hasTag(INIT)))
                             .map(x -> (MemEvent) x)
-                            .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)
+                            .sorted((o1, o2) -> o1.hasTag(INIT) == o2.hasTag(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.hasTag(INIT) ? -1 : 1)
                             .collect(Collectors.toList());
                     // The set of writes that won't be readable due getting overwritten.
                     Set<MemEvent> deletedWrites = new HashSet<>();
@@ -1414,7 +1414,7 @@ public class RelationAnalysis {
     }
 
     private static List<Event> visibleEvents(Thread t) {
-        return t.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+        return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
     }
 
     private static Set<Tuple> inverse(Set<Tuple> set) {
