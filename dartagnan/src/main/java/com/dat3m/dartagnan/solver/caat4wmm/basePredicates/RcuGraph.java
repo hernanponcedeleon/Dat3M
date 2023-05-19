@@ -38,9 +38,9 @@ public class RcuGraph extends StaticWMMGraph {
         Stack<EventData> lastLocks = new Stack<>();
         for (List<EventData> events : model.getThreadEventsMap().values()) {
             for (EventData e : events) {
-                if (e.is(Tag.Linux.RCU_LOCK)) {
+                if (e.hasTag(Tag.Linux.RCU_LOCK)) {
                     lastLocks.push(e);
-                } else if (e.is(Tag.Linux.RCU_UNLOCK)) {
+                } else if (e.hasTag(Tag.Linux.RCU_UNLOCK)) {
                     if (!lastLocks.isEmpty()) {
                         lockUnlockMap.put(lastLocks.pop(), e);
                     } else {

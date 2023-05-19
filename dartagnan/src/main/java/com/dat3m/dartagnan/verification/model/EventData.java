@@ -93,8 +93,8 @@ public class EventData implements Comparable<EventData> {
     	return event.hasTag(RMW);
     }
 
-    public boolean is(String type) {
-    	return event.hasTag(type);
+    public boolean hasTag(String tag) {
+    	return event.hasTag(tag);
     }
 
     @Override
