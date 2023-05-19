@@ -12,9 +12,9 @@ PTX
 //    We follow the later.
 // 2. Acquire-pattern: There is a comment in the alloy model saying "A Read followed by an AcquireFence (or greater)".
 //    The model misses this. In contrast, the original (proxy-less) model does include it in the acquire-pattern.
-// 3. Acquire-pattern & Release-pattern, both alloy models do not align precisely with the documentation which specifies
-//    that in the Acquire-pattern: the first read in the pattern should be a strong one; in the Release-pattern: the
-//    writing following the release operation or the memory fence should be a strong one. We follow the documentation
+// 3. Acquire-pattern & Release-pattern: both alloy models do not align precisely with the documentation which specifies
+//    that in the Acquire-pattern "the first read in the pattern should be a strong one"; in the Release-pattern "the
+//    writing following the release operation or the memory fence should be a strong one". We follow the documentation
 //    for both patterns here.
 
 (*******************)
@@ -80,7 +80,7 @@ let cause-write = ([W]; cause ; [W]) & loc
 empty (cause-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
-//this is equivalent to: irreflexive (fence-sc ; cause) as axiom-FenceSC
+// This is equivalent to: irreflexive (fence-sc ; cause) as axiom-FenceSC
 empty ([F & SC] ; cause; [F & SC] \ fence-sc) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
@@ -92,7 +92,7 @@ let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-// The alloy tool doesn't have this axiom
+// The alloy model doesn't have this axiom
 acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
