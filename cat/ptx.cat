@@ -2,8 +2,11 @@ PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 6.0 *)
 
 // Comparing to the model written in Alloy (https://github.com/NVlabs/ptxmemorymodel)
-// The alloy model does not align precisely with the documentation. The documentation specifies that
-// the first read in the pattern should be a strong one. We follow the documentation here.
+// The alloy model does not align precisely with the documentation in the Acquire-pattern
+// and Release-pattern. The documentation specifies that the first read in the pattern
+// should be a strong one. Also in the Release-pattern, the documentation specifies that
+// the second write in the pattern should be a strong one. We follow the documentation
+// for both patterns here.
 
 (*******************)
 (*   Auxiliaries   *)
@@ -50,13 +53,14 @@ let cause-write = ([W]; cause ; [W]) & loc
 empty (cause-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
-//this is equivalent to irreflexive (fence-sc ; cause) as axiom-FenceSC
+//this is equivalent to: irreflexive (fence-sc ; cause) as axiom-FenceSC
 empty ([F & SC] ; cause; [F & SC] \ fence-sc) as axiom-FenceSC
 
 (* Axiom 3 Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
 
 (* Axiom 4 No-Thin-Air *)
+// The alloy model does not support the dep used below
 let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
