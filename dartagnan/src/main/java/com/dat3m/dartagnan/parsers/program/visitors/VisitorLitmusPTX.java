@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
+import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -20,6 +21,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
@@ -27,6 +29,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder;
     private int mainThread;
     private int threadCount = 0;
+
+    private final HashMap<Integer, Integer> barriers = new HashMap<>();
 
     public VisitorLitmusPTX(ProgramBuilder pb) {
         this.programBuilder = pb;
@@ -151,6 +155,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         store.addFilters(scope);
         store.addFilters(ctx.store().storeProxy);
         store.addFilters(Tag.PTX.CON);
+        this.markAfterBarrier(mainThread, store);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -177,6 +182,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Store store = EventFactory.newStore(object, register, mo);
         store.addFilters(scope);
         store.addFilters(ctx.store().storeProxy);
+        this.markAfterBarrier(mainThread, store);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -210,6 +216,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Load load = EventFactory.newLoad(register, location, mo);
         load.addFilters(scope);
         load.addFilters(ctx.load().loadProxy);
+        this.markAfterBarrier(mainThread, load);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -228,6 +235,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
+        this.markAfterBarrier(mainThread, atom);
         return programBuilder.addChild(mainThread, atom);
     }
 
@@ -246,6 +254,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
+        this.markAfterBarrier(mainThread, atom);
         return programBuilder.addChild(mainThread, atom);
     }
 
@@ -264,6 +273,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
+        this.markAfterBarrier(mainThread, red);
         return programBuilder.addChild(mainThread, red);
     }
 
@@ -282,6 +292,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         }
         RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
+        this.markAfterBarrier(mainThread, red);
         return programBuilder.addChild(mainThread, red);
     }
 
@@ -312,5 +323,35 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addFilters(Tag.PTX.ALIAS);
         return programBuilder.addChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitBarrierSync(LitmusPTXParser.BarrierSyncContext ctx) {
+        int barID = ctx.barID().id;
+        if (barID < 0 || barID > 15) {
+            throw new ParsingException("Logical barrier resource out of range (0..15): " + barID);
+        }
+        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        programBuilder.markBeforeBarrier(mainThread, barID);
+        this.barriers.put(mainThread, barID);
+        return programBuilder.addChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitBarrierArrive(LitmusPTXParser.BarrierArriveContext ctx) {
+        int barID = ctx.barID().id;
+        if (barID < 0 || barID > 15) {
+            throw new ParsingException("Logical barrier resource out of range (0..15): " + barID);
+        }
+        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        programBuilder.markBeforeBarrier(mainThread, barID);
+        return programBuilder.addChild(mainThread, fence);
+    }
+
+    private void markAfterBarrier(int threadID, MemEvent e) {
+        if (this.barriers.containsKey(threadID)) {
+            e.addFilters(Tag.PTX.BAR_AFTER);
+            e.addFilters(Tag.PTX.BAR_AFTER + this.barriers.get(threadID));
+        }
     }
 }

@@ -1,6 +1,11 @@
 PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 6.0 *)
 
+// Base relations:
+// sr: same-scope
+// scta: same-cta
+// sync_bar: synchronize by barriers with same logical barrier resource (barID)
+
 // Comparing to the ptx-v6.0 model written in Alloy (https://github.com/NVlabs/ptxmemorymodel)
 // The alloy model does not align precisely with the documentation in the Acquire-pattern
 // and Release-pattern. The documentation specifies that the first read in the pattern
@@ -25,6 +30,7 @@ let sr-m = ([strong-m]; (sr & loc); [strong-m])
 let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 let fence-sc = [F & SC] ; sr; [F & SC]
+let sync-barrier = [BAR_BEFORE]; (po | (sync_bar & scta)); [BAR_AFTER]
 
 // The ASPLOS'19 paper uses the definition below
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
@@ -39,8 +45,7 @@ let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po;
 // However the documentation states that the first read shall be strong one
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
-// TODO: what about sync_barrier?
-let sw = (morally-strong & (release-pattern; observation; acquire-pattern)) | fence-sc 
+let sw = (morally-strong & (release-pattern; observation; acquire-pattern)) | fence-sc | sync-barrier
 let cause-base = (po?; sw; po?)+
 let cause = cause-base | (observation; (cause-base | po-loc))
 

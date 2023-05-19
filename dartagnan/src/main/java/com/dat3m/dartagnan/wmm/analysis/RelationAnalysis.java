@@ -917,6 +917,22 @@ public class RelationAnalysis {
         }
 
         @Override
+        public Knowledge visitSyncBarrier(Relation sync_bar, String bar_before, String bar_after) {
+            Set<Tuple> must = new HashSet<>();
+            List<Event> events = new ArrayList<>();
+            events.addAll(program.getEvents(Load.class));
+            events.addAll(program.getEvents(Store.class));
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    if (mustSyncBar(e1, e2, bar_before, bar_after) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
+        @Override
         public Knowledge visitAlias(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             List<MemEvent> events = program.getEvents(MemEvent.class);
@@ -945,6 +961,28 @@ public class RelationAnalysis {
                 return false;
             }
             return sameHigherScope(first, second, firstScope);
+        }
+
+        private boolean mustSyncBar(Event first, Event second, String bar_before, String bar_after) {
+            if (!first.is(bar_before) || !second.is(bar_after)) {
+                return false;
+            }
+            int barId1 = -1;
+            int barId2 = -1;
+            for (String filter : first.getFilters()) {
+                if (filter.contains(bar_before) && !filter.equals(bar_before)) {
+                    barId1 = Integer.parseInt(filter.replace(bar_before, ""));
+                }
+            }
+            for (String filter : second.getFilters()) {
+                if (filter.contains(bar_after) && !filter.equals(bar_after)) {
+                    barId2 = Integer.parseInt(filter.replace(bar_after, ""));
+                }
+            }
+            if (barId1 == barId2 && barId1 != -1) {
+                return true;
+            }
+            return false;
         }
 
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {

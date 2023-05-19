@@ -249,4 +249,12 @@ public class ProgramBuilder {
         object.setInitialValue(0,rightLocation.getInitialValue(0));
         return object;
     }
+
+    public void markBeforeBarrier(int threadID, int barId) {
+        Thread thread = threads.get(threadID);
+        for (Event e : thread.getEvents()) {
+            e.addFilters(Tag.PTX.BAR_BEFORE);
+            e.addFilters(Tag.PTX.BAR_BEFORE + barId);
+        }
+    }
 }

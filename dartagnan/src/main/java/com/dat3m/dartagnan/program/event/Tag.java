@@ -281,6 +281,8 @@ public final class Tag {
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
         public static final String ALIAS = "ALIAS";
+        public static final String BAR_BEFORE = "BAR_BEFORE";
+        public static final String BAR_AFTER = "BAR_AFTER";
         private PTX() {
         }
 

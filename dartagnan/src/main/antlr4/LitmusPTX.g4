@@ -121,6 +121,7 @@ fenceInstruction
     :   fencePhysic
     |   fenceProxy
     |   fenceAlias
+    |   barrier
     ;
 
 fencePhysic
@@ -133,6 +134,19 @@ fenceProxy
 
 fenceAlias
     :   Fence Period Proxy Period Alias
+    ;
+
+barrier
+    :   barrierSync
+    |   barrierArrive
+    ;
+
+barrierSync
+    :  Barrier Period CTA Period Sync barID
+    ;
+
+barrierArrive
+    :   Barrier Period CTA Period Arrive barID
     ;
 
 atomInstruction
@@ -200,6 +214,10 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
+barID returns [int id]
+    :   t = DigitSequence {$id = Integer.parseInt($t.text);}
+    ;
+
 mo returns [String content]
     :   Weak {$content = "WEAK";}
     |   Relaxed {$content = "RLX";}
@@ -250,6 +268,10 @@ Red             :   'red';
 SurfaceRed      :   'sured';
 
 Fence   :   'fence';
+Barrier :   'bar';
+
+Sync    :   'sync';
+Arrive  :   'arrive';
 
 CTA     :   'cta';
 GPU     :   'gpu';
