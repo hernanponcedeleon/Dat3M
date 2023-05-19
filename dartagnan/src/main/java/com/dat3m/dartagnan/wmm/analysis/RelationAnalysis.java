@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -446,10 +446,10 @@ public class RelationAnalysis {
             return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
         }
         @Override
-        public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
+        public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
             Set<Tuple> must = new HashSet<>();
-            List<Event> l1 = program.getEvents().stream().filter(domain::filter).collect(toList());
-            List<Event> l2 = program.getEvents().stream().filter(range::filter).collect(toList());
+            List<Event> l1 = program.getEvents().stream().filter(domain::apply).collect(toList());
+            List<Event> l2 = program.getEvents().stream().filter(range::apply).collect(toList());
             for (Event e1 : l1) {
                 for (Event e2 : l2) {
                     if (!exec.areMutuallyExclusive(e1, e2)) {
@@ -460,10 +460,10 @@ public class RelationAnalysis {
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
-        public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
+        public Knowledge visitIdentity(Relation rel, Filter set) {
             Set<Tuple> must = new HashSet<>();
             for (Event e : program.getEvents()) {
-                if (set.filter(e)) {
+                if (set.apply(e)) {
                     must.add(new Tuple(e, e));
                 }
             }
@@ -505,10 +505,10 @@ public class RelationAnalysis {
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
         @Override
-        public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
+        public Knowledge visitProgramOrder(Relation rel, Filter type) {
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
-                List<Event> events = t.getEvents().stream().filter(type::filter).collect(toList());
+                List<Event> events = t.getEvents().stream().filter(type::apply).collect(toList());
                 for (int i = 0; i < events.size(); i++) {
                     Event e1 = events.get(i);
                     for (int j = i + 1; j < events.size(); j++) {
@@ -560,7 +560,7 @@ public class RelationAnalysis {
             return visitDependency(RegReaderData.class , e -> ((RegReaderData) e).getDataRegs());
         }
         @Override
-        public Knowledge visitFences(Relation rel, FilterAbstract fence) {
+        public Knowledge visitFences(Relation rel, Filter fence) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
@@ -568,7 +568,7 @@ public class RelationAnalysis {
                 int end = events.size();
                 for (int i = 0; i < end; i++) {
                     Event f = events.get(i);
-                    if (!fence.filter(f)) {
+                    if (!fence.apply(f)) {
                         continue;
                     }
                     for (Event x : events.subList(0, i)) {

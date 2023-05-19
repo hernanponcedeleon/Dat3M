@@ -1,8 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
@@ -28,7 +27,7 @@ public class Wmm {
     public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
     private final List<Constraint> constraints = new ArrayList<>();
-    private final Map<String, FilterAbstract> filters = new HashMap<>();
+    private final Map<String, Filter> filters = new HashMap<>();
     private final Set<Relation> relations = new HashSet<>();
 
     public Wmm() {
@@ -180,12 +179,12 @@ public class Wmm {
         definedRelation.definition = new Definition.Undefined(definedRelation);
     }
 
-    public void addFilter(FilterAbstract filter) {
+    public void addFilter(Filter filter) {
         filters.put(filter.getName(), filter);
     }
 
-    public FilterAbstract getFilter(String name) {
-        return filters.computeIfAbsent(name, FilterBasic::get);
+    public Filter getFilter(String name) {
+        return filters.computeIfAbsent(name, Filter::byTag);
     }
 
     // ====================== Utility Methods ====================
@@ -213,7 +212,7 @@ public class Wmm {
         Stream<String> r = relations.stream()
                 .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
                 .map(x -> x.definition.toString());
-        Stream<String> s = filters.values().stream().map(FilterAbstract::toString);
+        Stream<String> s = filters.values().stream().map(Filter::toString);
         return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
@@ -248,11 +247,11 @@ public class Wmm {
         Relation r = newRelation(name);
         switch (name) {
             case PO:
-                return new ProgramOrder(r, FilterBasic.get(Tag.VISIBLE));
+                return new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
             case LOC:
                 return new SameAddress(r);
             case ID:
-                return new Identity(r, FilterBasic.get(Tag.VISIBLE));
+                return new Identity(r, Filter.byTag(Tag.VISIBLE));
             case INT:
                 return new SameThread(r);
             case EXT:
@@ -280,9 +279,9 @@ public class Wmm {
             case FR:
                 return composition(r, getRelation(RFINV), getRelation(CO));
             case MM:
-                return new CartesianProduct(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.MEMORY));
+                return new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.MEMORY));
             case MV:
-                return new CartesianProduct(r, FilterBasic.get(Tag.MEMORY), FilterBasic.get(Tag.VISIBLE));
+                return new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.VISIBLE));
             case IDDTRANS:
                 return new TransitiveClosure(r, getRelation(IDD));
             case DATA:
@@ -345,6 +344,6 @@ public class Wmm {
     }
 
     private Definition fence(Relation r0, String name) {
-        return new Fences(r0, FilterBasic.get(name));
+        return new Fences(r0, Filter.byTag(name));
     }
 }

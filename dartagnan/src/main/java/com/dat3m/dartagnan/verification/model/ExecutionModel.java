@@ -10,8 +10,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -45,7 +44,7 @@ public class ExecutionModel {
     // ============= Model specific  =============
     private Model model;
     private FormulaManager formulaManager;
-    private FilterAbstract eventFilter;
+    private Filter eventFilter;
     private boolean extractCoherences;
 
     private final EventMap eventMap;
@@ -151,7 +150,7 @@ public class ExecutionModel {
     public EncodingContext getContext() {
         return encodingContext;
     }
-    public FilterAbstract getEventFilter() {
+    public Filter getEventFilter() {
     	return eventFilter;
     }
     public boolean hasCoherences() {
@@ -211,10 +210,10 @@ public class ExecutionModel {
     }
 
     public void initialize(Model model, boolean extractCoherences) {
-        initialize(model, FilterBasic.get(Tag.VISIBLE), extractCoherences);
+        initialize(model, Filter.byTag(Tag.VISIBLE), extractCoherences);
     }
 
-    public void initialize(Model model, FilterAbstract eventFilter, boolean extractCoherences) {
+    public void initialize(Model model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
         // their capacity in previous iterations and thus we should have less overhead in future populations)
@@ -266,7 +265,7 @@ public class ExecutionModel {
                     e = e.getSuccessor();
                     continue;
                 }
-                if (eventFilter.filter(e)) {
+                if (eventFilter.apply(e)) {
                     addEvent(e, id++, localId++);
                 }
                 trackDependencies(e);
