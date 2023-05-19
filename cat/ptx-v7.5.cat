@@ -48,6 +48,7 @@ let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po;
 
 // The definition of ptx-v7.5 alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
 // However the documentation states that the first read shall be strong one
+// This version also misses an alternative case where the second load can be replaced by a fence
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
 let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
