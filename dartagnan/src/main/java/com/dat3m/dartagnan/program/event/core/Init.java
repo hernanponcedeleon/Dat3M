@@ -19,7 +19,7 @@ public class Init extends MemEvent {
 		super(b.add(o), "");
 		base = b;
 		offset = o;
-		addFilters(Tag.WRITE, Tag.INIT);
+		addTags(Tag.WRITE, Tag.INIT);
 	}
 
 	/**

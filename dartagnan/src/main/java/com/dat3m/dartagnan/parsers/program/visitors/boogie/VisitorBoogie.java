@@ -781,10 +781,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     	assertionIndex++;
     	programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
 				.setCFileInformation(currentLine, sourceCodeFile)
-				.addFilters(Tag.ASSERTION);
+				.addTags(Tag.ASSERTION);
        	Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
 		CondJump jump = EventFactory.newJump(new Atom(ass, COpBin.NEQ, IValue.ONE), end);
-		jump.addFilters(Tag.EARLYTERMINATION);
+		jump.addTags(Tag.EARLYTERMINATION);
 		programBuilder.addChild(threadCount, jump);
 		
 	}

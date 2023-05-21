@@ -242,7 +242,7 @@ public class Dartagnan extends BaseOptions {
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
                     for(Event e : p.getEvents(Local.class)) {
-                        if(e.is(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                        if(e.hasTag(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary
@@ -258,7 +258,7 @@ public class Dartagnan extends BaseOptions {
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
                     for(CondJump e : p.getEvents(CondJump.class)) {
-                        if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
+                        if(e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                             && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
@@ -343,7 +343,7 @@ public class Dartagnan extends BaseOptions {
 
     private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
         for (Event e : p.getEvents()) {
-            if (e.is(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
+            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",

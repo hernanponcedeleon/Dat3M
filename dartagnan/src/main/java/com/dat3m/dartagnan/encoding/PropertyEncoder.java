@@ -89,7 +89,7 @@ public class PropertyEncoder implements Encoder {
         logger.info("Encoding bound events execution");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return program.getEvents()
-                .stream().filter(e -> e.hasFilter(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+                .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
@@ -173,7 +173,7 @@ public class PropertyEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
         for (Event writeEvent : program.getEvents()) {
-            if (!writeEvent.is(Tag.WRITE)) {
+            if (!writeEvent.hasTag(Tag.WRITE)) {
                 continue;
             }
             MemEvent w1 = (MemEvent) writeEvent;
@@ -315,7 +315,7 @@ public class PropertyEncoder implements Encoder {
                     continue;
                 }
                 for (Event e1 : t1.getEvents()) {
-                    if (!e1.hasFilter(Tag.WRITE) || e1.hasFilter(Tag.INIT)) {
+                    if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
                     MemEvent w = (MemEvent)e1;
@@ -323,11 +323,11 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     for(Event e2 : t2.getEvents()) {
-                        if (!e2.hasFilter(Tag.MEMORY) || e2.hasFilter(Tag.INIT)) {
+                        if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
                         MemEvent m = (MemEvent)e2;
-                        if((w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
+                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
                             continue;
                         }
 
@@ -411,7 +411,7 @@ public class PropertyEncoder implements Encoder {
                 final BooleanFormula isStuck = isStuckMap.get(thread);
                 final BooleanFormula isTerminatingNormally = thread
                         .getEvents().stream()
-                        .filter(e -> e.hasFilter(Tag.EARLYTERMINATION))
+                        .filter(e -> e.hasTag(Tag.EARLYTERMINATION))
                         .map(CondJump.class::cast)
                         .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
                         .reduce(bmgr.makeTrue(), bmgr::and);
@@ -465,7 +465,7 @@ public class PropertyEncoder implements Encoder {
                 for (LoopAnalysis.LoopIterationInfo iter : loop.getIterations()) {
                     final List<Event> iterBody = iter.computeBody();
                     final List<CondJump> spinningJumps = iterBody.stream()
-                            .filter(e -> e instanceof CondJump && e.is(Tag.SPINLOOP))
+                            .filter(e -> e instanceof CondJump && e.hasTag(Tag.SPINLOOP))
                             .map(CondJump.class::cast)
                             .collect(Collectors.toList());
 

@@ -22,7 +22,7 @@ public class RMW extends MemEvent implements RegWriter, RegReaderData {
         super(address, mo);
 		this.resultRegister = register;
         this.value = value;
-        addFilters(READ, WRITE, RMW);
+        addTags(READ, WRITE, RMW);
     }
 
     private RMW(RMW other){

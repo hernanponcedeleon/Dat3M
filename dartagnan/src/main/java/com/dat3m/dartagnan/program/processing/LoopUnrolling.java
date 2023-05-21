@@ -104,7 +104,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 if (isLoop) {
                     // Bound annotation > Spin loop tag > default bound
                     final int bound = curBoundAnnotation != null ? curBoundAnnotation.getBound()
-                            : label.is(Tag.SPINLOOP) ? 1 : defaultBound;
+                            : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
                     loopBoundsMap.put(backjump.get(), bound);
                     curBoundAnnotation = null;
                 }
@@ -125,17 +125,17 @@ public class LoopUnrolling implements ProgramProcessor {
                 // Update loop iteration label
                 final String loopName = loopBegin.getName();
                 loopBegin.setName(String.format("%s%s%s%d", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
-                loopBegin.addFilters(Tag.NOOPT);
+                loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
                 final Label threadExit = (Label) loopBackJump.getThread().getExit();
                 final CondJump boundEvent = EventFactory.newGoto(threadExit);
-                boundEvent.addFilters(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
+                boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 loopBackJump.replaceBy(boundEvent);
 
                 // Mark end of loop, so we can find it later again
                 final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
-                endOfLoopMarker.addFilters(Tag.NOOPT);
+                endOfLoopMarker.addTags(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
                 boundEvent.copyAllMetadataFrom(loopBackJump);
@@ -158,7 +158,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 // Rename label of iteration.
                 final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
                 loopBeginCopy.setName(String.format("%s%s%s%d", loopBegin.getName(), LOOP_INFO_SEPARATOR, LOOP_INFO_ITERATION_SUFFIX, iterCounter));
-                loopBeginCopy.addFilters(Tag.NOOPT);
+                loopBeginCopy.addTags(Tag.NOOPT);
             }
         }
     }

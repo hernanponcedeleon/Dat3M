@@ -13,7 +13,7 @@ public class RMWOp extends RMWAbstract {
     public RMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
         super(address, register, value, Tag.Linux.MO_ONCE);
         this.op = op;
-        addFilters(Tag.Linux.NORETURN);
+        addTags(Tag.Linux.NORETURN);
     }
 
     private RMWOp(RMWOp other){

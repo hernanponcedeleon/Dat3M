@@ -56,7 +56,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         // Registers that are used by assertions or other threads cannot be removed
         final List<Event> programEvents = program.getEvents();
         programEvents.stream()
-                .filter(e -> e.is(ASSERTION))
+                .filter(e -> e.hasTag(ASSERTION))
                 .filter(RegWriter.class::isInstance).map(RegWriter.class::cast)
                 .map(RegWriter::getResultRegister)
                 .forEach(usedRegs::add);
@@ -74,7 +74,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         final List<Event> threadEvents = thread.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
         for(Event e : Lists.reverse(threadEvents)) {
-            if (e instanceof RegWriter && !e.is(NOOPT) && !e.is(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
+            if (e instanceof RegWriter && !e.hasTag(NOOPT) && !e.hasTag(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
                 // TODO (TH): Can we also remove loads to unused registers here?
                 // Invisible RegWriters that write to an unused reg can get removed
                 toBeRemoved.add(e);

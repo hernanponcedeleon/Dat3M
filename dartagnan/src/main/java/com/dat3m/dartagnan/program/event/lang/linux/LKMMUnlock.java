@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
-
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
+import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
+
 public class LKMMUnlock extends Store {
 
 	public LKMMUnlock(IExpr lock) {
 		super(lock, IValue.ZERO, MO_RELEASE);
-		addFilters(Tag.Linux.UNLOCK);
+		addTags(Tag.Linux.UNLOCK);
 	}
 
     protected LKMMUnlock(LKMMUnlock other){

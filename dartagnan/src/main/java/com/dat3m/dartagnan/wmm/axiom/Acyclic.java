@@ -281,7 +281,7 @@ public class Acyclic extends Axiom {
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
         List<Tuple> crossEdges = k.getMustSet().stream()
-                .filter(t -> t.isCrossThread() && !t.getFirst().is(Tag.INIT))
+                .filter(t -> t.isCrossThread() && !t.getFirst().hasTag(Tag.INIT))
                 .collect(Collectors.toList());
         logger.debug("cross-edges: {}", crossEdges.size());
         Map<Event, Set<Event>> transMinSet = new HashMap<>();

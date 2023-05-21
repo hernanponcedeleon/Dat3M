@@ -9,7 +9,11 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.Create;
+import com.dat3m.dartagnan.program.event.lang.pthread.End;
+import com.dat3m.dartagnan.program.event.lang.pthread.Join;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
@@ -25,7 +29,7 @@ public class VisitorC11 extends VisitorBase {
         @Override
         public List<Event> visitCreate(Create e) {
                 Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
-                store.addFilters(C11.PTHREAD);
+                store.addTags(C11.PTHREAD);
 
                 return tagList(eventSequence(
                                 store));
@@ -41,7 +45,7 @@ public class VisitorC11 extends VisitorBase {
         public List<Event> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-                load.addFilters(C11.PTHREAD);
+                load.addTags(C11.PTHREAD);
 
                 return tagList(eventSequence(
                                 load,
@@ -52,7 +56,7 @@ public class VisitorC11 extends VisitorBase {
         public List<Event> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-                load.addFilters(Tag.STARTLOAD);
+                load.addTags(Tag.STARTLOAD);
 
                 return tagList(eventSequence(
                                 load,
@@ -252,7 +256,7 @@ public class VisitorC11 extends VisitorBase {
 
     private void tagEvent(Event e) {
         if(e instanceof MemEvent) {
-                e.addFilters(((MemEvent)e).canRace() ? C11.NONATOMIC : C11.ATOMIC);
+                e.addTags(((MemEvent)e).canRace() ? C11.NONATOMIC : C11.ATOMIC);
         }
     }
 

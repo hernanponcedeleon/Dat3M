@@ -137,6 +137,6 @@ public abstract class AbstractCompilationTest {
         return Stream.of(
                 Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
                 Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC)
-                .anyMatch(e::is);
+                .anyMatch(e::hasTag);
     }
 }

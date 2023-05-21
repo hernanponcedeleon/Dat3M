@@ -132,7 +132,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         //event is a store operation
-        Verify.verify(e.is(Tag.WRITE), "memory event that is neither tagged \"W\" nor a register writer");
+        Verify.verify(e.hasTag(Tag.WRITE), "memory event that is neither tagged \"W\" nor a register writer");
         ExprInterface value = e.getMemValue();
         if (value instanceof Register) {
             addEdge(value, location);
