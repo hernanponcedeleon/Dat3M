@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -144,7 +143,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
         Expression noSideEffect = trackingRegs.stream()
                 .map(reg -> expressionFactory.makeBinary(reg, COpBin.NEQ, expressionFactory.makeZero(type)))
-                .reduce(expressionFactory.makeTrue(), (x, y) -> expressionFactory.makeBinary(x, BOpBin.AND, y));
+                .reduce(expressionFactory.makeTrue(), expressionFactory::makeAnd);
         final CondJump assumeSideEffect = EventFactory.newJump(noSideEffect, (Label) thread.getExit());
         assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();

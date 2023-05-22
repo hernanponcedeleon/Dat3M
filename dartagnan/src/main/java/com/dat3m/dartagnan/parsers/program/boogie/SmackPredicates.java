@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
 import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
 import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
@@ -112,9 +111,8 @@ public class SmackPredicates {
 		}
 		Literal maxValue = factory.parseValue(max, var.getType());
 		return factory.makeConditional(
-				factory.makeBinary(
+				factory.makeAnd(
 						factory.makeBinary(var, GTE, factory.parseValue(min, var.getType())),
-						AND,
 						factory.makeBinary(var, LTE, maxValue)),
 				var,
 				factory.makeBinary(var, MOD, maxValue));

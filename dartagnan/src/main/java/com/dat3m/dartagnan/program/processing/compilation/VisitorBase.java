@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -66,7 +65,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
         return eventSequence(
                 forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(expressions.makeBinary(resultRegister, BOpBin.OR, statusRegister)) : null
+                forceStart ? newAssume(expressions.makeOr(resultRegister, statusRegister)) : null
         );
 	}
 

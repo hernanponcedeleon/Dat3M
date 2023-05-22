@@ -146,6 +146,14 @@ public final class ExpressionFactory {
         return new UnaryIntegerExpression(type, operator, inner);
     }
 
+    public Expression makeAnd(Expression left, Expression right) {
+        return makeBinary(left, BOpBin.AND, right);
+    }
+
+    public Expression makeOr(Expression left, Expression right) {
+        return makeBinary(left, BOpBin.OR, right);
+    }
+
     public Expression makeBinary(Expression left, BOpBin operator, Expression right) {
         if (!left.isBoolean() || !right.isBoolean()) {
             logger.warn("Non-boolean operands {} {} {}.", left, operator, right);

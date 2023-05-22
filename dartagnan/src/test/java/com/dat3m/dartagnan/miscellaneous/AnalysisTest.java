@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
-import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
@@ -221,9 +220,8 @@ public class AnalysisTest {
         Register r0 = thread.newRegister("r0", type);
         thread.append(newLocal(r0, program.newConstant(type, true, null, null)));
         Label l0 = EventFactory.newLabel("l0");
-        thread.append(newJump(expressionFactory.makeBinary(
+        thread.append(newJump(expressionFactory.makeOr(
                 expressionFactory.makeBinary(r0, GT, expressionFactory.makeOne(type)),
-                BOpBin.OR,
                 expressionFactory.makeBinary(r0, LT, expressionFactory.makeZero(type))), l0));
         Store e0 = newStore(x);
         thread.append(e0);
