@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import com.dat3m.dartagnan.program.expression.Expression;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.specification.*;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
@@ -73,12 +73,24 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         if(ctx.constant() != null) {
             return expressions.parseValue(ctx.constant().getText(), types.getPointerType());
         }
+
         String name = ctx.varName().getText();
         if(ctx.threadId() != null) {
             int id = ctx.threadId().id;
-            return program.getThread(Integer.toString(id)).orElseThrow().getRegister(name).orElseThrow();
+            return program.getThread(Integer.toString(id)).
+                    orElseThrow(() -> new ParsingException(
+                            String.format("Assertion expression \"%s\" refers to non-existent thread id %d", ctx.getText(), id))
+                    )
+                    .getRegister(name)
+                    .orElseThrow(() -> new ParsingException(
+                            String.format("Assertion expression \"%s\" refers to non-existent register.", ctx.getText()))
+                    );
         }
-        MemoryObject base = program.getMemory().getObject(name).orElseThrow();
+
+        MemoryObject base = program.getMemory().getObject(name)
+                .orElseThrow(() -> new ParsingException(
+                        String.format("Assertion expression \"%s\" refers to non-existent memory location.", ctx.getText())
+                ));
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
         return right && offset == null ? base : new Location(name, base, o);

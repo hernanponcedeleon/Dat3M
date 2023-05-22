@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
@@ -84,12 +85,12 @@ public class ExceptionsTest {
         new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/IllegalJump.litmus"));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = ParsingException.class)
     public void LocationNotInitialized() throws Exception {
         new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/LocationNotInitialized.litmus"));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = ParsingException.class)
     public void RegisterNotInitialized() throws Exception {
         new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "exceptions/RegisterNotInitialized.litmus"));
     }
