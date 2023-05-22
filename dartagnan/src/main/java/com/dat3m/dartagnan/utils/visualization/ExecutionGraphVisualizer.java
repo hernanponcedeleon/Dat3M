@@ -163,7 +163,7 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
-                .stream().filter(e -> e.is(Tag.VISIBLE)).collect(Collectors.toList());
+                .stream().filter(e -> e.hasTag(Tag.VISIBLE)).collect(Collectors.toList());
         if (threadEvents.size() <= 1) {
             return this;
         }

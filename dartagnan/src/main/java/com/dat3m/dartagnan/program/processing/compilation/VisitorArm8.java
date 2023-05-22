@@ -52,7 +52,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.ARMv8.MO_REL);
-        store.addFilters(C11.PTHREAD);
+        store.addTags(C11.PTHREAD);
 
         return eventSequence(
                 store
@@ -70,7 +70,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
 
         return eventSequence(
                 load,
@@ -82,7 +82,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
-        load.addFilters(Tag.STARTLOAD);
+        load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
                 load,

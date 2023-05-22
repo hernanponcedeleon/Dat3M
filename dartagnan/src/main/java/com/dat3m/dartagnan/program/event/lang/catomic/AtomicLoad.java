@@ -21,7 +21,7 @@ public class AtomicLoad extends MemEvent implements RegWriter {
     	Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
     			getClass().getName() + " can not have memory order: " + mo);
         this.resultRegister = register;
-        addFilters(READ);
+        addTags(READ);
     }
 
     private AtomicLoad(AtomicLoad other){

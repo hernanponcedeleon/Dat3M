@@ -19,7 +19,7 @@ public abstract class RMWAbstract extends MemEvent implements RegWriter, RegRead
         super(address, mo);
         this.resultRegister = register;
         this.value = value;
-        addFilters(READ, WRITE, RMW);
+        addTags(READ, WRITE, RMW);
     }
 
     RMWAbstract(RMWAbstract other){

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,13 +76,13 @@ public abstract class Definition implements Constraint {
         default T visitInverse(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
         default T visitTransitiveClosure(Relation rel, Relation operand) { return visitDefinition(rel, List.of(operand)); }
         default T visitEmpty(Relation rel) { return visitDefinition(rel, List.of()); }
-        default T visitIdentity(Relation id, FilterAbstract set) { return visitDefinition(id, List.of()); }
-        default T visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) { return visitDefinition(rel, List.of()); }
+        default T visitIdentity(Relation id, Filter set) { return visitDefinition(id, List.of()); }
+        default T visitProduct(Relation rel, Filter domain, Filter range) { return visitDefinition(rel, List.of()); }
         default T visitExternal(Relation ext) { return visitDefinition(ext, List.of()); }
         default T visitInternal(Relation int_) { return visitDefinition(int_, List.of()); }
-        default T visitProgramOrder(Relation po, FilterAbstract type) { return visitDefinition(po, List.of()); }
+        default T visitProgramOrder(Relation po, Filter type) { return visitDefinition(po, List.of()); }
         default T visitControl(Relation ctrlDirect) { return visitDefinition(ctrlDirect, List.of()); }
-        default T visitFences(Relation fence, FilterAbstract type) { return visitDefinition(fence, List.of()); }
+        default T visitFences(Relation fence, Filter type) { return visitDefinition(fence, List.of()); }
         default T visitInternalDataDependency(Relation idd) { return visitDefinition(idd, List.of()); }
         default T visitCompareAndSwapDependency(Relation casDep) { return visitDefinition(casDep, List.of()); }
         default T visitAddressDependency(Relation addrDirect) { return visitDefinition(addrDirect, List.of()); }

@@ -21,7 +21,7 @@ public abstract class LlvmAbstractRMW extends MemEvent implements RegWriter, Reg
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
         this.resultRegister = register;
         this.value = value;
-        addFilters(READ, WRITE, RMW);
+        addTags(READ, WRITE, RMW);
     }
 
     LlvmAbstractRMW(LlvmAbstractRMW other) {

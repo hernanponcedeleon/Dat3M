@@ -213,8 +213,8 @@ public final class EncodingContext {
     }
 
     public NumeralFormula.IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.is(WRITE), "Cannot get a clock-var for non-writes.");
-        if (write.is(INIT)) {
+        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.hasTag(INIT)) {
             return formulaManager.getIntegerFormulaManager().makeNumber(0);
         }
         return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());

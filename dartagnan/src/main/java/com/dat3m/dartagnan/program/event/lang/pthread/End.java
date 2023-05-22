@@ -13,7 +13,7 @@ public class End extends Store {
 
     public End(Expression address){
     	super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_SC);
-    	addFilters(Tag.C11.PTHREAD);
+    	addTags(Tag.C11.PTHREAD);
     }
 
     private End(End other){

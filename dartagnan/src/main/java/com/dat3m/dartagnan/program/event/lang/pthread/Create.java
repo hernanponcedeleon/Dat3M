@@ -16,7 +16,7 @@ public class Create extends Store {
     public Create(Expression address, String routine) {
         super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getPointerType()), MO_SC);
         this.routine = routine;
-        addFilters(Tag.C11.PTHREAD);
+        addTags(Tag.C11.PTHREAD);
     }
 
     private Create(Create other){

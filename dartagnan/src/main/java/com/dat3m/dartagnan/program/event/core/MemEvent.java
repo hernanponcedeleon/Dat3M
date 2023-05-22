@@ -16,9 +16,9 @@ public abstract class MemEvent extends Event {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
-        addFilters(VISIBLE, MEMORY);
+        addTags(VISIBLE, MEMORY);
         if (!mo.isEmpty()) {
-            addFilters(mo);
+            addTags(mo);
         }
     }
 
@@ -44,12 +44,12 @@ public abstract class MemEvent extends Event {
     public void setMo(String mo) {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         if (!this.mo.isEmpty()) {
-            removeFilters(this.mo);
+            removeTags(this.mo);
         }
         this.mo = mo;
         // This cannot be merged with the if above, because this.mo was updated
         if (!this.mo.isEmpty()) {
-            addFilters(mo);
+            addTags(mo);
         }
     }
 

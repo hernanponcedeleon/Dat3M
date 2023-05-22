@@ -27,7 +27,7 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
-        store.addFilters(C11.PTHREAD);
+        store.addTags(C11.PTHREAD);
 
         return tagList(eventSequence(
                 store));
@@ -45,7 +45,7 @@ public class VisitorC11 extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
 
         return tagList(eventSequence(
                 load,
@@ -57,7 +57,7 @@ public class VisitorC11 extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-        load.addFilters(Tag.STARTLOAD);
+        load.addTags(Tag.STARTLOAD);
 
         return tagList(eventSequence(
                 load,
@@ -256,7 +256,7 @@ public class VisitorC11 extends VisitorBase {
 
     private void tagEvent(Event e) {
         if (e instanceof MemEvent) {
-            e.addFilters(((MemEvent) e).canRace() ? C11.NONATOMIC : C11.ATOMIC);
+            e.addTags(((MemEvent) e).canRace() ? C11.NONATOMIC : C11.ATOMIC);
         }
     }
 

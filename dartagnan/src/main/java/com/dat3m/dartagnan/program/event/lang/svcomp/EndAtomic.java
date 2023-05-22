@@ -28,7 +28,7 @@ public class EndAtomic extends Event {
 
 	public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
-        addFilters(RMW, SVCOMPATOMIC);
+        addTags(RMW, SVCOMPATOMIC);
     }
 
     protected EndAtomic(EndAtomic other){
@@ -73,7 +73,7 @@ public class EndAtomic extends Event {
 						logger.warn(e + " is inside atomic block but can be reached from the outside");
 					}
 					enclosedEvents.add(e);
-					e.addFilters(RMW);
+					e.addTags(RMW);
 				}
 			}
 		}

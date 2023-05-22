@@ -80,7 +80,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         }
 
         // Make sure to not remove "NOOPT" events.
-        toBeRemoved.removeIf(e -> e.is(Tag.NOOPT));
+        toBeRemoved.removeIf(e -> e.hasTag(Tag.NOOPT));
 
         // Here is the actual removal
         boolean isCurDead = false;
@@ -100,7 +100,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
                 // so we remove it as a possible predecessor of the label.
                 immediateLabelPredecessors.get(cur.getSuccessor()).remove(cur);
             }
-            if((isCurDead || toBeRemoved.contains(cur)) && !cur.is(Tag.NOOPT)) {
+            if((isCurDead || toBeRemoved.contains(cur)) && !cur.hasTag(Tag.NOOPT)) {
                 // If the current event is dead or can be removed for another reason, we delete it
                 cur.delete();
             }

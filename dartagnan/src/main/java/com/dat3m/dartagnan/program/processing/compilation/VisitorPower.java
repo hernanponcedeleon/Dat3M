@@ -48,7 +48,7 @@ public class VisitorPower extends VisitorBase {
     @Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
-        store.addFilters(C11.PTHREAD);
+        store.addTags(C11.PTHREAD);
 
         return eventSequence(
                 Power.newSyncBarrier(),
@@ -69,7 +69,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Literal zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), "");
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getGlobalId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -87,7 +87,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Literal one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
-		load.addFilters(Tag.STARTLOAD);
+		load.addTags(Tag.STARTLOAD);
 		Label label = newLabel("Jump_" + e.getGlobalId());
         CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 

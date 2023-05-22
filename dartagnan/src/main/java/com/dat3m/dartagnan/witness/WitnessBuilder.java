@@ -130,7 +130,7 @@ public class WitnessBuilder {
 				
 				// End is also WRITE and PTHREAD, but it does not have
 				// CLines and thus won't create an edge (as expected)
-				if (e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
+				if (e.hasTag(WRITE) && e.hasTag(PTHREAD)) {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;
 				}
@@ -155,7 +155,7 @@ public class WitnessBuilder {
 				graph.addEdge(edge);
 
 				nextNode++;
-				if (e.hasFilter(Tag.ASSERTION)) {
+				if (e.hasTag(Tag.ASSERTION)) {
 					break;
 				}
 			}
@@ -195,7 +195,7 @@ public class WitnessBuilder {
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
 		List<List<Event>> atomicBlocks = program.getEvents().stream()
-				.filter(e -> e.is(Tag.SVCOMP.SVCOMPATOMIC))
+				.filter(e -> e.hasTag(Tag.SVCOMP.SVCOMPATOMIC))
 				.map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
 						collect(Collectors.toList()))

@@ -30,7 +30,7 @@ public class VisitorLKMM extends VisitorBase {
         @Override
         public List<Event> visitCreate(Create e) {
             Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
-            store.addFilters(C11.PTHREAD);
+            store.addTags(C11.PTHREAD);
 
             return eventSequence(
                     store
@@ -50,7 +50,7 @@ public class VisitorLKMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Literal zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
         
         return eventSequence(
                 load,
@@ -63,7 +63,7 @@ public class VisitorLKMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Literal one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
-        load.addFilters(Tag.STARTLOAD);
+        load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
                 load,
@@ -155,7 +155,7 @@ public class VisitorLKMM extends VisitorBase {
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE);
-        load.addFilters(Tag.Linux.NORETURN);
+        load.addTags(Tag.Linux.NORETURN);
         
         return eventSequence(
                 load,

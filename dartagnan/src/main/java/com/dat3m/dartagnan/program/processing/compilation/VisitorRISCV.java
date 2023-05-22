@@ -55,7 +55,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
-        store.addFilters(C11.PTHREAD);
+        store.addTags(C11.PTHREAD);
 
         return eventSequence(
                 store
@@ -73,7 +73,7 @@ class VisitorRISCV extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Literal zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
 
         return eventSequence(
                 load,
@@ -86,7 +86,7 @@ class VisitorRISCV extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Literal one = expressions.makeOne(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
-        load.addFilters(Tag.STARTLOAD);
+        load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
 				load,

@@ -49,7 +49,7 @@ public class Local extends Event implements RegWriter, RegReaderData {
     @Override
     public String toString() {
         String str = register + " <- " + expr;
-        if (this.is(Tag.Std.MALLOC)) {
+        if (this.hasTag(Tag.Std.MALLOC)) {
             str = str + "\t### " + Tag.Std.MALLOC;
         }
         return str;

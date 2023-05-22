@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.Derivable;
 import com.dat3m.dartagnan.solver.caat.predicates.misc.PredicateVisitor;
@@ -16,10 +16,10 @@ import java.util.stream.Stream;
 
 public class StaticWMMSet extends AbstractWMMPredicate implements SetPredicate {
 
-    private final FilterAbstract filter;
+    private final Filter filter;
     private List<Element> events;
 
-    public StaticWMMSet(FilterAbstract filter) {
+    public StaticWMMSet(Filter filter) {
         this.filter = filter;
     }
 
@@ -31,7 +31,7 @@ public class StaticWMMSet extends AbstractWMMPredicate implements SetPredicate {
     @Override
     public void repopulate() {
         events = model.getEventList().stream()
-                .filter(e -> filter.filter(e.getEvent()))
+                .filter(e -> filter.apply(e.getEvent()))
                 .map(e -> new Element(e.getId())).collect(Collectors.toList());
     }
 
@@ -56,7 +56,7 @@ public class StaticWMMSet extends AbstractWMMPredicate implements SetPredicate {
 
     @Override
     public boolean containsById(int id) {
-        return filter.filter(getEvent(id).getEvent());
+        return filter.apply(getEvent(id).getEvent());
     }
 
     @Override

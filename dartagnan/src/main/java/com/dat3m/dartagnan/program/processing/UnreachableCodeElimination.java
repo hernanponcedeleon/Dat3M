@@ -42,7 +42,7 @@ public class UnreachableCodeElimination implements ProgramProcessor {
         final Event entry = thread.getEntry();
         final Event exit = thread.getExit();
 
-        if (entry.is(Tag.INIT)) {
+        if (entry.hasTag(Tag.INIT)) {
             return;
         }
 
@@ -50,7 +50,7 @@ public class UnreachableCodeElimination implements ProgramProcessor {
         computeReachableEvents(entry, reachableEvents);
 
         thread.getEvents().stream()
-                .filter(e -> !reachableEvents.contains(e) && e != exit && !e.is(Tag.NOOPT))
+                .filter(e -> !reachableEvents.contains(e) && e != exit && !e.hasTag(Tag.NOOPT))
                 .forEach(Event::delete);
     }
 

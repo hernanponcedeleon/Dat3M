@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -47,7 +47,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
-        store.addFilters(C11.PTHREAD);
+        store.addTags(C11.PTHREAD);
         
         return eventSequence(
                 store
@@ -67,7 +67,7 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Literal zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
-        load.addFilters(C11.PTHREAD);
+        load.addTags(C11.PTHREAD);
         
         return eventSequence(
 				load,
@@ -80,7 +80,7 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 		Literal one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
-        load.addFilters(Tag.STARTLOAD);
+        load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
 				load,
@@ -107,7 +107,7 @@ class VisitorIMM extends VisitorBase {
 		Register regExpected = e.getThread().newRegister(type);
         Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
-        loadExpected.addFilters(Tag.IMM.CASDEPORIGIN);
+        loadExpected.addTags(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");

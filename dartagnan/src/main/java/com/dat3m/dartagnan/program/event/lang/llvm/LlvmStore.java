@@ -22,7 +22,7 @@ public class LlvmStore extends MemEvent implements RegReaderData {
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
         		getClass().getName() + " cannot have memory order: " + mo);
         this.value = value;
-        addFilters(WRITE);
+        addTags(WRITE);
     }
 
     private LlvmStore(LlvmStore other){
