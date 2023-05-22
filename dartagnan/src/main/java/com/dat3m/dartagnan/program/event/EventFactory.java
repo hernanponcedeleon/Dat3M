@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
@@ -622,6 +623,11 @@ public class EventFactory {
             RedOp red = new RedOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
             red.addFilters(scope);
             return red;
+        }
+
+        public static FenceWithId newFenceWithId(String name, IExpr fenceId) {
+            FenceWithId fenceWithId = new FenceWithId(name, fenceId);
+            return fenceWithId;
         }
     }
 

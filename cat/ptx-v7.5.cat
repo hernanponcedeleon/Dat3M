@@ -37,8 +37,8 @@ let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-p
 let sr-m = ([strong-m]; (sr & loc & same-proxy); [strong-m])
 let po-m = ([M]; (po & loc & same-proxy); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
-let fence-sc = [F & SC] ; sr; [F & SC]
-let sync-barrier = [BAR_BEFORE]; (po | (sync_bar & scta)); [BAR_AFTER]
+let fence-sc = [F & SC]; sr; [F & SC]
+let sync-barrier = [F & BAR]; (sync_bar & scta); [F & BAR]
 
 // This is equivalent to 
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)

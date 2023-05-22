@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
@@ -8,6 +9,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
@@ -917,19 +919,27 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSyncBarrier(Relation sync_bar, String bar_before, String bar_after) {
+        public Knowledge visitSyncBarrier(Relation sync_bar) {
+            Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            List<Event> events = new ArrayList<>();
-            events.addAll(program.getEvents(Load.class));
-            events.addAll(program.getEvents(Store.class));
-            for (Event e1 : events) {
-                for (Event e2 : events) {
-                    if (mustSyncBar(e1, e2, bar_before, bar_after) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
+            List<FenceWithId> fenceEvents = program.getEvents(FenceWithId.class);
+            for (FenceWithId e1 : fenceEvents) {
+                for (FenceWithId e2 : fenceEvents) {
+                    if ((e1.getFenceID() instanceof Register || e2.getFenceID() instanceof Register)
+                            && !exec.areMutuallyExclusive(e1, e2)) {
+                        may.add(new Tuple(e1, e2));
+                    } else if (e1.getFenceID() instanceof IConst && e2.getFenceID() instanceof IConst
+                            && !exec.areMutuallyExclusive(e1, e2)) {
+                        IConst const1 = (IConst) e1.getFenceID();
+                        IConst const2 = (IConst) e2.getFenceID();
+                        if (const1.getValueAsInt() == const2.getValueAsInt()) {
+                            may.add(new Tuple(e1, e2));
+                            must.add(new Tuple(e1, e2));
+                        }
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -961,28 +971,6 @@ public class RelationAnalysis {
                 return false;
             }
             return sameHigherScope(first, second, firstScope);
-        }
-
-        private boolean mustSyncBar(Event first, Event second, String bar_before, String bar_after) {
-            if (!first.is(bar_before) || !second.is(bar_after)) {
-                return false;
-            }
-            int barId1 = -1;
-            int barId2 = -1;
-            for (String filter : first.getFilters()) {
-                if (filter.contains(bar_before) && !filter.equals(bar_before)) {
-                    barId1 = Integer.parseInt(filter.replace(bar_before, ""));
-                }
-            }
-            for (String filter : second.getFilters()) {
-                if (filter.contains(bar_after) && !filter.equals(bar_after)) {
-                    barId2 = Integer.parseInt(filter.replace(bar_after, ""));
-                }
-            }
-            if (barId1 == barId2 && barId1 != -1) {
-                return true;
-            }
-            return false;
         }
 
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {

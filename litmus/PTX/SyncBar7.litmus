@@ -8,7 +8,7 @@ P1:r1=0; P1:r3=0;
 }
  P0@cta 0,gpu 0         | P1@cta 0,gpu 0         ;
  st.weak x, 1           | st.weak y, 2           ;
- bar.cta.sync r2        | bar.cta.sync r3        ;
+ bar.cta.sync r2        | bar.cta.sync 0         ;
  ld.weak r0, y          | ld.weak r1, x          ;
 forall
 (P0:r0 == 2 \/ P1:r1 == 1)

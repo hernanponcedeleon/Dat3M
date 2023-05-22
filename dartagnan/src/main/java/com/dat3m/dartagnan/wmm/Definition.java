@@ -92,8 +92,7 @@ public abstract class Definition implements Constraint {
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
         default T visitSameScope(Relation sc, String scope) { return visitDefinition(sc, List.of()); }
-        default T visitSyncBarrier(Relation sync_bar, String bar_before, String bar_after){
-            return visitDefinition(sync_bar, List.of()); }
+        default T visitSyncBarrier(Relation sync_bar){ return visitDefinition(sync_bar, List.of()); }
         default T visitAlias(Relation alias) { return visitDefinition(alias, List.of()); }
     }
 

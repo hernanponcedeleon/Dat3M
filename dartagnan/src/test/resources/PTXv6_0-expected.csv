@@ -22,10 +22,11 @@ litmus/PTX/SB3.litmus,1
 litmus/PTX/SB4.litmus,1
 litmus/PTX/SyncBar1.litmus,1
 litmus/PTX/SyncBar2.litmus,0
-litmus/PTX/SyncBar3.litmus,0
-litmus/PTX/SyncBar4.litmus,1
+litmus/PTX/SyncBar3.litmus,1
+litmus/PTX/SyncBar4.litmus,0
 litmus/PTX/SyncBar5.litmus,1
 litmus/PTX/SyncBar6.litmus,0
+litmus/PTX/SyncBar7.litmus,1
 litmus/PTX/_Atom1.litmus,1
 litmus/PTX/_CoRW1.litmus,1
 litmus/PTX/_CoWR1.litmus,0

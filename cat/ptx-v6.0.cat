@@ -30,7 +30,7 @@ let sr-m = ([strong-m]; (sr & loc); [strong-m])
 let po-m = ([M]; po-loc; [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 let fence-sc = [F & SC] ; sr; [F & SC]
-let sync-barrier = [BAR_BEFORE]; (po | (sync_bar & scta)); [BAR_AFTER]
+let sync-barrier = [F & BAR]; (sync_bar & scta); [F & BAR]
 
 // The ASPLOS'19 paper uses the definition below
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)

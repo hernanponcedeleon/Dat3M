@@ -335,7 +335,7 @@ public class Wmm {
             case SCTA:
                 return new SameScope(r, Tag.PTX.CTA);
             case SYNC_BAR:
-                return new SyncBar(r, Tag.PTX.BAR_BEFORE, Tag.PTX.BAR_AFTER);
+                return new SyncBar(r);
             case ALIAS:
                 return new Alias(r);
             default:

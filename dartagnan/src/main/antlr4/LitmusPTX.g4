@@ -137,16 +137,16 @@ fenceAlias
     ;
 
 barrier
-    :   barrierSync
-    |   barrierArrive
+    :   barrierSyncConstant
+    |   barrierSyncRegister
     ;
 
-barrierSync
-    :  Barrier Period CTA Period Sync barID
+barrierSyncConstant
+    :  Barrier Period CTA Period Sync constant
     ;
 
-barrierArrive
-    :   Barrier Period CTA Period Arrive barID
+barrierSyncRegister
+    :   Barrier Period CTA Period Sync register
     ;
 
 atomInstruction
@@ -271,7 +271,6 @@ Fence   :   'fence';
 Barrier :   'bar';
 
 Sync    :   'sync';
-Arrive  :   'arrive';
 
 CTA     :   'cta';
 GPU     :   'gpu';

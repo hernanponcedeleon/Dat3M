@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -596,6 +598,29 @@ public class WmmEncoder implements Encoder {
                         }
                     }
                 }
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitSyncBarrier(Relation rel) {
+            final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+            EncodingContext.EdgeEncoder encoder = context.edge(rel);
+            for (Tuple tuple : encodeSets.get(rel)) {
+                FenceWithId e1 = (FenceWithId) tuple.getFirst();
+                FenceWithId e2 = (FenceWithId) tuple.getSecond();
+                BooleanFormula sameId;
+                if (k.containsMust(tuple)) {
+                    sameId = bmgr.makeTrue();
+                } else {
+                    IExpr id1 = e1.getFenceID();
+                    IExpr id2 = e2.getFenceID();
+                    sameId = context.equal(id1.toIntFormula(e1, context.getFormulaManager()),
+                            id2.toIntFormula(e2, context.getFormulaManager()));
+                }
+                enc.add(bmgr.equivalence(
+                        encoder.encode(tuple),
+                        bmgr.and(execution(tuple), sameId)));
             }
             return null;
         }
