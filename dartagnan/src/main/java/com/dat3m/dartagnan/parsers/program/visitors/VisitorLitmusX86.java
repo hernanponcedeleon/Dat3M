@@ -15,9 +15,10 @@ import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
+
+import java.util.HashMap;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
 
@@ -53,11 +54,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             AssertionHelper.parseAssertionFilter(program, raw);
         }
-        for (Thread thread : threadList) {
-            thread.append(EventFactory.newLabel(thread.getEndLabelName()));
-        }
-        EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
+        VisitorHelper.applyPostParsing(program, new HashMap<>());
         return program;
     }
 

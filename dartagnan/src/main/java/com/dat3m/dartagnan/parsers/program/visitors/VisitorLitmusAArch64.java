@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -67,11 +68,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             AssertionHelper.parseAssertionFilter(program, raw);
         }
-        for (Thread thread : threadList) {
-            thread.append(labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel));
-        }
-        EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
+        VisitorHelper.applyPostParsing(program, labelMap);
         return program;
     }
 

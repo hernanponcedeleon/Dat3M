@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.*;
@@ -58,11 +57,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             AssertionHelper.parseAssertionFilter(program, raw);
         }
-        for (Thread thread : program.getThreads()) {
-            thread.append(labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel));
-        }
-        EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
+        VisitorHelper.applyPostParsing(program, labelMap);
         return program;
     }
 
