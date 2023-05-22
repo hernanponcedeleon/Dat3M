@@ -627,7 +627,7 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getThread().newRegister(type);
         Register retReg = e.getThread().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, expressions.makeOne(type)));
+        Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, expressions.makeZero(type)));
 
         Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, retReg, ARMv8.extractStoreMoFromLKMo(mo), true);
