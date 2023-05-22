@@ -6,9 +6,9 @@ import com.dat3m.dartagnan.program.expression.type.Type;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
-import java.util.stream.Collectors;
 
 public class Thread {
 
@@ -100,7 +100,7 @@ public class Thread {
 
     public void append(Event event) {
         if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
-            event.addFilters(NOOPT);
+            event.addTags(NOOPT);
         }
         exit.setSuccessor(event);
         event.setThread(this);

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;

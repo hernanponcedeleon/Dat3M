@@ -13,7 +13,7 @@ public class LKMMLockWrite extends RMWStore {
 
 	public LKMMLockWrite(Load lockRead, Expression lock) {
 		super(lockRead, lock, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getIntegerType(1)), Linux.MO_ONCE);
-		addFilters(RMW, Linux.LOCK_WRITE);
+		addTags(RMW, Linux.LOCK_WRITE);
 	}
 
 	@Override

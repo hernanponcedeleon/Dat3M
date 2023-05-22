@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -25,6 +24,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.Literal;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
@@ -205,7 +205,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
 	protected CondJump newFakeCtrlDep(Register reg, Label target) {
 		CondJump jump = newJump(expressions.makeBinary(reg, COpBin.EQ, reg), target);
-		jump.addFilters(Tag.NOOPT);
+		jump.addTags(Tag.NOOPT);
 		return jump;
 	}
 

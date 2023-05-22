@@ -789,10 +789,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         assertionIndex++;
         Event local = EventFactory.newLocal(ass, expr);
         append(local);
-        local.addFilters(Tag.ASSERTION);
+        local.addTags(Tag.ASSERTION);
         Label end = labelMap.computeIfAbsent(thread.getEndLabelName(), EventFactory::newLabel);
         CondJump jump = EventFactory.newJump(expressions.makeBinary(ass, COpBin.NEQ, one), end);
-        jump.addFilters(Tag.EARLYTERMINATION);
+        jump.addTags(Tag.EARLYTERMINATION);
         thread.append(jump);
 
     }
