@@ -69,7 +69,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newJump(expressions.makeBinary(resultRegister, NEQ, zero),
+                newJumpUnless(expressions.makeBinary(resultRegister, EQ, zero),
                         (Label) e.getThread().getExit())));
     }
 
@@ -83,7 +83,7 @@ class VisitorTso extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeBinary(resultRegister, NEQ, one),
+                newJumpUnless(expressions.makeBinary(resultRegister, EQ, one),
                         (Label) e.getThread().getExit())));
     }
 

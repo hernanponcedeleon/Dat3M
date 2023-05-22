@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class EventFactory {
+
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     // Static class
     private EventFactory() {
@@ -112,12 +115,26 @@ public class EventFactory {
         return new CondJump(cond, target);
     }
 
+    public static CondJump newJumpUnless(Expression cond, Label target) {
+        return newJump(expressions.makeNot(cond), target);
+    }
+
     public static IfAsJump newIfJump(Expression expr, Label label, Label end) {
         return new IfAsJump(expr, label, end);
     }
 
+    public static IfAsJump newIfJumpUnless(Expression expr, Label label, Label end) {
+        return new IfAsJump(expressions.makeNot(expr), label, end);
+    }
+
     public static CondJump newGoto(Label target) {
         return newJump(ExpressionFactory.getInstance().makeTrue(), target);
+    }
+
+    public static CondJump newFakeCtrlDep(Register reg, Label target) {
+        CondJump jump = newJump(expressions.makeBinary(reg, COpBin.EQ, reg), target);
+        jump.addTags(Tag.NOOPT);
+        return jump;
     }
 
     public static Assume newAssume(Expression expr) {

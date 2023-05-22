@@ -76,7 +76,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newJump(expressions.makeBinary(resultRegister, NEQ, zero), (Label) e.getThread().getExit())
+                newJumpUnless(expressions.makeBinary(resultRegister, EQ, zero), (Label) e.getThread().getExit())
         );
 	}
 
@@ -90,7 +90,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
 				load,
 				super.visitStart(e),
-                newJump(expressions.makeBinary(resultRegister, NEQ, one), (Label) e.getThread().getExit())
+                newJumpUnless(expressions.makeBinary(resultRegister, EQ, one), (Label) e.getThread().getExit())
         );
 	}
 

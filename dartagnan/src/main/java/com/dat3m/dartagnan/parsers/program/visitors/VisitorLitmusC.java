@@ -198,7 +198,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         ifId++;
         Label elseL = labelMap.computeIfAbsent("else_" + ifId, EventFactory::newLabel);
         Label endL = labelMap.computeIfAbsent("end_" + ifId, EventFactory::newLabel);
-        thread.append(EventFactory.newIfJump(expressions.makeNot(expr), elseL, endL));
+        thread.append(EventFactory.newIfJumpUnless(expr, elseL, endL));
         for (ExpressionContext expressionContext : ctx.expression()) {
             expressionContext.accept(this);
         }

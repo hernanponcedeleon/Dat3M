@@ -501,7 +501,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             Expression c = (Expression) ctx.proposition().expr().accept(this);
             if (c != null) {
-                thread.append(EventFactory.newJump(expressions.makeNot(c), pairingLabel));
+                thread.append(EventFactory.newJumpUnless(c, pairingLabel));
             }
         }
         return null;

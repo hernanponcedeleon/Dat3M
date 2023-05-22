@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
@@ -200,12 +198,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitLlvmStore(LlvmStore e) {
 		throw error(e);
-	}
-
-	protected CondJump newFakeCtrlDep(Register reg, Label target) {
-		CondJump jump = newJump(expressions.makeBinary(reg, COpBin.EQ, reg), target);
-		jump.addTags(Tag.NOOPT);
-		return jump;
 	}
 
 	private IllegalArgumentException error(Event e) {

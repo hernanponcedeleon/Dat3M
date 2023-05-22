@@ -77,7 +77,7 @@ public class VisitorPower extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
-                newJump(expressions.makeBinary(resultRegister, NEQ, zero), (Label) e.getThread().getExit())
+                newJumpUnless(expressions.makeBinary(resultRegister, EQ, zero), (Label) e.getThread().getExit())
         );
 	}
 
@@ -96,7 +96,7 @@ public class VisitorPower extends VisitorBase {
                 label,
                 Power.newISyncBarrier(),
 				super.visitStart(e),
-                newJump(expressions.makeBinary(resultRegister, NEQ, one), (Label) e.getThread().getExit())
+                newJumpUnless(expressions.makeBinary(resultRegister, EQ, one), (Label) e.getThread().getExit())
         );
 	}
 
