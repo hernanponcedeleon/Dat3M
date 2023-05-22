@@ -655,7 +655,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (threadLocalVariables.contains(name)) {
             return program.getMemory().getOrNewObject(String.format("%s(%s)", name, threadCount));
         }
-        return program.getMemory().getObject(name).orElseThrow();
+        return program.getMemory().getObject(name)
+                .orElseThrow(() -> new ParsingException("Variable " + name + " is not defined."));
     }
 
     @Override
