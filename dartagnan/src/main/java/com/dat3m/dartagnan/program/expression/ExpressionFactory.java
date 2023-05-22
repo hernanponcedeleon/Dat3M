@@ -53,11 +53,10 @@ public final class ExpressionFactory {
         return new Literal(value, type);
     }
 
-    public Expression makeUnary(BOpUn operator, Expression inner) {
+    public Expression makeNot(Expression inner) {
         if (!inner.isBoolean()) {
-            logger.warn("Non-boolean operand for {} {}.", operator, inner);
+            logger.warn("Non-boolean operand for (not {}).", inner);
         }
-        assert operator.equals(BOpUn.NOT);
         if (inner instanceof Literal) {
             return makeValue(inner.isFalse());
         }
@@ -65,7 +64,12 @@ public final class ExpressionFactory {
             assert ((UnaryBooleanExpression) inner).getOp().equals(BOpUn.NOT);
             return ((UnaryBooleanExpression) inner).getInner();
         }
-        return new UnaryBooleanExpression(types.getBooleanType(), operator, inner);
+        return new UnaryBooleanExpression(types.getBooleanType(), BOpUn.NOT, inner);
+    }
+
+    public Expression makeUnary(BOpUn operator, Expression inner) {
+        assert operator.equals(BOpUn.NOT);
+        return makeNot(inner);
     }
 
     public Expression makeUnary(IOpUn operator, Expression inner) {
@@ -172,10 +176,10 @@ public final class ExpressionFactory {
             return makeFalse();
         }
         if (left.isTrue() || left.isFalse()) {
-            return comparator.equals(COpBin.EQ) == left.isTrue() ? right : makeUnary(BOpUn.NOT, right);
+            return comparator.equals(COpBin.EQ) == left.isTrue() ? right : makeNot(right);
         }
         if (right.isTrue() || right.isFalse()) {
-            return comparator.equals(COpBin.EQ) == right.isTrue() ? left : makeUnary(BOpUn.NOT, left);
+            return comparator.equals(COpBin.EQ) == right.isTrue() ? left : makeNot(left);
         }
         return new Comparison(types.getBooleanType(), left, comparator, right);
     }

@@ -32,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.LLVMFUNCTIONS;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmFunctions.llvmFunction;
@@ -502,7 +501,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             Expression c = (Expression) ctx.proposition().expr().accept(this);
             if (c != null) {
-                thread.append(EventFactory.newJump(expressions.makeUnary(NOT, c), pairingLabel));
+                thread.append(EventFactory.newJump(expressions.makeNot(c), pairingLabel));
             }
         }
         return null;
@@ -578,7 +577,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitNeg_expr(Neg_exprContext ctx) {
         Expression v = (Expression) ctx.unary_expr().accept(this);
-        return expressions.makeUnary(NOT, v);
+        return expressions.makeNot(v);
     }
 
     @Override

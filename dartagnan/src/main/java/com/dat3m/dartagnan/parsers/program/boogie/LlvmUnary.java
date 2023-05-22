@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
 import static com.dat3m.dartagnan.expression.op.IOpUn.*;
 
 public class LlvmUnary {
@@ -39,7 +38,7 @@ public class LlvmUnary {
 	
 	public static Object llvmUnary(String name, List<Object> callParams, ExpressionFactory factory) {
 		if(name.startsWith("$not.")) {
-			return factory.makeUnary(NOT, (Expression)callParams.get(0));
+			return factory.makeNot((Expression)callParams.get(0));
 		}
 
 		IOpUn op = null;

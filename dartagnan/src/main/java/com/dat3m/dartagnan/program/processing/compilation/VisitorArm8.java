@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
@@ -252,7 +251,7 @@ class VisitorArm8 extends VisitorBase {
         if (e.isWeak()) {
             Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", type);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-            optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeUnary(BOpUn.NOT, statusReg));
+            optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
         }
 
         return eventSequence(

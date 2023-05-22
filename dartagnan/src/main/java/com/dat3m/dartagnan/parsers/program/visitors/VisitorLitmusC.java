@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
@@ -199,7 +198,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         ifId++;
         Label elseL = labelMap.computeIfAbsent("else_" + ifId, EventFactory::newLabel);
         Label endL = labelMap.computeIfAbsent("end_" + ifId, EventFactory::newLabel);
-        thread.append(EventFactory.newIfJump(expressions.makeUnary(BOpUn.NOT, expr), elseL, endL));
+        thread.append(EventFactory.newIfJump(expressions.makeNot(expr), elseL, endL));
         for (ExpressionContext expressionContext : ctx.expression()) {
             expressionContext.accept(this);
         }
@@ -358,7 +357,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Expression visitReOpBoolNot(ReOpBoolNotContext ctx) {
         Register register = getReturnRegister(false);
         Expression v = (Expression) ctx.re().accept(this);
-        Expression result = expressions.makeUnary(BOpUn.NOT, v);
+        Expression result = expressions.makeNot(v);
         return assignToReturnRegister(register, result);
     }
 
