@@ -122,7 +122,7 @@ public final class ExpressionFactory {
                     bitWidth = ((IntegerType) inner.getType()).getBitWidth();
                     assert BigInteger.TWO.pow(bitWidth-1).negate().compareTo(value) <= 0;
                     assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
-                    v = BigInteger.TWO.pow(bitWidth-1).compareTo(value) <= 0 ? value : value.subtract(BigInteger.TWO.pow(bitWidth));
+                    v = value.testBit(bitWidth - 1) ? value.subtract(BigInteger.TWO.pow(bitWidth)) : value;
                     break;
                 case CTLZ:
                     checkArgument(type instanceof IntegerType, "Type mismatch for %s %s.", operator, inner);
