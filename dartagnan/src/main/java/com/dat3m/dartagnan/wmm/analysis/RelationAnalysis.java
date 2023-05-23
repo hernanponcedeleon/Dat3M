@@ -928,11 +928,8 @@ public class RelationAnalysis {
                     if ((e1.getFenceID() instanceof Register || e2.getFenceID() instanceof Register)
                             && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
-                    } else if (e1.getFenceID() instanceof IConst && e2.getFenceID() instanceof IConst
-                            && !exec.areMutuallyExclusive(e1, e2)) {
-                        IConst const1 = (IConst) e1.getFenceID();
-                        IConst const2 = (IConst) e2.getFenceID();
-                        if (const1.getValueAsInt() == const2.getValueAsInt()) {
+                    } else if (!exec.areMutuallyExclusive(e1, e2)) {
+                        if (e1.getFenceID().equals(e2.getFenceID())) {
                             may.add(new Tuple(e1, e2));
                             must.add(new Tuple(e1, e2));
                         }

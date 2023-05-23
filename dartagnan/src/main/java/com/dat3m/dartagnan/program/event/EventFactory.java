@@ -626,8 +626,7 @@ public class EventFactory {
         }
 
         public static FenceWithId newFenceWithId(String name, IExpr fenceId) {
-            FenceWithId fenceWithId = new FenceWithId(name, fenceId);
-            return fenceWithId;
+            return new FenceWithId(name, fenceId);
         }
     }
 

@@ -4,7 +4,7 @@ PTX
 // Base relations:
 // sr: same-scope
 // scta: same-cta
-// sync_bar: synchronize by barriers with same logical barrier resource (barID)
+// sync_barrier: synchronize by barriers with same logical barrier resource (barID)
 
 // Comparing to the ptx-v7.5 model written in Alloy (https://github.com/NVlabs/mixedproxy)
 // 1. The ptx-v7.5 alloy model uses this Causality-axiom "irreflexive ((rf | co | fr)?; cause)".
@@ -38,7 +38,6 @@ let sr-m = ([strong-m]; (sr & loc & same-proxy); [strong-m])
 let po-m = ([M]; (po & loc & same-proxy); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 let fence-sc = [F & SC]; sr; [F & SC]
-let sync-barrier = [F & BAR]; (sync_bar & scta); [F & BAR]
 
 // This is equivalent to 
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
@@ -54,7 +53,7 @@ let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po;
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
 let sync = morally-strong & (release-pattern; observation+; acquire-pattern)
-let cause-base = (po*; ((sync | sync-barrier | fence-sc); po*)+) | po
+let cause-base = (po*; ((sync | sync_barrier | fence-sc); po*)+) | po
 
 (*******************)
 

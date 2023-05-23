@@ -280,7 +280,6 @@ public final class Tag {
         public static final String TEX = "TEX"; // TEXTURE
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
-        public static final String BAR = "BAR";
         public static final String ALIAS = "ALIAS";
         private PTX() {
         }

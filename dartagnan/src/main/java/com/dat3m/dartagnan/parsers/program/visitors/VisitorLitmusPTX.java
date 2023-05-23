@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
@@ -317,18 +318,12 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitBarrierSyncConstant(LitmusPTXParser.BarrierSyncConstantContext ctx) {
-        IConst constant = (IConst) ctx.constant().accept(this);
-        Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), constant);
-        fence.addFilters(Tag.PTX.BAR);
-        return programBuilder.addChild(mainThread, fence);
-    }
-
-    @Override
-    public Object visitBarrierSyncRegister(LitmusPTXParser.BarrierSyncRegisterContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
-        Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), register);
-        fence.addFilters(Tag.PTX.BAR);
+    public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
+        IExpr fenceId = (IExpr) ctx.barID().accept(this);
+        if (fenceId == null) {
+            fenceId = programBuilder.getRegister(mainThread, ctx.barID().getText());
+        }
+        Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
     }
 }

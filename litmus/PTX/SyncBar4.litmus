@@ -3,12 +3,11 @@ PTX Bar
 {
 x=0;
 y=0;
-P0:r0=0; P0:r2=0;
-P1:r1=0; P1:r3=0;
+P0:r0=0; P0:r2=1;
+P1:r1=0; P1:r3=2;
 }
  P0@cta 0,gpu 0         | P1@cta 0,gpu 0         ;
  st.weak x, 1           | st.weak y, 2           ;
- ld.weak r1, 1          |                        ;
  bar.cta.sync r2        | bar.cta.sync r3        ;
  ld.weak r0, y          | ld.weak r1, x          ;
 forall

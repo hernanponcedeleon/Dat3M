@@ -46,7 +46,8 @@ public class RelationNameRepository {
 	public static final String CASDEP = "casdep";
 	public static final String SR = "sr";
 	public static final String SCTA = "scta"; // same-cta, the same as same_block_r in alloy
-	public static final String SYNC_BAR = "sync_bar";
+	public static final String SYNC_BARRIER = "sync_barrier";
+	public static final String SYNCBAR = "syncbar";
 	public static final String ALIAS = "alias";
 	// Any new string must be also added to method contains() below
 

@@ -334,8 +334,10 @@ public class Wmm {
                 return new SameScope(r);
             case SCTA:
                 return new SameScope(r, Tag.PTX.CTA);
-            case SYNC_BAR:
+            case SYNCBAR:
                 return new SyncBar(r);
+            case SYNC_BARRIER:
+                return intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
             case ALIAS:
                 return new Alias(r);
             default:

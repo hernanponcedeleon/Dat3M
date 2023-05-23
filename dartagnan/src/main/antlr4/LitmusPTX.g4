@@ -137,16 +137,7 @@ fenceAlias
     ;
 
 barrier
-    :   barrierSyncConstant
-    |   barrierSyncRegister
-    ;
-
-barrierSyncConstant
-    :  Barrier Period CTA Period Sync constant
-    ;
-
-barrierSyncRegister
-    :   Barrier Period CTA Period Sync register
+    :   Barrier Period CTA Period Sync barID
     ;
 
 atomInstruction
@@ -214,8 +205,9 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-barID returns [int id]
-    :   t = DigitSequence {$id = Integer.parseInt($t.text);}
+barID
+    :   constant
+    |   register
     ;
 
 mo returns [String content]
