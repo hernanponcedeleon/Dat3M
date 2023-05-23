@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.expression.type;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class AggregateType implements Type {
 
@@ -12,5 +13,11 @@ public final class AggregateType implements Type {
 
     public List<Type> getElementTypes() {
         return elementTypes;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("{ %s }", elementTypes.stream()
+                .map(Type::toString).collect(Collectors.joining(", ")));
     }
 }

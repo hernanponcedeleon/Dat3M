@@ -1,22 +1,16 @@
 package com.dat3m.dartagnan.program.expression;
 
 import com.dat3m.dartagnan.program.expression.type.BooleanType;
-import com.dat3m.dartagnan.program.expression.type.IntegerType;
-import com.dat3m.dartagnan.program.expression.type.NumberType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
 import java.math.BigInteger;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Immutable constant integer values.
  */
 public final class Literal extends AbstractExpression {
-
-    private static final BigInteger minInt = BigInteger.valueOf(Integer.MIN_VALUE);
-    private static final BigInteger maxInt = BigInteger.valueOf(Integer.MAX_VALUE);
 
     private final BigInteger value;
 
@@ -30,8 +24,7 @@ public final class Literal extends AbstractExpression {
     }
 
     public int getValueAsInt() {
-        checkState(minInt.compareTo(value) <= 0 && value.compareTo(maxInt) <= 0, "Non-int value %s.", value);
-        return value.intValue();
+        return value.intValueExact();
     }
 
     @Override
@@ -51,15 +44,16 @@ public final class Literal extends AbstractExpression {
 
     @Override
     public String toString() {
+        final String typeString;
+        final String valueString;
         if (type instanceof BooleanType) {
-            return value.equals(BigInteger.ZERO) ? "false" : "true";
+            typeString = type.toString();
+            valueString = value.equals(BigInteger.ZERO) ? "false" : "true";
+        } else {
+            typeString = type.toString();
+            valueString = value.toString();
         }
-        if (type instanceof NumberType) {
-            return value.toString();
-        }
-        if (type instanceof IntegerType) {
-            return value.toString() + "bv" + ((IntegerType) type).getBitWidth();
-        }
-        return type + "(" + value + ")";
+
+        return typeString + " " + valueString;
     }
 }

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.program.expression.AbstractExpression;
 import com.dat3m.dartagnan.program.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.program.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.math.BigInteger;
@@ -50,9 +50,10 @@ public final class NondeterministicExpression extends AbstractExpression {
 
     @Override
     public String toString() {
-        if (type instanceof IntegerType) {
-            return String.format("nondet_%c%d(%s,%s)", signed ? 'i' : 'u', ((IntegerType) type).getBitWidth(), min, max);
+        if (type instanceof BooleanType) {
+            return "nondet_" + type;
+        } else {
+            return String.format("nondet_%s(%s,%s)", type, min, max);
         }
-        return String.format("nondet_%s(%s,%s)", type, min, max);
     }
 }

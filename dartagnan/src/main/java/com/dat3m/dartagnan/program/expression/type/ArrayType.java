@@ -23,4 +23,9 @@ public final class ArrayType implements Type {
     public OptionalInt getElementCount() {
         return elementCount < 0 ? OptionalInt.empty() : OptionalInt.of(elementCount);
     }
+
+    @Override
+    public String toString() {
+        return String.format("[%s x %s]", getElementCount().isPresent() ? Integer.toString(elementCount) : "?", elementType);
+    }
 }

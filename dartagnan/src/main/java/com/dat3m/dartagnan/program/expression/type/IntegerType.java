@@ -14,4 +14,9 @@ public final class IntegerType implements Type {
     public int getBitWidth() {
         return bitWidth;
     }
+
+    @Override
+    public String toString() {
+        return "bv" + bitWidth;
+    }
 }
