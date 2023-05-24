@@ -10,5 +10,4 @@ P1:r2=0;
  st.release.cta x, 1           | st.release.cta y, 1    ;
  fence.acq_rel.cta             | fence.acq_rel.cta      ;
  ld.acquire.cta r1, y          | ld.acquire.cta r2, x   ;
-forall
-(P0:r1 == 1 /\ P1:r2 == 1)
+exists (P0:r1 == 0 /\ P1:r2 == 0)

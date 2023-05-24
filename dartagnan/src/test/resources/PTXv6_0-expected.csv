@@ -19,8 +19,7 @@ litmus/PTX/NoThinAir2.litmus,1
 litmus/PTX/SB+sc-cta.litmus,1
 litmus/PTX/SB+sc-gpu.litmus,1
 litmus/PTX/SB+sc-sys.litmus,1
-litmus/PTX/SB+acq_rel-weak.litmus,1
-litmus/PTX/SB+acq_rel-strong.litmus,0
+litmus/PTX/SB+acq_rel-cta.litmus,1
 litmus/PTX/SB+bar-const-equal.litmus,1
 litmus/PTX/SB+bar-const-diff.litmus,0
 litmus/PTX/SB+bar-reg-equal.litmus,1
