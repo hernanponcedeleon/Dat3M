@@ -11,10 +11,11 @@ import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.expression.Literal;
-import com.dat3m.dartagnan.program.expression.type.Type;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackTypes.refType;
 
 public class LlvmProcedures {
 
@@ -46,7 +47,7 @@ public class LlvmProcedures {
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Register reg = visitor.thread.getOrNewRegister(regName, visitor.types.getIntegerType());
+        Register reg = visitor.thread.getOrNewRegister(regName, refType);
 
         Object p0 = params.get(0).accept(visitor);
         int i0 = p0 instanceof Literal ? ((Literal) p0).getValueAsInt() : -1;
@@ -89,9 +90,8 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                Type type = visitor.types.getIntegerType();
-                Register oldValueRegister = visitor.thread.getOrNewRegister(regName + "(0)", type);
-                Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", type);
+                Register oldValueRegister = visitor.thread.getOrNewRegister(regName + "(0)", refType);
+                Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", refType);
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(i3);

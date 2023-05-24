@@ -40,6 +40,8 @@ import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackTypes.parseType;
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackTypes.refType;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.LKMMPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.handleLkmmFunction;
@@ -142,7 +144,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getIntegerType());
+        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", refType);
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
             next = pool.next();
@@ -267,7 +269,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 Expression pointer = pool.getPtrFromInt(threadCount);
-                Register reg = thread.newRegister(types.getIntegerType());
+                Register reg = thread.newRegister(refType);
                 thread.append(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
         }
@@ -544,10 +546,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Type visitType(TypeContext ctx) {
-        String typeString = ctx.getText();
-        return typeString.contains("bv") ?
-                types.getIntegerType(Integer.parseInt(typeString.split("bv")[1])) :
-                types.getIntegerType();
+        return parseType(ctx.getText());
     }
 
     @Override
@@ -654,8 +653,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (threadLocalVariables.contains(name)) {
             return program.getMemory().getOrNewObject(String.format("%s(%s)", name, threadCount));
         }
-        return program.getMemory().getObject(name)
-                .orElseThrow(() -> new ParsingException("Variable " + name + " is not defined."));
+        Optional<MemoryObject> object = program.getMemory().getObject(name);
+        if (object.isEmpty()) {
+            throw new ParsingException("Variable " + name + " is not defined.");
+        }
+        // SMACK's boogie treats pointers as integers
+        return expressions.makeCast(refType, object.get(), true);
     }
 
     @Override
@@ -761,7 +764,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitInt_expr(Int_exprContext ctx) {
-        return expressions.parseValue(ctx.getText(), types.getIntegerType());
+        return expressions.parseValue(ctx.getText(), refType);
     }
 
     @Override

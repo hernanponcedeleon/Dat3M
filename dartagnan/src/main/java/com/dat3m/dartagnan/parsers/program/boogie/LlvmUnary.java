@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.dat3m.dartagnan.parsers.program.boogie.SmackTypes.parseType;
+
 public class LlvmUnary {
 
     // List of supported prefixes.
@@ -70,14 +72,9 @@ public class LlvmUnary {
             case TRUNCATE, SIGNED_EXTEND, UNSIGNED_EXTEND -> {
                 String[] parts = suffix.split("\\.");
                 assert parts.length == 2;
-                boolean inputStartsWithBV = parts[0].startsWith("bv");
-                boolean targetStartsWithBV = parts[1].startsWith("bv");
-                assert inputStartsWithBV || parts[0].startsWith("i");
-                assert targetStartsWithBV || parts[1].startsWith("i");
-                //int inputBitWidth = Integer.parseInt(parts[0].substring(inputStartsWithBV ? 2 : 1));
-                int targetBitWidth = Integer.parseInt(parts[1].substring(targetStartsWithBV ? 2 : 1));
-                //TODO assert inner.getType().equals(types.getIntegerType(inputBitWidth));
-                Type targetType = types.getIntegerType(targetBitWidth);
+                Type inputType = parseType(parts[0]);
+                Type targetType = parseType(parts[1]);
+                assert inner.getType().equals(inputType);
                 return expressions.makeCast(targetType, inner, !prefix.equals(UNSIGNED_EXTEND));
             }
         }
