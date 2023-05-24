@@ -182,8 +182,8 @@ register
     ;
 
 operation locals [IOpBin op]
-    :   Plus {$op = IOpBin.PLUS;}
-    |   Minus {$op = IOpBin.MINUS;}
+    :   Add {$op = IOpBin.PLUS;}
+    |   Sub {$op = IOpBin.MINUS;}
     |   Mult {$op = IOpBin.MULT;}
     |   Div {$op = IOpBin.DIV;}
     |   And {$op = IOpBin.AND;}
@@ -279,8 +279,8 @@ Release :   'release';
 Acq_rel :   'acq_rel';
 Sc      :   'sc';
 
-Plus    :   'plus';
-Minus   :   'minus';
+Add    :   'plus';
+Sub    :   'minus';
 Mult    :   'mult';
 Div     :   'div';
 And     :   'and';

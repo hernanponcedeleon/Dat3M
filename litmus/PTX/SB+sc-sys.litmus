@@ -1,5 +1,5 @@
-PTX Causality
-"Causality Order"
+PTX SB+sc-sys
+"SB is not allowed because sc fences are morally strong and thus synchronize"
 {
 x=0;
 y=0;

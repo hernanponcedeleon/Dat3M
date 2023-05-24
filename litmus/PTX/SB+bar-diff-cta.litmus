@@ -1,5 +1,5 @@
-PTX Bar
-"Bar"
+PTX SB+bar-diff-cta
+"SB is allowed because fences have on different .cta and thus not synchronize"
 {
 x=0;
 y=0;

@@ -1,14 +1,14 @@
-PTX Bar
-"Bar"
+PTX SB+bar-const-diff
+"SB is allowed because fences have different id and thus not synchronize"
 {
 x=0;
 y=0;
-P0:r0=0; P0:r2=0;
-P1:r1=0; P1:r3=0;
+P0:r0=0;
+P1:r1=0;
 }
  P0@cta 0,gpu 0         | P1@cta 0,gpu 0         ;
  st.weak x, 1           | st.weak y, 2           ;
- bar.cta.sync r2        | bar.cta.sync r3        ;
+ bar.cta.sync 0         | bar.cta.sync 1         ;
  ld.weak r0, y          | ld.weak r1, x          ;
 forall
 (P0:r0 == 2 \/ P1:r1 == 1)

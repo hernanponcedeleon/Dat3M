@@ -1,5 +1,5 @@
-PTX Bar
-"Bar"
+PTX SB+bar-const-equal
+"SB is not allowed because fences have the same id and thus synchronize"
 {
 x=0;
 y=0;

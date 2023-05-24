@@ -1,5 +1,5 @@
-PTX Bar
-"Bar"
+PTX SB+sc-gpu
+"SB is not allowed because sc fences are morally strong and thus synchronize"
 {
 x=0;
 y=0;

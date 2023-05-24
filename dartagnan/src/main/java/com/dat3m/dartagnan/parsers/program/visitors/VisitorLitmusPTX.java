@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
