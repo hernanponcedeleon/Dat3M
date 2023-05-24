@@ -70,70 +70,72 @@ public final class ExpressionFactory {
     }
 
     public Expression makeNegative(Expression inner) {
-        return makeUnary(inner.getType(), IOpUn.MINUS, inner);
+        Type type = inner.getType();
+        if (inner instanceof Literal literal) {
+            return makeValue(literal.getValue().negate(), type);
+        }
+        return new UnaryIntegerExpression(type, IOpUn.MINUS, inner);
     }
 
     public Expression makeCountLeadingZeroes(Expression inner) {
-        return makeUnary(inner.getType(), IOpUn.CTLZ, inner);
+        Type type = inner.getType();
+        if (inner instanceof Literal literal) {
+            checkArgument(type instanceof BoundedIntegerType, "Type mismatch for count_leading_zeroes(%s).", inner);
+            int leadingZeroes = ((BoundedIntegerType) type).getBitWidth() - literal.getValue().bitLength();
+            checkArgument(leadingZeroes >= 0, "Range miss in count_leading_zeroes(%s).", inner);
+            return makeValue(BigInteger.valueOf(leadingZeroes), type);
+        }
+        return new UnaryIntegerExpression(type, IOpUn.CTLZ, inner);
     }
 
-    public Expression makeSignedCast(Type target, Expression inner) {
-        return makeUnary(target, IOpUn.SIGNED_CAST, inner);
-    }
-
-    public Expression makeUnsignedCast(Type target, Expression inner) {
-        return makeUnary(target, IOpUn.UNSIGNED_CAST, inner);
-    }
-
-    public Expression makeCast(Type target, Expression inner) {
-        // Should only be used for isomorphisms and truncation.
-        return makeSignedCast(target, inner);
+    public Expression makeCast(Type targetType, Expression inner, boolean signed) {
+        Type innerType = inner.getType();
+        if (inner instanceof Literal literal) {
+            BigInteger value = literal.getValue();
+            boolean truncate = innerType instanceof UnboundedIntegerType ||
+                    innerType instanceof BoundedIntegerType &&
+                            targetType instanceof BoundedIntegerType &&
+                            ((BoundedIntegerType) targetType).getBitWidth() < ((BoundedIntegerType) innerType).getBitWidth();
+            if (truncate) {
+                BigInteger v = value;
+                for (int i = ((BoundedIntegerType) targetType).getBitWidth(); i < value.bitLength(); i++) {
+                    v = v.clearBit(i);
+                }
+                return makeValue(v, targetType);
+            }
+            checkArgument(innerType instanceof BoundedIntegerType, "Type mismatch for cast(%s,%s).", targetType, inner);
+            int bitWidth = ((BoundedIntegerType) innerType).getBitWidth();
+            assert BigInteger.TWO.pow(bitWidth - 1).negate().compareTo(value) <= 0;
+            assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
+            return makeValue(signed ?
+                    value.testBit(bitWidth - 1) ? value.subtract(BigInteger.TWO.pow(bitWidth)) : value :
+                    value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value),
+                    targetType);
+        }
+        // Truncations/isomorphisms absorb inner casts.
+        Expression modifiedInner = inner instanceof UnaryIntegerExpression unary &&
+                (unary.getOp().equals(IOpUn.SIGNED_CAST) ||
+                        unary.getOp().equals(IOpUn.UNSIGNED_CAST)) &&
+                (targetType instanceof BooleanType ||
+                        innerType instanceof UnboundedIntegerType ||
+                        targetType instanceof BoundedIntegerType t0 &&
+                                innerType instanceof BoundedIntegerType t1 &&
+                                t0.getBitWidth() <= t1.getBitWidth()) ?
+                unary.getInner() :
+                inner;
+        if (targetType.equals(modifiedInner.getType())) {
+            return inner;
+        }
+        return new UnaryIntegerExpression(targetType, signed ? IOpUn.SIGNED_CAST : IOpUn.UNSIGNED_CAST, inner);
     }
 
     public Expression makeUnary(Type targetType, IOpUn operator, Expression inner) {
-        Type innerType = inner.getType();
-        if (inner instanceof Literal) {
-            BigInteger value = ((Literal) inner).getValue();
-            BigInteger v;
-            switch (operator) {
-                case MINUS -> v = value.negate();
-                case SIGNED_CAST, UNSIGNED_CAST -> {
-                    boolean truncate = innerType instanceof UnboundedIntegerType ||
-                            innerType instanceof BoundedIntegerType &&
-                                    targetType instanceof BoundedIntegerType &&
-                                    ((BoundedIntegerType) targetType).getBitWidth() < ((BoundedIntegerType) innerType).getBitWidth();
-                    if (truncate) {
-                        v = value;
-                        for (int i = ((BoundedIntegerType) targetType).getBitWidth(); i < value.bitLength(); i++) {
-                            v = v.clearBit(i);
-                        }
-                    } else {
-                        checkArgument(inner.getType() instanceof BoundedIntegerType, "Type mismatch for %s %s.", operator, inner);
-                        int bitWidth = ((BoundedIntegerType) inner.getType()).getBitWidth();
-                        assert BigInteger.TWO.pow(bitWidth - 1).negate().compareTo(value) <= 0;
-                        assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
-                        if (operator.equals(IOpUn.SIGNED_CAST)) {
-                            v = value.testBit(bitWidth - 1) ? value.subtract(BigInteger.TWO.pow(bitWidth)) : value;
-                        } else {
-                            v = value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value);
-                        }
-                    }
-                }
-                case CTLZ -> {
-                    checkArgument(targetType instanceof BoundedIntegerType, "Type mismatch for %s %s.", operator, inner);
-                    int leadingZeroes = ((BoundedIntegerType) targetType).getBitWidth() - value.bitLength();
-                    checkArgument(leadingZeroes >= 0, "Range miss in %s %s.", operator, inner);
-                    v = BigInteger.valueOf(leadingZeroes);
-                }
-                default -> throw new UnsupportedOperationException(String.format("Reduce not supported for (%s) %s %s.", targetType, operator, inner));
-            }
-            return makeValue(v, targetType);
-        }
-        if (inner instanceof UnaryIntegerExpression && operator.equals(IOpUn.MINUS) && ((UnaryIntegerExpression) inner).getOp().equals(IOpUn.MINUS)) {
-            return ((UnaryIntegerExpression) inner).getInner();
-        }
-        //TODO expansion followed by truncation
-        return new UnaryIntegerExpression(targetType, operator, inner);
+        return switch (operator) {
+            case CTLZ -> makeCountLeadingZeroes(inner);
+            case MINUS -> makeNegative(inner);
+            case SIGNED_CAST -> makeCast(targetType, inner, true);
+            case UNSIGNED_CAST -> makeCast(targetType, inner, false);
+        };
     }
 
     public Expression makeAnd(Expression left, Expression right) {

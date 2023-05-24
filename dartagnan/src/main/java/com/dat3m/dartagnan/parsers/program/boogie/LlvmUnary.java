@@ -55,17 +55,17 @@ public class LlvmUnary {
             }
             case BITVECTOR_TO_SIGNED_INTEGER -> {
                 assert inner.getType().equals(types.getIntegerType(Integer.parseInt(suffix)));
-                return expressions.makeSignedCast(types.getIntegerType(), inner);
+                return expressions.makeCast(types.getIntegerType(), inner, true);
             }
             case BITVECTOR_TO_UNSIGNED_INTEGER -> {
                 assert inner.getType().equals(types.getIntegerType(Integer.parseInt(suffix)));
-                return expressions.makeUnsignedCast(types.getIntegerType(), inner);
+                return expressions.makeCast(types.getIntegerType(), inner, false);
             }
             case SIGNED_INTEGER_TO_BITVECTOR, UNSIGNED_INTEGER_TO_BITVECTOR -> {
                 assert inner.getType() instanceof UnboundedIntegerType;
                 int bitWidth = Integer.parseInt(suffix);
                 Type targetType = types.getIntegerType(bitWidth);
-                return expressions.makeCast(targetType, inner);
+                return expressions.makeCast(targetType, inner, true);
             }
             case TRUNCATE, SIGNED_EXTEND, UNSIGNED_EXTEND -> {
                 String[] parts = suffix.split("\\.");
@@ -78,11 +78,7 @@ public class LlvmUnary {
                 int targetBitWidth = Integer.parseInt(parts[1].substring(targetStartsWithBV ? 2 : 1));
                 //TODO assert inner.getType().equals(types.getIntegerType(inputBitWidth));
                 Type targetType = types.getIntegerType(targetBitWidth);
-                return switch(prefix) {
-                    case SIGNED_EXTEND -> expressions.makeSignedCast(targetType, inner);
-                    case UNSIGNED_EXTEND -> expressions.makeUnsignedCast(targetType, inner);
-                    default -> expressions.makeCast(targetType, inner);
-                };
+                return expressions.makeCast(targetType, inner, !prefix.equals(UNSIGNED_EXTEND));
             }
         }
         throw new AssertionError();
