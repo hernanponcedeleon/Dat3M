@@ -1,5 +1,5 @@
-PTX NoThinAir
-"No thin air"
+PTX NoThinAir-register
+"No-Thin-Air"
 {
 P0:r1=0;
 P1:r2=0;

@@ -1,11 +1,10 @@
 PTX CoWW
-"Coherence, Write Write"
+"Coherence, Write-Write"
 {
 x = 0;
 }
  P0@cta 0,gpu 0             ;
  st.weak x, 1               ;
  st.weak x, 2               ;
- ld.acquire.sys r1, x       ;
 ~exists
-(P0:r1 == 1)
+(x == 1)

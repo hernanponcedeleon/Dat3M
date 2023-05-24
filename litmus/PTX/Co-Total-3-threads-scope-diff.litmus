@@ -1,5 +1,5 @@
-PTX Scope
-"scope test"
+PTX Co-Total-3-threads-scope-diff
+"Release consistency of three locations"
 {
 x = 0;
 flag1 = 0;

@@ -1,5 +1,5 @@
-PTX atom
-"Atomicity of Read Modify Write(RMW) operations"
+PTX Atom-plus-register
+"RMW register read from single update is allowed"
 {
 P0:r0=0;
 P1:r0=0;

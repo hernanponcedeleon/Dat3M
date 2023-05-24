@@ -1,5 +1,5 @@
-PTX atom
-"Atomicity of Read Modify Write(RMW) operations"
+PTX _Atom-plus-location
+"Atomicity is guaranteed when the operations are morally strong"
 {
 P0:r0=0;
 P1:r0=0;

@@ -1,12 +1,11 @@
-PTX CoRR
+PTX CoRR-weak-weak
 "Coherence, Read Read"
 {
 x = 0;
 P1:r1=0; P1:r2=0;
 }
  P0@cta 0,gpu 0         | P1@cta 1,gpu 1          ;
-                        | st.release.gpu x, 3     ;
  st.release.gpu x, 1    | ld.weak r1, x           ;
                         | ld.weak r2, x           ;
-~exists
-(P1:r1 == 1 /\ P1:r2 == 3)
+exists
+(P1:r1 == 1 /\ P1:r2 == 0)

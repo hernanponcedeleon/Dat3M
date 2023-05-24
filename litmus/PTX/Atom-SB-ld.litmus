@@ -1,5 +1,5 @@
-PTX atom
-"Atomicity of Read Modify Write (RMW) operations"
+PTX Atom-SB-ld
+"RMW store buffering load by non-RMW"
 {
 P0:r1=0;
 P0:r2=0;
