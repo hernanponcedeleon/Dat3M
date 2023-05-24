@@ -69,10 +69,15 @@ public class LlvmUnary {
             }
             case TRUNCATE, SIGNED_EXTEND, UNSIGNED_EXTEND -> {
                 String[] parts = suffix.split("\\.");
-                assert parts.length == 2 && parts[0].startsWith("bv") && parts[1].startsWith("bv");
-                assert inner.getType().equals(types.getIntegerType(Integer.parseInt(parts[0].substring(2))));
-                int bitWidth = Integer.parseInt(parts[1].substring(2));
-                Type targetType = types.getIntegerType(bitWidth);
+                assert parts.length == 2;
+                boolean inputStartsWithBV = parts[0].startsWith("bv");
+                boolean targetStartsWithBV = parts[1].startsWith("bv");
+                assert inputStartsWithBV || parts[0].startsWith("i");
+                assert targetStartsWithBV || parts[1].startsWith("i");
+                //int inputBitWidth = Integer.parseInt(parts[0].substring(inputStartsWithBV ? 2 : 1));
+                int targetBitWidth = Integer.parseInt(parts[1].substring(targetStartsWithBV ? 2 : 1));
+                //TODO assert inner.getType().equals(types.getIntegerType(inputBitWidth));
+                Type targetType = types.getIntegerType(targetBitWidth);
                 return switch(prefix) {
                     case SIGNED_EXTEND -> expressions.makeSignedCast(targetType, inner);
                     case UNSIGNED_EXTEND -> expressions.makeUnsignedCast(targetType, inner);
