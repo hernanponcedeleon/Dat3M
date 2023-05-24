@@ -166,6 +166,18 @@ public final class ExpressionFactory {
         checkTypes(left, comparator, right);
         checkArgument(!left.isBoolean() || comparator.equals(COpBin.EQ) || comparator.equals(COpBin.NEQ),
                 "Incompatible types for %s %s %s.", left, comparator, right);
+        if (left instanceof Literal leftLiteral && right instanceof Literal rightLiteral) {
+            int value = leftLiteral.getValue().compareTo(rightLiteral.getValue());
+            boolean result = switch (comparator) {
+                case EQ -> value == 0;
+                case NEQ -> value != 0;
+                case LT, ULT -> value < 0;
+                case LTE, ULTE -> value <= 0;
+                case GT, UGT -> value > 0;
+                case GTE, UGTE -> value >= 0;
+            };
+            return makeValue(result);
+        }
         if (left.equals(right) && left.getRegs().isEmpty()) {
             switch (comparator) {
                 case EQ: case LTE: case ULTE: case GTE: case UGTE:
