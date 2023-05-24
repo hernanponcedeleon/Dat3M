@@ -50,7 +50,7 @@ public class AnalysisTest {
 
     private static final TypeFactory typeFactory = TypeFactory.getInstance();
     private static final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-    private static final Type type = typeFactory.getPointerType();
+    private static final Type type = typeFactory.getIntegerType();
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
@@ -128,7 +128,7 @@ public class AnalysisTest {
         Register r0 = thread.newRegister("r0", type);
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
-        thread.append(newLocal(r0, mult(x, 1)));
+        thread.append(newLocal(r0, mult(expressionFactory.makeCast(typeFactory.getIntegerType(), x, true), 1)));
         Store e0 = newStore(r0);
         thread.append(e0);
         Store e1 = newStore(plus(r0, 1));
