@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.op.COpBin;
-import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
@@ -571,7 +570,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitMinus_expr(Minus_exprContext ctx) {
         Expression v = (Expression) ctx.unary_expr().accept(this);
-        return expressions.makeUnary(IOpUn.MINUS, v);
+        return expressions.makeNegative(v);
     }
 
     @Override

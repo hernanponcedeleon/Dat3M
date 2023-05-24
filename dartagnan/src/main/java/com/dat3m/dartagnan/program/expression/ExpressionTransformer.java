@@ -48,7 +48,7 @@ public abstract class ExpressionTransformer implements ExpressionVisitor<Express
     @Override
     public Expression visit(UnaryIntegerExpression iUn) {
         Expression i = iUn.getInner().visit(this);
-        return iUn.getInner().equals(i) ? iUn : factory.makeUnary(iUn.getOp(), i);
+        return iUn.getInner().equals(i) ? iUn : factory.makeUnary(iUn.getType(), iUn.getOp(), i);
     }
 
     @Override

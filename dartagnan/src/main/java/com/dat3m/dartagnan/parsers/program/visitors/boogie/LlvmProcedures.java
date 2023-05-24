@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
@@ -147,7 +146,7 @@ public class LlvmProcedures {
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
                 left = (Expression) p0;
-                visitor.append(EventFactory.newLocal(reg, factory.makeUnary(IOpUn.CTLZ, left)));
+                visitor.append(EventFactory.newLocal(reg, factory.makeCountLeadingZeroes(left)));
                 return;
             default:
                 throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
