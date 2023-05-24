@@ -21,7 +21,7 @@ public class SmackPredicates {
 			"$tos.i56", "$tos.i64", "$tos.i80", "$tos.i88", "$tos.i96", "$tos.i128", "$tos.i160", "$tos.i256"
 			);
 	
-	public static Object smackPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
+	public static Expression smackPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
 		String min = "0";
 		String max = "1";
 		Expression var = (Expression) callParams.get(0);

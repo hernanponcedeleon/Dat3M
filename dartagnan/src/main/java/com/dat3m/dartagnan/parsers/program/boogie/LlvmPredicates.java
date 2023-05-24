@@ -58,7 +58,7 @@ public class LlvmPredicates {
 			"$ne.bv8.bool", "$ne.bv16.bool", "$ne.bv32.bool", "$ne.bv64.bool"
 			);
 	
-	public static Object llvmPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
+	public static Expression llvmPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
 		COpBin op = null;
 		if(name.startsWith("$sle.")) {
 			op = LTE;

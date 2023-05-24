@@ -32,7 +32,7 @@ public class LlvmUnary {
             UNSIGNED_EXTEND
     );
 
-    public static Object llvmUnary(String name, List<Object> callParams, ExpressionFactory factory) {
+    public static Expression llvmUnary(String name, List<Object> callParams, ExpressionFactory factory) {
         try {
             for (String prefix : LLVMUNARY) {
                 if (name.startsWith(prefix)) {
@@ -45,7 +45,7 @@ public class LlvmUnary {
         throw new ParsingException("Function " + name + " has no implementation");
     }
 
-    private static Object llvmUnary(String prefix, String suffix, List<Object> callParams, ExpressionFactory expressions) {
+    private static Expression llvmUnary(String prefix, String suffix, List<Object> callParams, ExpressionFactory expressions) {
         TypeFactory types = TypeFactory.getInstance();
         Expression inner = (Expression) callParams.get(0);
         switch (prefix) {

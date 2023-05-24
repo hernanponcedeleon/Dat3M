@@ -29,7 +29,7 @@ public class LlvmFunctions {
 			"$and.",
 			"$nand.");
 	
-	public static Object llvmFunction(String name, List<Object> callParams, ExpressionFactory factory) {
+	public static Expression llvmFunction(String name, List<Object> callParams, ExpressionFactory factory) {
 		IOpBin op = null; 
 		if(name.startsWith("$add.")) {
 			op = PLUS;
