@@ -24,11 +24,14 @@ import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
+    private final int precision;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final Event event;
 
-    public ExpressionEncoder(FormulaManager formulaManager, Event event) {
+    ExpressionEncoder(int precision, FormulaManager formulaManager, Event event) {
+        checkArgument(precision >= -1, "Unknown option value %s", precision);
+        this.precision = precision;
         this.formulaManager = formulaManager;
         this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
         this.event = event;
@@ -152,6 +155,27 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         }
     }
 
+    OptionalInt getBitWidthFromIntegerType(Type type) {
+        switch (precision) {
+            case -1 -> {
+                if (type instanceof PointerType) {
+                    int archPrecision = getArchPrecision();
+                    return archPrecision < 0 ? OptionalInt.empty() : OptionalInt.of(archPrecision);
+                }
+                if (type instanceof UnboundedIntegerType) {
+                    return OptionalInt.empty();
+                }
+                return OptionalInt.of(((BoundedIntegerType) type).getBitWidth());
+            }
+            case 0 -> {
+                return OptionalInt.empty();
+            }
+            default -> {
+                return OptionalInt.of(precision);
+            }
+        }
+    }
+
     @Override
     public Formula visit(Comparison comparison) {
         Formula lhs = encodeAsInteger(comparison.getLHS());
@@ -183,7 +207,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         if (literal.isBoolean()) {
             return booleanFormulaManager.makeBoolean(literal.isTrue());
         }
-        OptionalInt bitWidth = getBitWidthFromLeafType(literal.getType());
+        OptionalInt bitWidth = getBitWidthFromIntegerType(literal.getType());
         if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeNumber(literal.getValue());
         }
@@ -387,7 +411,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         if (iNonDet.isBoolean()) {
             return booleanFormulaManager.makeVariable(name);
         }
-        OptionalInt bitWidth = getBitWidthFromLeafType(iNonDet.getType());
+        OptionalInt bitWidth = getBitWidthFromIntegerType(iNonDet.getType());
         if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeVariable(name);
         }
@@ -399,7 +423,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         String name = event == null ?
                 reg.getName() + "_" + reg.getThreadId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
-        OptionalInt bitWidth = getBitWidthFromLeafType(reg.getType());
+        OptionalInt bitWidth = getBitWidthFromIntegerType(reg.getType());
         if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeVariable(name);
         }
@@ -408,7 +432,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(MemoryObject address) {
-        OptionalInt bitWidth = getBitWidthFromLeafType(address.getType());
+        OptionalInt bitWidth = getBitWidthFromIntegerType(address.getType());
         if (bitWidth.isEmpty()) {
             return integerFormulaManager().makeNumber(address.getValue());
         }
@@ -419,16 +443,5 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
-    }
-
-    static OptionalInt getBitWidthFromLeafType(Type type) {
-        if (type instanceof PointerType) {
-            int archPrecision = getArchPrecision();
-            return archPrecision < 0 ? OptionalInt.empty() : OptionalInt.of(archPrecision);
-        }
-        if (type instanceof UnboundedIntegerType) {
-            return OptionalInt.empty();
-        }
-        return OptionalInt.of(((BoundedIntegerType) type).getBitWidth());
     }
 }

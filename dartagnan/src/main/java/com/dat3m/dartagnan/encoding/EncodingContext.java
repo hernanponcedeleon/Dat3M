@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.wmm.axiom.Acyclic;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.IntegerOption;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -28,8 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.OptionalInt;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
-import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -59,6 +59,12 @@ public final class EncodingContext {
             secure = true)
     private boolean shouldMergeCFVars = true;
 
+    @Option(name = PRECISION,
+            description = "Encode all integer expressions to a certain bit width.  Use 0 for unbounded integers.",
+            secure = true)
+    @IntegerOption(min = -1)
+    private int precision = -1;
+
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<Event, Formula> addresses = new HashMap<>();
@@ -81,6 +87,7 @@ public final class EncodingContext {
         task.getConfig().inject(context);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
+        logger.info("{}: {}", PRECISION, context.precision);
         context.initialize();
         if (logger.isInfoEnabled()) {
             logger.info("Number of encoded tuples for acyclicity: {}",
@@ -113,15 +120,15 @@ public final class EncodingContext {
     }
 
     public Formula encodeFinalIntegerExpression(Expression expression) {
-        return new ExpressionEncoder(formulaManager, null).encodeAsInteger(expression);
+        return newExpressionEncoder(null).encodeAsInteger(expression);
     }
 
     public BooleanFormula encodeBooleanExpressionAt(Expression expression, Event event) {
-        return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
+        return newExpressionEncoder(event).encodeAsBoolean(expression);
     }
 
     public Formula encodeIntegerExpressionAt(Expression expression, Event event) {
-        return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
+        return newExpressionEncoder(event).encodeAsInteger(expression);
     }
 
     public BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs) {
@@ -277,7 +284,7 @@ public final class EncodingContext {
             if (e instanceof RegWriter) {
                 Register register = ((RegWriter) e).getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                OptionalInt bitWidth = ExpressionEncoder.getBitWidthFromLeafType(register.getType());
+                OptionalInt bitWidth = newExpressionEncoder(e).getBitWidthFromIntegerType(register.getType());
                 if (bitWidth.isEmpty()) {
                     r = formulaManager.getIntegerFormulaManager().makeVariable(name);
                 } else {
@@ -300,5 +307,9 @@ public final class EncodingContext {
         return f instanceof BitvectorFormula ?
                 formulaManager.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) :
                 (NumeralFormula.IntegerFormula) f;
+    }
+
+    private ExpressionEncoder newExpressionEncoder(Event e) {
+        return new ExpressionEncoder(precision, formulaManager, e);
     }
 }
