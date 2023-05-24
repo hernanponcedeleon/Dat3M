@@ -348,7 +348,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
         if (name.equals("reach_error")) {
-            addAssertion(expressions.makeZero(types.getIntegerType()));
+            addAssertion(expressions.makeZero(types.getIntegerType(1)));
             return null;
         }
 
