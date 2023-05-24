@@ -241,6 +241,10 @@ red returns [String redProxy]
     |   SurfaceRed {$redProxy = "SUR";}
     ;
 
+Locations
+    :   'locations'
+    ;
+
 Register
     :   'r' DigitSequence
     ;
