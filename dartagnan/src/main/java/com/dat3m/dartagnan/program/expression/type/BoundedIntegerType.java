@@ -2,11 +2,11 @@ package com.dat3m.dartagnan.program.expression.type;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public final class IntegerType implements Type {
+public final class BoundedIntegerType implements Type {
 
     private final int bitWidth;
 
-    IntegerType(int bitWidth) {
+    BoundedIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0);
         this.bitWidth = bitWidth;
     }

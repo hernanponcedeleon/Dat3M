@@ -12,7 +12,7 @@ public final class TypeFactory {
     private final BooleanType booleanType = new BooleanType();
     private final NumberType numberType = new NumberType();
     private final PointerType pointerType = new PointerType();
-    private final Map<Integer, IntegerType> integerTypeMap = new HashMap<>();
+    private final Map<Integer, BoundedIntegerType> integerTypeMap = new HashMap<>();
     private final Map<Type, Map<Integer, ArrayType>> arrayTypeMap = new HashMap<>();
     private final Map<List<Type>, AggregateType> aggregateTypeMap = new HashMap<>();
 
@@ -34,8 +34,8 @@ public final class TypeFactory {
         return numberType;
     }
 
-    public IntegerType getIntegerType(int bitWidth) {
-        return integerTypeMap.computeIfAbsent(bitWidth, IntegerType::new);
+    public BoundedIntegerType getIntegerType(int bitWidth) {
+        return integerTypeMap.computeIfAbsent(bitWidth, BoundedIntegerType::new);
     }
 
     public ArrayType getArrayType(Type elementType, int elementCount) {

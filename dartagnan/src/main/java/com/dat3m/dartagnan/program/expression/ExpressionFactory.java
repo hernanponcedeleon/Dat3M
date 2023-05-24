@@ -99,17 +99,17 @@ public final class ExpressionFactory {
                 case MINUS -> v = value.negate();
                 case SIGNED_CAST, UNSIGNED_CAST -> {
                     boolean truncate = innerType instanceof NumberType ||
-                            innerType instanceof IntegerType &&
-                                    targetType instanceof IntegerType &&
-                                    ((IntegerType) targetType).getBitWidth() < ((IntegerType) innerType).getBitWidth();
+                            innerType instanceof BoundedIntegerType &&
+                                    targetType instanceof BoundedIntegerType &&
+                                    ((BoundedIntegerType) targetType).getBitWidth() < ((BoundedIntegerType) innerType).getBitWidth();
                     if (truncate) {
                         v = value;
-                        for (int i = ((IntegerType) targetType).getBitWidth(); i < value.bitLength(); i++) {
+                        for (int i = ((BoundedIntegerType) targetType).getBitWidth(); i < value.bitLength(); i++) {
                             v = v.clearBit(i);
                         }
                     } else {
-                        checkArgument(inner.getType() instanceof IntegerType, "Type mismatch for %s %s.", operator, inner);
-                        int bitWidth = ((IntegerType) inner.getType()).getBitWidth();
+                        checkArgument(inner.getType() instanceof BoundedIntegerType, "Type mismatch for %s %s.", operator, inner);
+                        int bitWidth = ((BoundedIntegerType) inner.getType()).getBitWidth();
                         assert BigInteger.TWO.pow(bitWidth - 1).negate().compareTo(value) <= 0;
                         assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
                         if (operator.equals(IOpUn.SIGNED_CAST)) {
@@ -120,8 +120,8 @@ public final class ExpressionFactory {
                     }
                 }
                 case CTLZ -> {
-                    checkArgument(targetType instanceof IntegerType, "Type mismatch for %s %s.", operator, inner);
-                    int leadingZeroes = ((IntegerType) targetType).getBitWidth() - value.bitLength();
+                    checkArgument(targetType instanceof BoundedIntegerType, "Type mismatch for %s %s.", operator, inner);
+                    int leadingZeroes = ((BoundedIntegerType) targetType).getBitWidth() - value.bitLength();
                     checkArgument(leadingZeroes >= 0, "Range miss in %s %s.", operator, inner);
                     v = BigInteger.valueOf(leadingZeroes);
                 }

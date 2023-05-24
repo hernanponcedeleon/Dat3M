@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.*;
-import com.dat3m.dartagnan.program.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.expression.type.BoundedIntegerType;
 import com.dat3m.dartagnan.program.expression.type.NumberType;
 import com.dat3m.dartagnan.program.expression.type.PointerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
@@ -339,7 +339,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                         return bitvectorFormulaManager().toIntegerFormula(number, signed);
                     }
                 }
-                if (targetType instanceof IntegerType integerTargetType) {
+                if (targetType instanceof BoundedIntegerType integerTargetType) {
                     int bitWidth = integerTargetType.getBitWidth();
                     if (inner instanceof IntegerFormula number) {
                         return bitvectorFormulaManager().makeBitvector(bitWidth, number);
@@ -429,6 +429,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         if (type instanceof NumberType) {
             return OptionalInt.empty();
         }
-        return OptionalInt.of(((IntegerType) type).getBitWidth());
+        return OptionalInt.of(((BoundedIntegerType) type).getBitWidth());
     }
 }

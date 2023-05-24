@@ -5,7 +5,7 @@ public interface Type {
     default boolean isLeafType() {
         return this instanceof BooleanType ||
                 this instanceof NumberType ||
-                this instanceof IntegerType ||
+                this instanceof BoundedIntegerType ||
                 this instanceof PointerType;
     }
 }
