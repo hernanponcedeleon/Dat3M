@@ -373,7 +373,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                         if (innerBitWidth < bitWidth) {
                             return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
                         }
-                        return bitvectorFormulaManager().extract(number, bitWidth, 0);
+                        return bitvectorFormulaManager().extract(number, bitWidth-1, 0);
                     }
                 }
             }
