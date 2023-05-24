@@ -123,7 +123,7 @@ public class StdProcedures {
     }
 
     private static void __assert_fail(VisitorBoogie visitor) {
-        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getIntegerType()));
+        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getIntegerType(1)));
     }
 
 }
