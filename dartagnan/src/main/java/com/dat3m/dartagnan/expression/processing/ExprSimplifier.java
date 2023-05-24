@@ -19,20 +19,20 @@ public class ExprSimplifier extends ExprTransformer {
         ExprInterface lhs = atom.getLHS().visit(this);
         ExprInterface rhs = atom.getRHS().visit(this);
         if (lhs.equals(rhs)) {
-        	switch(atom.getOp()) {
-        		case EQ:
-        		case LTE:
-        		case ULTE:
-        		case GTE:
-        		case UGTE:
-        			return BConst.TRUE;
-        		case NEQ:
-        		case LT:
-        		case ULT:
-        		case GT:
-        		case UGT:
-        			return BConst.FALSE;
-        	}
+            switch(atom.getOp()) {
+                case EQ:
+                case LTE:
+                case ULTE:
+                case GTE:
+                case UGTE:
+                    return BConst.TRUE;
+                case NEQ:
+                case LT:
+                case ULT:
+                case GT:
+                case UGT:
+                    return BConst.FALSE;
+            }
         }
         if (lhs instanceof IConst && rhs instanceof  IConst) {
             IConst lc = (IConst) lhs;
@@ -68,10 +68,10 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public BExpr visit(BExprBin bBin) {
-    	// Due to constant propagation we are not guaranteed to get BExprs
-    	if(!(bBin.getLHS().visit(this) instanceof BExpr && bBin.getRHS().visit(this) instanceof BExpr)) {
-    		return bBin;
-    	}
+        // Due to constant propagation we are not guaranteed to get BExprs
+        if(!(bBin.getLHS().visit(this) instanceof BExpr && bBin.getRHS().visit(this) instanceof BExpr)) {
+            return bBin;
+        }
         BExpr lhs = (BExpr) bBin.getLHS().visit(this);
         BExpr rhs = (BExpr) bBin.getRHS().visit(this);
         switch (bBin.getOp()) {
@@ -99,11 +99,11 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public BExpr visit(BExprUn bUn) {
-    	// Due to constant propagation we are not guaranteed to get BExprs
+        // Due to constant propagation we are not guaranteed to get BExprs
         ExprInterface innerExpr = bUn.getInner().visit(this);
-    	if(!(innerExpr instanceof BExpr)) {
-    		return bUn;
-    	}
+        if(!(innerExpr instanceof BExpr)) {
+            return bUn;
+        }
         BExpr inner = (BExpr) innerExpr;
         if (inner instanceof BConst) {
             return inner.isTrue() ? BConst.FALSE : BConst.TRUE;
@@ -136,26 +136,26 @@ public class ExprSimplifier extends ExprTransformer {
         IExpr rhs = (IExpr)iBin.getRHS().visit(this);
         IOpBin op = iBin.getOp();
         if (lhs.equals(rhs)) {
-        	switch(op) {
-        		case AND:
-        		case OR:
-        			return lhs;
-        		case XOR:
-        			return IValue.ZERO;
-        	}
+            switch(op) {
+                case AND:
+                case OR:
+                    return lhs;
+                case XOR:
+                    return IValue.ZERO;
+            }
         }
         if (! (lhs instanceof IConst || rhs instanceof IConst)) {
             return new IExprBin(lhs, iBin.getOp(), rhs);
         } else if (lhs instanceof IConst && rhs instanceof IConst) {
-    		// If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
-    		// We cannot call reduce for R_SHIFT (lack of implementation)
-    		if(!(lhs instanceof MemoryObject) && iBin.getOp() != R_SHIFT) {
-    			return new IExprBin(lhs, iBin.getOp(), rhs).reduce();
-    		}
-    		// Rule to reduce &mem + 0
-    		if(lhs instanceof MemoryObject && rhs.equals(IValue.ZERO)) {
-    			return lhs;
-    		}
+            // If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
+            // We cannot call reduce for R_SHIFT (lack of implementation)
+            if(!(lhs instanceof MemoryObject) && iBin.getOp() != R_SHIFT) {
+                return new IExprBin(lhs, iBin.getOp(), rhs).reduce();
+            }
+            // Rule to reduce &mem + 0
+            if(lhs instanceof MemoryObject && rhs.equals(IValue.ZERO)) {
+                return lhs;
+            }
         }
 
         if (lhs instanceof IConst) {
@@ -178,19 +178,19 @@ public class ExprSimplifier extends ExprTransformer {
                 return val.compareTo(BigInteger.ZERO) == 0 ? IValue.ZERO : val.equals(BigInteger.ONE) ? lhs : new IExprBin(lhs, op, rhs);
             case PLUS:
             case MINUS:
-            	if(val.compareTo(BigInteger.ZERO) == 0) {
-            		return lhs;
-            	}
-            	// Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
-            	// Either op can be +/-, but this does not affect correctness
-            	// e.g. (&mem + x) - y -> &mem + reduced(x - y)
-            	if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst  && ((IExprBin)lhs).getOp() != R_SHIFT) {
-        			IExprBin lhsBin = (IExprBin)lhs;
-            		IExpr newLHS = lhsBin.getLHS();
-					IExpr newRHS = new IExprBin(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
-					return new IExprBin(newLHS, op, newRHS);
-            	}
-            	return new IExprBin(lhs, op, rhs);
+                if(val.compareTo(BigInteger.ZERO) == 0) {
+                    return lhs;
+                }
+                // Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
+                // Either op can be +/-, but this does not affect correctness
+                // e.g. (&mem + x) - y -> &mem + reduced(x - y)
+                if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst  && ((IExprBin)lhs).getOp() != R_SHIFT) {
+                    IExprBin lhsBin = (IExprBin)lhs;
+                    IExpr newLHS = lhsBin.getLHS();
+                    IExpr newRHS = new IExprBin(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
+                    return new IExprBin(newLHS, op, newRHS);
+                }
+                return new IExprBin(lhs, op, rhs);
             default:
                 return new IExprBin(lhs, op, rhs);
         }
@@ -198,7 +198,7 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), iUn.getInner());
+        return new IExprUn(iUn.getOp(), iUn.getInner(), iUn.getType());
     }
 
     @Override

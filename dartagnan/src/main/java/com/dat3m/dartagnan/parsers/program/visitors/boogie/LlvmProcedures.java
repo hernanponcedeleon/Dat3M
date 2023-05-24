@@ -154,9 +154,8 @@ public class LlvmProcedures {
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
                 i1 = (IExpr) p0;
-                i2 = (IExpr) p1;
                 visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1)))
+                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, new IExprUn(IOpUn.CTLZ, i1, i1.getType())))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
                 return;
             default:

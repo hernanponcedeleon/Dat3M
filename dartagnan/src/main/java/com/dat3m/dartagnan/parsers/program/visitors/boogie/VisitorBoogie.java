@@ -567,7 +567,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	@Override
 	public Object visitMinus_expr(Minus_exprContext ctx) {
 		IExpr v = (IExpr)ctx.unary_expr().accept(this);
-		return new IExprUn(IOpUn.MINUS, v);
+		return new IExprUn(IOpUn.MINUS, v, v.getType());
 	}
 
 	@Override

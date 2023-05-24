@@ -1,141 +1,88 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprUn;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.type.*;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
-import static com.dat3m.dartagnan.expression.op.IOpUn.*;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class LlvmUnary {
 
-	public static List<String> LLVMUNARY = Arrays.asList(
-			"$not.",
+    // List of supported prefixes.
+    private static final String NOT = "$not.";
+    private static final String BITVECTOR_TO_SIGNED_INTEGER = "$bv2int.";
+    private static final String BITVECTOR_TO_UNSIGNED_INTEGER = "$bv2uint.";
+    private static final String SIGNED_INTEGER_TO_BITVECTOR = "$int2bv.";
+    private static final String UNSIGNED_INTEGER_TO_BITVECTOR = "$uint2bv.";
+    private static final String TRUNCATE = "$trunc.";
+    private static final String SIGNED_EXTEND = "$sext.";
+    private static final String UNSIGNED_EXTEND = "$zext.";
+    public static List<String> LLVMUNARY = Arrays.asList(
+            NOT,
+            BITVECTOR_TO_SIGNED_INTEGER,
+            BITVECTOR_TO_UNSIGNED_INTEGER,
+            SIGNED_INTEGER_TO_BITVECTOR,
+            UNSIGNED_INTEGER_TO_BITVECTOR,
+            TRUNCATE,
+            SIGNED_EXTEND,
+            UNSIGNED_EXTEND
+    );
 
-			"$bv2uint.", "$bv2int.",
+    public static Object llvmUnary(String name, List<Object> callParams) {
+        try {
+            for (String prefix : LLVMUNARY) {
+                if (name.startsWith(prefix)) {
+                    String suffix = name.substring(prefix.length());
+                    return llvmUnary(prefix, suffix, callParams);
+                }
+            }
+        } catch (IllegalArgumentException x) {
+            throw new ParsingException(String.format("Function %s is not implemented: %s", name, x.getMessage()));
+        }
+        throw new ParsingException(String.format("Function %s is not implemented.", name));
+    }
 
-			"$uint2bv.1", "$uint2bv.8", "$uint2bv.16", "$uint2bv.32", "$uint2bv.64",
-			"$int2bv.1", "$int2bv.8", "$int2bv.16", "$int2bv.32", "$int2bv.64",
-			
-			"$trunc.bv64.bv32", "$trunc.bv64.bv16", "$trunc.bv64.bv8", "$trunc.bv64.bv1",
-			"$trunc.bv32.bv16", "$trunc.bv32.bv8", "$trunc.bv32.bv1",
-			"$trunc.bv16.bv8", "$trunc.bv16.bv1",
-			"$trunc.bv8.bv1",
-			
-			"$zext.bv1.bv8", "$zext.bv1.bv16", "$zext.bv1.bv32","$zext.bv1.bv64", 
-			"$zext.bv8.bv16", "$zext.bv8.bv32", "$zext.bv8.bv64",
-			"$zext.bv16.bv32", "$zext.bv16.bv64",
-			"$zext.bv32.bv64",
-			
-			"$sext.bv1.bv8", "$sext.bv1.bv16", "$sext.bv1.bv32","$sext.bv1.bv64", 
-			"$sext.bv8.bv16", "$sext.bv8.bv32", "$sext.bv8.bv64",
-			"$sext.bv16.bv32", "$sext.bv16.bv64",
-			"$sext.bv32.bv64"
-			);
-	
-	public static Object llvmUnary(String name, List<Object> callParams) {
-		if(name.startsWith("$not.")) {
-			return new BExprUn(NOT, (ExprInterface)callParams.get(0));
-		}
-
-		IOpUn op = null;
-		if(name.startsWith("$bv2uint.")) {
-			op = BV2UINT;
-		} else if(name.startsWith("$bv2int.")) {
-			op = BV2INT;
-		} else if (name.contains("int2bv")) {
-			// ============ INT2BV ============
-			if (name.equals("$uint2bv.1") || name.equals("$int2bv.1")) {
-				op = INT2BV1;
-			} else if (name.equals("$uint2bv.8") || name.equals("$int2bv.8")) {
-				op = INT2BV8;
-			} else if (name.equals("$uint2bv.16") || name.equals("$int2bv.16")) {
-				op = INT2BV16;
-			} else if (name.equals("$uint2bv.32") || name.equals("$int2bv.32")) {
-				op = INT2BV32;
-			} else if (name.equals("$uint2bv.64") || name.equals("$int2bv.64")) {
-				op = INT2BV64;
-			}
-		} else if (name.startsWith("$trunc.")) {
-			// ============ TRUNC ============
-			if (name.equals("$trunc.bv64.bv32")) {
-				op = TRUNC6432;
-			} else if (name.equals("$trunc.bv64.bv16")) {
-				op = TRUNC6416;
-			} else if (name.equals("$trunc.bv64.bv8")) {
-				op = TRUNC648;
-			} else if (name.equals("$trunc.bv64.bv1")) {
-				op = TRUNC641;
-			} else if (name.equals("$trunc.bv32.bv16")) {
-				op = TRUNC3216;
-			} else if (name.equals("$trunc.bv32.bv8")) {
-				op = TRUNC328;
-			} else if (name.equals("$trunc.bv32.bv1")) {
-				op = TRUNC321;
-			} else if (name.equals("$trunc.bv16.bv8")) {
-				op = TRUNC168;
-			} else if (name.equals("$trunc.bv16.bv1")) {
-				op = TRUNC161;
-			} else if (name.equals("$trunc.bv8.bv1")) {
-				op = TRUNC81;
-			}
-		} else if (name.startsWith("$zext")) {
-			// ============ ZEXT ============
-			if (name.equals("$zext.bv1.bv8")) {
-				op = ZEXT18;
-			} else if (name.equals("$zext.bv1.bv16")) {
-				op = ZEXT116;
-			} else if (name.equals("$zext.bv1.bv32")) {
-				op = ZEXT132;
-			} else if (name.equals("$zext.bv1.bv64")) {
-				op = ZEXT164;
-			} else if (name.equals("$zext.bv8.bv16")) {
-				op = ZEXT816;
-			} else if (name.equals("$zext.bv8.bv32")) {
-				op = ZEXT832;
-			} else if (name.equals("$zext.bv8.bv64")) {
-				op = ZEXT864;
-			} else if (name.equals("$zext.bv16.bv32")) {
-				op = ZEXT1632;
-			} else if (name.equals("$zext.bv16.bv64")) {
-				op = ZEXT1664;
-			} else if (name.equals("$zext.bv32.bv64")) {
-				op = ZEXT3264;
-			}
-		} else if (name.startsWith("$sext")) {
-			// ============ SEXT ============
-			if (name.equals("$sext.bv1.bv8")) {
-				op = SEXT18;
-			} else if (name.equals("$sext.bv1.bv16")) {
-				op = SEXT116;
-			} else if (name.equals("$sext.bv1.bv32")) {
-				op = SEXT132;
-			} else if (name.equals("$sext.bv1.bv64")) {
-				op = SEXT164;
-			} else if (name.equals("$sext.bv8.bv16")) {
-				op = SEXT816;
-			} else if (name.equals("$sext.bv8.bv32")) {
-				op = SEXT832;
-			} else if (name.equals("$sext.bv8.bv64")) {
-				op = SEXT864;
-			} else if (name.equals("$sext.bv16.bv32")) {
-				op = SEXT1632;
-			} else if (name.equals("$sext.bv16.bv64")) {
-				op = SEXT1664;
-			} else if (name.equals("$sext.bv32.bv64")) {
-				op = SEXT3264;
-			}
-		}
-
-		if(op == null) {
-			throw new ParsingException("Function " + name + " has no implementation");
-		}
-		return new IExprUn(op, (IExpr)callParams.get(0));
-	}
+    private static Object llvmUnary(String prefix, String suffix, List<Object> callParams) {
+        TypeFactory types = TypeFactory.getInstance();
+        IExpr inner = (IExpr) callParams.get(0);
+        IntegerType integerType = inner.getType();
+        switch (prefix) {
+            case NOT -> {
+                //TODO type-cast
+                return new BExprUn(BOpUn.NOT, inner);
+            }
+            case BITVECTOR_TO_SIGNED_INTEGER, BITVECTOR_TO_UNSIGNED_INTEGER -> {
+                checkArgument(!integerType.isMathematical(), "Expected bv, got int.");
+                boolean signed = prefix.equals(BITVECTOR_TO_SIGNED_INTEGER);
+                IOpUn operator = signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED;
+                return new IExprUn(operator, inner, types.getIntegerType());
+            }
+            case SIGNED_INTEGER_TO_BITVECTOR, UNSIGNED_INTEGER_TO_BITVECTOR -> {
+                checkArgument(integerType.isMathematical(), "Expected int, got %s.", integerType);
+                boolean signed = prefix.equals(SIGNED_INTEGER_TO_BITVECTOR);
+                IOpUn operator = signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED;
+                int bitWidth = Integer.parseInt(suffix);
+                IntegerType targetType = types.getIntegerType(bitWidth);
+                return new IExprUn(operator, inner, targetType);
+            }
+            case TRUNCATE, SIGNED_EXTEND, UNSIGNED_EXTEND -> {
+                boolean signed = !prefix.equals(UNSIGNED_EXTEND);
+                IOpUn operator = signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED;
+                String[] suffixParts = suffix.split("\\.");
+                assert suffixParts.length == 2 && suffixParts[0].startsWith("bv") && suffixParts[1].startsWith("bv");
+                int expectedBitWidth = Integer.parseInt(suffixParts[0].substring(2));
+                checkArgument(!integerType.isMathematical() && integerType.getBitWidth() == expectedBitWidth,
+                        "Type mismatch between %s and bv%s.", integerType, expectedBitWidth);
+                int bitWidth = Integer.parseInt(suffixParts[1].substring(2));
+                IntegerType targetType = types.getIntegerType(bitWidth);
+                return new IExprUn(operator, inner, targetType);
+            }
+        }
+        throw new AssertionError();
+    }
 }
