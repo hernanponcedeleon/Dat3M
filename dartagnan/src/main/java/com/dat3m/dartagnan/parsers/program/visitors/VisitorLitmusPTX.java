@@ -122,6 +122,11 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitRegister(LitmusPTXParser.RegisterContext ctx) {
+        return programBuilder.getOrCreateRegister(mainThread, ctx.getText(), getArchPrecision());
+    }
+
+    @Override
     public Object visitInstructionRow(LitmusPTXParser.InstructionRowContext ctx) {
         for (int i = 0; i < threadCount; i++) {
             mainThread = i;
@@ -160,7 +165,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        Register register = (Register) ctx.register().accept(this);
         String mo = ctx.mo().content;
         String scope;
         switch (mo) {
@@ -185,14 +190,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitLocalConstant(LitmusPTXParser.LocalConstantContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        Register register = (Register) ctx.register().accept(this);
         IConst constant = (IConst) ctx.constant().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx) {
-        Register register = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
         String mo = ctx.mo().content;
         String scope;
@@ -218,7 +223,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitAtomConstant(LitmusPTXParser.AtomConstantContext ctx) {
-        Register register_destination = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        Register register_destination = (Register) ctx.register().accept(this);
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
@@ -273,7 +278,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitRedRegister(LitmusPTXParser.RedRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
-        Register register_operand = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
+        Register register_operand = (Register) ctx.register().accept(this);
         IOpBin op = ctx.operation().op;
         Register register_destination = programBuilder.getOrCreateRegister(mainThread, null, getArchPrecision());
         String mo = ctx.mo().content;
@@ -320,9 +325,6 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
         IExpr fenceId = (IExpr) ctx.barID().accept(this);
-        if (fenceId == null) {
-            fenceId = programBuilder.getRegister(mainThread, ctx.barID().getText());
-        }
         Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
     }
