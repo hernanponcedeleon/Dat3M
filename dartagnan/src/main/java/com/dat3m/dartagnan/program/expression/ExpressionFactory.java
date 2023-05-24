@@ -272,8 +272,7 @@ public final class ExpressionFactory {
     }
 
     private void checkTypes(Expression left, Object operator, Expression right) {
-        if(!left.getType().equals(right.getType())) {
-            logger.warn("Type mismatch: {} {} {}.", left, operator, right);
-        }
+        checkArgument(left.getType().equals(right.getType()),
+                "Type mismatch: %s %s %s.", left, operator, right);
     }
 }
