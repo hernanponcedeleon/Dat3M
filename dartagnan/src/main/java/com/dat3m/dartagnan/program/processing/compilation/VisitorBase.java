@@ -77,6 +77,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
     public List<Event> visitLock(Lock e) {
         Register resultRegister = e.getResultRegister();
+		Literal zero = expressions.makeZero(resultRegister.getType());
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
@@ -90,6 +91,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
 	public List<Event> visitUnlock(Unlock e) {
         Register resultRegister = e.getResultRegister();
+		Expression one = expressions.makeOne(resultRegister.getType());
 		Expression address = e.getAddress();
 		String mo = e.getMo();
 
