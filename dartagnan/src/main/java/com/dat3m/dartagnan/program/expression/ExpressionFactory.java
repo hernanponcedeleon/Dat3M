@@ -51,9 +51,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeNot(Expression inner) {
-        if (!inner.isBoolean()) {
-            logger.warn("Non-boolean operand for (not {}).", inner);
-        }
+        checkArgument(inner.isBoolean(), "Non-boolean operand for (not %s).", inner);
         if (inner instanceof Literal) {
             return makeValue(inner.isFalse());
         }
@@ -153,9 +151,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression left, BOpBin operator, Expression right) {
-        if (!left.isBoolean() || !right.isBoolean()) {
-            logger.warn("Non-boolean operands {} {} {}.", left, operator, right);
-        }
+        checkArgument(left.isBoolean() && right.isBoolean(), "Non-boolean operands %s %s %s.", left, operator, right);
         boolean isAnd = operator.equals(BOpBin.AND);
         assert isAnd || operator.equals(BOpBin.OR);
         if (left.equals(right)) {
@@ -187,11 +183,10 @@ public final class ExpressionFactory {
             return makeValue(result);
         }
         if (left.equals(right) && left.getRegs().isEmpty()) {
-            switch (comparator) {
-                case EQ: case LTE: case ULTE: case GTE: case UGTE:
-                    return makeTrue();
-            }
-            return makeFalse();
+            return switch (comparator) {
+                case EQ, LTE, ULTE, GTE, UGTE -> makeTrue();
+                default -> makeFalse();
+            };
         }
         if (left.isTrue() || left.isFalse()) {
             return comparator.equals(COpBin.EQ) == left.isTrue() ? right : makeNot(right);
@@ -207,9 +202,7 @@ public final class ExpressionFactory {
             boolean rightIsPointer = right.getType() instanceof PointerType;
             Type type;
             if (operator.equals(IOpBin.PLUS)) {
-                if (rightIsPointer) {
-                    logger.warn("Pointer addition is not allowed in {} + {}.", left, right);
-                }
+                checkArgument(!rightIsPointer, "Pointer addition is not allowed in %s + %s.", left, right);
                 type = left.getType();
             } else if (operator.equals(IOpBin.MINUS)) {
                 int precision = getArchPrecision();
@@ -258,9 +251,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
-        if (!condition.isBoolean()) {
-            logger.warn("Non-boolean guard for {} ? {} : {}.", condition, ifTrue, ifFalse);
-        }
+        checkArgument(condition.isBoolean(), "Non-boolean guard for %s ? %s : %s.", condition, ifTrue, ifFalse);
         if (ifTrue.equals(ifFalse) && condition.getRegs().isEmpty() ||
                 condition.isFalse() && ifFalse.getRegs().containsAll(ifTrue.getRegs())) {
             return ifFalse;
