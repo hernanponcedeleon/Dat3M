@@ -40,63 +40,34 @@ public class SvcompProcedures {
 
     public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-        switch(name) {
-            case "__VERIFIER_loop_bound":
-                __VERIFIER_loop_bound(visitor, ctx);
-                break;
-            case "__VERIFIER_loop_begin":
-                visitor.thread.append(EventFactory.Svcomp.newLoopBegin());
-                break;
-            case "__VERIFIER_spin_start":
-                visitor.thread.append(EventFactory.Svcomp.newSpinStart());
-                break;
-            case "__VERIFIER_spin_end":
-                visitor.thread.append(EventFactory.Svcomp.newSpinEnd());
-                break;
-            case "__VERIFIER_assert":
-                visitor.addAssertion((Expression)ctx.call_params().exprs().accept(visitor));
-                break;
-            case "__VERIFIER_assume":
-                __VERIFIER_assume(visitor, ctx);
-                break;
-            case "__VERIFIER_atomic_begin":
-                __VERIFIER_atomic_begin(visitor);
-                break;
-            case "__VERIFIER_atomic_end":
-                __VERIFIER_atomic_end(visitor);
-                break;
-            case "__VERIFIER_nondet_bool":
-                __VERIFIER_nondet_bool(visitor, ctx);
-                break;
-            case "__VERIFIER_nondet_int":
-            case "__VERIFIER_nondet_uint":
-            case "__VERIFIER_nondet_unsigned_int":
-            case "__VERIFIER_nondet_short":
-            case "__VERIFIER_nondet_ushort":
-            case "__VERIFIER_nondet_unsigned_short":
-            case "__VERIFIER_nondet_long":
-            case "__VERIFIER_nondet_ulong":
-            case "__VERIFIER_nondet_char":
-            case "__VERIFIER_nondet_uchar":
-                __VERIFIER_nondet(visitor, ctx, name);
-                break;
-            default:
-                throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
+        switch (name) {
+            case "__VERIFIER_loop_bound" -> __VERIFIER_loop_bound(visitor, ctx);
+            case "__VERIFIER_loop_begin" -> visitor.thread.append(EventFactory.Svcomp.newLoopBegin());
+            case "__VERIFIER_spin_start" -> visitor.thread.append(EventFactory.Svcomp.newSpinStart());
+            case "__VERIFIER_spin_end" -> visitor.thread.append(EventFactory.Svcomp.newSpinEnd());
+            case "__VERIFIER_assert" -> visitor.addAssertion((Expression) ctx.call_params().exprs().accept(visitor));
+            case "__VERIFIER_assume" -> __VERIFIER_assume(visitor, ctx);
+            case "__VERIFIER_atomic_begin" -> __VERIFIER_atomic_begin(visitor);
+            case "__VERIFIER_atomic_end" -> __VERIFIER_atomic_end(visitor);
+            case "__VERIFIER_nondet_bool" -> __VERIFIER_nondet_bool(visitor, ctx);
+            case "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int", "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short", "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong", "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" ->
+                    __VERIFIER_nondet(visitor, ctx, name);
+            default -> throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
         }
     }
 
     private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
-        Expression expr = (Expression)ctx.call_params().exprs().accept(visitor);
+        Expression expr = (Expression) ctx.call_params().exprs().accept(visitor);
         visitor.thread.append(EventFactory.newAssume(expr));
     }
 
     public static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
-		visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-		visitor.thread.append(visitor.currentBeginAtomic);
-	}
+        visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
+        visitor.thread.append(visitor.currentBeginAtomic);
+    }
 
     public static void __VERIFIER_atomic_end(VisitorBoogie visitor) {
-        if(visitor.currentBeginAtomic == null) {
+        if (visitor.currentBeginAtomic == null) {
             throw new MalformedProgramException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
         }
         visitor.thread.append(EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
@@ -105,53 +76,50 @@ public class SvcompProcedures {
 
     private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {
         boolean signed;
-        long min;
-        long max;
+        BigInteger min;
+        BigInteger max;
         switch (name) {
-            case "__VERIFIER_nondet_int":
+            case "__VERIFIER_nondet_int" -> {
                 signed = true;
-                min = Integer.MIN_VALUE;
-                max = Integer.MAX_VALUE;
-                break;
-            case "__VERIFIER_nondet_uint":
-            case "__VERIFIER_nondet_unsigned_int":
+                min = BigInteger.valueOf(Integer.MIN_VALUE);
+                max = BigInteger.valueOf(Integer.MAX_VALUE);
+            }
+            case "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int" -> {
                 signed = false;
-                min = 0;
-                max = UnsignedInteger.MAX_VALUE.longValue();
-                break;
-            case "__VERIFIER_nondet_short":
+                min = BigInteger.ZERO;
+                max = UnsignedInteger.MAX_VALUE.bigIntegerValue();
+            }
+            case "__VERIFIER_nondet_short" -> {
                 signed = true;
-                min = Short.MIN_VALUE;
-                max = Short.MAX_VALUE;
-                break;
-            case "__VERIFIER_nondet_ushort":
-            case "__VERIFIER_nondet_unsigned_short":
+                min = BigInteger.valueOf(Short.MIN_VALUE);
+                max = BigInteger.valueOf(Short.MAX_VALUE);
+            }
+            case "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short" -> {
                 signed = false;
-                min = 0;
-                max = 65535;
-                break;
-            case "__VERIFIER_nondet_long":
+                min = BigInteger.ZERO;
+                max = BigInteger.valueOf(65535);
+            }
+            case "__VERIFIER_nondet_long" -> {
                 signed = true;
-                min = Long.MIN_VALUE;
-                max = Long.MAX_VALUE;
-                break;
-            case "__VERIFIER_nondet_ulong":
+                min = BigInteger.valueOf(Long.MIN_VALUE);
+                max = BigInteger.valueOf(Long.MAX_VALUE);
+            }
+            case "__VERIFIER_nondet_ulong" -> {
                 signed = false;
-                min = 0;
-                max = UnsignedLong.MAX_VALUE.longValue();
-                break;
-            case "__VERIFIER_nondet_char":
+                min = BigInteger.ZERO;
+                max = UnsignedLong.MAX_VALUE.bigIntegerValue();
+            }
+            case "__VERIFIER_nondet_char" -> {
                 signed = true;
-                min = -128;
-                max = 127;
-                break;
-            case "__VERIFIER_nondet_uchar":
+                min = BigInteger.valueOf(-128);
+                max = BigInteger.valueOf(127);
+            }
+            case "__VERIFIER_nondet_uchar" -> {
                 signed = false;
-                min = 0;
-                max = 255;
-                break;
-            default:
-                throw new ParsingException(name + " is not supported");
+                min = BigInteger.ZERO;
+                max = BigInteger.valueOf(255);
+            }
+            default -> throw new ParsingException(name + " is not supported");
         }
         String registerName = ctx.call_params().Ident(0).getText();
         Optional<Register> register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName);
@@ -159,16 +127,16 @@ public class SvcompProcedures {
             return;
         }
         visitor.append(EventFactory.newLocal(register.get(),
-                        visitor.program.newConstant(
-                                register.get().getType(),
-                                signed,
-                                BigInteger.valueOf(min),
-                                BigInteger.valueOf(max))));
+                visitor.program.newConstant(
+                        register.get().getType(),
+                        signed,
+                        min,
+                        max)));
     }
 
     private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
         String registerName = ctx.call_params().Ident(0).getText();
-        Optional<Register> register = visitor.thread.getRegister( visitor.currentScope.getID() + ":" + registerName);
+        Optional<Register> register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName);
         Expression expression = visitor.program.newConstant(visitor.types.getIntegerType(1), false, BigInteger.ZERO, BigInteger.ONE);
         register.ifPresent(value -> visitor.append(EventFactory.newLocal(value, expression)));
 
