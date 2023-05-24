@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.NondeterministicExpression;
@@ -17,7 +18,6 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.OptionalInt;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
@@ -67,6 +67,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
             return formula;
         }
+        assert formula instanceof BooleanFormula;
         int precision = getArchPrecision();
         Formula one;
         Formula zero;
@@ -145,11 +146,13 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
     }
 
-    static Formula getLastMemValueExpr(MemoryObject object, int offset, FormulaManager formulaManager) {
+    Formula getLastMemValueExpr(MemoryObject object, int offset) {
         checkArgument(0 <= offset && offset < object.size(), "array index out of bounds");
         String name = String.format("last_val_at_%s_%d", object, offset);
-        if (getArchPrecision() > -1) {
-            return formulaManager.getBitvectorFormulaManager().makeVariable(getArchPrecision(), name);
+        //TODO Use an analysis to infer which type should get here.
+        int length = getArchPrecision();
+        if (length > -1) {
+            return formulaManager.getBitvectorFormulaManager().makeVariable(length, name);
         } else {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
@@ -159,7 +162,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         switch (precision) {
             case -1 -> {
                 if (type instanceof PointerType) {
-                    int archPrecision = getArchPrecision();
+                    int archPrecision = GlobalSettings.getArchPrecision();
                     return archPrecision < 0 ? OptionalInt.empty() : OptionalInt.of(archPrecision);
                 }
                 if (type instanceof UnboundedIntegerType) {
@@ -174,6 +177,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 return OptionalInt.of(precision);
             }
         }
+    }
+
+    private int getArchPrecision() {
+        return precision > -1 ? precision : GlobalSettings.getArchPrecision();
     }
 
     @Override
@@ -442,6 +449,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
-        return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
+        return getLastMemValueExpr(location.getMemoryObject(), location.getOffset());
     }
 }

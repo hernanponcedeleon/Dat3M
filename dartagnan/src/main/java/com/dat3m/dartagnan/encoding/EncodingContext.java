@@ -309,7 +309,7 @@ public final class EncodingContext {
                 (NumeralFormula.IntegerFormula) f;
     }
 
-    private ExpressionEncoder newExpressionEncoder(Event e) {
+    ExpressionEncoder newExpressionEncoder(Event e) {
         return new ExpressionEncoder(precision, formulaManager, e);
     }
 }
