@@ -30,9 +30,9 @@ public class ExceptionsTest {
     public void RegisterAlreadyExist() throws Exception {
         Program program = new Program(SourceLanguage.LITMUS);
         Thread t = program.newThread("0");
-        t.newRegister("r1", types.getNumberType());
+        t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
-        t.newRegister("r1", types.getNumberType());
+        t.newRegister("r1", types.getIntegerType());
     }
 
     @Test(expected = IllegalArgumentException.class)

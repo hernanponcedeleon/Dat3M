@@ -142,7 +142,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getNumberType());
+        Expression next = thread.getOrNewRegister(currentScope.getID() + ":" + "ptrMain", types.getIntegerType());
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
             next = pool.next();
@@ -267,7 +267,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
                 Expression pointer = pool.getPtrFromInt(threadCount);
-                Register reg = thread.newRegister(types.getNumberType());
+                Register reg = thread.newRegister(types.getIntegerType());
                 thread.append(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
         }
@@ -348,7 +348,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
         if (name.equals("reach_error")) {
-            addAssertion(expressions.makeZero(types.getNumberType()));
+            addAssertion(expressions.makeZero(types.getIntegerType()));
             return null;
         }
 
@@ -547,7 +547,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         String typeString = ctx.getText();
         return typeString.contains("bv") ?
                 types.getIntegerType(Integer.parseInt(typeString.split("bv")[1])) :
-                types.getNumberType();
+                types.getIntegerType();
     }
 
     @Override
@@ -761,7 +761,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitInt_expr(Int_exprContext ctx) {
-        return expressions.parseValue(ctx.getText(), types.getNumberType());
+        return expressions.parseValue(ctx.getText(), types.getIntegerType());
     }
 
     @Override

@@ -68,7 +68,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (ctx.initConstantValue() != null) {
             MemoryObject object = program.getMemory().getOrNewObject(ctx.varName().getText());
             //TODO Unknown precision, defaults to unbound integer?
-            Type type = types.getNumberType();
+            Type type = types.getIntegerType();
             object.setInitialValue(0, expressions.parseValue(ctx.initConstantValue().constant().getText(), type));
         }
         return null;
@@ -79,7 +79,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (ctx.initConstantValue() != null) {
             Thread thread = program.newThread(Integer.toString(ctx.threadId().id));
             //TODO Unknown precision, defaults to unbound integer?
-            Type type = types.getNumberType();
+            Type type = types.getIntegerType();
             Register register = thread.getOrNewRegister(ctx.varName().getText(), type);
             Literal value = expressions.parseValue(ctx.initConstantValue().constant().getText(), type);
             thread.append(EventFactory.newLocal(register, value));

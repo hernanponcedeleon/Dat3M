@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.boogie;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.type.NumberType;
+import com.dat3m.dartagnan.program.expression.type.UnboundedIntegerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 
@@ -55,14 +55,14 @@ public class LlvmUnary {
             }
             case BITVECTOR_TO_SIGNED_INTEGER -> {
                 assert inner.getType().equals(types.getIntegerType(Integer.parseInt(suffix)));
-                return expressions.makeSignedCast(types.getNumberType(), inner);
+                return expressions.makeSignedCast(types.getIntegerType(), inner);
             }
             case BITVECTOR_TO_UNSIGNED_INTEGER -> {
                 assert inner.getType().equals(types.getIntegerType(Integer.parseInt(suffix)));
-                return expressions.makeUnsignedCast(types.getNumberType(), inner);
+                return expressions.makeUnsignedCast(types.getIntegerType(), inner);
             }
             case SIGNED_INTEGER_TO_BITVECTOR, UNSIGNED_INTEGER_TO_BITVECTOR -> {
-                assert inner.getType() instanceof NumberType;
+                assert inner.getType() instanceof UnboundedIntegerType;
                 int bitWidth = Integer.parseInt(suffix);
                 Type targetType = types.getIntegerType(bitWidth);
                 return expressions.makeCast(targetType, inner);

@@ -10,7 +10,7 @@ public final class TypeFactory {
 
     private static final TypeFactory instance = new TypeFactory();
     private final BooleanType booleanType = new BooleanType();
-    private final NumberType numberType = new NumberType();
+    private final UnboundedIntegerType unboundedIntegerType = new UnboundedIntegerType();
     private final PointerType pointerType = new PointerType();
     private final Map<Integer, BoundedIntegerType> integerTypeMap = new HashMap<>();
     private final Map<Type, Map<Integer, ArrayType>> arrayTypeMap = new HashMap<>();
@@ -30,8 +30,8 @@ public final class TypeFactory {
         return pointerType;
     }
 
-    public NumberType getNumberType() {
-        return numberType;
+    public UnboundedIntegerType getIntegerType() {
+        return unboundedIntegerType;
     }
 
     public BoundedIntegerType getIntegerType(int bitWidth) {

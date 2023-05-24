@@ -83,7 +83,7 @@ public class PthreadsProcedures {
         visitor.allocations.add(pointer);
         visitor.append(EventFactory.Pthread.newCreate(pointer, threadName));
         String registerName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Type type = visitor.types.getNumberType();
+        Type type = visitor.types.getIntegerType();
         Register reg = visitor.thread.getOrNewRegister(registerName, type);
         visitor.thread.append(EventFactory.newLocal(reg, visitor.expressions.makeZero(type)));
     }
@@ -99,7 +99,7 @@ public class PthreadsProcedures {
 
     private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.thread.newRegister(visitor.types.getNumberType());
+        Register register = visitor.thread.newRegister(visitor.types.getIntegerType());
         Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
@@ -108,7 +108,7 @@ public class PthreadsProcedures {
 
     private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
         ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.thread.newRegister(visitor.types.getNumberType());
+        Register register = visitor.thread.newRegister(visitor.types.getIntegerType());
         Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.append(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));

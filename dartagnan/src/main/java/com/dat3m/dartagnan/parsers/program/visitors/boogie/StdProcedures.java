@@ -48,7 +48,7 @@ public class StdProcedures {
         if (name.equals("get_my_tid")) {
             String registerName = ctx.call_params().Ident(0).getText();
             Register register = visitor.thread.getRegister(visitor.currentScope.getID() + ":" + registerName).orElseThrow();
-            Literal tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), visitor.types.getNumberType());
+            Literal tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), visitor.types.getIntegerType());
             visitor.thread.append(EventFactory.newLocal(register, tid));
             return;
         }
@@ -123,7 +123,7 @@ public class StdProcedures {
     }
 
     private static void __assert_fail(VisitorBoogie visitor) {
-        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getNumberType()));
+        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getIntegerType()));
     }
 
 }

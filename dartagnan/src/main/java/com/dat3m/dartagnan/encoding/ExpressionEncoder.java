@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.*;
 import com.dat3m.dartagnan.program.expression.type.BoundedIntegerType;
-import com.dat3m.dartagnan.program.expression.type.NumberType;
+import com.dat3m.dartagnan.program.expression.type.UnboundedIntegerType;
 import com.dat3m.dartagnan.program.expression.type.PointerType;
 import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -331,7 +331,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
             case SIGNED_CAST, UNSIGNED_CAST -> {
                 boolean signed = iUn.getOp().equals(IOpUn.SIGNED_CAST);
-                if (targetType instanceof NumberType) {
+                if (targetType instanceof UnboundedIntegerType) {
                     if (inner instanceof IntegerFormula) {
                         return inner;
                     }
@@ -426,7 +426,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             int archPrecision = getArchPrecision();
             return archPrecision < 0 ? OptionalInt.empty() : OptionalInt.of(archPrecision);
         }
-        if (type instanceof NumberType) {
+        if (type instanceof UnboundedIntegerType) {
             return OptionalInt.empty();
         }
         return OptionalInt.of(((BoundedIntegerType) type).getBitWidth());

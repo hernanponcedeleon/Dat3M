@@ -46,7 +46,7 @@ public class LlvmProcedures {
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
-        Register reg = visitor.thread.getOrNewRegister(regName, visitor.types.getNumberType());
+        Register reg = visitor.thread.getOrNewRegister(regName, visitor.types.getIntegerType());
 
         Object p0 = params.get(0).accept(visitor);
         int i0 = p0 instanceof Literal ? ((Literal) p0).getValueAsInt() : -1;
@@ -89,7 +89,7 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                Type type = visitor.types.getNumberType();
+                Type type = visitor.types.getIntegerType();
                 Register oldValueRegister = visitor.thread.getOrNewRegister(regName + "(0)", type);
                 Register cmpRegister = visitor.thread.getOrNewRegister(regName + "(1)", type);
                 // The compilation of Llvm.newCompareExchange will

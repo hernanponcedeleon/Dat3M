@@ -98,7 +98,7 @@ public final class ExpressionFactory {
             switch (operator) {
                 case MINUS -> v = value.negate();
                 case SIGNED_CAST, UNSIGNED_CAST -> {
-                    boolean truncate = innerType instanceof NumberType ||
+                    boolean truncate = innerType instanceof UnboundedIntegerType ||
                             innerType instanceof BoundedIntegerType &&
                                     targetType instanceof BoundedIntegerType &&
                                     ((BoundedIntegerType) targetType).getBitWidth() < ((BoundedIntegerType) innerType).getBitWidth();
@@ -205,7 +205,7 @@ public final class ExpressionFactory {
                 type = left.getType();
             } else if (operator.equals(IOpBin.MINUS)) {
                 int precision = getArchPrecision();
-                type = rightIsPointer ? precision < 0 ? types.getNumberType() : types.getIntegerType(precision) : left.getType();
+                type = rightIsPointer ? precision < 0 ? types.getIntegerType() : types.getIntegerType(precision) : left.getType();
             } else {
                 logger.warn("Unsupported expression {} {} {}", left, operator, right);
                 type = left.getType();
