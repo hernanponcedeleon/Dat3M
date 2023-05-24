@@ -58,7 +58,7 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitEnd(End e) {
 		//TODO boolean
         return eventSequence(
-				newStore(e.getAddress(), expressions.makeZero(archType), C11.MO_RELEASE)
+				newStore(e.getAddress(), expressions.makeFalse(), C11.MO_RELEASE)
         );
 	}
 

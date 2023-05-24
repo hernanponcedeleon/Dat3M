@@ -41,7 +41,7 @@ public class VisitorLKMM extends VisitorBase {
         public List<Event> visitEnd(End e) {
             //TODO boolean
             return eventSequence(
-                    newStore(e.getAddress(), expressions.makeZero(archType), Tag.Linux.MO_RELEASE)
+                    newStore(e.getAddress(), expressions.makeFalse(), Tag.Linux.MO_RELEASE)
             );
         }
 

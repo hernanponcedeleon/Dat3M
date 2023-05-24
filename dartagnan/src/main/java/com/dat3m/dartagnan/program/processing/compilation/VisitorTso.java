@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -57,7 +56,7 @@ class VisitorTso extends VisitorBase {
     public List<Event> visitEnd(End e) {
         return tagList(eventSequence(
                 // Nothing comes after an End event thus no need for a fence
-                newStore(e.getAddress(), zero, "")));
+                newStore(e.getAddress(), expressions.makeFalse(), "")));
     }
 
     @Override
@@ -95,20 +94,20 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(archType);
+        Register dummy = e.getThread().newRegister(types.getBooleanType());
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
         Load load = newRMWLoad(dummy, e.getAddress(), "");
         return eventSequence(
                 load,
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
-                newRMWStore(load, e.getAddress(), one, ""));
+                newAssume(expressions.makeNot(dummy)),
+                newRMWStore(load, e.getAddress(), expressions.makeTrue(), ""));
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStore(e.getAddress(), zero, ""),
+                newStore(e.getAddress(), expressions.makeFalse(), ""),
                 X86.newMemoryFence());
     }
 
@@ -159,6 +158,7 @@ class VisitorTso extends VisitorBase {
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
+        Expression one = expressions.makeOne(resultRegister.getType());
 
         Expression value = e.getMemValue();
         Expression address = e.getAddress();
@@ -200,7 +200,7 @@ class VisitorTso extends VisitorBase {
         String mo = e.getMo();
         Expression expectedAddr = e.getExpectedAddr();
         Type type = resultRegister.getType();
-
+        Expression one = expressions.makeOne(type);
         Register regExpected = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Register regValue = e.getThread().newRegister(type);

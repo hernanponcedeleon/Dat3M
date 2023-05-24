@@ -37,7 +37,7 @@ public class VisitorC11 extends VisitorBase {
     public List<Event> visitEnd(End e) {
         //TODO boolean
         return tagList(eventSequence(
-                newStore(e.getAddress(), expressions.makeZero(archType), Tag.C11.MO_RELEASE)));
+                newStore(e.getAddress(), expressions.makeFalse(), Tag.C11.MO_RELEASE)));
     }
 
     @Override
@@ -221,6 +221,7 @@ public class VisitorC11 extends VisitorBase {
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
+        Expression one = expressions.makeOne(resultRegister.getType());
 
         Expression value = e.getMemValue();
         Expression address = e.getAddress();

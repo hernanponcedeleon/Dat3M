@@ -61,13 +61,14 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitEnd(End e) {
         return eventSequence(
-                newStore(e.getAddress(), zero, Tag.ARMv8.MO_REL)
+                newStore(e.getAddress(), expressions.makeFalse(), Tag.ARMv8.MO_REL)
         );
     }
 
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
+        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
         load.addTags(C11.PTHREAD);
 
@@ -80,6 +81,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Expression one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
         load.addTags(Tag.STARTLOAD);
 
@@ -98,20 +100,20 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(archType);
+        Register dummy = e.getThread().newRegister(types.getBooleanType());
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
-                newRMWStoreExclusive(e.getAddress(), one, "", true));
+                newAssume(expressions.makeNot(dummy)),
+                newRMWStoreExclusive(e.getAddress(), expressions.makeTrue(), "", true));
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStore(e.getAddress(), zero, ARMv8.MO_REL));
+                newStore(e.getAddress(), expressions.makeFalse(), ARMv8.MO_REL));
     }
 
     // =============================================================================================
@@ -185,6 +187,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
+        Expression one = expressions.makeOne(resultRegister.getType());
 
         Expression value = e.getMemValue();
         Expression address = e.getAddress();
@@ -234,6 +237,7 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
         Expression expectedAddr = e.getExpectedAddr();
         Type type = resultRegister.getType();
+        Expression one = expressions.makeOne(type);
         Register regExpected = e.getThread().newRegister(type);
         Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
@@ -650,21 +654,21 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getThread().newRegister(archType);
+        Register dummy = e.getThread().newRegister(types.getBooleanType());
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         // With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
-                newRMWStoreExclusive(e.getLock(), one, "", true)
+                newAssume(expressions.makeNot(dummy)),
+                newRMWStoreExclusive(e.getLock(), expressions.makeTrue(), "", true)
         );
     }
 
     @Override
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
-                newStore(e.getAddress(), zero, ARMv8.MO_REL)
+                newStore(e.getAddress(), expressions.makeFalse(), ARMv8.MO_REL)
         );
     }
 

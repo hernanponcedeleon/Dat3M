@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -59,7 +58,7 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitEnd(End e) {
         return eventSequence(
 				Power.newSyncBarrier(),
-				newStore(e.getAddress(), zero, e.getMo())
+				newStore(e.getAddress(), expressions.makeFalse(), e.getMo())
         );
 	}
 
@@ -109,14 +108,14 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(archType);
+        Register dummy = e.getThread().newRegister(types.getBooleanType());
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ""),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
-                Power.newRMWStoreConditional(e.getAddress(), one, "", true),
+                newAssume(expressions.makeNot(dummy)),
+                Power.newRMWStoreConditional(e.getAddress(), expressions.makeTrue(), "", true),
                 // Fake dependency to guarantee acquire semantics
                 newFakeCtrlDep(dummy, label),
                 label,
@@ -127,7 +126,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), zero, ""));
+                newStore(e.getAddress(), expressions.makeFalse(), ""));
     }
     
     // =============================================================================================
@@ -307,6 +306,7 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
+		Expression one = expressions.makeOne(resultRegister.getType());
 
 		Expression address = e.getAddress();
 		String mo = e.getMo();
@@ -374,7 +374,7 @@ public class VisitorPower extends VisitorBase {
 		String mo = e.getMo();
 		Expression expectedAddr = e.getExpectedAddr();
 		Type type = resultRegister.getType();
-
+		Expression one = expressions.makeOne(type);
 		Register regExpected = e.getThread().newRegister(type);
         Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
@@ -902,7 +902,7 @@ public class VisitorPower extends VisitorBase {
 		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		Type type = resultRegister.getType();
-
+		Expression zero = expressions.makeZero(type);
         Register regValue = e.getThread().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address, "");
@@ -910,7 +910,7 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getThread().newRegister(type);
 		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeBinary(dummy, EQ, zero), cauEnd);
@@ -946,9 +946,10 @@ public class VisitorPower extends VisitorBase {
 		Expression value = e.getMemValue();
 		Expression address = e.getAddress();
 		String mo = e.getMo();
-
-		Register dummy = e.getThread().newRegister(resultRegister.getType());
-        Register retReg = e.getThread().newRegister(resultRegister.getType());
+		Type type = resultRegister.getType();
+		Expression zero = expressions.makeZero(type);
+		Register dummy = e.getThread().newRegister(type);
+        Register retReg = e.getThread().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
         Local testOp = newLocal(resultRegister, expressions.makeBinary(retReg, EQ, zero));
 
@@ -978,13 +979,13 @@ public class VisitorPower extends VisitorBase {
 
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
-		Register dummy = e.getThread().newRegister(archType);
+		Register dummy = e.getThread().newRegister(types.getBooleanType());
 		Label label = newLabel("FakeDep");
     // Spinlock events are guaranteed to succeed, i.e. we can use assumes
 		return eventSequence(
 				newRMWLoadExclusive(dummy, e.getLock(), ""),
-                newAssume(expressions.makeBinary(dummy, COpBin.EQ, zero)),
-                Power.newRMWStoreConditional(e.getLock(), one, "", true),
+                newAssume(expressions.makeNot(dummy)),
+                Power.newRMWStoreConditional(e.getLock(), expressions.makeTrue(), "", true),
 				// Fake dependency to guarantee acquire semantics
 				newFakeCtrlDep(dummy, label),
 				label,
@@ -996,7 +997,7 @@ public class VisitorPower extends VisitorBase {
 		public List<Event> visitLKMMUnlock(LKMMUnlock e) {
 			return eventSequence(
 					Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), zero, "")
+                newStore(e.getAddress(), expressions.makeFalse(), "")
         );
 		}
 

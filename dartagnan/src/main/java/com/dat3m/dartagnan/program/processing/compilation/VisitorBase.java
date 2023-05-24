@@ -21,8 +21,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.expression.Expression;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
-import com.dat3m.dartagnan.program.expression.Literal;
-import com.dat3m.dartagnan.program.expression.type.Type;
 import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
 
@@ -36,10 +34,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
 	protected boolean forceStart;
 	protected static final TypeFactory types = TypeFactory.getInstance();
-	protected static final Type archType = types.getPointerType();
 	protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
-	protected final Literal zero = expressions.makeZero(types.getPointerType());
-	protected final Literal one = expressions.makeOne(types.getPointerType());
 
 	protected VisitorBase(boolean forceStart) {
 		this.forceStart = forceStart;
@@ -77,7 +72,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
     public List<Event> visitLock(Lock e) {
         Register resultRegister = e.getResultRegister();
-		Literal zero = expressions.makeZero(resultRegister.getType());
+		Expression zero = expressions.makeZero(resultRegister.getType());
+		Expression one = expressions.makeOne(resultRegister.getType());
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
@@ -91,6 +87,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
 	public List<Event> visitUnlock(Unlock e) {
         Register resultRegister = e.getResultRegister();
+		Expression zero = expressions.makeZero(resultRegister.getType());
 		Expression one = expressions.makeOne(resultRegister.getType());
 		Expression address = e.getAddress();
 		String mo = e.getMo();
