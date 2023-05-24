@@ -12,11 +12,15 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.expression.ExpressionFactory;
+import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 import java.util.stream.IntStream;
+
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 /*
     This pass collects all Malloc events in the program and for each of them it:
@@ -79,7 +83,9 @@ public class MemoryAllocation implements ProgramProcessor {
     private void createInitEvents(Program program) {
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
         ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-
+        int archPrecision = getArchPrecision();
+        TypeFactory types = TypeFactory.getInstance();
+        Type offsetType = archPrecision < 0 ? types.getIntegerType() : types.getIntegerType(archPrecision);
         for(MemoryObject memObj : program.getMemory().getObjects()) {
             // The last case "heuristically checks" if Smack generated initialization or not:
             // we expect at least every 8 bytes to be initialized.
@@ -90,7 +96,7 @@ public class MemoryAllocation implements ProgramProcessor {
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
-                Literal offset = expressionFactory.makeValue(BigInteger.valueOf(i), memObj.getType());
+                Literal offset = expressionFactory.makeValue(BigInteger.valueOf(i), offsetType);
                 Event init = new Init(memObj, i, expressionFactory.makeBinary(memObj, IOpBin.PLUS, offset));
                 final Thread thread = program.newThread(".INIT." + memObj + "." + i, init);
                 thread.append(EventFactory.newLabel(thread.getEndLabelName()));
