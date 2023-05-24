@@ -93,7 +93,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
                 if (cur instanceof RegWriter) {
                     Register register = ((RegWriter) cur).getResultRegister();
-                    // Loads may generate replacements for register expressions.
+                    // Locals may generate replacements for register expressions.
                     // We treat all other register writers as non-constant.
                     Expression expr = cur instanceof Local ? ((Local) cur).getExpr() : null;
                     boolean doPropagate = expr != null && expr.getRegs().isEmpty() ||
