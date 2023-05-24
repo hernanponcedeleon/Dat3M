@@ -15,7 +15,6 @@ public class SmackTypes {
 
     public static Type parseType(String name) {
         TypeFactory types = TypeFactory.getInstance();
-        //TODO this part should be in sync with VisitorBoogie
         if (name.equals("bool")) {
             return types.getBooleanType();
         }
