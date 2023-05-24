@@ -89,13 +89,17 @@ public final class ExpressionFactory {
     }
 
     public Expression makeCast(Type targetType, Expression inner, boolean signed) {
+        checkArgument(targetType.isLeafType(), "Unsupported cast to type %s.", targetType);
         Type innerType = inner.getType();
         if (inner instanceof Literal literal) {
             BigInteger value = literal.getValue();
-            boolean truncate = innerType instanceof UnboundedIntegerType ||
-                    innerType instanceof BoundedIntegerType &&
-                            targetType instanceof BoundedIntegerType &&
-                            ((BoundedIntegerType) targetType).getBitWidth() < ((BoundedIntegerType) innerType).getBitWidth();
+            if (targetType instanceof BooleanType) {
+                return makeValue(!value.equals(BigInteger.ZERO));
+            }
+            boolean truncate = targetType instanceof BoundedIntegerType targetBoundedType &&
+                    (innerType instanceof UnboundedIntegerType ||
+                            innerType instanceof BoundedIntegerType innerBoundedType &&
+                                    targetBoundedType.getBitWidth() < innerBoundedType.getBitWidth());
             if (truncate) {
                 BigInteger v = value;
                 for (int i = ((BoundedIntegerType) targetType).getBitWidth(); i < value.bitLength(); i++) {
@@ -103,14 +107,16 @@ public final class ExpressionFactory {
                 }
                 return makeValue(v, targetType);
             }
-            checkArgument(innerType instanceof BoundedIntegerType, "Type mismatch for cast(%s,%s).", targetType, inner);
-            int bitWidth = ((BoundedIntegerType) innerType).getBitWidth();
-            assert BigInteger.TWO.pow(bitWidth - 1).negate().compareTo(value) <= 0;
-            assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
-            return makeValue(signed ?
-                    value.testBit(bitWidth - 1) ? value.subtract(BigInteger.TWO.pow(bitWidth)) : value :
-                    value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value),
-                    targetType);
+            if (innerType instanceof BoundedIntegerType innerBoundedType) {
+                int bitWidth = innerBoundedType.getBitWidth();
+                assert BigInteger.TWO.pow(bitWidth - 1).negate().compareTo(value) <= 0;
+                assert BigInteger.TWO.pow(bitWidth).compareTo(value) > 0;
+                return makeValue(signed ?
+                                value.testBit(bitWidth - 1) ? value.subtract(BigInteger.TWO.pow(bitWidth)) : value :
+                                value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value),
+                        targetType);
+            }
+            return makeValue(value, targetType);
         }
         // Truncations/isomorphisms absorb inner casts.
         Expression modifiedInner = inner instanceof UnaryIntegerExpression unary &&
