@@ -195,10 +195,11 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitIfExpression(IfExpressionContext ctx) {
         Expression expr = (Expression) ctx.re().accept(this);
+        Expression guard = expressions.makeCast(types.getBooleanType(), expr, false);
         ifId++;
         Label elseL = labelMap.computeIfAbsent("else_" + ifId, EventFactory::newLabel);
         Label endL = labelMap.computeIfAbsent("end_" + ifId, EventFactory::newLabel);
-        thread.append(EventFactory.newIfJumpUnless(expr, elseL, endL));
+        thread.append(EventFactory.newIfJumpUnless(guard, elseL, endL));
         for (ExpressionContext expressionContext : ctx.expression()) {
             expressionContext.accept(this);
         }
