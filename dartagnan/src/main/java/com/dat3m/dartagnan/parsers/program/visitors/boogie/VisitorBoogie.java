@@ -651,7 +651,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return register.get();
         }
         if (threadLocalVariables.contains(name)) {
-            return program.getMemory().getOrNewObject(String.format("%s(%s)", name, threadCount));
+            MemoryObject object = program.getMemory().getOrNewObject(String.format("%s(%s)", name, threadCount));
+            return expressions.makeCast(refType, object, true);
         }
         Optional<MemoryObject> object = program.getMemory().getObject(name);
         if (object.isEmpty()) {
