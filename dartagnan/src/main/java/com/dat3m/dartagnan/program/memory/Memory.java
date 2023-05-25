@@ -36,6 +36,7 @@ public class Memory {
     public MemoryObject newObject(String name, int size) {
         MemoryObject newObject = allocate(size, true);
         staticObjects.put(name, newObject);
+        newObject.setCVar(name);
         return newObject;
     }
 
