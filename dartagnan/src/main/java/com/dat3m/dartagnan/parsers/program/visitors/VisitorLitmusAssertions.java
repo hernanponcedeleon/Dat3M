@@ -71,7 +71,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     private Expression acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
         if(ctx.constant() != null) {
-            return expressions.parseValue(ctx.constant().getText(), types.getPointerType());
+            return expressions.parseValue(ctx.constant().getText(), types.getArchType());
         }
 
         String name = ctx.varName().getText();

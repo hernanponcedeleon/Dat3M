@@ -27,7 +27,7 @@ public class SrcuSync extends MemEvent {
 	// irrelevant because this event does not contribute to any data flow.
 	@Override
 	public Expression getMemValue(){
-		return ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType());
+		return ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType());
 	}
 
 	// Visitor

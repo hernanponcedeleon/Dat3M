@@ -15,7 +15,7 @@ public class Lock extends Store {
     private final Register reg;
 
     public Lock(String name, Expression address, Register reg){
-        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getPointerType()), MO_SC);
+        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getBooleanType()), MO_SC);
         this.name = name;
         this.reg = reg;
     }

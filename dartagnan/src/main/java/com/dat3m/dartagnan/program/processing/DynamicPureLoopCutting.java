@@ -127,7 +127,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         final List<Register> trackingRegs = new ArrayList<>();
         Event insertionPoint = iterInfo.getIterationEnd();
-        Type type = TypeFactory.getInstance().getPointerType();
+        Type type = TypeFactory.getInstance().getArchType();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(

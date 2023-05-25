@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.expression.type;
 
+import com.dat3m.dartagnan.GlobalSettings;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,11 @@ public final class TypeFactory {
 
     public static TypeFactory getInstance() {
         return instance;
+    }
+
+    public Type getArchType() {
+        int archPrecision = GlobalSettings.getArchPrecision();
+        return archPrecision < 0 ? getIntegerType() : getIntegerType(archPrecision);
     }
 
     public BooleanType getBooleanType() {

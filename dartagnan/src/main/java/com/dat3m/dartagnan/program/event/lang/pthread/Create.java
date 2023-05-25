@@ -14,7 +14,7 @@ public class Create extends Store {
     private final String routine;
 
     public Create(Expression address, String routine) {
-        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getPointerType()), MO_SC);
+        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getBooleanType()), MO_SC);
         this.routine = routine;
         addTags(Tag.C11.PTHREAD);
     }

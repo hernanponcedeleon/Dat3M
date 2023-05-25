@@ -37,7 +37,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     private final Program program = new Program(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type type = TypeFactory.getInstance().getPointerType();
+    private final Type type = TypeFactory.getInstance().getArchType();
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private Thread[] threadList;
     private int mainThread;

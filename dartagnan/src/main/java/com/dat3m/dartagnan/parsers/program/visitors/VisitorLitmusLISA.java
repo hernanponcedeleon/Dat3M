@@ -26,7 +26,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	private final Program program = new Program(Program.SourceLanguage.LITMUS);
 	private final TypeFactory types = TypeFactory.getInstance();
 	private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-	private final Type type = types.getPointerType();
+	private final Type type = types.getArchType();
 	private Thread[] threadList;
 	private Thread thread;
 	private final Map<String, Label> labelMap = new HashMap<>();

@@ -12,7 +12,7 @@ import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
 public class LKMMUnlock extends Store {
 
 	public LKMMUnlock(Expression lock) {
-		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_RELEASE);
+		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_RELEASE);
 		addTags(Tag.Linux.UNLOCK);
 	}
 

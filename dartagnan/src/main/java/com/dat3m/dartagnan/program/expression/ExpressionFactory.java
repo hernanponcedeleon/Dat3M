@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public final class ExpressionFactory {
@@ -205,8 +204,7 @@ public final class ExpressionFactory {
                 checkArgument(!rightIsPointer, "Pointer addition is not allowed in %s + %s.", left, right);
                 type = left.getType();
             } else if (operator.equals(IOpBin.MINUS)) {
-                int precision = getArchPrecision();
-                type = rightIsPointer ? precision < 0 ? types.getIntegerType() : types.getIntegerType(precision) : left.getType();
+                type = rightIsPointer ? types.getArchType() : left.getType();
             } else {
                 logger.warn("Unsupported expression {} {} {}", left, operator, right);
                 type = left.getType();

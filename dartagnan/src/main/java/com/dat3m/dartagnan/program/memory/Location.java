@@ -31,7 +31,7 @@ public class Location implements Expression {
 
     @Override
     public Type getType() {
-        return TypeFactory.getInstance().getPointerType();
+        return TypeFactory.getInstance().getArchType();
     }
 
     @Override

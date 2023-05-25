@@ -50,7 +50,7 @@ public class AnalysisTest {
 
     private static final TypeFactory typeFactory = TypeFactory.getInstance();
     private static final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-    private static final Type type = typeFactory.getIntegerType();
+    private static final Type type = typeFactory.getArchType();
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {

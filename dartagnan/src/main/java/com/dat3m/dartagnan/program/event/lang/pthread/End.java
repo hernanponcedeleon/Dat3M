@@ -12,7 +12,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 public class End extends Store {
 
     public End(Expression address){
-    	super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_SC);
+    	super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getBooleanType()), MO_SC);
     	addTags(Tag.C11.PTHREAD);
     }
 

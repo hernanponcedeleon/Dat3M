@@ -43,7 +43,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type type = types.getIntegerType();
+    private final Type type = types.getArchType();
     private Thread[] threadList;
     private int mainThread;
     private Thread thread;

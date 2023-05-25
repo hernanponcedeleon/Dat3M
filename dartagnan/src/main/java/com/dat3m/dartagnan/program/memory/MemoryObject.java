@@ -40,7 +40,7 @@ public class MemoryObject extends AbstractExpression {
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
-            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()));
+            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
         }
     }
 
@@ -72,7 +72,7 @@ public class MemoryObject extends AbstractExpression {
      */
     public Expression getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()));
+        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
     }
 
     /**

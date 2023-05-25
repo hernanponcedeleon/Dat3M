@@ -15,7 +15,7 @@ public class Unlock extends Store {
 	private final Register reg;
 
 	public Unlock(String name, Expression address, Register reg){
-		super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getPointerType()), MO_SC);
+		super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getBooleanType()), MO_SC);
 		this.name = name;
         this.reg = reg;
     }
