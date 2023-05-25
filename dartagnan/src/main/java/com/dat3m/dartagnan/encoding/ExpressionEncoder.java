@@ -2,15 +2,13 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.program.NondeterministicExpression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.expression.*;
-import com.dat3m.dartagnan.program.expression.type.BoundedIntegerType;
-import com.dat3m.dartagnan.program.expression.type.UnboundedIntegerType;
-import com.dat3m.dartagnan.program.expression.type.PointerType;
-import com.dat3m.dartagnan.program.expression.type.Type;
+import com.dat3m.dartagnan.program.expression.type.*;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
@@ -84,72 +82,46 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
-        BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        if (lhs instanceof BooleanFormula && rhs instanceof BooleanFormula) {
-            BooleanFormula b1 = (BooleanFormula) lhs;
-            BooleanFormula b2 = (BooleanFormula) rhs;
-            switch (op) {
-                case EQ:
-                    return bmgr.equivalence(b1, b2);
-                case NEQ:
-                    return bmgr.not(bmgr.equivalence(b1, b2));
-                default:
-                    throw new UnsupportedOperationException("Encoding of COpBin operation" + op + " not supported on boolean formulas.");
-            }
+        BooleanFormulaManager booleanFormulaManager = fmgr.getBooleanFormulaManager();
+        if (lhs instanceof BooleanFormula left && rhs instanceof BooleanFormula right) {
+            return switch (op) {
+                case EQ -> booleanFormulaManager.equivalence(left, right);
+                case NEQ -> booleanFormulaManager.xor(left, right);
+                case LT, ULT -> booleanFormulaManager.and(booleanFormulaManager.not(left), right);
+                case LTE, ULTE -> booleanFormulaManager.or(booleanFormulaManager.not(left), right);
+                case GT, UGT -> booleanFormulaManager.and(left, booleanFormulaManager.not(right));
+                case GTE, UGTE -> booleanFormulaManager.or(left, booleanFormulaManager.not(right));
+            };
         }
-        if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
-            IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-            IntegerFormula i1 = (IntegerFormula) lhs;
-            IntegerFormula i2 = (IntegerFormula) rhs;
-            switch (op) {
-                case EQ:
-                    return imgr.equal(i1, i2);
-                case NEQ:
-                    return bmgr.not(imgr.equal(i1, i2));
-                case LT:
-                case ULT:
-                    return imgr.lessThan(i1, i2);
-                case LTE:
-                case ULTE:
-                    return imgr.lessOrEquals(i1, i2);
-                case GT:
-                case UGT:
-                    return imgr.greaterThan(i1, i2);
-                case GTE:
-                case UGTE:
-                    return imgr.greaterOrEquals(i1, i2);
-            }
+        if (lhs instanceof IntegerFormula left && rhs instanceof IntegerFormula right) {
+            IntegerFormulaManager integerFormulaManager = fmgr.getIntegerFormulaManager();
+            return switch (op) {
+                case EQ -> integerFormulaManager.equal(left, right);
+                case NEQ -> booleanFormulaManager.not(integerFormulaManager.equal(left, right));
+                case LT, ULT -> integerFormulaManager.lessThan(left, right);
+                case LTE, ULTE -> integerFormulaManager.lessOrEquals(left, right);
+                case GT, UGT -> integerFormulaManager.greaterThan(left, right);
+                case GTE, UGTE -> integerFormulaManager.greaterOrEquals(left, right);
+            };
         }
-        if (lhs instanceof BitvectorFormula && rhs instanceof BitvectorFormula) {
-            BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-            BitvectorFormula bv1 = (BitvectorFormula) lhs;
-            BitvectorFormula bv2 = (BitvectorFormula) rhs;
-            switch (op) {
-                case EQ:
-                    return bvmgr.equal(bv1, bv2);
-                case NEQ:
-                    return bmgr.not(bvmgr.equal(bv1, bv2));
-                case LT:
-                case ULT:
-                    return bvmgr.lessThan(bv1, bv2, op.equals(COpBin.LT));
-                case LTE:
-                case ULTE:
-                    return bvmgr.lessOrEquals(bv1, bv2, op.equals(COpBin.LTE));
-                case GT:
-                case UGT:
-                    return bvmgr.greaterThan(bv1, bv2, op.equals(COpBin.GT));
-                case GTE:
-                case UGTE:
-                    return bvmgr.greaterOrEquals(bv1, bv2, op.equals(COpBin.GTE));
-            }
+        if (lhs instanceof BitvectorFormula left && rhs instanceof BitvectorFormula right) {
+            BitvectorFormulaManager bitvectorFormulaManager = fmgr.getBitvectorFormulaManager();
+            return switch (op) {
+                case EQ -> bitvectorFormulaManager.equal(left, right);
+                case NEQ -> booleanFormulaManager.not(bitvectorFormulaManager.equal(left, right));
+                case LT, ULT -> bitvectorFormulaManager.lessThan(left, right, op.equals(COpBin.LT));
+                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(left, right, op.equals(COpBin.LTE));
+                case GT, UGT -> bitvectorFormulaManager.greaterThan(left, right, op.equals(COpBin.GT));
+                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(left, right, op.equals(COpBin.GTE));
+            };
         }
-        throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
+        throw new UnsupportedOperationException(String.format("Encoding not supported for %s %s %s.", lhs, op, rhs));
     }
 
     Formula getLastMemValueExpr(MemoryObject object, int offset) {
         checkArgument(0 <= offset && offset < object.size(), "array index out of bounds");
         String name = String.format("last_val_at_%s_%d", object, offset);
-        //TODO Use an analysis to infer which type should get here.
+        //TODO Use an analysis to infer which type should be used here.
         int length = getArchPrecision();
         if (length > -1) {
             return formulaManager.getBitvectorFormulaManager().makeVariable(length, name);
@@ -159,6 +131,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     OptionalInt getBitWidthFromIntegerType(Type type) {
+        if (type instanceof BooleanType || type instanceof BoundedIntegerType bounded && bounded.getBitWidth() == 1) {
+            return OptionalInt.of(1);
+        }
         switch (precision) {
             case -1 -> {
                 if (type instanceof PointerType) {
@@ -168,6 +143,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 if (type instanceof UnboundedIntegerType) {
                     return OptionalInt.empty();
                 }
+                assert type instanceof BoundedIntegerType;
                 return OptionalInt.of(((BoundedIntegerType) type).getBitWidth());
             }
             case 0 -> {
@@ -194,13 +170,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(BinaryBooleanExpression bBin) {
         BooleanFormula lhs = encodeAsBoolean(bBin.getLHS());
         BooleanFormula rhs = encodeAsBoolean(bBin.getRHS());
-        switch (bBin.getOp()) {
-            case AND:
-                return booleanFormulaManager.and(lhs, rhs);
-            case OR:
-                return booleanFormulaManager.or(lhs, rhs);
-        }
-        throw new UnsupportedOperationException("Encoding not supported for BOpBin " + bBin.getOp());
+        return switch (bBin.getOp()) {
+            case AND -> booleanFormulaManager.and(lhs, rhs);
+            case OR -> booleanFormulaManager.or(lhs, rhs);
+        };
     }
 
     @Override
@@ -225,125 +198,74 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(BinaryIntegerExpression iBin) {
         Formula lhs = encodeAsInteger(iBin.getLHS());
         Formula rhs = encodeAsInteger(iBin.getRHS());
-        if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
-            IntegerFormula i1 = (IntegerFormula) lhs;
-            IntegerFormula i2 = (IntegerFormula) rhs;
-            BitvectorFormulaManager bitvectorFormulaManager;
+        IOpBin operator = iBin.getOp();
+        if (lhs instanceof IntegerFormula left && rhs instanceof IntegerFormula right) {
             IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-            switch (iBin.getOp()) {
-                case PLUS:
-                    return integerFormulaManager.add(i1, i2);
-                case MINUS:
-                    return integerFormulaManager.subtract(i1, i2);
-                case MULT:
-                    return integerFormulaManager.multiply(i1, i2);
-                case DIV:
-                case UDIV:
-                    return integerFormulaManager.divide(i1, i2);
-                case MOD:
-                    return integerFormulaManager.modulo(i1, i2);
-                case AND:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.and(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
-                            false);
-                case OR:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.or(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
-                            false);
-                case XOR:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.xor(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
-                            false);
-                case L_SHIFT:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.shiftLeft(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
-                            false);
-                case R_SHIFT:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.shiftRight(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2),
-                                    false),
-                            false);
-                case AR_SHIFT:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.shiftRight(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2),
-                                    true),
-                            false);
-                case SREM:
-                case UREM:
-                    IntegerFormula zero = integerFormulaManager.makeNumber(0);
-                    IntegerFormula modulo = integerFormulaManager.modulo(i1, i2);
-                    BooleanFormula cond = booleanFormulaManager.and(
-                            integerFormulaManager.distinct(asList(modulo, zero)),
-                            integerFormulaManager.lessThan(i1, zero));
-                    return booleanFormulaManager.ifThenElse(cond, integerFormulaManager.subtract(modulo, i2), modulo);
-                default:
-                    throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on integer formulas.");
-            }
-        } else if (lhs instanceof BitvectorFormula && rhs instanceof BitvectorFormula) {
-            BitvectorFormula bv1 = (BitvectorFormula) lhs;
-            BitvectorFormula bv2 = (BitvectorFormula) rhs;
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            switch (iBin.getOp()) {
-                case PLUS:
-                    return bitvectorFormulaManager.add(bv1, bv2);
-                case MINUS:
-                    return bitvectorFormulaManager.subtract(bv1, bv2);
-                case MULT:
-                    return bitvectorFormulaManager.multiply(bv1, bv2);
-                case DIV:
-                    return bitvectorFormulaManager.divide(bv1, bv2, true);
-                case UDIV:
-                    return bitvectorFormulaManager.divide(bv1, bv2, false);
-                case MOD:
-                    BitvectorFormula rem = bitvectorFormulaManager.modulo(bv1, bv2, true);
-                    // Check if rem and bv2 have the same sign
-                    int rem_length = bitvectorFormulaManager.getLength(rem);
-                    int bv2_length = bitvectorFormulaManager.getLength(bv2);
-                    BitvectorFormula srem = bitvectorFormulaManager.extract(rem, rem_length - 1, rem_length - 1);
-                    BitvectorFormula sbv2 = bitvectorFormulaManager.extract(bv2, bv2_length - 1, bv2_length - 1);
-                    BooleanFormula cond = bitvectorFormulaManager.equal(srem, sbv2);
-                    // If they have the same sign, return the reminder, otherwise invert it
-                    return booleanFormulaManager.ifThenElse(cond, rem, bitvectorFormulaManager.negate(rem));
-                case SREM:
-                    return bitvectorFormulaManager.modulo(bv1, bv2, true);
-                case UREM:
-                    return bitvectorFormulaManager.modulo(bv1, bv2, false);
-                case AND:
-                    return bitvectorFormulaManager.and(bv1, bv2);
-                case OR:
-                    return bitvectorFormulaManager.or(bv1, bv2);
-                case XOR:
-                    return bitvectorFormulaManager.xor(bv1, bv2);
-                case L_SHIFT:
-                    return bitvectorFormulaManager.shiftLeft(bv1, bv2);
-                case R_SHIFT:
-                    return bitvectorFormulaManager.shiftRight(bv1, bv2, false);
-                case AR_SHIFT:
-                    return bitvectorFormulaManager.shiftRight(bv1, bv2, true);
-                default:
-                    throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on bitvector formulas.");
-            }
-        } else {
-            throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
+            return switch (operator) {
+                case PLUS -> integerFormulaManager.add(left, right);
+                case MINUS -> integerFormulaManager.subtract(left, right);
+                case MULT -> integerFormulaManager.multiply(left, right);
+                case DIV, UDIV -> integerFormulaManager.divide(left, right);
+                case MOD -> integerFormulaManager.modulo(left, right);
+                //FIXME if the type system works, the following should be dead
+                case AND -> toIntegerFormula(bitvectorFormulaManager().and(toBitvectorFormula(left), toBitvectorFormula(right)));
+                case OR -> toIntegerFormula(bitvectorFormulaManager().or(toBitvectorFormula(left), toBitvectorFormula(right)));
+                case XOR -> toIntegerFormula(bitvectorFormulaManager().xor(toBitvectorFormula(left), toBitvectorFormula(right)));
+                case L_SHIFT -> toIntegerFormula(bitvectorFormulaManager().shiftLeft(toBitvectorFormula(left), toBitvectorFormula(right)));
+                case R_SHIFT -> toIntegerFormula(bitvectorFormulaManager().shiftRight(toBitvectorFormula(left), toBitvectorFormula(right), false));
+                case AR_SHIFT -> toIntegerFormula(bitvectorFormulaManager().shiftRight(toBitvectorFormula(left), toBitvectorFormula(right), true));
+                case SREM, UREM -> encodeRemainder(integerFormulaManager, left, right);
+            };
         }
+        if (lhs instanceof BitvectorFormula left && rhs instanceof BitvectorFormula right) {
+            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
+            return switch (iBin.getOp()) {
+                case PLUS -> bitvectorFormulaManager.add(left, right);
+                case MINUS -> bitvectorFormulaManager.subtract(left, right);
+                case MULT -> bitvectorFormulaManager.multiply(left, right);
+                case DIV -> bitvectorFormulaManager.divide(left, right, true);
+                case UDIV -> bitvectorFormulaManager.divide(left, right, false);
+                case MOD -> encodeMod(bitvectorFormulaManager, left, right);
+                case SREM -> bitvectorFormulaManager.modulo(left, right, true);
+                case UREM -> bitvectorFormulaManager.modulo(left, right, false);
+                case AND -> bitvectorFormulaManager.and(left, right);
+                case OR -> bitvectorFormulaManager.or(left, right);
+                case XOR -> bitvectorFormulaManager.xor(left, right);
+                case L_SHIFT -> bitvectorFormulaManager.shiftLeft(left, right);
+                case R_SHIFT -> bitvectorFormulaManager.shiftRight(left, right, false);
+                case AR_SHIFT -> bitvectorFormulaManager.shiftRight(left, right, true);
+            };
+        }
+        throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
+    }
+
+    private BitvectorFormula toBitvectorFormula(IntegerFormula inner) {
+        return bitvectorFormulaManager().makeBitvector(32, inner);
+    }
+
+    private IntegerFormula toIntegerFormula(BitvectorFormula inner) {
+        return bitvectorFormulaManager().toIntegerFormula(inner, false);
+    }
+
+    private Formula encodeRemainder(IntegerFormulaManager integerFormulaManager, IntegerFormula left, IntegerFormula right) {
+        IntegerFormula zero = integerFormulaManager.makeNumber(0);
+        IntegerFormula modulo = integerFormulaManager.modulo(left, right);
+        BooleanFormula cond = booleanFormulaManager.and(
+                integerFormulaManager.distinct(asList(modulo, zero)),
+                integerFormulaManager.lessThan(left, zero));
+        return booleanFormulaManager.ifThenElse(cond, integerFormulaManager.subtract(modulo, right), modulo);
+    }
+
+    private Formula encodeMod(BitvectorFormulaManager bitvectorFormulaManager, BitvectorFormula left, BitvectorFormula right) {
+        BitvectorFormula rem = bitvectorFormulaManager.modulo(left, right, true);
+        // Check if rem and right have the same sign
+        int rem_length = bitvectorFormulaManager.getLength(rem);
+        int bv2_length = bitvectorFormulaManager.getLength(right);
+        BitvectorFormula srem = bitvectorFormulaManager.extract(rem, rem_length - 1, rem_length - 1);
+        BitvectorFormula sbv2 = bitvectorFormulaManager.extract(right, bv2_length - 1, bv2_length - 1);
+        BooleanFormula cond = bitvectorFormulaManager.equal(srem, sbv2);
+        // If they have the same sign, return the reminder, otherwise invert it
+        return booleanFormulaManager.ifThenElse(cond, rem, bitvectorFormulaManager.negate(rem));
     }
 
     @Override
