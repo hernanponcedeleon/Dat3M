@@ -1,5 +1,5 @@
 PTX _Atom-plus-location
-"Atomicity is not guaranteed if the operations are not morally strong"
+"Atomicity is not guaranteed because the operations scope is cta and they are in different cta (not morally strong)"
 {
 P0:r0=0;
 P1:r0=0;

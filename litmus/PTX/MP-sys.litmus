@@ -1,5 +1,5 @@
 PTX MP-sys
-"Message passing, True"
+"Message passing, sync because release/acquire are morally strong"
 {
 x=0;
 y=0;

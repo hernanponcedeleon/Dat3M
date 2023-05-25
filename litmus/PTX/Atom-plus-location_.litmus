@@ -1,5 +1,5 @@
 PTX _Atom-plus-location
-"Atomicity is guaranteed when the operations are morally strong"
+"Atomicity is guaranteed because the operations scope is sys and they are morally strong"
 {
 P0:r0=0;
 P1:r0=0;

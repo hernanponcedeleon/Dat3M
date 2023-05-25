@@ -1,9 +1,9 @@
-PTX MP-sys-gpu
-"Message Passing using acq/rel synchronization should pass"
+PTX MP-relaxed
+"Message Passing, not sync because the ld of y is relaxed"
 {
 x=0;
 y=0;
-P0:r1=0;
+P1:r1=0;
 P1:r2=0;
 }
  P0@cta 0, gpu 0             |P1@cta 0, gpu 0                                   ;

@@ -1,5 +1,5 @@
 PTX MP-cta
-"Message passing, True"
+"Message passing, not sync because release/acquire in different cta"
 {
 x=0;
 y=0;

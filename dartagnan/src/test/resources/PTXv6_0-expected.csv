@@ -4,6 +4,8 @@ litmus/PTX/Atom-minus-location_.litmus,1
 litmus/PTX/Atom-plus-location-weak_.litmus,1
 litmus/PTX/Atom-plus-location_.litmus,1
 litmus/PTX/Atom-plus-register.litmus,1
+litmus/PTX/Cause-base-strong.litmus,1
+litmus/PTX/Cause-base-weak.litmus,1
 litmus/PTX/Co-Total-3-threads-scope-diff.litmus,1
 litmus/PTX/Co-Total-3-threads-scope-same.litmus,1
 litmus/PTX/Co-Total-4-threads.litmus,1

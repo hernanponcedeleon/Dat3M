@@ -1,5 +1,5 @@
-PTX MP-relase-acquire
-"Message passing"
+PTX MP-gpu
+"Message passing, sync because release/acquire are morally strong"
 {
 x=0;
 y=0;
