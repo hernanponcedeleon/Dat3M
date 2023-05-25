@@ -33,10 +33,8 @@ import java.util.List;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.expression.op.COpBin.GT;
-import static com.dat3m.dartagnan.expression.op.COpBin.LT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
+import static com.dat3m.dartagnan.expression.op.COpBin.*;
+import static com.dat3m.dartagnan.expression.op.IOpBin.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static org.junit.Assert.*;
 
@@ -115,7 +113,7 @@ public class AnalysisTest {
 
     @Test
     public void fieldinsensitive0() throws InvalidConfigurationException {
-        program0(FIELD_INSENSITIVE, MAY, NONE, MAY, NONE, MAY, NONE);
+        program0(FIELD_INSENSITIVE, MAY, MAY, MAY, MAY, MAY, NONE);
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -128,7 +126,8 @@ public class AnalysisTest {
         Register r0 = thread.newRegister("r0", type);
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
-        thread.append(newLocal(r0, mult(expressionFactory.makeCast(typeFactory.getIntegerType(), x, true), 1)));
+        Expression xAddress = expressionFactory.makeCast(typeFactory.getIntegerType(), x, true);
+        thread.append(newLocal(r0, expressionFactory.makeBinary(mult(xAddress, 2), MINUS, xAddress)));
         Store e0 = newStore(r0);
         thread.append(e0);
         Store e1 = newStore(plus(r0, 1));
