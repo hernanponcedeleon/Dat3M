@@ -166,7 +166,12 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression left, COpBin comparator, Expression right) {
-        checkTypes(left, comparator, right);
+        //TODO enforce matching types
+        if (!left.getType().equals(right.getType())) {
+            logger.warn("Type mismatch: {} {} {}.", left, comparator, right);
+            left = makeCast(types.getArchType(), left, false);
+            right = makeCast(types.getArchType(), right, false);
+        }
         checkArgument(!left.isBoolean() || comparator.equals(COpBin.EQ) || comparator.equals(COpBin.NEQ),
                 "Incompatible types for %s %s %s.", left, comparator, right);
         if (left instanceof Literal leftLiteral && right instanceof Literal rightLiteral) {
@@ -211,7 +216,12 @@ public final class ExpressionFactory {
             }
             return new BinaryIntegerExpression(type, left, operator, right);
         }
-        checkTypes(left, operator, right);
+        //TODO enforce matching types
+        if (!left.getType().equals(right.getType())) {
+            logger.warn("Type mismatch: {} {} {}.", left, operator, right);
+            left = makeCast(types.getArchType(), left, false);
+            right = makeCast(types.getArchType(), right, false);
+        }
         if (left instanceof Literal && right instanceof Literal) {
             BigInteger result = operator.combine(((Literal) left).getValue(), ((Literal) right).getValue());
             return makeValue(result, left.getType());
@@ -258,10 +268,5 @@ public final class ExpressionFactory {
             return ifTrue;
         }
         return new ConditionalExpression(condition, ifTrue, ifFalse);
-    }
-
-    private void checkTypes(Expression left, Object operator, Expression right) {
-        checkArgument(left.getType().equals(right.getType()),
-                "Type mismatch: %s %s %s.", left, operator, right);
     }
 }
