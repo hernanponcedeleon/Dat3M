@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.dat3m.dartagnan.program.expression.ExpressionFactory;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.Map;
@@ -48,12 +47,9 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        Formula zero = context.encodeFinalIntegerExpression(expressions.makeZero(register.getType()));
-        Formula one = context.encodeFinalIntegerExpression(expressions.makeOne(register.getType()));
         return bmgr.and(super.encodeExec(context),
-                context.equal(context.result(this), bmgr.ifThenElse(context.execution(event), zero, one)));
+                context.equal(context.result(this), bmgr.not(context.execution(event))));
     }
 
     // Unrolling

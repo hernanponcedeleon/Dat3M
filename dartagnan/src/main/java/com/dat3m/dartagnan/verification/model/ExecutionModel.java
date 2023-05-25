@@ -335,11 +335,11 @@ public class ExecutionModel {
             }
 
             if (data.isRead()) {
-                data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
+                data.setValue(model.evaluate(encodingContext.result((RegWriter) e)).toString());
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
                 Object valueObject = checkNotNull(model.evaluate(encodingContext.value((MemEvent) e)));
-                data.setValue(new BigInteger(valueObject.toString()));
+                data.setValue(valueObject.toString());
                 addressWritesMap.get(address).add(data);
                 writeReadsMap.put(data, new HashSet<>());
                 if (data.isInit()) {

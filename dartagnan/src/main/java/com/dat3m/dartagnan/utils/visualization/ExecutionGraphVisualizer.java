@@ -206,7 +206,7 @@ public class ExecutionGraphVisualizer {
         String tag = e.getEvent().toString();
         if (e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
-            BigInteger value = e.getValue();
+            String value = e.getValue();
             String mo = ((MemEvent) e.getEvent()).getMo();
             mo = mo.isEmpty() ? mo : ", " + mo;
             tag = e.isWrite() ?

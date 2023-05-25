@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
@@ -14,24 +13,22 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import java.util.OptionalInt;
+import java.math.BigInteger;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
-    private final int precision;
+    private final EncodingContext context;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final Event event;
 
-    ExpressionEncoder(int precision, FormulaManager formulaManager, Event event) {
-        checkArgument(precision >= -1, "Unknown option value %s", precision);
-        this.precision = precision;
-        this.formulaManager = formulaManager;
-        this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+    ExpressionEncoder(EncodingContext context, Event event) {
+        this.context = context;
+        this.formulaManager = context.getFormulaManager();
+        this.booleanFormulaManager = context.getBooleanFormulaManager();
         this.event = event;
     }
 
@@ -45,40 +42,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     BooleanFormula encodeAsBoolean(Expression expression) {
         Formula formula = expression.visit(this);
-        if (formula instanceof BooleanFormula) {
-            return (BooleanFormula) formula;
-        }
-        if (formula instanceof BitvectorFormula) {
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            int length = bitvectorFormulaManager.getLength((BitvectorFormula) formula);
-            BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
-            return bitvectorFormulaManager.greaterThan((BitvectorFormula) formula, zero, false);
-        }
-        assert formula instanceof IntegerFormula;
-        IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-        IntegerFormula zero = integerFormulaManager.makeNumber(0);
-        return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
+        return context.equalZero(formula, true);
     }
 
     Formula encodeAsInteger(Expression expression) {
-        Formula formula = expression.visit(this);
-        if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
-            return formula;
-        }
-        assert formula instanceof BooleanFormula;
-        int precision = getArchPrecision();
-        Formula one;
-        Formula zero;
-        if(precision > -1) {
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            one = bitvectorFormulaManager.makeBitvector(precision, 1);
-            zero = bitvectorFormulaManager.makeBitvector(precision, 0);
-        } else {
-            IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-            one = integerFormulaManager.makeNumber(1);
-            zero = integerFormulaManager.makeNumber(0);
-        }
-        return booleanFormulaManager.ifThenElse((BooleanFormula) formula, one, zero);
+        return expression.visit(this);
     }
 
     static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
@@ -118,47 +86,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         throw new UnsupportedOperationException(String.format("Encoding not supported for %s %s %s.", lhs, op, rhs));
     }
 
-    Formula getLastMemValueExpr(MemoryObject object, int offset) {
-        checkArgument(0 <= offset && offset < object.size(), "array index out of bounds");
-        String name = String.format("last_val_at_%s_%d", object, offset);
-        //TODO Use an analysis to infer which type should be used here.
-        int length = getArchPrecision();
-        if (length > -1) {
-            return formulaManager.getBitvectorFormulaManager().makeVariable(length, name);
-        } else {
-            return formulaManager.getIntegerFormulaManager().makeVariable(name);
-        }
-    }
-
-    OptionalInt getBitWidthFromIntegerType(Type type) {
-        if (type instanceof BooleanType || type instanceof BoundedIntegerType bounded && bounded.getBitWidth() == 1) {
-            return OptionalInt.of(1);
-        }
-        switch (precision) {
-            case -1 -> {
-                if (type instanceof PointerType) {
-                    int archPrecision = GlobalSettings.getArchPrecision();
-                    return archPrecision < 0 ? OptionalInt.empty() : OptionalInt.of(archPrecision);
-                }
-                if (type instanceof UnboundedIntegerType) {
-                    return OptionalInt.empty();
-                }
-                assert type instanceof BoundedIntegerType;
-                return OptionalInt.of(((BoundedIntegerType) type).getBitWidth());
-            }
-            case 0 -> {
-                return OptionalInt.empty();
-            }
-            default -> {
-                return OptionalInt.of(precision);
-            }
-        }
-    }
-
-    private int getArchPrecision() {
-        return precision > -1 ? precision : GlobalSettings.getArchPrecision();
-    }
-
     @Override
     public Formula visit(Comparison comparison) {
         Formula lhs = encodeAsInteger(comparison.getLHS());
@@ -184,14 +111,15 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(Literal literal) {
-        if (literal.isBoolean()) {
-            return booleanFormulaManager.makeBoolean(literal.isTrue());
-        }
-        OptionalInt bitWidth = getBitWidthFromIntegerType(literal.getType());
-        if (bitWidth.isEmpty()) {
+        FormulaType<?> formulaType = context.getFormulaType(literal.getType());
+        if (formulaType.isIntegerType()) {
             return integerFormulaManager().makeNumber(literal.getValue());
         }
-        return bitvectorFormulaManager().makeBitvector(bitWidth.getAsInt(), literal.getValue());
+        if (formulaType instanceof FormulaType.BitvectorType bitvectorType) {
+            return bitvectorFormulaManager().makeBitvector(bitvectorType.getSize(), literal.getValue());
+        }
+        assert formulaType.isBooleanType();
+        return booleanFormulaManager.makeBoolean(!literal.getValue().equals(BigInteger.ZERO));
     }
 
     @Override
@@ -219,7 +147,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         }
         if (lhs instanceof BitvectorFormula left && rhs instanceof BitvectorFormula right) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            return switch (iBin.getOp()) {
+            return switch (operator) {
                 case PLUS -> bitvectorFormulaManager.add(left, right);
                 case MINUS -> bitvectorFormulaManager.subtract(left, right);
                 case MULT -> bitvectorFormulaManager.multiply(left, right);
@@ -236,7 +164,18 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case AR_SHIFT -> bitvectorFormulaManager.shiftRight(left, right, true);
             };
         }
-        throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
+        if (lhs instanceof BooleanFormula left && rhs instanceof BooleanFormula right) {
+            return switch(operator) {
+                case AND -> booleanFormulaManager.and(left, right);
+                case OR -> booleanFormulaManager.or(left, right);
+                //TODO optimization (xor x true) -> (not x) can be performed here
+                case XOR -> booleanFormulaManager.xor(left, right);
+                default -> throw new UnsupportedOperationException(
+                        String.format("Encoding of boolean operation %s %s %s.", left, operator, right));
+            };
+        }
+        throw new UnsupportedOperationException(
+                String.format("Unsupported encoding of %s %s %s due to mismatching types.", lhs, operator, rhs));
     }
 
     private BitvectorFormula toBitvectorFormula(IntegerFormula inner) {
@@ -270,7 +209,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(UnaryIntegerExpression iUn) {
-        //TODO if inner is a boolean formula, we still want to encode it as boolean in case of conversions
         Formula inner = encodeAsInteger(iUn.getInner());
         Type targetType = iUn.getType();
         switch (iUn.getOp()) {
@@ -284,27 +222,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
             case SIGNED_CAST, UNSIGNED_CAST -> {
                 boolean signed = iUn.getOp().equals(IOpUn.SIGNED_CAST);
-                if (targetType instanceof UnboundedIntegerType) {
-                    if (inner instanceof IntegerFormula) {
-                        return inner;
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
-                    }
-                }
-                if (targetType instanceof BoundedIntegerType integerTargetType) {
-                    int bitWidth = integerTargetType.getBitWidth();
-                    if (inner instanceof IntegerFormula number) {
-                        return bitvectorFormulaManager().makeBitvector(bitWidth, number);
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        int innerBitWidth = bitvectorFormulaManager().getLength(number);
-                        if (innerBitWidth < bitWidth) {
-                            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
-                        }
-                        return bitvectorFormulaManager().extract(number, bitWidth-1, 0);
-                    }
-                }
+                FormulaType<?> formulaType = context.getFormulaType(targetType);
+                return context.castFormula(formulaType, inner, signed);
             }
             case CTLZ -> {
                 if (inner instanceof BitvectorFormula bv) {
@@ -322,8 +241,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 }
             }
         }
-        throw new UnsupportedOperationException(String.format("Encoding of (%s) %s %s not supported.",
-                targetType, iUn.getOp(), inner));
+        throw new UnsupportedOperationException(
+                String.format("Encoding of (%s) %s %s not supported.", targetType, iUn.getOp(), inner));
     }
 
     @Override
@@ -337,14 +256,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(NondeterministicExpression iNonDet) {
         String name = iNonDet.getName();
-        if (iNonDet.isBoolean()) {
-            return booleanFormulaManager.makeVariable(name);
-        }
-        OptionalInt bitWidth = getBitWidthFromIntegerType(iNonDet.getType());
-        if (bitWidth.isEmpty()) {
-            return integerFormulaManager().makeVariable(name);
-        }
-        return bitvectorFormulaManager().makeVariable(bitWidth.getAsInt(), name);
+        FormulaType<?> formulaType = context.getFormulaType(iNonDet.getType());
+        return formulaManager.makeVariable(formulaType, name);
     }
 
     @Override
@@ -352,25 +265,26 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         String name = event == null ?
                 reg.getName() + "_" + reg.getThreadId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
-        OptionalInt bitWidth = getBitWidthFromIntegerType(reg.getType());
-        if (bitWidth.isEmpty()) {
-            return integerFormulaManager().makeVariable(name);
-        }
-        return bitvectorFormulaManager().makeVariable(bitWidth.getAsInt(), name);
+        FormulaType<?> formulaType = context.getFormulaType(reg.getType());
+        return formulaManager.makeVariable(formulaType, name);
     }
 
     @Override
     public Formula visit(MemoryObject address) {
-        OptionalInt bitWidth = getBitWidthFromIntegerType(address.getType());
-        if (bitWidth.isEmpty()) {
-            return integerFormulaManager().makeNumber(address.getValue());
+        // Currently, all addresses are fixed.
+        BigInteger value = address.getValue();
+        FormulaType<?> formulaType = context.getFormulaType(address.getType());
+        if (formulaType instanceof FormulaType.BitvectorType bitvectorType) {
+            return bitvectorFormulaManager().makeBitvector(bitvectorType.getSize(), value);
         }
-        return bitvectorFormulaManager().makeBitvector(bitWidth.getAsInt(), address.getValue());
+        // BooleanType is insufficient.
+        assert formulaType.isIntegerType();
+        return integerFormulaManager().makeNumber(value);
     }
 
     @Override
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
-        return getLastMemValueExpr(location.getMemoryObject(), location.getOffset());
+        return context.getLastMemValueExpr(location.getMemoryObject(), location.getOffset());
     }
 }
