@@ -1,7 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
-
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
