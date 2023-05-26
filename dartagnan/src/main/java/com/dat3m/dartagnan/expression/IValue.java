@@ -18,17 +18,17 @@ public final class IValue extends IConst {
     // However, it is impossible to define general constants, we need a function that produces
     // a constant for each precision degree
     // HP: agree. I assume you wanted this to improve code readability, but having one constant per precision won't help.
-    public static IConst ZERO = new IValue(types.getArchType(), BigInteger.ZERO);
-    public static IConst ONE = new IValue(types.getArchType(), BigInteger.ONE);
+    public static IConst ZERO = new IValue(BigInteger.ZERO, types.getArchType());
+    public static IConst ONE = new IValue(BigInteger.ONE, types.getArchType());
 
     private final BigInteger value;
 
     @Deprecated
     public IValue(BigInteger v, int p) {
-        this(p == -1 ? types.getIntegerType() : types.getIntegerType(p), v);
+        this(v, p == -1 ? types.getIntegerType() : types.getIntegerType(p));
     }
 
-    public IValue(IntegerType type, BigInteger value) {
+    public IValue(BigInteger value, IntegerType type) {
         super(type);
         this.value = value;
     }
