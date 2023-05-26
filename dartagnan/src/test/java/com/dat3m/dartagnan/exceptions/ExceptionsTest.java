@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.exceptions;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
@@ -21,6 +22,8 @@ import org.sosy_lab.common.configuration.Configuration;
 import java.io.File;
 
 public class ExceptionsTest {
+
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
@@ -62,7 +65,9 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
+        Register a = new Register("a", 0, types.getIntegerType(32));
+        Register b = new Register("b", 0, types.getIntegerType(64));
+        new IExprBin(a, IOpBin.PLUS, b);
     }
 
     @Test(expected = NullPointerException.class)

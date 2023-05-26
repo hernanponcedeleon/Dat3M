@@ -2,7 +2,10 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.google.common.collect.ImmutableSet;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Register extends IExpr {
 
@@ -11,13 +14,12 @@ public class Register extends IExpr {
 	private final String name;
 	private String cVar;
     private final int threadId;
+    private final IntegerType type;
 
-    private final int precision;
-
-	public Register(String name, int threadId, int precision) {
-		this.name = name;
+	public Register(String name, int threadId, IntegerType type) {
+		this.name = checkNotNull(name);
 		this.threadId = threadId;
-		this.precision = precision;
+		this.type = type;
 	}
 	
 	public String getName() {
@@ -59,6 +61,11 @@ public class Register extends IExpr {
     }
 
 	@Override
+	public IntegerType getType() {
+		return type;
+	}
+
+	@Override
 	public ImmutableSet<Register> getRegs() {
 		return ImmutableSet.of(this);
 	}
@@ -70,7 +77,7 @@ public class Register extends IExpr {
 
 	@Override
 	public int getPrecision() {
-    	return precision;
+    	return type.isMathematical() ? -1 : type.getBitWidth();
     }
 
 	@Override
