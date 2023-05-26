@@ -512,7 +512,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 return integerFormulaManager().makeVariable(name);
             }
             int bitWidth = integerType.getBitWidth();
-            bitvectorFormulaManager().makeVariable(bitWidth, name);
+            return bitvectorFormulaManager().makeVariable(bitWidth, name);
         }
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
