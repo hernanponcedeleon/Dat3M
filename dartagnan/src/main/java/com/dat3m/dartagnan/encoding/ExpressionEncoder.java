@@ -3,12 +3,15 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -183,9 +186,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IValue iValue) {
-        return iValue.getPrecision() > 0
-                ? bitvectorFormulaManager().makeBitvector(iValue.getPrecision(), iValue.getValue())
-                : integerFormulaManager().makeNumber(iValue.getValue());
+        BigInteger value = iValue.getValue();
+        Type type = iValue.getType();
+        return makeLiteral(type, value);
     }
 
     @Override
@@ -477,10 +480,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(INonDet iNonDet) {
         String name = Integer.toString(iNonDet.hashCode());
-        if (iNonDet.getPrecision() < 0) {
-            return integerFormulaManager().makeVariable(name);
-        }
-        return bitvectorFormulaManager().makeVariable(iNonDet.getPrecision(), name);
+        Type type = iNonDet.getType();
+        return makeVariable(type, name);
     }
 
     @Override
@@ -488,22 +489,42 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         String name = event == null ?
                 reg.getName() + "_" + reg.getThreadId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
-        if (reg.getPrecision() < 0) {
-            return integerFormulaManager().makeVariable(name);
-        }
-        return bitvectorFormulaManager().makeVariable(reg.getPrecision(), name);
+        Type type = reg.getType();
+        return makeVariable(type, name);
     }
 
     @Override
     public Formula visit(MemoryObject address) {
-        return address.getPrecision() > 0
-                ? bitvectorFormulaManager().makeBitvector(address.getPrecision(), address.getValue())
-                : integerFormulaManager().makeNumber(address.getValue());
+        BigInteger value = address.getValue();
+        Type type = address.getType();
+        return makeLiteral(type, value);
     }
 
     @Override
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
+    }
+
+    private Formula makeVariable(Type type, String name) {
+        if (type instanceof IntegerType integerType) {
+            if (integerType.isMathematical()) {
+                return integerFormulaManager().makeVariable(name);
+            }
+            int bitWidth = integerType.getBitWidth();
+            bitvectorFormulaManager().makeVariable(bitWidth, name);
+        }
+        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
+    }
+
+    private Formula makeLiteral(Type type, BigInteger value) {
+        if (type instanceof IntegerType integerType) {
+            if (integerType.isMathematical()) {
+                return integerFormulaManager().makeNumber(value);
+            }
+            int bitWidth = integerType.getBitWidth();
+            return bitvectorFormulaManager().makeBitvector(bitWidth, value);
+        }
+        throw new UnsupportedOperationException(String.format("Encoding literal of type %s.", type));
     }
 }
