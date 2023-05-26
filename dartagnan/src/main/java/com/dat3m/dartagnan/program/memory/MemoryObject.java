@@ -5,12 +5,12 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -35,6 +35,7 @@ public class MemoryObject extends IConst {
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated) {
+        super(TypeFactory.getInstance().getArchType());
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
@@ -125,11 +126,6 @@ public class MemoryObject extends IConst {
     @Override
     public BigInteger getValue() {
         return address != null ? address : BigInteger.valueOf(index);
-    }
-
-    @Override
-    public int getPrecision() {
-        return getArchPrecision();
     }
 
     @Override

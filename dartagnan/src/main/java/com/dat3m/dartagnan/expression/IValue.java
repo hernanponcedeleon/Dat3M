@@ -22,26 +22,20 @@ public final class IValue extends IConst {
     public static IConst ONE = new IValue(types.getArchType(), BigInteger.ONE);
 
     private final BigInteger value;
-    private final IntegerType type;
 
     @Deprecated
     public IValue(BigInteger v, int p) {
         this(p == -1 ? types.getIntegerType() : types.getIntegerType(p), v);
     }
 
-    public IValue(IntegerType t, BigInteger v) {
-        type = t;
-        value = v;
+    public IValue(IntegerType type, BigInteger value) {
+        super(type);
+        this.value = value;
     }
 
     @Override
     public BigInteger getValue() {
         return value;
-    }
-
-    @Override
-    public int getPrecision() {
-        return type.isMathematical() ? -1 : type.getBitWidth();
     }
 
     @Override
@@ -51,16 +45,17 @@ public final class IValue extends IConst {
 
     @Override
     public int hashCode() {
-        return type.hashCode() ^ 0xa185f6b3 + value.hashCode();
+        return getType().hashCode() ^ 0xa185f6b3 + value.hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
-        return this == o || o instanceof IValue && type.equals(((IValue) o).type) && value.equals(((IValue) o).value);
+        return this == o ||
+                o instanceof IValue && getType().equals(((IValue) o).getType()) && value.equals(((IValue) o).value);
     }
 
     @Override
     public String toString() {
-        return value.toString() + type.toString();
+        return value.toString() + getType().toString();
     }
 }

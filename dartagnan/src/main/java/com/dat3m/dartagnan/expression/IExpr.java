@@ -1,9 +1,16 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public abstract class IExpr implements Reducible {
+
+	private final IntegerType type;
+
+	protected IExpr(IntegerType type) {
+		this.type = checkNotNull(type);
+	}
 
 	public IExpr getBase() {
 		throw new UnsupportedOperationException("getBase() not supported for " + this);
@@ -11,7 +18,7 @@ public abstract class IExpr implements Reducible {
 	
 	@Deprecated
 	public int getPrecision() {
-		throw new UnsupportedOperationException("getPrecision() not supported for " + this);
+		return type.isMathematical() ? -1 : type.getBitWidth();
 	}
 	
 	@Override
@@ -23,9 +30,7 @@ public abstract class IExpr implements Reducible {
 	public boolean isInteger() { return getPrecision() <= 0; }
 
 	@Override
-	public IntegerType getType() {
-		TypeFactory types = TypeFactory.getInstance();
-		int precision = getPrecision();
-		return precision < 0 ? types.getIntegerType() : types.getIntegerType(precision);
+	public final IntegerType getType() {
+		return type;
 	}
 }

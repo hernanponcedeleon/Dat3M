@@ -2,21 +2,38 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
-
-import static com.dat3m.dartagnan.GlobalSettings.*;
 
 import java.math.BigInteger;
 
 public class IExprUn extends IExpr {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final IExpr b;
     private final IOpUn op;
 
     public IExprUn(IOpUn op, IExpr b) {
+        super(inferType(op, b));
         this.b = b;
         this.op = op;
+    }
+
+    private static IntegerType inferType(IOpUn op, IExpr b) {
+        return switch (op) {
+            // Formerly, CTLZ threw an exception when asked for precision.
+            case MINUS, CTLZ -> b.getType();
+            case BV2UINT, BV2INT -> types.getArchType();
+            case INT2BV1, TRUNC321, TRUNC641, TRUNC161, TRUNC81 -> types.getIntegerType(1);
+            case INT2BV8, TRUNC648, TRUNC328, TRUNC168, ZEXT18, SEXT18 -> types.getIntegerType(8);
+            case INT2BV16, TRUNC6416, TRUNC3216, ZEXT116, ZEXT816, SEXT116, SEXT816 -> types.getIntegerType(16);
+            case INT2BV32, TRUNC6432, ZEXT132, ZEXT832, ZEXT1632, SEXT132, SEXT832, SEXT1632 ->
+                    types.getIntegerType(32);
+            case INT2BV64, ZEXT164, ZEXT864, ZEXT1664, ZEXT3264, SEXT164, SEXT864, SEXT1664, SEXT3264 ->
+                    types.getIntegerType(64);
+        };
     }
 
     public IOpUn getOp() {
@@ -66,28 +83,6 @@ public class IExprUn extends IExpr {
                 return new IValue(BigInteger.valueOf(leading), precision);
             default:
                 throw new UnsupportedOperationException("Reduce not supported for " + this);
-        }
-    }
-
-    @Override
-    public int getPrecision() {
-        switch (op) {
-            case MINUS:
-                return b.getPrecision();
-            case BV2UINT: case BV2INT:
-                return getArchPrecision();
-            case INT2BV1: case TRUNC321: case TRUNC641: case TRUNC161: case TRUNC81:
-                return 1;
-            case INT2BV8: case TRUNC648: case TRUNC328: case TRUNC168: case ZEXT18: case SEXT18:
-                return 8;
-            case INT2BV16: case TRUNC6416: case TRUNC3216: case ZEXT116: case ZEXT816: case SEXT116: case SEXT816:
-                return 16;
-            case INT2BV32: case TRUNC6432: case ZEXT132: case ZEXT832: case ZEXT1632: case SEXT132: case SEXT832: case SEXT1632:
-                return 32;
-            case INT2BV64: case ZEXT164: case ZEXT864: case ZEXT1664: case ZEXT3264: case SEXT164: case SEXT864: case SEXT1664: case SEXT3264:
-                return 64;
-            default:
-                throw new UnsupportedOperationException("getPrecision not supported for " + this);
         }
     }
 

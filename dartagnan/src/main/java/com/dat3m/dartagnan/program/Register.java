@@ -14,12 +14,11 @@ public class Register extends IExpr {
 	private final String name;
 	private String cVar;
     private final int threadId;
-    private final IntegerType type;
 
 	public Register(String name, int threadId, IntegerType type) {
+		super(type);
 		this.name = checkNotNull(name);
 		this.threadId = threadId;
-		this.type = type;
 	}
 	
 	public String getName() {
@@ -61,11 +60,6 @@ public class Register extends IExpr {
     }
 
 	@Override
-	public IntegerType getType() {
-		return type;
-	}
-
-	@Override
 	public ImmutableSet<Register> getRegs() {
 		return ImmutableSet.of(this);
 	}
@@ -74,11 +68,6 @@ public class Register extends IExpr {
 	public <T> T visit(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
 	}
-
-	@Override
-	public int getPrecision() {
-    	return type.isMathematical() ? -1 : type.getBitWidth();
-    }
 
 	@Override
 	public IExpr getBase() {
