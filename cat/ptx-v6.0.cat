@@ -6,13 +6,6 @@ PTX
 // scta: same-cta
 // sync_barrier: synchronize by barriers with same logical barrier resource (barID)
 
-// Comparing to the ptx-v6.0 model written in Alloy (https://github.com/NVlabs/ptxmemorymodel)
-// The alloy model does not align precisely with the documentation in the Acquire-pattern
-// and Release-pattern. The documentation specifies that the first read in the pattern
-// should be a strong one. Also in the Release-pattern, the documentation specifies that
-// the second write in the pattern should be a strong one. We follow the documentation
-// for both patterns here.
-
 (*******************)
 (*   Auxiliaries   *)
 (*******************)
@@ -36,12 +29,8 @@ let fence-sc = [F & SC] ; sr; [F & SC]
 // but the ISCA'22 paper claims the one below is equivalent, thus we avoid the recursion
 let observation = (morally-strong & rf) | rmw
 
-// The definition of alloy: let release-pattern = ([W & REL]; po-loc?; [W]) | ([F & ACQ_REL]; po; [W])
-// However the documentation states that the second store shall be strong one
 let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 
-// The definition of alloy: let acquire-pattern = ([R]; po-loc?; [R & ACQ])
-// However the documentation states that the first read shall be strong one
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
 let sw = (morally-strong & (release-pattern; observation; acquire-pattern)) | fence-sc | sync_barrier
