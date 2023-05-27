@@ -926,14 +926,12 @@ public class RelationAnalysis {
             List<FenceWithId> fenceEvents = program.getEvents(FenceWithId.class);
             for (FenceWithId e1 : fenceEvents) {
                 for (FenceWithId e2 : fenceEvents) {
-                    if ((e1.getFenceID() instanceof Register || e2.getFenceID() instanceof Register)
-                            && !exec.areMutuallyExclusive(e1, e2)) {
-                        may.add(new Tuple(e1, e2));
-                    } else if (!exec.areMutuallyExclusive(e1, e2)) {
-                        if (e1.getFenceID().equals(e2.getFenceID())) {
-                            may.add(new Tuple(e1, e2));
-                            must.add(new Tuple(e1, e2));
-                        }
+                    if(exec.areMutuallyExclusive(e1, e2)) {
+                        continue;
+                    }
+                    may.add(new Tuple(e1, e2));
+                    if (e1.getFenceID().equals(e2.getFenceID())) {
+                        must.add(new Tuple(e1, e2));
                     }
                 }
             }
