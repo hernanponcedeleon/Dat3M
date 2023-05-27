@@ -43,7 +43,7 @@ public interface AliasAnalysis {
     }
 
     // This models same_alias_r from the PTX Alloy model
-    static boolean virtualLoc(MemEvent e1, MemEvent e2) {
+    static boolean virtuallyAlias(MemEvent e1, MemEvent e2) {
         // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias, 
         // then `x + offset` and `y + offset` should too
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {

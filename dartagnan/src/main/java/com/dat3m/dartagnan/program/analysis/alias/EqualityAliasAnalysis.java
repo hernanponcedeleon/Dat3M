@@ -30,7 +30,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mustAlias(MemEvent a, MemEvent b) {
-        if (AliasAnalysis.virtualLoc(a, b)) {
+        if (AliasAnalysis.virtuallyAlias(a, b)) {
             return true;
         }
         if (a.getThread() != b.getThread() || !a.getAddress().equals(b.getAddress())) {

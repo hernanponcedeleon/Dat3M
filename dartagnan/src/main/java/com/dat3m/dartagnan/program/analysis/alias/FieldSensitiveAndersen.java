@@ -85,7 +85,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemEvent x, MemEvent y) {
-        if (AliasAnalysis.virtualLoc(x, y)) {
+        if (AliasAnalysis.virtuallyAlias(x, y)) {
             return true;
         }
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
@@ -93,7 +93,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public boolean mustAlias(MemEvent x, MemEvent y) {
-        if (AliasAnalysis.virtualLoc(x, y)) {
+        if (AliasAnalysis.virtuallyAlias(x, y)) {
             return true;
         }
         Set<Location> a = getMaxAddressSet(x);
