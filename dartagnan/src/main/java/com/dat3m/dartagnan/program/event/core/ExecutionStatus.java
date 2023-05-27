@@ -1,13 +1,11 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.Map;
 
@@ -50,15 +48,28 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        FormulaManager fmgr = context.getFormulaManager();
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-        int precision = register.getPrecision();
-        return bmgr.and(super.encodeExec(context),
-                bmgr.implication(context.execution(event),
-                        context.equalZero(context.result(this))),
-                bmgr.or(context.execution(event),
-                        context.equal(context.result(this), bvmgr.makeBitvector(1, precision))));
+        FormulaManager formulaManager = context.getFormulaManager();
+        BooleanFormulaManager booleanFormulaManager = context.getBooleanFormulaManager();
+        Type type = register.getType();
+        BooleanFormula eventExecuted = context.execution(event);
+        Formula result = context.result(this);
+        if (type instanceof IntegerType integerType) {
+            Formula one;
+            if (integerType.isMathematical()) {
+                IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+                one = integerFormulaManager.makeNumber(1);
+            } else {
+                BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+                int bitWidth = integerType.getBitWidth();
+                one = bitvectorFormulaManager.makeBitvector(1, bitWidth);
+            }
+            return booleanFormulaManager.and(super.encodeExec(context),
+                    booleanFormulaManager.implication(eventExecuted,
+                            context.equalZero(result)),
+                    booleanFormulaManager.or(eventExecuted,
+                            context.equal(result, one)));
+        }
+        throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }
 
     // Unrolling

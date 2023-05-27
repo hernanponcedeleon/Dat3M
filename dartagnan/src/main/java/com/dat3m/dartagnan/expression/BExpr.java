@@ -1,6 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+
 public abstract class BExpr implements ExprInterface {
+
+    @Override
+    public BooleanType getType() {
+        return TypeFactory.getInstance().getBooleanType();
+    }
 
     public boolean isTrue() {
 		return this.equals(BConst.TRUE);

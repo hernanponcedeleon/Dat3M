@@ -12,8 +12,9 @@ public class IfExpr extends IExpr {
 	private final IExpr fbranch;
 	
 	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
-    	Preconditions.checkArgument(tbranch.getPrecision() == fbranch.getPrecision(), 
-    			"The type of " + tbranch + " and " + fbranch + " does not match");
+		super(tbranch.getType());
+    	Preconditions.checkArgument(tbranch.getType().equals(fbranch.getType()),
+    			"The types of %s and %s do not match.", tbranch, fbranch);
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
@@ -39,11 +40,6 @@ public class IfExpr extends IExpr {
 
 	public IExpr getFalseBranch() {
 		return fbranch;
-	}
-
-	@Override
-	public int getPrecision() {
-		return tbranch.getPrecision();
 	}
 
 	@Override

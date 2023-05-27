@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -276,11 +277,16 @@ public final class EncodingContext {
             if (e instanceof RegWriter) {
                 Register register = ((RegWriter) e).getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                int precision = register.getPrecision();
-                if (precision > 0) {
-                    r = formulaManager.getBitvectorFormulaManager().makeVariable(precision, name);
+                Type type = register.getType();
+                if (type instanceof IntegerType integerType) {
+                    if (integerType.isMathematical()) {
+                        r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                    } else {
+                        int bitWidth = integerType.getBitWidth();
+                        r = formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
+                    }
                 } else {
-                    r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                    throw new UnsupportedOperationException(String.format("Encoding result of type %s.", type));
                 }
             } else {
                 r = null;

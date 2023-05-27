@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
@@ -28,6 +30,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class ProgramBuilder {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<Integer, Thread> threads = new HashMap<>();
 
     private final Map<String,MemoryObject> locations = new HashMap<>();
@@ -156,15 +159,21 @@ public class ProgramBuilder {
         return null;
     }
 
-    public Register getOrCreateRegister(int threadId, String name, int precision){
+    @Deprecated
+    public Register getOrCreateRegister(int threadId, String name, int precision) {
+        IntegerType type = precision < 0 ? types.getIntegerType() : types.getIntegerType(precision);
+        return getOrNewRegister(threadId, name, type);
+    }
+
+    public Register getOrNewRegister(int threadId, String name, IntegerType type) {
         initThread(threadId);
         Thread thread = threads.get(threadId);
         if(name == null) {
-            return thread.newRegister(precision);
+            return thread.newRegister(type);
         }
         Register register = thread.getRegister(name);
         if(register == null){
-            return thread.newRegister(name, precision);
+            return thread.newRegister(name, type);
         }
         return register;
     }

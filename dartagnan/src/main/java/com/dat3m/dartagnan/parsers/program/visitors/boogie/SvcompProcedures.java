@@ -6,7 +6,10 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.google.common.primitives.UnsignedInteger;
+import com.google.common.primitives.UnsignedLong;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -97,45 +100,41 @@ public class SvcompProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
 		visitor.currentBeginAtomic = null;
 	}
-	
+
+	//TODO this should restart for each program.
+	private static int nondetCount;
+
 	private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {
-		INonDetTypes type = null;
-		switch (name) {
-			case "__VERIFIER_nondet_int":
-				type = INonDetTypes.INT;
-				break;
-			case "__VERIFIER_nondet_uint":
-			case "__VERIFIER_nondet_unsigned_int":
-				type = INonDetTypes.UINT;
-				break;
-			case "__VERIFIER_nondet_short":
-				type = INonDetTypes.SHORT;
-				break;
-			case "__VERIFIER_nondet_ushort":
-			case "__VERIFIER_nondet_unsigned_short":
-				type = INonDetTypes.USHORT;
-				break;
-			case "__VERIFIER_nondet_long":
-				type = INonDetTypes.LONG;
-				break;
-			case "__VERIFIER_nondet_ulong":
-				type = INonDetTypes.ULONG;
-				break;
-			case "__VERIFIER_nondet_char":
-				type = INonDetTypes.CHAR;
-				break;
-			case "__VERIFIER_nondet_uchar":
-				type = INonDetTypes.UCHAR;
-				break;
-			default:
-				throw new ParsingException(name + " is not supported");
-		}
+		String suffix = name.substring("__VERIFIER_nondet_".length());
+		boolean signed = switch (suffix) {
+			case "int", "short", "long", "char" -> true;
+			default -> false;
+		};
+		BigInteger min = switch (suffix) {
+			case "long" -> BigInteger.valueOf(Long.MIN_VALUE);
+			case "int" -> BigInteger.valueOf(Integer.MIN_VALUE);
+			case "short" -> BigInteger.valueOf(Short.MIN_VALUE);
+			case "char" -> BigInteger.valueOf(Byte.MIN_VALUE);
+			default -> BigInteger.ZERO;
+		};
+		BigInteger max = switch (suffix) {
+			case "int" -> BigInteger.valueOf(Integer.MAX_VALUE);
+			case "uint", "unsigned_int" -> UnsignedInteger.MAX_VALUE.bigIntegerValue();
+			case "short" -> BigInteger.valueOf(Short.MAX_VALUE);
+			case "ushort", "unsigned_short" -> BigInteger.valueOf(65535);
+			case "long" -> BigInteger.valueOf(Long.MAX_VALUE);
+			case "ulong" -> UnsignedLong.MAX_VALUE.bigIntegerValue();
+			case "char" -> BigInteger.valueOf(Byte.MAX_VALUE);
+			case "uchar" -> BigInteger.valueOf(255);
+			default -> throw new ParsingException(name + " is not supported");
+		};
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
-	    if(register != null){
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new INonDet(type, register.getPrecision())))
+		if (register != null) {
+			INonDet expression = new INonDet(nondetCount++, register.getType(), signed, min, max);
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, expression))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-	    }
+		}
 	}
 
 	private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {

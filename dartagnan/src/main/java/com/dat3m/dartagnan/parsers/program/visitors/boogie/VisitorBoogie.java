@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
@@ -56,7 +57,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
-	
+	private static final TypeFactory types = TypeFactory.getInstance();
 	protected ProgramBuilder programBuilder;
 	protected int threadCount = 0;
 	protected int currentThread = 0;
@@ -640,7 +641,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		}
 		if(constantsTypeMap.containsKey(name)) {
 			// Dummy register needed to parse axioms
-			return new Register(name, Register.NO_THREAD, constantsTypeMap.get(name));
+			int precision = constantsTypeMap.get(name);
+			IntegerType type = precision < 0 ? types.getIntegerType() : types.getIntegerType(precision);
+			return new Register(name, Register.NO_THREAD, type);
 		}
         Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){
