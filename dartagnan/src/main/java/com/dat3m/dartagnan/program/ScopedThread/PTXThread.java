@@ -5,9 +5,10 @@ import com.dat3m.dartagnan.program.event.core.Event;
 
 public class PTXThread extends ScopedThread {
 
+    // There is a unique system level
+
     public PTXThread(String name, int id, Event entry, int GpuId, int CtaId) {
         super(name, id, entry);
-        // There is a unique system level
         this.scopeIds.put(Tag.PTX.SYS, 0);
         this.scopeIds.put(Tag.PTX.GPU, GpuId);
         this.scopeIds.put(Tag.PTX.CTA, CtaId);
@@ -15,7 +16,6 @@ public class PTXThread extends ScopedThread {
 
     public PTXThread(int id, Event entry, int GpuId, int CtaId) {
         super(id, entry);
-        // There is a unique system level
         this.scopeIds.put(Tag.PTX.SYS, 0);
         this.scopeIds.put(Tag.PTX.GPU, GpuId);
         this.scopeIds.put(Tag.PTX.CTA, CtaId);
