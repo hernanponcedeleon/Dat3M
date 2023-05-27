@@ -3,7 +3,6 @@ PTX
 
 // Base relations:
 // sr: same-scope
-// scta: same-cta
 // sync_barrier: synchronize by barriers with same logical barrier resource (barID)
 
 (*******************)
