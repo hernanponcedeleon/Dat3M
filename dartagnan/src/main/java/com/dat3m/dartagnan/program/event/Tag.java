@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.event;
 
+import java.util.Set;
+
 public final class Tag {
     private Tag() { }
 
@@ -267,7 +269,6 @@ public final class Tag {
     // =============================================================================================
     public static final class PTX {
         // Scopes
-        public static final String PTX = "PTX";
         public static final String CTA = "CTA";
         public static final String GPU = "GPU";
         public static final String SYS = "SYS";
@@ -286,6 +287,14 @@ public final class Tag {
         // Virtual memory
         public static final String ALIAS = "ALIAS";
         private PTX() {
+        }
+
+        public static Set<String> getScopeTags() {
+            return Set.of(CTA, GPU, SYS);
+        }
+
+        public static Set<String> getProxyTags() {
+            return Set.of(GEN, TEX, SUR, CON);
         }
 
         public static String loadMO(String mo) {

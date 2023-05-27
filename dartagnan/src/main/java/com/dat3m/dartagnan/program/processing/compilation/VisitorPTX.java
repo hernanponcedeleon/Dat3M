@@ -34,10 +34,10 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.PTX.storeMO(mo));
-        load.addFilters(getScopeMo(e));
-        load.addFilters(getProxyMo(e));
-        store.addFilters(getScopeMo(e));
-        store.addFilters(getProxyMo(e));
+        load.addFilters(getScopeTag(e));
+        load.addFilters(getProxyTag(e));
+        store.addFilters(getScopeTag(e));
+        store.addFilters(getProxyTag(e));
         return eventSequence(
                 load,
                 store,
@@ -53,43 +53,22 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
-        load.addFilters(getScopeMo(e));
-        load.addFilters(getProxyMo(e));
-        store.addFilters(getScopeMo(e));
-        store.addFilters(getProxyMo(e));
+        load.addFilters(getScopeTag(e));
+        load.addFilters(getProxyTag(e));
+        store.addFilters(getScopeTag(e));
+        store.addFilters(getProxyTag(e));
         return eventSequence(
                 load,
                 store
         );
     }
 
-    private static String getScopeMo(Event e) {
-        if(e.is(Tag.PTX.SYS)) {
-            return Tag.PTX.SYS;
-        }
-        if(e.is(Tag.PTX.GPU)) {
-            return Tag.PTX.GPU;
-        }
-        if(e.is(Tag.PTX.CTA)) {
-            return Tag.PTX.CTA;
-        }
-        return "";
+    private static String getScopeTag(Event e) {
+        return Tag.PTX.getScopeTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
     }
 
-    private static String getProxyMo(Event e) {
-        if(e.is(Tag.PTX.GEN)) {
-            return Tag.PTX.GEN;
-        }
-        if(e.is(Tag.PTX.TEX)) {
-            return Tag.PTX.TEX;
-        }
-        if(e.is(Tag.PTX.SUR)) {
-            return Tag.PTX.SUR;
-        }
-        if(e.is(Tag.PTX.CON)) {
-            return Tag.PTX.CON;
-        }
-        return "";
+    private static String getProxyTag(Event e) {
+        return Tag.PTX.getProxyTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
     }
 
 }
