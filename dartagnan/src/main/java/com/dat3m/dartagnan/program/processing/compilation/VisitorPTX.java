@@ -34,10 +34,10 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.PTX.storeMO(mo));
-        load.addFilters(getScopeTag(e));
-        load.addFilters(getProxyTag(e));
-        store.addFilters(getScopeTag(e));
-        store.addFilters(getProxyTag(e));
+        load.addFilters(Tag.PTX.getScopeTag(e));
+        load.addFilters(Tag.PTX.getProxyTag(e));
+        store.addFilters(Tag.PTX.getScopeTag(e));
+        store.addFilters(Tag.PTX.getProxyTag(e));
         return eventSequence(
                 load,
                 store,
@@ -53,22 +53,13 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStore(load, address,
                 new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
-        load.addFilters(getScopeTag(e));
-        load.addFilters(getProxyTag(e));
-        store.addFilters(getScopeTag(e));
-        store.addFilters(getProxyTag(e));
+        load.addFilters(Tag.PTX.getScopeTag(e));
+        load.addFilters(Tag.PTX.getProxyTag(e));
+        store.addFilters(Tag.PTX.getScopeTag(e));
+        store.addFilters(Tag.PTX.getProxyTag(e));
         return eventSequence(
                 load,
                 store
         );
     }
-
-    private static String getScopeTag(Event e) {
-        return Tag.PTX.getScopeTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
-    }
-
-    private static String getProxyTag(Event e) {
-        return Tag.PTX.getProxyTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
-    }
-
 }

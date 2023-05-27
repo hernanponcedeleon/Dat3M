@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
@@ -904,12 +905,13 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = new ArrayList<>();
+            // We avoid using MemEvent because we don't want to consider Init events
             events.addAll(program.getEvents(Load.class));
             events.addAll(program.getEvents(Store.class));
             events.addAll(program.getEvents(Fence.class));
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustSameScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (mustScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -992,36 +994,32 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
-        private boolean mustSameScope(Event first, Event second, String specificScope) {
+        private boolean mustScope(Event first, Event second, String specificScope) {
             if (specificScope != null) { // scope specified
-                return sameHigherScope(first, second, specificScope);
+                return scopeAtHigherLevel(first, second, specificScope);
             }
             // if scope not specified, use valid scope
-            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
-            String firstScope = getValidScope(first, scopes);
-            String secondScope = getValidScope(second, scopes);
+            String firstScope = Tag.PTX.getScopeTag(first);
+            String secondScope = Tag.PTX.getScopeTag(second);
             if (firstScope == null || secondScope == null // proxy fence
                     || !firstScope.equals(secondScope)) {
                 return false;
             }
-            return sameHigherScope(first, second, firstScope);
+            return scopeAtHigherLevel(first, second, firstScope);
         }
 
-        private boolean sameHigherScope(Event first, Event second, String flag) {
+        // For each scope S higher than flag, we check both events are in the same scope S
+        private boolean scopeAtHigherLevel(Event first, Event second, String flag) {
             ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
             int validIndex = scopes.indexOf(flag);
+            // scopes(0) is highest in hierarchy
+            // i = 0 is SYS, every thread will always have the same id, so start from i = 1
             for (int i = 1; i <= validIndex; i++) {
-                // i = 0 is SYS, every thread will always have the same id, so start from i = 1
-                String scope = scopes.get(i);
-                if (!onSameScope(first, second, scope)) {
+                if (!onSameScope(first, second, scopes.get(i))) {
                     return false;
                 }
             }
             return true;
-        }
-
-        private String getValidScope(Event event, ArrayList<String> scopes) {
-            return scopes.stream().filter(event::is).findFirst().orElse(null);
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {

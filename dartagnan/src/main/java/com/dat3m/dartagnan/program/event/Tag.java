@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.event;
 
 import java.util.Set;
 
+import com.dat3m.dartagnan.program.event.core.Event;
+
 public final class Tag {
     private Tag() { }
 
@@ -297,6 +299,14 @@ public final class Tag {
             return Set.of(GEN, TEX, SUR, CON);
         }
 
+        public static String getScopeTag(Event e) {
+            return getScopeTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+        }
+    
+        public static String getProxyTag(Event e) {
+            return getProxyTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+        }
+        
         public static String loadMO(String mo) {
             switch (mo) {
                 case ACQ_REL:
