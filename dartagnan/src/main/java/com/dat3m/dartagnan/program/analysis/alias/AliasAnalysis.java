@@ -42,16 +42,17 @@ public interface AliasAnalysis {
         return a;
     }
 
-    // This models same_alias_r from the Alloy model
+    // This models same_alias_r from the PTX Alloy model
     static boolean virtualLoc(MemEvent e1, MemEvent e2) {
-        // TODO: Add support for pointers
+        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias, 
+        // then `x + offset` and `y + offset` should too
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
             return false;
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        boolean isAdd1Virtual = add1.getVirtual();
-        boolean isAdd2Virtual = add2.getVirtual();
+        boolean isAdd1Virtual = add1.isVirtual();
+        boolean isAdd2Virtual = add2.isVirtual();
         if (isAdd1Virtual && isAdd2Virtual) {
             // Virtual addresses always have an alias
             assert(add1.getAlias() != null);

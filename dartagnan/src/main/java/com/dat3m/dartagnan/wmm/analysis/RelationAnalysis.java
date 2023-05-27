@@ -1604,8 +1604,8 @@ public class RelationAnalysis {
         }
         MemoryObject add1 = (MemoryObject) e1.getAddress();
         MemoryObject add2 = (MemoryObject) e2.getAddress();
-        boolean virtual1 = add1.getVirtual();
-        boolean virtual2 = add2.getVirtual();
+        boolean virtual1 = add1.isVirtual();
+        boolean virtual2 = add2.isVirtual();
         MemoryObject alias1 = add1.getAlias();
         MemoryObject alias2 = add2.getAlias();
         if (virtual1 && virtual2) {

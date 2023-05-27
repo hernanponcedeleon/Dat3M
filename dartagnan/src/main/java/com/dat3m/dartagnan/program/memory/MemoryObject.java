@@ -32,7 +32,7 @@ public class MemoryObject extends IConst {
     private final boolean virtual;
     private final MemoryObject alias;
 
-    public boolean getVirtual() {
+    public boolean isVirtual() {
         return virtual;
     }
 
