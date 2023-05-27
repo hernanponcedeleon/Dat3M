@@ -611,14 +611,14 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static AtomOp newTaggedAtomOp(IExpr address, Register register, IExpr value,
+        public static AtomOp newAtomOp(IExpr address, Register register, IExpr value,
                                              IOpBin op, String mo, String scope) {
             AtomOp atom = new AtomOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
             atom.addFilters(scope);
             return atom;
         }
 
-        public static RedOp newTaggedRedOp(IExpr address, Register register, IExpr value,
+        public static RedOp newRedOp(IExpr address, Register register, IExpr value,
                                            IOpBin op, String mo, String scope) {
             RedOp red = new RedOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
             red.addFilters(scope);

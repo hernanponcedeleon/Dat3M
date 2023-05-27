@@ -233,7 +233,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, constant, op, mo, scope);
+        AtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, constant, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -251,7 +251,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        AtomOp atom = EventFactory.PTX.newTaggedAtomOp(object, register_destination, register_operand, op, mo, scope);
+        AtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, register_operand, op, mo, scope);
         atom.addFilters(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -269,7 +269,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
-        RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, constant, op, mo, scope);
+        RedOp red = EventFactory.PTX.newRedOp(object, register_destination, constant, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }
@@ -287,7 +287,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
-        RedOp red = EventFactory.PTX.newTaggedRedOp(object, register_destination, register_operand, op, mo, scope);
+        RedOp red = EventFactory.PTX.newRedOp(object, register_destination, register_operand, op, mo, scope);
         red.addFilters(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }

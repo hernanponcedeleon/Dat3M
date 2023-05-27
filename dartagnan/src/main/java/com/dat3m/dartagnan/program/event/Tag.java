@@ -266,20 +266,24 @@ public final class Tag {
     // =========================================== PTX =============================================
     // =============================================================================================
     public static final class PTX {
+        // Scopes
         public static final String PTX = "PTX";
         public static final String CTA = "CTA";
         public static final String GPU = "GPU";
         public static final String SYS = "SYS";
+        // Memory orders
         public static final String WEAK = "WEAK";
         public static final String RLX = "RLX"; // RELAXED
         public static final String ACQ = "ACQ"; // ACQUIRE
         public static final String REL = "REL"; // RELEASE
         public static final String ACQ_REL = "ACQ_REL";
         public static final String SC = "SC";
+        // Proxies
         public static final String GEN = "GEN"; // GENERIC
         public static final String TEX = "TEX"; // TEXTURE
         public static final String SUR = "SUR"; // SURFACE
         public static final String CON = "CON"; // CONSTANT
+        // Virtual memory
         public static final String ALIAS = "ALIAS";
         private PTX() {
         }
