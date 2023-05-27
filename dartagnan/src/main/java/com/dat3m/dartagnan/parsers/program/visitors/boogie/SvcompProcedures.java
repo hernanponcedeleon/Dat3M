@@ -114,7 +114,7 @@ public class SvcompProcedures {
 			case "long" -> BigInteger.valueOf(Long.MIN_VALUE);
 			case "int" -> BigInteger.valueOf(Integer.MIN_VALUE);
 			case "short" -> BigInteger.valueOf(Short.MIN_VALUE);
-			case "char" -> BigInteger.valueOf(-128);
+			case "char" -> BigInteger.valueOf(Byte.MIN_VALUE);
 			default -> BigInteger.ZERO;
 		};
 		BigInteger max = switch (suffix) {
@@ -124,7 +124,7 @@ public class SvcompProcedures {
 			case "ushort", "unsigned_short" -> BigInteger.valueOf(65535);
 			case "long" -> BigInteger.valueOf(Long.MAX_VALUE);
 			case "ulong" -> UnsignedLong.MAX_VALUE.bigIntegerValue();
-			case "char" -> BigInteger.valueOf(127);
+			case "char" -> BigInteger.valueOf(Byte.MAX_VALUE);
 			case "uchar" -> BigInteger.valueOf(255);
 			default -> throw new ParsingException(name + " is not supported");
 		};

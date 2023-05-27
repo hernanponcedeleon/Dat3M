@@ -50,8 +50,7 @@ public final class IValue extends IConst {
 
     @Override
     public boolean equals(Object o) {
-        return this == o ||
-                o instanceof IValue && getType().equals(((IValue) o).getType()) && value.equals(((IValue) o).value);
+        return this == o || o instanceof IValue val && getType().equals(val.getType()) && value.equals(val.value);
     }
 
     @Override

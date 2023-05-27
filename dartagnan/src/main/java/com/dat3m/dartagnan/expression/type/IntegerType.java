@@ -23,6 +23,6 @@ public final class IntegerType implements Type {
 
     @Override
     public String toString() {
-        return "bv" + bitWidth;
+        return isMathematical() ? "int" : "bv" + bitWidth;
     }
 }

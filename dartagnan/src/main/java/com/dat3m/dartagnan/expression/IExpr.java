@@ -26,8 +26,13 @@ public abstract class IExpr implements Reducible {
 		throw new UnsupportedOperationException("Reduce not supported for " + this);
 	}
 
-	public boolean isBV() { return getPrecision() > 0; }
-	public boolean isInteger() { return getPrecision() <= 0; }
+	public boolean isBV() {
+		return !getType().isMathematical();
+	}
+
+	public boolean isInteger() {
+		return getType().isMathematical();
+	}
 
 	@Override
 	public final IntegerType getType() {
