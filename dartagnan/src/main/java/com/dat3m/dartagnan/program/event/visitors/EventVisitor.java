@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.visitors;
 
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
@@ -8,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -23,7 +23,6 @@ public interface EventVisitor<T> {
 
 	// Basic events
 	default T visitAssume(Assume e) { return visitEvent(e); }
-	default T visitCmp(Cmp e) { return visitSkip(e); }
 	default T visitCondJump(CondJump e) { return visitEvent(e); }
 	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
 	default T visitFence(Fence e) { return visitEvent(e); }

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -11,22 +12,33 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Cmp;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
+    private static class CmpInstruction {
+        private final IExpr left;
+        private final IExpr right;
+
+        public CmpInstruction(Register left, IExpr comparand) {
+            this.left = left;
+            this.right = comparand;
+        }
+    }
+
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
     private final ProgramBuilder programBuilder;
+    private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private int mainThread;
     private int threadCount = 0;
 
@@ -171,18 +183,18 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitCmpw(LitmusPPCParser.CmpwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newCompare(r1, r2));
+        lastCmpInstructionPerThread.put(mainThread, new CmpInstruction(r1, r2));
+        return null;
     }
 
     @Override
     public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
-        Event lastEvent = programBuilder.getLastEvent(mainThread);
-        if(!(lastEvent instanceof Cmp)){
+        CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
+        if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-        Cmp cmp = (Cmp)lastEvent;
-        Atom expr = new Atom(cmp.getLeft(), ctx.cond().op, cmp.getRight());
+        Atom expr = new Atom(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

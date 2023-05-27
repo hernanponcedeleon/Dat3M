@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
@@ -16,7 +17,6 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.rmw.StoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -96,10 +96,6 @@ public class EventFactory {
 
     // ------------------------------------------ Local events ------------------------------------------
 
-    public static Cmp newCompare(IExpr left, IExpr right) {
-        return new Cmp(left, right);
-    }
-
     public static Skip newSkip() {
         return new Skip();
     }
@@ -176,7 +172,7 @@ public class EventFactory {
     }
 
     public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-        return new RMWStoreExclusive(address, value, mo, isStrong);
+        return new RMWStoreExclusive(address, value, mo, isStrong, false);
     }
 
     public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
@@ -191,8 +187,20 @@ public class EventFactory {
         return new ExecutionStatus(register, event, true);
     }
 
-    public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
-        return new StoreExclusive(register, address, value, mo);
+    // =============================================================================================
+    // ========================================== Common ===========================================
+    // =============================================================================================
+
+    /*
+        "Common" contains events that are shared between different architectures, yet are no core events.
+     */
+    public static class Common {
+        private Common() {
+        }
+
+        public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
+            return new StoreExclusive(register, address, value, mo);
+        }
     }
 
     // =============================================================================================
@@ -467,8 +475,8 @@ public class EventFactory {
             return new LKMMLockRead(register, address);
         }
 
-        public static LKMMLockWrite newLockWrite(IExpr address) {
-            return new LKMMLockWrite(address);
+        public static LKMMLockWrite newLockWrite(Load lockRead, IExpr address) {
+            return new LKMMLockWrite(lockRead, address);
         }
 
         public static LKMMLock newLock(IExpr address) {
@@ -511,8 +519,8 @@ public class EventFactory {
         }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
-            store.addFilters(Tag.RISCV.STCOND, Tag.MATCHADDRESS);
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
+            store.addFilters(Tag.RISCV.STCOND);
             return store;
         }
 
@@ -583,13 +591,7 @@ public class EventFactory {
         }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong);
-            store.addFilters(Tag.MATCHADDRESS);
-            return store;
-        }
-
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
-            return Power.newRMWStoreConditional(address, value, mo, false);
+            return new RMWStoreExclusive(address, value, mo, isStrong, true);
         }
 
         public static Fence newISyncBarrier() {

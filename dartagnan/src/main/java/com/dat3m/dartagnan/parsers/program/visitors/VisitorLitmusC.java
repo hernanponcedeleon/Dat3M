@@ -20,12 +20,12 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-import static com.dat3m.dartagnan.program.event.Tag.*;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
+import static com.dat3m.dartagnan.program.event.Tag.C11;
 
 public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
@@ -207,7 +207,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
         CondJump jumpToEnd = EventFactory.newGoto(endL);
-        jumpToEnd.addFilters(Tag.IFI);
 		programBuilder.addChild(currentThread, jumpToEnd);
         
         programBuilder.addChild(currentThread, elseL);

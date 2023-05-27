@@ -6,7 +6,6 @@ import java.util.Arrays;
 
 public class RelationNameRepository {
 
-	public static final String POWITHLOCALEVENTS = "_po";
 	public static final String PO = "po";
 	public static final String LOC = "loc";
 	public static final String ID = "id";

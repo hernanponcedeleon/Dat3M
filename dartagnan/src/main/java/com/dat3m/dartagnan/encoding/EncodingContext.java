@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -8,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -108,12 +112,31 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
+    public Formula encodeFinalIntegerExpression(ExprInterface expression) {
+        return new ExpressionEncoder(formulaManager, null).encodeAsInteger(expression);
+    }
+
+    public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
+        return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
+    }
+
+    public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
+        if (expression instanceof MemoryObject && ((MemoryObject) expression).getAlias() != null) {
+            return new ExpressionEncoder(formulaManager, event).encodeAsInteger(((MemoryObject) expression).getAlias());
+        }
+        return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
+    }
+
+    public BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs) {
+        return ExpressionEncoder.encodeComparison(op, lhs, rhs, formulaManager);
+    }
+
     public BooleanFormula controlFlow(Event event) {
         return controlFlowVariables.get(event);
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return event.getGuard().toBoolFormula(event, formulaManager);
+        return encodeBooleanExpressionAt(event.getGuard(), event);
     }
 
     public BooleanFormula execution(Event event) {
@@ -253,10 +276,22 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            Formula r = e instanceof RegWriter ? ((RegWriter) e).getResultRegister().toIntFormulaResult(e, formulaManager) : null;
+            Formula r;
+            if (e instanceof RegWriter) {
+                Register register = ((RegWriter) e).getResultRegister();
+                String name = register.getName() + "(" + e.getGlobalId() + "_result)";
+                int precision = register.getPrecision();
+                if (precision > 0) {
+                    r = formulaManager.getBitvectorFormulaManager().makeVariable(precision, name);
+                } else {
+                    r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                }
+            } else {
+                r = null;
+            }
             if (e instanceof MemEvent) {
-                addresses.put(e, ((MemEvent) e).getAddress().toIntFormula(e, formulaManager));
-                values.put(e, e instanceof Load ? r : ((MemEvent) e).getMemValue().toIntFormula(e, formulaManager));
+                addresses.put(e, encodeIntegerExpressionAt(((MemEvent) e).getAddress(), e));
+                values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(((MemEvent) e).getMemValue(), e));
             }
             if (r != null) {
                 results.put(e, r);

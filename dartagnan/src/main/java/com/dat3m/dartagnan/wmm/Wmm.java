@@ -248,8 +248,6 @@ public class Wmm {
     private Definition basicDefinition(String name) {
         Relation r = newRelation(name);
         switch (name) {
-            case POWITHLOCALEVENTS:
-                return new ProgramOrder(r, FilterBasic.get(Tag.ANY));
             case PO:
                 return new ProgramOrder(r, FilterBasic.get(Tag.VISIBLE));
             case LOC:

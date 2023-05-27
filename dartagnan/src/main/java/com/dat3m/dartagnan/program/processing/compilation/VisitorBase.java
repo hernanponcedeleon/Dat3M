@@ -1,17 +1,25 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.BExprBin;
+import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag.C11;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.rmw.*;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
@@ -20,7 +28,6 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
@@ -63,18 +70,13 @@ class VisitorBase implements EventVisitor<List<Event>> {
     public List<Event> visitLock(Lock e) {
         Register resultRegister = e.getResultRegister();
 		String mo = e.getMo();
-		
-		List<Event> events = eventSequence(
-                newLoad(resultRegister, e.getAddress(), mo),
+
+		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
+		return eventSequence(
+                rmwLoad,
                 newJump(new Atom(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
-                newStore(e.getAddress(), IValue.ONE, mo)
+                newRMWStore(rmwLoad, e.getAddress(), IValue.ONE, mo)
         );
-        
-		for(Event child : events) {
-            child.addFilters(C11.LOCK, RMW);
-        }
-        
-		return events;
     }
     
     @Override
@@ -82,18 +84,13 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
-		
-		List<Event> events = eventSequence(
-                newLoad(resultRegister, address, mo),
+
+		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
+		return eventSequence(
+                rmwLoad,
                 newJump(new Atom(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
-                newStore(address, IValue.ZERO, mo)
+                newRMWStore(rmwLoad, address, IValue.ZERO, mo)
         );
-        
-		for(Event child : events) {
-            child.addFilters(C11.LOCK, RMW);
-        }
-        
-		return events;
 	}
 
 	@Override

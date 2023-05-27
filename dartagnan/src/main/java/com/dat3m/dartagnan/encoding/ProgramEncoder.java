@@ -82,7 +82,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeThreadCF(Thread thread) {
-        final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         Map<Label, Set<CondJump>> labelJumpMap = new HashMap<>();
@@ -93,7 +92,7 @@ public class ProgramEncoder implements Encoder {
             BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
             if (pred instanceof CondJump) {
                 CondJump jump = (CondJump) pred;
-                cfCond = bmgr.and(cfCond, bmgr.not(jump.getGuard().toBoolFormula(jump, fmgr)));
+                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
                 // NOTE: we need to register the actual jumps here, because the
                 // listener sets of labels is too large (it contains old copies)
                 labelJumpMap.computeIfAbsent(jump.getLabel(), key -> new HashSet<>()).add(jump);
@@ -117,18 +116,19 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding fixed memory");
         final Memory memory = context.getTask().getProgram().getMemory();
         final FormulaManager fmgr = context.getFormulaManager();
-        
+
+        // For all objects, their 'final' value fetched here represents their constant value.
         BooleanFormula[] addrExprs;
         if(getArchPrecision() > -1) {
         	final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             addrExprs = memory.getObjects().stream()
-                    .map(addr -> bvmgr.equal((BitvectorFormula)addr.toIntFormula(fmgr),
+                    .map(addr -> bvmgr.equal((BitvectorFormula) context.encodeFinalIntegerExpression(addr),
                     		bvmgr.makeBitvector(getArchPrecision(), addr.getValue().intValue())))
                     .toArray(BooleanFormula[]::new);        	
         } else {
             final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
             addrExprs = memory.getObjects().stream()
-                    .map(addr -> imgr.equal((IntegerFormula)addr.toIntFormula(fmgr),
+                    .map(addr -> imgr.equal((IntegerFormula) context.encodeFinalIntegerExpression(addr),
                     		imgr.makeNumber(addr.getValue().intValue())))
                     .toArray(BooleanFormula[]::new);        	
         }
@@ -144,13 +144,12 @@ public class ProgramEncoder implements Encoder {
      */
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
-        final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
         for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
             final Event reader = e.getKey();
             for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
-                final Formula value = r.getKey().toIntFormula(reader, fmgr);
+                final Formula value = context.encodeIntegerExpressionAt(r.getKey(), reader);
                 final Dependency.State state = r.getValue();
                 List<BooleanFormula> overwrite = new ArrayList<>();
                 for(Event writer : reverse(state.may)) {
@@ -191,8 +190,7 @@ public class ProgramEncoder implements Encoder {
     }
     
     public BooleanFormula encodeFinalRegisterValues() {
-        final FormulaManager fmgr = context.getFormulaManager();
-        final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
+        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         if (context.getTask().getProgram().getFormat() == Program.SourceLanguage.BOOGIE) {
             // Boogie does not have assertions over final register values, so we do not need to encode them.
             logger.info("Skipping encoding of final register values: C-Code has no assertions over those values.");
@@ -202,7 +200,7 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding final register values");
         List<BooleanFormula> enc = new ArrayList<>();
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
-            final Formula value = e.getKey().getLastValueExpr(fmgr);
+            final Formula value = context.encodeFinalIntegerExpression(e.getKey());
             final Dependency.State state = e.getValue();
             final List<Event> writers = state.may;
             if(initializeRegisters && !state.initialized) {

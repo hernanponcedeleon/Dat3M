@@ -34,17 +34,9 @@ public class RMWGraph extends MaterializedWMMGraph {
 
         for (List<EventData> events : model.getThreadEventsMap().values()) {
             EventData lastExclLoad = null;
-            for (int i = 0; i < events.size(); i++) {
-                EventData e = events.get(i);
+            for (EventData e : events) {
                 if (e.isRead()) {
-                    if (e.isLock()) {   // Locks ~ (Load -> CondJump -> Store)
-                        if (i + 1 < events.size()) {
-                            // The condition fails, if the lock was not obtained cause then
-                            // it will be the last event of the thread (we terminate on failed locks)
-                            EventData next = events.get(i + 1);
-                            simpleGraph.add(new Edge(e.getId(), next.getId()));
-                        }
-                    } else if (e.isExclusive()) {  // LoadExcl
+                    if (e.isExclusive()) {  // LoadExcl
                         lastExclLoad = e;
                     }
                 } else if (e.isWrite()) {

@@ -54,7 +54,7 @@ public class AnalysisTest {
         Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
         Register r2 = b.getOrCreateRegister(0, "r2", getArchPrecision());
         Label alt = b.getOrCreateLabel("alt");
-        b.addChild(0, newJump(new BNonDet(getArchPrecision()), alt));
+        b.addChild(0, newJump(new BNonDet(), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);

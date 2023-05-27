@@ -202,7 +202,7 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    Formula v2 = init.getBase().getLastMemValueExpr(fmgr, init.getOffset());
+                    Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
                     BooleanFormula other = bmgr.makeFalse();
                     // Coherence is not guaranteed to be total in all models (e.g., PTX),

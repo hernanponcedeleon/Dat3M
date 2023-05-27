@@ -17,7 +17,7 @@ public abstract class MemEvent extends Event {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
-        addFilters(ANY, VISIBLE, MEMORY);
+        addFilters(VISIBLE, MEMORY);
         if (!mo.isEmpty()) {
             addFilters(mo);
         }

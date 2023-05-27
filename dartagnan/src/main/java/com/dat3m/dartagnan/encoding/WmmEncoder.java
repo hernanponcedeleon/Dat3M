@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -35,7 +36,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Sets.difference;
 import static java.lang.Boolean.TRUE;
@@ -428,15 +428,13 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
             final Function<Event, Collection<Tuple>> mayIn = k.getMayIn();
             final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
-            for (Event store : program.getEvents()) {
-                if (!store.is(Tag.WRITE) || !store.is(Tag.EXCL)) {
-                    continue;
-                }
-                checkState(store instanceof MemEvent, "non-memory event participating in '" + rmw.getNameOrTerm() + "'");
+
+            // ----------  Encode matching for LL/SC-type RMWs ----------
+            for (RMWStoreExclusive store : program.getEvents(RMWStoreExclusive.class)) {
                 BooleanFormula storeExec = bmgr.makeFalse();
                 for (Tuple t : mayIn.apply(store)) {
                     MemEvent load = (MemEvent) t.getFirst();
-                    BooleanFormula sameAddress = context.sameAddress(load, (MemEvent) store);
+                    BooleanFormula sameAddress = context.sameAddress(load, store);
                     // Encode if load and store form an exclusive pair
                     BooleanFormula isPair = exclPair(load, store);
                     List<BooleanFormula> pairingCond = new ArrayList<>();
@@ -458,7 +456,7 @@ public class WmmEncoder implements Encoder {
                     // The implementation does not include all possible unpredictable cases: in case of address
                     // mismatch, addresses of read and write are unknown, i.e. read and write can use any address.
                     // For RISCV and Power, addresses should match.
-                    if (store.is(Tag.MATCHADDRESS)) {
+                    if (store.doesRequireMatchingAddresses()) {
                         pairingCond.add(sameAddress);
                     } else {
                         unpredictable = bmgr.or(unpredictable, bmgr.and(context.execution(store), isPair, bmgr.not(sameAddress)));
@@ -468,20 +466,27 @@ public class WmmEncoder implements Encoder {
                 }
                 enc.add(bmgr.implication(context.execution(store), storeExec));
             }
+
+            // ---------- Encode actual RMW relation ----------
             EncodingContext.EdgeEncoder edge = context.edge(rmw);
             for (Tuple tuple : encodeSets.get(rmw)) {
                 MemEvent load = (MemEvent) tuple.getFirst();
                 MemEvent store = (MemEvent) tuple.getSecond();
-                if (!load.is(Tag.EXCL) || !store.is(Tag.EXCL)) {
+                if (!load.is(Tag.EXCL) || !(store instanceof RMWStoreExclusive)) {
+                    // Non-LL/SC type RMWs always hold
                     enc.add(bmgr.equivalence(edge.encode(tuple), context.execution(load, store)));
-                    continue;
+                } else {
+                    RMWStoreExclusive exclStore = (RMWStoreExclusive)store;
+                    // Note that if the pair RMWStore requires matching addresses, then we do NOT(!)
+                    // add an address check, because the pairing condition already includes the address check.
+                    BooleanFormula sameAddress = exclStore.doesRequireMatchingAddresses() ?
+                            bmgr.makeTrue() : context.sameAddress(load, store);
+                    enc.add(bmgr.equivalence(
+                            edge.encode(tuple),
+                            k.containsMust(tuple) ? execution(tuple) :
+                                    // Relation between exclusive load and store
+                                    bmgr.and(context.execution(store), exclPair(load, store), sameAddress)));
                 }
-                BooleanFormula sameAddress = store.is(Tag.MATCHADDRESS) ? bmgr.makeTrue() : context.sameAddress(load, store);
-                enc.add(bmgr.equivalence(
-                        edge.encode(tuple),
-                        k.containsMust(tuple) ? execution(tuple) :
-                                // Relation between exclusive load and store
-                                bmgr.and(context.execution(store), exclPair(load, store), sameAddress)));
             }
             enc.add(bmgr.equivalence(Flag.ARM_UNPREDICTABLE_BEHAVIOUR.repr(context.getFormulaManager()), unpredictable));
             return null;
@@ -616,8 +621,8 @@ public class WmmEncoder implements Encoder {
                 } else {
                     IExpr id1 = e1.getFenceID();
                     IExpr id2 = e2.getFenceID();
-                    sameId = context.equal(id1.toIntFormula(e1, context.getFormulaManager()),
-                            id2.toIntFormula(e2, context.getFormulaManager()));
+                    sameId = context.equal(context.encodeIntegerExpressionAt(id1, e1),
+                            context.encodeIntegerExpressionAt(id2, e2));
                 }
                 enc.add(bmgr.equivalence(
                         encoder.encode(tuple),

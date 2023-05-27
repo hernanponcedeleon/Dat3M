@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import java.math.BigInteger;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.LastValueInterface;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.exception.ParsingException;
@@ -66,12 +66,12 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     @Override
     public AbstractAssert visitAssertionBasic(LitmusAssertionsParser.AssertionBasicContext ctx){
-        LastValueInterface expr1 = acceptAssertionValue(ctx.assertionValue(0),false);
-        LastValueInterface expr2 = acceptAssertionValue(ctx.assertionValue(1),true);
+        ExprInterface expr1 = acceptAssertionValue(ctx.assertionValue(0),false);
+        ExprInterface expr2 = acceptAssertionValue(ctx.assertionValue(1),true);
         return new AssertBasic(expr1, ctx.assertionCompare().op, expr2);
     }
 
-    private LastValueInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
+    private ExprInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
         if(ctx.constant() != null) {
             return new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
         }

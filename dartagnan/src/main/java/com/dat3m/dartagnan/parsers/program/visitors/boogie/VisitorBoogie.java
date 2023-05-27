@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
@@ -376,11 +375,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		}
 		if(name.contains("__VERIFIER_atomic_")) {
 			atomicMode = ctx;
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				SvcompProcedures.__VERIFIER_atomic(this, true);	
-			} else {
-				SvcompProcedures.__VERIFIER_atomic_begin(this);
-			}
+			SvcompProcedures.__VERIFIER_atomic_begin(this);
 		}
 		// TODO: double check this 
 		// Some procedures might have an empty implementation.
@@ -404,12 +399,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		visitProc_decl(procedures.get(name), false, callingValues);
 		if(ctx.equals(atomicMode)) {
 			atomicMode = null;
-			if(GlobalSettings.ATOMIC_AS_LOCK) {
-				SvcompProcedures.__VERIFIER_atomic(this, false);	
-			} else {
-				SvcompProcedures.__VERIFIER_atomic_end(this);
-			}
-			
+			SvcompProcedures.__VERIFIER_atomic_end(this);
 		}
 		programBuilder.addChild(threadCount, EventFactory.newFunctionReturn(name))
 				.setCFileInformation(currentLine, sourceCodeFile);

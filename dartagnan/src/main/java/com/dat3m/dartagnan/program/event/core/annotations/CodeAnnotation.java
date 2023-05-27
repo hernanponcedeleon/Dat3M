@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core.annotations;
 
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -12,7 +11,6 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 public abstract class CodeAnnotation extends Event {
 
     public CodeAnnotation() {
-        addFilters(Tag.ANY, Tag.ANNOTATION);
     }
 
     protected CodeAnnotation(CodeAnnotation other) {

@@ -14,7 +14,6 @@ public class Label extends Event {
     public Label(String name){
         this.name = name;
         this.jumpSet = new HashSet<>();
-        addFilters(Tag.ANY, Tag.LABEL);
     }
 
     protected Label(Label other){

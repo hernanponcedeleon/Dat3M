@@ -81,7 +81,7 @@ public class VisitorLKMM extends VisitorBase {
         Label end = newLabel("RMW_end");
         Load rmwLoad;
         return eventSequence(
-                newJump(new BNonDet(resultRegister.getPrecision()), success),
+                newJump(new BNonDet(), success),
                     newLoad(dummy, address, Tag.Linux.MO_ONCE),
                     newAssume(new Atom(dummy, EQ, cmp)),
                     newGoto(end),
@@ -109,7 +109,7 @@ public class VisitorLKMM extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         Load casLoad;
         return eventSequence(
-                newJump(new BNonDet(resultRegister.getPrecision()), success),
+                newJump(new BNonDet(), success),
                     newLoad(dummy, address, Tag.Linux.MO_ONCE),
                     newAssume(new Atom(dummy, NEQ, cmp)),
                     newGoto(end),
@@ -224,13 +224,14 @@ public class VisitorLKMM extends VisitorBase {
 	public List<Event> visitLKMMLock(LKMMLock e) {
 		Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
+        Load lockRead = Linux.newLockRead(dummy, e.getLock());
 		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
 				newAssume(new Atom(dummy, EQ, IValue.ZERO)) :
 				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit());
 		return eventSequence(
-                Linux.newLockRead(dummy, e.getLock()),
+                lockRead,
                 middle,
-                Linux.newLockWrite(e.getLock())
+                Linux.newLockWrite(lockRead, e.getLock())
         );
 	}
 }
