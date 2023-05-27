@@ -24,9 +24,6 @@ public class ScopedThread extends Thread {
     }
 
     public int getScopeIds(String scope) {
-        if (!this.scopeIds.containsKey(scope)) {
-            return -1;
-        }
-        return this.scopeIds.get(scope);
+        return scopeIds.getOrDefault(scope, -1);
     }
 }

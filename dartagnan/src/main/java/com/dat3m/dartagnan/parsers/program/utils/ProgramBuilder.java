@@ -216,6 +216,7 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
+    
     public void initScopedThread(String name, int id, int ctaID, int gpuID) {
         if(!threads.containsKey(id)){
             Skip threadEntry = EventFactory.newSkip();
