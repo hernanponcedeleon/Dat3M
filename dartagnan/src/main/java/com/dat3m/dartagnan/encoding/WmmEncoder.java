@@ -610,6 +610,7 @@ public class WmmEncoder implements Encoder {
                 FenceWithId e1 = (FenceWithId) tuple.getFirst();
                 FenceWithId e2 = (FenceWithId) tuple.getSecond();
                 BooleanFormula sameId;
+                // If they are in must, they are guaranteed to have the same id
                 if (k.containsMust(tuple)) {
                     sameId = bmgr.makeTrue();
                 } else {
