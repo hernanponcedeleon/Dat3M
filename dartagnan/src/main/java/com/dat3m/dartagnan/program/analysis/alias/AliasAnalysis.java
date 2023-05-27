@@ -42,7 +42,14 @@ public interface AliasAnalysis {
         return a;
     }
 
+    // GPU memory models make use of virtual addresses.
     // This models same_alias_r from the PTX Alloy model
+    // There are 4 cases to consider ("alias" below refers to the syntax  
+    // used when allocating memory in the preamble of the litmus test).
+    // (1) - both addresses are virtual: they should both alias to the same physical address
+    // (2,3) - one virtual, one physical: the virtual should alias to the physical one
+    // (4) - both addresses are physical: the traditional alias analysis handles this
+
     static boolean virtuallyAlias(MemEvent e1, MemEvent e2) {
         // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias, 
         // then `x + offset` and `y + offset` should too
@@ -54,22 +61,26 @@ public interface AliasAnalysis {
         boolean isAdd1Virtual = add1.isVirtual();
         boolean isAdd2Virtual = add2.isVirtual();
         if (isAdd1Virtual && isAdd2Virtual) {
+            // Case (1)
             // Virtual addresses always have an alias
             assert(add1.getAlias() != null);
             assert(add2.getAlias() != null);
             // add1, add2 should virtually alias to the same physical Address
             return (add1.getAlias().equals(add2.getAlias()));
         } else if (!isAdd1Virtual && isAdd2Virtual) {
+            // Case (2)
             // Virtual addresses always have an alias
             assert(add2.getAlias() != null);
             // add2 should virtually alias to physical add1
             return add1 == add2.getAlias();
         } else if (isAdd1Virtual && !isAdd2Virtual) {
+            // Case (3)
             // Virtual addresses always have an alias
             assert(add1.getAlias() != null);
             // add1 should virtually alias to physical add2
             return add1.getAlias() == add2;
         } else {
+            // Case (4)
             // The normal AliasAnalysis handles the case where both addresses are physical 
             return false;
         }
