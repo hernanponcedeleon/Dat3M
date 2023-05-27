@@ -9,6 +9,7 @@ import java.util.HashMap;
 public class ScopedThread extends Thread {
 
     protected final HashMap<String, Integer> scopeIds = new HashMap<>();
+    // There is a hierarchy of scopes, thus order is important
     protected final ArrayList<String> scopes = new ArrayList<>();
 
     public ScopedThread(String name, int id, Event entry) {

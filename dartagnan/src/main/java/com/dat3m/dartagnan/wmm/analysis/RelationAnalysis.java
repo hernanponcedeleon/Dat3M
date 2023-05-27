@@ -953,23 +953,6 @@ public class RelationAnalysis {
             return new Knowledge(must, new HashSet<>(must));
         }
 
-        private boolean mustSameScope(Event first, Event second, String specificScope) {
-            if (specificScope != null) { // scope specified
-                return sameHigherScope(first, second, specificScope);
-            }
-            // if scope not specified, use valid scope
-            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
-            String firstScope = getValidScope(first, scopes);
-            String secondScope = getValidScope(second, scopes);
-            if (firstScope == null || secondScope == null) {
-                return false; // proxy fence
-            }
-            if (!firstScope.equals(secondScope)) {
-                return false;
-            }
-            return sameHigherScope(first, second, firstScope);
-        }
-
         private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
@@ -1010,6 +993,21 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
+        private boolean mustSameScope(Event first, Event second, String specificScope) {
+            if (specificScope != null) { // scope specified
+                return sameHigherScope(first, second, specificScope);
+            }
+            // if scope not specified, use valid scope
+            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
+            String firstScope = getValidScope(first, scopes);
+            String secondScope = getValidScope(second, scopes);
+            if (firstScope == null || secondScope == null // proxy fence
+                    || !firstScope.equals(secondScope)) {
+                return false;
+            }
+            return sameHigherScope(first, second, firstScope);
+        }
+
         private boolean sameHigherScope(Event first, Event second, String flag) {
             ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
             int validIndex = scopes.indexOf(flag);
@@ -1024,8 +1022,7 @@ public class RelationAnalysis {
         }
 
         private String getValidScope(Event event, ArrayList<String> scopes) {
-            Optional<String> scope = scopes.stream().filter(event::is).findFirst();
-            return scope.orElse(null);
+            return scopes.stream().filter(event::is).findFirst().orElse(null);
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {
