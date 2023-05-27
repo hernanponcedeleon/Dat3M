@@ -4,13 +4,14 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class ScopedThread extends Thread {
 
-    protected final HashMap<String, Integer> scopeIds = new HashMap<>();
-    // There is a hierarchy of scopes, thus order is important
-    protected final ArrayList<String> scopes = new ArrayList<>();
+    // There is a hierarchy of scopes, the order of keys
+    // is important, thus we use a LinkedHashMapeMap
+    protected final Map<String, Integer> scopeIds = new LinkedHashMap<>();
 
     public ScopedThread(String name, int id, Event entry) {
         super(name, id, entry);
@@ -21,7 +22,7 @@ public class ScopedThread extends Thread {
     }
 
     public ArrayList<String> getScopes() {
-        return scopes;
+        return new ArrayList<>(scopeIds.keySet());
     }
 
     public int getScopeIds(String scope) {
