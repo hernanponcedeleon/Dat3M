@@ -1,0 +1,12 @@
+PTX SB-strong
+"Fence-sc needed to prevent SB"
+{
+P0:r1=0;
+x=0;
+y=0;
+}
+ P0@cta 0,gpu 0 		| P1@cta 1,gpu 0		;
+ ld.acquire.sys r1, x   | st.release.sys y, 4	;
+ st.release.sys y, 3	| st.relaxed.sys x, 5	;
+exists
+(P0:r1 == 5 /\ y == 4)

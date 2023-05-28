@@ -1,0 +1,14 @@
+PTX Proxy-Const-CoRR-cause1
+"CoRR example with a constant proxy fence, st(to rd1) and the cold instructions follow the proxy_preserved_cause_base relation"
+"constant fence po before the cold so the cold is guaranteed to rf the weak store if the acquire load rf the release st"
+{
+rd1 = 0;
+rd2 @ generic aliases rd1;
+P0:r0=0;
+}
+ P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                   ;
+ st.weak rd1, 42                  |ld.acquire.cta r5, rd4           ;
+ st.release.cta rd4, 1            |fence.proxy.constant             ;
+                                  |cold.weak r3, rd2                ;
+~exists
+(P1:r5 == 1 /\ P1:r3 != 42)

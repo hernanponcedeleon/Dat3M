@@ -1,0 +1,19 @@
+PTX Proxy-MP-Alias+diffProxy-aliasFence+proxyFence-correctThread1
+"MP is guaranteed because the aliasFence and proxyFence are in the correct thread"
+"alias fence synchronize x to y, then surface fence synchronize y to s, so s could rf x"
+{
+x = 0;
+y @ generic aliases x;
+c @ surface aliases x;
+s @ surface aliases y;
+t @ texture aliases y;
+flag = 0;
+P1:r0=0;
+P1:r1=0;
+}
+ P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                    ;
+ st.weak x, 2                     |ld.acquire.gpu r0, flag           ;
+ fence.proxy.alias                |fence.proxy.surface               ;
+ st.release.gpu flag, 1           |suld.weak r1, s                   ;
+~exists
+(P1:r0 == 1 /\ P1:r1 != 2)

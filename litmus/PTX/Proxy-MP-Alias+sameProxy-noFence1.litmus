@@ -1,0 +1,18 @@
+PTX Proxy-MP-Alias+sameProxy-noFence1
+"MP is not guaranteed although they are with the same proxy because x and y are not synchrnoized"
+{
+x = 0;
+y @ generic aliases x;
+c @ surface aliases x;
+s @ surface aliases y;
+t @ texture aliases y;
+flag = 0;
+P1:r0=0;
+P1:r1=0;
+}
+ P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                    ;
+ sust.weak c, 2                   |ld.acquire.gpu r0, flag           ;
+                                  |                                  ;
+ st.release.gpu flag, 1           |suld.weak r1, s                   ;
+exists
+(P1:r0 == 1 /\ P1:r1 != 2)

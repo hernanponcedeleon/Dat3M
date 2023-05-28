@@ -1,5 +1,5 @@
 PTX _Atom-minus-location
-"RMW minus"
+"RMW minus op"
 {
 P0:r0=0;
 P1:r0=0;

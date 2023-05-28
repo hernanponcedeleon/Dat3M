@@ -1,0 +1,14 @@
+PTX Proxy-SingleThread-rf-surW-texF-texR
+"rf over different non-generic proxies with single proxy fence is not enough, the result will not be guaranteed"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ fence.proxy.texture              ;
+ tld.weak r0, t                   ;
+exists
+(P0:r0 != 1)

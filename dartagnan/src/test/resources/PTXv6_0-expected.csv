@@ -9,8 +9,8 @@ litmus/PTX/Cause-base-weak.litmus,1
 litmus/PTX/Co-Total-3-threads-scope-diff.litmus,1
 litmus/PTX/Co-Total-3-threads-scope-same.litmus,1
 litmus/PTX/Co-Total-4-threads.litmus,1
-litmus/PTX/Co-Total-strong_.litmus,1
-litmus/PTX/Co-Total-weak.litmus,1
+litmus/PTX/SB-strong.litmus,1
+litmus/PTX/SB-weak.litmus,1
 litmus/PTX/CoRR-acquire-weak.litmus,1
 litmus/PTX/CoRR-relaxed-acquire-weak.litmus,1
 litmus/PTX/CoRR-weak-acquire-weak.litmus,1
@@ -26,7 +26,7 @@ litmus/PTX/LB+NoThinAir-location_.litmus,1
 litmus/PTX/LB+NoThinAir-register.litmus,1
 litmus/PTX/MP-cta.litmus,1
 litmus/PTX/MP-gpu.litmus,1
-litmus/PTX/MP-sys-gpu.litmus,1
+litmus/PTX/MP-relaxed.litmus,1
 litmus/PTX/MP-sys.litmus,1
 litmus/PTX/Red-minus-location_.litmus,1
 litmus/PTX/Red-plus-location_.litmus,1
