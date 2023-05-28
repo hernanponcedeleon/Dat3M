@@ -81,6 +81,10 @@ public class MemoryAllocation implements ProgramProcessor {
 
         int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
+            // We do not create Init events for virtual addresses
+            if(memObj.isVirtual()) {
+                continue;
+            }
             // The last case "heuristically checks" if Smack generated initialization or not:
             // we expect at least every 8 bytes to be initialized.
             final boolean isStaticallyInitialized = !isLitmus
