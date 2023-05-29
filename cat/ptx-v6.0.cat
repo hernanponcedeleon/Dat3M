@@ -5,6 +5,12 @@ PTX
 // sr: same-scope
 // sync_barrier: synchronize by barriers with same logical barrier resource (barID)
 
+// Scope Tags:
+// CTA: Cooperative thread array, is an array of threads that execute a kernel concurrently or in parallel.
+//      The CTA scope is the set of all threads executing in the same CTA as the current thread.
+// GPU: Graphics processing unit. The GPU scope is the set of all threads executing in the same cluster as the current thread.
+// SYS: System. The SYS scope is the set of all threads in the current program.
+
 (*******************)
 (*   Auxiliaries   *)
 (*******************)
@@ -32,8 +38,8 @@ let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po;
 
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
-let sw = (morally-strong & (release-pattern; observation; acquire-pattern)) | fence-sc | sync_barrier
-let cause-base = (po?; sw; po?)+
+let sync = (morally-strong & (release-pattern; observation; acquire-pattern))
+let cause-base = (po*; ((sync | fence-sc | sync_barrier); po*)+)
 let cause = cause-base | (observation; (cause-base | po-loc))
 
 (******************************)

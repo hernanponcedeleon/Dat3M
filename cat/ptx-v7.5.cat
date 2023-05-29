@@ -2,9 +2,22 @@ PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 7.5 *)
 
 // Base relations:
+// alias: virtual address aliases mapping to the same physical address
 // sr: same-scope
 // scta: same-cta
 // sync_barrier: synchronize by barriers with same logical barrier resource (barID)
+
+// Scope Tags:
+// CTA: Cooperative thread array, is an array of threads that execute a kernel concurrently or in parallel.
+//      The CTA scope is the set of all threads executing in the same CTA as the current thread.
+// GPU: Graphics processing unit. The GPU scope is the set of all threads executing in the same cluster as the current thread.
+// SYS: System. The SYS scope is the set of all threads in the current program.
+
+// Proxy Tags:
+// GEN: Generic memory space, this is the memory space that proxy-less PTX memory model(ptx-v6.0) applies to.
+// SUR: Surface memory, used by graphics workloads
+// TEX: Texture memory, used by graphics workloads
+// CON: Constant memory, is a small, distinct address space reserved to hold fixed values.
 
 // Comparing to the ptx-v7.5 model written in Alloy (https://github.com/NVlabs/mixedproxy)
 // The ptx-v7.5 alloy model uses this Causality-axiom "irreflexive ((rf | co | fr)?; cause)".
