@@ -3,8 +3,8 @@ PTX Proxy-MP-Alias+sameProxy-noFence
 {
 x = 0;
 y @ generic aliases x;
-c @ surface aliases x;
-s @ surface aliases y;
+s @ surface aliases x;
+s1 @ surface aliases y;
 t @ texture aliases y;
 flag = 0;
 P1:r0=0;

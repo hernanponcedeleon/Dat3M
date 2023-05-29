@@ -1,6 +1,6 @@
 PTX Proxy-Const-MP-cause1
 "MP example with a constant proxy fence, st(to rd1) and the cold instructions follow the proxy_preserved_cause_base relation"
-"The constant-fence along the base causality path from the weak st to the cold, hence rf is guaranteed"
+"The constant fence along the base causality path from the weak st to the cold, hence rf is guaranteed"
 {
 rd1 = 0;
 rd2 @ generic aliases rd1;
