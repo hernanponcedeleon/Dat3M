@@ -1,6 +1,6 @@
-PTX Proxy-Const-CoRR-cause2
-"CoRR example with a constant proxy fence, st(to rd1) and the cold instructions follow the proxy_preserved_cause_base relation"
-"constant fence po after the weak store so the cold is guaranteed to rf the store if the acquire load rf the release st"
+PTX Proxy-Const-MP-cause2
+"MP example with a constant proxy fence, st(to rd1) and the cold instructions follow the proxy_preserved_cause_base relation"
+"The constant-fence along the base causality path from the weak st to the cold, hence rf is guaranteed"
 {
 rd1 = 0;
 rd2 @ generic aliases rd1;

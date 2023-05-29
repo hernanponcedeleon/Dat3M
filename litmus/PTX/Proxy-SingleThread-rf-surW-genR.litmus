@@ -1,5 +1,5 @@
 PTX Proxy-SingleThread-rf-surW-genR
-"rf over different proxies without proxy fence, the result will not be guaranteed"
+"The rf over different proxies without proxy fence, the result will not be guaranteed"
 {
 x = 0;
 t @ texture aliases x;

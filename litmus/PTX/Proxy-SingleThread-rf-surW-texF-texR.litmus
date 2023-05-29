@@ -1,5 +1,5 @@
 PTX Proxy-SingleThread-rf-surW-texF-texR
-"rf over different non-generic proxies with single proxy fence is not enough, the result will not be guaranteed"
+"The rf over different non-generic proxies with single proxy fence is not enough, the result will not be guaranteed"
 {
 x = 0;
 t @ texture aliases x;

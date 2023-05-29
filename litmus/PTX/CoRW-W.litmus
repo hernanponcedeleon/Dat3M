@@ -1,5 +1,5 @@
-PTX SB-strong
-"Fence-sc needed to prevent SB"
+PTX CoRW-W
+"Coherence, Read-Write"
 {
 P0:r1=0;
 x=0;

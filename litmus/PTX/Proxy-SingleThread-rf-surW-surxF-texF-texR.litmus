@@ -1,6 +1,6 @@
 PTX Proxy-SingleThread-rf-surW-surxF-texF-texR
-"rf over different non-generic proxies with both proxy fences in correct order are enough, the result will be guaranteed"
-"the generic memory is synchronize with surface cache by surface fence, then texture fence synchronize the data from generic memory to texture cache. Hence the tld is guaranteed to rf sust"
+"The rf over different non-generic proxies with both proxy fences in correct order are enough, the result will be guaranteed"
+"The generic memory is synchronize with surface cache by surface fence, then texture fence synchronize the data from generic memory to texture cache. Hence the tld is guaranteed to rf sust"
 {
 x = 0;
 t @ texture aliases x;

@@ -1,5 +1,5 @@
 PTX Proxy-MP-sur-tex-surF-texF-correctOrder1
-"the generic memory is synchronize with surface cache by surface fence, then texture fence synchronize the data from generic memory to texture cache. Hence the tld is guaranteed to rf sust"
+"The generic memory is synchronize with surface cache by surface fence, then texture fence synchronize the data from generic memory to texture cache. Hence the tld is guaranteed to rf sust"
 {
 x = 0;
 t @ texture aliases x;

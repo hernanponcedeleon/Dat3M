@@ -1,4 +1,4 @@
-PTX Proxy-Const-CoRR-cause-different-cta
+PTX Proxy-Const-MP-cause-different-cta
 "The proxy fence only has effect inside the cta, so the proxy_preserved_cause_base do not hold between the weak st and cold"
 {
 rd1 = 0;

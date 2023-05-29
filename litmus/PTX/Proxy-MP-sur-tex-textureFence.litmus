@@ -1,6 +1,6 @@
 PTX Proxy-MP-sur-tex-textureFence
 "MP is not guaranteed because single surface fence is not enough synchronize surface and texture operation"
-"no matter texture fence is in either side"
+"No matter texture fence is in either side"
 {
 x = 0;
 t @ texture aliases x;

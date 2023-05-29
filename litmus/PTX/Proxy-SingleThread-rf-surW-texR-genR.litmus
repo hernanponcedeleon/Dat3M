@@ -1,5 +1,5 @@
 PTX Proxy-SingleThread-rf-surW-texR-genR
-"A single thread example showing alias proxy fence usage"
+"The rf from surface cache to generic memory with irrelevant(texture) proxy fence, the result will not be guaranteed"
 {
 x = 0;
 t @ texture aliases x;

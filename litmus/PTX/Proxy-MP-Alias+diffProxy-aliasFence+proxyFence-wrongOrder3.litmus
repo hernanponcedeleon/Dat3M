@@ -1,6 +1,6 @@
 PTX Proxy-MP-Alias+diffProxy-aliasFence+proxyFence-wrongOrder3
 "MP is not guaranteed because the aliasFence and proxyFence are not in the correct order"
-"surface cache is synchronized to generic memory, then alias fence synchronize x to y, so the s cannot rf x"
+"The surface cache is synchronized to generic memory, then alias fence synchronize x to y, so the s cannot rf x"
 {
 x = 0;
 y @ generic aliases x;

@@ -1,6 +1,6 @@
 PTX Proxy-MP-Alias+diffProxy-aliasFence+proxyFence-correctOrder
 "MP is guaranteed because the aliasFence and proxyFence are in the correct order"
-"surface fence synchronize c to x, then alias fence synchronize x to y, so y could rf c"
+"The surface-fence synchronize c to x, then the alias-fence synchronize x to y, so y could rf c"
 {
 x = 0;
 y @ generic aliases x;
