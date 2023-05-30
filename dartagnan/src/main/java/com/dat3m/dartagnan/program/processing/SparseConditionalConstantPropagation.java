@@ -166,7 +166,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Void visitCondJump(CondJump e) {
-            e.setGuard((BExpr) e.getGuard().visit(propagator));
+            e.setGuard(e.getGuard().visit(propagator));
             return null;
         }
 

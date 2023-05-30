@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExpr;
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -72,7 +72,7 @@ public class Simplifier implements ProgramProcessor {
     private boolean simplifyJump(CondJump jump) {
         final Label jumpTarget = jump.getLabel();
         final Event successor = jump.getSuccessor();
-        final BExpr guard = jump.getGuard();
+        final ExprInterface guard = jump.getGuard();
         if(jumpTarget.equals(successor) && guard instanceof BConst) {
             jump.delete();
             return true;

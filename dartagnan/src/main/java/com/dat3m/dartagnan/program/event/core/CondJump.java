@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.BExpr;
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -15,11 +17,13 @@ import java.util.Set;
 public class CondJump extends AbstractEvent implements RegReader {
 
     private Label label;
-    private BExpr guard;
+    private ExprInterface guard;
 
-    public CondJump(BExpr guard, Label label){
+    public CondJump(ExprInterface guard, Label label) {
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
     	Preconditions.checkNotNull(guard, "CondJump event requires non null expression");
+        Preconditions.checkArgument(guard.getType() instanceof BooleanType,
+                "CondJump event with non-boolean guard %s.", guard);
         this.label = label;
         this.label.getJumpSet().add(this);
         this.thread = label.getThread();
@@ -34,18 +38,21 @@ public class CondJump extends AbstractEvent implements RegReader {
     }
     
     public boolean isGoto() {
-    	return guard.isTrue();
+    	return guard instanceof BConst constant && constant.getValue();
     }
-    public boolean isDead() {return guard.isFalse(); }
+
+    public boolean isDead() {
+        return guard instanceof BConst constant && !constant.getValue();
+    }
     
     public Label getLabel(){
         return label;
     }
 
-    public BExpr getGuard(){
+    public ExprInterface getGuard() {
         return guard;
     }
-    public void setGuard(BExpr guard){
+    public void setGuard(ExprInterface guard) {
         this.guard = guard;
     }
 
