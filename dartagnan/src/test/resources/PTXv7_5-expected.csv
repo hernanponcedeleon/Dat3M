@@ -103,6 +103,8 @@ litmus/PTX/SB+bar-reg-const-equal.litmus,1
 litmus/PTX/SB+bar-reg-diff.litmus,0
 litmus/PTX/SB+bar-reg-equal.litmus,1
 litmus/PTX/SB+sc-cta.litmus,1
+litmus/PTX/SB+sc-cta-outScope.litmus,1
 litmus/PTX/SB+sc-gpu.litmus,1
+litmus/PTX/SB+sc-gpu-multiFence.litmus,1
 litmus/PTX/SB+sc-sys.litmus,1
 litmus/PTX/SB-weak.litmus,1
