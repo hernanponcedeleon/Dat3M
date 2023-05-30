@@ -87,6 +87,7 @@ empty (cause-write \ co) as axiom-Coherence
 (* Axiom 2 FenceSC *)
 // This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
 empty (([F & SC]; cause; [F & SC]) \ sync_fence) as axiom-FenceSC
+acyclic sync_fence as axiom-FenceSC-Acyclic
 
 (* Axiom 3 Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity

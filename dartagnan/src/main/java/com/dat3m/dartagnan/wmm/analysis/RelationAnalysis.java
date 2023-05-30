@@ -930,16 +930,16 @@ public class RelationAnalysis {
 
         @Override
         public Knowledge visitSyncFence(Relation sync_fen) {
-            Set<Tuple> must = new HashSet<>();
+            Set<Tuple> may = new HashSet<>();
             List<Fence> fenceEvents = program.getEvents(Fence.class);
             for (Fence e1 : fenceEvents) {
                 for (Fence e2 : fenceEvents) {
                     if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
+                        may.add(new Tuple(e1, e2));
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(may, EMPTY_SET);
         }
 
         @Override

@@ -39,7 +39,7 @@ let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po;
 let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
 let sync = (morally-strong & (release-pattern; observation; acquire-pattern))
-let cause-base = (po*; ((sync | sync_fence | sync_barrier); po*)+)
+let cause-base = (po?; ((sync | sync_fence | sync_barrier); po?)+)
 let cause = cause-base | (observation; (cause-base | po-loc))
 
 (******************************)
@@ -47,12 +47,13 @@ let cause = cause-base | (observation; (cause-base | po-loc))
 (******************************)
 
 (* Axiom 1 Coherence *)
-let cause-write = ([W]; cause ; [W]) & loc
+let cause-write = ([W]; cause; [W]) & loc
 empty (cause-write \ co) as axiom-Coherence
 
 (* Axiom 2 FenceSC *)
 // This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
-empty ([F & SC] ; cause; [F & SC] \ sync_fence) as axiom-FenceSC
+empty (([F & SC]; cause; [F & SC]) \ sync_fence) as axiom-FenceSC
+acyclic (sync_fence) as axiom-FenceSC-Acyclic
 
 (* Axiom 3 Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
