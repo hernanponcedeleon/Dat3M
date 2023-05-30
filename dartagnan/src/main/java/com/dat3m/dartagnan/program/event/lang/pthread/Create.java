@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -12,8 +13,8 @@ public class Create extends Store {
 
 	private final String routine;
 	
-    public Create(IExpr address, String routine) {
-    	super(address, IValue.ONE, MO_SC);
+    public Create(ExprInterface address, String routine) {
+        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()), MO_SC);
         this.routine = routine;
         addTags(Tag.C11.PTHREAD);
     }

@@ -1,10 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
@@ -33,7 +29,7 @@ public class LlvmFunctions {
 			"$and.",
 			"$nand.");
 	
-	public static Object llvmFunction(String name, List<Object> callParams) {
+	public static Object llvmFunction(String name, List<Object> callParams, ExpressionFactory factory) {
 		IOpBin op = null; 
 		if(name.startsWith("$add.")) {
 			op = PLUS;
@@ -65,7 +61,7 @@ public class LlvmFunctions {
 				if (c.getValueAsInt() == 0) {
 					return callParams.get(0);
 				} else if (c.getValueAsInt() == 1) {
-					return new BExprUn(BOpUn.NOT, (ExprInterface) callParams.get(0));
+					return factory.makeUnary(BOpUn.NOT, (ExprInterface) callParams.get(0));
 				}
 			}
 			op = XOR;
@@ -77,6 +73,6 @@ public class LlvmFunctions {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return new IExprBin((IExpr)callParams.get(0), op, (IExpr)callParams.get(1));
+		return factory.makeBinary((IExpr)callParams.get(0), op, (IExpr)callParams.get(1));
 	}
 }

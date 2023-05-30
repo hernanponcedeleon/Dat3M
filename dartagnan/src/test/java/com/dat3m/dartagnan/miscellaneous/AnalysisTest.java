@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.BNonDet;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
@@ -27,16 +29,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.expression.IValue.ONE;
-import static com.dat3m.dartagnan.expression.IValue.ZERO;
-import static com.dat3m.dartagnan.expression.op.COpBin.GT;
-import static com.dat3m.dartagnan.expression.op.COpBin.LT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static org.junit.Assert.*;
 
@@ -49,14 +44,15 @@ public class AnalysisTest {
     private static final Result MUST = Result.MUST;
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
-        Register r2 = b.getOrCreateRegister(0, "r2", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Register r2 = b.getOrNewRegister(0, "r2");
         Label alt = b.getOrCreateLabel("alt");
         b.addChild(0, newJump(new BNonDet(), alt));
         Local e0 = newLocal(r0, value(1));
@@ -122,7 +118,7 @@ public class AnalysisTest {
         MemoryObject y = b.getOrNewObject("y");
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
         b.addChild(0, newLocal(r0, mult(x, 1)));
@@ -171,7 +167,7 @@ public class AnalysisTest {
         b.initThread(0);
         Store e0 = newStore(plus(x, 1));
         b.addChild(0, e0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = newLoad(r0, x);
         b.addChild(0, e1);
         Store e2 = newStore(r0);
@@ -209,22 +205,27 @@ public class AnalysisTest {
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        IntegerType type = types.getArchType();
         MemoryObject x = b.newObject("x", 3);
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        b.addChild(0, newLocal(r0, b.newConstant(types.getArchType(), true)));
+        Register r0 = b.getOrNewRegister(0, "r0");
+        b.addChild(0, newLocal(r0, b.newConstant(type, true)));
         Label l0 = b.getOrCreateLabel("l0");
-        b.addChild(0, newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
+        b.addChild(0, newJump(expressions.makeOr(
+                expressions.makeGreater(r0, expressions.makeOne(type), true),
+                expressions.makeLess(r0, expressions.makeZero(type), true)), l0));
         Store e0 = newStore(x);
         b.addChild(0, e0);
         Store e1 = newStore(plus(x, 1));
         b.addChild(0, e1);
         Store e2 = newStore(plus(x, 2));
         b.addChild(0, e2);
-        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
-        b.addChild(0, newLocal(r1, ZERO));
-        Store e3 = newStore(new IExprBin(new IExprBin(x, PLUS, mult(r0, 2)), PLUS, mult(r1, 4)));
+        Register r1 = b.getOrNewRegister(0, "r1");
+        b.addChild(0, newLocal(r1, expressions.makeZero(type)));
+        Store e3 = newStore(expressions.makePlus(
+                expressions.makePlus(x, mult(r0, 2)),
+                mult(r1, 4)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
@@ -262,7 +263,7 @@ public class AnalysisTest {
         x.setInitialValue(0, x);
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = newLoad(r0, x);
         b.addChild(0, e0);
         Store e1 = newStore(x, plus(r0, 1));
@@ -307,7 +308,7 @@ public class AnalysisTest {
         MemoryObject z = b.getOrNewObject("z");
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, mult(x, 0)));
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
@@ -351,7 +352,7 @@ public class AnalysisTest {
         MemoryObject z = b.getOrNewObject("z");
 
         b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
@@ -378,28 +379,28 @@ public class AnalysisTest {
         assertAlias(expect[5], a, me2, me3);
     }
 
-    private Load newLoad(Register value, IExpr address) {
+    private Load newLoad(Register value, ExprInterface address) {
         return EventFactory.newLoad(value, address, "");
     }
 
-    private Store newStore(IExpr address) {
-        return newStore(address, ZERO);
+    private Store newStore(ExprInterface address) {
+        return newStore(address, expressions.makeZero(types.getArchType()));
     }
 
-    private Store newStore(IExpr address, IExpr value) {
+    private Store newStore(ExprInterface address, ExprInterface value) {
         return EventFactory.newStore(address, value, "");
     }
 
-    private IValue value(long v) {
-        return new IValue(BigInteger.valueOf(v), getArchPrecision());
+    private ExprInterface value(long v) {
+        return expressions.makeValue(BigInteger.valueOf(v), types.getArchType());
     }
 
-    private IExpr plus(IExpr lhs, long rhs) {
-        return new IExprBin(lhs, PLUS, value(rhs));
+    private ExprInterface plus(ExprInterface lhs, long rhs) {
+        return expressions.makePlus(lhs, value(rhs));
     }
 
-    private IExpr mult(IExpr lhs, long rhs) {
-        return new IExprBin(lhs, MULT, value(rhs));
+    private ExprInterface mult(ExprInterface lhs, long rhs) {
+        return expressions.makeMultiply(lhs, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {

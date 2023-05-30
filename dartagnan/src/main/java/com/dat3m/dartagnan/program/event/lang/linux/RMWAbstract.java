@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -16,7 +15,7 @@ public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWrit
     protected final Register resultRegister;
     protected ExprInterface value;
 
-    RMWAbstract(IExpr address, Register register, ExprInterface value, String mo) {
+    RMWAbstract(ExprInterface address, Register register, ExprInterface value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;

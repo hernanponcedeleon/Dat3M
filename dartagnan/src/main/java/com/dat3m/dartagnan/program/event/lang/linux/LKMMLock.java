@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class LKMMLock extends AbstractMemoryEvent {
 
-	public LKMMLock(IExpr lock) {
+	public LKMMLock(ExprInterface lock) {
 		// This event will be compiled to LKMMLockRead + LKMMLockWrite 
 		// and each of those will be assigned a proper memory ordering
 		super(lock, "");
@@ -16,7 +16,7 @@ public class LKMMLock extends AbstractMemoryEvent {
         super(other);
     }
 
-	public IExpr getLock() {
+	public ExprInterface getLock() {
 		return address;
 	}
 	

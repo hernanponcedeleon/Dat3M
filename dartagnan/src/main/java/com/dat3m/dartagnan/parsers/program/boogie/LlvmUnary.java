@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.IOpUn;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,12 +33,12 @@ public class LlvmUnary {
             UNSIGNED_EXTEND
     );
 
-    public static Object llvmUnary(String name, List<Object> callParams) {
+    public static Object llvmUnary(String name, List<Object> callParams, ExpressionFactory expressions) {
         try {
             for (String prefix : LLVMUNARY) {
                 if (name.startsWith(prefix)) {
                     String suffix = name.substring(prefix.length());
-                    return llvmUnary(prefix, suffix, callParams);
+                    return llvmUnary(prefix, suffix, callParams, expressions);
                 }
             }
         } catch (IllegalArgumentException x) {
@@ -47,32 +47,31 @@ public class LlvmUnary {
         throw new ParsingException(String.format("Function %s is not implemented.", name));
     }
 
-    private static Object llvmUnary(String prefix, String suffix, List<Object> callParams) {
+    private static Object llvmUnary(String prefix, String suffix, List<Object> callParams, ExpressionFactory expressions) {
         TypeFactory types = TypeFactory.getInstance();
-        IExpr inner = (IExpr) callParams.get(0);
-        IntegerType integerType = inner.getType();
+        ExprInterface inner = (ExprInterface) callParams.get(0);
+        if (!(inner.getType() instanceof IntegerType integerType)) {
+            throw new ParsingException(String.format("%s is not an integer expression.", inner));
+        }
         switch (prefix) {
             case NOT -> {
                 //TODO type-cast
-                return new BExprUn(BOpUn.NOT, inner);
+                return expressions.makeNot(inner);
             }
             case BITVECTOR_TO_SIGNED_INTEGER, BITVECTOR_TO_UNSIGNED_INTEGER -> {
                 checkArgument(!integerType.isMathematical(), "Expected bv, got int.");
                 boolean signed = prefix.equals(BITVECTOR_TO_SIGNED_INTEGER);
-                IOpUn operator = signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED;
-                return new IExprUn(operator, inner, types.getIntegerType());
+                return expressions.makeIntegerCast(inner, types.getIntegerType(), signed);
             }
             case SIGNED_INTEGER_TO_BITVECTOR, UNSIGNED_INTEGER_TO_BITVECTOR -> {
                 checkArgument(integerType.isMathematical(), "Expected int, got %s.", integerType);
                 boolean signed = prefix.equals(SIGNED_INTEGER_TO_BITVECTOR);
-                IOpUn operator = signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED;
                 int bitWidth = Integer.parseInt(suffix);
                 IntegerType targetType = types.getIntegerType(bitWidth);
-                return new IExprUn(operator, inner, targetType);
+                return expressions.makeIntegerCast(inner, targetType, signed);
             }
             case TRUNCATE, SIGNED_EXTEND, UNSIGNED_EXTEND -> {
                 boolean signed = !prefix.equals(UNSIGNED_EXTEND);
-                IOpUn operator = signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED;
                 String[] suffixParts = suffix.split("\\.");
                 assert suffixParts.length == 2 && suffixParts[0].startsWith("bv") && suffixParts[1].startsWith("bv");
                 int expectedBitWidth = Integer.parseInt(suffixParts[0].substring(2));
@@ -80,7 +79,7 @@ public class LlvmUnary {
                         "Type mismatch between %s and bv%s.", integerType, expectedBitWidth);
                 int bitWidth = Integer.parseInt(suffixParts[1].substring(2));
                 IntegerType targetType = types.getIntegerType(bitWidth);
-                return new IExprUn(operator, inner, targetType);
+                return expressions.makeIntegerCast(inner, targetType, signed);
             }
         }
         throw new AssertionError();

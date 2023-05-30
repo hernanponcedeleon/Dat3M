@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class SrcuSync extends AbstractMemoryEvent {
 
-	public SrcuSync(IExpr address) {
+	public SrcuSync(ExprInterface address) {
 		super(address, Tag.Linux.SRCU_SYNC);
 	}
 
@@ -27,7 +27,7 @@ public class SrcuSync extends AbstractMemoryEvent {
 	// irrelevant because this event does not contribute to any data flow.
 	@Override
 	public ExprInterface getMemValue(){
-		return IValue.ZERO;
+		return ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType());
 	}
 
 	// Visitor

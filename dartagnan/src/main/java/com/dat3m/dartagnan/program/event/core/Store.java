@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -12,7 +11,7 @@ public class Store extends AbstractMemoryEvent {
 
     protected ExprInterface value;
 
-    public Store(IExpr address, ExprInterface value, String mo) {
+    public Store(ExprInterface address, ExprInterface value, String mo) {
         super(address, mo);
         this.value = value;
         addTags(Tag.WRITE);

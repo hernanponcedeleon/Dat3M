@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.google.common.base.Preconditions;
 
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
@@ -9,11 +8,11 @@ import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
 public abstract class AbstractMemoryEvent extends AbstractEvent implements MemoryEvent {
 
-    protected IExpr address;
+    protected ExprInterface address;
     protected String mo;
 
     // The empty string means no memory order 
-    public AbstractMemoryEvent(IExpr address, String mo) {
+    public AbstractMemoryEvent(ExprInterface address, String mo) {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
@@ -30,12 +29,12 @@ public abstract class AbstractMemoryEvent extends AbstractEvent implements Memor
     }
 
     @Override
-    public IExpr getAddress() {
+    public ExprInterface getAddress() {
         return address;
     }
 
     @Override
-    public void setAddress(IExpr address) {
+    public void setAddress(ExprInterface address) {
         this.address = address;
     }
 

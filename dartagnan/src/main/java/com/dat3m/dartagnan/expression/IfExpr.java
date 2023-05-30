@@ -1,23 +1,34 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class IfExpr extends IExpr {
 
-	private final BExpr guard;
-	private final IExpr tbranch;
-	private final IExpr fbranch;
+	private final ExprInterface guard;
+	private final ExprInterface tbranch;
+	private final ExprInterface fbranch;
 	
-	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
-		super(tbranch.getType());
-    	Preconditions.checkArgument(tbranch.getType().equals(fbranch.getType()),
-    			"The types of %s and %s do not match.", tbranch, fbranch);
+	public IfExpr(ExprInterface guard, ExprInterface tbranch, ExprInterface fbranch) {
+		super(checkIntegerType(tbranch));
+		checkArgument(guard.getType() instanceof BooleanType, "IfThenElse with non-boolean guard %s.", guard);
+        checkArgument(tbranch.getType().equals(fbranch.getType()),
+                "IfThenElse with mismatching branches %s and %s.", tbranch, fbranch);
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
+	}
+
+	private static IntegerType checkIntegerType(ExprInterface tbranch) {
+		if (tbranch.getType() instanceof IntegerType integerType) {
+			return integerType;
+		}
+		throw new IllegalArgumentException(String.format("IfThenElse with non-integer branch %s.", tbranch));
 	}
 
 	@Override
@@ -30,15 +41,15 @@ public class IfExpr extends IExpr {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
 
-	public BExpr getGuard() {
+	public ExprInterface getGuard() {
 		return guard;
 	}
 
-	public IExpr getTrueBranch() {
+	public ExprInterface getTrueBranch() {
 		return tbranch;
 	}
 
-	public IExpr getFalseBranch() {
+	public ExprInterface getFalseBranch() {
 		return fbranch;
 	}
 

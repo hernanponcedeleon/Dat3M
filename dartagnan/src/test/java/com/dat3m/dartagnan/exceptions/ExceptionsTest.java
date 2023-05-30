@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -37,9 +36,9 @@ public class ExceptionsTest {
         ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         pb.initThread(0);
         Thread t = pb.build().getThreads().get(0);
-        t.newRegister("r1", -1);
+        t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
-        t.newRegister("r1", -1);
+        t.newRegister("r1", types.getIntegerType());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -67,7 +66,7 @@ public class ExceptionsTest {
         // Both arguments should have same precision
         Register a = new Register("a", 0, types.getIntegerType(32));
         Register b = new Register("b", 0, types.getIntegerType(64));
-        new IExprBin(a, IOpBin.PLUS, b);
+        ExpressionFactory.getInstance().makePlus(a, b);
     }
 
     @Test(expected = NullPointerException.class)

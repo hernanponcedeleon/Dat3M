@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -17,7 +16,7 @@ public class AtomicStore extends AbstractMemoryEvent {
 
     private ExprInterface value;
 
-    public AtomicStore(IExpr address, ExprInterface value, String mo){
+    public AtomicStore(ExprInterface address, ExprInterface value, String mo){
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),

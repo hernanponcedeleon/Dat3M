@@ -1,8 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.*;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.*;
 
 import java.math.BigInteger;
 
@@ -28,7 +27,7 @@ public final class ExpressionFactory {
     }
 
     public BConst makeValue(boolean value) {
-        return value ? BConst.TRUE : BConst.FALSE;
+        return value ? makeTrue() : makeFalse();
     }
 
     public BExpr makeNot(ExprInterface operand) {
@@ -68,7 +67,8 @@ public final class ExpressionFactory {
     }
 
     public IExpr makeInteger(IntegerType targetType, ExprInterface operand) {
-        if (operand.isBoolean()) {
+        Type operandType = operand.getType();
+        if (operandType instanceof BooleanType) {
             return makeConditional(operand, makeOne(targetType), makeZero(targetType));
         }
         throw new UnsupportedOperationException(String.format("makeInteger with unknown-typed operand %s.", operand));
@@ -163,6 +163,10 @@ public final class ExpressionFactory {
 
     public IExpr makeBitwiseOr(ExprInterface leftOperand, ExprInterface rightOperand) {
         return makeBinary(leftOperand, IOpBin.OR, rightOperand);
+    }
+
+    public IExpr makeXor(ExprInterface leftOperand, ExprInterface rightOperand) {
+        return makeBinary(leftOperand, IOpBin.XOR, rightOperand);
     }
 
     public IExpr makeLeftShift(ExprInterface leftOperand, ExprInterface rightOperand) {

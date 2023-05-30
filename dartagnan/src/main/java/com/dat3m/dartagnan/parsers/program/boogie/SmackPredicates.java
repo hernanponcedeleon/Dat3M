@@ -5,7 +5,6 @@ import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
 import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
 import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class SmackPredicates {
 			"$tos.i56", "$tos.i64", "$tos.i80", "$tos.i88", "$tos.i96", "$tos.i128", "$tos.i160", "$tos.i256"
 			);
 	
-	public static Object smackPredicate(String name, List<Object> callParams) {
+	public static Object smackPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
 		String min = "0";
 		String max = "1";
 		IExpr var = (IExpr)callParams.get(0);
@@ -109,11 +108,13 @@ public class SmackPredicates {
 				throw new ParsingException("Function " + name + " has no implementation");
 			}
 		}
-		IValue maxValue = new IValue(new BigInteger(max),var.getPrecision());
-		Atom c1 = new Atom(var,GTE,new IValue(new BigInteger(min),var.getPrecision()));
-		Atom c2 = new Atom(var,LTE,maxValue);
-		BExprBin guard = new BExprBin(c1, AND, c2);
-		IExpr fbranch = new IExprBin(var,MOD,maxValue);
-		return new IfExpr(guard, var, fbranch);
+		IValue maxValue = factory.parseValue(max, var.getType());
+		return factory.makeConditional(
+				factory.makeBinary(
+						factory.makeBinary(var, GTE, factory.parseValue(min, var.getType())),
+						AND,
+						factory.makeBinary(var, LTE, maxValue)),
+				var,
+				factory.makeBinary(var, MOD, maxValue));
 	}
 }

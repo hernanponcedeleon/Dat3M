@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -16,86 +17,87 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorC11 extends VisitorBase {
 
-        protected VisitorC11(boolean forceStart) {
-                super(forceStart);
-        }
+    protected VisitorC11(boolean forceStart) {
+        super(forceStart);
+    }
 
-        @Override
-        public List<Event> visitCreate(Create e) {
-                Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
-                store.addTags(C11.PTHREAD);
+    @Override
+    public List<Event> visitCreate(Create e) {
+        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
+        store.addTags(C11.PTHREAD);
 
-                return tagList(eventSequence(
-                                store));
-        }
+        return tagList(eventSequence(
+                store));
+    }
 
-        @Override
-        public List<Event> visitEnd(End e) {
-                return tagList(eventSequence(
-                        newStore(e.getAddress(), IValue.ZERO, Tag.C11.MO_RELEASE)));
-        }
+    @Override
+    public List<Event> visitEnd(End e) {
+        //TODO boolean
+        return tagList(eventSequence(
+                newStore(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.C11.MO_RELEASE)));
+    }
 
-        @Override
-        public List<Event> visitJoin(Join e) {
-                Register resultRegister = e.getResultRegister();
-                Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-                load.addTags(C11.PTHREAD);
+    @Override
+    public List<Event> visitJoin(Join e) {
+        Register resultRegister = e.getResultRegister();
+        ExprInterface zero = expressions.makeZero(resultRegister.getType());
+        Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
+        load.addTags(C11.PTHREAD);
 
-                return tagList(eventSequence(
-                                load,
-                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())));
-        }
+        return tagList(eventSequence(
+                load,
+                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit())));
+    }
 
-        @Override
-        public List<Event> visitStart(Start e) {
-                Register resultRegister = e.getResultRegister();
-                Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-                load.addTags(Tag.STARTLOAD);
+    @Override
+    public List<Event> visitStart(Start e) {
+        Register resultRegister = e.getResultRegister();
+        ExprInterface one = expressions.makeOne(resultRegister.getType());
+        Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
+        load.addTags(Tag.STARTLOAD);
 
-                return tagList(eventSequence(
-                                load,
-                                super.visitStart(e),
-                                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())));
-        }
+        return tagList(eventSequence(
+                load,
+                super.visitStart(e),
+                newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())));
+    }
 
-        @Override
-        public List<Event> visitLoad(Load e) {
-                return tagList(eventSequence(
-                        newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
-        }
+    @Override
+    public List<Event> visitLoad(Load e) {
+        return tagList(eventSequence(
+                newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
+    }
 
-        @Override
-        public List<Event> visitStore(Store e) {
-                return tagList(eventSequence(
-                        newStore(e.getAddress(), e.getMemValue(), e.getMo())));
-        }
+    @Override
+    public List<Event> visitStore(Store e) {
+        return tagList(eventSequence(
+                newStore(e.getAddress(), e.getMemValue(), e.getMo())));
+    }
 
-        // =============================================================================================
-        // =========================================== C11 =============================================
-        // =============================================================================================
+    // =============================================================================================
+    // =========================================== C11 =============================================
+    // =============================================================================================
 
-        @Override
-	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		IExpr expectedAddr = e.getExpectedAddr();
-		int precision = resultRegister.getPrecision();
+    @Override
+    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+        Register resultRegister = e.getResultRegister();
+        ExprInterface address = e.getAddress();
+        String mo = e.getMo();
+        ExprInterface expectedAddr = e.getExpectedAddr();
+        IntegerType type = resultRegister.getType();
 
-		Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
+        Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr, "");
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, expressions.makeOne(type)), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
@@ -106,65 +108,64 @@ public class VisitorC11 extends VisitorBase {
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                    storeValue,
-                    gotoCasEnd,
+                storeValue,
+                gotoCasEnd,
                 casFail,
-                    storeExpected,
+                storeExpected,
                 casEnd
         ));
-	}
+    }
 
-	@Override
-	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+    @Override
+    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+        Register resultRegister = e.getResultRegister();
+        IOpBin op = e.getOp();
+        ExprInterface address = e.getAddress();
+        String mo = e.getMo();
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(resultRegister, address, mo);
         RMWStore store = newRMWStore(load, address, dummyReg, mo);
-        
-		return tagList(eventSequence(
+
+        return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
                 store
         ));
-	}
+    }
 
-	@Override
-	public List<Event> visitAtomicLoad(AtomicLoad e) {
-		return tagList(eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), e.getMo())
+    @Override
+    public List<Event> visitAtomicLoad(AtomicLoad e) {
+        return tagList(eventSequence(
+                newLoad(e.getResultRegister(), e.getAddress(), e.getMo())
         ));
-	}
+    }
 
-	@Override
-	public List<Event> visitAtomicStore(AtomicStore e) {
-		return tagList(eventSequence(
-        		newStore(e.getAddress(), e.getMemValue(), e.getMo())
+    @Override
+    public List<Event> visitAtomicStore(AtomicStore e) {
+        return tagList(eventSequence(
+                newStore(e.getAddress(), e.getMemValue(), e.getMo())
         ));
-	}
+    }
 
-	@Override
-	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-                return tagList(eventSequence(
-                        newFence(e.getMo())));
-	}
+    @Override
+    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+        return tagList(eventSequence(
+                newFence(e.getMo())));
+    }
 
-	@Override
-	public List<Event> visitAtomicXchg(AtomicXchg e) {
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
+    @Override
+    public List<Event> visitAtomicXchg(AtomicXchg e) {
+        ExprInterface address = e.getAddress();
+        String mo = e.getMo();
 
         Load load = newRMWLoad(e.getResultRegister(), address, mo);
         RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
-        
-		return tagList(eventSequence(
+
+        return tagList(eventSequence(
                 load,
                 store
         ));
-	}
+    }
 
     // =============================================================================================
     // =========================================== LLVM ============================================
@@ -172,81 +173,82 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
-            return tagList(eventSequence(
+        return tagList(eventSequence(
                 newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-           return tagList(eventSequence(
+        return tagList(eventSequence(
                 newStore(e.getAddress(), e.getMemValue(), e.getMo())));
     }
 
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
-            Register resultRegister = e.getResultRegister();
-            ExprInterface value = e.getMemValue();
-            IExpr address = e.getAddress();
-            String mo = e.getMo();
+        Register resultRegister = e.getResultRegister();
+        ExprInterface value = e.getMemValue();
+        ExprInterface address = e.getAddress();
+        String mo = e.getMo();
 
-            Load load = newRMWLoadExclusive(resultRegister, address, mo);
-            Store store = newRMWStoreExclusive(address, value, mo, true);
+        Load load = newRMWLoadExclusive(resultRegister, address, mo);
+        Store store = newRMWStoreExclusive(address, value, mo, true);
 
-            return tagList(eventSequence(
-                            load,
-                            store));
+        return tagList(eventSequence(
+                load,
+                store));
     }
 
     @Override
     public List<Event> visitLlvmRMW(LlvmRMW e) {
-            Register resultRegister = e.getResultRegister();
-            IOpBin op = e.getOp();
-            IExpr value = (IExpr) e.getMemValue();
-            IExpr address = e.getAddress();
-            String mo = e.getMo();
+        Register resultRegister = e.getResultRegister();
+        IOpBin op = e.getOp();
+        ExprInterface value = e.getMemValue();
+        ExprInterface address = e.getAddress();
+        String mo = e.getMo();
 
-            Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-            Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
-            Load load = newRMWLoadExclusive(resultRegister, address, mo);
-            Store store = newRMWStoreExclusive(address, dummyReg, mo, true);
+        Load load = newRMWLoadExclusive(resultRegister, address, mo);
+        Store store = newRMWStoreExclusive(address, dummyReg, mo, true);
 
-            return tagList(eventSequence(
-                            load,
-                            localOp,
-                            store));
+        return tagList(eventSequence(
+                load,
+                localOp,
+                store));
     }
 
     @Override
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-            Register oldValueRegister = e.getStructRegister(0);
-            Register resultRegister = e.getStructRegister(1);
+        Register oldValueRegister = e.getStructRegister(0);
+        Register resultRegister = e.getStructRegister(1);
 
-            ExprInterface value = e.getMemValue();
-            IExpr address = e.getAddress();
-            String mo = e.getMo();
-            ExprInterface expectedValue = e.getExpectedValue();
+        ExprInterface value = e.getMemValue();
+        ExprInterface address = e.getAddress();
+        String mo = e.getMo();
+        ExprInterface expectedValue = e.getExpectedValue();
 
-            Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
-            Label casEnd = newLabel("CAS_end");
-            CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
+        Label casEnd = newLabel("CAS_end");
+        ExprInterface one = expressions.makeOne(resultRegister.getType());
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casEnd);
 
-            Load load = newRMWLoadExclusive(oldValueRegister, address, mo);
-            Store store = newRMWStoreExclusive(address, value, mo, true);
+        Load load = newRMWLoadExclusive(oldValueRegister, address, mo);
+        Store store = newRMWStoreExclusive(address, value, mo, true);
 
-            return tagList(eventSequence(
-                            // Indentation shows the branching structure
-                            load,
-                            casCmpResult,
-                            branchOnCasCmpResult,
-                                store,
-                            casEnd));
+        return tagList(eventSequence(
+                // Indentation shows the branching structure
+                load,
+                casCmpResult,
+                branchOnCasCmpResult,
+                store,
+                casEnd));
     }
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-            return tagList(eventSequence(
-                            newFence(e.getMo())));
+        return tagList(eventSequence(
+                newFence(e.getMo())));
     }
 
     private List<Event> tagList(List<Event> in) {
@@ -255,7 +257,7 @@ public class VisitorC11 extends VisitorBase {
     }
 
     private void tagEvent(Event e) {
-        if(e instanceof MemoryEvent memEvent) {
+        if (e instanceof MemoryEvent memEvent) {
             final boolean canRace = (memEvent.getMo().isEmpty() || memEvent.getMo().equals(C11.NONATOMIC));
             e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
         }

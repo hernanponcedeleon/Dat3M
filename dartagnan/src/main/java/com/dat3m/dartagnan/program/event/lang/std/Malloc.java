@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.event.lang.std;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
@@ -13,6 +14,8 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /*
     NOTE: Although this event is no core event, it does not get compiled in the compilation pass.
     Instead, it will get replaced by a dedicated memory allocation pass.
@@ -22,9 +25,10 @@ import java.util.Set;
 public class Malloc extends AbstractEvent implements RegWriter, RegReader {
 
     protected final Register register;
-    protected IExpr sizeExpr;
+    protected ExprInterface sizeExpr;
 
-    public Malloc(Register register, IExpr sizeExpr) {
+    public Malloc(Register register, ExprInterface sizeExpr) {
+        checkArgument(sizeExpr.getType() instanceof IntegerType, "Malloc with non-integer size %s.", sizeExpr);
         this.register = register;
         this.sizeExpr = sizeExpr;
         addTags(Tag.Std.MALLOC);
@@ -36,8 +40,8 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
         this.sizeExpr = other.sizeExpr;
     }
 
-    public IExpr getSizeExpr() { return sizeExpr; }
-    public void setSizeExpr(IExpr sizeExpr) { this.sizeExpr = sizeExpr; }
+    public ExprInterface getSizeExpr() { return sizeExpr; }
+    public void setSizeExpr(ExprInterface sizeExpr) { this.sizeExpr = sizeExpr; }
 
     @Override
     public Register getResultRegister() { return register; }

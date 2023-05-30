@@ -108,19 +108,29 @@ public class ProgramBuilder {
         getOrNewObject(locName).setInitialValue(0,iValue);
     }
 
+    @Deprecated
     public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
+        initRegEqLocPtr(regThread, regName, locName, types.getIntegerType(precision));
+    }
+
+    public void initRegEqLocPtr(int regThread, String regName, String locName, IntegerType type) {
         MemoryObject object = getOrNewObject(locName);
-        Register reg = getOrCreateRegister(regThread, regName, precision);
+        Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread, EventFactory.newLocal(reg, object));
     }
 
+    @Deprecated
     public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        Register reg = getOrCreateRegister(regThread, regName, precision);
+        initRegEqLocVal(regThread, regName, locName, types.getIntegerType(precision));
+    }
+
+    public void initRegEqLocVal(int regThread, String regName, String locName, IntegerType type) {
+        Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread,EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
     }
 
     private IConst getInitialValue(String name) {
@@ -168,6 +178,10 @@ public class ProgramBuilder {
     public Register getOrCreateRegister(int threadId, String name, int precision) {
         IntegerType type = precision < 0 ? types.getIntegerType() : types.getIntegerType(precision);
         return getOrNewRegister(threadId, name, type);
+    }
+
+    public Register getOrNewRegister(int threadId, String name) {
+        return getOrNewRegister(threadId, name, types.getArchType());
     }
 
     public Register getOrNewRegister(int threadId, String name, IntegerType type) {

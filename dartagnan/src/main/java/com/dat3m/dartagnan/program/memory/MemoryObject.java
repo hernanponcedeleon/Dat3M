@@ -1,9 +1,7 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
@@ -11,7 +9,6 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -42,7 +39,7 @@ public class MemoryObject extends IConst {
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
-            initialValues.put(0, IValue.ZERO);
+            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
         }
     }
 
@@ -74,7 +71,7 @@ public class MemoryObject extends IConst {
      */
     public IConst getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, IValue.ZERO);
+        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
     }
 
     /**
@@ -103,17 +100,6 @@ public class MemoryObject extends IConst {
             size = offset + 1;
         }
         initialValues.put(offset, value);
-    }
-
-    /**
-     * Expresses the address of a field of this array.
-     *
-     * @param offset Non-negative number of fields before the target field.
-     * @return Points to the target.
-     */
-    public IExpr add(int offset) {
-        checkArgument(0 <= offset && offset < size, "array index out of bounds");
-        return offset == 0 ? this : new IExprBin(this, PLUS, new IValue(BigInteger.valueOf(offset), getPrecision()));
     }
 
     public boolean isAtomic() {

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.utils.visualization;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
@@ -40,7 +40,7 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
+    private final Map<BigInteger, ExprInterface> addresses = new HashMap<>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();

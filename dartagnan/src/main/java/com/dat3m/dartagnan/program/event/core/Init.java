@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -15,8 +16,8 @@ public class Init extends AbstractMemoryEvent {
 	private final MemoryObject base;
 	private final int offset;
 	
-	public Init(MemoryObject b, int o) {
-		super(b.add(o), "");
+	public Init(MemoryObject b, int o, ExprInterface address) {
+		super(address, "");
 		base = b;
 		offset = o;
 		addTags(Tag.WRITE, Tag.INIT);

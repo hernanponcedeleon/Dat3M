@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
@@ -14,8 +13,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
 public class PthreadsProcedures {
 	
@@ -86,9 +83,10 @@ public class PthreadsProcedures {
 		visitor.allocations.add(pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
 				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-		Register reg = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText(), getArchPrecision());
-		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, IValue.ZERO));
-		}
+		Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
+		ExprInterface zero = visitor.expressions.makeZero(reg.getType());
+		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, zero));
+	}
 	
 	private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprContext lock = ctx.call_params().exprs().expr(0);
@@ -102,7 +100,7 @@ public class PthreadsProcedures {
 	
 	private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, getArchPrecision());
+        Register register = visitor.programBuilder.getOrNewRegister(visitor.threadCount, null);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register))
@@ -112,7 +110,7 @@ public class PthreadsProcedures {
 	
 	private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
 		ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrCreateRegister(visitor.threadCount, null, getArchPrecision());
+        Register register = visitor.programBuilder.getOrNewRegister(visitor.threadCount, null);
 		IExpr lockAddress = (IExpr)lock.accept(visitor);
 		if(lockAddress != null) {
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register))

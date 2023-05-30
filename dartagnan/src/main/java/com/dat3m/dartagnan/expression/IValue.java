@@ -13,14 +13,6 @@ public final class IValue extends IConst {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    // TODO(TH): not sure where this are used, but why do you set the precision to 0?
-    // TH: This was a temporary try for integer logic only
-    // However, it is impossible to define general constants, we need a function that produces
-    // a constant for each precision degree
-    // HP: agree. I assume you wanted this to improve code readability, but having one constant per precision won't help.
-    public static IConst ZERO = new IValue(BigInteger.ZERO, types.getArchType());
-    public static IConst ONE = new IValue(BigInteger.ONE, types.getArchType());
-
     private final BigInteger value;
 
     @Deprecated

@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -123,11 +123,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         final List<Register> trackingRegs = new ArrayList<>();
         Event insertionPoint = iterInfo.getIterationEnd();
+        IntegerType type = TypeFactory.getInstance().getArchType();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    GlobalSettings.getArchPrecision());
+                    type);
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -135,9 +136,10 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             insertionPoint = execCheck;
         }
 
-        final BExpr atLeastOneSideEffect = trackingRegs.stream()
-                .map(reg -> (BExpr) new Atom(reg, COpBin.EQ, IValue.ZERO))
-                .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
+        ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+        final ExprInterface atLeastOneSideEffect = trackingRegs.stream()
+                .map(reg -> expressionFactory.makeEqual(reg, expressionFactory.makeZero(reg.getType())))
+                .reduce(expressionFactory.makeFalse(), expressionFactory::makeOr);
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();

@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
-import java.math.BigInteger;
-
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.exception.ParsingException;
@@ -13,12 +13,13 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
 
     private final ProgramBuilder programBuilder;
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final IntegerType archType = TypeFactory.getInstance().getArchType();
 
     public VisitorLitmusAssertions(ProgramBuilder programBuilder){
         this.programBuilder = programBuilder;
@@ -73,7 +74,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
 
     private ExprInterface acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
         if(ctx.constant() != null) {
-            return new IValue(new BigInteger(ctx.constant().getText()), getArchPrecision());
+            return expressions.parseValue(ctx.constant().getText(), archType);
         }
         String name = ctx.varName().getText();
         if(ctx.threadId() != null) {
