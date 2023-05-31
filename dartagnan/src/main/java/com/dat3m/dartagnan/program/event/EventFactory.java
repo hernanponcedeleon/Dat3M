@@ -615,14 +615,16 @@ public class EventFactory {
 
         public static AtomOp newAtomOp(IExpr address, Register register, IExpr value,
                                              IOpBin op, String mo, String scope) {
-            AtomOp atom = new AtomOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
+            // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
+            AtomOp atom = new AtomOp(address, register, value, op, mo);
             atom.addFilters(scope);
             return atom;
         }
 
         public static RedOp newRedOp(IExpr address, Register register, IExpr value,
                                            IOpBin op, String mo, String scope) {
-            RedOp red = new RedOp(address, register, value, op, mo); // mo = ACQ_REL || RLX
+            // PTX (currently) only generates memory orders ACQ_REL and RLX for red.
+            RedOp red = new RedOp(address, register, value, op, mo);
             red.addFilters(scope);
             return red;
         }
