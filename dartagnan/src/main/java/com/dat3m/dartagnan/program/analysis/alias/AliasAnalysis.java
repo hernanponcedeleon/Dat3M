@@ -56,29 +56,29 @@ public interface AliasAnalysis {
         if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
             return false;
         }
-        MemoryObject add1 = (MemoryObject) e1.getAddress();
-        MemoryObject add2 = (MemoryObject) e2.getAddress();
-        boolean isAdd1Virtual = add1.isVirtual();
-        boolean isAdd2Virtual = add2.isVirtual();
+        MemoryObject addr1 = (MemoryObject) e1.getAddress();
+        MemoryObject addr2 = (MemoryObject) e2.getAddress();
+        boolean isAdd1Virtual = addr1.isVirtual();
+        boolean isAdd2Virtual = addr2.isVirtual();
         if (isAdd1Virtual && isAdd2Virtual) {
             // Case (1)
             // Virtual addresses always have an alias
-            assert(add1.getAlias() != null);
-            assert(add2.getAlias() != null);
-            // add1, add2 should virtually alias to the same physical Address
-            return (add1.getAlias().equals(add2.getAlias()));
+            assert(addr1.getAlias() != null);
+            assert(addr2.getAlias() != null);
+            // addr1, addr2 should virtually alias to the same physical Address
+            return addr1.getAlias() == addr2.getAlias();
         } else if (!isAdd1Virtual && isAdd2Virtual) {
             // Case (2)
             // Virtual addresses always have an alias
-            assert(add2.getAlias() != null);
-            // add2 should virtually alias to physical add1
-            return add1 == add2.getAlias();
-        } else if (isAdd1Virtual && !isAdd2Virtual) {
+            assert(addr2.getAlias() != null);
+            // addr2 should virtually alias to physical addr1
+            return addr1 == addr2.getAlias();
+        } else if (isAdd1Virtual) {
             // Case (3)
             // Virtual addresses always have an alias
-            assert(add1.getAlias() != null);
-            // add1 should virtually alias to physical add2
-            return add1.getAlias() == add2;
+            assert(addr1.getAlias() != null);
+            // addr1 should virtually alias to physical addr2
+            return addr1.getAlias() == addr2;
         } else {
             // Case (4)
             // The normal AliasAnalysis handles the case where both addresses are physical 

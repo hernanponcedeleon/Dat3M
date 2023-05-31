@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.RMWAbstract;
+import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class RMWFetchOp extends RMWAbstract {

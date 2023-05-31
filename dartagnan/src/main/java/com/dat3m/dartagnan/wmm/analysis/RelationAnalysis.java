@@ -1028,8 +1028,8 @@ public class RelationAnalysis {
         }
 
         private boolean onSameScope(Event first, Event second, String scope) {
-            int firstId = ((PTXThread) first.getThread()).getScopeIds(scope);
-            int secondId = ((PTXThread) second.getThread()).getScopeIds(scope);
+            int firstId = ((PTXThread) first.getThread()).getScopeId(scope);
+            int secondId = ((PTXThread) second.getThread()).getScopeId(scope);
             return (firstId == secondId && firstId != -1);
         }
     }

@@ -10,7 +10,7 @@ import java.util.Map;
 public class ScopedThread extends Thread {
 
     // There is a hierarchy of scopes, the order of keys
-    // is important, thus we use a LinkedHashMapeMap
+    // is important, thus we use a LinkedHashMap
     protected final Map<String, Integer> scopeIds = new LinkedHashMap<>();
 
     public ScopedThread(String name, int id, Event entry) {
@@ -25,7 +25,7 @@ public class ScopedThread extends Thread {
         return new ArrayList<>(scopeIds.keySet());
     }
 
-    public int getScopeIds(String scope) {
+    public int getScopeId(String scope) {
         return scopeIds.getOrDefault(scope, -1);
     }
 }
