@@ -48,7 +48,6 @@ public class RelationNameRepository {
 	public static final String SYNC_BARRIER = "sync_barrier";
 	public static final String SYNC_FENCE = "sync_fence";
 	public static final String SYNCBAR = "syncbar";
-	public static final String SYNCFEN = "syncfen";
 	public static final String ALIAS = "alias";
 	// Any new string must be also added to method contains() below
 

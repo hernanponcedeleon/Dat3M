@@ -166,8 +166,9 @@ public class RelationAnalysis {
     }
 
     /*
-        Returns a set of co-edges (w1, w2) (subset of may set) whose clock-constraints
-        do not need to get encoded explicitly.
+        Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
+        clock-constraints do not need to get encoded explicitly.
+        e.g. for co relation: (e1 = w1, e2 = w2)
         The reason is that whenever we have co(w1,w2) then there exists an intermediary
         w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
         Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
@@ -183,14 +184,14 @@ public class RelationAnalysis {
               not involve encoding a clock constraint (due to this optimization).
         There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
      */
-    public Set<Tuple> findTransitivelyImpliedCo(Relation co) {
+    public Set<Tuple> findTransitivelyImpliedRel(Relation co) {
         final RelationAnalysis.Knowledge k = getKnowledge(co);
         Set<Tuple> transCo = new HashSet<>();
         final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
         final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
         for (final Tuple t : k.may) {
-            final MemEvent x = (MemEvent) t.getFirst();
-            final MemEvent z = (MemEvent) t.getSecond();
+            final Event x = t.getFirst();
+            final Event z = t.getSecond();
             final boolean hasIntermediary = mustOut.apply(x).stream().map(Tuple::getSecond)
                     .anyMatch(y -> y != x && y != z &&
                             (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
@@ -934,7 +935,8 @@ public class RelationAnalysis {
             List<Fence> fenceEvents = program.getEvents(Fence.class);
             for (Fence e1 : fenceEvents) {
                 for (Fence e2 : fenceEvents) {
-                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && mustScope(e1, e2, null)
+                            && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }

@@ -336,10 +336,8 @@ public class Wmm {
                 return new SyncBar(r);
             case SYNC_BARRIER:
                 return intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
-            case SYNCFEN:
-                return new SyncFence(r);
             case SYNC_FENCE:
-                return intersection(r, getRelation(SYNCFEN), getRelation(SR));
+                return new SyncFence(r);
             case ALIAS:
                 return new Alias(r);
             default:
