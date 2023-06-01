@@ -3,15 +3,16 @@ package com.dat3m.dartagnan.program.event.arch.tso;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public class Xchg extends MemEvent implements RegWriter, RegReaderData {
+public class Xchg extends MemEvent implements RegWriter, RegReader {
 
     private final Register resultRegister;
 
@@ -32,8 +33,8 @@ public class Xchg extends MemEvent implements RegWriter, RegReaderData {
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs(){
-        return ImmutableSet.of(resultRegister);
+    public Set<Register.Read> getRegisterReads(){
+        return Set.of(new Register.Read(resultRegister, Register.UsageType.DATA));
     }
 
     @Override

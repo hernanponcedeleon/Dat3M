@@ -1,9 +1,12 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -73,4 +76,25 @@ public class Register extends IExpr {
 	public IExpr getBase() {
     	return this;
     }
+
+
+	public static Set<Read> collectRegisterReads(ExprInterface expr, Register.UsageType usageType, Set<Read> collector) {
+		expr.getRegs().stream().map(r -> new Register.Read(r, usageType)).forEach(collector::add);
+		return collector;
+	}
+
+	public enum UsageType {
+		CTRL, DATA, ADDR, // The register value is used to determine control, data, or address.
+		OTHER;            // The register value is used for a different purpose.
+	}
+
+	/*
+        Describes for what purpose a register was read.
+    */
+	public record Read(Register register, UsageType usageType) {
+		@Override
+		public String toString() {
+			return String.format("RegRead[%s, %s]", register, usageType);
+		}
+	}
 }

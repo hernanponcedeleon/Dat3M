@@ -4,9 +4,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public class LlvmCmpXchg extends LlvmAbstractRMW {
@@ -60,11 +58,11 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     }
     
     @Override
-    public ImmutableSet<Register> getDataRegs() {
-        Set<Register> registers = new HashSet<>();
-        registers.addAll(value.getRegs());
-        registers.addAll(expectedValue.getRegs());
-        return ImmutableSet.copyOf(registers);
+    public Set<Register.Read> getRegisterReads() {
+        final Set<Register.Read> regReads = super.getRegisterReads();
+        Register.collectRegisterReads(value, Register.UsageType.DATA, regReads);
+        Register.collectRegisterReads(expectedValue, Register.UsageType.DATA, regReads);
+        return regReads;
     }
 
     @Override

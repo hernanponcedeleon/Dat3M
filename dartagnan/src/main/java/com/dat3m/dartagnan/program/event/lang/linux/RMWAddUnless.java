@@ -5,7 +5,8 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 public class RMWAddUnless extends RMWAbstract {
 
@@ -31,8 +32,8 @@ public class RMWAddUnless extends RMWAbstract {
     }
     
     @Override
-    public ImmutableSet<Register> getDataRegs(){
-        return new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
+    public Set<Register.Read> getRegisterReads(){
+        return Register.collectRegisterReads(cmp, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     // Unrolling

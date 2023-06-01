@@ -4,15 +4,15 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class LlvmAbstractRMW extends MemEvent implements RegWriter, RegReaderData {
+public abstract class LlvmAbstractRMW extends MemEvent implements RegWriter {
 
     protected final Register resultRegister;
     protected ExprInterface value;
@@ -37,8 +37,8 @@ public abstract class LlvmAbstractRMW extends MemEvent implements RegWriter, Reg
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs() {
-        return value.getRegs();
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     @Override

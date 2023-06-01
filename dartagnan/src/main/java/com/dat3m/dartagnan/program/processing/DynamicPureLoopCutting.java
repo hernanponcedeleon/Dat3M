@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
@@ -180,23 +180,23 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         Event cur = iterStart;
         do {
-            if (cur instanceof MemEvent) {
+            if (cur instanceof MemEvent memEvent) {
                 if (cur.hasTag(Tag.WRITE)) {
                     sideEffects.add(cur); // Writes always cause side effects
                     continue;
                 } else {
-                    final Set<Register> addrRegs = ((MemEvent) cur).getAddress().getRegs();
+                    final Set<Register> addrRegs = memEvent.getAddress().getRegs();
                     unsafeRegisters.addAll(Sets.difference(addrRegs, safeRegisters));
                 }
             }
 
-            if (cur instanceof RegReaderData) {
-                final Set<Register> dataRegs = ((RegReaderData) cur).getDataRegs();
+            if (cur instanceof RegReader regReader) {
+                final Set<Register> dataRegs = regReader.getRegisterReads().stream()
+                        .map(Register.Read::register).collect(Collectors.toSet());
                 unsafeRegisters.addAll(Sets.difference(dataRegs, safeRegisters));
             }
 
-            if (cur instanceof RegWriter) {
-                final RegWriter writer = (RegWriter) cur;
+            if (cur instanceof RegWriter writer) {
                 if (unsafeRegisters.contains(writer.getResultRegister())) {
                     // The loop writes to a register it previously read from.
                     // This means the next loop iteration will observe the newly written value,

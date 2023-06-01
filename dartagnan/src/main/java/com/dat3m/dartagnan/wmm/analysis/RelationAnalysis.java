@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -9,7 +10,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -36,6 +37,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -553,11 +555,12 @@ public class RelationAnalysis {
         }
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
-            return visitDependency(MemEvent.class, e -> ((MemEvent) e).getAddress().getRegs());
+            return computeInternalDependencies(EnumSet.of(ADDR));
         }
         @Override
         public Knowledge visitInternalDataDependency(Relation rel) {
-            return visitDependency(RegReaderData.class , e -> ((RegReaderData) e).getDataRegs());
+            // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
+            return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
         }
         @Override
         public Knowledge visitFences(Relation rel, Filter fence) {
@@ -854,48 +857,55 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
-        private Knowledge visitDependency(Class<?> eventClass, Function<Event, Set<Register>> registers) {
+
+        private Knowledge computeInternalDependencies(Set<UsageType> usageTypes) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            // We need to track ExecutionStatus events separately, because they induce data-dependencies
-            // without reading from a register.
-            Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();
-            for (Event regReader : program.getEvents()) {
-                if (!eventClass.isInstance(regReader)) {
-                    //FIXME: It would be better to use program.getEvents(eventClass), but that doesn't work
-                    // because we call this method with RegReaderData.class, which (unfortunately) does not
-                    // inherit from Event.
+
+            for (Event regReaderEvent : program.getEvents()) {
+                //TODO: Once "Event" is an interface and RegReader inherits from it,
+                // we can use program.getEvents(RegReader.class) here.
+                if (!(regReaderEvent instanceof RegReader regReader)) {
                     continue;
                 }
-                for (Register register : registers.apply(regReader)) {
+                for (Register.Read regRead : regReader.getRegisterReads()) {
+                    if (!usageTypes.contains(regRead.usageType())) {
+                        continue;
+                    }
+                    final Register register = regRead.register();
                     // Register x0 is hardwired to the constant 0 in RISCV
                     // https://en.wikichip.org/wiki/risc-v/registers,
                     // and thus it generates no dependency, see
                     // https://github.com/herd/herdtools7/issues/408
+                    // TODO: Can't we just replace all reads of "x0" by 0 in RISC-specific preprocessing?
                     if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
                         continue;
                     }
-                    Dependency.State r = dep.of(regReader, register);
+                    Dependency.State r = dep.of(regReaderEvent, register);
                     for (Event regWriter : r.may) {
-                        may.add(new Tuple(regWriter, regReader));
-                        if (regWriter instanceof ExecutionStatus) {
-                            execStatusRegWriter.add((ExecutionStatus) regWriter);
-                        }
+                        may.add(new Tuple(regWriter, regReaderEvent));
                     }
                     for (Event regWriter : enableMustSets ? r.must : List.<Event>of()) {
-                        must.add(new Tuple(regWriter, regReader));
+                        must.add(new Tuple(regWriter, regReaderEvent));
                     }
                 }
             }
-            for (ExecutionStatus execStatus : execStatusRegWriter) {
-                if (execStatus.doesTrackDep()) {
-                    Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
-                    may.add(t);
-                    must.add(t);
+
+            // We need to track ExecutionStatus events separately, because they induce data-dependencies
+            // without reading from a register.
+            if (usageTypes.contains(DATA)) {
+                for (ExecutionStatus execStatus : program.getEvents(ExecutionStatus.class)) {
+                    if (execStatus.doesTrackDep()) {
+                        Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
+                        may.add(t);
+                        must.add(t);
+                    }
                 }
             }
+
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
     }
 
     public final class Propagator implements Definition.Visitor<Delta> {

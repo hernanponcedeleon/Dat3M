@@ -4,11 +4,12 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
 
-public class Store extends MemEvent implements RegReaderData {
+import java.util.Set;
+
+public class Store extends MemEvent implements RegReader {
 
     protected ExprInterface value;
 
@@ -24,8 +25,8 @@ public class Store extends MemEvent implements RegReaderData {
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs(){
-        return value.getRegs();
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     @Override
