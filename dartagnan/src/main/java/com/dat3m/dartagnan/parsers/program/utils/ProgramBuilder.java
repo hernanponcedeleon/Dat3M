@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
@@ -20,10 +21,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -32,7 +30,7 @@ public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<Integer, Thread> threads = new HashMap<>();
-
+    private final List<INonDet> constants = new ArrayList<>();
     private final Map<String,MemoryObject> locations = new HashMap<>();
 
     private final Memory memory = new Memory();
@@ -56,6 +54,7 @@ public class ProgramBuilder {
             program.add(thread);
             thread.setProgram(program);
         }
+        constants.forEach(program::addConstant);
         program.setSpecification(ass);
         program.setFilterSpecification(assFilter);
         EventIdReassignment.newInstance().run(program);
@@ -130,6 +129,12 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
+
+    public INonDet newConstant(IntegerType type, boolean signed) {
+        var constant = new INonDet(constants.size(), type, signed);
+        constants.add(constant);
+        return constant;
+    }
 
     public Event getLastEvent(int thread){
         return threads.get(thread).getExit();

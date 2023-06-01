@@ -131,7 +131,9 @@ public class SvcompProcedures {
 		String registerName = ctx.call_params().Ident(0).getText();
 		Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
 		if (register != null) {
-			INonDet expression = new INonDet(nondetCount++, register.getType(), signed, min, max);
+			INonDet expression = visitor.programBuilder.newConstant(register.getType(), signed);
+			expression.setMin(min);
+			expression.setMax(max);
 			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, expression))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 		}

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -63,11 +64,36 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
+                encodeNondeterministicBounds(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
                 encodeFilter(),
                 encodeDependencies());
+    }
+
+    public BooleanFormula encodeNondeterministicBounds() {
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (INonDet constant : context.getTask().getProgram().getConstants()) {
+            Formula formula = context.encodeFinalIntegerExpression(constant);
+            if (formula instanceof BitvectorFormula bitvector) {
+                boolean signed = constant.isSigned();
+                var bitvectorFormulaManager = context.getFormulaManager().getBitvectorFormulaManager();
+                int bitWidth = bitvectorFormulaManager.getLength(bitvector);
+                constant.getMin().ifPresent(min -> enc.add(bitvectorFormulaManager.greaterOrEquals(bitvector, bitvectorFormulaManager.makeBitvector(bitWidth, min), signed)));
+                constant.getMax().ifPresent(max -> enc.add(bitvectorFormulaManager.lessOrEquals(bitvector, bitvectorFormulaManager.makeBitvector(bitWidth, max), signed)));
+            } else if (formula instanceof IntegerFormula integer) {
+                var integerFormulaManager = context.getFormulaManager().getIntegerFormulaManager();
+                constant.getMin().ifPresent(min -> enc.add(integerFormulaManager.greaterOrEquals(integer, integerFormulaManager.makeNumber(min))));
+                constant.getMax().ifPresent(max -> enc.add(integerFormulaManager.lessOrEquals(integer, integerFormulaManager.makeNumber(max))));
+            } else {
+                throw new UnsupportedOperationException(
+                        String.format(
+                                "Nondeterministic bounds of type %s.",
+                                context.getFormulaManager().getFormulaType(formula)));
+            }
+        }
+        return context.getBooleanFormulaManager().and(enc);
     }
 
     public BooleanFormula encodeControlFlow() {

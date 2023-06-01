@@ -9,22 +9,21 @@ import java.util.Optional;
 // TODO why is INonDet not a IConst?
 public class INonDet extends IExpr {
 
-    private final String id;
+    private final int id;
     private final boolean signed;
-    private final BigInteger min;
-    private final BigInteger max;
+    private BigInteger min;
+    private BigInteger max;
+    private String sourceName;
 
-    // Should only be accessed from Program
-    public INonDet(int id, IntegerType type, boolean signed, BigInteger min, BigInteger max) {
+    // Should only be accessed from ProgramBuilder
+    public INonDet(int id, IntegerType type, boolean signed) {
         super(type);
-        this.id = Integer.toString(id);
+        this.id = id;
         this.signed = signed;
-        this.min = min;
-        this.max = max;
     }
 
     public String getName() {
-        return id;
+        return Integer.toString(id);
     }
 
     public boolean isSigned() {
@@ -39,6 +38,26 @@ public class INonDet extends IExpr {
         return Optional.ofNullable(max);
     }
 
+    public void setMin(BigInteger bound) {
+        min = bound;
+    }
+
+    public void setMax(BigInteger bound) {
+        max = bound;
+    }
+
+    public void setSourceName(String name) {
+        sourceName = name;
+    }
+
+    @Override
+    public IConst reduce() {
+        if (min.equals(max)) {
+            return new IValue(min, getType());
+        }
+        return super.reduce();
+    }
+
     @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
@@ -46,6 +65,9 @@ public class INonDet extends IExpr {
 
     @Override
     public String toString() {
+        if (sourceName != null) {
+            return sourceName;
+        }
         IntegerType type = getType();
         if (type.isMathematical()) {
             return String.format("nondet_int(%d,%s,%s)", id, min, max);
