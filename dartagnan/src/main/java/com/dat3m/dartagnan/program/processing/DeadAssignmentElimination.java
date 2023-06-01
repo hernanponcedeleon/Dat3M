@@ -63,10 +63,6 @@ public class DeadAssignmentElimination implements ProgramProcessor {
                 .filter(e -> !e.getThread().equals(thread))
                 .filter(RegReader.class::isInstance).map(RegReader.class::cast)
                 .forEach(e -> e.getRegisterReads().stream().map(Register.Read::register).forEach(usedRegs::add));
-        /*programEvents.stream()
-                .filter(e -> !e.getThread().equals(thread))
-                .filter(MemEvent.class::isInstance).map(MemEvent.class::cast)
-                .forEach(e -> usedRegs.addAll(e.getAddress().getRegs()));*/
 
 
         // Compute events to be removed (removal is delayed)

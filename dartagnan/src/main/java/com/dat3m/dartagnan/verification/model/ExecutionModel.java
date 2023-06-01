@@ -280,14 +280,11 @@ public class ExecutionModel {
                 }
                 // =========================
 
-                if (e instanceof CondJump) {
-                    CondJump jump = (CondJump) e;
-                    if (isTrue(encodingContext.jumpCondition(jump))) {
-                        e = jump.getLabel();
-                        continue;
-                    }
+                if (e instanceof CondJump jump && isTrue(encodingContext.jumpCondition(jump))) {
+                    e = jump.getLabel();
+                } else {
+                    e = e.getSuccessor();
                 }
-                e = e.getSuccessor();
 
             } while (e != null);
             // We have a BeginAtomic without EndAtomic since the program terminated within the block
@@ -452,50 +449,6 @@ public class ExecutionModel {
                 lastRegWrites.put(local.getResultRegister(), dataDeps);
             }
         }
-
-        // TODO: Check below code
-
-        /*if (e instanceof ExecutionStatus status) {
-            // ---- Track data dependency due to execution tracking ----
-            Event tracked = status.getStatusEvent();
-            HashSet<EventData> deps = new HashSet<>();
-            if (eventExists(tracked) && status.doesTrackDep()) {
-                deps.add(eventMap.get(tracked));
-            }
-            lastRegWrites.put(status.getResultRegister(), deps);
-        }
-
-        if (e instanceof RegReader reader) {
-            // ---- Track data dependency ----
-            HashSet<EventData> deps = new HashSet<>();
-            for (Register r : reader.getRegisterReads()) {
-                deps.addAll(lastRegWrites.getOrDefault(r, Collections.emptySet()));
-            }
-
-            if (e instanceof Store) {
-                // ---- visible data dependency ----
-                dataDepMap.put(eventMap.get(e), deps);
-            }
-            if (e instanceof RegWriter writer) {
-                // ---- internal data dependency ----
-                lastRegWrites.put(writer.getResultRegister(), deps);
-            }
-            if (e instanceof CondJump) {
-                if (e instanceof IfAsJump) {
-                    // Remember what dependencies were added when entering the If so we can remove them when exiting
-                    HashSet<EventData> addedDeps = new HashSet<>(Sets.difference(deps, curCtrlDeps));
-                    ifCtrlDeps.push(addedDeps);
-                    endIfs.push(((IfAsJump)e).getEndIf());
-                }
-                // Jumps add all dependencies
-                curCtrlDeps.addAll(deps);
-            }
-        }
-
-        if (e instanceof Load load) {
-            // ---- Update lastRegWrites ----
-            lastRegWrites.compute(load.getResultRegister(), (k, v) -> new HashSet<>()).add(eventMap.get(e));
-        }*/
     }
 
     // ===================================================

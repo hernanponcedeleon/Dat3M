@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
@@ -180,14 +179,9 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         Event cur = iterStart;
         do {
-            if (cur instanceof MemEvent memEvent) {
-                if (cur.hasTag(Tag.WRITE)) {
-                    sideEffects.add(cur); // Writes always cause side effects
-                    continue;
-                } else {
-                    final Set<Register> addrRegs = memEvent.getAddress().getRegs();
-                    unsafeRegisters.addAll(Sets.difference(addrRegs, safeRegisters));
-                }
+            if (cur.hasTag(Tag.WRITE)) {
+                sideEffects.add(cur); // Writes always cause side effects
+                continue;
             }
 
             if (cur instanceof RegReader regReader) {

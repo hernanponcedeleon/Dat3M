@@ -100,15 +100,12 @@ public final class Dependency {
             if (j != null) {
                 state.addAll(j);
             }
-            //collecting dependencies, mixing 'data' and 'addr'
+            //collecting all register dependencies
             Set<Register> registers = new HashSet<>();
             if (event instanceof RegReader regReader) {
-                Set<Register.Read> regReads = regReader.getRegisterReads();
                 regReader.getRegisterReads().forEach( read -> registers.add(read.register()));
             }
-            /*if (event instanceof MemEvent) {
-                registers.addAll(((MemEvent) event).getAddress().getRegs());
-            }*/
+
             if (!registers.isEmpty()) {
                 Map<Register, State> result = new HashMap<>();
                 for (Register register : registers) {
