@@ -55,13 +55,13 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
     private int detectAndMarkSpinLoops(Thread thread) {
         final List<Label> unmarkedLabels = thread.getEvents().stream()
                 .filter(e -> e instanceof Label && !e.hasTag(Tag.SPINLOOP))
-                .map(Label.class::cast).collect(Collectors.toList());
+                .map(Label.class::cast).toList();
 
         int spinloopCounter = 0;
         for (final Label label : unmarkedLabels) {
             final List<CondJump> backjumps = label.getJumpSet()
                     .stream().filter(x -> x.getGlobalId() > label.getGlobalId())
-                    .collect(Collectors.toList());
+                    .toList();
             final boolean isLoop = !backjumps.isEmpty();
 
             if (isLoop) {

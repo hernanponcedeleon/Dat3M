@@ -69,7 +69,8 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         final List<Event> threadEvents = thread.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
         for(Event e : Lists.reverse(threadEvents)) {
-            if (e instanceof RegWriter && !e.hasTag(NOOPT) && !e.hasTag(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
+            if (!e.hasTag(NOOPT) && !e.hasTag(VISIBLE)
+                    && e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister())) {
                 // TODO (TH): Can we also remove loads to unused registers here?
                 // Invisible RegWriters that write to an unused reg can get removed
                 toBeRemoved.add(e);
