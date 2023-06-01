@@ -58,7 +58,7 @@ public class ExecutionStatus extends Event implements RegWriter {
                 bmgr.implication(context.execution(event),
                         context.equalZero(context.result(this))),
                 bmgr.or(context.execution(event),
-                        context.equal(context.result(this), bvmgr.makeBitvector(1, precision))));
+                        context.equal(context.result(this), bvmgr.makeBitvector(precision, 1))));
     }
 
     // Unrolling
