@@ -401,6 +401,10 @@ public class ExecutionModel {
             for (Register.Read regRead : regReader.getRegisterReads()) {
                 final Register reg = regRead.register();
                 final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
+                if (visibleRootDependencies == null) {
+                    // FIXME: This should never happen, but our parser is buggy and produces ill-formed code.
+                    continue;
+                }
                 switch (regRead.usageType()) {
                     case DATA -> dataDeps.addAll(visibleRootDependencies);
                     case ADDR -> addrDeps.addAll(visibleRootDependencies);
@@ -443,6 +447,10 @@ public class ExecutionModel {
                 for (Register.Read regRead : local.getRegisterReads()) {
                     final Register reg = regRead.register();
                     final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
+                    if (visibleRootDependencies == null) {
+                        // FIXME: This should never happen, but our parser is buggy and produces ill-formed code.
+                        continue;
+                    }
                     assert regRead.usageType() == Register.UsageType.DATA;
                     dataDeps.addAll(visibleRootDependencies);
                 }

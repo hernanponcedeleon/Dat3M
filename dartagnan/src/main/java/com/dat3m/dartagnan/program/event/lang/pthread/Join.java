@@ -20,7 +20,7 @@ public class Join extends Load {
 
     @Override
     public String toString() {
-        return "pthread_join(" + getAddress() + ")";
+        return resultRegister + " <- pthread_join(" + getAddress() + ")";
     }
 
     
