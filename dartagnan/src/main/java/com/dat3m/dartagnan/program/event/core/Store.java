@@ -4,22 +4,21 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
 
-public class Store extends MemEvent implements RegReader {
+public class Store extends MemEvent {
 
     protected ExprInterface value;
 
-    public Store(IExpr address, ExprInterface value, String mo){
-    	super(address, mo);
+    public Store(IExpr address, ExprInterface value, String mo) {
+        super(address, mo);
         this.value = value;
         addTags(Tag.WRITE);
     }
-    
-    protected Store(Store other){
+
+    protected Store(Store other) {
         super(other);
         this.value = other.value;
     }
@@ -35,12 +34,12 @@ public class Store extends MemEvent implements RegReader {
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public ExprInterface getMemValue() {
         return value;
     }
 
     @Override
-    public void setMemValue(ExprInterface value){
+    public void setMemValue(ExprInterface value) {
         this.value = value;
     }
 
@@ -48,15 +47,15 @@ public class Store extends MemEvent implements RegReader {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Store getCopy(){
+    public Store getCopy() {
         return new Store(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitStore(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitStore(this);
+    }
 }
