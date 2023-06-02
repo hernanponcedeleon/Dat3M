@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
@@ -96,8 +96,8 @@ public class Program {
      *
      * @return {@code cId}-ordered complete sequence of all events in this program.
      */
-	public List<AbstractEvent> getEvents() {
-        List<AbstractEvent> events = new ArrayList<>();
+	public List<Event> getEvents() {
+        List<Event> events = new ArrayList<>();
 		for (Thread t : threads) {
 			events.addAll(t.getEvents());
 		}
@@ -109,9 +109,9 @@ public class Program {
      *
      * @param cls Class of events to be selected.
      * @return {@code cId}-ordered complete sequence of all events of class {@code cls} in this program.
-     * @param <T> Desired subclass of {@link AbstractEvent}.
+     * @param <T> Desired subclass of {@link Event}.
      */
-    public <T extends AbstractEvent> List<T> getEvents(Class<T> cls) {
+    public <T extends Event> List<T> getEvents(Class<T> cls) {
         return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
 

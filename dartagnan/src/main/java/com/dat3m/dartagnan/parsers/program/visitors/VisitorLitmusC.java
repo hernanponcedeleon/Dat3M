@@ -13,8 +13,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -226,7 +226,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public IExpr visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
         Register register = getReturnRegister(true);
         IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
-        AbstractEvent event = EventFactory.Linux.newRMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
+        Event event = EventFactory.Linux.newRMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -236,7 +236,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public IExpr visitReAtomicFetchOp(LitmusCParser.ReAtomicFetchOpContext ctx){
         Register register = getReturnRegister(true);
         IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
-        AbstractEvent event = EventFactory.Linux.newRMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
+        Event event = EventFactory.Linux.newRMWFetchOp(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -245,7 +245,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 	public IExpr visitC11AtomicOp(LitmusCParser.C11AtomicOpContext ctx) {
         Register register = getReturnRegister(true);
         IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
-        AbstractEvent event = EventFactory.Atomic.newFetchOp(register, getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
+        Event event = EventFactory.Atomic.newFetchOp(register, getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
         programBuilder.addChild(currentThread, event);
         return register;
 	}
@@ -255,7 +255,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public IExpr visitReAtomicOpAndTest(LitmusCParser.ReAtomicOpAndTestContext ctx){
         Register register = getReturnRegister(true);
         IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
-        AbstractEvent event = EventFactory.Linux.newRMWOpAndTest(getAddress(ctx.address), register, value, ctx.op);
+        Event event = EventFactory.Linux.newRMWOpAndTest(getAddress(ctx.address), register, value, ctx.op);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -274,7 +274,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public IExpr visitReXchg(LitmusCParser.ReXchgContext ctx){
         Register register = getReturnRegister(true);
         IExpr value = (IExpr)ctx.value.accept(this);
-        AbstractEvent event = EventFactory.Linux.newRMWExchange(getAddress(ctx.address), register, value, ctx.mo);
+        Event event = EventFactory.Linux.newRMWExchange(getAddress(ctx.address), register, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -283,7 +283,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 	public IExpr visitReC11SCmpXchg(LitmusCParser.ReC11SCmpXchgContext ctx) {
         Register register = getReturnRegister(true);
         IExpr value = (IExpr)ctx.value.accept(this);
-        AbstractEvent event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, true);
+        Event event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, true);
         programBuilder.addChild(currentThread, event);
         return register;
 	}
@@ -292,7 +292,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 	public IExpr visitReC11WCmpXchg(LitmusCParser.ReC11WCmpXchgContext ctx) {
         Register register = getReturnRegister(true);
         IExpr value = (IExpr)ctx.value.accept(this);
-        AbstractEvent event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, false);
+        Event event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, false);
         programBuilder.addChild(currentThread, event);
         return register;
 	}
@@ -302,14 +302,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(true);
         ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
         IExpr value = (IExpr)ctx.value.accept(this);
-        AbstractEvent event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
+        Event event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
     }
 
 	@Override public IExpr visitReC11Load(LitmusCParser.ReC11LoadContext ctx) {
         Register register = getReturnRegister(true);
-        AbstractEvent event = EventFactory.Atomic.newLoad(register, getAddress(ctx.address), ctx.c11Mo().mo);
+        Event event = EventFactory.Atomic.newLoad(register, getAddress(ctx.address), ctx.c11Mo().mo);
         programBuilder.addChild(currentThread, event);
         return register;
 	}
@@ -317,7 +317,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReLoad(LitmusCParser.ReLoadContext ctx){
         Register register = getReturnRegister(true);
-        AbstractEvent event = EventFactory.Linux.newLKMMLoad(register, getAddress(ctx.address), ctx.mo);
+        Event event = EventFactory.Linux.newLKMMLoad(register, getAddress(ctx.address), ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -325,7 +325,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReReadOnce(LitmusCParser.ReReadOnceContext ctx){
         Register register = getReturnRegister(true);
-        AbstractEvent event = EventFactory.Linux.newLKMMLoad(register, getAddress(ctx.address), ctx.mo);
+        Event event = EventFactory.Linux.newLKMMLoad(register, getAddress(ctx.address), ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -333,7 +333,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = getReturnRegister(true);
-        AbstractEvent event = EventFactory.newLoad(register, getAddress(ctx.address), C11.NONATOMIC);
+        Event event = EventFactory.newLoad(register, getAddress(ctx.address), C11.NONATOMIC);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -419,7 +419,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
     	IExpr value = returnExpressionOrDefault(ctx.value, BigInteger.ONE);
         Register register = programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
-        AbstractEvent event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op);
+        Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op);
         return programBuilder.addChild(currentThread, event);
     }
 
@@ -427,25 +427,25 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
         if(ctx.mo.equals(Tag.Linux.MO_MB)){
-            AbstractEvent event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, Tag.Linux.MO_ONCE);
+            Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, Tag.Linux.MO_ONCE);
             programBuilder.addChild(currentThread, event);
             return programBuilder.addChild(currentThread, EventFactory.Linux.newMemoryBarrier());
         }
-        AbstractEvent event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
+        Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
         return programBuilder.addChild(currentThread, event);
     }
 
     @Override
     public Object visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        AbstractEvent event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
+        Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
         return programBuilder.addChild(currentThread, event);
     }
 
 	@Override
 	public Object visitNreC11Store(LitmusCParser.NreC11StoreContext ctx) {
         ExprInterface value = (ExprInterface)ctx.value.accept(this);
-        AbstractEvent event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, ctx.c11Mo().mo);
+        Event event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, ctx.c11Mo().mo);
         return programBuilder.addChild(currentThread, event);
 	}
 
@@ -463,7 +463,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
         ExprInterface value = (ExprInterface)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
-            AbstractEvent event = EventFactory.newStore((IExpr) variable, value, C11.NONATOMIC);
+            Event event = EventFactory.newStore((IExpr) variable, value, C11.NONATOMIC);
             return programBuilder.addChild(currentThread, event);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());

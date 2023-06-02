@@ -18,8 +18,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -436,7 +436,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
 	        if(register != null){
 	        	if(ctx.getText().contains("$load.")) {
-					AbstractEvent child;
+					Event child;
 					if(allocations.contains(value)) {
 						// These loads corresponding to pthread_joins
 						child = EventFactory.Pthread.newJoin(register, (IExpr)value);

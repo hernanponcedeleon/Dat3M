@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
@@ -50,7 +50,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
         // Establish that address expression evaluates to same value at both events.
         Set<Register> addrRegs = a.getAddress().getRegs();
-        AbstractEvent e = a.getSuccessor();
+        Event e = a.getSuccessor();
         while (e != b) {
             if (e instanceof RegWriter && addrRegs.contains(((RegWriter)e).getResultRegister())) {
                 cache.put(t, Boolean.FALSE);

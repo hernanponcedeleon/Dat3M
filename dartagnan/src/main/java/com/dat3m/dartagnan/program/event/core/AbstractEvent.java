@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -14,9 +13,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.*;
 
-public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent> {
-
-	public static final int PRINT_PAD_EXTRA = 50;
+public abstract class AbstractEvent implements Event {
 
 	protected Thread thread; // The thread this event belongs to
 	// This id is dynamically changing during processing.
@@ -38,29 +35,38 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
         this.thread = other.thread;
     }
 
+	@Override
 	public int getGlobalId() { return globalId; }
+	@Override
 	public void setGlobalId(int id) { this.globalId = id; }
 
 	// ============================================ Metadata ============================================
 
-	public void copyAllMetadataFrom(AbstractEvent other) {
-		other.metadataMap.getAllMetadata().forEach(this.metadataMap::put);
+	@Override
+	public void copyAllMetadataFrom(Event other) {
+		((AbstractEvent)other).metadataMap.getAllMetadata().forEach(this.metadataMap::put);
 	}
 
-	public void copyMetadataFrom(AbstractEvent other, Class<? extends Metadata> metadataClass) {
+	@Override
+	public void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass) {
 		other.setMetadata(other.getMetadata(metadataClass));
 	}
 
+	@Override
 	public boolean hasMetadata(Class<? extends Metadata> metadataClass) { return metadataMap.contains(metadataClass); }
+	@Override
 	public <T extends Metadata> T getMetadata(Class<T> metadataClass) { return metadataMap.get(metadataClass); }
+	@Override
 	public <T extends Metadata> T setMetadata(T metadata) { return metadataMap.put(metadata); }
 
-	public boolean hasEqualMetadata(AbstractEvent other, Class<? extends Metadata> metadataClass) {
+	@Override
+	public boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass) {
 		return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
 	}
 
 	// TODO: Remove this
-	public AbstractEvent setCFileInformation(int line, String sourceCodeFilePath) {
+	@Override
+	public Event setCFileInformation(int line, String sourceCodeFilePath) {
 		setMetadata(new SourceLocation(sourceCodeFilePath, line));
 		return this;
 	}
@@ -70,27 +76,39 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 	// ============================================ Tags =============================================
 
 	// The set of tags should not be modified directly.
+	@Override
 	public Set<String> getTags() { return tags; }
+	@Override
 	public boolean hasTag(String tag){ return tag != null && tags.contains(tag); }
 
+	@Override
 	public void addTags(Collection<? extends String> tags) { this.tags.addAll(tags); }
+	@Override
 	public void addTags(String... tags){ addTags(Arrays.asList(tags)); }
+	@Override
 	public void removeTags(Collection<? extends String> tags) { this.tags.removeAll(tags); }
+	@Override
 	public void removeTags(String... tags){  removeTags(Arrays.asList(tags)); }
 
 	// ===============================================================================================
 
 	// ======================================== Control-flow =========================================
 
-	public AbstractEvent getSuccessor() { return successor; }
-	public AbstractEvent getPredecessor() { return predecessor; }
+	@Override
+	public Event getSuccessor() { return successor; }
+	@Override
+	public Event getPredecessor() { return predecessor; }
 
+	@Override
 	public Thread getThread() { return thread; }
+	@Override
 	public void setThread(Thread thread) {
 		this.thread = Preconditions.checkNotNull(thread);
 	}
 
-	public void setSuccessor(AbstractEvent event) {
+	@Override
+	public void setSuccessor(Event ev) {
+		final AbstractEvent event = (AbstractEvent)ev;
 		if (successor != null) {
 			successor.predecessor = null;
 		}
@@ -104,7 +122,9 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 		successor = event;
 	}
 
-	public void setPredecessor(AbstractEvent event) {
+	@Override
+	public void setPredecessor(Event ev) {
+		final AbstractEvent event = (AbstractEvent)ev;
 		if (predecessor != null) {
 			predecessor.successor = null;
 		}
@@ -118,22 +138,24 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 		predecessor = event;
 	}
 
-	public final List<AbstractEvent> getSuccessors(){
-		List<AbstractEvent> events = new ArrayList<>();
-		AbstractEvent cur = this;
+	@Override
+	public final List<Event> getSuccessors(){
+		List<Event> events = new ArrayList<>();
+		Event cur = this;
 		while (cur != null) {
-			events.add( cur);
+			events.add(cur);
 			cur = cur.getSuccessor();
 		}
 
 		return events;
 	}
 
-	public final List<AbstractEvent> getPredecessors(){
-		List<AbstractEvent> events = new ArrayList<>();
-		AbstractEvent cur = this;
+	@Override
+	public final List<Event> getPredecessors(){
+		List<Event> events = new ArrayList<>();
+		Event cur = this;
 		while (cur != null) {
-			events.add( cur);
+			events.add(cur);
 			cur = cur.getPredecessor();
 		}
 
@@ -141,6 +163,7 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 	}
 
 
+	@Override
 	public void delete() {
 		if (getPredecessor() != null) {
 			getPredecessor().setSuccessor(this.getSuccessor());
@@ -149,22 +172,25 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 		}
 	}
 
-	public void insertAfter(AbstractEvent toBeInserted) {
+	@Override
+	public void insertAfter(Event toBeInserted) {
 		if (this.successor != null) {
 			this.successor.setPredecessor(toBeInserted);
 		}
 		this.setSuccessor(toBeInserted);
 	}
 
-	public void insertAfter(List<AbstractEvent> toBeInserted) {
-		AbstractEvent cur = this;
-		for (AbstractEvent next : toBeInserted) {
+	@Override
+	public void insertAfter(List<Event> toBeInserted) {
+		Event cur = this;
+		for (Event next : toBeInserted) {
 			cur.insertAfter(next);
 			cur = next;
 		}
 	}
 
-	public void replaceBy(AbstractEvent replacement) {
+	@Override
+	public void replaceBy(Event replacement) {
 		this.insertAfter(replacement);
 		this.delete();
 	}
@@ -174,7 +200,7 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 	// ======================================== Miscellaneous ========================================
 
 	@Override
-	public int compareTo(AbstractEvent e){
+	public int compareTo(Event e){
 		if (e == this) {
 			return 0;
 		}
@@ -187,23 +213,29 @@ public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent
 		return result;
 	}
 
-	public AbstractEvent getCopy(){
+	@Override
+	public Event getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-	public void updateReferences(Map<AbstractEvent, AbstractEvent> updateMapping) { }
+	@Override
+	public void updateReferences(Map<Event, Event> updateMapping) { }
 
+	@Override
 	public <T> T accept(EventVisitor<T> visitor) {
 		return visitor.visitEvent(this);
 	}
 
+	@Override
 	public void runLocalAnalysis(Program program, Context context) { }
 
 	// This method needs to get overwritten for conditional events.
+	@Override
 	public boolean cfImpliesExec() {
 		return true;
 	}
 
+	@Override
 	public BooleanFormula encodeExec(EncodingContext ctx) {
 		return ctx.getBooleanFormulaManager().makeTrue();
 	}

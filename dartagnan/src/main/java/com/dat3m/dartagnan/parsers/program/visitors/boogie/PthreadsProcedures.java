@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,7 +79,7 @@ public class PthreadsProcedures {
 		String threadName = ctx.call_params().exprs().expr().get(2).getText();
 		visitor.pool.add(pointer, threadName, visitor.threadCount);
         
-		AbstractEvent matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
+		Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
 		visitor.programBuilder.addChild(visitor.threadCount, matcher);
 		visitor.pool.addMatcher(pointer, matcher);
 		

@@ -1,24 +1,24 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.function.Function;
 
 public class Tuple implements Comparable<Tuple> {
 
-    private final AbstractEvent first;
-    private final AbstractEvent second;
+    private final Event first;
+    private final Event second;
 
-    public Tuple(AbstractEvent first, AbstractEvent second) {
+    public Tuple(Event first, Event second) {
         this.first = first;
         this.second = second;
     }
 
-    public AbstractEvent getFirst(){
+    public Event getFirst(){
         return first;
     }
 
-    public AbstractEvent getSecond(){
+    public Event getSecond(){
         return second;
     }
 
@@ -61,7 +61,7 @@ public class Tuple implements Comparable<Tuple> {
     	return new Tuple(second, first);
     }
 
-    public Tuple permute(Function<AbstractEvent, AbstractEvent> p) {
+    public Tuple permute(Function<Event, Event> p) {
         return new Tuple(p.apply(first), p.apply(second));
     }
 

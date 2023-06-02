@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
 import java.util.Collection;
@@ -17,15 +17,15 @@ public class Thread {
     private static final TypeFactory types = TypeFactory.getInstance();
     private String name;
     private final int id;
-    private final AbstractEvent entry;
-    private AbstractEvent exit;
+    private final Event entry;
+    private Event exit;
     
 	protected Program program; // The program this thread belongs to
 
     private final Map<String, Register> registers;
     private int dummyCount = 0;
 
-    public Thread(String name, int id, AbstractEvent entry){
+    public Thread(String name, int id, Event entry){
     	Preconditions.checkArgument(id >= 0, "Invalid thread ID");
     	Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         entry.setThread(this);
@@ -36,7 +36,7 @@ public class Thread {
         this.registers = new HashMap<>();
     }
 
-    public Thread(int id, AbstractEvent entry){
+    public Thread(int id, Event entry){
     	this(String.valueOf(id), id, entry);
     }
 
@@ -52,11 +52,11 @@ public class Thread {
         return id;
     }
 
-    public List<AbstractEvent> getEvents() {
+    public List<Event> getEvents() {
         return entry.getSuccessors();
     }
 
-    public <T extends AbstractEvent> List<T> getEvents(Class<T> cls) {
+    public <T extends Event> List<T> getEvents(Class<T> cls) {
         return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
 
@@ -106,23 +106,23 @@ public class Thread {
         return register;
     }
 
-    public AbstractEvent getEntry(){
+    public Event getEntry(){
         return entry;
     }
 
-    public AbstractEvent getExit(){
+    public Event getExit(){
         return exit;
     }
 
-    public void append(AbstractEvent event){
+    public void append(Event event){
         exit.setSuccessor(event);
         event.setThread(this);
         updateExit(event);
     }
 
-    public void updateExit(AbstractEvent event){
+    public void updateExit(Event event){
         exit = event;
-        AbstractEvent next = exit.getSuccessor();
+        Event next = exit.getSuccessor();
         while(next != null){
             exit = next;
             exit.setThread(this);

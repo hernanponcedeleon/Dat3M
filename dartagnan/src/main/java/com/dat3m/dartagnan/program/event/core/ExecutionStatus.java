@@ -13,10 +13,10 @@ import java.util.Map;
 public class ExecutionStatus extends AbstractEvent implements RegWriter {
 
     private final Register register;
-    private AbstractEvent event;
+    private Event event;
     private final boolean trackDep;
 
-    public ExecutionStatus(Register register, AbstractEvent event, boolean trackDep) {
+    public ExecutionStatus(Register register, Event event, boolean trackDep) {
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
@@ -34,7 +34,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter {
         return register;
     }
 
-    public AbstractEvent getStatusEvent() {
+    public Event getStatusEvent() {
         return event;
     }
 
@@ -77,12 +77,12 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public AbstractEvent getCopy() {
+    public Event getCopy() {
         return new ExecutionStatus(this);
     }
 
     @Override
-    public void updateReferences(Map<AbstractEvent, AbstractEvent> updateMapping) {
+    public void updateReferences(Map<Event, Event> updateMapping) {
         this.event = updateMapping.getOrDefault(event, event);
     }
 

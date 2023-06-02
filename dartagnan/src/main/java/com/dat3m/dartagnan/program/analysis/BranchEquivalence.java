@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -45,7 +46,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_BRANCHES;
 */
 
 @Options
-public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
+public class BranchEquivalence extends AbstractEquivalence<Event> {
     /*
        NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
         - That means they will not get returned by getAllEquivalenceClasses, nor will they be accessible
@@ -82,29 +83,29 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
         return program;
     }
 
-    public boolean isGuaranteedEvent(AbstractEvent e) {
+    public boolean isGuaranteedEvent(Event e) {
         return initialClass.contains(e);
     }
 
-    public boolean isUnreachableEvent(AbstractEvent e) { return unreachableClass.contains(e); }
+    public boolean isUnreachableEvent(Event e) { return unreachableClass.contains(e); }
 
-    public boolean areMutuallyExclusive(AbstractEvent e1, AbstractEvent e2) {
+    public boolean areMutuallyExclusive(Event e1, Event e2) {
         return getEquivalenceClass(e1).getExclusiveClasses().contains(getEquivalenceClass(e2));
     }
 
-    public boolean isImplied(AbstractEvent start, AbstractEvent implied) {
+    public boolean isImplied(Event start, Event implied) {
         return getEquivalenceClass(start).getImpliedClasses().contains(getEquivalenceClass(implied));
     }
 
-    public boolean isReachableFrom(AbstractEvent start, AbstractEvent target) {
+    public boolean isReachableFrom(Event start, Event target) {
         return start.getThread() == target.getThread() && start.getGlobalId() <= target.getGlobalId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
     }
 
-    public Set<AbstractEvent> getExclusiveEvents(AbstractEvent e) {
+    public Set<Event> getExclusiveEvents(Event e) {
         return new ExclusiveSet(e);
     }
 
-    public Set<Class> getExclusiveClasses(AbstractEvent e) {
+    public Set<Class> getExclusiveClasses(Event e) {
         return (this.<BranchClass>getTypedEqClass(e)).getExclusiveClasses();
     }
 
@@ -113,7 +114,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
     public Class getUnreachableClass() { return unreachableClass; }
 
     @Override
-    public Class getEquivalenceClass(AbstractEvent x) {
+    public Class getEquivalenceClass(Event x) {
         return super.getTypedEqClass(x);
     }
 
@@ -144,11 +145,11 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
     }
 
     private void run() {
-        Map<Thread, Map<AbstractEvent, Branch>> threadBranches = new HashMap<>();
+        Map<Thread, Map<Event, Branch>> threadBranches = new HashMap<>();
         for (Thread t : program.getThreads()) {
             // Step (1)
-            Map<AbstractEvent, Branch> branchMap = new HashMap<>();
-            Map<AbstractEvent, Branch> finalBranchMap = new HashMap<>();
+            Map<Event, Branch> branchMap = new HashMap<>();
+            Map<Event, Branch> finalBranchMap = new HashMap<>();
             threadBranches.put(t, branchMap);
             computeBranches(t.getEntry(), branchMap, finalBranchMap);
             // Step (2)-(3)
@@ -176,7 +177,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
         }
     }
 
-    public void removeUnreachableEvent(AbstractEvent e) {
+    public void removeUnreachableEvent(Event e) {
         unreachableClass.removeInternal(e);
         if (unreachableClass.isEmpty()) {
             removeUnreachableClass();
@@ -185,7 +186,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
 
     //========================== Branching Property =========================
 
-    private Branch computeBranches(AbstractEvent start, Map<AbstractEvent, Branch> branchMap, Map<AbstractEvent, Branch> finalBranchMap) {
+    private Branch computeBranches(Event start, Map<Event, Branch> branchMap, Map<Event, Branch> finalBranchMap) {
         if ( branchMap.containsKey(start)) {
             // <start> was already visited
             return branchMap.get(start);
@@ -193,7 +194,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
 
         Branch b = new Branch(start);
         branchMap.put(start, b);
-        AbstractEvent succ = start;
+        Event succ = start;
         do {
             if (succ instanceof CondJump) {
                 CondJump jump = (CondJump) succ;
@@ -285,7 +286,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
 
     //========================== Equivalence class computations =========================
 
-    private void computeExclusiveClasses(Map<Thread, Map<AbstractEvent, Branch>> threadBranches) {
+    private void computeExclusiveClasses(Map<Thread, Map<Event, Branch>> threadBranches) {
         for (Thread t : program.getThreads()) {
             computeReachableBranches(threadBranches.get(t).get(t.getEntry()));
         }
@@ -313,8 +314,8 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
                     continue;
                 }
 
-                AbstractEvent e1 = c1.getRepresentative();
-                AbstractEvent e2 = c2.getRepresentative();
+                Event e1 = c1.getRepresentative();
+                Event e2 = c2.getRepresentative();
                 if ( e1.getThread() == e2.getThread() && e1.getGlobalId() < e2.getGlobalId()) {
                     if (!c1.reachableClasses.contains(c2)) {
                         excl.add(c2);
@@ -339,11 +340,11 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
             removeClass(unreachableClass);
         } else {
             unreachableClass.representative = unreachableClass.stream()
-                    .min(Comparator.comparingInt(AbstractEvent::getGlobalId)).get();
+                    .min(Comparator.comparingInt(Event::getGlobalId)).get();
         }
     }
 
-    private void createBranchClasses(Map<AbstractEvent, Branch> branchMap) {
+    private void createBranchClasses(Map<Event, Branch> branchMap) {
         List<BranchClass> newClasses;
         if (mergeBranches) {
             DependencyGraph<Branch> depGraph = DependencyGraph.from(branchMap.values(), Branch::getImpliedBranches);
@@ -353,7 +354,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
                 newClasses.add(eq);
                 scc.forEach(b -> eq.addAllInternal(b.getContent().events));
                 eq.representative = eq.stream()
-                        .min(Comparator.comparingInt(AbstractEvent::getGlobalId)).get();
+                        .min(Comparator.comparingInt(Event::getGlobalId)).get();
             }
         } else {
             newClasses = new ArrayList<>();
@@ -414,7 +415,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
 
     //========================== Internal data structures =========================
 
-    public interface Class extends EquivalenceClass<AbstractEvent> {
+    public interface Class extends EquivalenceClass<Event> {
         Set<Class> getImpliedClasses();
         Set<Class> getReachableClasses();
         Set<Class> getExclusiveClasses();
@@ -460,14 +461,14 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
         final Set<Branch> parents = new HashSet<>();
         final Set<Branch> mustSucc = new HashSet<>();
         final Set<Branch> mustPred = new HashSet<>();
-        final List<AbstractEvent> events = new ArrayList<>();
+        final List<Event> events = new ArrayList<>();
         final Set<Branch> reachableBranches = new HashSet<>();
 
         boolean mustPredComputed = false;
         boolean mustSuccComputed = false;
         boolean reachableBranchesComputed = false;
 
-        public Branch(AbstractEvent root) {
+        public Branch(Event root) {
             mustPred.add(this);
             mustSucc.add(this);
             reachableBranches.add(this);
@@ -479,7 +480,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
             return Sets.union(mustSucc, mustPred);
         }
 
-        public AbstractEvent getRoot() {
+        public Event getRoot() {
             return events.get(0);
         }
 
@@ -489,12 +490,12 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
         }
     }
 
-    private class ExclusiveSet extends AbstractSet<AbstractEvent> {
+    private class ExclusiveSet extends AbstractSet<Event> {
 
         final Set<Class> classes;
         final int size;
 
-        public ExclusiveSet(AbstractEvent e) {
+        public ExclusiveSet(Event e) {
             classes = getEquivalenceClass(e).getExclusiveClasses();
             int size = 0;
             for (Class c : classes) {
@@ -512,7 +513,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
         }
 
         @Override
-        public Iterator<AbstractEvent> iterator() {
+        public Iterator<Event> iterator() {
             return new Iter();
         }
 
@@ -522,10 +523,10 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
         }
 
 
-        private class Iter implements Iterator<AbstractEvent> {
+        private class Iter implements Iterator<Event> {
 
             private final Iterator<Class> outer;
-            private Iterator<AbstractEvent> inner;
+            private Iterator<Event> inner;
 
             public Iter() {
                 outer = classes.iterator();
@@ -545,7 +546,7 @@ public class BranchEquivalence extends AbstractEquivalence<AbstractEvent> {
              }
 
             @Override
-            public AbstractEvent next() {
+            public Event next() {
                 return inner.next();
             }
         }

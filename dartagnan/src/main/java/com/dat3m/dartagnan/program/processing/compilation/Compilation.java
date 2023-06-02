@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
@@ -82,7 +82,7 @@ public class Compilation implements ProgramProcessor {
             return;
         }
 
-        EventVisitor<List<AbstractEvent>> visitor;
+        EventVisitor<List<Event>> visitor;
         switch (target) {
             case C11:
                 visitor = new VisitorC11(forceStart); break;
@@ -111,13 +111,13 @@ public class Compilation implements ProgramProcessor {
         logger.info("Program compiled to {}", target);
     }
 
-    private void compileThread(Thread thread, EventVisitor<List<AbstractEvent>> visitor) {
+    private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
 
-        AbstractEvent pred = thread.getEntry();
-        AbstractEvent toBeCompiled = pred.getSuccessor();
+        Event pred = thread.getEntry();
+        Event toBeCompiled = pred.getSuccessor();
         while (toBeCompiled != null) {
-            List<AbstractEvent> compiledEvents = toBeCompiled.accept(visitor);
-            for (AbstractEvent e : compiledEvents) {
+            List<Event> compiledEvents = toBeCompiled.accept(visitor);
+            for (Event e : compiledEvents) {
                 e.copyAllMetadataFrom(toBeCompiled);
                 pred.setSuccessor(e);
                 pred = e;

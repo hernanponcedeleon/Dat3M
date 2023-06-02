@@ -55,7 +55,7 @@ public class WitnessBuilder {
 
     // =====================================================================
 
-	private final Map<AbstractEvent, Integer> eventThreadMap = new HashMap<>();
+	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 	
 	private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r) {
 		context = checkNotNull(c);
@@ -71,7 +71,7 @@ public class WitnessBuilder {
 
 	public WitnessGraph build() {
 		for(Thread t : context.getTask().getProgram().getThreads()) {
-			for(AbstractEvent e : t.getEntry().getSuccessors()) {
+			for(Event e : t.getEntry().getSuccessors()) {
 				eventThreadMap.put(e, t.getId() - 1);
 			}
 		}
@@ -113,12 +113,12 @@ public class WitnessBuilder {
 		}
 
 		try (Model model = prover.getModel()) {
-			List<AbstractEvent> execution = reOrderBasedOnAtomicity(context.getTask().getProgram(), getSCExecutionOrder(model));
+			List<Event> execution = reOrderBasedOnAtomicity(context.getTask().getProgram(), getSCExecutionOrder(model));
 
 			for (int i = 0; i < execution.size(); i++) {
-				AbstractEvent e = execution.get(i);
+				Event e = execution.get(i);
 				if (i + 1 < execution.size()) {
-					AbstractEvent next = execution.get(i + 1);
+					Event next = execution.get(i + 1);
 					if (e.hasEqualMetadata(next, SourceLocation.class) && e.getThread() == next.getThread()) {
 						continue;
 					}
@@ -167,15 +167,15 @@ public class WitnessBuilder {
 		return graph;
 	}
 	
-	private List<AbstractEvent> getSCExecutionOrder(Model model) {
-		List<AbstractEvent> execEvents = new ArrayList<>();
+	private List<Event> getSCExecutionOrder(Model model) {
+		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
-		Predicate<AbstractEvent> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e)))
+		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e)))
 				&& e.hasMetadata(SourceLocation.class);
 		execEvents.addAll(context.getTask().getProgram().getEvents(Init.class).stream().filter(executedCEvents).collect(Collectors.toList()));
 		execEvents.addAll(context.getTask().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
-		Map<Integer, List<AbstractEvent>> map = new HashMap<>();
-        for(AbstractEvent e : execEvents) {
+		Map<Integer, List<Event>> map = new HashMap<>();
+        for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
 			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
 				continue;
@@ -186,28 +186,28 @@ public class WitnessBuilder {
         	}
         }
 
-        List<AbstractEvent> exec = map.keySet().stream().sorted()
+        List<Event> exec = map.keySet().stream().sorted()
 				.flatMap(key -> map.get(key).stream()).collect(Collectors.toList());
         return exec.isEmpty() ? execEvents : exec;
 	}
 	
-	private List<AbstractEvent> reOrderBasedOnAtomicity(Program program, List<AbstractEvent> order) {
-		List<AbstractEvent> result = new ArrayList<>();
-		Set<AbstractEvent> processedEvents = new HashSet<>(); // Maintained for constant lookup time
+	private List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
+		List<Event> result = new ArrayList<>();
+		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
-		List<List<AbstractEvent>> atomicBlocks = program.getEvents().stream()
+		List<List<Event>> atomicBlocks = program.getEvents().stream()
 				.filter(e -> e.hasTag(Tag.SVCOMP.SVCOMPATOMIC))
 				.map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
 						collect(Collectors.toList()))
 				.collect(Collectors.toList());
 
-		for (AbstractEvent next : order) {
+		for (Event next : order) {
 			if (processedEvents.contains(next)) {
 				// next was added as part of a previous block
 				continue;
 			}
-			List<AbstractEvent> block = atomicBlocks.stream()
+			List<Event> block = atomicBlocks.stream()
 					.filter(b -> Collections.binarySearch(b, next) >= 0).findFirst()
 					.orElseGet(() -> Collections.singletonList(next));
 			result.addAll(block);

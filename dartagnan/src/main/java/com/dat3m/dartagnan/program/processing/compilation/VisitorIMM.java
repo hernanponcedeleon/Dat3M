@@ -30,7 +30,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLoad(Load e) {
+	public List<Event> visitLoad(Load e) {
 		String mo = e.getMo();
         return eventSequence(
         		newLoad(e.getResultRegister(), e.getAddress(), mo.isEmpty() || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
@@ -38,7 +38,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitStore(Store e) {
+	public List<Event> visitStore(Store e) {
 		String mo = e.getMo();
         return eventSequence(
         		newStore(e.getAddress(), e.getMemValue(), mo.isEmpty() || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
@@ -46,7 +46,7 @@ class VisitorIMM extends VisitorBase {
 	}
 	
 	@Override
-	public List<AbstractEvent> visitCreate(Create e) {
+	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
         store.addTags(C11.PTHREAD);
         
@@ -56,14 +56,14 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitEnd(End e) {
+	public List<Event> visitEnd(End e) {
         return eventSequence(
         		newStore(e.getAddress(), IValue.ZERO, C11.MO_RELEASE)
         );
 	}
 
 	@Override
-	public List<AbstractEvent> visitJoin(Join e) {
+	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
@@ -75,7 +75,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitStart(Start e) {
+	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
@@ -92,7 +92,7 @@ class VisitorIMM extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<AbstractEvent> visitAtomicCmpXchg(AtomicCmpXchg e) {
+	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -131,7 +131,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicFetchOp(AtomicFetchOp e) {
+	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr address = e.getAddress();
@@ -152,7 +152,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicLoad(AtomicLoad e) {
+	public List<Event> visitAtomicLoad(AtomicLoad e) {
 		String mo = e.getMo();
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
@@ -162,7 +162,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicStore(AtomicStore e) {
+	public List<Event> visitAtomicStore(AtomicStore e) {
 		String mo = e.getMo();
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
@@ -172,12 +172,12 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicThreadFence(AtomicThreadFence e) {
+	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
 		return Collections.singletonList(newFence(e.getMo()));
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicXchg(AtomicXchg e) {
+	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
@@ -198,19 +198,19 @@ class VisitorIMM extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<AbstractEvent> visitLlvmLoad(LlvmLoad e) {
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
 		return eventSequence(
 				newLoad(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo())));
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmStore(LlvmStore e) {
+	public List<Event> visitLlvmStore(LlvmStore e) {
 		return eventSequence(
 				newStore(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo())));
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmXchg(LlvmXchg e) {
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
@@ -219,7 +219,7 @@ class VisitorIMM extends VisitorBase {
 		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
 		Store store = newRMWStoreExclusive(address, value, IMM.extractStoreMo(mo), true);
 		Label label = newLabel("FakeDep");
-		AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
 		return eventSequence(
 				load,
@@ -229,7 +229,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmRMW(LlvmRMW e) {
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -242,7 +242,7 @@ class VisitorIMM extends VisitorBase {
 		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
 		Store store = newRMWStoreExclusive(address, dummyReg, IMM.extractStoreMo(mo), true);
 		Label label = newLabel("FakeDep");
-		AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
 		return eventSequence(
 				load,
@@ -253,7 +253,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmCmpXchg(LlvmCmpXchg e) {
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
 
@@ -279,7 +279,7 @@ class VisitorIMM extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmFence(LlvmFence e) {
+	public List<Event> visitLlvmFence(LlvmFence e) {
 		return eventSequence(
 				newFence(e.getMo()));
 	}

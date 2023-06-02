@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -50,8 +50,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
      */
     private static class IterationData {
         private LoopAnalysis.LoopIterationInfo iterationInfo;
-        private final List<AbstractEvent> sideEffects = new ArrayList<>();
-        private final List<AbstractEvent> guaranteedExitPoints = new ArrayList<>();
+        private final List<Event> sideEffects = new ArrayList<>();
+        private final List<Event> guaranteedExitPoints = new ArrayList<>();
         private boolean isAlwaysSideEffectFull = false;
     }
 
@@ -119,18 +119,18 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final Thread thread = iterInfo.getContainingLoop().getThread();
         final int loopNumber = iterInfo.getContainingLoop().getLoopNumber();
         final int iterNumber = iterInfo.getIterationNumber();
-        final List<AbstractEvent> sideEffects = iter.sideEffects;
+        final List<Event> sideEffects = iter.sideEffects;
 
         final List<Register> trackingRegs = new ArrayList<>();
-        AbstractEvent insertionPoint = iterInfo.getIterationEnd();
+        Event insertionPoint = iterInfo.getIterationEnd();
         for (int i = 0; i < sideEffects.size(); i++) {
-            final AbstractEvent sideEffect = sideEffects.get(i);
+            final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
                     GlobalSettings.getArchPrecision());
             trackingRegs.add(trackingReg);
 
-            final AbstractEvent execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
+            final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
             insertionPoint.insertAfter(execCheck);
             insertionPoint = execCheck;
         }
@@ -140,7 +140,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
                 .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
-        final AbstractEvent spinloopStart = iterInfo.getIterationStart();
+        final Event spinloopStart = iterInfo.getIterationStart();
         assumeSideEffect.copyAllMetadataFrom(spinloopStart);
         insertionPoint.insertAfter(assumeSideEffect);
     }
@@ -156,8 +156,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
     }
 
     private IterationData computeIterationData(LoopAnalysis.LoopIterationInfo iteration) {
-        final AbstractEvent iterStart = iteration.getIterationStart();
-        final AbstractEvent iterEnd = iteration.getIterationEnd();
+        final Event iterStart = iteration.getIterationStart();
+        final Event iterEnd = iteration.getIterationEnd();
 
         final IterationData data = new IterationData();
         data.iterationInfo = iteration;
@@ -170,14 +170,14 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         return data;
     }
 
-    private List<AbstractEvent> collectSideEffects(AbstractEvent iterStart, AbstractEvent iterEnd) {
-        List<AbstractEvent> sideEffects = new ArrayList<>();
+    private List<Event> collectSideEffects(Event iterStart, Event iterEnd) {
+        List<Event> sideEffects = new ArrayList<>();
         // Unsafe means the loop read from the registers before writing to them.
         Set<Register> unsafeRegisters = new HashSet<>();
         // Safe means the loop wrote to these register before using them
         Set<Register> safeRegisters = new HashSet<>();
 
-        AbstractEvent cur = iterStart;
+        Event cur = iterStart;
         do {
             if (cur.hasTag(Tag.WRITE)) {
                 sideEffects.add(cur); // Writes always cause side effects
@@ -208,8 +208,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
     private void reduceToDominatingSideEffects(IterationData data) {
         final LoopAnalysis.LoopIterationInfo iter = data.iterationInfo;
-        final AbstractEvent start = iter.getIterationStart();
-        final AbstractEvent end = iter.getIterationEnd();
+        final Event start = iter.getIterationStart();
+        final Event end = iter.getIterationEnd();
 
         if (start.hasTag(Tag.SPINLOOP)) {
             // If the iteration start is tagged as "SPINLOOP", we treat the iteration as side effect free
@@ -218,13 +218,13 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             return;
         }
 
-        final List<AbstractEvent> iterBody = iter.computeBody();
+        final List<Event> iterBody = iter.computeBody();
         // to compute the pre-dominator tree ...
-        final Map<AbstractEvent, List<AbstractEvent>> immPredMap = new HashMap<>();
+        final Map<Event, List<Event>> immPredMap = new HashMap<>();
         immPredMap.put(iterBody.get(0), List.of());
-        for (AbstractEvent e : iterBody.subList(1, iterBody.size())) {
-            final List<AbstractEvent> preds = new ArrayList<>();
-            final AbstractEvent pred = e.getPredecessor();
+        for (Event e : iterBody.subList(1, iterBody.size())) {
+            final List<Event> preds = new ArrayList<>();
+            final Event pred = e.getPredecessor();
             if (!(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
                 preds.add(pred);
             }
@@ -235,11 +235,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         // to compute the post-dominator tree ...
-        final List<AbstractEvent> reversedOrderEvents = new ArrayList<>(Lists.reverse(iterBody));
-        final Map<AbstractEvent, List<AbstractEvent>> immSuccMap = new HashMap<>();
+        final List<Event> reversedOrderEvents = new ArrayList<>(Lists.reverse(iterBody));
+        final Map<Event, List<Event>> immSuccMap = new HashMap<>();
         immSuccMap.put(reversedOrderEvents.get(0), List.of());
-        for (AbstractEvent e : iterBody) {
-            for (AbstractEvent pred : immPredMap.get(e)) {
+        for (Event e : iterBody) {
+            for (Event pred : immPredMap.get(e)) {
                 immSuccMap.computeIfAbsent(pred, key -> new ArrayList<>()).add(e);
             }
         }
@@ -247,11 +247,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         // We delete all side effects that are guaranteed to lead to an exit point, i.e.,
         // those that never reach a subsequent iteration.
         reversedOrderEvents.forEach(e -> immSuccMap.putIfAbsent(e, List.of()));
-        List<AbstractEvent> exitPoints = new ArrayList<>(data.guaranteedExitPoints);
+        List<Event> exitPoints = new ArrayList<>(data.guaranteedExitPoints);
         boolean changed = true;
         while (changed) {
             changed = !exitPoints.isEmpty();
-            for (AbstractEvent exit : exitPoints) {
+            for (Event exit : exitPoints) {
                 assert immSuccMap.get(exit).isEmpty();
                 immSuccMap.remove(exit);
                 immPredMap.get(exit).forEach(pred -> immSuccMap.get(pred).remove(exit));
@@ -261,13 +261,13 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         reversedOrderEvents.removeIf(e -> ! immSuccMap.containsKey(e));
 
 
-        final Map<AbstractEvent, AbstractEvent> preDominatorTree = computeDominatorTree(iterBody, immPredMap::get);
+        final Map<Event, Event> preDominatorTree = computeDominatorTree(iterBody, immPredMap::get);
 
         {
             // Check if always side-effect-full
             // This is an approximation: If the end of the iteration is predominated by some side effect
             // then we always observe side effects.
-            AbstractEvent dom = end;
+            Event dom = end;
             do {
                 if (data.sideEffects.contains(dom)) {
                     // A special case where the loop is always side-effect-full
@@ -282,8 +282,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         data.sideEffects.removeIf(e -> !immSuccMap.containsKey(e));
 
         // Delete all pre-dominated side effects
-        for (final AbstractEvent e : List.copyOf(data.sideEffects)) {
-            AbstractEvent dom = e;
+        for (final Event e : List.copyOf(data.sideEffects)) {
+            Event dom = e;
             while ((dom = preDominatorTree.get(dom)) != start) {
                 assert dom != null;
                 if (data.sideEffects.contains(dom)) {
@@ -294,9 +294,9 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         // Delete all post-dominated side effects
-        final Map<AbstractEvent, AbstractEvent> postDominatorTree = computeDominatorTree(reversedOrderEvents, immSuccMap::get);
-        for (final AbstractEvent e : List.copyOf(data.sideEffects)) {
-            AbstractEvent dom = e;
+        final Map<Event, Event> postDominatorTree = computeDominatorTree(reversedOrderEvents, immSuccMap::get);
+        for (final Event e : List.copyOf(data.sideEffects)) {
+            Event dom = e;
             while ((dom = postDominatorTree.get(dom)) != end) {
                 assert dom != null;
                 if (data.sideEffects.contains(dom)) {
@@ -307,7 +307,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
     }
 
-    private Map<AbstractEvent, AbstractEvent> computeDominatorTree(List<AbstractEvent> events, Function<AbstractEvent, ? extends Collection<AbstractEvent>> predsFunc) {
+    private Map<Event, Event> computeDominatorTree(List<Event> events, Function<Event, ? extends Collection<Event>> predsFunc) {
         Preconditions.checkNotNull(events);
         Preconditions.checkNotNull(predsFunc);
         if (events.isEmpty()) {
@@ -315,25 +315,25 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         // Compute natural ordering on <events>
-        final Map<AbstractEvent, Integer> orderingMap = Maps.uniqueIndex(IntStream.range(0, events.size()).boxed()::iterator, events::get);
+        final Map<Event, Integer> orderingMap = Maps.uniqueIndex(IntStream.range(0, events.size()).boxed()::iterator, events::get);
         @SuppressWarnings("ConstantConditions")
-        final BiPredicate<AbstractEvent, AbstractEvent> leq = (x, y) -> orderingMap.get(x) <= orderingMap.get(y);
+        final BiPredicate<Event, Event> leq = (x, y) -> orderingMap.get(x) <= orderingMap.get(y);
 
         // Compute actual dominator tree
-        final Map<AbstractEvent, AbstractEvent> dominatorTree = new HashMap<>();
+        final Map<Event, Event> dominatorTree = new HashMap<>();
         dominatorTree.put(events.get(0), events.get(0));
-        for (AbstractEvent cur : events.subList(1, events.size())) {
-            final Collection<AbstractEvent> preds = predsFunc.apply(cur);
+        for (Event cur : events.subList(1, events.size())) {
+            final Collection<Event> preds = predsFunc.apply(cur);
             Verify.verify(preds.stream().allMatch(dominatorTree::containsKey),
                     "Error: detected predecessor outside of the provided event list.");
-            final AbstractEvent immDom = preds.stream().reduce(null, (x, y) -> commonDominator(x, y, dominatorTree, leq));
+            final Event immDom = preds.stream().reduce(null, (x, y) -> commonDominator(x, y, dominatorTree, leq));
             dominatorTree.put(cur, immDom);
         }
 
         return dominatorTree;
     }
 
-    private AbstractEvent commonDominator(AbstractEvent a, AbstractEvent b, Map<AbstractEvent, AbstractEvent> dominatorTree, BiPredicate<AbstractEvent, AbstractEvent> leq) {
+    private Event commonDominator(Event a, Event b, Map<Event, Event> dominatorTree, BiPredicate<Event, Event> leq) {
         Preconditions.checkArgument(a != null || b != null);
         if (a == null) {
             return b;

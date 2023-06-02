@@ -37,24 +37,24 @@ public class EventFactory {
     // ========================================= Utility ===========================================
     // =============================================================================================
 
-    public static List<AbstractEvent> eventSequence(AbstractEvent... events) {
+    public static List<Event> eventSequence(Event... events) {
         return eventSequence(Arrays.asList(events));
     }
 
-    public static List<AbstractEvent> eventSequence(Collection<? extends AbstractEvent> events) {
+    public static List<Event> eventSequence(Collection<? extends Event> events) {
         return events.stream().filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    public static List<AbstractEvent> eventSequence(Object... events) {
-        List<AbstractEvent> retVal = new ArrayList<>();
+    public static List<Event> eventSequence(Object... events) {
+        List<Event> retVal = new ArrayList<>();
         for (Object obj : events) {
             if (obj == null) {
                 continue;
             }
             if (obj instanceof AbstractEvent) {
-                retVal.add((AbstractEvent) obj);
+                retVal.add((Event) obj);
             } else if (obj instanceof Collection<?>) {
-                retVal.addAll((Collection<? extends AbstractEvent>) obj);
+                retVal.addAll((Collection<? extends Event>) obj);
             } else {
                 throw new IllegalArgumentException("Cannot parse " + obj.getClass() + " as event.");
             }
@@ -176,11 +176,11 @@ public class EventFactory {
         return newRMWStoreExclusive(address, value, mo, false);
     }
 
-    public static ExecutionStatus newExecutionStatus(Register register, AbstractEvent event) {
+    public static ExecutionStatus newExecutionStatus(Register register, Event event) {
         return new ExecutionStatus(register, event, false);
     }
 
-    public static ExecutionStatus newExecutionStatusWithDependencyTracking(Register register, AbstractEvent event) {
+    public static ExecutionStatus newExecutionStatusWithDependencyTracking(Register register, Event event) {
         return new ExecutionStatus(register, event, true);
     }
 
@@ -228,7 +228,7 @@ public class EventFactory {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, IExpr address, AbstractEvent creationEvent) {
+        public static Start newStart(Register reg, IExpr address, Event creationEvent) {
             return new Start(reg, address, creationEvent);
         }
 

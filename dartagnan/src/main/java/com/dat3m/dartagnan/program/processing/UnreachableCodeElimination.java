@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -39,24 +39,24 @@ public class UnreachableCodeElimination implements ProgramProcessor {
     }
 
     private void eliminateDeadCode(Thread thread) {
-        final AbstractEvent entry = thread.getEntry();
-        final AbstractEvent exit = thread.getExit();
+        final Event entry = thread.getEntry();
+        final Event exit = thread.getExit();
 
         if (entry.hasTag(Tag.INIT)) {
             return;
         }
 
-        final Set<AbstractEvent> reachableEvents = new HashSet<>();
+        final Set<Event> reachableEvents = new HashSet<>();
         computeReachableEvents(entry, reachableEvents);
 
         thread.getEvents().stream()
                 .filter(e -> !reachableEvents.contains(e) && e != exit && !e.hasTag(Tag.NOOPT))
-                .forEach(AbstractEvent::delete);
+                .forEach(Event::delete);
     }
 
     // Modifies the second parameter
-    private void computeReachableEvents(AbstractEvent start, Set<AbstractEvent> reachable) {
-        AbstractEvent e = start;
+    private void computeReachableEvents(Event start, Set<Event> reachable) {
+        Event e = start;
         while (e != null && reachable.add(e)) {
             if (e instanceof CondJump) {
                 final CondJump jump = (CondJump) e;

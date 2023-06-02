@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
@@ -24,7 +25,7 @@ public class EndAtomic extends AbstractEvent {
 	private static final Logger logger = LogManager.getLogger(EndAtomic.class);
 
 	protected BeginAtomic begin;
-	protected transient List<AbstractEvent> enclosedEvents;
+	protected transient List<Event> enclosedEvents;
 
 	public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
@@ -40,7 +41,7 @@ public class EndAtomic extends AbstractEvent {
     	return begin;
     }
     
-    public List<AbstractEvent> getBlock(){
+    public List<Event> getBlock(){
     	Preconditions.checkState(getThread().getProgram().isCompiled(), "The program needs to get compiled first");
     	return enclosedEvents;
     }
@@ -49,7 +50,7 @@ public class EndAtomic extends AbstractEvent {
 	public void runLocalAnalysis(Program program, Context context) {
 		//===== Temporary fix to rematch atomic blocks correctly =====
 		BranchEquivalence eq = context.requires(BranchEquivalence.class);
-		List<AbstractEvent> begins = this.thread.getEvents()
+		List<Event> begins = this.thread.getEvents()
 				.stream().filter( x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
 				.collect(Collectors.toList());
 		this.begin = (BeginAtomic) begins.get(begins.size() - 1);
@@ -67,7 +68,7 @@ public class EndAtomic extends AbstractEvent {
 		}
 
 		for (BranchEquivalence.Class c : startClass.getReachableClasses()) {
-			for (AbstractEvent e : c) {
+			for (Event e : c) {
 				if (begin.getGlobalId() <= e.getGlobalId() && e.getGlobalId() <= this.getGlobalId()) {
 					if (!eq.isImplied(e, begin)) {
 						logger.warn(e + " is inside atomic block but can be reached from the outside");
@@ -95,7 +96,7 @@ public class EndAtomic extends AbstractEvent {
 	}
 
 	@Override
-	public void updateReferences(Map<AbstractEvent, AbstractEvent> updateMapping) {
+	public void updateReferences(Map<Event, Event> updateMapping) {
 		this.begin = (BeginAtomic) updateMapping.getOrDefault(this.begin, this.begin);
 	}
 

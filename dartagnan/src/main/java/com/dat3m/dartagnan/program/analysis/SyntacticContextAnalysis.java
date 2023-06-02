@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -48,15 +48,15 @@ public class SyntacticContextAnalysis {
     }
 
     public static class LoopContext implements Context {
-        private final AbstractEvent loopMarker;
+        private final Event loopMarker;
         private final int iterationNumber;
 
-        private LoopContext(AbstractEvent loopMarker, int loopIteration) {
+        private LoopContext(Event loopMarker, int loopIteration) {
             this.loopMarker = loopMarker;
             this.iterationNumber = loopIteration;
         }
 
-        public AbstractEvent getLoopMarker() { return this.loopMarker; }
+        public Event getLoopMarker() { return this.loopMarker; }
         public int getIterationNumber() { return this.iterationNumber; }
 
         @Override
@@ -84,15 +84,15 @@ public class SyntacticContextAnalysis {
         This is the information object we attach to all events.
      */
     public static class Info {
-        private final AbstractEvent event;
+        private final Event event;
         private final ImmutableList<Context> contextStack;
 
-        private Info(AbstractEvent event, ImmutableList<Context> contextStack) {
+        private Info(Event event, ImmutableList<Context> contextStack) {
             this.event = event;
             this.contextStack = contextStack;
         }
 
-        public AbstractEvent getEvent() { return this.event; }
+        public Event getEvent() { return this.event; }
         public ImmutableList<Context> getContextStack() { return this.contextStack; }
         public boolean hasContext() { return !contextStack.isEmpty(); }
 
@@ -119,9 +119,9 @@ public class SyntacticContextAnalysis {
 
     // ============================================================================
 
-    private final Map<AbstractEvent, Info> infoMap = new HashMap<>();
+    private final Map<Event, Info> infoMap = new HashMap<>();
 
-    public Info getContextInfo(AbstractEvent ev) {
+    public Info getContextInfo(Event ev) {
         Info retVal = infoMap.get(ev);
         if (retVal == null) {
             retVal = new Info(ev, ImmutableList.of());
@@ -151,11 +151,11 @@ public class SyntacticContextAnalysis {
     }
 
     private void run(Thread thread, LoopAnalysis loops) {
-        final Map<AbstractEvent, LoopMarkerTypes> loopMarkerTypesMap = getLoopMarkerTypesMap(thread, loops);
+        final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = getLoopMarkerTypesMap(thread, loops);
 
         Stack<Context> curContextStack = new Stack<>();
         curContextStack.push(new ThreadContext(thread));
-        for (AbstractEvent ev : thread.getEvents()) {
+        for (Event ev : thread.getEvents()) {
 
             final ImmutableList<Context> copyOfCurContextStack = ImmutableList.copyOf(curContextStack);
             infoMap.put(ev, new Info(ev, copyOfCurContextStack));
@@ -187,8 +187,8 @@ public class SyntacticContextAnalysis {
         }
     }
 
-    private Map<AbstractEvent, LoopMarkerTypes> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
-        final Map<AbstractEvent, LoopMarkerTypes> loopMarkerTypesMap = new HashMap<>();
+    private Map<Event, LoopMarkerTypes> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
+        final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = new HashMap<>();
         for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfThread(thread)) {
             final List<LoopAnalysis.LoopIterationInfo> iterations = loop.getIterations();
 
@@ -205,7 +205,7 @@ public class SyntacticContextAnalysis {
     // ============================== Utility methods =============================
     // ============================================================================
 
-    public static String getSourceLocationString(AbstractEvent ev) {
+    public static String getSourceLocationString(Event ev) {
         SourceLocation loc = ev.getMetadata(SourceLocation.class);
         return loc != null ? String.format("@%s#%s", loc.getSourceCodeFileName(), loc.getLineNumber()) : "@unknown";
     }

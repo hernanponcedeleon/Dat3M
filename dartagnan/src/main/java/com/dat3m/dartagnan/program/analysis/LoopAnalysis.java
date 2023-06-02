@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
@@ -42,22 +42,22 @@ public class LoopAnalysis {
 
     public static class LoopIterationInfo {
         private LoopInfo containingLoop;
-        private AbstractEvent iterBegin;
-        private AbstractEvent iterEnd;
+        private Event iterBegin;
+        private Event iterEnd;
         private int iterNumber;
 
         public LoopInfo getContainingLoop() { return containingLoop; }
-        public AbstractEvent getIterationStart() { return iterBegin; }
-        public AbstractEvent getIterationEnd() { return iterEnd; }
+        public Event getIterationStart() { return iterBegin; }
+        public Event getIterationEnd() { return iterEnd; }
         public int getIterationNumber() { return iterNumber; }
         public boolean isLast() {
             return this == containingLoop.getIterations().get(containingLoop.getIterations().size() - 1);
         }
 
-        public List<AbstractEvent> computeBody() {
-            final List<AbstractEvent> body = new ArrayList<>();
-            final AbstractEvent terminator = getIterationEnd().getSuccessor();
-            AbstractEvent cur = getIterationStart();
+        public List<Event> computeBody() {
+            final List<Event> body = new ArrayList<>();
+            final Event terminator = getIterationEnd().getSuccessor();
+            Event cur = getIterationStart();
             do {
                 body.add(cur);
             } while ((cur = cur.getSuccessor()) != terminator);
@@ -100,7 +100,7 @@ public class LoopAnalysis {
         final List<LoopInfo> loops = new ArrayList<>();
 
         int loopCounter = 0;
-        for (AbstractEvent e : thread.getEvents()) {
+        for (Event e : thread.getEvents()) {
             final LoopLabelInfo labelInfo = tryParseLoopLabel(e);
             if (labelInfo == null) {
                 continue;
@@ -147,7 +147,7 @@ public class LoopAnalysis {
 
     // A loop-related label has the form
     // "origLabel.loop/bound OR origLabel.loop/itr_N"
-    private LoopLabelInfo tryParseLoopLabel(AbstractEvent eventToParse) {
+    private LoopLabelInfo tryParseLoopLabel(Event eventToParse) {
         if (!(eventToParse instanceof Label && ((Label)eventToParse).getName().contains(LOOP_LABEL_IDENTIFIER))) {
             return null;
         }

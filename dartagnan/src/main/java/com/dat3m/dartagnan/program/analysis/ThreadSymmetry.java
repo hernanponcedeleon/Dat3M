@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.google.common.base.Preconditions;
@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private final Program program;
-    private final Map<Thread, Map<Integer, AbstractEvent>> thread2id2EventMap = new HashMap<>();
-    private final Map<AbstractEvent, Integer> event2IdMap = new HashMap<>();
+    private final Map<Thread, Map<Integer, Event>> thread2id2EventMap = new HashMap<>();
+    private final Map<Event, Integer> event2IdMap = new HashMap<>();
 
     private ThreadSymmetry(Program program, boolean createSymmetryMappings) {
         this.program = program;
@@ -50,8 +50,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     private void createSymmetryMappings() {
         for (Thread thread : program.getThreads()) {
-            final List<AbstractEvent> threadEvents = thread.getEvents();
-            final Map<Integer, AbstractEvent> id2EventMap = thread2id2EventMap.computeIfAbsent(thread, key -> new HashMap<>());
+            final List<Event> threadEvents = thread.getEvents();
+            final Map<Integer, Event> id2EventMap = thread2id2EventMap.computeIfAbsent(thread, key -> new HashMap<>());
             for (int i = 0; i < threadEvents.size(); i++) {
                 id2EventMap.put(i, threadEvents.get(i));
                 event2IdMap.put(threadEvents.get(i), i);
@@ -72,13 +72,13 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
 
     // ================= Public methods ===================
 
-    public AbstractEvent map(AbstractEvent source, Thread targetThread) {
+    public Event map(Event source, Thread targetThread) {
     	Preconditions.checkArgument(areEquivalent(source.getThread(), targetThread),
     			"Target thread is not symmetric with source thread.");
         return thread2id2EventMap.get(targetThread).get(event2IdMap.get(source));
     }
 
-    public Function<AbstractEvent, AbstractEvent> createEventPermutation(List<Thread> origPerm, List<Thread> targetPerm) {
+    public Function<Event, Event> createEventPermutation(List<Thread> origPerm, List<Thread> targetPerm) {
     	Preconditions.checkArgument(origPerm.size() == targetPerm.size(),
                 "Target permutation has different size to original permutation.");
         if (origPerm.equals(targetPerm)) {
@@ -91,7 +91,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         };
     }
 
-    public Function<AbstractEvent, AbstractEvent> createEventTransposition(Thread t1, Thread t2) {
+    public Function<Event, Event> createEventTransposition(Thread t1, Thread t2) {
         if (!areEquivalent(t1, t2)) {
             return Function.identity();
         }
@@ -103,7 +103,7 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
         };
     }
 
-    public List<Function<AbstractEvent, AbstractEvent>> createAllEventPermutations(EquivalenceClass<Thread> eqClass) {
+    public List<Function<Event, Event>> createAllEventPermutations(EquivalenceClass<Thread> eqClass) {
     	Preconditions.checkArgument(eqClass.getEquivalence() == this, 
     			"<eqClass> is not a symmetry class of this symmetry equivalence.");
 

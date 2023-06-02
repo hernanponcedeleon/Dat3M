@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
@@ -31,7 +31,7 @@ public final class Dependency {
 
     private static final Logger logger = LogManager.getLogger(Dependency.class);
 
-    private final HashMap<AbstractEvent, Map<Register, State>> map = new HashMap<>();
+    private final HashMap<Event, Map<Register, State>> map = new HashMap<>();
     private final Map<Register, State> finalWriters = new HashMap<>();
 
     private Dependency() {
@@ -65,7 +65,7 @@ public final class Dependency {
      * @param register Thread-local program variable used by {@code reader}.
      * @return Local result of this analysis.
      */
-    public State of(AbstractEvent reader, Register register) {
+    public State of(Event reader, Register register) {
         return map.getOrDefault(reader, Map.of()).getOrDefault(register, new State(false, List.of(), List.of()));
     }
 
@@ -84,17 +84,17 @@ public final class Dependency {
      * @return Grouped by reader, then result register.
      * Writers are program-ordered.
      */
-    public Collection<Map.Entry<AbstractEvent, Map<Register, State>>> getAll() {
+    public Collection<Map.Entry<Event, Map<Register, State>>> getAll() {
         return map.entrySet();
     }
 
     private void process(Thread thread, ExecutionAnalysis exec) {
-        Map<AbstractEvent, Set<Writer>> jumps = new HashMap<>();
+        Map<Event, Set<Writer>> jumps = new HashMap<>();
         Set<Writer> state = new HashSet<>();
         for (Register register : thread.getRegisters()) {
             state.add(new Writer(register, null));
         }
-        for (AbstractEvent event : thread.getEvents()) {
+        for (Event event : thread.getEvents()) {
             //merge with incoming jumps
             Set<Writer> j = jumps.remove(event);
             if (j != null) {
@@ -168,19 +168,19 @@ public final class Dependency {
         }
     }
 
-    private static State process(AbstractEvent reader, Set<Writer> state, Register register, ExecutionAnalysis exec) {
-        List<AbstractEvent> candidates = state.stream()
+    private static State process(Event reader, Set<Writer> state, Register register, ExecutionAnalysis exec) {
+        List<Event> candidates = state.stream()
                 .filter(e -> e.register.equals(register))
                 .map(e -> e.event)
                 .filter(e -> reader == null || !exec.areMutuallyExclusive(reader, e))
                 .collect(toList());
         //NOTE if candidates is empty, the reader is unreachable
-        List<AbstractEvent> mays = candidates.stream()
+        List<Event> mays = candidates.stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparingInt(AbstractEvent::getGlobalId))
+                .sorted(Comparator.comparingInt(Event::getGlobalId))
                 .collect(Collectors.toCollection(ArrayList::new));
         int end = mays.size();
-        List<AbstractEvent> musts = range(0, end)
+        List<Event> musts = range(0, end)
                 .filter(i -> mays.subList(i + 1, end).stream().allMatch(j -> exec.areMutuallyExclusive(mays.get(i), j)))
                 .mapToObj(mays::get)
                 .collect(toList());
@@ -189,9 +189,9 @@ public final class Dependency {
 
     private static final class Writer {
         final Register register;
-        final AbstractEvent event;
+        final Event event;
 
-        Writer(Register r, AbstractEvent e) {
+        Writer(Register r, Event e) {
             register = checkNotNull(r);
             event = e;
         }
@@ -225,15 +225,15 @@ public final class Dependency {
          * Complete, but unsound, program-ordered list of direct providers for the register:
          * If there is a program execution where an event of the program was the latest writer, that event is contained in this list.
          */
-        public final List<AbstractEvent> may;
+        public final List<Event> may;
 
         /**
          * Sound, but incomplete, program-ordered list of direct providers with no overwriting event in between:
          * Each event in this list will be the latest writer in any execution that contains that event.
          */
-        public final List<AbstractEvent> must;
+        public final List<Event> must;
 
-        private State(boolean initialized, List<AbstractEvent> may, List<AbstractEvent> must) {
+        private State(boolean initialized, List<Event> may, List<Event> must) {
             verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
             verify(may.isEmpty() || must.contains(may.get(may.size() - 1)), "The last may-writer must also be a must-writer.");
             this.initialized = initialized;

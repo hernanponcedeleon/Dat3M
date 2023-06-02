@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
@@ -99,7 +99,7 @@ public abstract class ModelChecker {
         analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
-            for(AbstractEvent e : thread.getEvents()) {
+            for(Event e : thread.getEvents()) {
                 // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
                 // which may rely on previous "global" analyses
                 e.runLocalAnalysis(program, analysisContext);
@@ -124,7 +124,7 @@ public abstract class ModelChecker {
     private static void computeSpecificationFromProgramAssertions(Program program) {
         // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
         // For litmus tests, this function should not be called.
-        List<AbstractEvent> assertions = program.getEvents().stream().filter(e -> e.hasTag(ASSERTION)).collect(toList());
+        List<Event> assertions = program.getEvents().stream().filter(e -> e.hasTag(ASSERTION)).collect(toList());
         AbstractAssert spec = new AssertTrue();
         if(!assertions.isEmpty()) {
             spec = new AssertInline((Local)assertions.get(0));

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 public class EventIdReassignment implements ProgramProcessor {
 
@@ -16,7 +16,7 @@ public class EventIdReassignment implements ProgramProcessor {
     public void run(Program program) {
         int globalId = 0;
         for (Thread thread : program.getThreads()) {
-            AbstractEvent cur = thread.getEntry();
+            Event cur = thread.getEntry();
             while (cur != null) {
                 cur.setGlobalId(globalId++);
                 cur = cur.getSuccessor();

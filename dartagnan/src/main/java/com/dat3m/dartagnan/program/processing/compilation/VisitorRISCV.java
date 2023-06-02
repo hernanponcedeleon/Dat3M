@@ -38,7 +38,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 	
     @Override
-	public List<AbstractEvent> visitStoreExclusive(StoreExclusive e) {
+	public List<Event> visitStoreExclusive(StoreExclusive e) {
         RMWStoreExclusive store = RISCV.newRMWStoreConditional(e.getAddress(), e.getMemValue(), e.getMo());
 
         return eventSequence(
@@ -52,7 +52,7 @@ class VisitorRISCV extends VisitorBase {
     // =============================================================================================
 
     @Override
-	public List<AbstractEvent> visitCreate(Create e) {
+	public List<Event> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
         store.addTags(C11.PTHREAD);
 
@@ -62,13 +62,13 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitEnd(End e) {
+	public List<Event> visitEnd(End e) {
         return eventSequence(
         		newStore(e.getAddress(), IValue.ZERO, Tag.RISCV.MO_REL));
 	}
 
 	@Override
-	public List<AbstractEvent> visitJoin(Join e) {
+	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(C11.PTHREAD);
@@ -80,7 +80,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitStart(Start e) {
+	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(Tag.STARTLOAD);
@@ -93,14 +93,14 @@ class VisitorRISCV extends VisitorBase {
 	}
 
     @Override
-    public List<AbstractEvent> visitInitLock(InitLock e) {
+    public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
                 newStore(e.getAddress(), e.getMemValue(), ""));
     }
 
     @Override
-    public List<AbstractEvent> visitLock(Lock e) {
+    public List<Event> visitLock(Lock e) {
         Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
@@ -113,7 +113,7 @@ class VisitorRISCV extends VisitorBase {
     }
 
     @Override
-    public List<AbstractEvent> visitUnlock(Unlock e) {
+    public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
                 newStore(e.getAddress(), IValue.ZERO, ""));
@@ -124,7 +124,7 @@ class VisitorRISCV extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<AbstractEvent> visitLlvmLoad(LlvmLoad e) {
+	public List<Event> visitLlvmLoad(LlvmLoad e) {
 		String mo = e.getMo();
 		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
 		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence()
@@ -137,7 +137,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmStore(LlvmStore e) {
+	public List<Event> visitLlvmStore(LlvmStore e) {
 		String mo = e.getMo();
 		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme
 				? RISCV.newRWWFence()
@@ -149,7 +149,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmXchg(LlvmXchg e) {
+	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
@@ -162,7 +162,7 @@ class VisitorRISCV extends VisitorBase {
 		// Here we make it mandatory to guarantee correct dependencies.
 		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
 		Label label = newLabel("FakeDep");
-		AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
 		return eventSequence(
 				load,
@@ -173,7 +173,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmRMW(LlvmRMW e) {
+	public List<Event> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -191,7 +191,7 @@ class VisitorRISCV extends VisitorBase {
 		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
 
 		Label label = newLabel("FakeDep");
-		AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
 		return eventSequence(
 				load,
@@ -203,7 +203,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmCmpXchg(LlvmCmpXchg e) {
+	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
 
@@ -229,7 +229,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLlvmFence(LlvmFence e) {
+	public List<Event> visitLlvmFence(LlvmFence e) {
 		Fence fence = null;
 		switch (e.getMo()) {
 			case Tag.C11.MO_ACQUIRE:
@@ -255,7 +255,7 @@ class VisitorRISCV extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<AbstractEvent> visitAtomicCmpXchg(AtomicCmpXchg e) {
+	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
@@ -298,7 +298,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 	
 	@Override
-	public List<AbstractEvent> visitAtomicFetchOp(AtomicFetchOp e) {
+	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -316,7 +316,7 @@ class VisitorRISCV extends VisitorBase {
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
@@ -329,7 +329,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicLoad(AtomicLoad e) {
+	public List<Event> visitAtomicLoad(AtomicLoad e) {
 		String mo = e.getMo();
 		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() :  null;
 		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() :  null;
@@ -342,7 +342,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicStore(AtomicStore e) {
+	public List<Event> visitAtomicStore(AtomicStore e) {
 		String mo = e.getMo();
 		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() :  null;
 
@@ -353,7 +353,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicThreadFence(AtomicThreadFence e) {
+	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
 		Fence fence = null;
 		switch(e.getMo()) {
 			case Tag.C11.MO_ACQUIRE:
@@ -376,7 +376,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitAtomicXchg(AtomicXchg e) {
+	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
@@ -389,7 +389,7 @@ class VisitorRISCV extends VisitorBase {
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         return eventSequence(
                 load,
@@ -405,7 +405,7 @@ class VisitorRISCV extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<AbstractEvent> visitLKMMLoad(LKMMLoad e) {
+	public List<Event> visitLKMMLoad(LKMMLoad e) {
         String mo = e.getMo();
 		Fence optionalMemoryBarrier = mo.equals(MO_ACQUIRE) ? RISCV.newRRWFence() : null;
     
@@ -417,7 +417,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLKMMStore(LKMMStore e) {
+	public List<Event> visitLKMMStore(LKMMStore e) {
         String mo = e.getMo();
 		Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
 		
@@ -429,7 +429,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
 	@Override
-	public List<AbstractEvent> visitLKMMFence(LKMMFence e) {
+	public List<Event> visitLKMMFence(LKMMFence e) {
 		Fence optionalMemoryBarrier;
 		switch(e.getName()) {
 			// smp_mb()
@@ -473,7 +473,7 @@ class VisitorRISCV extends VisitorBase {
         );
 	}
 	
-	public List<AbstractEvent> visitRMWCmpXchg(RMWCmpXchg e) {
+	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
@@ -488,7 +488,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
@@ -511,7 +511,7 @@ class VisitorRISCV extends VisitorBase {
 	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
 	// The linux kernel uses AMO instructions which we don't yet support
 	@Override
-	public List<AbstractEvent> visitRMWXchg(RMWXchg e) {
+	public List<Event> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
@@ -525,7 +525,7 @@ class VisitorRISCV extends VisitorBase {
 		Store store = RISCV.newRMWStoreConditional(address, value, moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -543,7 +543,7 @@ class VisitorRISCV extends VisitorBase {
 	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
 	// The linux kernel uses AMO instructions which we don't yet support
 	@Override
-	public List<AbstractEvent> visitRMWOp(RMWOp e) {
+	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -558,7 +558,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, op, value), moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
 
         return eventSequence(
                 load,
@@ -575,7 +575,7 @@ class VisitorRISCV extends VisitorBase {
 	// Since in VisitorArm8 this one is similar to visitRMWCmpXchg
 	// we also make it scheme similar to the one of visitRMWCmpXchg in this class
 	@Override
-	public List<AbstractEvent> visitRMWFetchOp(RMWFetchOp e) {
+	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr value = (IExpr) e.getMemValue();
 		IExpr address = e.getAddress();
@@ -588,7 +588,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
@@ -610,7 +610,7 @@ class VisitorRISCV extends VisitorBase {
 	// Since in VisitorArm8 this one is similar to visitRMWCmpXchg
 	// we also make it scheme similar to the one of visitRMWCmpXchg in this class
 	@Override
-	public List<AbstractEvent> visitRMWOpReturn(RMWOpReturn e) {
+	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -624,7 +624,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
@@ -647,7 +647,7 @@ class VisitorRISCV extends VisitorBase {
 	// and not on inlined assembly, we don't really need to test that the compilation is correct
 	// (the other methods implementing the macros are been tested already).
 	@Override
-	public List<AbstractEvent> visitRMWAddUnless(RMWAddUnless e) {
+	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
@@ -662,7 +662,7 @@ class VisitorRISCV extends VisitorBase {
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newFakeCtrlDep(regValue, label);
+        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		ExprInterface unless = e.getCmp();
@@ -690,7 +690,7 @@ class VisitorRISCV extends VisitorBase {
 	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
 	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
 	@Override
-	public List<AbstractEvent> visitRMWOpAndTest(RMWOpAndTest e) {
+	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -707,7 +707,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
         return eventSequence(
@@ -723,7 +723,7 @@ class VisitorRISCV extends VisitorBase {
 	};
 
 	@Override
-	public List<AbstractEvent> visitLKMMLock(LKMMLock e) {
+	public List<Event> visitLKMMLock(LKMMLock e) {
 	Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
     // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
 	// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
@@ -737,7 +737,7 @@ class VisitorRISCV extends VisitorBase {
 	}
 
     @Override
-	public List<AbstractEvent> visitLKMMUnlock(LKMMUnlock e) {
+	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
 	return eventSequence(
 				RISCV.newRWWFence(),
 				newStore(e.getAddress(), IValue.ZERO, "")

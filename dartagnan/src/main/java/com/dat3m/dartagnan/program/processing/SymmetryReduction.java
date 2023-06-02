@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +56,7 @@ public class SymmetryReduction implements ProgramProcessor {
             rep.setName(rep.getName() + "__symm_unique");
 
             for (Thread t : c.stream().filter(x -> x != rep).collect(Collectors.toList())) {
-                for (AbstractEvent e : t.getEvents()) {
+                for (Event e : t.getEvents()) {
                     if (e.hasTag(Tag.ASSERTION)) {
                         e.getSuccessor().delete();
                         e.delete();

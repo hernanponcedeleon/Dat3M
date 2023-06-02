@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.utils.printer;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
@@ -59,7 +59,7 @@ public class Printer {
         if(showInitThreads){
             return true;
         }
-        AbstractEvent firstEvent = thread.getEntry().getSuccessor();
+        Event firstEvent = thread.getEntry().getSuccessor();
         // Thread always have at least two events, Skip and end Label
         return firstEvent.getSuccessor() != null && !(firstEvent instanceof Init);
     }
@@ -71,12 +71,12 @@ public class Printer {
         } catch (Exception e) {
             result.append("\n").append(thread.getName()).append("\n");        	
         }
-        for (AbstractEvent e : thread.getEvents()) {
+        for (Event e : thread.getEvents()) {
             appendEvent(e);
         }
     }
 
-    private void appendEvent(AbstractEvent event){
+    private void appendEvent(Event event){
         if(showAuxiliaryEvents || !isAuxiliary(event)){
             StringBuilder idSb = new StringBuilder();
             idSb.append(event.getGlobalId()).append(":");
@@ -89,7 +89,7 @@ public class Printer {
         }
     }
 
-    private boolean isAuxiliary(AbstractEvent event){
+    private boolean isAuxiliary(Event event){
         return event instanceof Skip;
     }
 

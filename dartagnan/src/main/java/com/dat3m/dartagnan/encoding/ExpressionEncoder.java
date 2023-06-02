@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.*;
@@ -23,9 +23,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
-    private final AbstractEvent event;
+    private final Event event;
 
-    public ExpressionEncoder(FormulaManager formulaManager, AbstractEvent event) {
+    public ExpressionEncoder(FormulaManager formulaManager, Event event) {
         this.formulaManager = formulaManager;
         this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
         this.event = event;

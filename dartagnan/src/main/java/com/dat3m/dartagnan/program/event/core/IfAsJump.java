@@ -23,12 +23,12 @@ public class IfAsJump extends CondJump {
 
 	public Label getEndIf() { return end; }
 
-    public List<AbstractEvent> getBranchesEvents(){
+    public List<Event> getBranchesEvents(){
     	// Because it is used for RelCtrlDirect
     	Preconditions.checkState(getThread().getProgram().isCompiled(),
 				"getBranchesEvents() must be called after compilation");
-		List<AbstractEvent> events = new ArrayList<>();
-		AbstractEvent next = getSuccessor();
+		List<Event> events = new ArrayList<>();
+		Event next = getSuccessor();
 		// For IfAsJump events, getLabel() returns the label representing the else branch
 		while(next != null && next.getSuccessor() != getLabel()) {
 			events.add(next);

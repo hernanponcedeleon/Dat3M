@@ -70,14 +70,14 @@ public class CondJump extends AbstractEvent implements RegReader {
     	} else {
             output = "if(" + guard + "); then goto " + label.getName();
     	}
-        output = hasTag(Tag.BOUND) ? String.format("%1$-" + AbstractEvent.PRINT_PAD_EXTRA + "s", output) + "\t### BOUND" : output;
-        output = hasTag(Tag.SPINLOOP) ? String.format("%1$-" + AbstractEvent.PRINT_PAD_EXTRA + "s", output) + "\t### SPINLOOP" : output;
+        output = hasTag(Tag.BOUND) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### BOUND" : output;
+        output = hasTag(Tag.SPINLOOP) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### SPINLOOP" : output;
         return output;
     }
 
 
     @Override
-    public void updateReferences(Map<AbstractEvent, AbstractEvent> updateMapping) {
+    public void updateReferences(Map<Event, Event> updateMapping) {
         Label old = this.label;
         this.label = (Label)updateMapping.getOrDefault(this.label, this.label);
         if (old != this.label) {

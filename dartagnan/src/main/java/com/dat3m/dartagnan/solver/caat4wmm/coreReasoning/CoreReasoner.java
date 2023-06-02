@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
@@ -50,15 +50,15 @@ public class CoreReasoner {
         List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
         for (CAATLiteral lit : baseReason.getLiterals()) {
             if (lit instanceof ElementLiteral) {
-                AbstractEvent e = domain.getObjectById(((ElementLiteral) lit).getElement().getId()).getEvent();
+                Event e = domain.getObjectById(((ElementLiteral) lit).getElement().getId()).getEvent();
                 // We only have static tags, so all of them reduce to execution literals
                 coreReason.add(new ExecLiteral(e, lit.isNegative()));
             } else {
 
                 EdgeLiteral edgeLit = (EdgeLiteral) lit;
                 Edge edge = edgeLit.getEdge();
-                AbstractEvent e1 = domain.getObjectById(edge.getFirst()).getEvent();
-                AbstractEvent e2 = domain.getObjectById(edge.getSecond()).getEvent();
+                Event e1 = domain.getObjectById(edge.getFirst()).getEvent();
+                Event e2 = domain.getObjectById(edge.getSecond()).getEvent();
                 Tuple tuple = new Tuple(e1, e2);
                 Relation rel = termMap.get(lit.getName());
 
@@ -106,7 +106,7 @@ public class CoreReasoner {
             if (!(lit instanceof ExecLiteral) || lit.isNegative()) {
                 return false;
             }
-            AbstractEvent ev = ((ExecLiteral) lit).getData();
+            Event ev = ((ExecLiteral) lit).getData();
             return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
                     .anyMatch(e -> exec.isImplied(e.getData().getFirst(), ev)
@@ -116,12 +116,12 @@ public class CoreReasoner {
     }
 
     private void addExecReason(Tuple edge, List<CoreLiteral> coreReasons) {
-        AbstractEvent e1 = edge.getFirst();
-        AbstractEvent e2 = edge.getSecond();
+        Event e1 = edge.getFirst();
+        Event e2 = edge.getSecond();
 
         if (e1.getGlobalId() > e2.getGlobalId()) {
             // Normalize edge direction
-            AbstractEvent temp = e1;
+            Event temp = e1;
             e1 = e2;
             e2 = temp;
         }

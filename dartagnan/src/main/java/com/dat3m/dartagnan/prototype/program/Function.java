@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.prototype.program;
 
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.prototype.expr.ExpressionKind;
 import com.dat3m.dartagnan.prototype.expr.ExpressionVisitor;
@@ -24,7 +24,7 @@ public class Function extends GlobalObject {
 
     private SymbolTable<Register> registerTable; // TODO: Do we need this?
     private List<Parameter> parameters; // List of parameter expressions, matching the function type.
-    private AbstractEvent entry; // NULL for declaration-only functions
+    private Event entry; // NULL for declaration-only functions
     private boolean isIntrinsic;
 
     protected Function(Program program, String name, FunctionType funcType, boolean hasDefinition, boolean isIntrinsic) {
@@ -53,7 +53,7 @@ public class Function extends GlobalObject {
 
     public boolean isIntrinsic() { return this.isIntrinsic; }
     public boolean hasDefinition() { return entry != null; }
-    public AbstractEvent getEntryEvent() { return entry; }
+    public Event getEntryEvent() { return entry; }
 
     @Override
     public <TRet> TRet accept(ExpressionVisitor<TRet> visitor) { return visitor.visitFunction(this); }

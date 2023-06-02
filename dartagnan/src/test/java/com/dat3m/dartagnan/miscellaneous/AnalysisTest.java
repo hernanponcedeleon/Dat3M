@@ -85,12 +85,12 @@ public class AnalysisTest {
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, context, config));
         Dependency dep = Dependency.fromConfig(program, context, config);
-        AbstractEvent me0 = findMatchingEventAfterProcessing(program, e0);
-        AbstractEvent me1 = findMatchingEventAfterProcessing(program, e1);
-        AbstractEvent me2 = findMatchingEventAfterProcessing(program, e2);
-        AbstractEvent me3 = findMatchingEventAfterProcessing(program, e3);
-        AbstractEvent me4 = findMatchingEventAfterProcessing(program, e4);
-        AbstractEvent me5 = findMatchingEventAfterProcessing(program, e5);
+        Event me0 = findMatchingEventAfterProcessing(program, e0);
+        Event me1 = findMatchingEventAfterProcessing(program, e1);
+        Event me2 = findMatchingEventAfterProcessing(program, e2);
+        Event me3 = findMatchingEventAfterProcessing(program, e3);
+        Event me4 = findMatchingEventAfterProcessing(program, e4);
+        Event me5 = findMatchingEventAfterProcessing(program, e5);
         assertTrue(dep.of(me1, r0).initialized);
         assertList(dep.of(me1, r0).may, me0);
         assertList(dep.of(me1, r0).must, me0);
@@ -429,7 +429,7 @@ public class AnalysisTest {
         assertArrayEquals(expected, results.toArray());
     }
 
-    private AbstractEvent findMatchingEventAfterProcessing(Program p, AbstractEvent orig) {
+    private Event findMatchingEventAfterProcessing(Program p, Event orig) {
         return p.getEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
     }
 }

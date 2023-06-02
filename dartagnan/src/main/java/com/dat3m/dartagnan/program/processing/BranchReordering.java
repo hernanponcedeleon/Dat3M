@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -74,7 +74,7 @@ public class BranchReordering implements ProgramProcessor {
     private class ThreadReordering {
         private class MovableBranch {
             int id = 0;
-            final List<AbstractEvent> events = new ArrayList<>();
+            final List<Event> events = new ArrayList<>();
 
             @Override
             public int hashCode() {
@@ -98,19 +98,19 @@ public class BranchReordering implements ProgramProcessor {
 
         private final Thread thread;
         private final List<MovableBranch> branches = new ArrayList<>();
-        private final Map<AbstractEvent, MovableBranch> eventBranchMap = new HashMap<>();
+        private final Map<Event, MovableBranch> eventBranchMap = new HashMap<>();
 
         public ThreadReordering(Thread t) {
             this.thread = t;
         }
 
         private void computeBranchDecomposition() {
-            final AbstractEvent exit = thread.getExit();
+            final Event exit = thread.getExit();
 
             MovableBranch curBranch = new MovableBranch();
             branches.add(curBranch);
             int id = 1;
-            AbstractEvent e = thread.getEntry();
+            Event e = thread.getEntry();
             while (e != null) {
                 curBranch.events.add(e);
                 eventBranchMap.put(e, curBranch);
@@ -132,7 +132,7 @@ public class BranchReordering implements ProgramProcessor {
                 return new ArrayList<>(movables);
             }
             final MovableBranch startBranch = movables.get(0);
-            final Map<AbstractEvent, MovableBranch> eventBranchMap = this.eventBranchMap;
+            final Map<Event, MovableBranch> eventBranchMap = this.eventBranchMap;
 
             // Construct successor map of branches
             final Map<MovableBranch, Set<MovableBranch>> successorMap = new HashMap<>();
@@ -140,7 +140,7 @@ public class BranchReordering implements ProgramProcessor {
                 successorMap.put(b, new HashSet<>());
             }
             for (MovableBranch branch : movables) {
-                for (AbstractEvent e : branch.events) {
+                for (Event e : branch.events) {
                     if (e instanceof CondJump) {
                         final CondJump jump = (CondJump) e;
                         final MovableBranch targetBranch = eventBranchMap.get(jump.getLabel());
@@ -171,10 +171,10 @@ public class BranchReordering implements ProgramProcessor {
             // Reorder branches but keep the last branch fixed.
             final List<MovableBranch> reordering = computeReordering(branches.subList(0, branches.size() - 1));
             reordering.add(branches.get(branches.size() - 1));
-            final Iterable<AbstractEvent> reorderedEvents = reordering.stream().flatMap(x -> x.events.stream())::iterator;
+            final Iterable<Event> reorderedEvents = reordering.stream().flatMap(x -> x.events.stream())::iterator;
 
-            AbstractEvent pred = null;
-            for (AbstractEvent next : reorderedEvents) {
+            Event pred = null;
+            for (Event next : reorderedEvents) {
                 next.setPredecessor(pred);
                 pred = next;
             }

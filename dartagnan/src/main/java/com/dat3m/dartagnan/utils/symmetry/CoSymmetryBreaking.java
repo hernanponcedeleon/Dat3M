@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.encoding.SymmetryEncoder;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -123,8 +123,8 @@ public class CoSymmetryBreaking {
         Map<Store, Integer> syncDegreeMap = new HashMap<>(writes.size());
         for (final Axiom ax : axioms) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(ax.getRelation());
-            final Function<AbstractEvent, Collection<Tuple>> mustIn = k.getMustIn();
-            final Function<AbstractEvent, Collection<Tuple>> mustOut = k.getMustOut();
+            final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
+            final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
             for (final Store w : writes) {
                 final int in = 1 + mustIn.apply(w).size();
                 final int out = 1 + mustOut.apply(w).size();
@@ -228,7 +228,7 @@ public class CoSymmetryBreaking {
         Thread rep = symmClass.getRepresentative();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
-            Function<AbstractEvent, AbstractEvent> p = symm.createEventTransposition(t1, t2);
+            Function<Event, Event> p = symm.createEventTransposition(t1, t2);
             List<Tuple> r2Tuples = r1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
             List<BooleanFormula> r2 = new ArrayList<>(r2Tuples.size() + 1);
             if (info.hasMustEdges) {

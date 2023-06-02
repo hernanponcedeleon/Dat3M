@@ -165,14 +165,14 @@ public class PropertyEncoder implements Encoder {
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
-        final Set<AbstractEvent> dominatedWrites = knowledge.getMustSet().stream()
+        final Set<Event> dominatedWrites = knowledge.getMustSet().stream()
                 .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                 .map(Tuple::getFirst).collect(Collectors.toSet());
 
         // ---- Construct encoding ----
         List<BooleanFormula> enc = new ArrayList<>();
-        final Function<AbstractEvent, Collection<Tuple>> out = knowledge.getMayOut();
-        for (AbstractEvent writeEvent : program.getEvents()) {
+        final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
+        for (Event writeEvent : program.getEvents()) {
             if (!writeEvent.hasTag(Tag.WRITE)) {
                 continue;
             }
@@ -189,7 +189,7 @@ public class PropertyEncoder implements Encoder {
                     // that already witnesses that w1 is not last.
                     continue;
                 }
-                AbstractEvent w2 = coEdge.getSecond();
+                Event w2 = coEdge.getSecond();
                 BooleanFormula isAfter = bmgr.not(knowledge.containsMust(coEdge) ? context.execution(w2) : coEncoder.encode(coEdge));
                 isLast = bmgr.and(isLast, isAfter);
             }
@@ -211,7 +211,7 @@ public class PropertyEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
-    private BooleanFormula lastCoVar(AbstractEvent write) {
+    private BooleanFormula lastCoVar(Event write) {
         return context.getBooleanFormulaManager().makeVariable("co_last(" + write.getGlobalId() + ")");
     }
 
@@ -314,7 +314,7 @@ public class PropertyEncoder implements Encoder {
                 if(t1 == t2) {
                     continue;
                 }
-                for (AbstractEvent e1 : t1.getEvents()) {
+                for (Event e1 : t1.getEvents()) {
                     if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
@@ -322,7 +322,7 @@ public class PropertyEncoder implements Encoder {
                     if (!w.canRace()) {
                         continue;
                     }
-                    for(AbstractEvent e2 : t2.getEvents()) {
+                    for(Event e2 : t2.getEvents()) {
                         if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
@@ -431,7 +431,7 @@ public class PropertyEncoder implements Encoder {
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
             final EncodingContext.EdgeEncoder rfEncoder = context.edge(rf);
-            final Function<AbstractEvent, Collection<Tuple>> rfMayIn = ra.getKnowledge(rf).getMayIn();
+            final Function<Event, Collection<Tuple>> rfMayIn = ra.getKnowledge(rf).getMayIn();
 
             if (loops.isEmpty()) {
                 return bmgr.makeFalse();
@@ -463,7 +463,7 @@ public class PropertyEncoder implements Encoder {
 
             for (LoopAnalysis.LoopInfo loop : loops) {
                 for (LoopAnalysis.LoopIterationInfo iter : loop.getIterations()) {
-                    final List<AbstractEvent> iterBody = iter.computeBody();
+                    final List<Event> iterBody = iter.computeBody();
                     final List<CondJump> spinningJumps = iterBody.stream()
                             .filter(e -> e instanceof CondJump && e.hasTag(Tag.SPINLOOP))
                             .map(CondJump.class::cast)

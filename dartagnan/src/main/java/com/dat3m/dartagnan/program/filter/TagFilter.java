@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.filter;
 
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 
 public class TagFilter extends Filter {
 
@@ -11,7 +11,7 @@ public class TagFilter extends Filter {
     }
 
     @Override
-    public boolean apply(AbstractEvent event){
+    public boolean apply(Event event){
         return event.hasTag(tag);
     }
 

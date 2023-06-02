@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Definition.Visitor;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -18,7 +18,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     List<Tuple> news;
     // Caches the collection of may sets in frequently-used relations
     // for when those relations get multiple encode set updates in one runtime.
-    Map<Relation, Function<AbstractEvent, Collection<Tuple>>> mayOutCache = new HashMap<>();
+    Map<Relation, Function<Event, Collection<Tuple>>> mayOutCache = new HashMap<>();
 
     EncodeSets(Context analysisContext) {
         ra = analysisContext.requires(RelationAnalysis.class);
@@ -61,9 +61,9 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
         final Set<Tuple> set2 = new HashSet<>();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
-        final Function<AbstractEvent, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k1.getMayOut());
+        final Function<Event, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k1.getMayOut());
         for (Tuple t : news) {
-            AbstractEvent e = t.getSecond();
+            Event e = t.getSecond();
             for (Tuple t1 : out.apply(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k2.containsMay(t2)) {
@@ -82,7 +82,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     @Override
     public Map<Relation, Stream<Tuple>> visitDomainIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        final Function<AbstractEvent, Collection<Tuple>> out = k1.getMayOut();
+        final Function<Event, Collection<Tuple>> out = k1.getMayOut();
         return Map.of(r1, news.stream()
                 .flatMap(t -> out.apply(t.getFirst()).stream())
                 .filter(t -> !k1.containsMust(t)));
@@ -91,7 +91,7 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     @Override
     public Map<Relation, Stream<Tuple>> visitRangeIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        final Function<AbstractEvent, Collection<Tuple>> in = k1.getMayIn();
+        final Function<Event, Collection<Tuple>> in = k1.getMayIn();
         return Map.of(r1, news.stream()
                 .flatMap(t -> in.apply(t.getSecond()).stream())
                 .filter(t -> !k1.containsMust(t)));
@@ -107,9 +107,9 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitTransitiveClosure(Relation rel, Relation r1) {
         HashSet<Tuple> factors = new HashSet<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-        final Function<AbstractEvent, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k0.getMayOut());
+        final Function<Event, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k0.getMayOut());
         for (Tuple t : news) {
-            AbstractEvent e = t.getSecond();
+            Event e = t.getSecond();
             for (Tuple t1 : out.apply(t.getFirst())) {
                 Tuple t2 = new Tuple(t1.getSecond(), e);
                 if (k0.containsMay(t2)) {
@@ -129,19 +129,19 @@ final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
     public Map<Relation, Stream<Tuple>> visitCriticalSections(Relation rscs) {
         List<Tuple> queue = new ArrayList<>();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rscs);
-        final Function<AbstractEvent, Collection<Tuple>> in = k0.getMayIn();
-        final Function<AbstractEvent, Collection<Tuple>> out = k0.getMayOut();
+        final Function<Event, Collection<Tuple>> in = k0.getMayIn();
+        final Function<Event, Collection<Tuple>> out = k0.getMayOut();
         for (Tuple tuple : news) {
-            AbstractEvent lock = tuple.getFirst();
-            AbstractEvent unlock = tuple.getSecond();
+            Event lock = tuple.getFirst();
+            Event unlock = tuple.getSecond();
             for (Tuple t : in.apply(unlock)) {
-                AbstractEvent e = t.getFirst();
+                Event e = t.getFirst();
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);
                 }
             }
             for (Tuple t : out.apply(lock)) {
-                AbstractEvent e = t.getSecond();
+                Event e = t.getSecond();
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
                     queue.add(t);
                 }
