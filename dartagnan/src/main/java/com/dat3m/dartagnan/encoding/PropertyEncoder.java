@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -97,7 +98,7 @@ public class PropertyEncoder implements Encoder {
         if (specType == Property.Type.MIXED) {
             final String error = String.format(
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
-                    "Cannot encode mixed properties into a single SMT-query.", properties);
+                            "Cannot encode mixed properties into a single SMT-query.", properties);
             throw new IllegalArgumentException(error);
         }
 
@@ -204,23 +205,32 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
-                    BooleanFormula other = bmgr.makeFalse();
-                    // Coherence is not guaranteed to be total in all models (e.g., PTX),
-                    // but the final value of a location should always match that of some coLast event.
-                    // No need to iterate over Inits since they are always ordered wrt coherence.
-                    // lastCo(w) => (lastVal(w.address) = w.val) 
-                    //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
-                    for (MemEvent w2 : program.getEvents(Store.class)) {
-                        if (!alias.mayAlias(w1, w2)) {
-                            continue;
-                        }
-                        BooleanFormula sameAddressOther = context.sameAddress(w1, w2);
-                        BooleanFormula lastCoExprOther = lastCoVar(w2);
-                        BooleanFormula sameValueOther = context.equal(context.value(w2), v2);
-                        other = bmgr.or(other, bmgr.and(lastCoExprOther, sameAddressOther, sameValueOther));
+                    if (Arch.coIsTotal(program.getArch())) {
+                        enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                     }
-                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), bmgr.or(sameValue, other)));
                 }
+            }
+        }
+        if (doEncodeFinalAddressValues && !Arch.coIsTotal(program.getArch())) {
+            // Coherence is not guaranteed to be total in all models (e.g., PTX),
+            // but the final value of a location should always match that of some coLast event.
+            // lastCo(w) => (lastVal(w.address) = w.val)
+            //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
+            for (Init init : program.getEvents(Init.class)) {
+                BooleanFormula lastValueEnc = bmgr.makeFalse();
+                BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
+                Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
+                for (Store w : program.getEvents(Store.class)) {
+                    if (!alias.mayAlias(w, init)) {
+                        continue;
+                    }
+                    BooleanFormula isLast = lastCoVar(w);
+                    BooleanFormula sameAddr = context.sameAddress(init, w);
+                    BooleanFormula sameValue = context.equal(context.value(w), v2);
+                    lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));
+                    lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
+                }
+                enc.add(bmgr.implication(lastStoreExistsEnc, lastValueEnc));
             }
         }
         return bmgr.and(enc);
