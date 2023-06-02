@@ -164,7 +164,7 @@ public class PropertyEncoder implements Encoder {
         final List<Init> initEvents = program.getEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
-        final Set<Tuple> transCo = ra.findTransitivelyImpliedRel(co);
+        final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
         final Set<Event> dominatedWrites = knowledge.getMustSet().stream()
                 .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))

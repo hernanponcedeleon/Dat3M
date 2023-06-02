@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -184,7 +183,7 @@ public class RelationAnalysis {
               not involve encoding a clock constraint (due to this optimization).
         There is also a symmetric case where co(w3, w1) is impossible and co(w3, w2) is a must-edge.
      */
-    public Set<Tuple> findTransitivelyImpliedRel(Relation co) {
+    public Set<Tuple> findTransitivelyImpliedCo(Relation co) {
         final RelationAnalysis.Knowledge k = getKnowledge(co);
         Set<Tuple> transCo = new HashSet<>();
         final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
@@ -902,8 +901,19 @@ public class RelationAnalysis {
             events.addAll(program.getEvents(Fence.class));
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (mustScope(e1, e2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
+                    ScopedThread thread1 = (ScopedThread) e1.getThread();
+                    ScopedThread thread2 = (ScopedThread) e2.getThread();
+                    if (specificScope != null) { // scope specified
+                        if (thread1.sameAtHigherScope(thread2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    } else {
+                        String scope1 = Tag.PTX.getScopeTag(e1);
+                        String scope2 = Tag.PTX.getScopeTag(e2);
+                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)
+                                && !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
                     }
                 }
             }
@@ -935,8 +945,7 @@ public class RelationAnalysis {
             List<Fence> fenceEvents = program.getEvents(Fence.class);
             for (Fence e1 : fenceEvents) {
                 for (Fence e2 : fenceEvents) {
-                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && mustScope(e1, e2, null)
-                            && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -999,40 +1008,6 @@ public class RelationAnalysis {
                 }
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
-        }
-
-        private boolean mustScope(Event first, Event second, String specificScope) {
-            if (specificScope != null) { // scope specified
-                return scopeAtHigherLevel(first, second, specificScope);
-            }
-            // if scope not specified, use valid scope
-            String firstScope = Tag.PTX.getScopeTag(first);
-            String secondScope = Tag.PTX.getScopeTag(second);
-            if (firstScope == null || secondScope == null // proxy fence
-                    || !firstScope.equals(secondScope)) {
-                return false;
-            }
-            return scopeAtHigherLevel(first, second, firstScope);
-        }
-
-        // For each scope S higher than flag, we check both events are in the same scope S
-        private boolean scopeAtHigherLevel(Event first, Event second, String flag) {
-            ArrayList<String> scopes = ((ScopedThread) first.getThread()).getScopes();
-            int validIndex = scopes.indexOf(flag);
-            // scopes(0) is highest in hierarchy
-            // i = 0 is SYS, every thread will always have the same id, so start from i = 1
-            for (int i = 1; i <= validIndex; i++) {
-                if (!onSameScope(first, second, scopes.get(i))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private boolean onSameScope(Event first, Event second, String scope) {
-            int firstId = ((PTXThread) first.getThread()).getScopeId(scope);
-            int secondId = ((PTXThread) second.getThread()).getScopeId(scope);
-            return (firstId == secondId && firstId != -1);
         }
     }
 

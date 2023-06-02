@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
@@ -551,7 +552,7 @@ public class WmmEncoder implements Encoder {
                     .collect(toList());
             EncodingContext.EdgeEncoder edge = context.edge(co);
             RelationAnalysis.Knowledge k = ra.getKnowledge(co);
-            Set<Tuple> transCo = idl ? ra.findTransitivelyImpliedRel(co) : null;
+            Set<Tuple> transCo = idl ? ra.findTransitivelyImpliedCo(co) : null;
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
             if (idl) {
                 // ---- Encode clock conditions (init = 0, non-init > 0) ----
@@ -641,20 +642,19 @@ public class WmmEncoder implements Encoder {
                     .collect(toList());
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
-            Set<Tuple> transSC = idl ? ra.findTransitivelyImpliedRel(syncFence) : null;
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
-            if (idl) {
-                // ---- Encode clock conditions (fence >= 0) ----
-                NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
-                for (Fence fence : allFenceSC) {
-                    NumeralFormula.IntegerFormula clock = context.clockVariable(fence.getName(), fence);
-                    enc.add(imgr.greaterOrEquals(clock, zero));
-                }
-            }
             // ---- Encode syncFence ----
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
                 Fence x = allFenceSC.get(i);
                 for (Fence z : allFenceSC.subList(i + 1, allFenceSC.size())) {
+                    String scope1 = Tag.PTX.getScopeTag(x);
+                    String scope2 = Tag.PTX.getScopeTag(z);
+                    if (!scope1.equals(scope2) || scope1.isEmpty()) {
+                        continue;
+                    }
+                    if (!((ScopedThread) x.getThread()).sameAtHigherScope(((ScopedThread) z.getThread()),scope1)) {
+                        continue;
+                    }
                     Tuple xz = new Tuple(x, z);
                     Tuple zx = xz.getInverse();
                     boolean forwardPossible = k.containsMay(xz);
@@ -663,27 +663,25 @@ public class WmmEncoder implements Encoder {
                         continue;
                     }
                     BooleanFormula pairingCond = execution(xz);
-                    BooleanFormula coF = forwardPossible ? edge.encode(xz) : bmgr.makeFalse();
-                    BooleanFormula coB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
-                    enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
+                    BooleanFormula scF = forwardPossible ? edge.encode(xz) : bmgr.makeFalse();
+                    BooleanFormula scB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
+                    enc.add(bmgr.equivalence(pairingCond, bmgr.or(scF, scB)));
                     if (idl) {
-                        enc.add(bmgr.implication(coF, transSC.contains(xz) ? bmgr.makeTrue() :
-                                imgr.lessThan(context.clockVariable(x.getName(), x), context.clockVariable(z.getName(), z))));
-                        enc.add(bmgr.implication(coB,transSC.contains(zx) ? bmgr.makeTrue() :
-                                imgr.lessThan(context.clockVariable(z.getName(), z), context.clockVariable(x.getName(), x))));
+                        enc.add(bmgr.implication(scF, imgr.lessThan(context.clockVariable(x.getName(), x), context.clockVariable(z.getName(), z))));
+                        enc.add(bmgr.implication(scB, imgr.lessThan(context.clockVariable(z.getName(), z), context.clockVariable(x.getName(), x))));
                     } else {
-                        enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
+                        enc.add(bmgr.or(bmgr.not(scF), bmgr.not(scB)));
                         if (!k.containsMust(xz) && !k.containsMust(zx)) {
                             for (Fence y : allFenceSC) {
                                 Tuple xy = new Tuple(x, y);
                                 Tuple yz = new Tuple(y, z);
                                 if (forwardPossible && k.containsMay(xy) && k.containsMay(yz)) {
-                                    enc.add(bmgr.implication(bmgr.and(edge.encode(xy), edge.encode(yz)), coF));
+                                    enc.add(bmgr.implication(bmgr.and(edge.encode(xy), edge.encode(yz)), scF));
                                 }
                                 Tuple yx = xy.getInverse();
                                 Tuple zy = yz.getInverse();
                                 if (backwardPossible && k.containsMay(yx) && k.containsMay(zy)) {
-                                    enc.add(bmgr.implication(bmgr.and(edge.encode(yx), edge.encode(zy)), coB));
+                                    enc.add(bmgr.implication(bmgr.and(edge.encode(yx), edge.encode(zy)), scB));
                                 }
                             }
                         }
