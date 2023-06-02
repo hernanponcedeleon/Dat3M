@@ -16,14 +16,14 @@ public class Load extends MemEvent implements RegWriter {
         this.resultRegister = register;
         addTags(Tag.READ);
     }
-    
-    protected Load(Load other){
+
+    protected Load(Load other) {
         super(other);
         this.resultRegister = other.resultRegister;
     }
 
     @Override
-    public Register getResultRegister(){
+    public Register getResultRegister() {
         return resultRegister;
     }
 
@@ -33,7 +33,7 @@ public class Load extends MemEvent implements RegWriter {
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public ExprInterface getMemValue() {
         return resultRegister;
     }
 
@@ -41,15 +41,15 @@ public class Load extends MemEvent implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Load getCopy(){
+    public Load getCopy() {
         return new Load(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLoad(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLoad(this);
+    }
 }

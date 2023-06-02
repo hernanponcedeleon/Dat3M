@@ -5,13 +5,15 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 
-public class Local extends Event implements RegWriter, RegReaderData {
+import java.util.HashSet;
+import java.util.Set;
+
+public class Local extends Event implements RegWriter, RegReader {
 
     protected final Register register;
     protected ExprInterface expr;
@@ -41,8 +43,8 @@ public class Local extends Event implements RegWriter, RegReaderData {
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs() {
-        return expr.getRegs();
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(expr, Register.UsageType.DATA, new HashSet<>());
     }
 
     @Override
