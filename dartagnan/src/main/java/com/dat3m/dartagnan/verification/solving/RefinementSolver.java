@@ -437,7 +437,7 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static CharSequence generateCoverageReport(Set<Event> coveredEvents, Program program,
-            Context analysisContext) {
+                                                       Context analysisContext) {
         // We track symmetric events
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);

@@ -13,7 +13,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Local extends Event implements RegWriter, RegReader {
+public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     protected final Register register;
     protected ExprInterface expr;

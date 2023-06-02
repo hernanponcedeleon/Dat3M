@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Label extends Event {
+public class Label extends AbstractEvent {
 
     private String name;
     private final Set<CondJump> jumpSet;

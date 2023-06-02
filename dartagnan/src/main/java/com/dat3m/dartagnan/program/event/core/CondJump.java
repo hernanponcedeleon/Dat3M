@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class CondJump extends Event implements RegReader {
+public class CondJump extends AbstractEvent implements RegReader {
 
     private Label label;
     private BExpr guard;
