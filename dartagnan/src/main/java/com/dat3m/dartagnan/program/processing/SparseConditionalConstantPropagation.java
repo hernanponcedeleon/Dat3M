@@ -69,7 +69,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                 ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
 
-        Set<Event> reachableEvents = new HashSet<>();
+        Set<AbstractEvent> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
         // NOTE: An absent key represents the TOP value of our lattice (we start from
         // TOP everywhere)
@@ -78,7 +78,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         Map<Register, ExprInterface> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
-        for (Event cur : thread.getEvents()) {
+        for (AbstractEvent cur : thread.getEvents()) {
 
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
@@ -123,7 +123,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         // ---------- Remove dead code ----------
-        for (Event e : thread.getEvents()) {
+        for (AbstractEvent e : thread.getEvents()) {
             if (reachableEvents.contains(e)) {
                 continue;
             } else if (e instanceof Label && e.hasTag(Tag.NOOPT)) {
@@ -160,7 +160,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public Void visitEvent(Event e) {
+        public Void visitEvent(AbstractEvent e) {
             return null;
         }
 

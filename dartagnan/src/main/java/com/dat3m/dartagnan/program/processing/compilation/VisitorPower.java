@@ -45,7 +45,7 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
 
     @Override
-	public List<Event> visitCreate(Create e) {
+	public List<AbstractEvent> visitCreate(Create e) {
         Store store = newStore(e.getAddress(), e.getMemValue(), e.getMo());
         store.addTags(C11.PTHREAD);
 
@@ -56,7 +56,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitEnd(End e) {
+	public List<AbstractEvent> visitEnd(End e) {
         return eventSequence(
         		Power.newSyncBarrier(),
         		newStore(e.getAddress(), IValue.ZERO, e.getMo())
@@ -64,7 +64,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitJoin(Join e) {
+	public List<AbstractEvent> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
 		Load load = newLoad(resultRegister, e.getAddress(), "");
         load.addTags(C11.PTHREAD);
@@ -81,7 +81,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitStart(Start e) {
+	public List<AbstractEvent> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
 		load.addTags(Tag.STARTLOAD);
@@ -99,14 +99,14 @@ public class VisitorPower extends VisitorBase {
 	}
 
     @Override
-    public List<Event> visitInitLock(InitLock e) {
+    public List<AbstractEvent> visitInitLock(InitLock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
                 newStore(e.getAddress(), e.getMemValue(), ""));
     }
 
     @Override
-    public List<Event> visitLock(Lock e) {
+    public List<AbstractEvent> visitLock(Lock e) {
         Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
@@ -122,7 +122,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitUnlock(Unlock e) {
+    public List<AbstractEvent> visitUnlock(Unlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
                 newStore(e.getAddress(), IValue.ZERO, ""));
@@ -133,7 +133,7 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<Event> visitLlvmLoad(LlvmLoad e) {
+	public List<AbstractEvent> visitLlvmLoad(LlvmLoad e) {
 		Register resultRegister = e.getResultRegister();
 
 		Fence optionalBarrierBefore = null;
@@ -175,7 +175,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitLlvmStore(LlvmStore e) {
+	public List<AbstractEvent> visitLlvmStore(LlvmStore e) {
 		Fence optionalBarrierBefore = null;
 		Store store = newStore(e.getAddress(), e.getMemValue(), "");
 		Fence optionalBarrierAfter = null;
@@ -201,7 +201,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitLlvmXchg(LlvmXchg e) {
+	public List<AbstractEvent> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -210,7 +210,7 @@ public class VisitorPower extends VisitorBase {
 		Load load = newRMWLoadExclusive(resultRegister, address, "");
 		Store store = Power.newRMWStoreConditional(address, e.getMemValue(), "",  true);
 		Label label = newLabel("FakeDep");
-		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+		AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
 		Fence optionalBarrierBefore = null;
 		Fence optionalBarrierAfter = null;
@@ -247,7 +247,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitLlvmRMW(LlvmRMW e) {
+	public List<AbstractEvent> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -259,7 +259,7 @@ public class VisitorPower extends VisitorBase {
 		Load load = newRMWLoadExclusive(resultRegister, address, "");
 		Store store = Power.newRMWStoreConditional(address, dummyReg, "", true);
 		Label label = newLabel("FakeDep");
-		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+		AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
 		Fence optionalBarrierBefore = null;
 		// Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync
@@ -302,7 +302,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
  	@Override
-	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+	public List<AbstractEvent> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
 
@@ -353,7 +353,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitLlvmFence(LlvmFence e) {
+	public List<AbstractEvent> visitLlvmFence(LlvmFence e) {
 		Fence fence = e.getMo().equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
 
 		return eventSequence(
@@ -365,7 +365,7 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
 
 	@Override
-	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+	public List<AbstractEvent> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
@@ -438,7 +438,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+	public List<AbstractEvent> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -452,7 +452,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(resultRegister, address, "");
         Store store = Power.newRMWStoreConditional(address, dummyReg, "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         Fence optionalBarrierBefore = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
@@ -494,7 +494,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicLoad(AtomicLoad e) {
+	public List<AbstractEvent> visitAtomicLoad(AtomicLoad e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -539,7 +539,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicStore(AtomicStore e) {
+	public List<AbstractEvent> visitAtomicStore(AtomicStore e) {
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -570,7 +570,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+	public List<AbstractEvent> visitAtomicThreadFence(AtomicThreadFence e) {
 		String mo = e.getMo();
         Fence fence = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
 
@@ -580,7 +580,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicXchg(AtomicXchg e) {
+	public List<AbstractEvent> visitAtomicXchg(AtomicXchg e) {
 		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
@@ -590,7 +590,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(resultRegister, address, "");
         Store store = Power.newRMWStoreConditional(address, value, "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
@@ -634,7 +634,7 @@ public class VisitorPower extends VisitorBase {
 	// Following
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
-	public List<Event> visitLKMMLoad(LKMMLoad e) {
+	public List<AbstractEvent> visitLKMMLoad(LKMMLoad e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -652,7 +652,7 @@ public class VisitorPower extends VisitorBase {
 	// Following
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
-	public List<Event> visitLKMMStore(LKMMStore e) {
+	public List<AbstractEvent> visitLKMMStore(LKMMStore e) {
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -670,7 +670,7 @@ public class VisitorPower extends VisitorBase {
 	// Following
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
-	public List<Event> visitLKMMFence(LKMMFence e) {
+	public List<AbstractEvent> visitLKMMFence(LKMMFence e) {
 		Fence optionalMemoryBarrier;
 		switch(e.getName()) {
 			case Tag.Linux.MO_MB:
@@ -730,7 +730,7 @@ public class VisitorPower extends VisitorBase {
 	// =============================================================================================
 
 	@Override
-	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+	public List<AbstractEvent> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
@@ -744,7 +744,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, value, "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -766,7 +766,7 @@ public class VisitorPower extends VisitorBase {
 	}
 	
 	@Override
-	public List<Event> visitRMWXchg(RMWXchg e) {
+	public List<AbstractEvent> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
 		ExprInterface value = e.getMemValue();
 		IExpr address = e.getAddress();
@@ -777,7 +777,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, value, "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -796,7 +796,7 @@ public class VisitorPower extends VisitorBase {
 	}
 	
 	@Override
-	public List<Event> visitRMWOp(RMWOp e) {
+	public List<AbstractEvent> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -808,7 +808,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, op, value), "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -827,7 +827,7 @@ public class VisitorPower extends VisitorBase {
 	};
 
 	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+	public List<AbstractEvent> visitRMWOpReturn(RMWOpReturn e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -839,7 +839,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, dummy, "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -860,7 +860,7 @@ public class VisitorPower extends VisitorBase {
 	};
 
 	@Override
-	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+	public List<AbstractEvent> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr value = (IExpr) e.getMemValue();
 		IExpr address = e.getAddress();
@@ -870,7 +870,7 @@ public class VisitorPower extends VisitorBase {
 		Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -894,7 +894,7 @@ public class VisitorPower extends VisitorBase {
 	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
 	// Since RMWAddUnless does not care about any returned value, we don't need the final sub
 	@Override
-	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+	public List<AbstractEvent> visitRMWAddUnless(RMWAddUnless e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		ExprInterface value = e.getMemValue();
@@ -906,7 +906,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(regValue, address, "");
         Store store = Power.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		ExprInterface unless = e.getCmp();
@@ -938,7 +938,7 @@ public class VisitorPower extends VisitorBase {
 	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
 	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
 	@Override
-	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+	public List<AbstractEvent> visitRMWOpAndTest(RMWOpAndTest e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr value = (IExpr) e.getMemValue();
@@ -954,7 +954,7 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = Power.newRMWStoreConditional(address, retReg, "", true);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        AbstractEvent fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -975,7 +975,7 @@ public class VisitorPower extends VisitorBase {
 	};
 	
 	@Override
-	public List<Event> visitLKMMLock(LKMMLock e) {
+	public List<AbstractEvent> visitLKMMLock(LKMMLock e) {
 	Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
 	Label label = newLabel("FakeDep");
     // Spinlock events are guaranteed to succeed, i.e. we can use assumes
@@ -991,7 +991,7 @@ public class VisitorPower extends VisitorBase {
 	}
 
         @Override
-	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+	public List<AbstractEvent> visitLKMMUnlock(LKMMUnlock e) {
 	return eventSequence(
 				Power.newLwSyncBarrier(),
                 newStore(e.getAddress(), IValue.ZERO, "")

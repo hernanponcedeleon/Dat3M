@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -132,7 +132,7 @@ public abstract class AbstractCompilationTest {
         }
     }
 
-    private static boolean isRcuOrSrcu(Event e) {
+    private static boolean isRcuOrSrcu(AbstractEvent e) {
         // The following have features (RCU and SRCU) that hardware models do not support
         return Stream.of(
                 Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,

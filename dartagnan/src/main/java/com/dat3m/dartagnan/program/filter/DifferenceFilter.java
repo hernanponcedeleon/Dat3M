@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.filter;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 
 public class DifferenceFilter extends Filter {
 
@@ -13,7 +13,7 @@ public class DifferenceFilter extends Filter {
     }
 
     @Override
-    public boolean apply(Event event){
+    public boolean apply(AbstractEvent event){
         return filter1.apply(event) && !filter2.apply(event);
     }
 

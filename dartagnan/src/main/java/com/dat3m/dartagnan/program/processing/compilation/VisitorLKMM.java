@@ -28,7 +28,7 @@ public class VisitorLKMM extends VisitorBase {
         }
 	
         @Override
-        public List<Event> visitCreate(Create e) {
+        public List<AbstractEvent> visitCreate(Create e) {
             Store store = newStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
             store.addTags(C11.PTHREAD);
 
@@ -38,14 +38,14 @@ public class VisitorLKMM extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitEnd(End e) {
+        public List<AbstractEvent> visitEnd(End e) {
             return eventSequence(
                     newStore(e.getAddress(), IValue.ZERO, Tag.Linux.MO_RELEASE)
             );
         }
 
     @Override
-	public List<Event> visitJoin(Join e) {
+	public List<AbstractEvent> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
@@ -57,7 +57,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
     @Override
-	public List<Event> visitStart(Start e) {
+	public List<AbstractEvent> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         Load load = newLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
@@ -70,7 +70,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+	public List<AbstractEvent> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
         ExprInterface cmp = e.getCmp();
@@ -97,7 +97,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
 	@Override
-	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+	public List<AbstractEvent> visitRMWCmpXchg(RMWCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         ExprInterface cmp = e.getCmp();
         ExprInterface value = e.getMemValue();
@@ -125,7 +125,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+	public List<AbstractEvent> visitRMWFetchOp(RMWFetchOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         IExpr address = e.getAddress();
@@ -146,7 +146,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitRMWOp(RMWOp e) {
+	public List<AbstractEvent> visitRMWOp(RMWOp e) {
         IExpr address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 		
@@ -161,7 +161,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+	public List<AbstractEvent> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         IExpr address = e.getAddress();
         int precision = resultRegister.getPrecision();
@@ -180,7 +180,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+	public List<AbstractEvent> visitRMWOpReturn(RMWOpReturn e) {
         Register resultRegister = e.getResultRegister();
         IExpr address = e.getAddress();
         String mo = e.getMo();
@@ -201,7 +201,7 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitRMWXchg(RMWXchg e) {
+	public List<AbstractEvent> visitRMWXchg(RMWXchg e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         IExpr address = e.getAddress();
@@ -221,11 +221,11 @@ public class VisitorLKMM extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitLKMMLock(LKMMLock e) {
+	public List<AbstractEvent> visitLKMMLock(LKMMLock e) {
 		Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
-		Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
+		AbstractEvent middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
 				newAssume(new Atom(dummy, EQ, IValue.ZERO)) :
 				newJump(new Atom(dummy, NEQ, IValue.ZERO), (Label)e.getThread().getExit());
 		return eventSequence(

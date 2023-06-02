@@ -12,7 +12,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class MemEvent extends Event implements RegReader {
+public abstract class MemEvent extends AbstractEvent implements RegReader {
 
     protected IExpr address;
     protected String mo;

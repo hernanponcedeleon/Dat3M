@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -9,13 +10,13 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.util.Map;
 
-public class ExecutionStatus extends Event implements RegWriter {
+public class ExecutionStatus extends AbstractEvent implements RegWriter {
 
     private final Register register;
-    private Event event;
+    private AbstractEvent event;
     private final boolean trackDep;
 
-    public ExecutionStatus(Register register, Event event, boolean trackDep) {
+    public ExecutionStatus(Register register, AbstractEvent event, boolean trackDep) {
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
@@ -33,7 +34,7 @@ public class ExecutionStatus extends Event implements RegWriter {
         return register;
     }
 
-    public Event getStatusEvent() {
+    public AbstractEvent getStatusEvent() {
         return event;
     }
 
@@ -76,12 +77,12 @@ public class ExecutionStatus extends Event implements RegWriter {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Event getCopy() {
+    public AbstractEvent getCopy() {
         return new ExecutionStatus(this);
     }
 
     @Override
-    public void updateReferences(Map<Event, Event> updateMapping) {
+    public void updateReferences(Map<AbstractEvent, AbstractEvent> updateMapping) {
         this.event = updateMapping.getOrDefault(event, event);
     }
 

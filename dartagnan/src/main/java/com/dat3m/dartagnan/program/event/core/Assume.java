@@ -11,7 +11,7 @@ import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Assume extends Event implements RegReader {
+public class Assume extends AbstractEvent implements RegReader {
 
 	protected final ExprInterface expr;
 

@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -44,12 +44,12 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
     private void eliminateDeadCondJumps(Thread thread) {
 
-        List<Event> toBeRemoved = new ArrayList<>();
-        Map<Label, List<Event>> immediateLabelPredecessors = new HashMap<>();
+        List<AbstractEvent> toBeRemoved = new ArrayList<>();
+        Map<Label, List<AbstractEvent>> immediateLabelPredecessors = new HashMap<>();
         // We fill the map of predecessors
-        Event current = thread.getEntry();
+        AbstractEvent current = thread.getEntry();
         while (current != null) {
-            final Event pred = current.getPredecessor();
+            final AbstractEvent pred = current.getPredecessor();
         	if (current instanceof CondJump) {
         		final CondJump jump = (CondJump)current;
         		// After constant propagation some jumps have False as condition and are dead
@@ -66,8 +66,8 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
         // We check which "ifs" can be removed
         for (Label label : immediateLabelPredecessors.keySet()) {
-        	final Event next = label.getSuccessor();
-            final List<Event> preds = immediateLabelPredecessors.get(label);
+        	final AbstractEvent next = label.getSuccessor();
+            final List<AbstractEvent> preds = immediateLabelPredecessors.get(label);
             if (next == null) {
                 continue;
             }
@@ -84,9 +84,9 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
         // Here is the actual removal
         boolean isCurDead = false;
-        Event cur = thread.getEntry();
+        AbstractEvent cur = thread.getEntry();
         while (cur != null) {
-            final Event succ = cur.getSuccessor();
+            final AbstractEvent succ = cur.getSuccessor();
             if(isCurDead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur,List.of()).isEmpty()) {
                 // We reached a label that has a non-dead predecessor, hence we reset the isCurDead flag.
                 isCurDead = false;
@@ -113,7 +113,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         }
    }
     
-    private boolean mutuallyExclusiveIfs(CondJump jump, Event e) {
+    private boolean mutuallyExclusiveIfs(CondJump jump, AbstractEvent e) {
         if (!(e instanceof CondJump)) {
             return false;
         }

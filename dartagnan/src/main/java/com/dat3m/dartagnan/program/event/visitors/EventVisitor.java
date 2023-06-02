@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 
 public interface EventVisitor<T> {
 
-	T visitEvent(Event e);
+	T visitEvent(AbstractEvent e);
 
 	// Basic events
 	default T visitAssume(Assume e) { return visitEvent(e); }

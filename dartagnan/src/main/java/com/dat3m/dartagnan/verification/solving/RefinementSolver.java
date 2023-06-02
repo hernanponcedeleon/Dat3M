@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -170,7 +170,7 @@ public class RefinementSolver extends ModelChecker {
 
         // ------ Just for statistics ------
         List<WMMSolver.Statistics> statList = new ArrayList<>();
-        Set<Event> coveredEvents = new HashSet<>(); // For "coverage" report
+        Set<AbstractEvent> coveredEvents = new HashSet<>(); // For "coverage" report
         int iterationCount = 0;
         long lastTime = System.currentTimeMillis();
         long curTime;
@@ -436,13 +436,13 @@ public class RefinementSolver extends ModelChecker {
         return message;
     }
 
-    private static CharSequence generateCoverageReport(Set<Event> coveredEvents, Program program,
-            Context analysisContext) {
+    private static CharSequence generateCoverageReport(Set<AbstractEvent> coveredEvents, Program program,
+                                                       Context analysisContext) {
         // We track symmetric events
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        final Set<Event> programEvents = program.getEvents(MemEvent.class).stream()
+        final Set<AbstractEvent> programEvents = program.getEvents(MemEvent.class).stream()
                 // TODO: Can we have events with source information but without parse id?
                 .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
                 .collect(Collectors.toSet());
@@ -456,9 +456,9 @@ public class RefinementSolver extends ModelChecker {
         
         final SyntacticContextAnalysis synContext = newInstance(program);
 
-        for (Event e : programEvents) {
+        for (AbstractEvent e : programEvents) {
             EquivalenceClass<Thread> clazz = symm.getEquivalenceClass(e.getThread());
-            Event symmRep = symm.map(e, clazz.getRepresentative());
+            AbstractEvent symmRep = symm.map(e, clazz.getRepresentative());
             OriginalId branchRepId = cf.getRepresentative(symmRep).getMetadata(OriginalId.class);
             assert branchRepId != null;
 

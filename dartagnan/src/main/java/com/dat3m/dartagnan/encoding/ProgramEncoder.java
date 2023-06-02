@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -22,7 +22,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.util.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
+import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
 
@@ -85,9 +85,9 @@ public class ProgramEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 
         Map<Label, Set<CondJump>> labelJumpMap = new HashMap<>();
-        Event pred = null;
+        AbstractEvent pred = null;
         final List<BooleanFormula> enc = new ArrayList<>();
-        for(Event e : thread.getEntry().getSuccessors()) {
+        for(AbstractEvent e : thread.getEntry().getSuccessors()) {
             // Immediate control flow
             BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
             if (pred instanceof CondJump) {
@@ -146,13 +146,13 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding dependencies");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
-        for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
-            final Event reader = e.getKey();
+        for(Map.Entry<AbstractEvent,Map<Register, Dependency.State>> e : dep.getAll()) {
+            final AbstractEvent reader = e.getKey();
             for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
                 final Formula value = context.encodeIntegerExpressionAt(r.getKey(), reader);
                 final Dependency.State state = r.getValue();
                 List<BooleanFormula> overwrite = new ArrayList<>();
-                for(Event writer : reverse(state.may)) {
+                for(AbstractEvent writer : reverse(state.may)) {
                     assert writer instanceof RegWriter;
                     BooleanFormula edge;
                     if(state.must.contains(writer)) {
@@ -202,21 +202,21 @@ public class ProgramEncoder implements Encoder {
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
             final Formula value = context.encodeFinalIntegerExpression(e.getKey());
             final Dependency.State state = e.getValue();
-            final List<Event> writers = state.may;
+            final List<AbstractEvent> writers = state.may;
             if(initializeRegisters && !state.initialized) {
                 List<BooleanFormula> clause = new ArrayList<>();
                 clause.add(context.equalZero(value));
-                for(Event w : writers) {
+                for(AbstractEvent w : writers) {
                     clause.add(context.execution(w));
                 }
                 enc.add(bmgr.or(clause));
             }
             for(int i = 0; i < writers.size(); i++) {
-                final Event writer = writers.get(i);
+                final AbstractEvent writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
                 clause.add(context.equal(value, context.result((RegWriter) writer)));
                 clause.add(bmgr.not(context.execution(writer)));
-                for(Event w : writers.subList(i + 1, writers.size())) {
+                for(AbstractEvent w : writers.subList(i + 1, writers.size())) {
                     if(!exec.areMutuallyExclusive(writer, w)) {
                         clause.add(context.execution(w));
                     }

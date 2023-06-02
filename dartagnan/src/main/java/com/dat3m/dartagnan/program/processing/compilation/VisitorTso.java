@@ -25,7 +25,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitXchg(Xchg e) {
+        public List<AbstractEvent> visitXchg(Xchg e) {
                 Register resultRegister = e.getResultRegister();
                 IExpr address = e.getAddress();
 
@@ -43,7 +43,7 @@ class VisitorTso extends VisitorBase {
     // =============================================================================================
 
     @Override
-        public List<Event> visitCreate(Create e) {
+        public List<AbstractEvent> visitCreate(Create e) {
                 Store store = newStore(e.getAddress(), e.getMemValue(), "");
                 store.addTags(C11.PTHREAD);
 
@@ -53,14 +53,14 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitEnd(End e) {
+        public List<AbstractEvent> visitEnd(End e) {
                 return tagList(eventSequence(
                                 // Nothing comes after an End event thus no need for a fence
                                 newStore(e.getAddress(), IValue.ZERO, "")));
         }
 
         @Override
-        public List<Event> visitJoin(Join e) {
+        public List<AbstractEvent> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addTags(C11.PTHREAD);
@@ -72,7 +72,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitStart(Start e) {
+        public List<AbstractEvent> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addTags(Tag.STARTLOAD);
@@ -84,14 +84,14 @@ class VisitorTso extends VisitorBase {
                                                 (Label) e.getThread().getExit())));
         }
 
-        public List<Event> visitInitLock(InitLock e) {
+        public List<AbstractEvent> visitInitLock(InitLock e) {
             return eventSequence(
                     newStore(e.getAddress(), e.getMemValue(), ""),
                     X86.newMemoryFence());
         }
 
         @Override
-        public List<Event> visitLock(Lock e) {
+        public List<AbstractEvent> visitLock(Lock e) {
             Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
             // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
             // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
@@ -103,7 +103,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitUnlock(Unlock e) {
+        public List<AbstractEvent> visitUnlock(Unlock e) {
             return eventSequence(
                     newStore(e.getAddress(), IValue.ZERO, ""),
                     X86.newMemoryFence());
@@ -114,13 +114,13 @@ class VisitorTso extends VisitorBase {
         // =============================================================================================
 
         @Override
-        public List<Event> visitLlvmLoad(LlvmLoad e) {
+        public List<AbstractEvent> visitLlvmLoad(LlvmLoad e) {
                 return eventSequence(
                                 newLoad(e.getResultRegister(), e.getAddress(), ""));
         }
 
         @Override
-        public List<Event> visitLlvmStore(LlvmStore e) {
+        public List<AbstractEvent> visitLlvmStore(LlvmStore e) {
                 Fence optionalMFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
                 return eventSequence(
@@ -129,7 +129,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitLlvmXchg(LlvmXchg e) {
+        public List<AbstractEvent> visitLlvmXchg(LlvmXchg e) {
                 IExpr address = e.getAddress();
                 Load load = newRMWLoad(e.getResultRegister(), address, "");
 
@@ -139,7 +139,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitLlvmRMW(LlvmRMW e) {
+        public List<AbstractEvent> visitLlvmRMW(LlvmRMW e) {
                 Register resultRegister = e.getResultRegister();
                 Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
 
@@ -153,7 +153,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+        public List<AbstractEvent> visitLlvmCmpXchg(LlvmCmpXchg e) {
                 Register oldValueRegister = e.getStructRegister(0);
                 Register resultRegister = e.getStructRegister(1);
 
@@ -178,7 +178,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitLlvmFence(LlvmFence e) {
+        public List<AbstractEvent> visitLlvmFence(LlvmFence e) {
                 Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
                 return eventSequence(
@@ -190,7 +190,7 @@ class VisitorTso extends VisitorBase {
         // =============================================================================================
 
         @Override
-        public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+        public List<AbstractEvent> visitAtomicCmpXchg(AtomicCmpXchg e) {
                 Register resultRegister = e.getResultRegister();
                 IExpr address = e.getAddress();
                 ExprInterface value = e.getMemValue();
@@ -224,7 +224,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+        public List<AbstractEvent> visitAtomicFetchOp(AtomicFetchOp e) {
                 Register resultRegister = e.getResultRegister();
                 Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
 
@@ -239,13 +239,13 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitAtomicLoad(AtomicLoad e) {
+        public List<AbstractEvent> visitAtomicLoad(AtomicLoad e) {
                 return eventSequence(
                                 newLoad(e.getResultRegister(), e.getAddress(), e.getMo()));
         }
 
         @Override
-        public List<Event> visitAtomicStore(AtomicStore e) {
+        public List<AbstractEvent> visitAtomicStore(AtomicStore e) {
                 String mo = e.getMo();
                 Fence optionalMFence = mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
@@ -255,7 +255,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+        public List<AbstractEvent> visitAtomicThreadFence(AtomicThreadFence e) {
                 Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
                 return eventSequence(
@@ -263,7 +263,7 @@ class VisitorTso extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitAtomicXchg(AtomicXchg e) {
+        public List<AbstractEvent> visitAtomicXchg(AtomicXchg e) {
                 IExpr address = e.getAddress();
                 String mo = e.getMo();
                 Load load = newRMWLoad(e.getResultRegister(), address, mo);
@@ -273,12 +273,12 @@ class VisitorTso extends VisitorBase {
                                 newRMWStore(load, address, e.getMemValue(), mo)));
         }
 
-        private List<Event> tagList(List<Event> in) {
+        private List<AbstractEvent> tagList(List<AbstractEvent> in) {
                 in.forEach(this::tagEvent);
                 return in;
         }
 
-        private void tagEvent(Event e) {
+        private void tagEvent(AbstractEvent e) {
                 if (e instanceof MemEvent) {
                         e.addTags(Tag.TSO.ATOM);
                 }

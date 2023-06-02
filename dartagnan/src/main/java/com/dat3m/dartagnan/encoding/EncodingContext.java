@@ -2,13 +2,14 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -59,11 +60,11 @@ public final class EncodingContext {
             secure = true)
     private boolean shouldMergeCFVars = true;
 
-    private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
-    private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
-    private final Map<Event, Formula> addresses = new HashMap<>();
-    private final Map<Event, Formula> values = new HashMap<>();
-    private final Map<Event, Formula> results = new HashMap<>();
+    private final Map<AbstractEvent, BooleanFormula> controlFlowVariables = new HashMap<>();
+    private final Map<AbstractEvent, BooleanFormula> executionVariables = new HashMap<>();
+    private final Map<AbstractEvent, Formula> addresses = new HashMap<>();
+    private final Map<AbstractEvent, Formula> values = new HashMap<>();
+    private final Map<AbstractEvent, Formula> results = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
@@ -116,11 +117,11 @@ public final class EncodingContext {
         return new ExpressionEncoder(formulaManager, null).encodeAsInteger(expression);
     }
 
-    public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
+    public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, AbstractEvent event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
     }
 
-    public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
+    public Formula encodeIntegerExpressionAt(ExprInterface expression, AbstractEvent event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
     }
 
@@ -128,7 +129,7 @@ public final class EncodingContext {
         return ExpressionEncoder.encodeComparison(op, lhs, rhs, formulaManager);
     }
 
-    public BooleanFormula controlFlow(Event event) {
+    public BooleanFormula controlFlow(AbstractEvent event) {
         return controlFlowVariables.get(event);
     }
 
@@ -136,7 +137,7 @@ public final class EncodingContext {
         return encodeBooleanExpressionAt(event.getGuard(), event);
     }
 
-    public BooleanFormula execution(Event event) {
+    public BooleanFormula execution(AbstractEvent event) {
         return (event.cfImpliesExec() ? controlFlowVariables : executionVariables).get(event);
     }
 
@@ -150,10 +151,10 @@ public final class EncodingContext {
      * @return
      * Proposition that both {@code first} and {@code second} are included in the modelled execution.
      */
-    public BooleanFormula execution(Event first, Event second) {
+    public BooleanFormula execution(AbstractEvent first, AbstractEvent second) {
         boolean b = first.getGlobalId() < second.getGlobalId();
-        Event x = b ? first : second;
-        Event y = b ? second : first;
+        AbstractEvent x = b ? first : second;
+        AbstractEvent y = b ? second : first;
         if (executionAnalysis.isImplied(x, y)) {
             return execution(x);
         }
@@ -163,7 +164,7 @@ public final class EncodingContext {
         return booleanFormulaManager.and(execution(x), execution(y));
     }
 
-    public BooleanFormula dependency(Event first, Event second) {
+    public BooleanFormula dependency(AbstractEvent first, AbstractEvent second) {
         return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
@@ -208,11 +209,11 @@ public final class EncodingContext {
         return results.get(event);
     }
 
-    public NumeralFormula.IntegerFormula clockVariable(String name, Event event) {
+    public NumeralFormula.IntegerFormula clockVariable(String name, AbstractEvent event) {
         return formulaManager.getIntegerFormulaManager().makeVariable(formulaManager.escape(name) + " " + event.getGlobalId());
     }
 
-    public NumeralFormula.IntegerFormula memoryOrderClock(Event write) {
+    public NumeralFormula.IntegerFormula memoryOrderClock(AbstractEvent write) {
         checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
         if (write.hasTag(INIT)) {
             return formulaManager.getIntegerFormulaManager().makeNumber(0);
@@ -220,7 +221,7 @@ public final class EncodingContext {
         return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
-    public BooleanFormula edgeVariable(String name, Event first, Event second) {
+    public BooleanFormula edgeVariable(String name, AbstractEvent first, AbstractEvent second) {
         return booleanFormulaManager.makeVariable(formulaManager.escape(name) + " " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
@@ -229,7 +230,7 @@ public final class EncodingContext {
 
         BooleanFormula encode(Tuple tuple);
 
-        default BooleanFormula encode(Event first, Event second) {
+        default BooleanFormula encode(AbstractEvent first, AbstractEvent second) {
             return encode(new Tuple(first, second));
         }
     }
@@ -252,7 +253,7 @@ public final class EncodingContext {
         return edge(relation).encode(tuple);
     }
 
-    public BooleanFormula edge(Relation relation, Event first, Event second) {
+    public BooleanFormula edge(Relation relation, AbstractEvent first, AbstractEvent second) {
         return edge(relation).encode(first, second);
     }
 
@@ -260,16 +261,16 @@ public final class EncodingContext {
         if (shouldMergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
                 BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
-                for (Event e : cls) {
+                for (AbstractEvent e : cls) {
                     controlFlowVariables.put(e, v);
                 }
             }
         } else {
-            for (Event e : verificationTask.getProgram().getEvents()) {
+            for (AbstractEvent e : verificationTask.getProgram().getEvents()) {
                 controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getGlobalId()));
             }
         }
-        for (Event e : verificationTask.getProgram().getEvents()) {
+        for (AbstractEvent e : verificationTask.getProgram().getEvents()) {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }

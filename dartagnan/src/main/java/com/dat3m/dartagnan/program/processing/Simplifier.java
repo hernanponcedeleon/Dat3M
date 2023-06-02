@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
@@ -42,8 +42,8 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private void simplify(Thread t) {
-        Event cur = t.getEntry();
-        Event next;
+        AbstractEvent cur = t.getEntry();
+        AbstractEvent next;
         while ((next = cur.getSuccessor()) != null) {
             // Some simplifications are only applicable after others.
             // Thus, we apply them iteratively until we reach a fixpoint.
@@ -54,7 +54,7 @@ public class Simplifier implements ProgramProcessor {
         }
     }
 
-    private boolean simplifyEvent(Event next) {
+    private boolean simplifyEvent(AbstractEvent next) {
         if (next.hasTag(Tag.NOOPT)) {
             return false;
         }
@@ -71,7 +71,7 @@ public class Simplifier implements ProgramProcessor {
 
     private boolean simplifyJump(CondJump jump) {
         final Label jumpTarget = jump.getLabel();
-        final Event successor = jump.getSuccessor();
+        final AbstractEvent successor = jump.getSuccessor();
         final BExpr guard = jump.getGuard();
         if(jumpTarget.equals(successor) && guard instanceof BConst) {
             jump.delete();
@@ -93,7 +93,7 @@ public class Simplifier implements ProgramProcessor {
         while (simplifyEvent(call.getSuccessor())) { }
 
         // Check if we reached the return statement
-        final Event successor = call.getSuccessor();
+        final AbstractEvent successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
             call.delete();
             successor.delete();

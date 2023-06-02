@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.witness;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -79,9 +79,9 @@ public class WitnessGraph extends ElemWithAttributes {
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
 		List<BooleanFormula> enc = new ArrayList<>();
-		List<Event> previous = new ArrayList<>();
+		List<AbstractEvent> previous = new ArrayList<>();
 		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getEvents(MemEvent.class).stream()
+			List<AbstractEvent> events = program.getEvents(MemEvent.class).stream()
 					.filter(e -> e.hasMetadata(SourceLocation.class))
 					.filter(e -> e.getMetadata(SourceLocation.class).getLineNumber() == edge.getCline())
 					.collect(Collectors.toList());

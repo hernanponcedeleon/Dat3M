@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -234,16 +234,16 @@ public class WmmEncoder implements Encoder {
             EncodingContext.EdgeEncoder e2 = context.edge(r2);
             final Set<Tuple> a1 = Sets.union(encodeSets.get(r1), k1.getMustSet());
             final Set<Tuple> a2 = Sets.union(encodeSets.get(r2), k2.getMustSet());
-            final Function<Event, Collection<Tuple>> out = k1.getMayOut();
+            final Function<AbstractEvent, Collection<Tuple>> out = k1.getMayOut();
             for (Tuple tuple : encodeSets.get(rel)) {
                 BooleanFormula expr = bmgr.makeFalse();
                 if (k.containsMust(tuple)) {
                     expr = execution(tuple);
                 } else {
-                    Event x = tuple.getFirst();
-                    Event z = tuple.getSecond();
+                    AbstractEvent x = tuple.getFirst();
+                    AbstractEvent z = tuple.getSecond();
                     for (Tuple t1 : out.apply(x)) {
-                        Event y = t1.getSecond();
+                        AbstractEvent y = t1.getSecond();
                         Tuple t2 = new Tuple(y, z);
                         if (k2.containsMay(t2)) {
                             verify(a1.contains(t1) && a2.contains(t2),
@@ -259,11 +259,11 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitDomainIdentity(Relation rel, Relation r1) {
-            final Function<Event, Collection<Tuple>> mayOut = ra.getKnowledge(r1).getMayOut();
+            final Function<AbstractEvent, Collection<Tuple>> mayOut = ra.getKnowledge(r1).getMayOut();
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder e1 = context.edge(r1);
             for (Tuple tuple : encodeSets.get(rel)) {
-                Event e = tuple.getFirst();
+                AbstractEvent e = tuple.getFirst();
                 BooleanFormula opt = bmgr.makeFalse();
                 //TODO: Optimize using minSets (but no CAT uses this anyway)
                 for (Tuple t : mayOut.apply(e)) {
@@ -276,12 +276,12 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitRangeIdentity(Relation rel, Relation r1) {
-            final Function<Event, Collection<Tuple>> mayIn = ra.getKnowledge(r1).getMayIn();
+            final Function<AbstractEvent, Collection<Tuple>> mayIn = ra.getKnowledge(r1).getMayIn();
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder e1 = context.edge(r1);
             //TODO: Optimize using minSets (but no CAT uses this anyway)
             for (Tuple tuple : encodeSets.get(rel)) {
-                Event e = tuple.getFirst();
+                AbstractEvent e = tuple.getFirst();
                 BooleanFormula opt = bmgr.makeFalse();
                 for (Tuple t : mayIn.apply(e)) {
                     opt = bmgr.or(opt, e1.encode(t));
@@ -295,7 +295,7 @@ public class WmmEncoder implements Encoder {
         public Void visitTransitiveClosure(Relation rel, Relation r1) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-            final Function<Event, Collection<Tuple>> out = k1.getMayOut();
+            final Function<AbstractEvent, Collection<Tuple>> out = k1.getMayOut();
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
             EncodingContext.EdgeEncoder e1 = context.edge(r1);
             for (Tuple tuple : encodeSets.get(rel)) {
@@ -305,13 +305,13 @@ public class WmmEncoder implements Encoder {
                     continue;
                 }
                 BooleanFormula orClause = bmgr.makeFalse();
-                Event x = tuple.getFirst();
-                Event z = tuple.getSecond();
+                AbstractEvent x = tuple.getFirst();
+                AbstractEvent z = tuple.getSecond();
                 if (k1.containsMay(tuple)) {
                     orClause = bmgr.or(orClause, e1.encode(tuple));
                 }
                 for (Tuple t : out.apply(x)) {
-                    Event y = t.getSecond();
+                    AbstractEvent y = t.getSecond();
                     if (y.getGlobalId() != x.getGlobalId() && y.getGlobalId() != z.getGlobalId()) {
                         Tuple yz = new Tuple(y, z);
                         if (k.containsMay(yz)) {
@@ -343,11 +343,11 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitFences(Relation rel, Filter fenceSet) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-            List<Event> fences = program.getEvents().stream().filter(fenceSet::apply).collect(toList());
+            List<AbstractEvent> fences = program.getEvents().stream().filter(fenceSet::apply).collect(toList());
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
+                AbstractEvent e1 = tuple.getFirst();
+                AbstractEvent e2 = tuple.getSecond();
                 BooleanFormula orClause;
                 if (k.containsMust(tuple)) {
                     orClause = bmgr.makeTrue();
@@ -377,8 +377,8 @@ public class WmmEncoder implements Encoder {
             Dependency dep = context.getAnalysisContext().get(Dependency.class);
             EncodingContext.EdgeEncoder edge = context.edge(r);
             for (Tuple t : encodeSets.get(r)) {
-                Event writer = t.getFirst();
-                Event reader = t.getSecond();
+                AbstractEvent writer = t.getFirst();
+                AbstractEvent reader = t.getSecond();
                 if (!(writer instanceof RegWriter)) {
                     enc.add(bmgr.not(edge.encode(t)));
                 } else {
@@ -396,21 +396,21 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitCriticalSections(Relation rscs) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rscs);
-            final Function<Event, Collection<Tuple>> mayIn = k.getMayIn();
-            final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
+            final Function<AbstractEvent, Collection<Tuple>> mayIn = k.getMayIn();
+            final Function<AbstractEvent, Collection<Tuple>> mayOut = k.getMayOut();
             EncodingContext.EdgeEncoder encoder = context.edge(rscs);
             for (Tuple tuple : encodeSets.get(rscs)) {
-                Event lock = tuple.getFirst();
-                Event unlock = tuple.getSecond();
+                AbstractEvent lock = tuple.getFirst();
+                AbstractEvent unlock = tuple.getSecond();
                 BooleanFormula relation = execution(tuple);
                 for (Tuple t : mayIn.apply(unlock)) {
-                    Event y = t.getFirst();
+                    AbstractEvent y = t.getFirst();
                     if (lock.getGlobalId() < y.getGlobalId() && y.getGlobalId() < unlock.getGlobalId()) {
                         relation = bmgr.and(relation, bmgr.not(encoder.encode(t)));
                     }
                 }
                 for (Tuple t : mayOut.apply(lock)) {
-                    Event y = t.getSecond();
+                    AbstractEvent y = t.getSecond();
                     if (lock.getGlobalId() < y.getGlobalId() && y.getGlobalId() < unlock.getGlobalId()) {
                         relation = bmgr.and(relation, bmgr.not(encoder.encode(t)));
                     }
@@ -424,8 +424,8 @@ public class WmmEncoder implements Encoder {
         public Void visitReadModifyWrites(Relation rmw) {
             BooleanFormula unpredictable = bmgr.makeFalse();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
-            final Function<Event, Collection<Tuple>> mayIn = k.getMayIn();
-            final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
+            final Function<AbstractEvent, Collection<Tuple>> mayIn = k.getMayIn();
+            final Function<AbstractEvent, Collection<Tuple>> mayOut = k.getMayOut();
 
             // ----------  Encode matching for LL/SC-type RMWs ----------
             for (RMWStoreExclusive store : program.getEvents(RMWStoreExclusive.class)) {
@@ -439,13 +439,13 @@ public class WmmEncoder implements Encoder {
                     pairingCond.add(context.execution(load));
                     pairingCond.add(context.controlFlow(store));
                     for (Tuple t1 : mayIn.apply(store)) {
-                        Event otherLoad = t1.getFirst();
+                        AbstractEvent otherLoad = t1.getFirst();
                         if (otherLoad.getGlobalId() > load.getGlobalId()) {
                             pairingCond.add(bmgr.not(context.execution(otherLoad)));
                         }
                     }
                     for (Tuple t1 : mayOut.apply(load)) {
-                        Event otherStore = t1.getSecond();
+                        AbstractEvent otherStore = t1.getSecond();
                         if (otherStore.getGlobalId() < store.getGlobalId()) {
                             pairingCond.add(bmgr.not(context.controlFlow(otherStore)));
                         }
@@ -490,7 +490,7 @@ public class WmmEncoder implements Encoder {
             return null;
         }
 
-        private BooleanFormula exclPair(Event load, Event store) {
+        private BooleanFormula exclPair(AbstractEvent load, AbstractEvent store) {
             return bmgr.makeVariable("excl(" + load.getGlobalId() + "," + store.getGlobalId() + ")");
         }
 
@@ -544,7 +544,7 @@ public class WmmEncoder implements Encoder {
             boolean idl = !context.useSATEncoding;
             List<MemEvent> allWrites = program.getEvents(MemEvent.class).stream()
                     .filter(e -> e.hasTag(WRITE))
-                    .sorted(Comparator.comparingInt(Event::getGlobalId))
+                    .sorted(Comparator.comparingInt(AbstractEvent::getGlobalId))
                     .collect(toList());
             EncodingContext.EdgeEncoder edge = context.edge(co);
             RelationAnalysis.Knowledge k = ra.getKnowledge(co);

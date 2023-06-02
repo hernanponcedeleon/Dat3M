@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -19,7 +19,7 @@ import java.util.Set;
     FIXME: Possibly make this event "core" due to the absence of compilation?
            A better alternative would be to reuse 'Local' but with a malloc expression as its right-hand side.
  */
-public class Malloc extends Event implements RegWriter, RegReader {
+public class Malloc extends AbstractEvent implements RegWriter, RegReader {
 
     protected final Register register;
     protected IExpr sizeExpr;

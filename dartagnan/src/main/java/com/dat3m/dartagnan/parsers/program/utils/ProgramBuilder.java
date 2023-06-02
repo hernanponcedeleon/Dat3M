@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
@@ -74,7 +74,7 @@ public class ProgramBuilder {
         initThread(String.valueOf(id), id);
     }
 
-    public Event addChild(int thread, Event child){
+    public AbstractEvent addChild(int thread, AbstractEvent child){
         if(!threads.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }
@@ -131,7 +131,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
 
-    public Event getLastEvent(int thread){
+    public AbstractEvent getLastEvent(int thread){
         return threads.get(thread).getExit();
     }
 
@@ -203,7 +203,7 @@ public class ProgramBuilder {
     private void validateLabels(Thread thread) throws MalformedProgramException {
         Map<String, Label> threadLabels = new HashMap<>();
         Set<String> referencedLabels = new HashSet<>();
-        Event e = thread.getEntry();
+        AbstractEvent e = thread.getEntry();
         while(e != null){
             if(e instanceof CondJump){
                 referencedLabels.add(((CondJump) e).getLabel().getName());

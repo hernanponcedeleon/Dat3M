@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.BooleanFormula;
@@ -43,7 +43,7 @@ public class RMWStoreExclusive extends Store {
     public String toString() {
         String tag = isStrong ? " strong" : "";
         tag += requiresMatchingAddresses ? " addrmatch" : "";
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
+        return String.format("%1$-" + AbstractEvent.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
     }
 
     @Override

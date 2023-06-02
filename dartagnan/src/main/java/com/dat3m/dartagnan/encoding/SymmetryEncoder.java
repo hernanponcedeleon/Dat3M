@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -123,8 +123,8 @@ public class SymmetryEncoder implements Encoder {
         Thread t1 = symmThreads.get(0);
         List<Tuple> t1Tuples = new ArrayList<>();
         for (Tuple t : maySet) {
-            Event a = t.getFirst();
-            Event b = t.getSecond();
+            AbstractEvent a = t.getFirst();
+            AbstractEvent b = t.getSecond();
             if (!a.hasTag(Tag.C11.PTHREAD) && !b.hasTag(Tag.C11.PTHREAD)
                     && a.getThread() == t1 && symmClass.contains(b.getThread())) {
                 t1Tuples.add(t);
@@ -136,7 +136,7 @@ public class SymmetryEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for (int i = 1; i < symmThreads.size(); i++) {
             Thread t2 = symmThreads.get(i);
-            Function<Event, Event> p = symm.createEventTransposition(t1, t2);
+            Function<AbstractEvent, AbstractEvent> p = symm.createEventTransposition(t1, t2);
             List<Tuple> t2Tuples = t1Tuples.stream().map(t -> t.permute(p)).collect(Collectors.toList());
 
             List<BooleanFormula> r1 = t1Tuples.stream().map(edge::encode).collect(Collectors.toList());
@@ -160,8 +160,8 @@ public class SymmetryEncoder implements Encoder {
         // ====== Sync-degree based order ======
 
         // Setup of data structures
-        final Set<Event> inEvents = new HashSet<>();
-        final Set<Event> outEvents = new HashSet<>();
+        final Set<AbstractEvent> inEvents = new HashSet<>();
+        final Set<AbstractEvent> outEvents = new HashSet<>();
         for (Tuple t : row) {
             inEvents.add(t.getFirst());
             outEvents.add(t.getSecond());
@@ -170,19 +170,19 @@ public class SymmetryEncoder implements Encoder {
         final List<RelationAnalysis.Knowledge> knowledge = acycAxioms.stream()
                 .map(a -> ra.getKnowledge(a.getRelation()))
                 .collect(Collectors.toList());
-        final List<Function<Event, Collection<Tuple>>> mustIn = knowledge.stream()
+        final List<Function<AbstractEvent, Collection<Tuple>>> mustIn = knowledge.stream()
                 .map(RelationAnalysis.Knowledge::getMustIn)
                 .collect(Collectors.toList());
-        final List<Function<Event, Collection<Tuple>>> mustOut = knowledge.stream()
+        final List<Function<AbstractEvent, Collection<Tuple>>> mustOut = knowledge.stream()
                 .map(RelationAnalysis.Knowledge::getMustOut)
                 .collect(Collectors.toList());
-        final Map<Event, Integer> combinedInDegree = new HashMap<>(inEvents.size());
-        final Map<Event, Integer> combinedOutDegree = new HashMap<>(outEvents.size());
-        for (Event e : inEvents) {
+        final Map<AbstractEvent, Integer> combinedInDegree = new HashMap<>(inEvents.size());
+        final Map<AbstractEvent, Integer> combinedOutDegree = new HashMap<>(outEvents.size());
+        for (AbstractEvent e : inEvents) {
             int syncDeg = mustIn.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
             combinedInDegree.put(e, syncDeg);
         }
-        for (Event e : outEvents) {
+        for (AbstractEvent e : outEvents) {
             int syncDec = mustOut.stream().mapToInt(m -> m.apply(e).size() + 1).max().orElse(0);
             combinedOutDegree.put(e, syncDec);
         }

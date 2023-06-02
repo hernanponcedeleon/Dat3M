@@ -27,7 +27,7 @@ public class VisitorC11 extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitCreate(Create e) {
+        public List<AbstractEvent> visitCreate(Create e) {
                 Store store = newStore(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
                 store.addTags(C11.PTHREAD);
 
@@ -36,13 +36,13 @@ public class VisitorC11 extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitEnd(End e) {
+        public List<AbstractEvent> visitEnd(End e) {
                 return tagList(eventSequence(
                         newStore(e.getAddress(), IValue.ZERO, Tag.C11.MO_RELEASE)));
         }
 
         @Override
-        public List<Event> visitJoin(Join e) {
+        public List<AbstractEvent> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
                 load.addTags(C11.PTHREAD);
@@ -53,7 +53,7 @@ public class VisitorC11 extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitStart(Start e) {
+        public List<AbstractEvent> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
                 Load load = newLoad(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
                 load.addTags(Tag.STARTLOAD);
@@ -65,13 +65,13 @@ public class VisitorC11 extends VisitorBase {
         }
 
         @Override
-        public List<Event> visitLoad(Load e) {
+        public List<AbstractEvent> visitLoad(Load e) {
                 return tagList(eventSequence(
                         newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
         }
 
         @Override
-        public List<Event> visitStore(Store e) {
+        public List<AbstractEvent> visitStore(Store e) {
                 return tagList(eventSequence(
                         newStore(e.getAddress(), e.getMemValue(), e.getMo())));
         }
@@ -81,7 +81,7 @@ public class VisitorC11 extends VisitorBase {
         // =============================================================================================
 
         @Override
-	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+	public List<AbstractEvent> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
@@ -115,7 +115,7 @@ public class VisitorC11 extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+	public List<AbstractEvent> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
 		IExpr address = e.getAddress();
@@ -133,27 +133,27 @@ public class VisitorC11 extends VisitorBase {
 	}
 
 	@Override
-	public List<Event> visitAtomicLoad(AtomicLoad e) {
+	public List<AbstractEvent> visitAtomicLoad(AtomicLoad e) {
 		return tagList(eventSequence(
         		newLoad(e.getResultRegister(), e.getAddress(), e.getMo())
         ));
 	}
 
 	@Override
-	public List<Event> visitAtomicStore(AtomicStore e) {
+	public List<AbstractEvent> visitAtomicStore(AtomicStore e) {
 		return tagList(eventSequence(
         		newStore(e.getAddress(), e.getMemValue(), e.getMo())
         ));
 	}
 
 	@Override
-	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+	public List<AbstractEvent> visitAtomicThreadFence(AtomicThreadFence e) {
                 return tagList(eventSequence(
                         newFence(e.getMo())));
 	}
 
 	@Override
-	public List<Event> visitAtomicXchg(AtomicXchg e) {
+	public List<AbstractEvent> visitAtomicXchg(AtomicXchg e) {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
@@ -171,19 +171,19 @@ public class VisitorC11 extends VisitorBase {
     // =============================================================================================
 
     @Override
-    public List<Event> visitLlvmLoad(LlvmLoad e) {
+    public List<AbstractEvent> visitLlvmLoad(LlvmLoad e) {
             return tagList(eventSequence(
                 newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
     }
 
     @Override
-    public List<Event> visitLlvmStore(LlvmStore e) {
+    public List<AbstractEvent> visitLlvmStore(LlvmStore e) {
            return tagList(eventSequence(
                 newStore(e.getAddress(), e.getMemValue(), e.getMo())));
     }
 
     @Override
-    public List<Event> visitLlvmXchg(LlvmXchg e) {
+    public List<AbstractEvent> visitLlvmXchg(LlvmXchg e) {
             Register resultRegister = e.getResultRegister();
             ExprInterface value = e.getMemValue();
             IExpr address = e.getAddress();
@@ -198,7 +198,7 @@ public class VisitorC11 extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitLlvmRMW(LlvmRMW e) {
+    public List<AbstractEvent> visitLlvmRMW(LlvmRMW e) {
             Register resultRegister = e.getResultRegister();
             IOpBin op = e.getOp();
             IExpr value = (IExpr) e.getMemValue();
@@ -218,7 +218,7 @@ public class VisitorC11 extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+    public List<AbstractEvent> visitLlvmCmpXchg(LlvmCmpXchg e) {
             Register oldValueRegister = e.getStructRegister(0);
             Register resultRegister = e.getStructRegister(1);
 
@@ -244,17 +244,17 @@ public class VisitorC11 extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitLlvmFence(LlvmFence e) {
+    public List<AbstractEvent> visitLlvmFence(LlvmFence e) {
             return tagList(eventSequence(
                             newFence(e.getMo())));
     }
 
-    private List<Event> tagList(List<Event> in) {
+    private List<AbstractEvent> tagList(List<AbstractEvent> in) {
         in.forEach(this::tagEvent);
         return in;
     }
 
-    private void tagEvent(Event e) {
+    private void tagEvent(AbstractEvent e) {
         if(e instanceof MemEvent) {
                 e.addTags(((MemEvent)e).canRace() ? C11.NONATOMIC : C11.ATOMIC);
         }

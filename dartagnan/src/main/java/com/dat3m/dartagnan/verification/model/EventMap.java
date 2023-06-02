@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.verification.model;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,22 +9,22 @@ import java.util.Set;
 
 public class EventMap {
 
-    private final Map<Event, EventData> eventMap;
+    private final Map<AbstractEvent, EventData> eventMap;
 
 
     public EventMap() {
         eventMap = new HashMap<>();
     }
 
-    public boolean contains(Event e) {
+    public boolean contains(AbstractEvent e) {
         return eventMap.containsKey(e);
     }
 
-    public Set<Event> getKeys() {
+    public Set<AbstractEvent> getKeys() {
         return eventMap.keySet();
     }
 
-    public EventData remove(Event e) {
+    public EventData remove(AbstractEvent e) {
         return eventMap.remove(e);
     }
 
@@ -32,11 +32,11 @@ public class EventMap {
         eventMap.remove(eventData.getEvent());
     }
 
-    public EventData getOrCreate(Event e) {
+    public EventData getOrCreate(AbstractEvent e) {
         return eventMap.computeIfAbsent(e, EventData::new);
     }
 
-    public EventData get(Event e) {
+    public EventData get(AbstractEvent e) {
         return eventMap.get(e);
     }
 

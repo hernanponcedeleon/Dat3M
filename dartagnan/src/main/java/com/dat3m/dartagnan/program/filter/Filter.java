@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.filter;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +27,7 @@ public abstract class Filter {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public abstract boolean apply(Event event);
+    public abstract boolean apply(AbstractEvent event);
 
     // ================================= Factory =================================
 

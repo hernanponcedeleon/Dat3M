@@ -194,11 +194,11 @@ public class ExecutionModel {
 
 
 
-    public boolean eventExists(Event e) {
+    public boolean eventExists(AbstractEvent e) {
         return eventMap.contains(e);
     }
 
-    public Optional<EventData> getData(Event e) {
+    public Optional<EventData> getData(AbstractEvent e) {
         return Optional.ofNullable(eventMap.get(e));
     }
 
@@ -257,7 +257,7 @@ public class ExecutionModel {
         for (Thread thread : threadList) {
             initDepTracking();
             List<List<Integer>> atomicBlockRanges = atomicBlockRangesMap.computeIfAbsent(thread, key -> new ArrayList<>());
-            Event e = thread.getEntry();
+            AbstractEvent e = thread.getEntry();
             int atomicBegin = -1;
             int localId = 0;
             do {
@@ -314,7 +314,7 @@ public class ExecutionModel {
     }
 
 
-    private void addEvent(Event e, int globalId, int localId) {
+    private void addEvent(AbstractEvent e, int globalId, int localId) {
         EventData data = eventMap.getOrCreate(e);
         data.setId(globalId);
         data.setLocalId(localId);
@@ -379,7 +379,7 @@ public class ExecutionModel {
         endIfs = new Stack<>();
     }
 
-    private void trackDependencies(Event e) {
+    private void trackDependencies(AbstractEvent e) {
 
         while (!endIfs.isEmpty() && e.getGlobalId() >= endIfs.peek().getGlobalId()) {
             // We exited an If and remove the dependencies associated with it
@@ -433,7 +433,7 @@ public class ExecutionModel {
                 lastRegWrites.put(load.getResultRegister(), new HashSet<>(Set.of(eData)));
             } else if (regWriter instanceof ExecutionStatus status) {
                 // ---- Track data dependency due to execution tracking ----
-                final Event tracked = status.getStatusEvent();
+                final AbstractEvent tracked = status.getStatusEvent();
                 HashSet<EventData> deps = new HashSet<>();
                 if (eventExists(tracked) && status.doesTrackDep()) {
                     deps.add(eventMap.get(tracked));

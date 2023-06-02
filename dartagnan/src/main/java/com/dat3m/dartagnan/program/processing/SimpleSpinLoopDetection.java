@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -94,7 +94,7 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
         // Safe means the loop wrote to these register before using them
         Set<Register> safeRegisters = new HashSet<>();
 
-        Event cur = loopBegin;
+        AbstractEvent cur = loopBegin;
         while ((cur = cur.getSuccessor()) != loopEnd) {
             if (cur.hasTag(Tag.WRITE)) {
                 return false;// Writes always cause side effects

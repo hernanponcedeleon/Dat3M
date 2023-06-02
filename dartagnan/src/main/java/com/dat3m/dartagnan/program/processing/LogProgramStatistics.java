@@ -25,7 +25,7 @@ public class LogProgramStatistics implements ProgramProcessor {
         int loadCount = 0;
         int initCount = 0;
         int fenceCount = 0;
-        for (Event e : program.getEvents()) {
+        for (AbstractEvent e : program.getEvents()) {
             totalEventCount++;
             if (e instanceof Store) {
                 storeCount++;

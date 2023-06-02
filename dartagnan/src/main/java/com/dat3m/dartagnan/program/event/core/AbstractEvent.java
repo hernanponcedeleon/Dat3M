@@ -14,7 +14,7 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.*;
 
-public abstract class Event implements Encoder, Comparable<Event> {
+public abstract class AbstractEvent implements Encoder, Comparable<AbstractEvent> {
 
 	public static final int PRINT_PAD_EXTRA = 50;
 
@@ -25,14 +25,14 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	protected final MetadataMap metadataMap = new MetadataMap();
 	protected final Set<String> tags;
 
-	private transient Event successor;
-	private transient Event predecessor;
+	private transient AbstractEvent successor;
+	private transient AbstractEvent predecessor;
 
-	protected Event(){
+	protected AbstractEvent(){
 		tags = new HashSet<>();
 	}
 
-	protected Event(Event other){
+	protected AbstractEvent(AbstractEvent other){
 		copyAllMetadataFrom(other);
         this.tags = other.tags; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
         this.thread = other.thread;
@@ -43,11 +43,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	// ============================================ Metadata ============================================
 
-	public void copyAllMetadataFrom(Event other) {
+	public void copyAllMetadataFrom(AbstractEvent other) {
 		other.metadataMap.getAllMetadata().forEach(this.metadataMap::put);
 	}
 
-	public void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass) {
+	public void copyMetadataFrom(AbstractEvent other, Class<? extends Metadata> metadataClass) {
 		other.setMetadata(other.getMetadata(metadataClass));
 	}
 
@@ -55,12 +55,12 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	public <T extends Metadata> T getMetadata(Class<T> metadataClass) { return metadataMap.get(metadataClass); }
 	public <T extends Metadata> T setMetadata(T metadata) { return metadataMap.put(metadata); }
 
-	public boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass) {
+	public boolean hasEqualMetadata(AbstractEvent other, Class<? extends Metadata> metadataClass) {
 		return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
 	}
 
 	// TODO: Remove this
-	public Event setCFileInformation(int line, String sourceCodeFilePath) {
+	public AbstractEvent setCFileInformation(int line, String sourceCodeFilePath) {
 		setMetadata(new SourceLocation(sourceCodeFilePath, line));
 		return this;
 	}
@@ -82,15 +82,15 @@ public abstract class Event implements Encoder, Comparable<Event> {
 
 	// ======================================== Control-flow =========================================
 
-	public Event getSuccessor() { return successor; }
-	public Event getPredecessor() { return predecessor; }
+	public AbstractEvent getSuccessor() { return successor; }
+	public AbstractEvent getPredecessor() { return predecessor; }
 
 	public Thread getThread() { return thread; }
 	public void setThread(Thread thread) {
 		this.thread = Preconditions.checkNotNull(thread);
 	}
 
-	public void setSuccessor(Event event) {
+	public void setSuccessor(AbstractEvent event) {
 		if (successor != null) {
 			successor.predecessor = null;
 		}
@@ -104,7 +104,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		successor = event;
 	}
 
-	public void setPredecessor(Event event) {
+	public void setPredecessor(AbstractEvent event) {
 		if (predecessor != null) {
 			predecessor.successor = null;
 		}
@@ -118,9 +118,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		predecessor = event;
 	}
 
-	public final List<Event> getSuccessors(){
-		List<Event> events = new ArrayList<>();
-		Event cur = this;
+	public final List<AbstractEvent> getSuccessors(){
+		List<AbstractEvent> events = new ArrayList<>();
+		AbstractEvent cur = this;
 		while (cur != null) {
 			events.add( cur);
 			cur = cur.getSuccessor();
@@ -129,9 +129,9 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return events;
 	}
 
-	public final List<Event> getPredecessors(){
-		List<Event> events = new ArrayList<>();
-		Event cur = this;
+	public final List<AbstractEvent> getPredecessors(){
+		List<AbstractEvent> events = new ArrayList<>();
+		AbstractEvent cur = this;
 		while (cur != null) {
 			events.add( cur);
 			cur = cur.getPredecessor();
@@ -149,22 +149,22 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		}
 	}
 
-	public void insertAfter(Event toBeInserted) {
+	public void insertAfter(AbstractEvent toBeInserted) {
 		if (this.successor != null) {
 			this.successor.setPredecessor(toBeInserted);
 		}
 		this.setSuccessor(toBeInserted);
 	}
 
-	public void insertAfter(List<Event> toBeInserted) {
-		Event cur = this;
-		for (Event next : toBeInserted) {
+	public void insertAfter(List<AbstractEvent> toBeInserted) {
+		AbstractEvent cur = this;
+		for (AbstractEvent next : toBeInserted) {
 			cur.insertAfter(next);
 			cur = next;
 		}
 	}
 
-	public void replaceBy(Event replacement) {
+	public void replaceBy(AbstractEvent replacement) {
 		this.insertAfter(replacement);
 		this.delete();
 	}
@@ -174,7 +174,7 @@ public abstract class Event implements Encoder, Comparable<Event> {
 	// ======================================== Miscellaneous ========================================
 
 	@Override
-	public int compareTo(Event e){
+	public int compareTo(AbstractEvent e){
 		if (e == this) {
 			return 0;
 		}
@@ -187,11 +187,11 @@ public abstract class Event implements Encoder, Comparable<Event> {
 		return result;
 	}
 
-	public Event getCopy(){
+	public AbstractEvent getCopy(){
 		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
 	}
 
-	public void updateReferences(Map<Event, Event> updateMapping) { }
+	public void updateReferences(Map<AbstractEvent, AbstractEvent> updateMapping) { }
 
 	public <T> T accept(EventVisitor<T> visitor) {
 		return visitor.visitEvent(this);

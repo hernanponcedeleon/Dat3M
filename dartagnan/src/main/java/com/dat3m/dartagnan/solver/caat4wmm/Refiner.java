@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.solver.caat4wmm;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
@@ -31,7 +31,7 @@ public class Refiner {
     public enum SymmetryLearning { NONE, LINEAR, QUADRATIC, FULL }
 
     private final ThreadSymmetry symm;
-    private final List<Function<Event, Event>> symmPermutations;
+    private final List<Function<AbstractEvent, AbstractEvent>> symmPermutations;
     private final SymmetryLearning learningOption;
 
     public Refiner(Context analysisContext) {
@@ -51,7 +51,7 @@ public class Refiner {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> refinement = new ArrayList<>();
         // For each symmetry permutation, we will create refinement clauses
-        for (Function<Event, Event> perm : symmPermutations) {
+        for (Function<AbstractEvent, AbstractEvent> perm : symmPermutations) {
             for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
                 BooleanFormula permutedClause = bmgr.makeFalse();
                 for (CoreLiteral lit : reason.getLiterals()) {
@@ -74,9 +74,9 @@ public class Refiner {
     // Computes a list of permutations allowed by the program.
     // Depending on the <learningOption>, the set of computed permutations differs.
     // In particular, for the option NONE, only the identity permutation will be returned.
-    private List<Function<Event, Event>> computeSymmetryPermutations() {
+    private List<Function<AbstractEvent, AbstractEvent>> computeSymmetryPermutations() {
         Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
-        List<Function<Event, Event>> perms = new ArrayList<>();
+        List<Function<AbstractEvent, AbstractEvent>> perms = new ArrayList<>();
         perms.add(Function.identity());
 
         for (EquivalenceClass<Thread> c : symmClasses) {
@@ -100,7 +100,7 @@ public class Refiner {
                     }
                     break;
                 case FULL:
-                    List<Function<Event, Event>> allPerms = symm.createAllEventPermutations(c);
+                    List<Function<AbstractEvent, AbstractEvent>> allPerms = symm.createAllEventPermutations(c);
                     allPerms.remove(Function.identity()); // We avoid adding multiple identities
                     perms.addAll(allPerms);
                     break;
@@ -116,7 +116,7 @@ public class Refiner {
 
     // Changes a reasoning <literal> based on a given permutation <perm> and translates the result
     // into a BooleanFormula for Refinement.
-    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, EncodingContext encoder) {
+    private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<AbstractEvent, AbstractEvent> perm, EncodingContext encoder) {
         BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         BooleanFormula enc;
         if (literal instanceof ExecLiteral) {

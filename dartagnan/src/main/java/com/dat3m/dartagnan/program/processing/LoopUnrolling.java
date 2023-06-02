@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
@@ -88,7 +88,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
         LoopBound curBoundAnnotation = null;
         final Map<CondJump, Integer> loopBoundsMap = new HashMap<>();
-        for (Event event : thread.getEvents()) {
+        for (AbstractEvent event : thread.getEvents()) {
             if (event instanceof LoopBound) {
                 // Track LoopBound annotation
                 if (curBoundAnnotation != null) {
@@ -142,15 +142,15 @@ public class LoopUnrolling implements ProgramProcessor {
                 endOfLoopMarker.copyAllMetadataFrom(loopBackJump);
 
             } else {
-                final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
+                final Map<AbstractEvent, AbstractEvent> copyCtx = new HashMap<>();
+                final List<AbstractEvent> copies = copyPath(loopBegin, loopBackJump, copyCtx);
 
                 // Insert copy of the loop
                 loopBegin.getPredecessor().insertAfter(copies);
                 if (iterCounter == 1) {
                     // This is the first unrolling; every outside jump to the loop header
                     // gets updated to jump to the first iteration instead.
-                    final List<Event> loopEntryJumps = loopBegin.getJumpSet().stream()
+                    final List<AbstractEvent> loopEntryJumps = loopBegin.getJumpSet().stream()
                             .filter(j -> j != loopBackJump).collect(Collectors.toList());
                     loopEntryJumps.forEach(j -> j.updateReferences(copyCtx));
                 }
@@ -163,13 +163,13 @@ public class LoopUnrolling implements ProgramProcessor {
         }
     }
 
-    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext) {
-        final List<Event> copies = new ArrayList<>();
+    private List<AbstractEvent> copyPath(AbstractEvent from, AbstractEvent until, Map<AbstractEvent, AbstractEvent> copyContext) {
+        final List<AbstractEvent> copies = new ArrayList<>();
 
-        Event cur = from;
-        Event lastCopy = null;
+        AbstractEvent cur = from;
+        AbstractEvent lastCopy = null;
         while(cur != null && !cur.equals(until)){
-            final Event copy = cur.getCopy();
+            final AbstractEvent copy = cur.getCopy();
             copy.setPredecessor(lastCopy);
             copies.add(copy);
             copyContext.put(cur, copy);

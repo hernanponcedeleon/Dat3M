@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.verification.model;
 
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.math.BigInteger;
 
@@ -11,7 +11,7 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 //EventData represents all data associated with an event in a concrete model.
 public class EventData implements Comparable<EventData> {
-    private final Event event;
+    private final AbstractEvent event;
     private EventData readFrom;
     private int id = -1;
     private int localId = -1;
@@ -20,11 +20,11 @@ public class EventData implements Comparable<EventData> {
     private int coIndex = Integer.MIN_VALUE;
     private boolean wasExecuted;
 
-    EventData(Event e) {
+    EventData(AbstractEvent e) {
         this.event = e;
     }
 
-    public Event getEvent() {
+    public AbstractEvent getEvent() {
     	return event;
     }
     public Thread getThread() {

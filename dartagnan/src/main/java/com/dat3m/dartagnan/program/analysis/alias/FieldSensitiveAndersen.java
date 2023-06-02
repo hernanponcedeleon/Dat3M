@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -68,7 +68,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         for (MemEvent e : memEvents) {
             processLocs(e);
         }
-        for (Event e : program.getEvents()) {
+        for (AbstractEvent e : program.getEvents()) {
             if(e instanceof Local) {
                 processRegs((Local)e);
             }

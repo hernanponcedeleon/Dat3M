@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.utils.logic.AbstractDataLiteral;
 
 /*
 This encodes events as literals. An event literal is simply the events exec-variable.
  */
-public class ExecLiteral extends AbstractDataLiteral<CoreLiteral, Event> implements CoreLiteral {
+public class ExecLiteral extends AbstractDataLiteral<CoreLiteral, AbstractEvent> implements CoreLiteral {
 
-    public ExecLiteral(Event event, boolean isNegative) {
+    public ExecLiteral(AbstractEvent event, boolean isNegative) {
         super("exec", event, isNegative);
     }
 
-    public ExecLiteral(Event event) {
+    public ExecLiteral(AbstractEvent event) {
         this(event,false);
     }
 

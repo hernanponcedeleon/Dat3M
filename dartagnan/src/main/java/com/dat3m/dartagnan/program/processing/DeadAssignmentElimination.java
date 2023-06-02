@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.collect.Lists;
@@ -53,7 +53,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
             usedRegs.addAll(program.getSpecification().getRegs());
         }
         // Registers that are used by assertions or other threads cannot be removed
-        final List<Event> programEvents = program.getEvents();
+        final List<AbstractEvent> programEvents = program.getEvents();
         programEvents.stream()
                 .filter(e -> e.hasTag(ASSERTION))
                 .filter(RegWriter.class::isInstance).map(RegWriter.class::cast)
@@ -66,9 +66,9 @@ public class DeadAssignmentElimination implements ProgramProcessor {
 
 
         // Compute events to be removed (removal is delayed)
-        final List<Event> threadEvents = thread.getEvents();
-        final Set<Event> toBeRemoved = new HashSet<>();
-        for(Event e : Lists.reverse(threadEvents)) {
+        final List<AbstractEvent> threadEvents = thread.getEvents();
+        final Set<AbstractEvent> toBeRemoved = new HashSet<>();
+        for(AbstractEvent e : Lists.reverse(threadEvents)) {
             if (!e.hasTag(NOOPT) && !e.hasTag(VISIBLE)
                     && e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister())) {
                 // TODO (TH): Can we also remove loads to unused registers here?
@@ -83,6 +83,6 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         // Here is the actual removal
         threadEvents.stream()
                 .filter(toBeRemoved::contains)
-                .forEach(Event::delete);
+                .forEach(AbstractEvent::delete);
     }
 }
