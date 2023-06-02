@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -50,15 +51,12 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        FormulaManager fmgr = context.getFormulaManager();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-        int precision = register.getPrecision();
         return bmgr.and(super.encodeExec(context),
                 bmgr.implication(context.execution(event),
                         context.equalZero(context.result(this))),
                 bmgr.or(context.execution(event),
-                        context.equal(context.result(this), bvmgr.makeBitvector(precision, 1))));
+                        context.equal(context.result(this), context.encodeIntegerExpressionAt(IValue.ONE, this))));
     }
 
     // Unrolling
