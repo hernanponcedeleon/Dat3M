@@ -18,6 +18,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -38,6 +40,8 @@ The ExecutionModel wraps a Model and extracts data from it in a more workable ma
 //TODO: Add the capability to remove unnecessary init events from a model
 // i.e. those that init some address which no read nor write accesses.
 public class ExecutionModel {
+
+    private static final Logger logger = LogManager.getLogger(ExecutionModel.class);
 
     private final EncodingContext encodingContext;
 
@@ -403,6 +407,7 @@ public class ExecutionModel {
                 final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
                 if (visibleRootDependencies == null) {
                     // FIXME: This should never happen, but our parser is buggy and produces ill-formed code.
+                    logger.warn("Encountered uninitialized register {} read by {} in an execution.", reg, e);
                     continue;
                 }
                 switch (regRead.usageType()) {
@@ -449,6 +454,7 @@ public class ExecutionModel {
                     final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
                     if (visibleRootDependencies == null) {
                         // FIXME: This should never happen, but our parser is buggy and produces ill-formed code.
+                        logger.warn("Encountered uninitialized register {} read by {} in an execution.", reg, e);
                         continue;
                     }
                     assert regRead.usageType() == Register.UsageType.DATA;

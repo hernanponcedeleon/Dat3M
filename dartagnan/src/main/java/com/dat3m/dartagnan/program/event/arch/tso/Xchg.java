@@ -33,7 +33,7 @@ public class Xchg extends MemEvent implements RegWriter {
 
     @Override
     public Set<Register.Read> getRegisterReads(){
-        return Set.of(new Register.Read(resultRegister, Register.UsageType.DATA));
+        return Register.collectRegisterReads(resultRegister, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     @Override
