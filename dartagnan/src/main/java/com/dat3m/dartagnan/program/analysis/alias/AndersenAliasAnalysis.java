@@ -70,17 +70,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemEvent x, MemEvent y) {
-        if (AliasAnalysis.virtuallyAlias(x, y)) {
-            return true;
-        }
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
     public boolean mustAlias(MemEvent x, MemEvent y) {
-        if (AliasAnalysis.virtuallyAlias(x, y)) {
-            return true;
-        }
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 

@@ -46,4 +46,10 @@ public enum Arch implements OptionInterface {
         Arch[] coNotTotal = {PTX};
         return !Arrays.asList(coNotTotal).contains(arch);
     }
+
+    // used to check if supports virtual addressing.
+    public static boolean supVirAdd(Arch arch) {
+        Arch[] supportVirtualAddress = {PTX};
+        return Arrays.asList(supportVirtualAddress).contains(arch);
+    }
 }
