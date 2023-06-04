@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
@@ -136,14 +137,14 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewObject(String name) {
-        MemoryObject object = locations.computeIfAbsent(name, k -> memory.allocate(1, true, false, null));
+        MemoryObject object = locations.computeIfAbsent(name, k -> memory.allocate(1, true));
         object.setCVar(name);
         return object;
     }
 
     public MemoryObject newObject(String name, int size) {
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        MemoryObject result = memory.allocate(size, true, false, null);
+        MemoryObject result = memory.allocate(size, true);
         locations.put(name,result);
         return result;
     }
@@ -228,26 +229,43 @@ public class ProgramBuilder {
         initScopedThread(String.valueOf(id), id, ctaID, gpuID);
     }
 
-    public MemoryObject initLocEqLocAliasGen(String leftName, String rightName){
-        MemoryObject rightLocation = getObject(rightName);
+    public void initVirLocEqCon(String leftName, IConst iValue){
+        MemoryObject object = locations.computeIfAbsent(
+                leftName, k->memory.allocateVirtual(1, true, true, null));
+        object.setCVar(leftName);
+        object.setInitialValue(0, iValue);
+    }
+
+    public void initVirLocEqLoc(String leftName, String rightName){
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(leftName, k->memory.allocate(1, true, false, rightLocation));
+        MemoryObject object = locations.computeIfAbsent(leftName,
+                k->memory.allocateVirtual(1, true, true, null));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
-        return object;
     }
 
-    public MemoryObject initLocEqLocAliasProxy(String leftName, String rightName){
-        MemoryObject rightLocation = getObject(rightName);
+    public void initVirLocEqLocAliasGen(String leftName, String rightName){
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        if (rightLocation == null) {
+            throw new MalformedProgramException("Alias to non-exist location: " + rightName);
+        }
+        MemoryObject object = locations.computeIfAbsent(leftName,
+                k->memory.allocateVirtual(1, true, true, rightLocation));
+        object.setCVar(leftName);
+        object.setInitialValue(0,rightLocation.getInitialValue(0));
+    }
+
+    public void initVirLocEqLocAliasProxy(String leftName, String rightName){
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->memory.allocate(1, true, true, rightLocation));
+                leftName, k->memory.allocateVirtual(1, true, false, rightLocation));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
-        return object;
     }
 }

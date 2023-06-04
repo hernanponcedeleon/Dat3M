@@ -37,7 +37,7 @@ public class MemoryAllocation implements ProgramProcessor {
 
     private void processMallocs(Program program) {
         for (Malloc malloc : program.getEvents(Malloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false, false, null);
+            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
             local.addFilters(Tag.Std.MALLOC);
             local.copyMetadataFrom(malloc);
@@ -81,10 +81,6 @@ public class MemoryAllocation implements ProgramProcessor {
 
         int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
-            // We do not create Init events for virtual addresses
-            if(memObj.isVirtual()) {
-                continue;
-            }
             // The last case "heuristically checks" if Smack generated initialization or not:
             // we expect at least every 8 bytes to be initialized.
             final boolean isStaticallyInitialized = !isLitmus

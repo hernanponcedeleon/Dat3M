@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -121,8 +121,9 @@ public final class EncodingContext {
     }
 
     public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
-        if (expression instanceof MemoryObject && ((MemoryObject) expression).getAlias() != null) {
-            return new ExpressionEncoder(formulaManager, event).encodeAsInteger(((MemoryObject) expression).getAlias());
+        if (expression instanceof VirtualMemoryObject) {
+            return new ExpressionEncoder(formulaManager, event).encodeAsInteger(
+                    ((VirtualMemoryObject) expression).getPhysicalAddress());
         }
         return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
     }

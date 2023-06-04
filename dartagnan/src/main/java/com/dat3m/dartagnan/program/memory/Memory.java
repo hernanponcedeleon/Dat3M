@@ -16,9 +16,16 @@ public class Memory {
      * @return
      * Points to the created location.
      */
-    public MemoryObject allocate(int size, boolean isStatic, boolean virtual, MemoryObject alias) {
+    public MemoryObject allocate(int size, boolean isStatic) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        MemoryObject address = new MemoryObject(nextIndex++, size, isStatic, virtual, alias);
+        MemoryObject address = new MemoryObject(nextIndex++, size, isStatic);
+        objects.add(address);
+        return address;
+    }
+
+    public VirtualMemoryObject allocateVirtual(int size, boolean isStatic, boolean generic, VirtualMemoryObject alias) {
+        Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
+        VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, size, isStatic, generic, alias);
         objects.add(address);
         return address;
     }

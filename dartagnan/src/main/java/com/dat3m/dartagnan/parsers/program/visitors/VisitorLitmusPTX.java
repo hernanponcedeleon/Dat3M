@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.math.BigInteger;
-import java.util.HashMap;
 
 import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 
@@ -62,7 +61,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     // Variable declarator list
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
-        programBuilder.initLocEqConst(ctx.location().getText(),
+        programBuilder.initVirLocEqCon(ctx.location().getText(),
                 (IConst) ctx.constant().accept(this));
         return null;
     }
@@ -82,7 +81,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusPTXParser.VariableDeclaratorLocationLocationContext ctx) {
-        programBuilder.initLocEqLocPtr(ctx.location(0).getText(), ctx.location(1).getText());
+        programBuilder.initVirLocEqLoc(ctx.location(0).getText(), ctx.location(1).getText());
         return null;
     }
 
@@ -91,10 +90,10 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorProxy(LitmusPTXParser.VariableDeclaratorProxyContext ctx) {
         if (ctx.proxyType().content.equals(Tag.PTX.GEN)) {
-            programBuilder.initLocEqLocAliasGen(ctx.location(0).getText(),
+            programBuilder.initVirLocEqLocAliasGen(ctx.location(0).getText(),
                     ctx.location(1).getText());
         } else {
-            programBuilder.initLocEqLocAliasProxy(ctx.location(0).getText(),
+            programBuilder.initVirLocEqLocAliasProxy(ctx.location(0).getText(),
                     ctx.location(1).getText());
         }
         return null;

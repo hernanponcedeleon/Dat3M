@@ -24,16 +24,6 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
-    private final boolean virtual;
-    private final MemoryObject alias;
-
-    public boolean isVirtual() {
-        return virtual;
-    }
-
-    public MemoryObject getAlias() {
-        return alias;
-    }
 
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
@@ -45,13 +35,10 @@ public class MemoryObject extends IConst {
 
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
-    MemoryObject(int index, int size, boolean isStaticallyAllocated, boolean virtual, MemoryObject alias) {
-        checkArgument(!virtual || alias != null, "Virtual MemoryObject must have alias target");
+    MemoryObject(int index, int size, boolean isStaticallyAllocated) {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
-        this.virtual = virtual;
-        this.alias = alias;
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized

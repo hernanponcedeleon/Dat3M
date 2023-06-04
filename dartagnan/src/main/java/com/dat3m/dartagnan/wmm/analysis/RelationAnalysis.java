@@ -15,7 +15,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -749,7 +749,7 @@ public class RelationAnalysis {
                 }
                 for (MemEvent w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
-                            && (alias.mayAlias((MemEvent) w1, w2) || alias((MemEvent) w1, w2))) {
+                            && (alias.mayAlias((MemEvent) w1, w2) || samePhysicalAddress((MemEvent) w1, w2))) {
                         may.add(new Tuple(w1, w2));
                     }
                 }
@@ -786,7 +786,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (Load e2 : loadEvents) {
-                    if ((alias.mayAlias((MemEvent) e1, e2) || alias((MemEvent) e1, e2)) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if ((alias.mayAlias((MemEvent) e1, e2) || samePhysicalAddress((MemEvent) e1, e2)) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -959,7 +959,7 @@ public class RelationAnalysis {
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if (alias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (samePhysicalAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1528,7 +1528,7 @@ public class RelationAnalysis {
             for (Tuple xy : disabled) {
                 MemEvent first = (MemEvent) xy.getFirst();
                 MemEvent second = (MemEvent) xy.getSecond();
-                if (alias.mustAlias(first, second) || alias(first, second)) {
+                if (alias.mustAlias(first, second) || samePhysicalAddress(first, second)) {
                     e.add(xy.getInverse());
                 }
             }
@@ -1577,45 +1577,14 @@ public class RelationAnalysis {
     }
 
     // This models same_location_r from the PTX Alloy model.
-    // Virtual addresses always alias to a physical one.
-    // Physical addresses may alias to other physical one.
-    // There are 4 cases (-> means alias):
-    // (1) virtual/virtual
-    //     `x -> px -> py <- y` 
-    //     `x -> px <- py <- y` 
-    // (2,3) physical/virtual
-    //     `x <- py <- y` 
-    //     `x -> px <- py <- y` (x is physical but still alias to physical px) 
-    // (4) physical/physical
-    //     `x <- y` 
-    //     `x -> y` 
-
-    private boolean alias(MemEvent e1, MemEvent e2) {
+    // Checking address1 and address2 hold the same physical address
+    private boolean samePhysicalAddress(MemEvent e1, MemEvent e2) {
         // TODO: Add support for pointers
-        if (!(e1.getAddress() instanceof MemoryObject) || !(e2.getAddress() instanceof MemoryObject)) {
+        if (!(e1.getAddress() instanceof VirtualMemoryObject) || !(e2.getAddress() instanceof VirtualMemoryObject)) {
             return false;
         }
-        MemoryObject x = (MemoryObject) e1.getAddress();
-        MemoryObject y = (MemoryObject) e2.getAddress();
-        boolean virtual1 = x.isVirtual();
-        boolean virtual2 = y.isVirtual();
-        MemoryObject px = x.getAlias();
-        MemoryObject py = y.getAlias();
-        if (virtual1 && virtual2) {
-            // Virtual addresses always alias to a physical one
-            assert (px != null);
-            assert (py != null);
-            return py.equals(px.getAlias()) || px.equals(py.getAlias());
-        } else if (!virtual1 && virtual2) {
-            // Virtual addresses always alias to a physical one
-            assert (py != null);
-            return x.equals(py.getAlias()) || py.equals(px);
-        } else if (virtual1) { // virtual1 && !virtual2
-            // Virtual addresses always alias to a physical one
-            assert (px != null);
-            return y.equals(px.getAlias()) || px.equals(py);
-        } else { // !virtual1 && !virtual2
-            return x.equals(py) || y.equals(px);
-        }
+        VirtualMemoryObject addr1 = (VirtualMemoryObject) e1.getAddress();
+        VirtualMemoryObject addr2 = (VirtualMemoryObject) e2.getAddress();
+        return addr1.getPhysicalAddress() == addr2.getPhysicalAddress();
     }
 }
