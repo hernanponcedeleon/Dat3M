@@ -14,13 +14,13 @@ litmus/PTX/CoRR-relaxed-acquire-weak.litmus,1
 litmus/PTX/CoRR-weak-acquire-weak.litmus,1
 litmus/PTX/CoRR-weak-acquire.litmus,1
 litmus/PTX/CoRR-weak-weak.litmus,1
-litmus/PTX/CoRW-R.litmus,0
+litmus/PTX/CoRW-R.litmus,1
 litmus/PTX/CoRW-WW.litmus,1
 litmus/PTX/CoRW_.litmus,1
 litmus/PTX/CoWR-R.litmus,1
-litmus/PTX/CoWR_.litmus,0
-litmus/PTX/CoWW-R.litmus,0
-litmus/PTX/CoWW_.litmus,0
+litmus/PTX/CoWR_.litmus,1
+litmus/PTX/CoWW-R.litmus,1
+litmus/PTX/CoWW_.litmus,1
 litmus/PTX/LB+NoThinAir-location_.litmus,1
 litmus/PTX/LB+NoThinAir-register.litmus,1
 litmus/PTX/MP-cta.litmus,1
@@ -40,7 +40,7 @@ litmus/PTX/SB+bar-reg-equal.litmus,1
 litmus/PTX/SB+sc-cta.litmus,1
 litmus/PTX/SB+sc-cta-outScope.litmus,1
 litmus/PTX/SB+sc-gpu.litmus,1
-litmus/PTX/SB+sc-gpu-multiFence.litmus,0
+litmus/PTX/SB+sc-gpu-multiFence.litmus,1
 litmus/PTX/SB+sc-gpu-multiFence-TotalOrder.litmus,1
 litmus/PTX/SB+sc-sys.litmus,1
 litmus/PTX/SB-weak.litmus,1
