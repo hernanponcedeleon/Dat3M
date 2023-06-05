@@ -4,6 +4,7 @@ PTX Proxy-Const-MP-cause1
 {
 rd1 = 0;
 rd2 @ generic aliases rd1;
+rd4 = 0;
 P0:r0=0;
 }
  P0@cta 0,gpu 0                   |P1@cta 0,gpu 0                   ;

@@ -338,8 +338,8 @@ public class Wmm {
                 return intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
             case SYNC_FENCE:
                 return new SyncFence(r);
-            case ALIAS:
-                return new Alias(r);
+            case VLOC:
+                return new VirtualLocation(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

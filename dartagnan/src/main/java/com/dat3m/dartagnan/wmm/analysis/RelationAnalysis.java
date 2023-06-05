@@ -749,7 +749,7 @@ public class RelationAnalysis {
                 }
                 for (MemEvent w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
-                            && (alias.mayAlias((MemEvent) w1, w2) || samePhysicalAddress((MemEvent) w1, w2))) {
+                            && alias.mayAlias((MemEvent) w1, w2)) {
                         may.add(new Tuple(w1, w2));
                     }
                 }
@@ -786,7 +786,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (Load e2 : loadEvents) {
-                    if ((alias.mayAlias((MemEvent) e1, e2) || samePhysicalAddress((MemEvent) e1, e2)) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias((MemEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -954,12 +954,12 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitLoc(Relation rel) {
+        public Knowledge visitVirtualLocation(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {
                 for (MemEvent e2 : events) {
-                    if (samePhysicalAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
@@ -1528,7 +1528,7 @@ public class RelationAnalysis {
             for (Tuple xy : disabled) {
                 MemEvent first = (MemEvent) xy.getFirst();
                 MemEvent second = (MemEvent) xy.getSecond();
-                if (alias.mustAlias(first, second) || samePhysicalAddress(first, second)) {
+                if (alias.mustAlias(first, second)) {
                     e.add(xy.getInverse());
                 }
             }
@@ -1576,15 +1576,17 @@ public class RelationAnalysis {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
     }
 
-    // This models same_location_r from the PTX Alloy model.
-    // Checking address1 and address2 hold the same physical address
-    private boolean samePhysicalAddress(MemEvent e1, MemEvent e2) {
-        // TODO: Add support for pointers
+    // GPU memory models make use of virtual addresses.
+    // This models same_alias_r from the PTX Alloy model
+    // Checking address1 and address2 hold the same generic address
+    private boolean sameGenericAddress(MemEvent e1, MemEvent e2) {
+        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
+        // then `x + offset` and `y + offset` should too
         if (!(e1.getAddress() instanceof VirtualMemoryObject) || !(e2.getAddress() instanceof VirtualMemoryObject)) {
             return false;
         }
         VirtualMemoryObject addr1 = (VirtualMemoryObject) e1.getAddress();
         VirtualMemoryObject addr2 = (VirtualMemoryObject) e2.getAddress();
-        return addr1.getPhysicalAddress() == addr2.getPhysicalAddress();
+        return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 }

@@ -16,24 +16,23 @@ public class VirtualAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemEvent e1, MemEvent e2) {
-        return sameGenericAddress(e1, e2) || wrappedAnalysis.mayAlias(e1, e2);
+        return samePhysicalAddress(e1, e2) || wrappedAnalysis.mayAlias(e1, e2);
     }
     @Override
     public boolean mustAlias(MemEvent e1, MemEvent e2) {
-        return sameGenericAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
+        return samePhysicalAddress(e1, e2) || wrappedAnalysis.mustAlias(e1, e2);
     }
 
     // GPU memory models make use of virtual addresses.
-    // This models same_alias_r from the PTX Alloy model
-    // Checking address1 and address2 hold the same generic address
-    public boolean sameGenericAddress(MemEvent e1, MemEvent e2) {
-        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
-        // then `x + offset` and `y + offset` should too
+    // This models same_location_r from the PTX Alloy model.
+    // Checking address1 and address2 hold the same physical address
+    private boolean samePhysicalAddress(MemEvent e1, MemEvent e2) {
+        // TODO: Add support for pointers
         if (!(e1.getAddress() instanceof VirtualMemoryObject) || !(e2.getAddress() instanceof VirtualMemoryObject)) {
             return false;
         }
         VirtualMemoryObject addr1 = (VirtualMemoryObject) e1.getAddress();
         VirtualMemoryObject addr2 = (VirtualMemoryObject) e2.getAddress();
-        return addr1.getGenericAddress() == addr2.getGenericAddress();
+        return addr1.getPhysicalAddress() == addr2.getPhysicalAddress();
     }
 }

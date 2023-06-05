@@ -48,7 +48,7 @@ public class RelationNameRepository {
 	public static final String SYNC_BARRIER = "sync_barrier";
 	public static final String SYNC_FENCE = "sync_fence";
 	public static final String SYNCBAR = "syncbar";
-	public static final String ALIAS = "alias";
+	public static final String VLOC = "vloc";
 	// Any new string must be also added to method contains() below
 
 	public static final ImmutableSet<String> RELATION_NAMES;

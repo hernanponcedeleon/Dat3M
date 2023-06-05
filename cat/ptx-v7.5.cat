@@ -2,7 +2,7 @@ PTX
 (* NVIDIA. Parallel Thread Execution ISA Version 7.5 *)
 
 // Base relations:
-// alias: virtual address aliases mapping to the same physical address
+// vloc: virtual address mapping to the same generic address
 // sr: same-scope
 // scta: same-cta
 // sync_barrier: synchronize by barriers with same logical barrier resource (barID)
@@ -38,12 +38,13 @@ let strong-operation = strong-m | F
 
 (* Proxy *)
 let same-proxy = GEN * GEN | SUR * SUR | TEX * TEX | CON * CON
+let po-vloc = po & vloc
 
 (* Relations *)
 let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
 let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
-let sr-m = ([strong-m]; (sr & loc & same-proxy); [strong-m])
-let po-m = ([M]; (po & loc & same-proxy); [M])
+let sr-m = ([strong-m]; (sr & vloc & same-proxy); [strong-m])
+let po-m = ([M]; (po & vloc & same-proxy); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 // This is probably equivalent to 
@@ -51,9 +52,9 @@ let morally-strong = sr-fence | po-fence | sr-m | po-m
 // We opt to avoid the recursion
 let observation = (morally-strong & rf) | rmw
 
-let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+let release-pattern = ([W & REL]; po-vloc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
 
-let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+let acquire-pattern = ([strong-read]; po-vloc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
 
 let sync = morally-strong & (release-pattern; observation; acquire-pattern)
 let cause-base = (po?; ((sync | sync_fence | sync_barrier); po?)+) | po
@@ -63,17 +64,17 @@ let cause-base = (po?; ((sync | sync_fence | sync_barrier); po?)+) | po
 (* Proxy-aware causality ordering *)
 let proxy-fence-ops = [F]; (same-proxy & scta); [M]
 let proxy-preserved-cause-base
-                = ([GEN]; (loc & cause-base); [GEN])
-                | ([M]; (same-proxy & scta & loc & cause-base); [M])
-                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [GEN])
-                | loc & ([GEN]; cause-base; cause-base & proxy-fence-ops)
-                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; cause-base & proxy-fence-ops)
+                = ([GEN]; (vloc & cause-base); [GEN])
+                | ([M]; (same-proxy & scta & vloc & cause-base); [M])
+                | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; [GEN])
+                | vloc & ([GEN]; cause-base; cause-base & proxy-fence-ops)
+                | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; cause-base & proxy-fence-ops)
                 // The alloy model does not support the constant proxy below
-                | alias & ([M & CON]; cause-base; [F & CON]; cause-base; [M & CON]) 
-                | alias & ([GEN]; cause-base; [F & ALIAS]; cause-base; [GEN])
-                | alias & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
-                | alias & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
-                | alias & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
+                | loc & ([M & CON]; cause-base; [F & CON]; cause-base; [M & CON])
+                | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; [GEN])
+                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
+                | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
+                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
 let cause = observation?; proxy-preserved-cause-base
 
 (******************************)
