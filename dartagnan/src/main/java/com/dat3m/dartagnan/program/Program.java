@@ -2,10 +2,10 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;

@@ -4,48 +4,49 @@ import com.dat3m.dartagnan.expression.BExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-public class CondJump extends Event implements RegReaderData {
+public class CondJump extends AbstractEvent implements RegReader {
 
     private Label label;
-    private BExpr expr;
+    private BExpr guard;
 
-    public CondJump(BExpr expr, Label label){
+    public CondJump(BExpr guard, Label label){
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
-    	Preconditions.checkNotNull(expr, "CondJump event requires non null expression");
+    	Preconditions.checkNotNull(guard, "CondJump event requires non null expression");
         this.label = label;
         this.label.getJumpSet().add(this);
         this.thread = label.getThread();
-        this.expr = expr;
+        this.guard = guard;
     }
 
     protected CondJump(CondJump other) {
 		super(other);
 		this.label = other.label;;
-		this.expr = other.expr;
+		this.guard = other.guard;
         this.label.getJumpSet().add(this);
     }
     
     public boolean isGoto() {
-    	return expr.isTrue();
+    	return guard.isTrue();
     }
-    public boolean isDead() {return expr.isFalse(); }
+    public boolean isDead() {return guard.isFalse(); }
     
     public Label getLabel(){
         return label;
     }
 
     public BExpr getGuard(){
-        return expr;
+        return guard;
     }
     public void setGuard(BExpr guard){
-        this.expr = guard;
+        this.guard = guard;
     }
 
     @Override
@@ -57,8 +58,8 @@ public class CondJump extends Event implements RegReaderData {
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs(){
-        return expr.getRegs();
+    public Set<Register.Read> getRegisterReads(){
+        return Register.collectRegisterReads(guard, Register.UsageType.CTRL, new HashSet<>());
     }
 
     @Override
@@ -67,7 +68,7 @@ public class CondJump extends Event implements RegReaderData {
     	if(isGoto()) {
             output = "goto " + label.getName();
     	} else {
-            output = "if(" + expr + "); then goto " + label.getName();    		
+            output = "if(" + guard + "); then goto " + label.getName();
     	}
         output = hasTag(Tag.BOUND) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### BOUND" : output;
         output = hasTag(Tag.SPINLOOP) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### SPINLOOP" : output;

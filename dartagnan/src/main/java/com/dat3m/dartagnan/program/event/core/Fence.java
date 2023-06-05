@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class Fence extends Event {
+public class Fence extends AbstractEvent {
 
 	protected final String name;
 

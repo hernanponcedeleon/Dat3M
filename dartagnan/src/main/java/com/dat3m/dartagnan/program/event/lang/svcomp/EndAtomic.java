@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 
-public class EndAtomic extends Event {
+public class EndAtomic extends AbstractEvent {
 
 	private static final Logger logger = LogManager.getLogger(EndAtomic.class);
 

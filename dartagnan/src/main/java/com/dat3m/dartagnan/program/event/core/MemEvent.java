@@ -2,12 +2,17 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class MemEvent extends Event {
+public abstract class MemEvent extends AbstractEvent implements RegReader {
 
     protected IExpr address;
     protected String mo;
@@ -31,6 +36,11 @@ public abstract class MemEvent extends Event {
 
     public IExpr getAddress() { return address; }
     public void setAddress(IExpr address) { this.address = address; }
+
+    @Override
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(address, Register.UsageType.ADDR, new HashSet<>());
+    }
 
     public ExprInterface getMemValue() {
         throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
