@@ -213,7 +213,7 @@ public class AnalysisTest {
 
         b.initThread(0);
         Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        b.addChild(0, newLocal(r0, new INonDet(0, types.getArchType(), true, null, null)));
+        b.addChild(0, newLocal(r0, b.newConstant(types.getArchType(), true)));
         Label l0 = b.getOrCreateLabel("l0");
         b.addChild(0, newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
         Store e0 = newStore(x);

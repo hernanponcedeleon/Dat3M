@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 
+import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -8,6 +9,8 @@ import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,6 +22,7 @@ public class Program {
 	private AbstractAssert spec;
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
 	private final List<Thread> threads;
+    private final List<INonDet> constants = new ArrayList<>();
 	private final Memory memory;
 	private Arch arch;
     private int unrollingBound = 0;
@@ -89,6 +93,14 @@ public class Program {
 
     public List<Thread> getThreads() {
         return threads;
+    }
+
+    public void addConstant(INonDet constant) {
+        constants.add(constant);
+    }
+
+    public Collection<INonDet> getConstants() {
+        return Collections.unmodifiableCollection(constants);
     }
 
     /**
