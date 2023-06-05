@@ -140,10 +140,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);
@@ -184,10 +184,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -233,10 +233,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -277,10 +277,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -321,10 +321,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -365,10 +365,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -408,7 +408,7 @@ public class AnalysisTest {
         return AliasAnalysis.fromConfig(program, Configuration.builder().setOption(ALIAS_METHOD, method.asStringOption()).build());
     }
 
-    private void assertAlias(Result expect, AliasAnalysis a, MemEvent x, MemEvent y) {
+    private void assertAlias(Result expect, AliasAnalysis a, MemoryEvent x, MemoryEvent y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));

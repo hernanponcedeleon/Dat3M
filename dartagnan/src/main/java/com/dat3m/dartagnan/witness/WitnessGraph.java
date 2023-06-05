@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.Lists;
@@ -80,8 +80,8 @@ public class WitnessGraph extends ElemWithAttributes {
 		IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
 		List<BooleanFormula> enc = new ArrayList<>();
 		List<Event> previous = new ArrayList<>();
-		for(Edge edge : edges.stream().filter(Edge::hasCline).collect(Collectors.toList())) {
-			List<Event> events = program.getEvents(MemEvent.class).stream()
+		for(Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
+			List<Event> events = program.getEvents(MemoryEvent.class).stream()
 					.filter(e -> e.hasMetadata(SourceLocation.class))
 					.filter(e -> e.getMetadata(SourceLocation.class).getLineNumber() == edge.getCline())
 					.collect(Collectors.toList());

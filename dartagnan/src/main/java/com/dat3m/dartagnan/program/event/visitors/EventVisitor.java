@@ -29,7 +29,7 @@ public interface EventVisitor<T> {
 	default T visitLabel(Label e) { return visitEvent(e); }
 	default T visitLoad(Load e) { return visitMemEvent(e); }
 	default T visitLocal(Local e) { return visitEvent(e); }
-	default T visitMemEvent(MemEvent e) { return visitEvent(e); }
+	default T visitMemEvent(MemoryEvent e) { return visitEvent(e); }
 	default T visitSkip(Skip e) { return visitEvent(e); }
 	default T visitStore(Store e) { return visitMemEvent(e); }
 

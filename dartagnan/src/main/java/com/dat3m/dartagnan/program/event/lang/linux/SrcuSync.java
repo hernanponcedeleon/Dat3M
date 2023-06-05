@@ -4,10 +4,10 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class SrcuSync extends MemEvent {
+public class SrcuSync extends AbstractMemoryEvent {
 
 	public SrcuSync(IExpr address) {
 		super(address, Tag.Linux.SRCU_SYNC);

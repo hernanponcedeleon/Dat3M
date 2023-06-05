@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
  * It is exposed to the memory consistency model as a visible event.
  * It acts like a regular store, such that load events may read from it and other stores may overwrite it.
  */
-public class Init extends MemEvent {
+public class Init extends AbstractMemoryEvent {
 
 	private final MemoryObject base;
 	private final int offset;

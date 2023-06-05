@@ -176,7 +176,7 @@ public class PropertyEncoder implements Encoder {
             if (!writeEvent.hasTag(Tag.WRITE)) {
                 continue;
             }
-            MemEvent w1 = (MemEvent) writeEvent;
+            MemoryEvent w1 = (MemoryEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
                 enc.add(bmgr.not(lastCoVar(w1)));
                 continue;
@@ -318,7 +318,7 @@ public class PropertyEncoder implements Encoder {
                     if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
-                    MemEvent w = (MemEvent)e1;
+                    MemoryEvent w = (MemoryEvent)e1;
                     if (!w.canRace()) {
                         continue;
                     }
@@ -326,7 +326,7 @@ public class PropertyEncoder implements Encoder {
                         if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
-                        MemEvent m = (MemEvent)e2;
+                        MemoryEvent m = (MemoryEvent)e2;
                         if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
                             continue;
                         }

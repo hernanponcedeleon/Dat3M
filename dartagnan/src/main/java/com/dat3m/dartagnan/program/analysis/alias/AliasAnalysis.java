@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -16,8 +16,8 @@ public interface AliasAnalysis {
 
     Logger logger = LogManager.getLogger(AliasAnalysis.class);
 
-    boolean mustAlias(MemEvent a, MemEvent b);
-    boolean mayAlias(MemEvent a, MemEvent b);
+    boolean mustAlias(MemoryEvent a, MemoryEvent b);
+    boolean mayAlias(MemoryEvent a, MemoryEvent b);
 
     static AliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
@@ -63,12 +63,12 @@ public interface AliasAnalysis {
         }
 
         @Override
-        public boolean mustAlias(MemEvent a, MemEvent b) {
+        public boolean mustAlias(MemoryEvent a, MemoryEvent b) {
             return a1.mustAlias(a, b) || a2.mustAlias(a, b);
         }
 
         @Override
-        public boolean mayAlias(MemEvent a, MemEvent b) {
+        public boolean mayAlias(MemoryEvent a, MemoryEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
         }
     }
