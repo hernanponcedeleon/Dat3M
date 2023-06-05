@@ -64,7 +64,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
-                encodeNondeterministicBounds(),
+                encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
@@ -72,7 +72,7 @@ public class ProgramEncoder implements Encoder {
                 encodeDependencies());
     }
 
-    public BooleanFormula encodeNondeterministicBounds() {
+    public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
         for (INonDet constant : context.getTask().getProgram().getConstants()) {
             Formula formula = context.encodeFinalIntegerExpression(constant);
@@ -89,7 +89,7 @@ public class ProgramEncoder implements Encoder {
             } else {
                 throw new UnsupportedOperationException(
                         String.format(
-                                "Nondeterministic bounds of type %s.",
+                                "Program constant bounds of type %s.",
                                 context.getFormulaManager().getFormulaType(formula)));
             }
         }

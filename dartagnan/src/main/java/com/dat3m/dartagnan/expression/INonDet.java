@@ -15,7 +15,7 @@ public class INonDet extends IExpr {
     private BigInteger max;
     private String sourceName;
 
-    // Should only be accessed from ProgramBuilder
+    // Should only be accessed from Program
     public INonDet(int id, IntegerType type, boolean signed) {
         super(type);
         this.id = id;
