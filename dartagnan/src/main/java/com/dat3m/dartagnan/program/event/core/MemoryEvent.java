@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public interface MemoryEvent extends Event, RegReader {
@@ -20,10 +21,12 @@ public interface MemoryEvent extends Event, RegReader {
     void setMo(String mo);
 
     @Override
-    Set<Register.Read> getRegisterReads();
-
-    boolean canRace();
+    default Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(getAddress(), Register.UsageType.ADDR, new HashSet<>());
+    }
 
     @Override
-    <T> T accept(EventVisitor<T> visitor);
+    default <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitMemEvent(this);
+    }
 }

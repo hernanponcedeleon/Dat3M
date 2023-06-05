@@ -256,7 +256,8 @@ public class VisitorC11 extends VisitorBase {
 
     private void tagEvent(Event e) {
         if(e instanceof MemoryEvent memEvent) {
-            e.addTags(memEvent.canRace() ? C11.NONATOMIC : C11.ATOMIC);
+            final boolean canRace = (memEvent.getMo().isEmpty() || memEvent.getMo().equals(C11.NONATOMIC));
+            e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
         }
     }
 

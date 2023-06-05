@@ -2,14 +2,10 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
+import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
 public abstract class AbstractMemoryEvent extends AbstractEvent implements MemoryEvent {
 
@@ -34,13 +30,13 @@ public abstract class AbstractMemoryEvent extends AbstractEvent implements Memor
     }
 
     @Override
-    public IExpr getAddress() { return address; }
-    @Override
-    public void setAddress(IExpr address) { this.address = address; }
+    public IExpr getAddress() {
+        return address;
+    }
 
     @Override
-    public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(address, Register.UsageType.ADDR, new HashSet<>());
+    public void setAddress(IExpr address) {
+        this.address = address;
     }
 
     @Override
@@ -54,7 +50,9 @@ public abstract class AbstractMemoryEvent extends AbstractEvent implements Memor
     }
 
     @Override
-    public String getMo() { return mo; }
+    public String getMo() {
+        return mo;
+    }
 
     @Override
     public void setMo(String mo) {
@@ -69,14 +67,5 @@ public abstract class AbstractMemoryEvent extends AbstractEvent implements Memor
         }
     }
 
-    @Override
-    public boolean canRace() { return mo.isEmpty() || mo.equals(C11.NONATOMIC); }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitMemEvent(this);
-    }
 }
+
