@@ -26,6 +26,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -176,7 +177,7 @@ public class PropertyEncoder implements Encoder {
             if (!writeEvent.hasTag(Tag.WRITE)) {
                 continue;
             }
-            MemEvent w1 = (MemEvent) writeEvent;
+            MemoryEvent w1 = (MemoryEvent) writeEvent;
             if (dominatedWrites.contains(w1)) {
                 enc.add(bmgr.not(lastCoVar(w1)));
                 continue;
@@ -308,6 +309,8 @@ public class PropertyEncoder implements Encoder {
         final Program program = this.program;
         final AliasAnalysis alias = this.alias;
 
+        final Predicate<MemoryEvent> canRace = (m -> m.getMo().isEmpty() || m.getMo().equals(Tag.C11.NONATOMIC));
+
         BooleanFormula hasRace = bmgr.makeFalse();
         for(Thread t1 : program.getThreads()) {
             for(Thread t2 : program.getThreads()) {
@@ -318,16 +321,16 @@ public class PropertyEncoder implements Encoder {
                     if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
-                    MemEvent w = (MemEvent)e1;
-                    if (!w.canRace()) {
+                    MemoryEvent w = (MemoryEvent)e1;
+                    if (!canRace.test(w)) {
                         continue;
                     }
                     for(Event e2 : t2.getEvents()) {
                         if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
-                        MemEvent m = (MemEvent)e2;
-                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
+                        MemoryEvent m = (MemoryEvent)e2;
+                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
                             continue;
                         }
 

@@ -211,16 +211,16 @@ class VisitorTso extends VisitorBase {
                 Store storeExpected = newStore(expectedAddr, regValue, "");
 
                 return tagList(eventSequence(
-                                // Indentation shows the branching structure
-                                loadExpected,
-                                loadValue,
-                                casCmpResult,
-                                branchOnCasCmpResult,
-                                        storeValue,
-                                        gotoCasEnd,
-                                casFail,
-                                        storeExpected,
-                                casEnd));
+                        // Indentation shows the branching structure
+                        loadExpected,
+                        loadValue,
+                        casCmpResult,
+                        branchOnCasCmpResult,
+                                storeValue,
+                                gotoCasEnd,
+                        casFail,
+                                storeExpected,
+                        casEnd));
         }
 
         @Override
@@ -250,38 +250,37 @@ class VisitorTso extends VisitorBase {
                 Fence optionalMFence = mo.equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
                 return eventSequence(
-                                newStore(e.getAddress(), e.getMemValue(), mo),
-                                optionalMFence);
+                        newStore(e.getAddress(), e.getMemValue(), mo),
+                        optionalMFence);
         }
 
         @Override
         public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
                 Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
-                return eventSequence(
-                                optionalFence);
+                return eventSequence(optionalFence);
         }
 
         @Override
         public List<Event> visitAtomicXchg(AtomicXchg e) {
-                IExpr address = e.getAddress();
-                String mo = e.getMo();
-                Load load = newRMWLoad(e.getResultRegister(), address, mo);
+            IExpr address = e.getAddress();
+            String mo = e.getMo();
+            Load load = newRMWLoad(e.getResultRegister(), address, mo);
 
-                return tagList(eventSequence(
-                                load,
-                                newRMWStore(load, address, e.getMemValue(), mo)));
+            return tagList(eventSequence(
+                    load,
+                    newRMWStore(load, address, e.getMemValue(), mo)));
         }
 
         private List<Event> tagList(List<Event> in) {
-                in.forEach(this::tagEvent);
-                return in;
+            in.forEach(this::tagEvent);
+            return in;
         }
 
         private void tagEvent(Event e) {
-                if (e instanceof MemEvent) {
-                        e.addTags(Tag.TSO.ATOM);
-                }
+            if (e instanceof MemoryEvent) {
+                e.addTags(Tag.TSO.ATOM);
+            }
         }
 
 }

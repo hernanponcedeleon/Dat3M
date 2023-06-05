@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.arch.lisa;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -12,7 +12,7 @@ import java.util.Set;
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public class RMW extends MemEvent implements RegWriter {
+public class RMW extends AbstractMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
     private final IExpr value;

@@ -327,7 +327,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object addressObject = checkNotNull(model.evaluate(encodingContext.address((MemEvent) e)));
+            Object addressObject = checkNotNull(model.evaluate(encodingContext.address((MemoryEvent) e)));
             BigInteger address = new BigInteger(addressObject.toString());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {
@@ -339,7 +339,7 @@ public class ExecutionModel {
                 data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
-                Object valueObject = checkNotNull(model.evaluate(encodingContext.value((MemEvent) e)));
+                Object valueObject = checkNotNull(model.evaluate(encodingContext.value((MemoryEvent) e)));
                 data.setValue(new BigInteger(valueObject.toString()));
                 addressWritesMap.get(address).add(data);
                 writeReadsMap.put(data, new HashSet<>());

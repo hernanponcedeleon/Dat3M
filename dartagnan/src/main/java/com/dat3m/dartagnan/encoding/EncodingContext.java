@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -193,15 +193,15 @@ public final class EncodingContext {
         }
     }
 
-    public BooleanFormula sameAddress(MemEvent first, MemEvent second) {
+    public BooleanFormula sameAddress(MemoryEvent first, MemoryEvent second) {
         return aliasAnalysis.mustAlias(first, second) ? booleanFormulaManager.makeTrue() : equal(address(first), address(second));
     }
 
-    public Formula address(MemEvent event) {
+    public Formula address(MemoryEvent event) {
         return addresses.get(event);
     }
 
-    public Formula value(MemEvent event) {
+    public Formula value(MemoryEvent event) {
         return values.get(event);
     }
 
@@ -292,9 +292,9 @@ public final class EncodingContext {
             } else {
                 r = null;
             }
-            if (e instanceof MemEvent) {
-                addresses.put(e, encodeIntegerExpressionAt(((MemEvent) e).getAddress(), e));
-                values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(((MemEvent) e).getMemValue(), e));
+            if (e instanceof MemoryEvent memEvent) {
+                addresses.put(e, encodeIntegerExpressionAt(memEvent.getAddress(), e));
+                values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(memEvent.getMemValue(), e));
             }
             if (r != null) {
                 results.put(e, r);

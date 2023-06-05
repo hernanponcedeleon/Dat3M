@@ -177,7 +177,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public Void visitMemEvent(MemEvent e) {
+        public Void visitMemEvent(MemoryEvent e) {
             e.setAddress((IExpr) e.getAddress().visit(propagator));
             return null;
         }

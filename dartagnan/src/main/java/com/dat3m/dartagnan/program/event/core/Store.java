@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
 
-public class Store extends MemEvent {
+public class Store extends AbstractMemoryEvent {
 
     protected ExprInterface value;
 

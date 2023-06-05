@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -11,7 +11,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class RMWAbstract extends MemEvent implements RegWriter {
+public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
     protected ExprInterface value;

@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -70,7 +70,7 @@ public class ExecutionGraphVisualizer {
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) throws IOException {
         for (EventData data : model.getEventList()) {
             if (data.isMemoryEvent()) {
-                MemEvent m = (MemEvent) data.getEvent();
+                MemoryEvent m = (MemoryEvent) data.getEvent();
                 if (!(m.getAddress() instanceof Register)) {
                     addresses.putIfAbsent(data.getAccessedAddress(), m.getAddress());
                 }
@@ -207,7 +207,7 @@ public class ExecutionGraphVisualizer {
         if (e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
             BigInteger value = e.getValue();
-            String mo = ((MemEvent) e.getEvent()).getMo();
+            String mo = ((MemoryEvent) e.getEvent()).getMo();
             mo = mo.isEmpty() ? mo : ", " + mo;
             tag = e.isWrite() ?
                     String.format("W(%s, %d%s)", address, value, mo) :

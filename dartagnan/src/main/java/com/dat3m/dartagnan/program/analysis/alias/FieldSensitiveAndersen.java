@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -51,7 +51,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     ///Maps registers to matched value expressions of stores that use the register in their address
     private final Map<Object,List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
-    private final Map<MemEvent,ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<MemoryEvent,ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -61,11 +61,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private FieldSensitiveAndersen(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
-        List<MemEvent> memEvents = program.getEvents().stream()
-                .filter(MemEvent.class::isInstance)
-                .map(MemEvent.class::cast)
-                .collect(toList());
-        for (MemEvent e : memEvents) {
+        List<MemoryEvent> memEvents = program.getEvents().stream()
+                .filter(MemoryEvent.class::isInstance)
+                .map(MemoryEvent.class::cast)
+                .toList();
+        for (MemoryEvent e : memEvents) {
             processLocs(e);
         }
         for (Event e : program.getEvents()) {
@@ -76,7 +76,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         while(!variables.isEmpty()) {
             algorithm(variables.poll());
         }
-        for (MemEvent e : memEvents) {
+        for (MemoryEvent e : memEvents) {
             processResults(e);
         }
     }
@@ -84,23 +84,23 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemEvent x, MemEvent y) {
+    public boolean mayAlias(MemoryEvent x, MemoryEvent y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(MemEvent x, MemEvent y) {
+    public boolean mustAlias(MemoryEvent x, MemoryEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
     // ================================ Processing ================================
 
-    protected void processLocs(MemEvent e) {
+    protected void processLocs(MemoryEvent e) {
         Collector collector = new Collector(e.getAddress());
         if(e instanceof RegWriter) {
             Register result = ((RegWriter)e).getResultRegister();
@@ -161,7 +161,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected void processResults(MemEvent e) {
+    protected void processResults(MemoryEvent e) {
         ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
         Collector collector = new Collector(e.getAddress());
         addresses.addAll(collector.address());

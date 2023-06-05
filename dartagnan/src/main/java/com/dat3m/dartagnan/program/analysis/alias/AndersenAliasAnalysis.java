@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -44,9 +44,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private final ImmutableSet<Location> maxAddressSet;
     private final Map<Object, Set<Object>> edges = new HashMap<>();
     private final Map<Object, Set<Location>> addresses = new HashMap<>();
-    private final Map<Register, Set<MemEvent>> events = new HashMap<>();
+    private final Map<Register, Set<MemoryEvent>> events = new HashMap<>();
     private final Map<Register, Set<Location>> targets = new HashMap<>();
-    private final Map<MemEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<MemoryEvent, ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -69,25 +69,25 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemEvent x, MemEvent y) {
+    public boolean mayAlias(MemoryEvent x, MemoryEvent y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(MemEvent x, MemEvent y) {
+    public boolean mustAlias(MemoryEvent x, MemoryEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
     // ================================ Processing ================================
 
     private void run(Program program) {
-        List<MemEvent> memEvents = program.getEvents(MemEvent.class);
+        List<MemoryEvent> memEvents = program.getEvents(MemoryEvent.class);
         List<Local> locals = program.getEvents(Local.class);
-        for (MemEvent e : memEvents) {
+        for (MemoryEvent e : memEvents) {
             processLocs(e);
         }
         for (Local e : locals) {
@@ -97,12 +97,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (Local e : locals) {
             processResults(e);
         }
-        for (MemEvent e : memEvents) {
+        for (MemoryEvent e : memEvents) {
             processResults(e);
         }
     }
 
-    private void processLocs(MemEvent e) {
+    private void processLocs(MemoryEvent e) {
         IExpr address = e.getAddress();
         // Collect for each v events of form: p = *v, *v = q
         if (address instanceof Register) {
@@ -170,7 +170,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             if (variable instanceof Register) {
                 // Process rules with *variable:
                 for (Location address : getAddresses(variable)) {
-                    for (MemEvent e : getEvents((Register) variable)) {
+                    for (MemoryEvent e : getEvents((Register) variable)) {
                         // p = *variable:
                         if (e instanceof RegWriter) {
                             // Add edge from location to p
@@ -241,7 +241,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private void processResults(MemEvent e) {
+    private void processResults(MemoryEvent e) {
         IExpr address = e.getAddress();
         Set<Location> addresses;
         if (address instanceof Register) {
@@ -343,11 +343,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         return addresses.getOrDefault(v, ImmutableSet.of());
     }
 
-    private void addEvent(Register r, MemEvent e) {
+    private void addEvent(Register r, MemoryEvent e) {
         events.computeIfAbsent(r, key -> new HashSet<>()).add(e);
     }
 
-    private Set<MemEvent> getEvents(Register r) {
+    private Set<MemoryEvent> getEvents(Register r) {
         return events.getOrDefault(r, ImmutableSet.of());
     }
 

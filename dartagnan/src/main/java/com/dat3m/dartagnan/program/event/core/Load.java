@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class Load extends MemEvent implements RegWriter {
+public class Load extends AbstractMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
 
