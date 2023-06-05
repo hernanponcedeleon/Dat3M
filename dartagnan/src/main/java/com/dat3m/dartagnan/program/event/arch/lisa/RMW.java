@@ -3,7 +3,8 @@ package com.dat3m.dartagnan.program.event.arch.lisa;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.core.SingleAddressMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -12,22 +13,22 @@ import java.util.Set;
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public class RMW extends AbstractMemoryEvent implements RegWriter {
+public class RMW extends SingleAddressMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
     private final IExpr value;
-    
+
 
     public RMW(IExpr address, Register register, IExpr value, String mo) {
         super(address, mo);
-		this.resultRegister = register;
+        this.resultRegister = register;
         this.value = value;
         addTags(READ, WRITE, RMW);
     }
 
-    private RMW(RMW other){
+    private RMW(RMW other) {
         super(other);
-		this.resultRegister = other.resultRegister;
+        this.resultRegister = other.resultRegister;
         this.value = other.value;
     }
 
@@ -36,7 +37,7 @@ public class RMW extends AbstractMemoryEvent implements RegWriter {
         return resultRegister + " := rmw[" + mo + "](" + value + ", " + address + ")";
     }
 
-    public ExprInterface getMemValue(){
+    public ExprInterface getMemValue() {
         return value;
     }
 
@@ -45,24 +46,30 @@ public class RMW extends AbstractMemoryEvent implements RegWriter {
         return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
-	@Override
-	public Register getResultRegister() {
-		return resultRegister;
-	}
+    @Override
+    public Register getResultRegister() {
+        return resultRegister;
+    }
+
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        // TODO: Once we can return multiple MemoryAccesses, we need to add the LOAD here as well.
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RMW getCopy(){
+    public RMW getCopy() {
         return new RMW(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMW(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitRMW(this);
+    }
 }

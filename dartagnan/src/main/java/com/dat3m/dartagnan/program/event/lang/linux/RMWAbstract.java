@@ -3,7 +3,8 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.core.SingleAddressMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -11,7 +12,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWriter {
+public abstract class RMWAbstract extends SingleAddressMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
     protected ExprInterface value;
@@ -23,7 +24,7 @@ public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWrit
         addTags(READ, WRITE, RMW);
     }
 
-    RMWAbstract(RMWAbstract other){
+    RMWAbstract(RMWAbstract other) {
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;
@@ -35,25 +36,31 @@ public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWrit
     }
 
     @Override
-    public Set<Register.Read> getRegisterReads(){
+    public Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     @Override
-    public ExprInterface getMemValue(){
+    public ExprInterface getMemValue() {
         return value;
     }
 
     @Override
-    public void setMemValue(ExprInterface value){
+    public void setMemValue(ExprInterface value) {
         this.value = value;
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        // TODO: Once we can return multiple MemoryAccesses, we need to add the LOAD here as well.
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWAbstract(this);
-	}
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitRMWAbstract(this);
+    }
 }

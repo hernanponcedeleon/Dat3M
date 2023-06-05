@@ -293,7 +293,7 @@ public final class EncodingContext {
                 r = null;
             }
             if (e instanceof MemoryEvent memEvent) {
-                addresses.put(e, encodeIntegerExpressionAt(memEvent.getAddress(), e));
+                addresses.put(e, encodeIntegerExpressionAt(memEvent.getMemoryAccess().address(), e));
                 values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(memEvent.getMemValue(), e));
             }
             if (r != null) {

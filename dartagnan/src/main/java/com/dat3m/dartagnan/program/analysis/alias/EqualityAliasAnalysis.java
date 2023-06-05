@@ -30,7 +30,8 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mustAlias(MemoryEvent a, MemoryEvent b) {
-        if (a.getThread() != b.getThread() || !a.getAddress().equals(b.getAddress())) {
+        if (a.getThread() != b.getThread()
+                || !a.getMemoryAccess().address().equals(b.getMemoryAccess().address())) {
             return false;
         } else if (a == b) {
             return true;
@@ -49,7 +50,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         }
 
         // Establish that address expression evaluates to same value at both events.
-        Set<Register> addrRegs = a.getAddress().getRegs();
+        Set<Register> addrRegs = a.getMemoryAccess().address().getRegs();
         Event e = a.getSuccessor();
         while (e != b) {
             if (e instanceof RegWriter && addrRegs.contains(((RegWriter)e).getResultRegister())) {

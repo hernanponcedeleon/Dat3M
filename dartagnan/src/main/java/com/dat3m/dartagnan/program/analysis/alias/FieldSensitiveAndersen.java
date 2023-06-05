@@ -101,7 +101,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ Processing ================================
 
     protected void processLocs(MemoryEvent e) {
-        Collector collector = new Collector(e.getAddress());
+        Collector collector = new Collector(e.getMemoryAccess().address());
         if(e instanceof RegWriter) {
             Register result = ((RegWriter)e).getResultRegister();
             for(Offset<Register> r : collector.register()) {
@@ -163,7 +163,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     protected void processResults(MemoryEvent e) {
         ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
-        Collector collector = new Collector(e.getAddress());
+        Collector collector = new Collector(e.getMemoryAccess().address());
         addresses.addAll(collector.address());
         for(Offset<Register> r : collector.register()) {
             addresses.addAll(fields(getAddresses(r.base),r.offset,r.alignment));

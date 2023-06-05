@@ -71,8 +71,9 @@ public class ExecutionGraphVisualizer {
         for (EventData data : model.getEventList()) {
             if (data.isMemoryEvent()) {
                 MemoryEvent m = (MemoryEvent) data.getEvent();
-                if (!(m.getAddress() instanceof Register)) {
-                    addresses.putIfAbsent(data.getAccessedAddress(), m.getAddress());
+                IExpr addr = m.getMemoryAccess().address();
+                if (!(addr instanceof Register)) {
+                    addresses.putIfAbsent(data.getAccessedAddress(), addr);
                 }
             }
         }

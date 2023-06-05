@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -11,8 +11,8 @@ import java.util.Set;
 
 public interface MemoryEvent extends Event, RegReader {
 
-    IExpr getAddress();
-    void setAddress(IExpr address);
+
+    MemoryAccess getMemoryAccess();
 
     ExprInterface getMemValue();
     void setMemValue(ExprInterface value);
@@ -22,7 +22,7 @@ public interface MemoryEvent extends Event, RegReader {
 
     @Override
     default Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(getAddress(), Register.UsageType.ADDR, new HashSet<>());
+        return Register.collectRegisterReads(getMemoryAccess().address(), Register.UsageType.ADDR, new HashSet<>());
     }
 
     @Override

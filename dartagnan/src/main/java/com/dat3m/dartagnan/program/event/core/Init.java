@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -10,60 +11,63 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
  * It is exposed to the memory consistency model as a visible event.
  * It acts like a regular store, such that load events may read from it and other stores may overwrite it.
  */
-public class Init extends AbstractMemoryEvent {
+public class Init extends SingleAddressMemoryEvent {
 
-	private final MemoryObject base;
-	private final int offset;
-	
-	public Init(MemoryObject b, int o) {
-		super(b.add(o), "");
-		base = b;
-		offset = o;
-		addTags(Tag.WRITE, Tag.INIT);
-	}
+    private final MemoryObject base;
+    private final int offset;
 
-	/**
-	 * Partially identifies this instance in the program.
-	 * @return
-	 * Address of the array whose field is initialized in this event.
-	 */
-	public MemoryObject getBase() {
-		return base;
-	}
+    public Init(MemoryObject b, int o) {
+        super(b.add(o), "");
+        base = b;
+        offset = o;
+        addTags(Tag.WRITE, Tag.INIT);
+    }
 
-	/**
-	 * Partially identifies this instance in the program.
-	 * @return
-	 * Number of fields before the initialized location.
-	 */
-	public int getOffset() {
-		return offset;
-	}
+    /**
+     * Partially identifies this instance in the program.
+     *
+     * @return Address of the array whose field is initialized in this event.
+     */
+    public MemoryObject getBase() {
+        return base;
+    }
 
-	/**
-	 * Initial value at the associated field.
-	 * @return
-	 * Content of the location at the start of each execution.
-	 */
-	public IConst getValue(){
-		return base.getInitialValue(offset);
-	}
+    /**
+     * Partially identifies this instance in the program.
+     *
+     * @return Number of fields before the initialized location.
+     */
+    public int getOffset() {
+        return offset;
+    }
 
-	@Override
-	public String toString() {
-		return String.format("%s[%d] := %s",base,offset,getValue());
-	}
+    /**
+     * Initial value at the associated field.
+     *
+     * @return Content of the location at the start of each execution.
+     */
+    public IConst getValue() {
+        return base.getInitialValue(offset);
+    }
 
-	@Override
-	public IConst getMemValue(){
-		return getValue();
-	}
+    @Override
+    public String toString() {
+        return String.format("%s[%d] := %s", base, offset, getValue());
+    }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public IConst getMemValue() { return getValue(); }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitInit(this);
-	}
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+    }
+
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitInit(this);
+    }
 }

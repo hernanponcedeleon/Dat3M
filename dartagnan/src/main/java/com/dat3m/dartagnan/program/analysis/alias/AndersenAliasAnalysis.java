@@ -103,7 +103,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processLocs(MemoryEvent e) {
-        IExpr address = e.getAddress();
+        IExpr address = e.getMemoryAccess().address();
         // Collect for each v events of form: p = *v, *v = q
         if (address instanceof Register) {
             addEvent((Register) address, e);
@@ -242,7 +242,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processResults(MemoryEvent e) {
-        IExpr address = e.getAddress();
+        IExpr address = e.getMemoryAccess().address();
         Set<Location> addresses;
         if (address instanceof Register) {
             Set<Location> target = targets.get(address);
