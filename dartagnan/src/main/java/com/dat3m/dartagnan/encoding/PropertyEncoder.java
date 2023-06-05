@@ -196,7 +196,7 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
             enc.add(bmgr.equivalence(lastCoExpr, isLast));
-            if (doEncodeFinalAddressValues) {
+            if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
                 // ---- Encode final values of addresses ----
                 for (Init init : initEvents) {
                     if (!alias.mayAlias(w1, init)) {
@@ -205,9 +205,7 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
-                    if (Arch.coIsTotal(program.getArch())) {
-                        enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
-                    }
+                    enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }
         }
@@ -220,6 +218,7 @@ public class PropertyEncoder implements Encoder {
                 BooleanFormula lastValueEnc = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
                 Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
+                BooleanFormula readFromInit = context.equal(context.value(init), v2);
                 for (Store w : program.getEvents(Store.class)) {
                     if (!alias.mayAlias(w, init)) {
                         continue;
@@ -230,7 +229,7 @@ public class PropertyEncoder implements Encoder {
                     lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));
                     lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
                 }
-                enc.add(bmgr.implication(lastStoreExistsEnc, lastValueEnc));
+                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, lastValueEnc, readFromInit));
             }
         }
         return bmgr.and(enc);

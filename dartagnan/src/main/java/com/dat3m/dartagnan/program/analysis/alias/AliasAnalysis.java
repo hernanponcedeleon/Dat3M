@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -37,7 +36,7 @@ public interface AliasAnalysis {
                 throw new UnsupportedOperationException("Alias method not recognized");
         }
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
-        if (Arch.supVirAdd(program.getArch())) {
+        if (Arch.supportsVirtualAddressing(program.getArch())) {
             a = VirtualAliasAnalysis.wrap(a);
         }
 

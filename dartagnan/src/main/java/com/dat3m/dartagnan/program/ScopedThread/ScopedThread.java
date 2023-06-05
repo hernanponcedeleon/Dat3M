@@ -39,14 +39,14 @@ public class ScopedThread extends Thread {
         // scopes(0) is highest in hierarchy
         // i = 0 is global, every thread will always have the same id, so start from i = 1
         for (int i = 1; i <= validIndex; i++) {
-            if (!sameAtSingleSameScope(thread, scopes.get(i))) {
+            if (!sameAtSingleScope(thread, scopes.get(i))) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean sameAtSingleSameScope(ScopedThread thread, String scope) {
+    private boolean sameAtSingleScope(ScopedThread thread, String scope) {
         int thisId = this.getScopeId(scope);
         int threadId = thread.getScopeId(scope);
         return (thisId == threadId && thisId != -1);

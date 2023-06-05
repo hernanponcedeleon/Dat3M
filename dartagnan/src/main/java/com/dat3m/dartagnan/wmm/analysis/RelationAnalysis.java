@@ -954,7 +954,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitAlias(Relation rel) {
+        public Knowledge visitLoc(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             List<MemEvent> events = program.getEvents(MemEvent.class);
             for (MemEvent e1 : events) {

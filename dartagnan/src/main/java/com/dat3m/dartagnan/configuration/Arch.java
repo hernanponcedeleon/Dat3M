@@ -48,7 +48,7 @@ public enum Arch implements OptionInterface {
     }
 
     // used to check if supports virtual addressing.
-    public static boolean supVirAdd(Arch arch) {
+    public static boolean supportsVirtualAddressing(Arch arch) {
         Arch[] supportVirtualAddress = {PTX};
         return Arrays.asList(supportVirtualAddress).contains(arch);
     }

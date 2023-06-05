@@ -94,7 +94,7 @@ public abstract class Definition implements Constraint {
         default T visitSameScope(Relation sc, String scope) { return visitDefinition(sc, List.of()); }
         default T visitSyncBarrier(Relation sync_bar){ return visitDefinition(sync_bar, List.of()); }
         default T visitSyncFence(Relation sync_fen){ return visitDefinition(sync_fen, List.of()); }
-        default T visitAlias(Relation alias) { return visitDefinition(alias, List.of()); }
+        default T visitLoc(Relation alias) { return visitDefinition(alias, List.of()); }
     }
 
     public static final class Undefined extends Definition {
