@@ -11,7 +11,7 @@ import java.util.Set;
 
 public interface MemoryEvent extends Event, RegReader {
 
-
+    // TODO: Make this a List<MemoryAccess> to properly support multi-access events like MemCopy and RMW
     MemoryAccess getMemoryAccess();
 
     // TODO: Get rid of these, because only Stores have a meaningful MemValue.
