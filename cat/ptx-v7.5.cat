@@ -82,10 +82,9 @@ let cause = observation?; proxy-preserved-cause-base
 (******************************)
 
 (* Axiom 1 Coherence *)
-let cause-write = ([W]; cause; [W]) & loc
-empty (cause-write \ co) as axiom-Coherence
+empty ((([W]; cause; [W]) & loc)+ \ (co | id)) as axiom-Coherence
 // Make sure that all morally strong same-loc writes are related by co in either direction
-empty (([W]; morally-strong; [W]) & loc) \ (co | co^-1) as axiom-Coherence2
+empty (([W]; morally-strong; [W]) & loc)+ \ (co | co^-1 | id) as axiom-Coherence2
 
 (* Axiom 2 FenceSC *)
 // This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
