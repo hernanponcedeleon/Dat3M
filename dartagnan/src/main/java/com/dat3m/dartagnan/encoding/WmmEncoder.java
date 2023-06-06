@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
@@ -579,7 +580,9 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula coF = forwardPossible ? edge.encode(xz) : bmgr.makeFalse();
                     BooleanFormula coB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
                     // Coherence is not total for weak stores in PTX
-                    if(!x.is(Tag.PTX.WEAK) || !z.is(Tag.PTX.WEAK)) {
+                    if (!Arch.coIsTotal(program.getArch())) {
+                        enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB, bmgr.and(bmgr.not(coF), bmgr.not(coB)))));
+                    } else {
                         enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
                     }
                     if (idl) {

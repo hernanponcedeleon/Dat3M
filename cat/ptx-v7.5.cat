@@ -44,8 +44,8 @@ let po-vloc = po & vloc
 let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
 let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
 let sr-m = ([strong-m]; (sr & vloc & same-proxy); [strong-m])
-let po-m = ([M]; (po & vloc & same-proxy); [M])
-let morally-strong = sr-fence | po-fence | sr-m | po-m
+let po-m = ([M]; (int & vloc & same-proxy); [M])
+let morally-strong = (sr-fence | po-fence | sr-m | po-m) \ id
 
 // This is probably equivalent to 
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
@@ -84,6 +84,8 @@ let cause = observation?; proxy-preserved-cause-base
 (* Axiom 1 Coherence *)
 let cause-write = ([W]; cause; [W]) & loc
 empty (cause-write \ co) as axiom-Coherence
+// Make sure that all morally strong same-loc writes are related by co in either direction
+empty (([W]; morally-strong; [W]) & loc) \ (co | co^-1) as axiom-Coherence2
 
 (* Axiom 2 FenceSC *)
 // This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
