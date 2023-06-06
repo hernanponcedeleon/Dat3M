@@ -26,8 +26,8 @@ let strong-operation = strong-m | F
 let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
 let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
 let sr-m = ([strong-m]; (sr & loc); [strong-m])
-let po-m = ([M]; (int & loc); [M])
-let morally-strong = (sr-fence | po-fence | sr-m | po-m) \ id
+let po-m = ([M]; ((po | po^-1) & loc); [M])
+let morally-strong = (sr-fence | po-fence | sr-m | po-m)
 
 // The ASPLOS'19 paper uses the definition below
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)

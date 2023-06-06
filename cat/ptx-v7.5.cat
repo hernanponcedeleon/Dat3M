@@ -44,8 +44,8 @@ let po-vloc = po & vloc
 let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
 let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
 let sr-m = ([strong-m]; (sr & vloc & same-proxy); [strong-m])
-let po-m = ([M]; (int & vloc & same-proxy); [M])
-let morally-strong = (sr-fence | po-fence | sr-m | po-m) \ id
+let po-m = ([M]; ((po | po^-1) & vloc & same-proxy); [M])
+let morally-strong = (sr-fence | po-fence | sr-m | po-m)
 
 // This is probably equivalent to 
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
