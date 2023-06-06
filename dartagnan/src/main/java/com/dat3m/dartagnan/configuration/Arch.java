@@ -56,12 +56,8 @@ public enum Arch implements OptionInterface {
     // Set to false for architectures don't hold local consistency e.g. PTX
     // When location accessed via different proxies but not properly synchronized,
     // they can form intra-thread data races.
-    public static boolean archLocallyConsistent(Arch arch, boolean assumeLocalConsistency) {
+    public static boolean archLocallyConsistent(Arch arch) {
         Arch[] supportVirtualAddress = {PTX};
-        if (Arrays.asList(supportVirtualAddress).contains(arch)) {
-            return false;
-        } else {
-            return assumeLocalConsistency;
-        }
+        return !Arrays.asList(supportVirtualAddress).contains(arch);
     }
 }

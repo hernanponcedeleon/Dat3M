@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -49,13 +50,16 @@ public class WmmAnalysis {
         return respectsAtomicBlocks;
     }
 
-    private WmmAnalysis(Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
+    private WmmAnalysis(Wmm memoryModel, Arch arch, Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         checkWellformedness(memoryModel);
+        if (!Arch.archLocallyConsistent(arch)) {
+            this.assumeLocalConsistency = false;
+        }
     }
 
-    public static WmmAnalysis fromConfig(Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
-        return new WmmAnalysis(memoryModel, config);
+    public static WmmAnalysis fromConfig(Wmm memoryModel, Arch arch, Configuration config) throws InvalidConfigurationException {
+        return new WmmAnalysis(memoryModel, arch, config);
     }
 
     private void checkWellformedness(Wmm memoryModel) {

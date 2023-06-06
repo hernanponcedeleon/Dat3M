@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
@@ -763,7 +762,7 @@ public class RelationAnalysis {
                     must.add(t);
                 }
             }
-            if (Arch.archLocallyConsistent(program.getArch(), wmmAnalysis.isLocallyConsistent())) {
+            if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
                 for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
                     MemEvent w1 = (MemEvent) t.getFirst();
@@ -792,7 +791,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            if (Arch.archLocallyConsistent(program.getArch(), wmmAnalysis.isLocallyConsistent())) {
+            if (wmmAnalysis.isLocallyConsistent()) {
                 // Remove future reads
                 may.removeIf(Tuple::isBackward);
                 // Remove past reads
