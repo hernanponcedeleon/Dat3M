@@ -29,6 +29,8 @@ PTX
 (*******************)
 (*   Auxiliaries   *)
 (*******************)
+// Explicitly add transitivity for coherence because the co is not totality
+let co = co+
 
 (* Events *)
 let strong-write = W & (RLX | REL)
@@ -45,7 +47,7 @@ let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-p
 let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
 let sr-m = ([strong-m]; (sr & vloc & same-proxy); [strong-m])
 let po-m = ([M]; ((po | po^-1) & vloc & same-proxy); [M])
-let morally-strong = (sr-fence | po-fence | sr-m | po-m)
+let morally-strong = sr-fence | po-fence | sr-m | po-m
 
 // This is probably equivalent to 
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
@@ -82,7 +84,7 @@ let cause = observation?; proxy-preserved-cause-base
 (******************************)
 
 (* Axiom 1 Coherence *)
-empty ((([W]; cause; [W]) & loc)+ \ (co | id)) as axiom-Coherence
+empty ((([W]; cause; [W]) & loc) \ co) as axiom-Coherence
 // Make sure that all morally strong same-loc writes are related by co in either direction
 empty (([W]; morally-strong; [W]) & loc)+ \ (co | co^-1 | id) as axiom-Coherence2
 
