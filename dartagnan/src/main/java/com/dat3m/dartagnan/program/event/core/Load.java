@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
@@ -31,11 +30,6 @@ public class Load extends SingleAddressMemoryEvent implements RegWriter {
     @Override
     public String toString() {
         return resultRegister + " = load(*" + address + (!mo.isEmpty() ? ", " + mo : "") + ")";
-    }
-
-    @Override
-    public ExprInterface getMemValue() {
-        return resultRegister;
     }
 
     @Override

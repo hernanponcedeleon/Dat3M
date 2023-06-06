@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
@@ -13,9 +12,6 @@ public interface MemoryEvent extends Event, RegReader {
 
     // TODO: Make this a List<MemoryAccess> to properly support multi-access events like MemCopy and RMW
     MemoryAccess getMemoryAccess();
-
-    // TODO: Get rid of these, because only Stores have a meaningful MemValue.
-    ExprInterface getMemValue();
 
     // TODO: Is "mo" really fundamental to all memory events?
     String getMo();

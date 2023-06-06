@@ -39,7 +39,6 @@ public class Store extends SingleAddressMemoryEvent {
         return "store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
-    @Override
     public ExprInterface getMemValue() {
         return value;
     }

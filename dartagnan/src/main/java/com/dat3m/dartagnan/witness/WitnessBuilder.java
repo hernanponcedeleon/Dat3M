@@ -5,7 +5,10 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Init;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -177,7 +180,7 @@ public class WitnessBuilder {
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
-			if(e instanceof MemoryEvent memEvent && memEvent.getMemValue() instanceof BConst bVal && bVal.isFalse()) {
+			if(e instanceof Store store && store.getMemValue() instanceof BConst bVal && bVal.isFalse()) {
 				continue;
 			}
 			BigInteger var = model.evaluate(context.clockVariable("hb", e));

@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -132,8 +131,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         //event is a store operation
-        Verify.verify(e.hasTag(Tag.WRITE), "memory event that is neither tagged \"W\" nor a register writer");
-        ExprInterface value = e.getMemValue();
+        Verify.verify(e instanceof Store, "memory event that is neither store nor load.");
+        ExprInterface value = ((Store)e).getMemValue();
         if (value instanceof Register) {
             addEdge(value, location);
             return;
@@ -178,16 +177,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                                 // Add location to variables if edge is new.
                                 variables.add(address);
                             }
-                        } else if (e instanceof Store) {
+                        } else if (e instanceof Store store && store.getMemValue() instanceof Register register) {
                             // *variable = register
-                            ExprInterface value = e.getMemValue();
-                            if (value instanceof Register) {
-                                Register register = (Register) value;
-                                // Add edge from register to location
-                                if (addEdge(register, address)) {
-                                    // Add register to variables if edge is new.
-                                    variables.add(register);
-                                }
+                            // Add edge from register to location
+                            if (addEdge(register, address)) {
+                                // Add register to variables if edge is new.
+                                variables.add(register);
                             }
                         }
                     }

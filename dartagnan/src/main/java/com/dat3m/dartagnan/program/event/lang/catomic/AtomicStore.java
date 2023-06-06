@@ -42,7 +42,6 @@ public class AtomicStore extends SingleAddressMemoryEvent {
         return "atomic_store(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }
 
-    @Override
     public ExprInterface getMemValue() {
         return value;
     }

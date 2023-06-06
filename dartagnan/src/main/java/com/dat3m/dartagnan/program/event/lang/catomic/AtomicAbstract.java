@@ -41,7 +41,6 @@ public abstract class AtomicAbstract extends SingleAddressMemoryEvent implements
         return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
-    @Override
     public ExprInterface getMemValue() {
         return value;
     }

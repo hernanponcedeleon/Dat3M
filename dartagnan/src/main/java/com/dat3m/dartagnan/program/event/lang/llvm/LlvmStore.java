@@ -42,7 +42,6 @@ public class LlvmStore extends SingleAddressMemoryEvent {
         return "llvm_store(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
-    @Override
     public ExprInterface getMemValue() {
         return value;
     }

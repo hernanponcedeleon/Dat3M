@@ -42,7 +42,6 @@ public class Xchg extends SingleAddressMemoryEvent implements RegWriter {
         return "xchg(*" + address + ", " + resultRegister + ")";
     }
 
-    @Override
     public ExprInterface getMemValue(){
         return resultRegister;
     }

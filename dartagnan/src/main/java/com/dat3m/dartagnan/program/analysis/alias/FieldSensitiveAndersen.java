@@ -4,10 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -102,16 +99,22 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     protected void processLocs(MemoryEvent e) {
         Collector collector = new Collector(e.getMemoryAccess().address());
-        if(e instanceof RegWriter) {
-            Register result = ((RegWriter)e).getResultRegister();
+        if(e instanceof Load load) {
+            Register result = load.getResultRegister();
             for(Offset<Register> r : collector.register()) {
                 loads.computeIfAbsent(r.base,k->new LinkedList<>()).add(new Offset<>(result,r.offset,r.alignment));
             }
             for(Location f : collector.address()) {
                 addEdge(f,result,0,0);
             }
-        } else {
-            Collector value = new Collector(e.getMemValue());
+        } else if (e instanceof Store || e instanceof Init) {
+            ExprInterface storeVal;
+            if (e instanceof Store store) {
+                storeVal = store.getMemValue();
+            } else {
+                storeVal = ((Init)e).getMemValue();
+            }
+            Collector value = new Collector(storeVal);
             for(Offset<Register> r : collector.register()) {
                 stores.computeIfAbsent(r.base,k->new LinkedList<>()).add(new Offset<>(value,r.offset,r.alignment));
             }
@@ -121,6 +124,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 }
                 addAllAddresses(l,value.address());
             }
+        } else {
+            // Special MemoryEvents that produce no values (e.g. SRCU) will just get skipped
         }
     }
 

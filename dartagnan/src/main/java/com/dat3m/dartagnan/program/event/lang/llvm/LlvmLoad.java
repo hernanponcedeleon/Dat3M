@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
@@ -39,11 +38,6 @@ public class LlvmLoad extends SingleAddressMemoryEvent implements RegWriter {
     @Override
     public String toString() {
         return resultRegister + " = llvm_load(*" + address + ", " + mo + ")\t### LLVM";
-    }
-
-    @Override
-    public ExprInterface getMemValue() {
-        return resultRegister;
     }
 
     @Override

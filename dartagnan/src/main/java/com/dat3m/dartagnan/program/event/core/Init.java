@@ -55,7 +55,6 @@ public class Init extends SingleAddressMemoryEvent {
         return String.format("%s[%d] := %s", base, offset, getValue());
     }
 
-    @Override
     public IConst getMemValue() { return getValue(); }
 
     @Override

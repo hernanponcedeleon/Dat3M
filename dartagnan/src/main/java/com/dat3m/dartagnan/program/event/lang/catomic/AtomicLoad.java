@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
@@ -39,11 +38,6 @@ public class AtomicLoad extends SingleAddressMemoryEvent implements RegWriter {
     @Override
     public String toString() {
         return resultRegister + " = atomic_load(*" + address + ", " + mo + ")\t### C11";
-    }
-
-    @Override
-    public ExprInterface getMemValue() {
-        return resultRegister;
     }
 
     @Override

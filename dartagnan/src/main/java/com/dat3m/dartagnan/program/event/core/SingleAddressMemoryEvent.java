@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -50,11 +49,6 @@ public abstract class SingleAddressMemoryEvent extends AbstractEvent implements 
 
     public Type getAccessType() { return accessType; }
     public void setAccessType(Type type) { this.accessType = type; }
-
-    @Override
-    public ExprInterface getMemValue() {
-        throw new RuntimeException("MemValue is not available for event " + this.getClass().getName());
-    }
 
     @Override
     public String getMo() {
