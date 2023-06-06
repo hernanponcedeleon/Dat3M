@@ -63,7 +63,7 @@ let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
 (* Axiom 5 SC-per-Location *)
-acyclic ((morally-strong & (rf | co | fr)); po-loc) as axiom-ScPerLocation
+acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
 irreflexive ((rf | fr); cause) as axiom-Causality
