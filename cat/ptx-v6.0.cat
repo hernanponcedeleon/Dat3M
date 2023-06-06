@@ -28,7 +28,7 @@ let strong-operation = strong-m | F
 (* Relations *)
 let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
 let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
-let sr-m = ([strong-m]; (sr & loc); [strong-m])
+let sr-m = ([strong-m]; (sr & loc \ id); [strong-m])
 let po-m = ([M]; ((po | po^-1) & loc); [M])
 let morally-strong = sr-fence | po-fence | sr-m | po-m
 
@@ -52,7 +52,7 @@ let cause = cause-base | (observation; (cause-base | po-loc))
 (* Axiom 1 Coherence *)
 empty ((([W]; cause; [W]) & loc) \ co) as axiom-Coherence
 // Make sure that all morally strong same-loc writes are related by co in either direction
-empty (([W]; morally-strong; [W]) & loc)+ \ (co | co^-1 | id) as axiom-Coherence2
+empty (([W]; morally-strong; [W]) & loc) \ (co | co^-1) as axiom-Coherence2
 
 (* Axiom 2 FenceSC *)
 // This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
