@@ -45,7 +45,6 @@ public abstract class RMWAbstract extends SingleAddressMemoryEvent implements Re
         return value;
     }
 
-    @Override
     public void setMemValue(ExprInterface value) {
         this.value = value;
     }

@@ -47,7 +47,6 @@ public abstract class LlvmAbstractRMW extends SingleAddressMemoryEvent implement
         return value;
     }
 
-    @Override
     public void setMemValue(ExprInterface value) {
         this.value = value;
     }

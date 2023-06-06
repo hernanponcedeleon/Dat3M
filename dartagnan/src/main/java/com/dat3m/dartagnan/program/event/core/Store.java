@@ -44,7 +44,6 @@ public class Store extends SingleAddressMemoryEvent {
         return value;
     }
 
-    @Override
     public void setMemValue(ExprInterface value) {
         this.value = value;
     }

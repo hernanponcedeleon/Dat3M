@@ -57,26 +57,8 @@ public abstract class SingleAddressMemoryEvent extends AbstractEvent implements 
     }
 
     @Override
-    public void setMemValue(ExprInterface value) {
-        throw new RuntimeException("SetValue is not available for event " + this.getClass().getName());
-    }
-
-    @Override
     public String getMo() {
         return mo;
-    }
-
-    @Override
-    public void setMo(String mo) {
-        Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
-        if (!this.mo.isEmpty()) {
-            removeTags(this.mo);
-        }
-        this.mo = mo;
-        // This cannot be merged with the if above, because this.mo was updated
-        if (!this.mo.isEmpty()) {
-            addTags(mo);
-        }
     }
 
 }

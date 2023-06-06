@@ -16,11 +16,9 @@ public interface MemoryEvent extends Event, RegReader {
 
     // TODO: Get rid of these, because only Stores have a meaningful MemValue.
     ExprInterface getMemValue();
-    void setMemValue(ExprInterface value);
 
     // TODO: Is "mo" really fundamental to all memory events?
     String getMo();
-    void setMo(String mo);
 
     @Override
     default Set<Register.Read> getRegisterReads() {

@@ -43,19 +43,18 @@ public abstract class AtomicAbstract extends SingleAddressMemoryEvent implements
 
     @Override
     public ExprInterface getMemValue() {
-    	return value;
+        return value;
     }
-    
-    @Override
-    public void setMemValue(ExprInterface value){
+
+    public void setMemValue(ExprInterface value) {
         this.value = value;
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitAtomicAbstract(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAtomicAbstract(this);
+    }
 }
