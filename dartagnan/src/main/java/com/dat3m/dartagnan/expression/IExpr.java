@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public abstract class IExpr implements Reducible {
+public abstract class IExpr implements ExprInterface {
 
 	private final IntegerType type;
 
@@ -21,11 +21,6 @@ public abstract class IExpr implements Reducible {
 		return type.isMathematical() ? -1 : type.getBitWidth();
 	}
 	
-	@Override
-	public IConst reduce() {
-		throw new UnsupportedOperationException("Reduce not supported for " + this);
-	}
-
 	public boolean isBV() {
 		return !getType().isMathematical();
 	}
