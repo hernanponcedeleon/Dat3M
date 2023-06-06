@@ -8,12 +8,4 @@ public record MemoryAccess(IExpr address, Type accessType, Mode mode) {
         LOAD, STORE, OTHER;
     }
 
-    public MemoryAccess withAddress(IExpr address) {
-        return new MemoryAccess(address, accessType, mode);
-    }
-
-    public MemoryAccess withType(Type accessType) {
-        return new MemoryAccess(address, accessType, mode);
-    }
-
 }

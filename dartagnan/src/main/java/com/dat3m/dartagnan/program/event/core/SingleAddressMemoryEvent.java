@@ -11,12 +11,13 @@ import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
 /*
     WARNING: This class is an implementation detail, i.e., it does NOT provide an interface
-    and should ONLY be used to reduce common boilerplate code.
+    and should ONLY be used to reduce boilerplate code by sharing common code.
 
     A SingleAddressMemoryEvent may perform multiple memory accesses, but all of them are on the same address
     with the same type.
-    This includes simple loads and stores but also more complex RMW operations or abstract operations like SRCU.
-    A MemCpy accesses two different addresses and hence is unable to reuse the implementation given by this class.
+    This includes simple loads and stores but also RMW events or abstract events like SRCU.
+    Complex events like MemCpy access two different addresses and hence are unable to
+    reuse the implementation given by this class.
  */
 public abstract class SingleAddressMemoryEvent extends AbstractEvent implements MemoryEvent {
 
