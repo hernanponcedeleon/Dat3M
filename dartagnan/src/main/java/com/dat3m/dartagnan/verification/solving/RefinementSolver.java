@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.SingleAddressMemoryEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -442,7 +442,7 @@ public class RefinementSolver extends ModelChecker {
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        final Set<Event> programEvents = program.getEvents(SingleAddressMemoryEvent.class).stream()
+        final Set<Event> programEvents = program.getEvents(MemoryEvent.class).stream()
                 // TODO: Can we have events with source information but without parse id?
                 .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
                 .collect(Collectors.toSet());
