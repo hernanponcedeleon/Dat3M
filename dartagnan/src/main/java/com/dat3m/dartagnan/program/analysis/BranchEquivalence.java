@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -506,7 +505,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
         @Override
         public boolean contains(Object o) {
-            if (!(o instanceof AbstractEvent)) {
+            if (!(o instanceof Event)) {
                 return false;
             }
             return classes.contains(classMap.get(o));

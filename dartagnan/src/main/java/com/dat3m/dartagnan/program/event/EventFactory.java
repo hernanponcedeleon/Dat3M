@@ -51,7 +51,7 @@ public class EventFactory {
             if (obj == null) {
                 continue;
             }
-            if (obj instanceof AbstractEvent) {
+            if (obj instanceof Event) {
                 retVal.add((Event) obj);
             } else if (obj instanceof Collection<?>) {
                 retVal.addAll((Collection<? extends Event>) obj);
