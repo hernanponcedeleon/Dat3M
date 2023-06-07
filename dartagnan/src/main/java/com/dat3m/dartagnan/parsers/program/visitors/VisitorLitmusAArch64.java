@@ -196,7 +196,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-        ExprInterface expr = expressions.makeBinary(cmp.left, ctx.branchCondition().op, cmp.right);
+        Expression expr = expressions.makeBinary(cmp.left, ctx.branchCondition().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

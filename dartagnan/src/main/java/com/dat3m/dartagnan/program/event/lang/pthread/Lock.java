@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -14,7 +14,7 @@ public class Lock extends Store {
 	private final String name;
 	private final Register reg;
 
-	public Lock(String name, ExprInterface address, Register reg){
+	public Lock(String name, Expression address, Register reg){
 		super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()), MO_SC);
 		this.name = name;
         this.reg = reg;

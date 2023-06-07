@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
@@ -200,7 +200,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
-    	ExprInterface expr = (ExprInterface) ctx.re().accept(this);
+    	Expression expr = (Expression) ctx.re().accept(this);
 
     	ifId++;
         Label elseL = programBuilder.getOrCreateLabel("else_" + ifId);
@@ -230,7 +230,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReAtomicOpReturn(LitmusCParser.ReAtomicOpReturnContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface value = returnExpressionOrOne(ctx.value);
+        Expression value = returnExpressionOrOne(ctx.value);
         Event event = EventFactory.Linux.newRMWOpReturn(getAddress(ctx.address), register, value, ctx.op, ctx.mo);
         programBuilder.addChild(currentThread, event);
         return register;
@@ -270,7 +270,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public IExpr visitReAtomicAddUnless(LitmusCParser.ReAtomicAddUnlessContext ctx){
         Register register = getReturnRegister(true);
         IExpr value = (IExpr)ctx.value.accept(this);
-        ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
+        Expression cmp = (Expression)ctx.cmp.accept(this);
         programBuilder.addChild(currentThread, EventFactory.Linux.newRMWAddUnless(getAddress(ctx.address), register, cmp, value));
         return register;
     }
@@ -305,7 +305,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
         Register register = getReturnRegister(true);
-        ExprInterface cmp = (ExprInterface)ctx.cmp.accept(this);
+        Expression cmp = (Expression)ctx.cmp.accept(this);
         IExpr value = (IExpr)ctx.value.accept(this);
         Event event = EventFactory.Linux.newRMWCompareExchange(getAddress(ctx.address), register, cmp, value, ctx.mo);
         programBuilder.addChild(currentThread, event);
@@ -347,17 +347,17 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     // Return expressions (register for return value is optional)
 
     @Override
-    public ExprInterface visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
+    public Expression visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
         //TODO boolean register
         Register register = getReturnRegister(false);
-        ExprInterface v1 = (ExprInterface)ctx.re(0).accept(this);
-        ExprInterface v2 = (ExprInterface)ctx.re(1).accept(this);
-        ExprInterface result = expressions.makeBinary(v1, ctx.opCompare().op, v2);
+        Expression v1 = (Expression)ctx.re(0).accept(this);
+        Expression v2 = (Expression)ctx.re(1).accept(this);
+        Expression result = expressions.makeBinary(v1, ctx.opCompare().op, v2);
         return assignToReturnRegister(register, result);
     }
 
     @Override
-    public ExprInterface visitReOpArith(LitmusCParser.ReOpArithContext ctx){
+    public Expression visitReOpArith(LitmusCParser.ReOpArithContext ctx){
         Register register = getReturnRegister(false);
         IExpr v1 = (IExpr)ctx.re(0).accept(this);
         IExpr v2 = (IExpr)ctx.re(1).accept(this);
@@ -366,41 +366,41 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     @Override
-    public ExprInterface visitReOpBool(LitmusCParser.ReOpBoolContext ctx){
+    public Expression visitReOpBool(LitmusCParser.ReOpBoolContext ctx){
         Register register = getReturnRegister(false);
-        ExprInterface v1 = (ExprInterface)ctx.re(0).accept(this);
-        ExprInterface v2 = (ExprInterface)ctx.re(1).accept(this);
-        ExprInterface result = expressions.makeBinary(v1, ctx.opBool().op, v2);
+        Expression v1 = (Expression)ctx.re(0).accept(this);
+        Expression v2 = (Expression)ctx.re(1).accept(this);
+        Expression result = expressions.makeBinary(v1, ctx.opBool().op, v2);
         return assignToReturnRegister(register, result);
     }
 
     @Override
-    public ExprInterface visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
+    public Expression visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
         Register register = getReturnRegister(false);
-        ExprInterface v = (ExprInterface)ctx.re().accept(this);
-        ExprInterface result = expressions.makeNot(v);
+        Expression v = (Expression)ctx.re().accept(this);
+        Expression result = expressions.makeNot(v);
         return assignToReturnRegister(register, result);
     }
 
     @Override
-    public ExprInterface visitReBoolConst(LitmusCParser.ReBoolConstContext ctx){
+    public Expression visitReBoolConst(LitmusCParser.ReBoolConstContext ctx){
         return expressions.makeValue(ctx.boolConst().value);
     }
 
     @Override
-    public ExprInterface visitReParenthesis(LitmusCParser.ReParenthesisContext ctx){
-        return (ExprInterface)ctx.re().accept(this);
+    public Expression visitReParenthesis(LitmusCParser.ReParenthesisContext ctx){
+        return (Expression)ctx.re().accept(this);
     }
 
     @Override
-    public ExprInterface visitReCast(LitmusCParser.ReCastContext ctx){
+    public Expression visitReCast(LitmusCParser.ReCastContext ctx){
         Register register = getReturnRegister(false);
-        ExprInterface result = (ExprInterface)ctx.re().accept(this);
+        Expression result = (Expression)ctx.re().accept(this);
         return assignToReturnRegister(register, result);
     }
 
     @Override
-    public ExprInterface visitReVarName(LitmusCParser.ReVarNameContext ctx){
+    public Expression visitReVarName(LitmusCParser.ReVarNameContext ctx){
         Register register = getReturnRegister(false);
         IExpr variable = visitVarName(ctx.varName());
         if (variable instanceof Register result) {
@@ -410,7 +410,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     @Override
-    public ExprInterface visitReConst(LitmusCParser.ReConstContext ctx){
+    public Expression visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
         IValue result = expressions.parseValue(ctx.getText(), archType);
         return assignToReturnRegister(register, result);
@@ -430,7 +430,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreStore(LitmusCParser.NreStoreContext ctx){
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        Expression value = (Expression)ctx.value.accept(this);
         if(ctx.mo.equals(Tag.Linux.MO_MB)){
             Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, Tag.Linux.MO_ONCE);
             programBuilder.addChild(currentThread, event);
@@ -442,21 +442,21 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreWriteOnce(LitmusCParser.NreWriteOnceContext ctx){
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Linux.newLKMMStore(getAddress(ctx.address), value, ctx.mo);
         return programBuilder.addChild(currentThread, event);
     }
 
 	@Override
 	public Object visitNreC11Store(LitmusCParser.NreC11StoreContext ctx) {
-        ExprInterface value = (ExprInterface)ctx.value.accept(this);
+        Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, ctx.c11Mo().mo);
         return programBuilder.addChild(currentThread, event);
 	}
 
     @Override
     public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
-        ExprInterface variable = (ExprInterface)ctx.varName().accept(this);
+        Expression variable = (Expression)ctx.varName().accept(this);
         if(ctx.Ast() == null){
             if(variable instanceof Register){
                 returnRegister = (Register)variable;
@@ -466,7 +466,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
 
-        ExprInterface value = (ExprInterface)ctx.re().accept(this);
+        Expression value = (Expression)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
             Event event = EventFactory.newStore(variable, value, C11.NONATOMIC);
             return programBuilder.addChild(currentThread, event);
@@ -538,7 +538,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     }
 
     private IExpr getAddress(LitmusCParser.ReContext ctx){
-        ExprInterface address = (ExprInterface)ctx.accept(this);
+        Expression address = (Expression)ctx.accept(this);
         if(address instanceof IExpr){
            return (IExpr)address;
         }
@@ -558,7 +558,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return register;
     }
 
-    private ExprInterface assignToReturnRegister(Register register, ExprInterface value){
+    private Expression assignToReturnRegister(Register register, Expression value){
         if(register != null){
             programBuilder.addChild(currentThread, EventFactory.newLocal(register, value));
         }

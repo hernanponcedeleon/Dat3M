@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Join extends Load {
 
-    public Join(Register reg, ExprInterface expr) {
+    public Join(Register reg, Expression expr) {
         // We will set the correct (C11 or LKMM) acquire tag (or barriers) when the event is compiled
     	super(reg, expr, "");
         addTags(Tag.C11.PTHREAD);

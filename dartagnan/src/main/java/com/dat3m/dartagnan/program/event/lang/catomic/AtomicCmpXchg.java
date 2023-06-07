@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -8,10 +8,10 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class AtomicCmpXchg extends AtomicAbstract {
 
-    private ExprInterface expectedAddr;
+    private Expression expectedAddr;
     private boolean isStrong;
 
-    public AtomicCmpXchg(Register register, ExprInterface address, ExprInterface expectedAddr, ExprInterface value, String mo, boolean isStrong) {
+    public AtomicCmpXchg(Register register, Expression address, Expression expectedAddr, Expression value, String mo, boolean isStrong) {
         super(address, register, value, mo);
         this.expectedAddr = expectedAddr;
         this.isStrong = isStrong;
@@ -28,11 +28,11 @@ public class AtomicCmpXchg extends AtomicAbstract {
 
     //TODO: Override getDataRegs???
 
-    public ExprInterface getExpectedAddr() {
+    public Expression getExpectedAddr() {
     	return expectedAddr;
     }
     
-    public void setExpectedAddr(ExprInterface expectedAddr) {
+    public void setExpectedAddr(Expression expectedAddr) {
         this.expectedAddr = expectedAddr;
     }
     

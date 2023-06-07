@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
 
@@ -84,6 +84,6 @@ public class LlvmPredicates {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return factory.makeBinary((ExprInterface)callParams.get(0), op, (ExprInterface)callParams.get(1));
+		return factory.makeBinary((Expression)callParams.get(0), op, (Expression)callParams.get(1));
 	}
 }

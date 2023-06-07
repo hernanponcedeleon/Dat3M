@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -10,7 +10,7 @@ public class RMWFetchOp extends RMWAbstract {
 
     private final IOpBin op;
 
-    public RMWFetchOp(ExprInterface address, Register register, ExprInterface value, IOpBin op, String mo) {
+    public RMWFetchOp(Expression address, Register register, Expression value, IOpBin op, String mo) {
         super(address, register, value, mo);
         this.op = op;
     }

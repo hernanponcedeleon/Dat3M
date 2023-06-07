@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -62,7 +62,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		ExprInterface zero = expressions.makeZero(resultRegister.getType());
+		Expression zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), "");
         load.addTags(C11.PTHREAD);
         Label label = newLabel("Jump_" + e.getGlobalId());
@@ -80,7 +80,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		ExprInterface one = expressions.makeOne(resultRegister.getType());
+		Expression one = expressions.makeOne(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress(), e.getMo());
 		load.addTags(Tag.STARTLOAD);
 		Label label = newLabel("Jump_" + e.getGlobalId());
@@ -106,7 +106,7 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitLock(Lock e) {
         Register dummy = e.getThread().newRegister(types.getArchType());
-		ExprInterface zero = expressions.makeZero(dummy.getType());
+		Expression zero = expressions.makeZero(dummy.getType());
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
@@ -202,7 +202,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		// Power does not have mo tags, thus we use null
@@ -248,7 +248,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
@@ -305,8 +305,8 @@ public class VisitorPower extends VisitorBase {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
 
-		ExprInterface one = expressions.makeOne(resultRegister.getType());
-		ExprInterface address = e.getAddress();
+		Expression one = expressions.makeOne(resultRegister.getType());
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, e.getExpectedValue()));
@@ -367,11 +367,11 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface one = expressions.makeOne(resultRegister.getType());
-		ExprInterface address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression one = expressions.makeOne(resultRegister.getType());
+		Expression address = e.getAddress();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
-		ExprInterface expectedAddr = e.getExpectedAddr();
+		Expression expectedAddr = e.getExpectedAddr();
 		IntegerType type = resultRegister.getType();
 
 		Register regExpected = e.getThread().newRegister(type);
@@ -442,8 +442,8 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(resultRegister.getType());
@@ -497,7 +497,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicLoad(AtomicLoad e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Fence optionalBarrierBefore = null;
@@ -541,8 +541,8 @@ public class VisitorPower extends VisitorBase {
 
 	@Override
 	public List<Event> visitAtomicStore(AtomicStore e) {
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         Fence optionalBarrierBefore = null;
@@ -583,8 +583,8 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         // Power does not have mo tags, thus we use the emptz string
@@ -637,7 +637,7 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitLKMMLoad(LKMMLoad e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		// Power does not have mo tags, thus we use the empty string
@@ -654,8 +654,8 @@ public class VisitorPower extends VisitorBase {
 	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
 	@Override
 	public List<Event> visitLKMMStore(LKMMStore e) {
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         // Power does not have mo tags, thus we use the empty string
@@ -733,8 +733,8 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression address = e.getAddress();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
@@ -769,8 +769,8 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -800,8 +800,8 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitRMWOp(RMWOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -831,8 +831,8 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -863,8 +863,8 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -897,11 +897,11 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression address = e.getAddress();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 		IntegerType type = resultRegister.getType();
-		ExprInterface zero = expressions.makeZero(type);
+		Expression zero = expressions.makeZero(type);
 
         Register regValue = e.getThread().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
@@ -911,7 +911,7 @@ public class VisitorPower extends VisitorBase {
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getThread().newRegister(type);
-		ExprInterface unless = e.getCmp();
+		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeEqual(dummy, zero), cauEnd);
 
@@ -943,10 +943,10 @@ public class VisitorPower extends VisitorBase {
 	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface zero = expressions.makeZero(type);
+		Expression zero = expressions.makeZero(type);
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(type);
@@ -981,8 +981,8 @@ public class VisitorPower extends VisitorBase {
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
 		IntegerType type = types.getArchType();
-		ExprInterface zero = expressions.makeZero(type);
-		ExprInterface one = expressions.makeOne(type);
+		Expression zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
 		Register dummy = e.getThread().newRegister(type);
 		Label label = newLabel("FakeDep");
     // Spinlock events are guaranteed to succeed, i.e. we can use assumes

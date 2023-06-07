@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -46,15 +46,15 @@ public class LlvmProcedures {
         String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
         Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
 
-        ExprInterface p0 = (ExprInterface) params.get(0).accept(visitor);
-        ExprInterface p1 = params.size() > 1 ? (ExprInterface) params.get(1).accept(visitor) : null;
-        ExprInterface p2 = params.size() > 2 ? (ExprInterface) params.get(2).accept(visitor) : null;
-        ExprInterface p3 = params.size() > 3 ? (ExprInterface) params.get(3).accept(visitor) : null;
+        Expression p0 = (Expression) params.get(0).accept(visitor);
+        Expression p1 = params.size() > 1 ? (Expression) params.get(1).accept(visitor) : null;
+        Expression p2 = params.size() > 2 ? (Expression) params.get(2).accept(visitor) : null;
+        Expression p3 = params.size() > 3 ? (Expression) params.get(3).accept(visitor) : null;
 
         String mo;
 
         // For intrinsics
-        ExprInterface cond;
+        Expression cond;
 
         switch (name) {
             case "__llvm_atomic32_load":

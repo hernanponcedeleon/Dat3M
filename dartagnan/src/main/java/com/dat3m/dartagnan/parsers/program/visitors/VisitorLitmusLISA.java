@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -118,7 +118,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitLocal(LitmusLISAParser.LocalContext ctx) {
         Register reg = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-		ExprInterface e = (ExprInterface) ctx.expression().accept(this);
+		Expression e = (Expression) ctx.expression().accept(this);
         programBuilder.addChild(mainThread, EventFactory.newLocal(reg, e));
 		return null;
 	}
@@ -162,8 +162,8 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
-		ExprInterface one = expressions.makeOne(reg.getType());
-        ExprInterface cond = expressions.makeEqual(reg, one);
+		Expression one = expressions.makeOne(reg.getType());
+        Expression cond = expressions.makeEqual(reg, one);
 		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
 		return null;
 	}
@@ -222,15 +222,15 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
 	@Override
 	public Object visitEq(LitmusLISAParser.EqContext ctx) {
-		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
-		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeEqual(e1, e2);
 	}
 
 	@Override
 	public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
-		ExprInterface e1 = (ExprInterface) ctx.expression(0).accept(this);
-		ExprInterface e2 = (ExprInterface) ctx.expression(1).accept(this);
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
 		return expressions.makeNotEqual(e1, e2);
 	}
 

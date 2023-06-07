@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.BNonDet;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -74,9 +74,9 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getThread().newRegister(resultRegister.getType());
-        ExprInterface cmp = e.getCmp();
-        ExprInterface value = e.getMemValue();
-        ExprInterface address = e.getAddress();
+        Expression cmp = e.getCmp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
 
         Label success = newLabel("RMW_success");
         Label end = newLabel("RMW_end");
@@ -100,9 +100,9 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface cmp = e.getCmp();
-        ExprInterface value = e.getMemValue();
-        ExprInterface address = e.getAddress();
+        Expression cmp = e.getCmp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Label success = newLabel("CAS_success");
@@ -129,8 +129,8 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWFetchOp(RMWFetchOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
-        ExprInterface address = e.getAddress();
-        ExprInterface value = e.getMemValue();
+        Expression address = e.getAddress();
+        Expression value = e.getMemValue();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
@@ -148,7 +148,7 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitRMWOp(RMWOp e) {
-        ExprInterface address = e.getAddress();
+        Expression address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -164,7 +164,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface address = e.getAddress();
+        Expression address = e.getAddress();
         IntegerType type = resultRegister.getType();
 
         Register dummy = e.getThread().newRegister(type);
@@ -183,7 +183,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWOpReturn(RMWOpReturn e) {
         Register resultRegister = e.getResultRegister();
-        ExprInterface address = e.getAddress();
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
@@ -205,7 +205,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWXchg(RMWXchg e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
-        ExprInterface address = e.getAddress();
+        Expression address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo));
@@ -224,7 +224,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
         Register dummy = e.getThread().newRegister(types.getArchType());
-        ExprInterface zero = expressions.makeZero(dummy.getType());
+        Expression zero = expressions.makeZero(dummy.getType());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
         Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?

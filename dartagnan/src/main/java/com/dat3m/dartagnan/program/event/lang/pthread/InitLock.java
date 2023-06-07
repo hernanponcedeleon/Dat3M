@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -10,7 +10,7 @@ public class InitLock extends Store {
 	
 	private final String name;
 
-	public InitLock(String name, ExprInterface address, ExprInterface value) {
+	public InitLock(String name, Expression address, Expression value) {
 		super(address, value, MO_SC);
 		this.name = name;
     }

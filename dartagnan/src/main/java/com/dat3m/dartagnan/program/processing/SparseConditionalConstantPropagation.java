@@ -66,17 +66,17 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
     private void run(Thread thread) {
         final EventSimplifier simplifier = new EventSimplifier();
-        final Predicate<ExprInterface> checkDoPropagate = propagateCopyAssignments
+        final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
 
         Set<Event> reachableEvents = new HashSet<>();
-        Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
+        Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();
         // NOTE: An absent key represents the TOP value of our lattice (we start from
         // TOP everywhere)
         // BOT is not represented as it is never produced (we only ever join non-BOT
         // values and hence never produce BOT).
-        Map<Register, ExprInterface> propagationMap = new HashMap<>();
+        Map<Register, Expression> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
         for (Event cur : thread.getEvents()) {
@@ -95,8 +95,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
                 if (cur instanceof Local) {
                     final Local local = (Local) cur;
-                    final ExprInterface expr = local.getExpr();
-                    final ExprInterface valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
+                    final Expression expr = local.getExpr();
+                    final Expression valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
                     propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
                 } else if (cur instanceof RegWriter) {
                     // We treat all other register writers as non-constant
@@ -114,7 +114,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                     }
                     if (!jump.isDead()) {
                         // Join current map with label-associated map
-                        final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
+                        final Map<Register, Expression> finalPropagationMap = propagationMap;
                         inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
                                 : join(v, finalPropagationMap));
                     }
@@ -138,13 +138,13 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
     }
 
-    private Map<Register, ExprInterface> join(Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
+    private Map<Register, Expression> join(Map<Register, Expression> x, Map<Register, Expression> y) {
         Preconditions.checkNotNull(x);
         Preconditions.checkNotNull(y);
 
-        final Map<Register, ExprInterface> smallerMap = x.size() <= y.size() ? x : y;
-        final Map<Register, ExprInterface> largerMap = smallerMap == x ? y : x;
-        final Map<Register, ExprInterface> joined = new HashMap<>(smallerMap);
+        final Map<Register, Expression> smallerMap = x.size() <= y.size() ? x : y;
+        final Map<Register, Expression> largerMap = smallerMap == x ? y : x;
+        final Map<Register, Expression> joined = new HashMap<>(smallerMap);
         joined.entrySet().removeIf(entry -> entry.getValue() != largerMap.getOrDefault(entry.getKey(), null));
         return joined;
     }
@@ -156,7 +156,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         private final ConstantPropagator propagator = new ConstantPropagator();
 
-        public void setPropagationMap(Map<Register, ExprInterface> propagationMap) {
+        public void setPropagationMap(Map<Register, Expression> propagationMap) {
             this.propagator.propagationMap = propagationMap;
         }
 
@@ -207,11 +207,11 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      */
     private static class ConstantPropagator extends ExprTransformer {
 
-        private Map<Register, ExprInterface> propagationMap = new HashMap<>();
+        private Map<Register, Expression> propagationMap = new HashMap<>();
 
         @Override
-        public ExprInterface visit(Register reg) {
-            final ExprInterface retVal = propagationMap.getOrDefault(reg, reg);
+        public Expression visit(Register reg) {
+            final Expression retVal = propagationMap.getOrDefault(reg, reg);
             if (retVal instanceof BConst) {
                 // We only have integral registers, so we need to implicitly convert booleans to
                 // integers.
@@ -223,9 +223,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public ExprInterface visit(Atom atom) {
-            ExprInterface lhs = atom.getLHS().visit(this);
-            ExprInterface rhs = atom.getRHS().visit(this);
+        public Expression visit(Atom atom) {
+            Expression lhs = atom.getLHS().visit(this);
+            Expression rhs = atom.getRHS().visit(this);
             if (lhs instanceof BConst) {
                 lhs = expressions.makeValue(
                         ((BConst) lhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
@@ -245,8 +245,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public BExpr visit(BExprBin bBin) {
-            ExprInterface lhs = bBin.getLHS().visit(this);
-            ExprInterface rhs = bBin.getRHS().visit(this);
+            Expression lhs = bBin.getLHS().visit(this);
+            Expression rhs = bBin.getRHS().visit(this);
             if (lhs instanceof BConst left && rhs instanceof BConst right) {
                 return expressions.makeValue(bBin.getOp().combine(left.getValue(), right.getValue()));
             } else {
@@ -256,7 +256,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public BExpr visit(BExprUn bUn) {
-            ExprInterface inner = bUn.getInner().visit(this);
+            Expression inner = bUn.getInner().visit(this);
             if (inner instanceof BConst) {
                 return expressions.makeValue(bUn.getOp().combine(((BConst) inner).getValue()));
             } else {
@@ -288,10 +288,10 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public ExprInterface visit(IfExpr ifExpr) {
-            ExprInterface guard = ifExpr.getGuard().visit(this);
-            ExprInterface trueBranch = ifExpr.getTrueBranch().visit(this);
-            ExprInterface falseBranch = ifExpr.getFalseBranch().visit(this);
+        public Expression visit(IfExpr ifExpr) {
+            Expression guard = ifExpr.getGuard().visit(this);
+            Expression trueBranch = ifExpr.getTrueBranch().visit(this);
+            Expression falseBranch = ifExpr.getFalseBranch().visit(this);
             if (guard instanceof BConst constant && trueBranch instanceof IValue && falseBranch instanceof IValue) {
                 // We optimize ITEs only if all subexpressions are constant to avoid messing up
                 // data dependencies

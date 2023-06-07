@@ -15,9 +15,9 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 public class ExprSimplifier extends ExprTransformer {
 
     @Override
-    public ExprInterface visit(Atom atom) {
-        ExprInterface lhs = atom.getLHS().visit(this);
-        ExprInterface rhs = atom.getRHS().visit(this);
+    public Expression visit(Atom atom) {
+        Expression lhs = atom.getLHS().visit(this);
+        Expression rhs = atom.getRHS().visit(this);
         if (lhs.equals(rhs)) {
             switch(atom.getOp()) {
                 case EQ:
@@ -100,7 +100,7 @@ public class ExprSimplifier extends ExprTransformer {
     @Override
     public BExpr visit(BExprUn bUn) {
         // Due to constant propagation we are not guaranteed to get BExprs
-        ExprInterface innerExpr = bUn.getInner().visit(this);
+        Expression innerExpr = bUn.getInner().visit(this);
         if(!(innerExpr instanceof BExpr)) {
             return bUn;
         }
@@ -213,10 +213,10 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public ExprInterface visit(IfExpr ifExpr) {
-        ExprInterface cond = ifExpr.getGuard().visit(this);
-        ExprInterface t = ifExpr.getTrueBranch().visit(this);
-        ExprInterface f = ifExpr.getFalseBranch().visit(this);
+    public Expression visit(IfExpr ifExpr) {
+        Expression cond = ifExpr.getGuard().visit(this);
+        Expression t = ifExpr.getTrueBranch().visit(this);
+        Expression f = ifExpr.getFalseBranch().visit(this);
 
         if (cond instanceof BConst constantGuard) {
             return constantGuard.getValue() ? t : f;
@@ -243,12 +243,12 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public ExprInterface visit(Register reg) {
+    public Expression visit(Register reg) {
         return reg;
     }
 
     @Override
-    public ExprInterface visit(MemoryObject address) {
+    public Expression visit(MemoryObject address) {
         return address;
     }
 }

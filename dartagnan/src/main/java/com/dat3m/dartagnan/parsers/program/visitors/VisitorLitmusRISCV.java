@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -223,7 +223,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
         Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
-        ExprInterface expr = expressions.makeBinary(r1, ctx.cond().op, r2);
+        Expression expr = expressions.makeBinary(r1, ctx.cond().op, r2);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
 	}
 

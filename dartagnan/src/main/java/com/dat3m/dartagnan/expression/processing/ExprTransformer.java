@@ -6,13 +6,13 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
+public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Override
-    public ExprInterface visit(Atom atom) {
+    public Expression visit(Atom atom) {
         return expressions.makeBinary(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
     }
 
@@ -52,7 +52,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public ExprInterface visit(IfExpr ifExpr) {
+    public Expression visit(IfExpr ifExpr) {
         return expressions.makeConditional(
                 ifExpr.getGuard().visit(this),
                 ifExpr.getTrueBranch().visit(this),
@@ -65,17 +65,17 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public ExprInterface visit(Register reg) {
+    public Expression visit(Register reg) {
         return reg;
     }
 
     @Override
-    public ExprInterface visit(MemoryObject address) {
+    public Expression visit(MemoryObject address) {
         return address;
     }
 
     @Override
-    public ExprInterface visit(Location location) {
+    public Expression visit(Location location) {
         return location;
     }
 }

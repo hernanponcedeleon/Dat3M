@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -25,10 +25,10 @@ import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     private static class CmpInstruction {
-        private final ExprInterface left;
-        private final ExprInterface right;
+        private final Expression left;
+        private final Expression right;
 
-        public CmpInstruction(Register left, ExprInterface comparand) {
+        public CmpInstruction(Register left, Expression comparand) {
             this.left = left;
             this.right = comparand;
         }
@@ -198,7 +198,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
-        ExprInterface expr = expressions.makeBinary(cmp.left, ctx.cond().op, cmp.right);
+        Expression expr = expressions.makeBinary(cmp.left, ctx.cond().op, cmp.right);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -10,7 +10,7 @@ public class RMWOp extends RMWAbstract {
 
     private final IOpBin op;
 
-    public RMWOp(ExprInterface address, Register register, ExprInterface value, IOpBin op) {
+    public RMWOp(Expression address, Register register, Expression value, IOpBin op) {
         super(address, register, value, Tag.Linux.MO_ONCE);
         this.op = op;
         addTags(Tag.Linux.NORETURN);

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -24,7 +24,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitXchg(Xchg e) {
                 Register resultRegister = e.getResultRegister();
-                ExprInterface address = e.getAddress();
+                Expression address = e.getAddress();
 
                 Register dummyReg = e.getThread().newRegister(resultRegister.getType());
                 Load load = newRMWLoad(dummyReg, address, "");
@@ -59,7 +59,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitJoin(Join e) {
                 Register resultRegister = e.getResultRegister();
-                ExprInterface zero = expressions.makeZero(resultRegister.getType());
+                Expression zero = expressions.makeZero(resultRegister.getType());
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addTags(C11.PTHREAD);
 
@@ -72,7 +72,7 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitStart(Start e) {
                 Register resultRegister = e.getResultRegister();
-                ExprInterface one = expressions.makeOne(resultRegister.getType());
+                Expression one = expressions.makeOne(resultRegister.getType());
                 Load load = newLoad(resultRegister, e.getAddress(), "");
                 load.addTags(Tag.STARTLOAD);
 
@@ -130,7 +130,7 @@ class VisitorTso extends VisitorBase {
 
         @Override
         public List<Event> visitLlvmXchg(LlvmXchg e) {
-                ExprInterface address = e.getAddress();
+                Expression address = e.getAddress();
                 Load load = newRMWLoad(e.getResultRegister(), address, "");
 
                 return tagList(eventSequence(
@@ -143,7 +143,7 @@ class VisitorTso extends VisitorBase {
                 Register resultRegister = e.getResultRegister();
                 Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 
-                ExprInterface address = e.getAddress();
+                Expression address = e.getAddress();
                 Load load = newRMWLoad(resultRegister, address, "");
 
                 return tagList(eventSequence(
@@ -156,11 +156,11 @@ class VisitorTso extends VisitorBase {
         public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
                 Register oldValueRegister = e.getStructRegister(0);
                 Register resultRegister = e.getStructRegister(1);
-                ExprInterface one = expressions.makeOne(resultRegister.getType());
+                Expression one = expressions.makeOne(resultRegister.getType());
 
-                ExprInterface value = e.getMemValue();
-                ExprInterface address = e.getAddress();
-                ExprInterface expectedValue = e.getExpectedValue();
+                Expression value = e.getMemValue();
+                Expression address = e.getAddress();
+                Expression expectedValue = e.getExpectedValue();
 
                 Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
                 Label casEnd = newLabel("CAS_end");
@@ -193,12 +193,12 @@ class VisitorTso extends VisitorBase {
         @Override
         public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
                 Register resultRegister = e.getResultRegister();
-                ExprInterface address = e.getAddress();
-                ExprInterface value = e.getMemValue();
+                Expression address = e.getAddress();
+                Expression value = e.getMemValue();
                 String mo = e.getMo();
-                ExprInterface expectedAddr = e.getExpectedAddr();
+                Expression expectedAddr = e.getExpectedAddr();
                 IntegerType type = resultRegister.getType();
-                ExprInterface one = expressions.makeOne(type);
+                Expression one = expressions.makeOne(type);
 
                 Register regExpected = e.getThread().newRegister(type);
                 Load loadExpected = newLoad(regExpected, expectedAddr, "");
@@ -230,7 +230,7 @@ class VisitorTso extends VisitorBase {
                 Register resultRegister = e.getResultRegister();
                 Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 
-                ExprInterface address = e.getAddress();
+                Expression address = e.getAddress();
                 String mo = e.getMo();
                 Load load = newRMWLoad(resultRegister, address, mo);
 
@@ -265,7 +265,7 @@ class VisitorTso extends VisitorBase {
 
         @Override
         public List<Event> visitAtomicXchg(AtomicXchg e) {
-            ExprInterface address = e.getAddress();
+            Expression address = e.getAddress();
             String mo = e.getMo();
             Load load = newRMWLoad(e.getResultRegister(), address, mo);
 

@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.expression.BNonDet;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -379,27 +379,27 @@ public class AnalysisTest {
         assertAlias(expect[5], a, me2, me3);
     }
 
-    private Load newLoad(Register value, ExprInterface address) {
+    private Load newLoad(Register value, Expression address) {
         return EventFactory.newLoad(value, address, "");
     }
 
-    private Store newStore(ExprInterface address) {
+    private Store newStore(Expression address) {
         return newStore(address, expressions.makeZero(types.getArchType()));
     }
 
-    private Store newStore(ExprInterface address, ExprInterface value) {
+    private Store newStore(Expression address, Expression value) {
         return EventFactory.newStore(address, value, "");
     }
 
-    private ExprInterface value(long v) {
+    private Expression value(long v) {
         return expressions.makeValue(BigInteger.valueOf(v), types.getArchType());
     }
 
-    private ExprInterface plus(ExprInterface lhs, long rhs) {
+    private Expression plus(Expression lhs, long rhs) {
         return expressions.makePlus(lhs, value(rhs));
     }
 
-    private ExprInterface mult(ExprInterface lhs, long rhs) {
+    private Expression mult(Expression lhs, long rhs) {
         return expressions.makeMultiply(lhs, value(rhs));
     }
 

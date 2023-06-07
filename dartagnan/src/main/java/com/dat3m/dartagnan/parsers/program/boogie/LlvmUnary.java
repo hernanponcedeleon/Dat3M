@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
@@ -49,7 +49,7 @@ public class LlvmUnary {
 
     private static Object llvmUnary(String prefix, String suffix, List<Object> callParams, ExpressionFactory expressions) {
         TypeFactory types = TypeFactory.getInstance();
-        ExprInterface inner = (ExprInterface) callParams.get(0);
+        Expression inner = (Expression) callParams.get(0);
         if (!(inner.getType() instanceof IntegerType integerType)) {
             throw new ParsingException(String.format("%s is not an integer expression.", inner));
         }

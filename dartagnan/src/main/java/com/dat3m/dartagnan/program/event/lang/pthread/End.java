@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -11,7 +11,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class End extends Store {
 
-    public End(ExprInterface address){
+    public End(Expression address){
     	super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_SC);
     	addTags(Tag.C11.PTHREAD);
     }

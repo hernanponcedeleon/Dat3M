@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -13,7 +13,7 @@ public class Start extends Load {
 
     private final Event creationEvent;
 
-	public Start(Register reg, ExprInterface address, Event creationEvent){
+	public Start(Register reg, Expression address, Event creationEvent){
 		super(reg, address, MO_SC);
         this.creationEvent = creationEvent;
         addTags(Tag.C11.PTHREAD);

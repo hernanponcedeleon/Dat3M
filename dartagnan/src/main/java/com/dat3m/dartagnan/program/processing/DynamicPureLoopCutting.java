@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
@@ -137,7 +137,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-        final ExprInterface atLeastOneSideEffect = trackingRegs.stream()
+        final Expression atLeastOneSideEffect = trackingRegs.stream()
                 .map(reg -> expressionFactory.makeEqual(reg, expressionFactory.makeZero(reg.getType())))
                 .reduce(expressionFactory.makeFalse(), expressionFactory::makeOr);
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
@@ -69,7 +69,7 @@ public class PthreadsProcedures {
 		visitor.currentThread++;
 
 		visitor.threadCallingValues.put(visitor.currentThread, new ArrayList<>());
-		ExprInterface callingValue = (ExprInterface)ctx.call_params().exprs().expr().get(3).accept(visitor);
+		Expression callingValue = (Expression)ctx.call_params().exprs().expr().get(3).accept(visitor);
 		visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 
 		IExpr pointer = (IExpr)ctx.call_params().exprs().expr(0).accept(visitor);
@@ -84,7 +84,7 @@ public class PthreadsProcedures {
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
 				.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 		Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
-		ExprInterface zero = visitor.expressions.makeZero(reg.getType());
+		Expression zero = visitor.expressions.makeZero(reg.getType());
 		visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, zero));
 	}
 	

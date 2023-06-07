@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -11,7 +11,7 @@ import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 public class LKMMLockWrite extends RMWStore {
 
-	public LKMMLockWrite(Load lockRead, ExprInterface lock) {
+	public LKMMLockWrite(Load lockRead, Expression lock) {
 		super(lockRead, lock, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()), Linux.MO_ONCE);
 		addTags(RMW, Linux.LOCK_WRITE);
 	}

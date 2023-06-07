@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.arch.lisa;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -14,10 +14,10 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 public class RMW extends AbstractMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
-    private final ExprInterface value;
+    private final Expression value;
     
 
-    public RMW(ExprInterface address, Register register, ExprInterface value, String mo) {
+    public RMW(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
 		this.resultRegister = register;
         this.value = value;
@@ -35,7 +35,7 @@ public class RMW extends AbstractMemoryEvent implements RegWriter {
         return resultRegister + " := rmw[" + mo + "](" + value + ", " + address + ")";
     }
 
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return value;
     }
 

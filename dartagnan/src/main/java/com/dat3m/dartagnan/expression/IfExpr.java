@@ -10,11 +10,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public class IfExpr extends IExpr {
 
-	private final ExprInterface guard;
-	private final ExprInterface tbranch;
-	private final ExprInterface fbranch;
+	private final Expression guard;
+	private final Expression tbranch;
+	private final Expression fbranch;
 	
-	public IfExpr(ExprInterface guard, ExprInterface tbranch, ExprInterface fbranch) {
+	public IfExpr(Expression guard, Expression tbranch, Expression fbranch) {
 		super(checkIntegerType(tbranch));
 		checkArgument(guard.getType() instanceof BooleanType, "IfThenElse with non-boolean guard %s.", guard);
         checkArgument(tbranch.getType().equals(fbranch.getType()),
@@ -24,7 +24,7 @@ public class IfExpr extends IExpr {
 		this.fbranch = fbranch;
 	}
 
-	private static IntegerType checkIntegerType(ExprInterface tbranch) {
+	private static IntegerType checkIntegerType(Expression tbranch) {
 		if (tbranch.getType() instanceof IntegerType integerType) {
 			return integerType;
 		}
@@ -41,15 +41,15 @@ public class IfExpr extends IExpr {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
 
-	public ExprInterface getGuard() {
+	public Expression getGuard() {
 		return guard;
 	}
 
-	public ExprInterface getTrueBranch() {
+	public Expression getTrueBranch() {
 		return tbranch;
 	}
 
-	public ExprInterface getFalseBranch() {
+	public Expression getFalseBranch() {
 		return fbranch;
 	}
 

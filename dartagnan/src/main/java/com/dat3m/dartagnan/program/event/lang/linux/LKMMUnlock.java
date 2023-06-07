@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -11,7 +11,7 @@ import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
 
 public class LKMMUnlock extends Store {
 
-	public LKMMUnlock(ExprInterface lock) {
+	public LKMMUnlock(Expression lock) {
 		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_RELEASE);
 		addTags(Tag.Linux.UNLOCK);
 	}

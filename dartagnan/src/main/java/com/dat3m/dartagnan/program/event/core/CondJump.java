@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -17,9 +17,9 @@ import java.util.Set;
 public class CondJump extends AbstractEvent implements RegReader {
 
     private Label label;
-    private ExprInterface guard;
+    private Expression guard;
 
-    public CondJump(ExprInterface guard, Label label) {
+    public CondJump(Expression guard, Label label) {
     	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
     	Preconditions.checkNotNull(guard, "CondJump event requires non null expression");
         Preconditions.checkArgument(guard.getType() instanceof BooleanType,
@@ -49,10 +49,10 @@ public class CondJump extends AbstractEvent implements RegReader {
         return label;
     }
 
-    public ExprInterface getGuard() {
+    public Expression getGuard() {
         return guard;
     }
-    public void setGuard(ExprInterface guard) {
+    public void setGuard(Expression guard) {
         this.guard = guard;
     }
 

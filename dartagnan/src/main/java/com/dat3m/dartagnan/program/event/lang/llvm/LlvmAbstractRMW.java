@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -14,9 +14,9 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 public abstract class LlvmAbstractRMW extends AbstractMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
-    protected ExprInterface value;
+    protected Expression value;
 
-    LlvmAbstractRMW(ExprInterface address, Register register, ExprInterface value, String mo) {
+    LlvmAbstractRMW(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
         this.resultRegister = register;
@@ -41,12 +41,12 @@ public abstract class LlvmAbstractRMW extends AbstractMemoryEvent implements Reg
     }
 
     @Override
-    public ExprInterface getMemValue() {
+    public Expression getMemValue() {
     	return value;
     }
     
     @Override
-    public void setMemValue(ExprInterface value){
+    public void setMemValue(Expression value){
         this.value = value;
     }
 

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -66,7 +66,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		ExprInterface zero = expressions.makeZero(resultRegister.getType());
+		Expression zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(C11.PTHREAD);
 
@@ -79,7 +79,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		ExprInterface one = expressions.makeOne(resultRegister.getType());
+		Expression one = expressions.makeOne(resultRegister.getType());
 		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(Tag.STARTLOAD);
 
@@ -101,8 +101,8 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLock(Lock e) {
 		IntegerType type = types.getArchType();
         Register dummy = e.getThread().newRegister(type);
-		ExprInterface zero = expressions.makeZero(type);
-		ExprInterface one = expressions.makeOne(type);
+		Expression zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because of the fence.
@@ -152,8 +152,8 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
@@ -178,8 +178,8 @@ class VisitorRISCV extends VisitorBase {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(type);
@@ -208,12 +208,12 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
-		ExprInterface one = expressions.makeOne(resultRegister.getType());
+		Expression one = expressions.makeOne(resultRegister.getType());
 
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
+		Expression expectedValue = e.getExpectedValue();
 
 		Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
 		Label casEnd = newLabel("CAS_end");
@@ -261,11 +261,11 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface one = expressions.makeOne(type);
-		ExprInterface address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression one = expressions.makeOne(type);
+		Expression address = e.getAddress();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
-		ExprInterface expectedAddr = e.getExpectedAddr();
+		Expression expectedAddr = e.getExpectedAddr();
 
 		Register regExpected = e.getThread().newRegister(type);
         Register regValue = e.getThread().newRegister(type);
@@ -306,8 +306,8 @@ class VisitorRISCV extends VisitorBase {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummyReg = e.getThread().newRegister(type);
@@ -383,8 +383,8 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
@@ -480,8 +480,8 @@ class VisitorRISCV extends VisitorBase {
 
 	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression address = e.getAddress();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
@@ -519,8 +519,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWXchg(RMWXchg e) {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(type);
@@ -553,8 +553,8 @@ class VisitorRISCV extends VisitorBase {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(type);
@@ -585,8 +585,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(type);
@@ -621,10 +621,10 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface zero = expressions.makeZero(type);
+		Expression zero = expressions.makeZero(type);
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(type);
@@ -660,8 +660,8 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface address = e.getAddress();
-		ExprInterface value = e.getMemValue();
+		Expression address = e.getAddress();
+		Expression value = e.getMemValue();
 		String mo = e.getMo();
 
         Register regValue = e.getThread().newRegister(type);
@@ -675,7 +675,7 @@ class VisitorRISCV extends VisitorBase {
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
-		ExprInterface unless = e.getCmp();
+		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeEqual(dummy, expressions.makeZero(type)), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
@@ -704,8 +704,8 @@ class VisitorRISCV extends VisitorBase {
 		Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
 		IOpBin op = e.getOp();
-		ExprInterface value = e.getMemValue();
-		ExprInterface address = e.getAddress();
+		Expression value = e.getMemValue();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Register dummy = e.getThread().newRegister(type);
@@ -736,8 +736,8 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitLKMMLock(LKMMLock e) {
 		IntegerType type = types.getArchType();
-		ExprInterface one = expressions.makeOne(type);
-		ExprInterface zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
+		Expression zero = expressions.makeZero(type);
 		Register dummy = e.getThread().newRegister(type);
     // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
 		// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h

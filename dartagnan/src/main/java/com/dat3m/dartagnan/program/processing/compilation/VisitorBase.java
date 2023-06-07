@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -73,8 +73,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
     public List<Event> visitLock(Lock e) {
         Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface zero = expressions.makeZero(type);
-		ExprInterface one = expressions.makeOne(type);
+		Expression zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
@@ -89,9 +89,9 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	public List<Event> visitUnlock(Unlock e) {
         Register resultRegister = e.getResultRegister();
 		IntegerType type = resultRegister.getType();
-		ExprInterface zero = expressions.makeZero(type);
-		ExprInterface one = expressions.makeOne(type);
-		ExprInterface address = e.getAddress();
+		Expression zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
@@ -165,7 +165,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitRMW(RMW e) {
         Register resultRegister = e.getResultRegister();
-		ExprInterface address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Load load = newRMWLoad(dummyReg, address, mo);

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.std;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -25,9 +25,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class Malloc extends AbstractEvent implements RegWriter, RegReader {
 
     protected final Register register;
-    protected ExprInterface sizeExpr;
+    protected Expression sizeExpr;
 
-    public Malloc(Register register, ExprInterface sizeExpr) {
+    public Malloc(Register register, Expression sizeExpr) {
         checkArgument(sizeExpr.getType() instanceof IntegerType, "Malloc with non-integer size %s.", sizeExpr);
         this.register = register;
         this.sizeExpr = sizeExpr;
@@ -40,8 +40,8 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
         this.sizeExpr = other.sizeExpr;
     }
 
-    public ExprInterface getSizeExpr() { return sizeExpr; }
-    public void setSizeExpr(ExprInterface sizeExpr) { this.sizeExpr = sizeExpr; }
+    public Expression getSizeExpr() { return sizeExpr; }
+    public void setSizeExpr(Expression sizeExpr) { this.sizeExpr = sizeExpr; }
 
     @Override
     public Register getResultRegister() { return register; }

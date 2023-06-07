@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public abstract class IExpr implements ExprInterface {
+public abstract class IExpr implements Expression {
 
 	private final IntegerType type;
 

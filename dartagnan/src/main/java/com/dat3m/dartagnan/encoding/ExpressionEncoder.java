@@ -40,7 +40,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return formulaManager.getBitvectorFormulaManager();
     }
 
-    BooleanFormula encodeAsBoolean(ExprInterface expression) {
+    BooleanFormula encodeAsBoolean(Expression expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BooleanFormula) {
             return (BooleanFormula) formula;
@@ -57,7 +57,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
     }
 
-    Formula encodeAsInteger(ExprInterface expression) {
+    Formula encodeAsInteger(Expression expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
             return formula;

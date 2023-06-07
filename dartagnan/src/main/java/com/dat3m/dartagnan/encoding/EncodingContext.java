@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -113,15 +113,15 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public Formula encodeFinalIntegerExpression(ExprInterface expression) {
+    public Formula encodeFinalIntegerExpression(Expression expression) {
         return new ExpressionEncoder(formulaManager, null).encodeAsInteger(expression);
     }
 
-    public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
+    public BooleanFormula encodeBooleanExpressionAt(Expression expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
     }
 
-    public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
+    public Formula encodeIntegerExpressionAt(Expression expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
     }
 
