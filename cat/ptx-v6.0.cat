@@ -16,7 +16,7 @@ PTX
 (*   Auxiliaries   *)
 (*******************)
 
-// Explicitly add transitivity for coherence because the co is not totality
+// Explicitly add transitivity for coherence since the co in PTX is not total
 let co = co+
 
 (* Events *)
@@ -49,24 +49,24 @@ let cause = cause-base | (observation; (cause-base | po-loc))
 (*  PTX Memory Model Axioms   *)
 (******************************)
 
-(* Axiom 1 Coherence *)
+(* Axiom Coherence *)
 empty ((([W]; cause; [W]) & loc) \ co) as axiom-Coherence
 // Make sure that all morally strong same-loc writes are related by co in either direction
 empty (([W]; morally-strong; [W]) & loc) \ (co | co^-1) as axiom-Coherence2
 
-(* Axiom 2 FenceSC *)
+(* Axiom FenceSC *)
 // This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
 empty (([F & SC]; cause; [F & SC]) \ sync_fence) as axiom-FenceSC
 
-(* Axiom 3 Atomicity *)
+(* Axiom Atomicity *)
 empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
 
-(* Axiom 4 No-Thin-Air *)
+(* Axiom No-Thin-Air *)
 let dep = addr | data | ctrl
 acyclic (rf | dep) as axiom-NoThinAir
 
-(* Axiom 5 SC-per-Location *)
+(* Axiom SC-per-Location *)
 acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
-(* Axiom 6 Causality *)
+(* Axiom Causality *)
 irreflexive ((rf | fr); cause) as axiom-Causality
