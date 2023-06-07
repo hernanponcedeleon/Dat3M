@@ -15,11 +15,6 @@ public final class IValue extends IConst {
 
     private final BigInteger value;
 
-    @Deprecated
-    public IValue(BigInteger v, int p) {
-        this(v, p == -1 ? types.getIntegerType() : types.getIntegerType(p));
-    }
-
     public IValue(BigInteger value, IntegerType type) {
         super(type);
         this.value = value;

@@ -108,20 +108,10 @@ public class ProgramBuilder {
         getOrNewObject(locName).setInitialValue(0,iValue);
     }
 
-    @Deprecated
-    public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
-        initRegEqLocPtr(regThread, regName, locName, types.getIntegerType(precision));
-    }
-
     public void initRegEqLocPtr(int regThread, String regName, String locName, IntegerType type) {
         MemoryObject object = getOrNewObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread, EventFactory.newLocal(reg, object));
-    }
-
-    @Deprecated
-    public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        initRegEqLocVal(regThread, regName, locName, types.getIntegerType(precision));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, IntegerType type) {
@@ -146,10 +136,6 @@ public class ProgramBuilder {
         return constant;
     }
 
-    public Event getLastEvent(int thread){
-        return threads.get(thread).getExit();
-    }
-
     public MemoryObject getObject(String name) {
         return locations.get(name);
     }
@@ -172,12 +158,6 @@ public class ProgramBuilder {
             return threads.get(thread).getRegister(name);
         }
         return null;
-    }
-
-    @Deprecated
-    public Register getOrCreateRegister(int threadId, String name, int precision) {
-        IntegerType type = precision < 0 ? types.getIntegerType() : types.getIntegerType(precision);
-        return getOrNewRegister(threadId, name, type);
     }
 
     public Register getOrNewRegister(int threadId, String name) {

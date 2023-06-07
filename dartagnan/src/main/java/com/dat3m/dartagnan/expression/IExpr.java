@@ -15,12 +15,7 @@ public abstract class IExpr implements ExprInterface {
 	public IExpr getBase() {
 		throw new UnsupportedOperationException("getBase() not supported for " + this);
 	}
-	
-	@Deprecated
-	public int getPrecision() {
-		return type.isMathematical() ? -1 : type.getBitWidth();
-	}
-	
+
 	public boolean isBV() {
 		return !getType().isMathematical();
 	}
