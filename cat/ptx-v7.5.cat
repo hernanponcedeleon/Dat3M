@@ -102,7 +102,7 @@ acyclic (rf | dep) as axiom-NoThinAir
 (* Axiom 5 SC-per-Location *)
 // The ptx-v7.5 alloy model doesn't have this axiom because it is possible redundant
 // due to the fact that po was added to cause-base
-acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
+//acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
 
 (* Axiom 6 Causality *)
 irreflexive ((rf | fr); cause) as axiom-Causality
