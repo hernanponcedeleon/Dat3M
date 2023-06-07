@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -11,16 +10,17 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
  * It is exposed to the memory consistency model as a visible event.
  * It acts like a regular store, such that load events may read from it and other stores may overwrite it.
  */
-public class Init extends SingleAddressMemoryEvent {
+public class Init extends Store {
 
     private final MemoryObject base;
     private final int offset;
 
     public Init(MemoryObject b, int o) {
-        super(b.add(o), "");
+        super(b.add(o), b.getInitialValue(o), "");
+        //super(b.add(o), "");
         base = b;
         offset = o;
-        addTags(Tag.WRITE, Tag.INIT);
+        addTags(Tag.INIT);
     }
 
     /**
@@ -55,12 +55,9 @@ public class Init extends SingleAddressMemoryEvent {
         return String.format("%s[%d] := %s", base, offset, getValue());
     }
 
+    @Override
     public IConst getMemValue() { return getValue(); }
 
-    @Override
-    public MemoryAccess getMemoryAccess() {
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
-    }
 
     // Visitor
     // -----------------------------------------------------------------------------------------------------------------

@@ -107,14 +107,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             for(Location f : collector.address()) {
                 addEdge(f,result,0,0);
             }
-        } else if (e instanceof Store || e instanceof Init) {
-            ExprInterface storeVal;
-            if (e instanceof Store store) {
-                storeVal = store.getMemValue();
-            } else {
-                storeVal = ((Init)e).getMemValue();
-            }
-            Collector value = new Collector(storeVal);
+        } else if (e instanceof Store store) {
+            Collector value = new Collector(store.getMemValue());
             for(Offset<Register> r : collector.register()) {
                 stores.computeIfAbsent(r.base,k->new LinkedList<>()).add(new Offset<>(value,r.offset,r.alignment));
             }

@@ -173,11 +173,7 @@ public class PropertyEncoder implements Encoder {
         // ---- Construct encoding ----
         List<BooleanFormula> enc = new ArrayList<>();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
-        for (Event writeEvent : program.getEvents()) {
-            if (!writeEvent.hasTag(Tag.WRITE)) {
-                continue;
-            }
-            MemoryEvent w1 = (MemoryEvent) writeEvent;
+        for (Store w1 : program.getEvents(Store.class)) {
             if (dominatedWrites.contains(w1)) {
                 enc.add(bmgr.not(lastCoVar(w1)));
                 continue;

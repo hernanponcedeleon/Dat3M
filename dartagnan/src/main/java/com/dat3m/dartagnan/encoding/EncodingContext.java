@@ -295,8 +295,6 @@ public final class EncodingContext {
                     values.put(e, r);
                 } else if (e instanceof Store store) {
                     values.put(e, encodeIntegerExpressionAt(store.getMemValue(), e));
-                } else if (e instanceof Init init) {
-                    values.put(e, encodeIntegerExpressionAt(init.getMemValue(), e));
                 }
             }
             if (r != null) {

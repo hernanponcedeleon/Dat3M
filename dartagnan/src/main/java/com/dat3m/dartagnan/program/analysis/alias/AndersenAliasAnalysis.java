@@ -131,7 +131,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         //event is a store operation
-        Verify.verify(e instanceof Store, "memory event that is neither store nor load.");
+        Verify.verify(e instanceof Store,
+                "Encountered memory event that is neither store nor load: {}", e);
         ExprInterface value = ((Store)e).getMemValue();
         if (value instanceof Register) {
             addEdge(value, location);

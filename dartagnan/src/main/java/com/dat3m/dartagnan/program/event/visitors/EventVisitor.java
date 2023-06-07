@@ -25,7 +25,7 @@ public interface EventVisitor<T> {
 	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
 	default T visitFence(Fence e) { return visitEvent(e); }
 	default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
-	default T visitInit(Init e) { return visitMemEvent(e); }
+	default T visitInit(Init e) { return visitStore(e); }
 	default T visitLabel(Label e) { return visitEvent(e); }
 	default T visitLoad(Load e) { return visitMemEvent(e); }
 	default T visitLocal(Local e) { return visitEvent(e); }
