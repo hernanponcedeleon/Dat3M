@@ -319,6 +319,7 @@ public class RefinementSolver extends ModelChecker {
         // TODO: Add support to move flagged axioms to the baselineWmm
         Set<Relation> cutRelations = new HashSet<>();
         Set<Relation> cutCandidates = new HashSet<>();
+        int cutCounter = 0;
         targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
                 .forEach(ax -> collectDependencies(ax.getRelation(), cutCandidates));
         for (Relation rel : cutCandidates) {
@@ -330,7 +331,13 @@ public class RefinementSolver extends ModelChecker {
                     // non-derived in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
-                    baselineWmm.addConstraint(new ForceEncodeAxiom(getCopyOfRelation(sec, baselineWmm)));
+                    Relation baseLineCopy = getCopyOfRelation(sec, baselineWmm);
+                    baselineWmm.addConstraint(new ForceEncodeAxiom(baseLineCopy));
+                    // We give the cut relations new aliases in the original and the baseline wmm
+                    // so that we can match them later by name.
+                    targetWmm.addAlias("cut#" + cutCounter, sec);
+                    baselineWmm.addAlias("cut#" + cutCounter, baseLineCopy);
+                    cutCounter++;
                 }
             }
         }
