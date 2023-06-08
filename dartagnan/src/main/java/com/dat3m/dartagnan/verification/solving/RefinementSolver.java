@@ -331,12 +331,12 @@ public class RefinementSolver extends ModelChecker {
                     // non-derived in our Wmm but for CAAT they are derived from unary predicates!
                     logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
                     cutRelations.add(sec);
-                    Relation baseLineCopy = getCopyOfRelation(sec, baselineWmm);
-                    baselineWmm.addConstraint(new ForceEncodeAxiom(baseLineCopy));
+                    Relation baselineCopy = getCopyOfRelation(sec, baselineWmm);
+                    baselineWmm.addConstraint(new ForceEncodeAxiom(baselineCopy));
                     // We give the cut relations new aliases in the original and the baseline wmm
                     // so that we can match them later by name.
                     targetWmm.addAlias("cut#" + cutCounter, sec);
-                    baselineWmm.addAlias("cut#" + cutCounter, baseLineCopy);
+                    baselineWmm.addAlias("cut#" + cutCounter, baselineCopy);
                     cutCounter++;
                 }
             }
