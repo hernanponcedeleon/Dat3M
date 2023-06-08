@@ -11,6 +11,11 @@ public final class ExpressionFactory {
 
     private static final ExpressionFactory instance = new ExpressionFactory();
 
+    private final TypeFactory types = TypeFactory.getInstance();
+    private final BooleanType booleanType = types.getBooleanType();
+    private final BConst falseConstant = new BConst(booleanType, false);
+    private final BConst trueConstant = new BConst(booleanType, true);
+
     private ExpressionFactory() {}
 
     public static ExpressionFactory getInstance() {
@@ -21,35 +26,35 @@ public final class ExpressionFactory {
     // Boolean
 
     public BConst makeTrue() {
-        return BConst.TRUE;
+        return trueConstant;
     }
 
     public BConst makeFalse() {
-        return BConst.FALSE;
+        return falseConstant;
     }
 
     public BConst makeValue(boolean value) {
         return value ? makeTrue() : makeFalse();
     }
 
-    public BExpr makeNot(Expression operand) {
+    public Expression makeNot(Expression operand) {
         return makeUnary(BOpUn.NOT, operand);
     }
 
-    public BExpr makeUnary(BOpUn operator, Expression operand) {
-        return new BExprUn(operator, operand);
+    public Expression makeUnary(BOpUn operator, Expression operand) {
+        return new BExprUn(types.getBooleanType(), operator, operand);
     }
 
-    public BExpr makeAnd(Expression leftOperand, Expression rightOperand) {
+    public Expression makeAnd(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, BOpBin.AND, rightOperand);
     }
 
-    public BExpr makeOr(Expression leftOperand, Expression rightOperand) {
+    public Expression makeOr(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, BOpBin.OR, rightOperand);
     }
 
-    public BExpr makeBinary(Expression leftOperand, BOpBin operator, Expression rightOperand) {
-        return new BExprBin(leftOperand, operator, rightOperand);
+    public Expression makeBinary(Expression leftOperand, BOpBin operator, Expression rightOperand) {
+        return new BExprBin(booleanType, leftOperand, operator, rightOperand);
     }
 
     public IValue makeZero(IntegerType type) {
@@ -72,10 +77,9 @@ public final class ExpressionFactory {
         return new IfExpr(condition, ifTrue, ifFalse);
     }
 
-    public BExpr makeBoolean(Expression operand) {
+    public Expression makeBoolean(Expression operand) {
         if (operand.getType() instanceof BooleanType) {
-            assert operand instanceof BExpr;
-            return (BExpr) operand;
+            return operand;
         }
         if (operand.getType() instanceof IntegerType integerType) {
             return makeNEQ(operand, makeZero(integerType));
@@ -83,32 +87,32 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException(String.format("makeBoolean with unknown-typed operand %s.", operand));
     }
 
-    public BExpr makeEQ(Expression leftOperand, Expression rightOperand) {
+    public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, COpBin.EQ, rightOperand);
     }
 
-    public BExpr makeNEQ(Expression leftOperand, Expression rightOperand) {
+    public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, COpBin.NEQ, rightOperand);
     }
 
-    public BExpr makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.LT : COpBin.ULT, rightOperand);
     }
 
-    public BExpr makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.GT : COpBin.UGT, rightOperand);
     }
 
-    public BExpr makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.LTE : COpBin.ULTE, rightOperand);
     }
 
-    public BExpr makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.GTE : COpBin.UGTE, rightOperand);
     }
 
-    public BExpr makeBinary(Expression leftOperand, COpBin operator, Expression rightOperand) {
-        return new Atom(leftOperand, operator, rightOperand);
+    public Expression makeBinary(Expression leftOperand, COpBin operator, Expression rightOperand) {
+        return new Atom(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
     public IExpr makeNEG(Expression operand, IntegerType targetType) {

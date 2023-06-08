@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
@@ -10,7 +11,8 @@ public class BExprUn extends BExpr {
     private final Expression b;
     private final BOpUn op;
 
-    public BExprUn(BOpUn op, Expression b) {
+    public BExprUn(BooleanType type, BOpUn op, Expression b) {
+        super(type);
         this.b = b;
         this.op = op;
     }

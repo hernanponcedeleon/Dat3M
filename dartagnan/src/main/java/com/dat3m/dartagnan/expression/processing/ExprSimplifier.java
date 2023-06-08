@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -25,13 +26,13 @@ public class ExprSimplifier extends ExprTransformer {
                 case ULTE:
                 case GTE:
                 case UGTE:
-                    return BConst.TRUE;
+                    return expressions.makeTrue();
                 case NEQ:
                 case LT:
                 case ULT:
                 case GT:
                 case UGT:
-                    return BConst.FALSE;
+                    return expressions.makeFalse();
             }
         }
         if (lhs instanceof IConst && rhs instanceof  IConst) {
@@ -51,7 +52,7 @@ public class ExprSimplifier extends ExprTransformer {
             BConst rc = (BConst) rhs;
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
-        if (lhs instanceof BExpr && rhs instanceof IConst) {
+        if (lhs.getType() instanceof BooleanType && rhs instanceof IConst) {
             // Simplify "cond == 1" to just "cond"
             // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
             if (atom.getOp() == COpBin.EQ && ((IConst) rhs).getValue().intValue() == 1) {
@@ -62,54 +63,34 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public BExpr visit(BConst bConst) {
-        return bConst;
+    public Expression visit(BExprBin bBin) {
+        Expression left = bBin.getLHS().visit(this);
+        Expression right = bBin.getRHS().visit(this);
+        if (left instanceof BConst constant) {
+            boolean value = constant.getValue();
+            return switch (bBin.getOp()) {
+                case OR -> value ? left : right;
+                case AND -> value ? right : left;
+            };
+        }
+        if (right instanceof BConst constant) {
+            boolean value = constant.getValue();
+            return switch (bBin.getOp()) {
+                case OR -> value ? right : left;
+                case AND -> value ? left : right;
+            };
+        }
+        return expressions.makeBinary(left, bBin.getOp(), right);
     }
 
     @Override
-    public BExpr visit(BExprBin bBin) {
-        // Due to constant propagation we are not guaranteed to get BExprs
-        if(!(bBin.getLHS().visit(this) instanceof BExpr && bBin.getRHS().visit(this) instanceof BExpr)) {
-            return bBin;
-        }
-        BExpr lhs = (BExpr) bBin.getLHS().visit(this);
-        BExpr rhs = (BExpr) bBin.getRHS().visit(this);
-        switch (bBin.getOp()) {
-            case OR:
-                if (lhs.isTrue() || rhs.isTrue()) {
-                    return BConst.TRUE;
-                } else if (lhs.isFalse()) {
-                    return rhs;
-                } else if (rhs.isFalse()) {
-                    return lhs;
-                }
-                break;
-            case AND:
-                if (lhs.isFalse() || rhs.isFalse()) {
-                    return BConst.FALSE;
-                } else if (lhs.isTrue()) {
-                    return rhs;
-                } else if (rhs.isTrue()) {
-                    return lhs;
-                }
-                break;
-        }
-        return expressions.makeBinary(lhs, bBin.getOp(), rhs);
-    }
-
-    @Override
-    public BExpr visit(BExprUn bUn) {
-        // Due to constant propagation we are not guaranteed to get BExprs
-        Expression innerExpr = bUn.getInner().visit(this);
-        if(!(innerExpr instanceof BExpr)) {
-            return bUn;
-        }
-        BExpr inner = (BExpr) innerExpr;
-        if (inner instanceof BConst) {
-            return expressions.makeValue(!inner.isTrue());
+    public Expression visit(BExprUn bUn) {
+        Expression inner = bUn.getInner().visit(this);
+        if (inner instanceof BConst constant) {
+            return expressions.makeValue(!constant.getValue());
         }
         if (inner instanceof BExprUn && bUn.getOp() == BOpUn.NOT) {
-            return (BExpr) ((BExprUn)inner).getInner();
+            return ((BExprUn)inner).getInner();
         }
 
         if (inner instanceof Atom && bUn.getOp() == BOpUn.NOT) {
@@ -118,16 +99,6 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeBinary(atom.getLHS(), atom.getOp().inverted(), atom.getRHS());
         }
         return expressions.makeUnary(bUn.getOp(), inner);
-    }
-
-    @Override
-    public BExpr visit(BNonDet bNonDet) {
-        return bNonDet;
-    }
-
-    @Override
-    public IValue visit(IValue iValue) {
-        return iValue;
     }
 
     @Override

@@ -219,10 +219,10 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public Expression visit(Register reg) {
             final Expression retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof BConst) {
+            if (retVal instanceof BConst constant) {
                 // We only have integral registers, so we need to implicitly convert booleans to
                 // integers.
-                BigInteger value = retVal.equals(BConst.TRUE) ? BigInteger.ONE : BigInteger.ZERO;
+                BigInteger value = constant.getValue() ? BigInteger.ONE : BigInteger.ZERO;
                 return expressions.makeValue(value, reg.getType());
             } else {
                 return retVal;
@@ -235,11 +235,11 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             Expression rhs = atom.getRHS().visit(this);
             if (lhs instanceof BConst constant) {
                 IntegerType type = rhs instanceof IExpr ? ((IExpr) rhs).getType() : types.getIntegerType(1);
-                lhs = constant.isTrue() ? expressions.makeOne(type) : expressions.makeZero(type);
+                lhs = constant.getValue() ? expressions.makeOne(type) : expressions.makeZero(type);
             }
             if (rhs instanceof BConst constant) {
                 IntegerType type = lhs instanceof IExpr ? ((IExpr) lhs).getType() : types.getIntegerType(1);
-                rhs = constant.isTrue() ? expressions.makeOne(type) : expressions.makeZero(type);
+                rhs = constant.getValue() ? expressions.makeOne(type) : expressions.makeZero(type);
             }
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
                 return expressions.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));
@@ -249,7 +249,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public BExpr visit(BExprBin bBin) {
+        public Expression visit(BExprBin bBin) {
             Expression lhs = bBin.getLHS().visit(this);
             Expression rhs = bBin.getRHS().visit(this);
             if (lhs instanceof BConst left && rhs instanceof BConst right) {
@@ -260,7 +260,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public BExpr visit(BExprUn bUn) {
+        public Expression visit(BExprUn bUn) {
             Expression inner = bUn.getInner().visit(this);
             if (inner instanceof BConst) {
                 return expressions.makeValue(bUn.getOp().combine(((BConst) inner).getValue()));

@@ -203,7 +203,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitBranchRegister(LitmusAArch64Parser.BranchRegisterContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
         IValue zero = expressions.makeZero(register.getType());
-        BExpr expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
+        Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = programBuilder.getOrCreateLabel(ctx.label().getText());
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }

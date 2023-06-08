@@ -17,22 +17,22 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public BExpr visit(BConst bConst) {
+    public Expression visit(BConst bConst) {
         return bConst;
     }
 
     @Override
-    public BExpr visit(BExprBin bBin) {
+    public Expression visit(BExprBin bBin) {
         return expressions.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
     }
 
     @Override
-    public BExpr visit(BExprUn bUn) {
+    public Expression visit(BExprUn bUn) {
         return expressions.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
     }
 
     @Override
-    public BExpr visit(BNonDet bNonDet) {
+    public Expression visit(BNonDet bNonDet) {
         return bNonDet;
     }
 
