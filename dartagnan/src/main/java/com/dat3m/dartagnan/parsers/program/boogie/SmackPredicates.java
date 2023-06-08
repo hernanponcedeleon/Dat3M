@@ -1,8 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.exception.ParsingException;
 
 import java.util.Arrays;
@@ -20,7 +19,7 @@ public class SmackPredicates {
 	public static Object smackPredicate(String name, List<Object> callParams, ExpressionFactory expressions) {
 		String min = "0";
 		String max = "1";
-		IExpr var = (IExpr)callParams.get(0);
+		Expression var = (Expression) callParams.get(0);
 		if(name.startsWith("$tou.")) {
 			switch(name.substring(name.lastIndexOf(".")+1)) {
 			case "i1":
@@ -105,7 +104,7 @@ public class SmackPredicates {
 				throw new ParsingException("Function " + name + " has no implementation");
 			}
 		}
-		IValue maxValue = expressions.parseValue(max, var.getType());
+		Expression maxValue = expressions.parseValue(max, var.getType());
 		return expressions.makeConditional(
 				expressions.makeAnd(
 						expressions.makeGTE(var, expressions.parseValue(min, var.getType()), true),

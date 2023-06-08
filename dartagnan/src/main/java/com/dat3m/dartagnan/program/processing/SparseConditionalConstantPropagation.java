@@ -234,11 +234,11 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             Expression lhs = atom.getLHS().visit(this);
             Expression rhs = atom.getRHS().visit(this);
             if (lhs instanceof BConst constant) {
-                IntegerType type = rhs instanceof IExpr ? ((IExpr) rhs).getType() : types.getIntegerType(1);
+                IntegerType type = rhs.getType() instanceof IntegerType t ? t : types.getIntegerType(1);
                 lhs = constant.getValue() ? expressions.makeOne(type) : expressions.makeZero(type);
             }
             if (rhs instanceof BConst constant) {
-                IntegerType type = lhs instanceof IExpr ? ((IExpr) lhs).getType() : types.getIntegerType(1);
+                IntegerType type = lhs.getType() instanceof IntegerType t ? t : types.getIntegerType(1);
                 rhs = constant.getValue() ? expressions.makeOne(type) : expressions.makeZero(type);
             }
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
@@ -270,9 +270,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public IExpr visit(IExprBin iBin) {
-            IExpr lhs = (IExpr) iBin.getLHS().visit(this);
-            IExpr rhs = (IExpr) iBin.getRHS().visit(this);
+        public Expression visit(IExprBin iBin) {
+            Expression lhs = iBin.getLHS().visit(this);
+            Expression rhs = iBin.getRHS().visit(this);
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
                 return expressions.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
             } else {
@@ -281,8 +281,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
-        public IExpr visit(IExprUn iUn) {
-            IExpr inner = (IExpr) iUn.getInner().visit(this);
+        public Expression visit(IExprUn iUn) {
+            Expression inner = iUn.getInner().visit(this);
             if (inner instanceof IValue) {
                 return expressions.makeUnary(iUn.getOp(), inner, iUn.getType()).reduce();
             }

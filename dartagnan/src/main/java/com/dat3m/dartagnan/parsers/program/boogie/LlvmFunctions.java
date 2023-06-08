@@ -72,6 +72,6 @@ public class LlvmFunctions {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return factory.makeBinary((IExpr)callParams.get(0), op, (IExpr)callParams.get(1));
+		return factory.makeBinary((Expression) callParams.get(0), op, (Expression) callParams.get(1));
 	}
 }

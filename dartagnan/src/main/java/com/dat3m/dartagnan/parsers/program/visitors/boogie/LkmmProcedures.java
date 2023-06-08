@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
@@ -32,10 +32,10 @@ public class LkmmProcedures {
 
 		Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
 		
-		Object p0 = params.get(0).accept(visitor);
-		Object p1 = params.size() > 1 ? params.get(1).accept(visitor) : null;
-		Object p2 = params.size() > 2 ? params.get(2).accept(visitor) : null;
-		Object p3 = params.size() > 3 ? params.get(3).accept(visitor) : null;
+		Expression p0 = (Expression) params.get(0).accept(visitor);
+		Expression p1 = params.size() > 1 ? (Expression) params.get(1).accept(visitor) : null;
+		Expression p2 = params.size() > 2 ? (Expression) params.get(2).accept(visitor) : null;
+		Expression p3 = params.size() > 3 ? (Expression) params.get(3).accept(visitor) : null;
 		
 		String mo;
 		IOpBin op;
@@ -43,12 +43,12 @@ public class LkmmProcedures {
 		switch (name) {
 		case "__LKMM_LOAD":
 			mo = Linux.intToMo(((IConst) p1).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMLoad(reg, (IExpr) p0, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMLoad(reg, p0, mo))
 	        		.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	        return;
 		case "__LKMM_STORE":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMStore((IExpr) p0, (IExpr) p1, mo.equals(Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLKMMStore(p0, p1, mo.equals(Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 	        if(mo.equals(Tag.Linux.MO_MB)){
 	            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newMemoryBarrier())
@@ -57,29 +57,29 @@ public class LkmmProcedures {
 	        return;
 		case "__LKMM_XCHG":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWExchange((IExpr) p0, reg, (IExpr) p1, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWExchange(p0, reg, p1, mo))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_CMPXCHG":
 			mo = Linux.intToMo(((IConst) p3).getValueAsInt());
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWCompareExchange((IExpr) p0, reg, (IExpr) p1, (IExpr) p2, mo))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWCompareExchange(p0, reg, p1, p2, mo))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_ATOMIC_FETCH_OP":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
-	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWFetchOp((IExpr) p0, reg, (IExpr) p1, op, mo))
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWFetchOp(p0, reg, p1, op, mo))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_ATOMIC_OP_RETURN":
 			mo = Linux.intToMo(((IConst) p2).getValueAsInt());
 			op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
-	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOpReturn((IExpr) p0, reg, (IExpr) p1, op, mo))
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOpReturn(p0, reg, p1, op, mo))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_ATOMIC_OP":
 			op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
-	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp((IExpr) p0, reg, (IExpr) p1, op))
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp(p0, reg, p1, op))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_FENCE":
@@ -88,11 +88,11 @@ public class LkmmProcedures {
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_SPIN_LOCK":
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLock((IExpr) p0))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newLock(p0))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_SPIN_UNLOCK":
-			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newUnlock((IExpr) p0))
+			visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newUnlock(p0))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		default:

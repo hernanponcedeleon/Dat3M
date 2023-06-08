@@ -102,9 +102,9 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public IExpr visit(IExprBin iBin) {
-        IExpr lhs = (IExpr)iBin.getLHS().visit(this);
-        IExpr rhs = (IExpr)iBin.getRHS().visit(this);
+    public Expression visit(IExprBin iBin) {
+        Expression lhs = iBin.getLHS().visit(this);
+        Expression rhs = iBin.getRHS().visit(this);
         IOpBin op = iBin.getOp();
         if (lhs.equals(rhs)) {
             switch(op) {
@@ -169,8 +169,8 @@ public class ExprSimplifier extends ExprTransformer {
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
                 if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst  && ((IExprBin)lhs).getOp() != R_SHIFT) {
                     IExprBin lhsBin = (IExprBin)lhs;
-                    IExpr newLHS = lhsBin.getLHS();
-                    IExpr newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
+                    Expression newLHS = lhsBin.getLHS();
+                    Expression newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);
                 }
 
@@ -179,7 +179,7 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public IExpr visit(IExprUn iUn) {
+    public Expression visit(IExprUn iUn) {
         return expressions.makeUnary(iUn.getOp(), iUn.getInner(), iUn.getType());
     }
 
@@ -209,7 +209,7 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public IExpr visit(INonDet iNonDet) {
+    public Expression visit(INonDet iNonDet) {
         return iNonDet;
     }
 

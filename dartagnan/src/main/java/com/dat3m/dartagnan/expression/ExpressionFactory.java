@@ -61,19 +61,51 @@ public final class ExpressionFactory {
         return makeValue(BigInteger.ZERO, type);
     }
 
+    @Deprecated
+    public IValue makeZero(Type type) {
+        if (type instanceof IntegerType t) {
+            return makeZero(t);
+        }
+        throw new IllegalArgumentException("Non-integer type " + type);
+    }
+
     public IValue makeOne(IntegerType type) {
         return makeValue(BigInteger.ONE, type);
+    }
+
+    @Deprecated
+    public IValue makeOne(Type type) {
+        if (type instanceof IntegerType t) {
+            return makeOne(t);
+        }
+        throw new IllegalArgumentException("Non-integer type " + type);
     }
 
     public IValue parseValue(String text, IntegerType type) {
         return makeValue(new BigInteger(text), type);
     }
 
+    @Deprecated
+    public IValue parseValue(String text, Type type) {
+        if (type instanceof IntegerType t) {
+            return parseValue(text, t);
+        }
+        throw new IllegalArgumentException("Non-integer type " + type);
+    }
+
     public IValue makeValue(BigInteger value, IntegerType type) {
         return new IValue(value, type);
     }
 
-    public IExpr makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
+    @Deprecated
+    public IValue makeValue(BigInteger value, Type type) {
+        if (type instanceof IntegerType t) {
+            return makeValue(value, t);
+        }
+        throw new IllegalArgumentException("Non-integer type " + type);
+    }
+
+    public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
         return new IfExpr(condition, ifTrue, ifFalse);
     }
 
@@ -115,73 +147,76 @@ public final class ExpressionFactory {
         return new Atom(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public IExpr makeNEG(Expression operand, IntegerType targetType) {
+    public Expression makeNEG(Expression operand, IntegerType targetType) {
         return makeUnary(IOpUn.MINUS, operand, targetType);
     }
 
-    public IExpr makeCTLZ(Expression operand, IntegerType targetType) {
+    public Expression makeCTLZ(Expression operand, IntegerType targetType) {
         return makeUnary(IOpUn.CTLZ, operand, targetType);
     }
 
-    public IExpr makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
+    public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
         if (operand.getType() instanceof BooleanType) {
             return makeConditional(operand, makeOne(targetType), makeZero(targetType));
         }
         return makeUnary(signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED, operand, targetType);
     }
 
-    public IExpr makeUnary(IOpUn operator, Expression operand, IntegerType targetType) {
-        checkArgument(operand instanceof IExpr, String.format("Non-integer operand for %s %s.", operator, operand));
-        return new IExprUn(operator, (IExpr) operand, targetType);
+    public Expression makeUnary(IOpUn operator, Expression operand, IntegerType targetType) {
+        checkArgument(operand.getType() instanceof IntegerType,
+                String.format("Non-integer operand for %s %s.", operator, operand));
+        return new IExprUn(operator, operand, targetType);
     }
 
-    public IExpr makeADD(Expression leftOperand, Expression rightOperand) {
+    public Expression makeADD(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.PLUS, rightOperand);
     }
 
-    public IExpr makeSUB(Expression leftOperand, Expression rightOperand) {
+    public Expression makeSUB(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MINUS, rightOperand);
     }
 
-    public IExpr makeMUL(Expression leftOperand, Expression rightOperand) {
+    public Expression makeMUL(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MULT, rightOperand);
     }
 
-    public IExpr makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.DIV : IOpBin.UDIV, rightOperand);
     }
 
-    public IExpr makeMOD(Expression leftOperand, Expression rightOperand) {
+    public Expression makeMOD(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MOD, rightOperand);
     }
 
-    public IExpr makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.SREM : IOpBin.UREM, rightOperand);
     }
 
-    public IExpr makeAND(Expression leftOperand, Expression rightOperand) {
+    public Expression makeAND(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.AND, rightOperand);
     }
 
-    public IExpr makeOR(Expression leftOperand, Expression rightOperand) {
+    public Expression makeOR(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.OR, rightOperand);
     }
 
-    public IExpr makeXOR(Expression leftOperand, Expression rightOperand) {
+    public Expression makeXOR(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.XOR, rightOperand);
     }
 
-    public IExpr makeLSH(Expression leftOperand, Expression rightOperand) {
+    public Expression makeLSH(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.L_SHIFT, rightOperand);
     }
 
-    public IExpr makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Expression makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.AR_SHIFT : IOpBin.R_SHIFT, rightOperand);
     }
 
-    public IExpr makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
-        checkArgument(leftOperand instanceof IExpr && rightOperand instanceof IExpr,
-                String.format("Non-integer operands for %s %s %s.", leftOperand, operator, rightOperand));
-        return new IExprBin((IExpr) leftOperand, operator, (IExpr) rightOperand);
+    public Expression makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
+        if (!(leftOperand.getType() instanceof IntegerType type)) {
+            throw new IllegalArgumentException(
+                    String.format("Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand));
+        }
+        return new IExprBin(type, leftOperand, operator, rightOperand);
     }
 }

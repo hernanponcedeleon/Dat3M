@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
@@ -80,11 +81,15 @@ public class Thread {
         return registers.get(name);
     }
 
-    public Register newRegister(IntegerType type) {
+    public Register newRegister(Type type) {
         return newRegister("DUMMY_REG_" + dummyCount++, type);
     }
 
-    public Register newRegister(String name, IntegerType type) {
+    public Register newRegister(String name, Type t) {
+        //TODO allow all types
+        if (!(t instanceof IntegerType type)) {
+            throw new UnsupportedOperationException(String.format("Cannot create register of type %s.", t));
+        }
         if (registers.containsKey(name)) {
             throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }

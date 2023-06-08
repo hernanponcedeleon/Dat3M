@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -10,12 +11,12 @@ import java.math.BigInteger;
 
 public class IExprBin extends IExpr {
 
-    private final IExpr lhs;
-    private final IExpr rhs;
+    private final Expression lhs;
+    private final Expression rhs;
     private final IOpBin op;
 
-    public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
-        super(lhs.getType());
+    public IExprBin(IntegerType type, Expression lhs, IOpBin op, Expression rhs) {
+        super(type);
     	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
                 "The types of %s and %s do not match.", lhs, rhs);
         this.lhs = lhs;
@@ -37,18 +38,18 @@ public class IExprBin extends IExpr {
 	public IConst reduce() {
     	BigInteger v1 = lhs.reduce().getValue();
     	BigInteger v2 = rhs.reduce().getValue();
-		return new IValue(op.combine(v1, v2), lhs.getType());
+		return new IValue(op.combine(v1, v2), getType());
 	}
 	
 	public IOpBin getOp() {
 		return op;
 	}
 	
-	public IExpr getRHS() {
+	public Expression getRHS() {
 		return rhs;
 	}
 
-	public IExpr getLHS() {
+	public Expression getLHS() {
 		return lhs;
 	}
 

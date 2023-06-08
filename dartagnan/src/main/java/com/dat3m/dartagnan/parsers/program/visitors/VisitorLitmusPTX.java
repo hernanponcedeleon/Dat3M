@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
@@ -315,7 +315,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
-        IExpr fenceId = (IExpr) ctx.barID().accept(this);
+        Expression fenceId = (Expression) ctx.barID().accept(this);
         Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
     }

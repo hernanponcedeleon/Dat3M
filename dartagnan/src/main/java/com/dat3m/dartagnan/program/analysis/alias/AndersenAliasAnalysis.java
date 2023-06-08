@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -209,9 +208,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!(exp instanceof IExprBin)) {
             return;
         }
-        IExpr base = ((IExprBin) exp).getLHS();
+        Expression base = ((IExprBin) exp).getLHS();
         if (base instanceof MemoryObject) {
-            IExpr rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst) {
                 addTarget(reg, new Location((MemoryObject) base, ((IConst) rhs).getValueAsInt()));
@@ -225,7 +224,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            IExpr rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst) {
                 int o = target.offset + ((IConst) rhs).getValueAsInt();
@@ -275,8 +274,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 return;
             }
             if (x instanceof IExprBin && ((IExprBin) x).getOp() == PLUS) {
-                IExpr lhs = ((IExprBin) x).getLHS();
-                IExpr rhs = ((IExprBin) x).getRHS();
+                Expression lhs = ((IExprBin) x).getLHS();
+                Expression rhs = ((IExprBin) x).getRHS();
                 if (lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
                     location = new Location((MemoryObject) lhs, ((IConst) rhs).getValueAsInt());
                     failed = false;
