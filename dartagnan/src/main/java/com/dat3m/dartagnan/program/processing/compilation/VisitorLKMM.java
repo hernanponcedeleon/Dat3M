@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -169,7 +169,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
 
         Register dummy = e.getThread().newRegister(type);
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);

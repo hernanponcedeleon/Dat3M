@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -371,7 +372,7 @@ public class VisitorPower extends VisitorBase {
         Expression value = e.getMemValue();
         String mo = e.getMo();
         Expression expectedAddr = e.getExpectedAddr();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
 
         Register regExpected = e.getThread().newRegister(type);
         Register regValue = e.getThread().newRegister(type);
@@ -899,7 +900,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         Expression value = e.getMemValue();
         String mo = e.getMo();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
 
         Register regValue = e.getThread().newRegister(type);
@@ -942,7 +943,7 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
         IOpBin op = e.getOp();
         Expression value = e.getMemValue();

@@ -1,27 +1,27 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Register extends IExpr {
+public class Register implements Expression {
 
     public static final int NO_THREAD = -1;
 
     private final String name;
     private String cVar;
     private final int threadId;
+    private final Type type;
 
-    public Register(String name, int threadId, IntegerType type) {
-        super(type);
+    public Register(String name, int threadId, Type type) {
         this.name = checkNotNull(name);
         this.threadId = threadId;
+        this.type = checkNotNull(type);
     }
 
     public String getName() {
@@ -38,6 +38,11 @@ public class Register extends IExpr {
 
     public int getThreadId() {
         return threadId;
+    }
+
+    @Override
+    public Type getType() {
+        return type;
     }
 
     @Override
