@@ -197,11 +197,11 @@ public class ExprSimplifier extends ExprTransformer {
 
         // Simplifies "ITE(cond, 1, 0)" to "cond" and "ITE(cond, 0, 1) to "!cond"
         // TODO: It is not clear if this gives performance improvements or not
-        if (t instanceof IConst tConstant && tConstant.isInteger() && tConstant.getValueAsInt() == 1
-                && f instanceof IConst fConstant && fConstant.isInteger() && fConstant.getValueAsInt() == 0) {
+        if (t instanceof IConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
+                && f instanceof IConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
             return cond;
-        } else if (t instanceof IConst tConstant && tConstant.isInteger() && tConstant.getValueAsInt() == 0
-                && f instanceof IConst fConstant && fConstant.isInteger() && fConstant.getValueAsInt() == 1) {
+        } else if (t instanceof IConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
+                && f instanceof IConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
             return expressions.makeNot(cond);
         }
 
