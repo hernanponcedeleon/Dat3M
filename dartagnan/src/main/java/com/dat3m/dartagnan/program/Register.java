@@ -72,11 +72,6 @@ public class Register extends IExpr {
         return visitor.visit(this);
     }
 
-    @Override
-    public IExpr getBase() {
-        return this;
-    }
-
     // ============================== Static utility =============================
 
     public static Set<Read> collectRegisterReads(Expression expr, Register.UsageType usageType, Set<Read> collector) {

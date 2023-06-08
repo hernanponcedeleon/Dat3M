@@ -40,11 +40,6 @@ public class IExprBin extends IExpr {
 		return new IValue(op.combine(v1, v2), lhs.getType());
 	}
 	
-	@Override
-	public IExpr getBase() {
-		return lhs.getBase();
-	}
-	
 	public IOpBin getOp() {
 		return op;
 	}
