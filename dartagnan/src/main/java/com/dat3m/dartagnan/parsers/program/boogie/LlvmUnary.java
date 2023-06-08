@@ -73,12 +73,11 @@ public class LlvmUnary {
             case TRUNCATE, SIGNED_EXTEND, UNSIGNED_EXTEND -> {
                 boolean signed = !prefix.equals(UNSIGNED_EXTEND);
                 String[] suffixParts = suffix.split("\\.");
-                assert suffixParts.length == 2 && suffixParts[0].startsWith("bv") && suffixParts[1].startsWith("bv");
-                int expectedBitWidth = Integer.parseInt(suffixParts[0].substring(2));
-                checkArgument(!integerType.isMathematical() && integerType.getBitWidth() == expectedBitWidth,
-                        "Type mismatch between %s and bv%s.", integerType, expectedBitWidth);
-                int bitWidth = Integer.parseInt(suffixParts[1].substring(2));
-                IntegerType targetType = types.getIntegerType(bitWidth);
+                assert suffixParts.length == 2;
+                IntegerType innerType = Types.parseIntegerType(suffixParts[0], types);
+                checkArgument(integerType.equals(innerType),
+                        "Type mismatch between %s and %s.", integerType, innerType);
+                IntegerType targetType = Types.parseIntegerType(suffixParts[1], types);
                 return expressions.makeIntegerCast(inner, targetType, signed);
             }
         }

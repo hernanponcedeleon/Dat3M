@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -278,13 +277,10 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public IExpr visit(IExprUn iUn) {
             IExpr inner = (IExpr) iUn.getInner().visit(this);
-            if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                return expressions.makeValue(((IValue) inner).getValue().negate(), iUn.getType());
-            } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
+            if (inner instanceof IValue) {
                 return expressions.makeUnary(iUn.getOp(), inner, iUn.getType()).reduce();
-            } else {
-                return expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
             }
+            return expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
         }
 
         @Override

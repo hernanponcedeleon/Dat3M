@@ -11,12 +11,12 @@ import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
-import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
 import com.dat3m.dartagnan.parsers.program.boogie.Function;
 import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
 import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
 import com.dat3m.dartagnan.parsers.program.boogie.Scope;
+import com.dat3m.dartagnan.parsers.program.boogie.Types;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -172,7 +172,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
 				for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
 					String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-					IntegerType type = parseIntegerType(typeString);
+					IntegerType type = Types.parseIntegerType(typeString, types);
 					threadCallingValues.get(threadCount).add(programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + ident.getText(), type));
 				}
 			}
@@ -196,7 +196,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		for(ParseTree ident : ctx.typed_idents().idents().Ident()) {
 			String name = ident.getText();
 			String typeString = ctx.typed_idents().type().getText();
-			IntegerType type = parseIntegerType(typeString);
+			IntegerType type = Types.parseIntegerType(typeString, types);
 			if(ctx.getText().contains(":treadLocal")) {
 				threadLocalVariables.add(name);
 			}
@@ -237,7 +237,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
 				String name = ident.getText();
 				String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-				IntegerType type = parseIntegerType(typeString);
+				IntegerType type = Types.parseIntegerType(typeString, types);
 				if(constantsTypeMap.containsKey(name)) {
 					throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
@@ -287,7 +287,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 					// To deal with references passed to created threads
 					if(index < callingValues.size()) {
 						String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-						IntegerType type = parseIntegerType(typeString);
+						IntegerType type = Types.parseIntegerType(typeString, types);
 						Register register = programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + ident.getText(), type);
 						Expression value = callingValues.get(index);
 						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
@@ -318,14 +318,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		}
     }
 
-	private IntegerType parseIntegerType(String string) {
-		if (string.contains("bv")) {
-			return types.getIntegerType(Integer.parseInt(string.split("bv")[1]));
-		}
-		return types.getArchType();
-	}
-
-    @Override
+	@Override
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
 		addAssertion((IExpr)ctx.proposition().expr().accept(this));
 		return null;
@@ -792,7 +785,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	}
 
 	@Override
-	public Object visitLine_comment(BoogieParser.Line_commentContext ctx) {
+	public Object visitLine_comment(Line_commentContext ctx) {
 		String line = ctx.getText();
 		line = line.substring(line.indexOf("version") + 8, line.indexOf("for"));
 		logger.info("SMACK version: " + line);
