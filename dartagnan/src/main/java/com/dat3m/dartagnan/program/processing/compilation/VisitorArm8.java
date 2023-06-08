@@ -624,7 +624,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         IntegerType type = resultRegister.getType();
-        Expression one = expressions.makeOne(type);
+        Expression zero = expressions.makeZero(type);
         IOpBin op = e.getOp();
         Expression value = e.getMemValue();
         Expression address = e.getAddress();
@@ -633,7 +633,7 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getThread().newRegister(type);
         Register retReg = e.getThread().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeEqual(retReg, one));
+        Local testOp = newLocal(resultRegister, expressions.makeEqual(retReg, zero));
 
         Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, retReg, ARMv8.extractStoreMoFromLKMo(mo), true);
