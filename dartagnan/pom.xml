@@ -163,7 +163,7 @@
 	    <dependency>
 	      <groupId>org.sosy-lab</groupId>
 	      <artifactId>javasmt-yices2</artifactId>
-	      <version>3.12.0</version> <!-- version of Yices2 bindings in JavaSMT -->
+	      <version>4.0.1</version> <!-- version of Yices2 bindings in JavaSMT -->
 	      <type>jar</type>
 	    </dependency>
 	    <dependency>
@@ -473,7 +473,7 @@
                 <artifactItem>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>java-smt</artifactId>
-                    <version>4.0.0</version>
+                    <version>4.0.2</version>
                 </artifactItem>
                 <!--<artifactItem>
                   <groupId>org.sosy-lab</groupId>
@@ -625,7 +625,7 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>4.0.0</version>
+      <version>4.0.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
