@@ -22,7 +22,7 @@ public class LlvmUnary {
     private static final String TRUNCATE = "$trunc.";
     private static final String SIGNED_EXTEND = "$sext.";
     private static final String UNSIGNED_EXTEND = "$zext.";
-    public static List<String> LLVMUNARY = Arrays.asList(
+    public static final List<String> LLVMUNARY = Arrays.asList(
             NOT,
             BITVECTOR_TO_SIGNED_INTEGER,
             BITVECTOR_TO_UNSIGNED_INTEGER,

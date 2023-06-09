@@ -60,13 +60,9 @@ public class IExprUn extends IExpr {
                     return new IValue(v, targetType);
                 }
                 if (!innerType.isMathematical()) {
-                    int bitWidth = innerType.getBitWidth();
-                    verify(BigInteger.TWO.pow(bitWidth - 1).negate().compareTo(value) <= 0);
-                    verify(BigInteger.TWO.pow(bitWidth).compareTo(value) > 0);
-                    return new IValue(signed ?
-                            value.testBit(bitWidth - 1) ? value.subtract(BigInteger.TWO.pow(bitWidth)) : value :
-                            value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value),
-                            targetType);
+                    verify(innerType.canContain(value), "");
+                    BigInteger result = innerType.applySign(value, signed);
+                    return new IValue(result, targetType);
                 }
                 return new IValue(value, targetType);
             }
