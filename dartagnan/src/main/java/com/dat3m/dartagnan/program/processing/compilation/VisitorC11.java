@@ -63,7 +63,7 @@ public class VisitorC11 extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 super.visitStart(e),
-                newJumpUnless(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeEqual(resultRegister, one), (Label) e.getThread().getExit())));
     }
 
     @Override
