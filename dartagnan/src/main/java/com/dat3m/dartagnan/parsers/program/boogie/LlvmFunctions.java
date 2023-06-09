@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
 
@@ -61,7 +60,7 @@ public class LlvmFunctions {
 				if (c.getValueAsInt() == 0) {
 					return callParams.get(0);
 				} else if (c.getValueAsInt() == 1) {
-					return factory.makeUnary(BOpUn.NOT, (Expression) callParams.get(0));
+					return factory.makeNot((Expression) callParams.get(0));
 				}
 			}
 			op = XOR;

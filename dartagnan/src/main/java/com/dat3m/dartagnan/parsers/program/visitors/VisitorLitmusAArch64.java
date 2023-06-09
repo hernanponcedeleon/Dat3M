@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -260,7 +259,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         IExpr expr = ctx.immediate() == null
                 ? programBuilder.getOrErrorRegister(mainThread, ctx.expressionConversion().register32().id)
                 : expressions.parseValue(ctx.immediate().constant().getText(), archType);
-        programBuilder.addChild(mainThread, EventFactory.newLocal(result, expressions.makeBinary(register, IOpBin.PLUS, expr)));
+        programBuilder.addChild(mainThread, EventFactory.newLocal(result, expressions.makePlus(register, expr)));
         return result;
     }
 }

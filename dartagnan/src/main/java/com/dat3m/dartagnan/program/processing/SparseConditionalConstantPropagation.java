@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -225,15 +226,13 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         public Expression visit(Atom atom) {
             Expression lhs = atom.getLHS().visit(this);
             Expression rhs = atom.getRHS().visit(this);
-            if (lhs instanceof BConst) {
-                lhs = expressions.makeValue(
-                        ((BConst) lhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
-                        rhs instanceof IExpr ? ((IExpr) rhs).getType() : types.getIntegerType(1));
+            if (lhs instanceof BConst constant) {
+                IntegerType type = rhs instanceof IExpr ? ((IExpr) rhs).getType() : types.getIntegerType(1);
+                lhs = constant.isTrue() ? expressions.makeOne(type) : expressions.makeZero(type);
             }
-            if (rhs instanceof BConst) {
-                rhs = expressions.makeValue(
-                        ((BConst) rhs).isTrue() ? BigInteger.ONE : BigInteger.ZERO,
-                        lhs instanceof IExpr ? ((IExpr) lhs).getType() : types.getIntegerType(1));
+            if (rhs instanceof BConst constant) {
+                IntegerType type = lhs instanceof IExpr ? ((IExpr) lhs).getType() : types.getIntegerType(1);
+                rhs = constant.isTrue() ? expressions.makeOne(type) : expressions.makeZero(type);
             }
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
                 return expressions.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));

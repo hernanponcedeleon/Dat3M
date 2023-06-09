@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
@@ -172,7 +171,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeBinary(r2, IOpBin.PLUS, constant)));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makePlus(r2, constant)));
     }
 
     @Override
@@ -180,7 +179,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeBinary(r2, IOpBin.XOR, r3)));
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeXor(r2, r3)));
     }
 
     @Override

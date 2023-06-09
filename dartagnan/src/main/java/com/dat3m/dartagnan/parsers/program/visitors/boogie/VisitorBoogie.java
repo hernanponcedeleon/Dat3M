@@ -58,57 +58,57 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
-	protected final TypeFactory types = TypeFactory.getInstance();
-	protected ProgramBuilder programBuilder;
+    protected final TypeFactory types = TypeFactory.getInstance();
+    protected ProgramBuilder programBuilder;
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
     protected int threadCount = 0;
-	protected int currentThread = 0;
-	private Set<String> threadLocalVariables = new HashSet<String>();
+    protected int currentThread = 0;
+    private Set<String> threadLocalVariables = new HashSet<String>();
 
-	protected int currentLine= -1;
-	protected String sourceCodeFile = "";
+    protected int currentLine = -1;
+    protected String sourceCodeFile = "";
 
     private Label currentLabel = null;
     private final Map<Label, Label> pairLabels = new HashMap<>();
 
     private final Map<String, Function> functions = new HashMap<>();
-	private FunctionCall currentCall = null;
+    private FunctionCall currentCall = null;
 
-	// Improves performance by initializing Locations rather than creating new write events
-	private boolean initMode = false;
+    // Improves performance by initializing Locations rather than creating new write events
+    private boolean initMode = false;
 
-	private final Map<String, Proc_declContext> procedures = new HashMap<>();
-	protected PthreadPool pool = new PthreadPool();
+    private final Map<String, Proc_declContext> procedures = new HashMap<>();
+    protected PthreadPool pool = new PthreadPool();
 
-	private int nextScopeID = 0;
-	protected Scope currentScope = new Scope(nextScopeID, null);
+    private int nextScopeID = 0;
+    protected Scope currentScope = new Scope(nextScopeID, null);
 
-	private final List<Register> returnRegister = new ArrayList<>();
-	private String currentReturnName = null;
+    private final List<Register> returnRegister = new ArrayList<>();
+    private String currentReturnName = null;
 
-	private final Map<String, Expression> constantsMap = new HashMap<>();
-	private final Map<String, IntegerType> constantsTypeMap = new HashMap<>();
+    private final Map<String, Expression> constantsMap = new HashMap<>();
+    private final Map<String, IntegerType> constantsTypeMap = new HashMap<>();
 
-	protected final Set<IExpr> allocations = new HashSet<>();
+    protected final Set<IExpr> allocations = new HashSet<>();
 
-	protected Map<Integer, List<Expression>> threadCallingValues = new HashMap<>();
+    protected Map<Integer, List<Expression>> threadCallingValues = new HashMap<>();
 
-	protected int assertionIndex = 0;
+    protected int assertionIndex = 0;
 
-	protected BeginAtomic currentBeginAtomic = null;
-	protected Call_cmdContext atomicMode = null;
+    protected BeginAtomic currentBeginAtomic = null;
+    protected Call_cmdContext atomicMode = null;
 
-	private final ExprSimplifier exprSimplifier = new ExprSimplifier();
+    private final ExprSimplifier exprSimplifier = new ExprSimplifier();
 
 
-	public VisitorBoogie(ProgramBuilder pb) {
-		this.programBuilder = pb;
-	}
+    public VisitorBoogie(ProgramBuilder pb) {
+        this.programBuilder = pb;
+    }
 
-	private final List<String> smackDummyVariables =
-			Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM",
-					"$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl",
-					"$1024.ref", "$0.ref", "$1.ref", "env_value_str", "errno_global", "$CurrAddr");
+    private final List<String> smackDummyVariables =
+            Arrays.asList("$M.0", "$exn", "$exnv", "$CurrAddr", "$GLOBALS_BOTTOM",
+                    "$EXTERNS_BOTTOM", "$MALLOC_TOP", "__SMACK_code", "__SMACK_decls", "__SMACK_top_decl",
+                    "$1024.ref", "$0.ref", "$1.ref", "env_value_str", "errno_global", "$CurrAddr");
 
 	private boolean doIgnoreVariable(String varName) {
 		// We ignore some smack-generated dummy variables
@@ -128,57 +128,57 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitMain(MainContext ctx) {
-		visitLine_comment(ctx.line_comment(0));
-		for(Func_declContext funDecContext : ctx.func_decl()) {
-			visitFunc_decl(funDecContext);
-		}
-		for(Proc_declContext procDecContext : ctx.proc_decl()) {
-			preProc_decl(procDecContext);
-		}
-		for(Const_declContext constDecContext : ctx.const_decl()) {
-			visitConst_decl(constDecContext);
-		}
-		for(Axiom_declContext axiomDecContext : ctx.axiom_decl()) {
-			visitAxiom_decl(axiomDecContext);
-		}
-		for(Var_declContext varDecContext : ctx.var_decl()) {
-			visitVar_decl(varDecContext);
-		}
-		if(!procedures.containsKey("main")) {
-			throw new ParsingException("Program shall have a main procedure");
-		}
+        visitLine_comment(ctx.line_comment(0));
+        for (Func_declContext funDecContext : ctx.func_decl()) {
+            visitFunc_decl(funDecContext);
+        }
+        for (Proc_declContext procDecContext : ctx.proc_decl()) {
+            preProc_decl(procDecContext);
+        }
+        for (Const_declContext constDecContext : ctx.const_decl()) {
+            visitConst_decl(constDecContext);
+        }
+        for (Axiom_declContext axiomDecContext : ctx.axiom_decl()) {
+            visitAxiom_decl(axiomDecContext);
+        }
+        for (Var_declContext varDecContext : ctx.var_decl()) {
+            visitVar_decl(varDecContext);
+        }
+        if (!procedures.containsKey("main")) {
+            throw new ParsingException("Program shall have a main procedure");
+        }
 
-		IExpr next = programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + "ptrMain");
-		pool.add(next, "main", -1);
-		while(pool.canCreate()) {
-			next = pool.next();
-			String nextName = pool.getNameFromPtr(next);
-			pool.addIntPtr(threadCount + 1, next);
-			visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));
-		}
+        IExpr next = programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + "ptrMain");
+        pool.add(next, "main", -1);
+        while (pool.canCreate()) {
+            next = pool.next();
+            String nextName = pool.getNameFromPtr(next);
+            pool.addIntPtr(threadCount + 1, next);
+            visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));
+        }
 
-		logger.info("Number of threads (including main): " + threadCount);
+        logger.info("Number of threads (including main): " + threadCount);
 
-		return programBuilder.build();
+        return programBuilder.build();
     }
 
-	private void preProc_decl(Proc_declContext ctx) {
-		String name = ctx.proc_sign().Ident().getText();
-		if(procedures.containsKey(name)) {
-			throw new ParsingException("Procedure " + name + " is already defined");
-		}
-		if(name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
-			threadCallingValues.put(threadCount, new ArrayList<>());
-			for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
-				for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-					String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-					IntegerType type = Types.parseIntegerType(typeString, types);
-					threadCallingValues.get(threadCount).add(programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + ident.getText(), type));
-				}
-			}
-		}
-		procedures.put(name, ctx);
-	}
+    private void preProc_decl(Proc_declContext ctx) {
+        String name = ctx.proc_sign().Ident().getText();
+        if (procedures.containsKey(name)) {
+            throw new ParsingException("Procedure " + name + " is already defined");
+        }
+        if (name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
+            threadCallingValues.put(threadCount, new ArrayList<>());
+            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+                    String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
+                    IntegerType type = Types.parseIntegerType(typeString, types);
+                    threadCallingValues.get(threadCount).add(programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + ident.getText(), type));
+                }
+            }
+        }
+        procedures.put(name, ctx);
+    }
 
 	@Override
 	public Object visitAxiom_decl(Axiom_declContext ctx) {
@@ -202,8 +202,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			}
 			if(ctx.getText().contains("ref;") && !procedures.containsKey(name) && !doIgnoreVariable(name)) {
 				int size = ctx.getText().contains(":allocSize")
-						? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
-						: 1;
+					? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
+					: 1;
 				programBuilder.newObject(name,size);
 			} else {
 				constantsTypeMap.put(name, type);
@@ -239,10 +239,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
 				IntegerType type = Types.parseIntegerType(typeString, types);
 				if(constantsTypeMap.containsKey(name)) {
-					throw new ParsingException("Variable " + name + " is already defined as a constant");
+                    throw new ParsingException("Variable " + name + " is already defined as a constant");
 				}
 				if(programBuilder.getObject(name) != null) {
-					throw new ParsingException("Variable " + name + " is already defined globally");
+                    throw new ParsingException("Variable " + name + " is already defined globally");
 				}
 				programBuilder.getOrNewRegister(scope, currentScope.getID() + ":" + name, type);
 			}
@@ -251,18 +251,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	}
 
     private void visitProc_decl(Proc_declContext ctx, boolean create, List<Expression> callingValues) {
-		currentLine = -1;
-		if(ctx.proc_sign().proc_sign_out() != null) {
-			for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
-				for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-					currentReturnName = ident.getText();
-				}
-			}
-		}
+        currentLine = -1;
+        if (ctx.proc_sign().proc_sign_out() != null) {
+            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+                    currentReturnName = ident.getText();
+                }
+            }
+        }
 
-		if(create) {
-			threadCount ++;
-			String name = ctx.proc_sign().Ident().getText();
+        if (create) {
+            threadCount++;
+            String name = ctx.proc_sign().Ident().getText();
             programBuilder.initThread(name, threadCount);
             if(threadCount != 1) {
                 // Used to allow execution of threads after they have been created (pthread_create)
@@ -270,58 +270,58 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 Register reg = programBuilder.getOrNewRegister(threadCount, null);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             }
-		}
+        }
 
-		currentScope = new Scope(nextScopeID, currentScope);
-		nextScopeID++;
+        currentScope = new Scope(nextScopeID, currentScope);
+        nextScopeID++;
 
-		Impl_bodyContext body = ctx.impl_body();
-		if(body == null) {
-			throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
-		}
+        Impl_bodyContext body = ctx.impl_body();
+        if (body == null) {
+            throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
+        }
 
-		if(ctx.proc_sign().proc_sign_in() != null) {
-			int index = 0;
-			for(Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
-				for(ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-					// To deal with references passed to created threads
-					if(index < callingValues.size()) {
-						String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-						IntegerType type = Types.parseIntegerType(typeString, types);
-						Register register = programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + ident.getText(), type);
-						Expression value = callingValues.get(index);
-						programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-								.setCFileInformation(currentLine, sourceCodeFile);
-						index++;
-					}
-				}
-			}
-		}
+        if (ctx.proc_sign().proc_sign_in() != null) {
+            int index = 0;
+            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+                    // To deal with references passed to created threads
+                    if (index < callingValues.size()) {
+                        String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
+                        IntegerType type = Types.parseIntegerType(typeString, types);
+                        Register register = programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + ident.getText(), type);
+                        Expression value = callingValues.get(index);
+                        programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
+                                .setCFileInformation(currentLine, sourceCodeFile);
+                        index++;
+                    }
+                }
+            }
+        }
 
         for(Local_varsContext localVarContext : body.local_vars()) {
-			visitLocal_vars(localVarContext, threadCount);
+            visitLocal_vars(localVarContext, threadCount);
         }
 
         visitChildren(body.stmt_list());
 
-		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		programBuilder.addChild(threadCount, label);
+        Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+        programBuilder.addChild(threadCount, label);
 
         currentScope = currentScope.getParent();
 
-		if(create) {
-			if(threadCount != 1) {
-				// Used to mark the end of the execution of a thread (used by pthread_join)
-				IExpr pointer = pool.getPtrFromInt(threadCount);
+        if (create) {
+            if (threadCount != 1) {
+                // Used to mark the end of the execution of a thread (used by pthread_join)
+                IExpr pointer = pool.getPtrFromInt(threadCount);
                 programBuilder.addChild(threadCount, EventFactory.Pthread.newEnd(pointer));
-			}
-		}
+            }
+        }
     }
 
-	@Override
+    @Override
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
-		addAssertion((IExpr)ctx.proposition().expr().accept(this));
-		return null;
+        addAssertion((IExpr) ctx.proposition().expr().accept(this));
+        return null;
     }
 
 	@Override
@@ -386,11 +386,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		// There will be no return for them.
 		if(ctx.call_params().Define() != null && procedures.get(name).impl_body() != null) {
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + ctx.call_params().Ident(0).getText());
-			if(register != null){
-				returnRegister.add(register);
-			}
-		}
-		List<Expression> callingValues = new ArrayList<>();
+            if(register != null){
+                returnRegister.add(register);
+            }
+        }
+        List<Expression> callingValues = new ArrayList<>();
 		if(ctx.call_params().exprs() != null) {
 			callingValues = ctx.call_params().exprs().expr().stream().map(c -> (Expression)c.accept(this)).collect(Collectors.toList());
 		}
@@ -416,18 +416,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	@Override
 	public Object visitAssign_cmd(Assign_cmdContext ctx) {
         ExprsContext exprs = ctx.def_body().exprs();
-		if(ctx.Ident().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
+        if (ctx.Ident().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
-		}
+        }
 		for(int i = 0; i < ctx.Ident().size(); i++) {
 			Expression value = (Expression)exprs.expr(i).accept(this);
-			if(value == null) {
-				continue;
-			}
+            if(value == null) {
+                continue;
+            }
 			String name = ctx.Ident(i).getText();
-			if(doIgnoreVariable(name)) {
-				continue;
-			}
+            if(doIgnoreVariable(name)) {
+                continue;
+            }
 			if(constantsTypeMap.containsKey(name)) {
 				throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
 			}
@@ -436,8 +436,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				continue;
 			}
 			Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
-			if(register != null){
-				if(ctx.getText().contains("$load.")) {
+            if (register != null) {
+                if (ctx.getText().contains("$load.")) {
 					Event child;
 					if(allocations.contains(value)) {
 						// These loads corresponding to pthread_joins
@@ -448,21 +448,21 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 					programBuilder.addChild(threadCount, child)
 							.setCFileInformation(currentLine, sourceCodeFile);
 					continue;
-				}
-				value = value.visit(exprSimplifier);
+                }
+                value = value.visit(exprSimplifier);
 				programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
 						.setCFileInformation(currentLine, sourceCodeFile);
-				continue;
-			}
+                continue;
+            }
             MemoryObject object = programBuilder.getObject(name);
             if(object != null){
-				// These events are eventually compiled and we need to compare its mo, thus it cannot be null
+                // These events are eventually compiled and we need to compare its mo, thus it cannot be null
 				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, ""))
 						.setCFileInformation(currentLine, sourceCodeFile);
-				continue;
-			}
-			if(currentReturnName.equals(name)) {
-				if(!returnRegister.isEmpty()) {
+                continue;
+            }
+            if (currentReturnName.equals(name)) {
+                if (!returnRegister.isEmpty()) {
 					Register ret = returnRegister.remove(returnRegister.size() - 1);
 					programBuilder.addChild(threadCount, EventFactory.newLocal(ret, value))
 							.setCFileInformation(currentLine, sourceCodeFile);
@@ -526,9 +526,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
 	@Override
 	public Object visitGoto_cmd(Goto_cmdContext ctx) {
-		String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
-		boolean loop = programBuilder.hasLabel(labelName);
-		Label l1 = programBuilder.getOrCreateLabel(labelName);
+        String labelName = currentScope.getID() + ":" + ctx.idents().children.get(0).getText();
+        boolean loop = programBuilder.hasLabel(labelName);
+        Label l1 = programBuilder.getOrCreateLabel(labelName);
 		programBuilder.addChild(threadCount, EventFactory.newGoto(l1));
         // If there is a loop, we return if the loop is not completely unrolled.
         // SMACK will take care of another escape if the loop is completely unrolled.

@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.type.*;
 
 import java.math.BigInteger;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public final class ExpressionFactory {
 
     private static final ExpressionFactory instance = new ExpressionFactory();
@@ -110,7 +112,7 @@ public final class ExpressionFactory {
     }
 
     public BExpr makeGreaterOrEqual(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? COpBin.LTE : COpBin.ULTE, rightOperand);
+        return makeBinary(leftOperand, signed ? COpBin.GTE : COpBin.UGTE, rightOperand);
     }
 
     public BExpr makeBinary(Expression leftOperand, COpBin operator, Expression rightOperand) {
@@ -130,6 +132,7 @@ public final class ExpressionFactory {
     }
 
     public IExpr makeUnary(IOpUn operator, Expression operand, IntegerType targetType) {
+        checkArgument(operand instanceof IExpr, String.format("Non-integer operand for %s %s.", operator, operand));
         return new IExprUn(operator, (IExpr) operand, targetType);
     }
 
@@ -178,6 +181,8 @@ public final class ExpressionFactory {
     }
 
     public IExpr makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
+        checkArgument(leftOperand instanceof IExpr && rightOperand instanceof IExpr,
+                String.format("Non-integer operands for %s %s %s.", leftOperand, operator, rightOperand));
         return new IExprBin((IExpr) leftOperand, operator, (IExpr) rightOperand);
     }
 }

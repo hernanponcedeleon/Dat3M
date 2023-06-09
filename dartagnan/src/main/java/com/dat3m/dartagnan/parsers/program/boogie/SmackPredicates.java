@@ -1,15 +1,12 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
-import static com.dat3m.dartagnan.expression.op.COpBin.LTE;
-import static com.dat3m.dartagnan.expression.op.COpBin.GTE;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MOD;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.exception.ParsingException;
 
 import java.util.Arrays;
 import java.util.List;
-
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.exception.ParsingException;
 
 public class SmackPredicates {
 
@@ -20,7 +17,7 @@ public class SmackPredicates {
 			"$tos.i56", "$tos.i64", "$tos.i80", "$tos.i88", "$tos.i96", "$tos.i128", "$tos.i160", "$tos.i256"
 			);
 	
-	public static Object smackPredicate(String name, List<Object> callParams, ExpressionFactory factory) {
+	public static Object smackPredicate(String name, List<Object> callParams, ExpressionFactory expressions) {
 		String min = "0";
 		String max = "1";
 		IExpr var = (IExpr)callParams.get(0);
@@ -108,13 +105,12 @@ public class SmackPredicates {
 				throw new ParsingException("Function " + name + " has no implementation");
 			}
 		}
-		IValue maxValue = factory.parseValue(max, var.getType());
-		return factory.makeConditional(
-				factory.makeBinary(
-						factory.makeBinary(var, GTE, factory.parseValue(min, var.getType())),
-						AND,
-						factory.makeBinary(var, LTE, maxValue)),
+		IValue maxValue = expressions.parseValue(max, var.getType());
+		return expressions.makeConditional(
+				expressions.makeAnd(
+						expressions.makeGreaterOrEqual(var, expressions.parseValue(min, var.getType()), true),
+						expressions.makeLessOrEqual(var, maxValue, true)),
 				var,
-				factory.makeBinary(var, MOD, maxValue));
+				expressions.makeModulo(var, maxValue));
 	}
 }

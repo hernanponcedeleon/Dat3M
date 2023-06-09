@@ -334,15 +334,15 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
             case CAST_SIGNED, CAST_UNSIGNED -> {
                 boolean signed = iUn.getOp().equals(IOpUn.CAST_SIGNED);
-                if (targetType instanceof IntegerType) {
-                    if (inner instanceof IntegerFormula) {
-                        return inner;
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
-                    }
-                }
                 if (targetType instanceof IntegerType integerTargetType) {
+                    if (integerTargetType.isMathematical()) {
+                        if (inner instanceof IntegerFormula) {
+                            return inner;
+                        }
+                        if (inner instanceof BitvectorFormula number) {
+                            return bitvectorFormulaManager().toIntegerFormula(number, signed);
+                        }
+                    }
                     int bitWidth = integerTargetType.getBitWidth();
                     if (inner instanceof IntegerFormula number) {
                         return bitvectorFormulaManager().makeBitvector(bitWidth, number);

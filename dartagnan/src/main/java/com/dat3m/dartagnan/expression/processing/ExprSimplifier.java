@@ -231,7 +231,7 @@ public class ExprSimplifier extends ExprTransformer {
             return cond;
         } else if (t instanceof IConst tConstant && tConstant.isInteger() && tConstant.getValueAsInt() == 0
                 && f instanceof IConst fConstant && fConstant.isInteger() && fConstant.getValueAsInt() == 1) {
-            return expressions.makeUnary(BOpUn.NOT, cond);
+            return expressions.makeNot(cond);
         }
 
         return expressions.makeConditional(cond, t, f);

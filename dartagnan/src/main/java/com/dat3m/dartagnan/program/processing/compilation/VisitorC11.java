@@ -50,7 +50,7 @@ public class VisitorC11 extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeEqual(resultRegister, zero), (Label) e.getThread().getExit())));
     }
 
     @Override
@@ -63,7 +63,7 @@ public class VisitorC11 extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())));
     }
 
     @Override
@@ -108,10 +108,10 @@ public class VisitorC11 extends VisitorBase {
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                storeValue,
-                gotoCasEnd,
+                    storeValue,
+                    gotoCasEnd,
                 casFail,
-                storeExpected,
+                    storeExpected,
                 casEnd
         ));
     }
@@ -241,7 +241,7 @@ public class VisitorC11 extends VisitorBase {
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
-                store,
+                    store,
                 casEnd));
     }
 
