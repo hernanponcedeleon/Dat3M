@@ -625,8 +625,8 @@ public class WmmEncoder implements Encoder {
                 } else {
                     Expression id1 = e1.getFenceID();
                     Expression id2 = e2.getFenceID();
-                    sameId = context.equal(context.encodeIntegerExpressionAt(id1, e1),
-                            context.encodeIntegerExpressionAt(id2, e2));
+                    sameId = context.equal(context.encodeExpressionAt(id1, e1),
+                            context.encodeExpressionAt(id2, e2));
                 }
                 enc.add(bmgr.equivalence(
                         encoder.encode(tuple),
