@@ -80,7 +80,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit()),
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit()),
                 newRMWStore(rmwLoad, e.getAddress(), one, mo)
         );
     }
@@ -97,7 +97,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit()),
+                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit()),
                 newRMWStore(rmwLoad, address, zero, mo)
         );
 	}

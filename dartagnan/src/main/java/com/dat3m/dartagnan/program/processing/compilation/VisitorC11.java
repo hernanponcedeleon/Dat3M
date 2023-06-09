@@ -50,7 +50,7 @@ public class VisitorC11 extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newJumpUnless(expressions.makeEqual(resultRegister, zero), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeEQ(resultRegister, zero), (Label) e.getThread().getExit())));
     }
 
     @Override
@@ -63,7 +63,7 @@ public class VisitorC11 extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 super.visitStart(e),
-                newJumpUnless(expressions.makeEqual(resultRegister, one), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeEQ(resultRegister, one), (Label) e.getThread().getExit())));
     }
 
     @Override
@@ -96,8 +96,8 @@ public class VisitorC11 extends VisitorBase {
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, expressions.makeOne(type)), casFail);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, expressions.makeOne(type)), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, mo);
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), mo);
@@ -228,10 +228,10 @@ public class VisitorC11 extends VisitorBase {
         String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
 
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
         Label casEnd = newLabel("CAS_end");
         Expression one = expressions.makeOne(resultRegister.getType());
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoadExclusive(oldValueRegister, address, mo);
         Store store = newRMWStoreExclusive(address, value, mo, true);

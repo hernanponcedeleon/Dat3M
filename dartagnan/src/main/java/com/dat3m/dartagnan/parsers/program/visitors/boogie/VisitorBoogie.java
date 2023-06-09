@@ -569,7 +569,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	@Override
 	public Object visitMinus_expr(Minus_exprContext ctx) {
 		IExpr v = (IExpr)ctx.unary_expr().accept(this);
-		return expressions.makeNegate(v, v.getType());
+		return expressions.makeNEG(v, v.getType());
 	}
 
 	@Override
@@ -607,16 +607,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		for(int i = 0; i < ctx.bv_term().size()-1; i++) {
 			v2 = (Expression)ctx.bv_term(i+1).accept(this);
 			v1 = switch (ctx.rel_op(i).op) {
-				case EQ -> expressions.makeEqual(v1, v2);
-				case NEQ -> expressions.makeNotEqual(v1, v2);
-				case GTE -> expressions.makeGreaterOrEqual(v1, v2, true);
-				case LTE -> expressions.makeLessOrEqual(v1, v2, true);
-				case GT -> expressions.makeGreater(v1, v2, true);
-				case LT -> expressions.makeLess(v1, v2, true);
-				case UGTE -> expressions.makeGreaterOrEqual(v1, v2, false);
-				case ULTE -> expressions.makeLessOrEqual(v1, v2, false);
-				case UGT -> expressions.makeGreater(v1, v2, false);
-				case ULT -> expressions.makeLess(v1, v2, false);
+				case EQ -> expressions.makeEQ(v1, v2);
+				case NEQ -> expressions.makeNEQ(v1, v2);
+				case GTE -> expressions.makeGTE(v1, v2, true);
+				case LTE -> expressions.makeLTE(v1, v2, true);
+				case GT -> expressions.makeGT(v1, v2, true);
+				case LT -> expressions.makeLT(v1, v2, true);
+				case UGTE -> expressions.makeGTE(v1, v2, false);
+				case ULTE -> expressions.makeLTE(v1, v2, false);
+				case UGT -> expressions.makeGT(v1, v2, false);
+				case ULT -> expressions.makeLT(v1, v2, false);
 			};
 		}
 		return v1;
@@ -628,7 +628,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		Expression v2;
 		for(int i = 0; i < ctx.factor().size()-1; i++) {
 			v2 = (Expression)ctx.factor(i+1).accept(this);
-			v1 = expressions.makePlus(v1, v2);
+			v1 = expressions.makeADD(v1, v2);
 		}
 		return v1;
 	}
@@ -639,7 +639,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		Expression v2 ;
 		for(int i = 0; i < ctx.power().size()-1; i++) {
 			v2 = (Expression)ctx.power(i+1).accept(this);
-			v1 = expressions.makeMultiply(v1, v2);
+			v1 = expressions.makeMUL(v1, v2);
 		}
 		return v1;
 	}
@@ -804,7 +804,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				.setCFileInformation(currentLine, sourceCodeFile)
 				.addTags(Tag.ASSERTION);
 		Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-		CondJump jump = EventFactory.newJump(expressions.makeNotEqual(ass, one), end);
+		CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
 		jump.addTags(Tag.EARLYTERMINATION);
 		programBuilder.addChild(threadCount, jump);
 

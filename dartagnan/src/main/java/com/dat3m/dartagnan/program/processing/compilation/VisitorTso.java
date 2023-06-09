@@ -65,7 +65,7 @@ class VisitorTso extends VisitorBase {
 
                 return tagList(eventSequence(
                                 load,
-                                newJump(expressions.makeNotEqual(resultRegister, zero),
+                                newJump(expressions.makeNEQ(resultRegister, zero),
                                                 (Label) e.getThread().getExit())));
         }
 
@@ -79,7 +79,7 @@ class VisitorTso extends VisitorBase {
                 return tagList(eventSequence(
                                 load,
                                 super.visitStart(e),
-                                newJump(expressions.makeNotEqual(resultRegister, one),
+                                newJump(expressions.makeNEQ(resultRegister, one),
                                                 (Label) e.getThread().getExit())));
         }
 
@@ -98,7 +98,7 @@ class VisitorTso extends VisitorBase {
             Load load = newRMWLoad(dummy, e.getAddress(), "");
             return eventSequence(
                     load,
-                    newAssume(expressions.makeEqual(dummy, expressions.makeZero(type))),
+                    newAssume(expressions.makeEQ(dummy, expressions.makeZero(type))),
                     newRMWStore(load, e.getAddress(), expressions.makeOne(type), ""));
         }
 
@@ -162,9 +162,9 @@ class VisitorTso extends VisitorBase {
                 Expression address = e.getAddress();
                 Expression expectedValue = e.getExpectedValue();
 
-                Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
+                Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
                 Label casEnd = newLabel("CAS_end");
-                CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casEnd);
+                CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
                 Load load = newRMWLoad(oldValueRegister, address, "");
                 Store store = newRMWStore(load, address, value, "");
@@ -204,9 +204,9 @@ class VisitorTso extends VisitorBase {
                 Load loadExpected = newLoad(regExpected, expectedAddr, "");
                 Register regValue = e.getThread().newRegister(type);
                 Load loadValue = newRMWLoad(regValue, address, mo);
-                Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(regValue, regExpected));
+                Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
                 Label casFail = newLabel("CAS_fail");
-                CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casFail);
+                CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
                 Store storeValue = newRMWStore(loadValue, address, value, mo);
                 Label casEnd = newLabel("CAS_end");
                 CondJump gotoCasEnd = newGoto(casEnd);

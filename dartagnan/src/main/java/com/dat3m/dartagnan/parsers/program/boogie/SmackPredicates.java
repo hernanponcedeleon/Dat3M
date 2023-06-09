@@ -108,9 +108,9 @@ public class SmackPredicates {
 		IValue maxValue = expressions.parseValue(max, var.getType());
 		return expressions.makeConditional(
 				expressions.makeAnd(
-						expressions.makeGreaterOrEqual(var, expressions.parseValue(min, var.getType()), true),
-						expressions.makeLessOrEqual(var, maxValue, true)),
+						expressions.makeGTE(var, expressions.parseValue(min, var.getType()), true),
+						expressions.makeLTE(var, maxValue, true)),
 				var,
-				expressions.makeModulo(var, maxValue));
+				expressions.makeMOD(var, maxValue));
 	}
 }

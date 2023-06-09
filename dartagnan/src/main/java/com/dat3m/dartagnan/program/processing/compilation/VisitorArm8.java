@@ -72,7 +72,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
         );
     }
 
@@ -86,7 +86,7 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
         );
     }
 
@@ -107,7 +107,7 @@ class VisitorArm8 extends VisitorBase {
         // because the load is an acquire one.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeEqual(dummy, zero)),
+                newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreExclusive(e.getAddress(), one, "", true));
     }
 
@@ -195,9 +195,9 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
 
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoadExclusive(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromCMo(mo), true);
@@ -245,8 +245,8 @@ class VisitorArm8 extends VisitorBase {
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casFail);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         Load loadValue = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
@@ -445,7 +445,7 @@ class VisitorArm8 extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         // The real scheme uses XOR instead of comparison, but both are semantically
         // equivalent and XOR harms performance substantially.
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(dummy, e.getCmp()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, value, ARMv8.extractStoreMoFromLKMo(mo), true);
@@ -589,7 +589,7 @@ class VisitorArm8 extends VisitorBase {
 
         Register regValue = e.getThread().newRegister(type);
         Load load = newRMWLoadExclusive(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusive(address, expressions.makePlus(regValue, value), ARMv8.extractStoreMoFromLKMo(mo), true);
+        Store store = newRMWStoreExclusive(address, expressions.makeADD(regValue, value), ARMv8.extractStoreMoFromLKMo(mo), true);
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
@@ -597,13 +597,13 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getThread().newRegister(type);
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(expressions.makeEqual(dummy, zero), cauEnd);
+        CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, zero), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 // Indentation shows the branching structure
                 load,
-                newLocal(dummy, expressions.makeNotEqual(regValue, unless)),
+                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                     store,
                     fakeCtrlDep,
@@ -633,7 +633,7 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getThread().newRegister(type);
         Register retReg = e.getThread().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeEqual(retReg, zero));
+        Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, zero));
 
         Load load = newRMWLoadExclusive(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusive(address, retReg, ARMv8.extractStoreMoFromLKMo(mo), true);
@@ -666,7 +666,7 @@ class VisitorArm8 extends VisitorBase {
         // because the load is an acquire one.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getLock(), ARMv8.MO_ACQ),
-                newAssume(expressions.makeEqual(dummy, zero)),
+                newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreExclusive(e.getLock(), one, "", true)
         );
     }

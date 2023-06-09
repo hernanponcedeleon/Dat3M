@@ -93,7 +93,7 @@ public class EventFactory {
 
     public static Init newInit(MemoryObject base, int offset) {
         IValue offsetExpression = expressions.makeValue(BigInteger.valueOf(offset), base.getType());
-        return new Init(base, offset, expressions.makePlus(base, offsetExpression));
+        return new Init(base, offset, expressions.makeADD(base, offsetExpression));
     }
 
     // ------------------------------------------ Local events ------------------------------------------
@@ -146,7 +146,7 @@ public class EventFactory {
     }
 
     public static CondJump newFakeCtrlDep(Register reg, Label target) {
-        CondJump jump = newJump(expressions.makeEqual(reg, reg), target);
+        CondJump jump = newJump(expressions.makeEQ(reg, reg), target);
         jump.addTags(Tag.NOOPT);
         return jump;
     }

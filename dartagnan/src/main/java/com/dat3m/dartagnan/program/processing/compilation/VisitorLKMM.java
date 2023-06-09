@@ -52,7 +52,7 @@ public class VisitorLKMM extends VisitorBase {
         
         return eventSequence(
                 load,
-                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
         );
     }
 
@@ -66,7 +66,7 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
         );
     }
 
@@ -84,16 +84,16 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 newJump(new BNonDet(), success),
                     newLoad(dummy, address, Tag.Linux.MO_ONCE),
-                    newAssume(expressions.makeEqual(dummy, cmp)),
+                    newAssume(expressions.makeEQ(dummy, cmp)),
                     newGoto(end),
                 success, // RMW success branch
                     Linux.newMemoryBarrier(),
                     rmwLoad = newRMWLoad(dummy, address, Tag.Linux.MO_ONCE),
-                    newAssume(expressions.makeNotEqual(dummy, cmp)),
-                    newRMWStore(rmwLoad, address, expressions.makePlus(dummy, value), Tag.Linux.MO_ONCE),
+                    newAssume(expressions.makeNEQ(dummy, cmp)),
+                    newRMWStore(rmwLoad, address, expressions.makeADD(dummy, value), Tag.Linux.MO_ONCE),
                     Linux.newMemoryBarrier(),
                 end,
-                newLocal(resultRegister, expressions.makeNotEqual(dummy, cmp))
+                newLocal(resultRegister, expressions.makeNEQ(dummy, cmp))
         );
     }
 
@@ -112,12 +112,12 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 newJump(new BNonDet(), success),
                     newLoad(dummy, address, Tag.Linux.MO_ONCE),
-                    newAssume(expressions.makeNotEqual(dummy, cmp)),
+                    newAssume(expressions.makeNEQ(dummy, cmp)),
                     newGoto(end),
                 success, // CAS success branch
                     mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
                     casLoad = newRMWLoad(dummy, address, Tag.Linux.loadMO(mo)),
-                    newAssume(expressions.makeEqual(dummy, cmp)),
+                    newAssume(expressions.makeEQ(dummy, cmp)),
                     newRMWStore(casLoad, address, value, Tag.Linux.storeMO(mo)),
                     mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
                 end,
@@ -175,7 +175,7 @@ public class VisitorLKMM extends VisitorBase {
                 load,
                 newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), e.getMemValue())),
                 newRMWStore(load, address, dummy, Tag.Linux.MO_ONCE),
-                newLocal(resultRegister, expressions.makeEqual(dummy, expressions.makeZero(type))),
+                newLocal(resultRegister, expressions.makeEQ(dummy, expressions.makeZero(type))),
                 Linux.newMemoryBarrier()
         );
     }
@@ -228,8 +228,8 @@ public class VisitorLKMM extends VisitorBase {
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
         Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
-                newAssume(expressions.makeEqual(dummy, zero)) :
-                newJump(expressions.makeNotEqual(dummy, zero), (Label)e.getThread().getExit());
+                newAssume(expressions.makeEQ(dummy, zero)) :
+                newJump(expressions.makeNEQ(dummy, zero), (Label)e.getThread().getExit());
         return eventSequence(
                 lockRead,
                 middle,

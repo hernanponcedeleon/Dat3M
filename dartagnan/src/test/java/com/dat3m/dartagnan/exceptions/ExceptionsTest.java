@@ -66,7 +66,7 @@ public class ExceptionsTest {
         // Both arguments should have same precision
         Register a = new Register("a", 0, types.getIntegerType(32));
         Register b = new Register("b", 0, types.getIntegerType(64));
-        ExpressionFactory.getInstance().makePlus(a, b);
+        ExpressionFactory.getInstance().makeADD(a, b);
     }
 
     @Test(expected = NullPointerException.class)

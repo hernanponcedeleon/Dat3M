@@ -163,7 +163,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
         Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
 		Expression one = expressions.makeOne(reg.getType());
-        Expression cond = expressions.makeEqual(reg, one);
+        Expression cond = expressions.makeEQ(reg, one);
 		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
 		return null;
 	}
@@ -189,49 +189,49 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitAdd(LitmusLISAParser.AddContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return expressions.makePlus(e1, e2);
+		return expressions.makeADD(e1, e2);
 	}
 
 	@Override
 	public Object visitSub(LitmusLISAParser.SubContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return expressions.makeMinus(e1, e2);
+		return expressions.makeSUB(e1, e2);
 	}
 
 	@Override
 	public Object visitXor(LitmusLISAParser.XorContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return expressions.makeXor(e1, e2);
+		return expressions.makeXOR(e1, e2);
 	}
 
 	@Override
 	public Object visitOr(LitmusLISAParser.OrContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return expressions.makeBitwiseOr(e1, e2);
+		return expressions.makeOR(e1, e2);
 	}
 
 	@Override
 	public Object visitAnd(LitmusLISAParser.AndContext ctx) {
 		IExpr e1 = (IExpr) ctx.expression(0).accept(this);
 		IExpr e2 = (IExpr) ctx.expression(1).accept(this);
-		return expressions.makeBitwiseAnd(e1, e2);
+		return expressions.makeAND(e1, e2);
 	}
 
 	@Override
 	public Object visitEq(LitmusLISAParser.EqContext ctx) {
 		Expression e1 = (Expression) ctx.expression(0).accept(this);
 		Expression e2 = (Expression) ctx.expression(1).accept(this);
-		return expressions.makeEqual(e1, e2);
+		return expressions.makeEQ(e1, e2);
 	}
 
 	@Override
 	public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
 		Expression e1 = (Expression) ctx.expression(0).accept(this);
 		Expression e2 = (Expression) ctx.expression(1).accept(this);
-		return expressions.makeNotEqual(e1, e2);
+		return expressions.makeNEQ(e1, e2);
 	}
 
 	@Override
@@ -243,7 +243,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitArrayAccess(LitmusLISAParser.ArrayAccessContext ctx) {
 		MemoryObject base = (MemoryObject) ctx.location().accept(this);
 		IExpr offset = (IExpr) ctx.value().accept(this);
-		return expressions.makePlus(base, offset);
+		return expressions.makeADD(base, offset);
 	}
 
 }

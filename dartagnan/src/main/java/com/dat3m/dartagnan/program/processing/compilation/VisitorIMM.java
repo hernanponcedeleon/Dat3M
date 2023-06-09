@@ -71,7 +71,7 @@ class VisitorIMM extends VisitorBase {
 
         return eventSequence(
 				load,
-                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
         );
 	}
 
@@ -85,7 +85,7 @@ class VisitorIMM extends VisitorBase {
         return eventSequence(
 				load,
 				super.visitStart(e),
-				newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())
+				newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
         );
 	}
 
@@ -111,8 +111,8 @@ class VisitorIMM extends VisitorBase {
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casFail);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoad(regValue, address, extractLoadMo(mo));
         Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), extractStoreMo(mo));
@@ -266,9 +266,9 @@ class VisitorIMM extends VisitorBase {
 		String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
 
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
 		Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
 		Load load = newRMWLoadExclusive(oldValueRegister, address, IMM.extractLoadMo(mo));
 		Store store = newRMWStoreExclusive(address, value, IMM.extractStoreMo(mo), true);

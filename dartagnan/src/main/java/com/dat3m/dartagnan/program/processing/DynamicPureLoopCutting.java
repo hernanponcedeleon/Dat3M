@@ -138,7 +138,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
         final Expression atLeastOneSideEffect = trackingRegs.stream()
-                .map(reg -> expressionFactory.makeEqual(reg, expressionFactory.makeZero(reg.getType())))
+                .map(reg -> expressionFactory.makeEQ(reg, expressionFactory.makeZero(reg.getType())))
                 .reduce(expressionFactory.makeFalse(), expressionFactory::makeOr);
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);

@@ -213,8 +213,8 @@ public class AnalysisTest {
         b.addChild(0, newLocal(r0, b.newConstant(type, true)));
         Label l0 = b.getOrCreateLabel("l0");
         b.addChild(0, newJump(expressions.makeOr(
-                expressions.makeGreater(r0, expressions.makeOne(type), true),
-                expressions.makeLess(r0, expressions.makeZero(type), true)), l0));
+                expressions.makeGT(r0, expressions.makeOne(type), true),
+                expressions.makeLT(r0, expressions.makeZero(type), true)), l0));
         Store e0 = newStore(x);
         b.addChild(0, e0);
         Store e1 = newStore(plus(x, 1));
@@ -223,8 +223,8 @@ public class AnalysisTest {
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, newLocal(r1, expressions.makeZero(type)));
-        Store e3 = newStore(expressions.makePlus(
-                expressions.makePlus(x, mult(r0, 2)),
+        Store e3 = newStore(expressions.makeADD(
+                expressions.makeADD(x, mult(r0, 2)),
                 mult(r1, 4)));
         b.addChild(0, e3);
         b.addChild(0, l0);
@@ -396,11 +396,11 @@ public class AnalysisTest {
     }
 
     private Expression plus(Expression lhs, long rhs) {
-        return expressions.makePlus(lhs, value(rhs));
+        return expressions.makeADD(lhs, value(rhs));
     }
 
     private Expression mult(Expression lhs, long rhs) {
-        return expressions.makeMultiply(lhs, value(rhs));
+        return expressions.makeMUL(lhs, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {

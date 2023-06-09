@@ -126,7 +126,7 @@ public class LlvmProcedures {
             case "llvm.smax.i64":
             case "llvm.umax.i32":
             case "llvm.umax.i64":
-                cond = visitor.expressions.makeGreater(p0, p1, name.contains("smax"));
+                cond = visitor.expressions.makeGT(p0, p1, name.contains("smax"));
                 visitor.programBuilder
                         .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
@@ -135,7 +135,7 @@ public class LlvmProcedures {
             case "llvm.smin.i64":
             case "llvm.umin.i32":
             case "llvm.umin.i64":
-                cond = visitor.expressions.makeLess(p0, p1, name.contains("smin"));
+                cond = visitor.expressions.makeLT(p0, p1, name.contains("smin"));
                 visitor.programBuilder
                         .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
@@ -143,7 +143,7 @@ public class LlvmProcedures {
             case "llvm.ctlz.i32":
             case "llvm.ctlz.i64":
                 visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeCountLeadingZeroes(p0, (IntegerType) p0.getType())))
+                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeCTLZ(p0, (IntegerType) p0.getType())))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
                 return;
             default:

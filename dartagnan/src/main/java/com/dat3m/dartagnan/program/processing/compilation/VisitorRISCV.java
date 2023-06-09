@@ -72,7 +72,7 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 load,
-                newJump(expressions.makeNotEqual(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
         );
 	}
 
@@ -86,7 +86,7 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
 				load,
 				super.visitStart(e),
-                newJump(expressions.makeNotEqual(resultRegister, one), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
         );
 	}
 
@@ -108,7 +108,7 @@ class VisitorRISCV extends VisitorBase {
         // because of the fence.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress(), ""),
-                newAssume(expressions.makeEqual(dummy, zero)),
+                newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreExclusive(e.getAddress(), one, "", true),
                 RISCV.newRRWFence());
     }
@@ -215,9 +215,9 @@ class VisitorRISCV extends VisitorBase {
 		String mo = e.getMo();
 		Expression expectedValue = e.getExpectedValue();
 
-		Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(oldValueRegister, expectedValue));
+		Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
 		Label casEnd = newLabel("CAS_end");
-		CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casEnd);
+		CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
 		Load load = newRMWLoadExclusive(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = newRMWStoreExclusive(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
@@ -273,8 +273,8 @@ class VisitorRISCV extends VisitorBase {
         Store storeExpected = newStore(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEqual(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(resultRegister, one), casFail);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
         Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
@@ -487,13 +487,13 @@ class VisitorRISCV extends VisitorBase {
 		Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNotEqual(dummy, e.getCmp()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
         
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEqual(statusReg, expressions.makeZero(types.getArchType())), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(types.getArchType())), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
@@ -531,7 +531,7 @@ class VisitorRISCV extends VisitorBase {
 		Store store = RISCV.newRMWStoreConditional(address, value, moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEqual(statusReg, expressions.makeZero(type)), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -565,7 +565,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, op, value), moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEqual(statusReg, expressions.makeZero(type)), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
 
         return eventSequence(
                 load,
@@ -596,7 +596,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEqual(statusReg, expressions.makeZero(type)), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
@@ -634,7 +634,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEqual(statusReg, zero), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, zero), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
         
@@ -668,7 +668,7 @@ class VisitorRISCV extends VisitorBase {
 		Register statusReg = e.getThread().newRegister(type);
 
 		Load load = newRMWLoadExclusive(regValue, address, "");
-        Store store = RISCV.newRMWStoreConditional(address, expressions.makePlus(regValue, value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeADD(regValue, value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");
@@ -677,13 +677,13 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getType());
 		Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(expressions.makeEqual(dummy, expressions.makeZero(type)), cauEnd);
+        CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, expressions.makeZero(type)), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 // Indentation shows the branching structure
                 load,
-                newLocal(dummy, expressions.makeNotEqual(regValue, unless)),
+                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                     store,
                     status,
@@ -712,7 +712,7 @@ class VisitorRISCV extends VisitorBase {
 		Register statusReg = e.getThread().newRegister(type);
         Register retReg = e.getThread().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeEqual(retReg, expressions.makeZero(type)));
+        Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, expressions.makeZero(type)));
 
         Load load = newRMWLoadExclusive(dummy, address, "");
         Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
@@ -744,7 +744,7 @@ class VisitorRISCV extends VisitorBase {
 		// We replace AMO instructions with LL/SC
 		return eventSequence(
 				newRMWLoadExclusive(dummy, e.getLock(), ""),
-                newAssume(expressions.makeEqual(dummy, zero)),
+                newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreExclusive(e.getLock(), one, "", true),
 				RISCV.newRRWFence()
         );

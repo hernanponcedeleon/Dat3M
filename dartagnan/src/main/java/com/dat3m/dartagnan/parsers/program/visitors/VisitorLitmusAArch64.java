@@ -259,7 +259,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         IExpr expr = ctx.immediate() == null
                 ? programBuilder.getOrErrorRegister(mainThread, ctx.expressionConversion().register32().id)
                 : expressions.parseValue(ctx.immediate().constant().getText(), archType);
-        programBuilder.addChild(mainThread, EventFactory.newLocal(result, expressions.makePlus(register, expr)));
+        programBuilder.addChild(mainThread, EventFactory.newLocal(result, expressions.makeADD(register, expr)));
         return result;
     }
 }

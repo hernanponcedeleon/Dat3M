@@ -86,32 +86,32 @@ public final class ExpressionFactory {
             return (BExpr) operand;
         }
         if (operand.getType() instanceof IntegerType integerType) {
-            return makeNotEqual(operand, makeZero(integerType));
+            return makeNEQ(operand, makeZero(integerType));
         }
         throw new UnsupportedOperationException(String.format("makeBoolean with unknown-typed operand %s.", operand));
     }
 
-    public BExpr makeEqual(Expression leftOperand, Expression rightOperand) {
+    public BExpr makeEQ(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, COpBin.EQ, rightOperand);
     }
 
-    public BExpr makeNotEqual(Expression leftOperand, Expression rightOperand) {
+    public BExpr makeNEQ(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, COpBin.NEQ, rightOperand);
     }
 
-    public BExpr makeLess(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public BExpr makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.LT : COpBin.ULT, rightOperand);
     }
 
-    public BExpr makeGreater(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public BExpr makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.GT : COpBin.UGT, rightOperand);
     }
 
-    public BExpr makeLessOrEqual(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public BExpr makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.LTE : COpBin.ULTE, rightOperand);
     }
 
-    public BExpr makeGreaterOrEqual(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public BExpr makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.GTE : COpBin.UGTE, rightOperand);
     }
 
@@ -119,11 +119,11 @@ public final class ExpressionFactory {
         return new Atom(leftOperand, operator, rightOperand);
     }
 
-    public IExpr makeNegate(Expression operand, IntegerType targetType) {
+    public IExpr makeNEG(Expression operand, IntegerType targetType) {
         return makeUnary(IOpUn.MINUS, operand, targetType);
     }
 
-    public IExpr makeCountLeadingZeroes(Expression operand, IntegerType targetType) {
+    public IExpr makeCTLZ(Expression operand, IntegerType targetType) {
         return makeUnary(IOpUn.CTLZ, operand, targetType);
     }
 
@@ -136,47 +136,47 @@ public final class ExpressionFactory {
         return new IExprUn(operator, (IExpr) operand, targetType);
     }
 
-    public IExpr makePlus(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeADD(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.PLUS, rightOperand);
     }
 
-    public IExpr makeMinus(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeSUB(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MINUS, rightOperand);
     }
 
-    public IExpr makeMultiply(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeMUL(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MULT, rightOperand);
     }
 
-    public IExpr makeDivision(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public IExpr makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.DIV : IOpBin.UDIV, rightOperand);
     }
 
-    public IExpr makeModulo(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeMOD(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MOD, rightOperand);
     }
 
-    public IExpr makeRemainder(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public IExpr makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.SREM : IOpBin.UREM, rightOperand);
     }
 
-    public IExpr makeBitwiseAnd(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeAND(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.AND, rightOperand);
     }
 
-    public IExpr makeBitwiseOr(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeOR(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.OR, rightOperand);
     }
 
-    public IExpr makeXor(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeXOR(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.XOR, rightOperand);
     }
 
-    public IExpr makeLeftShift(Expression leftOperand, Expression rightOperand) {
+    public IExpr makeLSH(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.L_SHIFT, rightOperand);
     }
 
-    public IExpr makeRightShift(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public IExpr makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.AR_SHIFT : IOpBin.R_SHIFT, rightOperand);
     }
 
