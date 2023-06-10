@@ -50,10 +50,13 @@ public class WmmAnalysis {
         return respectsAtomicBlocks;
     }
 
+    // Set assumeLocalConsistency to false for architectures don't hold local consistency e.g. PTX
+    // When location accessed via different proxies but not properly synchronized,
+    // they can form intra-thread data races.
     private WmmAnalysis(Wmm memoryModel, Arch arch, Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         checkWellformedness(memoryModel);
-        if (!Arch.archLocallyConsistent(arch)) {
+        if (arch == Arch.PTX) {
             this.assumeLocalConsistency = false;
         }
     }

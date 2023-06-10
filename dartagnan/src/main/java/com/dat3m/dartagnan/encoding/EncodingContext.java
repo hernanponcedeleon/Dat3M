@@ -121,10 +121,6 @@ public final class EncodingContext {
     }
 
     public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
-        if (expression instanceof VirtualMemoryObject) {
-            return new ExpressionEncoder(formulaManager, event).encodeAsInteger(
-                    ((VirtualMemoryObject) expression).getPhysicalAddress());
-        }
         return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
     }
 
