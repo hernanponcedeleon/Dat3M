@@ -13,7 +13,7 @@ Requirements
 * [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
-* [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library
+* [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library (only to verify C programs)
 * [Graphviz](https://graphviz.org) (only if option `--witness.graphviz=true` is used)
 
 Installation
@@ -41,7 +41,7 @@ export DAT3M_HOME=<Dat3M's root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 ```
 
-At least the following compiler flag needs to be set, further can be added  
+At least the following compiler flag needs to be set, further can be added (only to verify C programs)
 ```
 export CFLAGS="-I$DAT3M_HOME/include"
 export SMACK_FLAGS="-q -t --no-memory-splitting"
@@ -90,7 +90,7 @@ You can also run Dartagnan from the console:
 ```
 java -jar dartagnan/target/dartagnan-3.1.1.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
-For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. It must be one of the following: 
+For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. Program written in `.litmus` format do not require such option. `<arch>` must be one of the following: 
 - c11
 - lkmm
 - imm
@@ -98,8 +98,9 @@ For programs written in `.c` and `.bpl`, value `<arch>` specifies the programmin
 - power
 - arm8
 - riscv
+- ptx
 
-Program written in `.litmus` format do not require such option. The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
+The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 
 Further options can be specified using `--<option>=<value>`. Common options include:
 - `bound`: unrolling bound for the BMC (default is 1).
