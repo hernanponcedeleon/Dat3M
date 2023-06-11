@@ -26,11 +26,12 @@ let strong-m = strong-write | strong-read
 let strong-operation = strong-m | F
 
 (* Relations *)
-let sr-fence = ([strong-operation]; sr; [F]) | ([F]; sr; [strong-operation])
-let po-fence = ([strong-operation]; po; [F]) | ([F]; po; [strong-operation])
-let sr-m = ([strong-m]; (sr & loc \ id); [strong-m])
-let po-m = ([M]; ((po | po^-1) & loc); [M])
-let morally-strong = sr-fence | po-fence | sr-m | po-m
+// The operations are related in program order, or each operation is strong and
+// specifies a scope that includes the thread executing the other operation.
+let ms1 = (po | po^-1) | ([strong-operation]; sr; [strong-operation])
+// If both are memory operations, then they overlap completely
+let ms2 = ((M * M) & loc) | ((_ * _) \ (M * M))
+let morally-strong = (ms1 & ms2) \ id
 
 // The ASPLOS'19 paper uses the definition below
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)

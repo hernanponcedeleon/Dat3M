@@ -44,11 +44,14 @@ let same-proxy = GEN * GEN | SUR * SUR | TEX * TEX | CON * CON
 let po-vloc = po & vloc
 
 (* Relations *)
-let sr-fence = ([strong-operation]; (sr & same-proxy); [F]) | ([F]; (sr & same-proxy); [strong-operation])
-let po-fence = ([strong-operation]; (po & same-proxy); [F]) | ([F]; (po & same-proxy); [strong-operation])
-let sr-m = ([strong-m]; (sr & vloc & same-proxy \ id); [strong-m])
-let po-m = ([M]; ((po | po^-1) & vloc & same-proxy); [M])
-let morally-strong = sr-fence | po-fence | sr-m | po-m
+// The operations are related in program order, or each operation is strong and
+// specifies a scope that includes the thread executing the other operation.
+let ms1 = (po | po^-1) | ([strong-operation]; sr; [strong-operation])
+// Both operations are performed via the same proxy.
+let ms2 = same-proxy
+// If both are memory operations, then they overlap completely
+let ms3 = ((M * M) & vloc) | ((_ * _) \ (M * M))
+let morally-strong = (ms1 & ms2 & ms3) \ id
 
 // This is probably equivalent to 
 // let rec observation = (morally-strong & rf) | (observation; rmw; observation)
