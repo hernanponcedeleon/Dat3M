@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
@@ -208,11 +209,11 @@ public class ExecutionGraphVisualizer {
         if (e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
             BigInteger value = e.getValue();
-            String mo = ((MemoryEvent) e.getEvent()).getMo();
-            mo = mo.isEmpty() ? mo : ", " + mo;
+            MemoryOrder mo = e.getEvent().getMetadata(MemoryOrder.class);
+            String moString = mo == null ? "" : ", " + mo.value();
             tag = e.isWrite() ?
-                    String.format("W(%s, %d%s)", address, value, mo) :
-                    String.format("%s = R(%s%s)", value, address, mo);
+                    String.format("W(%s, %d%s)", address, value, moString) :
+                    String.format("%s = R(%s%s)", value, address, moString);
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");

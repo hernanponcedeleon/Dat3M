@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.List;
 
@@ -245,8 +246,7 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-            return tagList(eventSequence(
-                            newFence(e.getMo())));
+            return tagList(eventSequence(newFence(e.getMo())));
     }
 
     private List<Event> tagList(List<Event> in) {
@@ -255,8 +255,9 @@ public class VisitorC11 extends VisitorBase {
     }
 
     private void tagEvent(Event e) {
-        if(e instanceof MemoryEvent memEvent) {
-            final boolean canRace = (memEvent.getMo().isEmpty() || memEvent.getMo().equals(C11.NONATOMIC));
+        if(e instanceof MemoryEvent) {
+            final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+            final boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
             e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);
         }
     }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class Load extends SingleAddressMemoryEvent implements RegWriter {
@@ -29,7 +30,9 @@ public class Load extends SingleAddressMemoryEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return resultRegister + " = load(*" + address + (!mo.isEmpty() ? ", " + mo : "") + ")";
+        final MemoryOrder mo = getMetadata(MemoryOrder.class);
+        return String.format("%s = load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
+        //return resultRegister + " = load(*" + address + (mo != null ? ", " + mo.value() : "") + ")";
     }
 
     @Override

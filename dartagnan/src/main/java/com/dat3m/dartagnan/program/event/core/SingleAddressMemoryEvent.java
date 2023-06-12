@@ -50,7 +50,6 @@ public abstract class SingleAddressMemoryEvent extends AbstractEvent implements 
     public Type getAccessType() { return accessType; }
     public void setAccessType(Type type) { this.accessType = type; }
 
-    @Override
     public String getMo() {
         return mo;
     }

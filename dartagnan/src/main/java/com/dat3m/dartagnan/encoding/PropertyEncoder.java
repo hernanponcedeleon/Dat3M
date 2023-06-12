@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -305,7 +306,10 @@ public class PropertyEncoder implements Encoder {
         final Program program = this.program;
         final AliasAnalysis alias = this.alias;
 
-        final Predicate<MemoryEvent> canRace = (m -> m.getMo().isEmpty() || m.getMo().equals(Tag.C11.NONATOMIC));
+        final Predicate<MemoryEvent> canRace = (m -> {
+            final MemoryOrder mo = m.getMetadata(MemoryOrder.class);
+            return mo == null || mo.value().equals(Tag.C11.NONATOMIC);
+        });
 
         BooleanFormula hasRace = bmgr.makeFalse();
         for(Thread t1 : program.getThreads()) {

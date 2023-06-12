@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
@@ -36,7 +37,9 @@ public class Store extends SingleAddressMemoryEvent {
 
     @Override
     public String toString() {
-        return "store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
+        final MemoryOrder mo = getMetadata(MemoryOrder.class);
+        return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
+        //return "store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
     public ExprInterface getMemValue() {

@@ -13,9 +13,6 @@ public interface MemoryEvent extends Event, RegReader {
     // TODO: Make this a List<MemoryAccess> to properly support multi-access events like MemCopy and RMW
     MemoryAccess getMemoryAccess();
 
-    // TODO: Is "mo" really fundamental to all memory events?
-    String getMo();
-
     @Override
     default Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(getMemoryAccess().address(), Register.UsageType.ADDR, new HashSet<>());
