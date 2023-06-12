@@ -119,6 +119,7 @@ Authors and Contact
 
 * [Thomas Haas](https://www.tcs.cs.tu-bs.de/group/haas/home.html)
 * [René Pascal Maseli](https://www.tcs.cs.tu-bs.de/group/maseli/home.html)
+* [Haining Tong](https://researchportal.helsinki.fi/fi/persons/haining-tong)
 
 **Former Developers:**
 
