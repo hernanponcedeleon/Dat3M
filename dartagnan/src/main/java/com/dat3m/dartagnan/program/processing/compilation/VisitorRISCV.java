@@ -53,7 +53,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
 	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
+        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
         store.addTags(C11.PTHREAD);
 
         return eventSequence(
@@ -64,13 +64,13 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		newStore(e.getAddress(), IValue.ZERO, Tag.RISCV.MO_REL));
+        		newStoreWithMo(e.getAddress(), IValue.ZERO, Tag.RISCV.MO_REL));
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
+		Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(C11.PTHREAD);
 
         return eventSequence(
@@ -82,7 +82,7 @@ class VisitorRISCV extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
+		Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
@@ -96,7 +96,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), e.getMemValue(), ""));
+                newStoreWithMo(e.getAddress(), e.getMemValue(), ""));
     }
 
     @Override
@@ -106,9 +106,9 @@ class VisitorRISCV extends VisitorBase {
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because of the fence.
         return eventSequence(
-                newRMWLoadExclusive(dummy, e.getAddress(), ""),
+                newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ""),
                 newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getAddress(), IValue.ONE, "", true),
+                newRMWStoreExclusiveWithMo(e.getAddress(), IValue.ONE, true, ""),
                 RISCV.newRRWFence());
     }
 
@@ -116,7 +116,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), IValue.ZERO, ""));
+                newStoreWithMo(e.getAddress(), IValue.ZERO, ""));
     }
     
 	// =============================================================================================
@@ -132,7 +132,7 @@ class VisitorRISCV extends VisitorBase {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newLoad(e.getResultRegister(), e.getAddress(), ""),
+				newLoadWithMo(e.getResultRegister(), e.getAddress(), ""),
 				optionalBarrierAfter);
 	}
 
@@ -145,7 +145,7 @@ class VisitorRISCV extends VisitorBase {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), ""));
+				newStoreWithMo(e.getAddress(), e.getMemValue(), ""));
 	}
 
 	@Override
@@ -155,7 +155,7 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+		Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
 		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
 		// We normally make the following optional.
@@ -183,7 +183,7 @@ class VisitorRISCV extends VisitorBase {
 		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
 		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+		Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
 		Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
 		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
 		// We normally make the following optional.
@@ -216,8 +216,8 @@ class VisitorRISCV extends VisitorBase {
 		Label casEnd = newLabel("CAS_end");
 		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-		Load load = newRMWLoadExclusive(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-		Store store = newRMWStoreExclusive(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+		Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+		Store store = newRMWStoreExclusiveWithMo(address, value, true, Tag.RISCV.extractStoreMoFromCMo(mo));
 
 		return eventSequence(
 				// Indentation shows the branching structure
@@ -265,15 +265,15 @@ class VisitorRISCV extends VisitorBase {
 
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, "");
-        Store storeExpected = newStore(expectedAddr, regValue, "");
+        Load loadExpected = newLoadWithMo(regExpected, expectedAddr, "");
+        Store storeExpected = newStoreWithMo(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
 
-        Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Load loadValue = newRMWLoadExclusiveWithMo(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.isStrong());
         Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", precision);
         // We normally make the following two events optional.
@@ -308,7 +308,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
         Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
         Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
         // We normally make the following optional.
@@ -336,7 +336,7 @@ class VisitorRISCV extends VisitorBase {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newLoad(e.getResultRegister(), e.getAddress(), ""),
+				newLoadWithMo(e.getResultRegister(), e.getAddress(), ""),
 				optionalBarrierAfter
 		);
 	}
@@ -348,7 +348,7 @@ class VisitorRISCV extends VisitorBase {
 
 		return eventSequence(
 				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), "")
+				newStoreWithMo(e.getAddress(), e.getMemValue(), "")
 		);
 	}
 
@@ -382,7 +382,7 @@ class VisitorRISCV extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
         Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
         // We normally make the following optional.
@@ -410,7 +410,7 @@ class VisitorRISCV extends VisitorBase {
 		Fence optionalMemoryBarrier = mo.equals(MO_ACQUIRE) ? RISCV.newRRWFence() : null;
     
 		return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), ""),
+        		newLoadWithMo(e.getResultRegister(), e.getAddress(), ""),
         		optionalMemoryBarrier
         );
 
@@ -423,7 +423,7 @@ class VisitorRISCV extends VisitorBase {
 		
 		return eventSequence(
         		optionalMemoryBarrier,
-				newStore(e.getAddress(), e.getMemValue(), "")
+				newStoreWithMo(e.getAddress(), e.getMemValue(), "")
         );
 
 	}
@@ -484,7 +484,7 @@ class VisitorRISCV extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(new Atom(dummy, NEQ, e.getCmp()), casEnd);
         
-        Load load = newRMWLoadExclusive(dummy, address, "");
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, "");
         Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -520,7 +520,7 @@ class VisitorRISCV extends VisitorBase {
 		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
 		String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
-        Load load = newRMWLoadExclusive(dummy, address, moLoad);
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
 		Store store = RISCV.newRMWStoreConditional(address, value, moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -553,7 +553,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
 		String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
-        Load load = newRMWLoadExclusive(dummy, address, moLoad);
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
         Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, op, value), moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -584,7 +584,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
 
-		Load load = newRMWLoadExclusive(dummy, address, "");
+		Load load = newRMWLoadExclusiveWithMo(dummy, address, "");
         Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -620,7 +620,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
 
-        Load load = newRMWLoadExclusive(dummy, address, "");
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, "");
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -657,7 +657,7 @@ class VisitorRISCV extends VisitorBase {
         Register regValue = e.getThread().newRegister(precision);
 		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
 
-		Load load = newRMWLoadExclusive(regValue, address, "");
+		Load load = newRMWLoadExclusiveWithMo(regValue, address, "");
         Store store = RISCV.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
@@ -703,8 +703,8 @@ class VisitorRISCV extends VisitorBase {
         Local localOp = newLocal(retReg, new IExprBin(dummy, op, value));
         Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
 
-        Load load = newRMWLoadExclusive(dummy, address, "");
-        Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, "");
+        Store store = newRMWStoreExclusiveWithMo(address, retReg, true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
@@ -729,9 +729,9 @@ class VisitorRISCV extends VisitorBase {
 	// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
 	// We replace AMO instructions with LL/SC
 	return eventSequence(
-				newRMWLoadExclusive(dummy, e.getLock(), ""),
+				newRMWLoadExclusiveWithMo(dummy, e.getLock(), ""),
                 newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true),
+                newRMWStoreExclusiveWithMo(e.getLock(), IValue.ONE, true, ""),
 				RISCV.newRRWFence()
         );
 	}
@@ -740,7 +740,7 @@ class VisitorRISCV extends VisitorBase {
 	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
 	return eventSequence(
 				RISCV.newRWWFence(),
-				newStore(e.getAddress(), IValue.ZERO, "")
+				newStoreWithMo(e.getAddress(), IValue.ZERO, "")
         );
 	}
 }

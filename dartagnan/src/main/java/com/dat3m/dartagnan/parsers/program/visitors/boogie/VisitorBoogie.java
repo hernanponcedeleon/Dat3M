@@ -441,7 +441,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 						// These loads corresponding to pthread_joins
 						child = EventFactory.Pthread.newJoin(register, (IExpr)value);
 					} else {
-						child = EventFactory.newLoad(register, (IExpr)value, "");
+						child = EventFactory.newLoadWithMo(register, (IExpr)value, "");
 					}
 					programBuilder.addChild(threadCount, child)
 							.setCFileInformation(currentLine, sourceCodeFile);
@@ -455,7 +455,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             MemoryObject object = programBuilder.getObject(name);
             if(object != null){
     			// These events are eventually compiled and we need to compare its mo, thus it cannot be null
-				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, ""))
+				programBuilder.addChild(threadCount, EventFactory.newStoreWithMo(object, value, ""))
 						.setCFileInformation(currentLine, sourceCodeFile);
 	            continue;
 	        }
@@ -704,7 +704,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				programBuilder.getOrNewObject(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
-			programBuilder.addChild(threadCount, EventFactory.newStore(address, value, ""))
+			programBuilder.addChild(threadCount, EventFactory.newStoreWithMo(address, value, ""))
 					.setCFileInformation(currentLine, sourceCodeFile);
 			return null;
 		}

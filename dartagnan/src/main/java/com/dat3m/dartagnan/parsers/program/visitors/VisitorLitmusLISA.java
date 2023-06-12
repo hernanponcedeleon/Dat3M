@@ -108,7 +108,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
         Register reg = programBuilder.getOrCreateRegister(mainThread, ctx.register().getText(), getArchPrecision());
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-		programBuilder.addChild(mainThread, EventFactory.newLoad(reg, address, mo));
+		programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(reg, address, mo));
 		return null;
 	}
 
@@ -125,7 +125,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 		IExpr value = (IExpr) ctx.value().accept(this);
         IExpr address = (IExpr) ctx.expression().accept(this);
         String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-        programBuilder.addChild(mainThread, EventFactory.newStore(address, value, mo));
+        programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(address, value, mo));
 		return null;
 
 	}

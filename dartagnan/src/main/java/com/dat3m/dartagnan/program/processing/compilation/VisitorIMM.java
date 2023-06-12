@@ -36,7 +36,7 @@ class VisitorIMM extends VisitorBase {
 		final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
 		final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
         return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), isNonAtomic ? C11.MO_RELAXED : mo.value())
+        		newLoadWithMo(e.getResultRegister(), e.getAddress(), isNonAtomic ? C11.MO_RELAXED : mo.value())
         );
 	}
 
@@ -46,13 +46,13 @@ class VisitorIMM extends VisitorBase {
 		final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
 		final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
         return eventSequence(
-        		newStore(e.getAddress(), e.getMemValue(), isNonAtomic ? C11.MO_RELAXED : mo.value())
+        		newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? C11.MO_RELAXED : mo.value())
         );
 	}
 	
 	@Override
 	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
+        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
         store.addTags(C11.PTHREAD);
         
         return eventSequence(
@@ -63,14 +63,14 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitEnd(End e) {
         return eventSequence(
-        		newStore(e.getAddress(), IValue.ZERO, C11.MO_RELEASE)
+        		newStoreWithMo(e.getAddress(), IValue.ZERO, C11.MO_RELEASE)
         );
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
+		Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
         
         return eventSequence(
@@ -82,7 +82,7 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
+        Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
@@ -108,16 +108,16 @@ class VisitorIMM extends VisitorBase {
 
 		Register regExpected = e.getThread().newRegister(precision);
         Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, "");
+        Load loadExpected = newLoadWithMo(regExpected, expectedAddr, "");
         loadExpected.addTags(Tag.IMM.CASDEPORIGIN);
-        Store storeExpected = newStore(expectedAddr, regValue, "");
+        Store storeExpected = newStoreWithMo(expectedAddr, regValue, "");
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
         Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
         CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-        Load loadValue = newRMWLoad(regValue, address, extractLoadMo(mo));
-        Store storeValue = newRMWStore(loadValue, address, e.getMemValue(), extractStoreMo(mo));
+        Load loadValue = newRMWLoadWithMo(regValue, address, extractLoadMo(mo));
+        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), extractStoreMo(mo));
 
         return eventSequence(
                 // Indentation shows the branching structure
@@ -145,14 +145,14 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(resultRegister, address, extractLoadMo(mo));
+        Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
         		optionalFenceBefore,
                 load,
                 newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
         		optionalFenceAfter,
-                newRMWStore(load, address, dummyReg, extractStoreMo(mo))
+                newRMWStoreWithMo(load, address, dummyReg, extractStoreMo(mo))
         );
 	}
 
@@ -162,7 +162,7 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
-        		newLoad(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
+        		newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
         );
 	}
 
@@ -172,7 +172,7 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
         		optionalFence,
-        		newStore(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
+        		newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
         );
 	}
 
@@ -188,13 +188,13 @@ class VisitorIMM extends VisitorBase {
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		
-        Load load = newRMWLoad(e.getResultRegister(), address, mo);
+        Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
         
         return eventSequence(
         		optionalFenceLoad,
                 load,
                 optionalFenceStore,
-                newRMWStore(load, address, e.getMemValue(), extractStoreMo(mo))
+                newRMWStoreWithMo(load, address, e.getMemValue(), extractStoreMo(mo))
         );
 	}
 
@@ -205,13 +205,13 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmLoad(LlvmLoad e) {
 		return eventSequence(
-				newLoad(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo())));
+				newLoadWithMo(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo())));
 	}
 
 	@Override
 	public List<Event> visitLlvmStore(LlvmStore e) {
 		return eventSequence(
-				newStore(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo())));
+				newStoreWithMo(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo())));
 	}
 
 	@Override
@@ -221,8 +221,8 @@ class VisitorIMM extends VisitorBase {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
-		Store store = newRMWStoreExclusive(address, value, IMM.extractStoreMo(mo), true);
+		Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));
+		Store store = newRMWStoreExclusiveWithMo(address, value, true, IMM.extractStoreMo(mo));
 		Label label = newLabel("FakeDep");
 		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -244,8 +244,8 @@ class VisitorIMM extends VisitorBase {
 		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
 		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
 
-		Load load = newRMWLoadExclusive(resultRegister, address, IMM.extractLoadMo(mo));
-		Store store = newRMWStoreExclusive(address, dummyReg, IMM.extractStoreMo(mo), true);
+		Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));
+		Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, IMM.extractStoreMo(mo));
 		Label label = newLabel("FakeDep");
 		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -271,8 +271,8 @@ class VisitorIMM extends VisitorBase {
 		Label casEnd = newLabel("CAS_end");
 		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
 
-		Load load = newRMWLoadExclusive(oldValueRegister, address, IMM.extractLoadMo(mo));
-		Store store = newRMWStoreExclusive(address, value, IMM.extractStoreMo(mo), true);
+		Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, IMM.extractLoadMo(mo));
+		Store store = newRMWStoreExclusiveWithMo(address, value, true, IMM.extractStoreMo(mo));
 
 		return eventSequence(
 				// Indentation shows the branching structure

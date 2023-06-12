@@ -333,7 +333,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = getReturnRegister(true);
-        Event event = EventFactory.newLoad(register, getAddress(ctx.address), C11.NONATOMIC);
+        Event event = EventFactory.newLoadWithMo(register, getAddress(ctx.address), C11.NONATOMIC);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -463,7 +463,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
         ExprInterface value = (ExprInterface)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
-            Event event = EventFactory.newStore((IExpr) variable, value, C11.NONATOMIC);
+            Event event = EventFactory.newStoreWithMo((IExpr) variable, value, C11.NONATOMIC);
             return programBuilder.addChild(currentThread, event);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
@@ -521,14 +521,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             MemoryObject object = programBuilder.getObject(ctx.getText());
             if(object != null){
                 register = programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
+                programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
                 return register;
             }
             return programBuilder.getOrCreateRegister(scope, ctx.getText(), getArchPrecision());
         }
         MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
         Register register = programBuilder.getOrCreateRegister(scope, null, getArchPrecision());
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
+        programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;
     }
 

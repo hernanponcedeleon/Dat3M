@@ -3,23 +3,20 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.event.common.NoInterface;
 
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
-/*
-    WARNING: This class is an implementation detail, i.e., it does NOT provide an interface
-    and should ONLY be used to reduce boilerplate code by sharing common code.
- */
+@NoInterface
 public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements MemoryCoreEvent {
 
     protected IExpr address;
     protected Type accessType;
 
-    // The empty string means no memory order
     public AbstractMemoryCoreEvent(IExpr address) {
         this.address = address;
-        this.accessType = TypeFactory.getInstance().getArchType();
+        this.accessType = TypeFactory.getInstance().getArchType(); // TODO: Add proper typing
         addTags(VISIBLE, MEMORY);
     }
 
@@ -34,7 +31,5 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
 
     public Type getAccessType() { return accessType; }
     public void setAccessType(Type type) { this.accessType = type; }
-
-
 }
 

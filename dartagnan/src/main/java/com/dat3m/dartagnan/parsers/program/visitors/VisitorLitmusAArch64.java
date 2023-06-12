@@ -152,7 +152,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(register, address, ctx.loadInstruction().mo));
+        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(register, address, ctx.loadInstruction().mo));
     }
 
     @Override
@@ -162,7 +162,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        Load load = EventFactory.newRMWLoadExclusive(register, address, ctx.loadExclusiveInstruction().mo);
+        Load load = EventFactory.newRMWLoadExclusiveWithMo(register, address, ctx.loadExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -173,7 +173,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        return programBuilder.addChild(mainThread, EventFactory.newStore(address, register, ctx.storeInstruction().mo));
+        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(address, register, ctx.storeInstruction().mo));
     }
 
     @Override

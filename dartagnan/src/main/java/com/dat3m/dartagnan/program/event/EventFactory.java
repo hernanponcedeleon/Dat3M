@@ -70,21 +70,23 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Load newLoad(Register register, IExpr address, String mo) {
-        Load load = new Load(register, address);
-        if (mo != null && !mo.isEmpty()) {
-            load.setMetadata(new MemoryOrder(mo));
-            load.addTags(mo);
-        }
+    public static Load newLoad(Register register, IExpr address) {
+        return new Load(register, address);
+    }
+
+    public static Load newLoadWithMo(Register register, IExpr address, String mo) {
+        Load load = newLoad(register, address);
+        load.setMemoryOrder(mo);
         return load;
     }
 
-    public static Store newStore(IExpr address, ExprInterface value, String mo) {
-        Store store = new Store(address, value);
-        if (mo != null && !mo.isEmpty()) {
-            store.setMetadata(new MemoryOrder(mo));
-            store.addTags(mo);
-        }
+    public static Store newStore(IExpr address, ExprInterface value) {
+        return new Store(address, value);
+    }
+
+    public static Store newStoreWithMo(IExpr address, ExprInterface value, String mo) {
+        Store store = newStore(address, value);
+        store.setMemoryOrder(mo);
         return store;
     }
 
@@ -163,38 +165,48 @@ public class EventFactory {
 
     // ------------------------------------------ RMW events ------------------------------------------
 
-    public static Load newRMWLoad(Register reg, IExpr address, String mo) {
-        Load load = newLoad(reg, address, mo);
+    public static Load newRMWLoad(Register reg, IExpr address) {
+        Load load = newLoad(reg, address);
         load.addTags(Tag.RMW);
         return load;
     }
 
-    public static RMWStore newRMWStore(Load loadEvent, IExpr address, ExprInterface value, String mo) {
-        RMWStore store =  new RMWStore(loadEvent, address, value);
-        if (mo != null && !mo.isEmpty()) {
-            store.setMetadata(new MemoryOrder(mo));
-            store.addTags(mo);
-        }
+    public static Load newRMWLoadWithMo(Register reg, IExpr address, String mo) {
+        Load load = newLoadWithMo(reg, address, mo);
+        load.addTags(Tag.RMW);
+        return load;
+    }
+
+    public static RMWStore newRMWStore(Load loadEvent, IExpr address, ExprInterface value) {
+        return new RMWStore(loadEvent, address, value);
+    }
+
+    public static RMWStore newRMWStoreWithMo(Load loadEvent, IExpr address, ExprInterface value, String mo) {
+        RMWStore store = newRMWStore(loadEvent, address, value);
+        store.setMemoryOrder(mo);
         return store;
     }
 
-    public static Load newRMWLoadExclusive(Register reg, IExpr address, String mo) {
-        Load load = newLoad(reg, address, mo);
+    public static Load newRMWLoadExclusive(Register reg, IExpr address) {
+        Load load = newLoad(reg, address);
         load.addTags(Tag.RMW, Tag.EXCL);
         return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-        RMWStoreExclusive store = new  RMWStoreExclusive(address, value, isStrong, false);
-        if (mo != null && !mo.isEmpty()) {
-            store.setMetadata(new MemoryOrder(mo));
-            store.addTags(mo);
-        }
-        return store;
+    public static Load newRMWLoadExclusiveWithMo(Register reg, IExpr address, String mo) {
+        Load load = newRMWLoadExclusive(reg, address);
+        load.setMemoryOrder(mo);
+        return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
-        return newRMWStoreExclusive(address, value, mo, false);
+    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, boolean isStrong) {
+        return new RMWStoreExclusive(address, value, isStrong, false);
+    }
+
+    public static RMWStoreExclusive newRMWStoreExclusiveWithMo(IExpr address, ExprInterface value, boolean isStrong, String mo) {
+        RMWStoreExclusive store = newRMWStoreExclusive(address, value, isStrong);
+        store.setMemoryOrder(mo);
+        return store;
     }
 
     public static ExecutionStatus newExecutionStatus(Register register, Event event) {

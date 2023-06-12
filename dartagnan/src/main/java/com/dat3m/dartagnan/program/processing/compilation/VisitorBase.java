@@ -65,7 +65,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitInitLock(InitLock e) {
 		return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), e.getMo())
+                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
         );
 	}
 
@@ -74,11 +74,11 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
 		String mo = e.getMo();
 
-		Load rmwLoad = newRMWLoad(resultRegister, e.getAddress(), mo);
+		Load rmwLoad = newRMWLoadWithMo(resultRegister, e.getAddress(), mo);
 		return eventSequence(
                 rmwLoad,
                 newJump(new Atom(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
-                newRMWStore(rmwLoad, e.getAddress(), IValue.ONE, mo)
+                newRMWStoreWithMo(rmwLoad, e.getAddress(), IValue.ONE, mo)
         );
     }
     
@@ -88,11 +88,11 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
 
-		Load rmwLoad = newRMWLoad(resultRegister, address, mo);
+		Load rmwLoad = newRMWLoadWithMo(resultRegister, address, mo);
 		return eventSequence(
                 rmwLoad,
                 newJump(new Atom(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
-                newRMWStore(rmwLoad, address, IValue.ZERO, mo)
+                newRMWStoreWithMo(rmwLoad, address, IValue.ZERO, mo)
         );
 	}
 
@@ -162,8 +162,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 		IExpr address = e.getAddress();
 		String mo = e.getMo();
         Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		Load load = newRMWLoad(dummyReg, address, mo);
-        RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
+		Load load = newRMWLoadWithMo(dummyReg, address, mo);
+        RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
 		return eventSequence(
         		load,
                 store,

@@ -134,7 +134,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = programBuilder.getOrCreateRegister(mainThread, ctx.register(0).getText(), getArchPrecision());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, "_rx"));
+        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, ra, "_rx"));
     }
 
     @Override
@@ -147,7 +147,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, "_rx"));
+        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(ra, r1, "_rx"));
     }
 
     @Override
