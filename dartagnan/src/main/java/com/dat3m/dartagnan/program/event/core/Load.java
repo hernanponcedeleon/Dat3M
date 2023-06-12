@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
+import java.util.List;
+
 public class Load extends AbstractMemoryCoreEvent implements RegWriter {
 
     protected final Register resultRegister;
@@ -35,8 +37,8 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
     }
 
     @Override
-    public MemoryAccess getMemoryAccess() {
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD);
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD));
     }
 
     // Unrolling

@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
+import java.util.List;
 import java.util.Set;
 
 public class Store extends AbstractMemoryCoreEvent {
@@ -31,8 +32,8 @@ public class Store extends AbstractMemoryCoreEvent {
     }
 
     @Override
-    public MemoryAccess getMemoryAccess() {
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE));
     }
 
     @Override

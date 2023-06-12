@@ -190,7 +190,7 @@ public final class EncodingContext {
         }
     }
 
-    public BooleanFormula sameAddress(MemoryEvent first, MemoryEvent second) {
+    public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
         return aliasAnalysis.mustAlias(first, second) ? booleanFormulaManager.makeTrue() : equal(address(first), address(second));
     }
 
@@ -289,8 +289,8 @@ public final class EncodingContext {
             } else {
                 r = null;
             }
-            if (e instanceof MemoryEvent memEvent) {
-                addresses.put(e, encodeIntegerExpressionAt(memEvent.getMemoryAccess().address(), e));
+            if (e instanceof MemoryCoreEvent memEvent) {
+                addresses.put(e, encodeIntegerExpressionAt(memEvent.getAddress(), e));
                 if (e instanceof Load) {
                     values.put(e, r);
                 } else if (e instanceof Store store) {

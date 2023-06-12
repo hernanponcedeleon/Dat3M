@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,16 +29,17 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(MemoryEvent a, MemoryEvent b) {
+    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+
         if (a.getThread() != b.getThread()
-                || !a.getMemoryAccess().address().equals(b.getMemoryAccess().address())) {
+                || !a.getAddress().equals(b.getAddress())) {
             return false;
         } else if (a == b) {
             return true;
         }
         // Normalize direction
         if (a.getGlobalId() > b.getGlobalId()) {
-            MemoryEvent temp = a;
+            MemoryCoreEvent temp = a;
             a = b;
             b = temp;
         }
@@ -50,7 +51,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         }
 
         // Establish that address expression evaluates to same value at both events.
-        Set<Register> addrRegs = a.getMemoryAccess().address().getRegs();
+        Set<Register> addrRegs = a.getAddress().getRegs();
         Event e = a.getSuccessor();
         while (e != b) {
             if (e instanceof RegWriter && addrRegs.contains(((RegWriter)e).getResultRegister())) {
@@ -64,7 +65,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(MemoryEvent a, MemoryEvent b) {
+    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
     }
 }

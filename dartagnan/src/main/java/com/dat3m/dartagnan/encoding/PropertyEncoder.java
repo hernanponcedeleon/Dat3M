@@ -321,7 +321,7 @@ public class PropertyEncoder implements Encoder {
                     if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
-                    MemoryEvent w = (MemoryEvent)e1;
+                    MemoryCoreEvent w = (MemoryCoreEvent)e1;
                     if (!canRace.test(w)) {
                         continue;
                     }
@@ -329,7 +329,7 @@ public class PropertyEncoder implements Encoder {
                         if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
-                        MemoryEvent m = (MemoryEvent)e2;
+                        MemoryCoreEvent m = (MemoryCoreEvent)e2;
                         if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
                             continue;
                         }

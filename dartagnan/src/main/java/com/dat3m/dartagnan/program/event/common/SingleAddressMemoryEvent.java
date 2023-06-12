@@ -3,9 +3,12 @@ package com.dat3m.dartagnan.program.event.common;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.google.common.base.Preconditions;
+
+import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
@@ -54,5 +57,11 @@ public abstract class SingleAddressMemoryEvent extends AbstractEvent implements 
         return mo;
     }
 
+    public abstract MemoryAccess getMemoryAccess();
+
+    @Override
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(getMemoryAccess());
+    }
 }
 

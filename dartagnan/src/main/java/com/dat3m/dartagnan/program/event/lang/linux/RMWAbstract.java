@@ -53,6 +53,8 @@ public abstract class RMWAbstract extends SingleAddressMemoryEvent implements Re
         return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
+
+
     // Visitor
     // -----------------------------------------------------------------------------------------------------------------
 

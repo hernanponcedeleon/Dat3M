@@ -699,7 +699,7 @@ public class RelationAnalysis {
                         may.add(tuple);
                         if (enableMustSets &&
                                 intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
-                                (store.doesRequireMatchingAddresses() || alias.mustAlias((MemoryEvent) load, store))) {
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
                             must.add(tuple);
                         }
                     }
@@ -712,21 +712,18 @@ public class RelationAnalysis {
             logger.trace("Computing knowledge about memory order");
             List<Store> nonInitWrites = program.getEvents(Store.class);
             Set<Tuple> may = new HashSet<>();
-            for (Event w1 : program.getEvents()) {
-                if (!w1.hasTag(WRITE)) {
-                    continue;
-                }
-                for (MemoryEvent w2 : nonInitWrites) {
+            for (Store w1 : program.getEvents(Store.class)) {
+                for (MemoryCoreEvent w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
-                            && alias.mayAlias((MemoryEvent) w1, w2)) {
+                            && alias.mayAlias(w1, w2)) {
                         may.add(new Tuple(w1, w2));
                     }
                 }
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                MemoryEvent w1 = (MemoryEvent) t.getFirst();
-                MemoryEvent w2 = (MemoryEvent) t.getSecond();
+                MemoryCoreEvent w1 = (MemoryCoreEvent) t.getFirst();
+                MemoryCoreEvent w2 = (MemoryCoreEvent) t.getSecond();
                 if (!w2.hasTag(INIT) && alias.mustAlias(w1, w2) && w1.hasTag(INIT)) {
                     must.add(t);
                 }
@@ -734,8 +731,8 @@ public class RelationAnalysis {
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
                 for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                    MemoryEvent w1 = (MemoryEvent) t.getFirst();
-                    MemoryEvent w2 = (MemoryEvent) t.getSecond();
+                    MemoryCoreEvent w1 = (MemoryCoreEvent) t.getFirst();
+                    MemoryCoreEvent w2 = (MemoryCoreEvent) t.getSecond();
                     if (alias.mustAlias(w1, w2) && t.isForward()) {
                         must.add(t);
                     }
@@ -754,7 +751,7 @@ public class RelationAnalysis {
                     continue;
                 }
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias((MemoryEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias((MemoryCoreEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -771,19 +768,19 @@ public class RelationAnalysis {
                 for (Load read : program.getEvents(Load.class)) {
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
-                    List<MemoryEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
+                    List<MemoryCoreEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
                             .filter(e -> (e.getThread() == read.getThread() || e.hasTag(INIT)))
-                            .map(x -> (MemoryEvent) x)
+                            .map(x -> (MemoryCoreEvent) x)
                             .sorted((o1, o2) -> o1.hasTag(INIT) == o2.hasTag(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.hasTag(INIT) ? -1 : 1)
                             .collect(Collectors.toList());
                     // The set of writes that won't be readable due getting overwritten.
-                    Set<MemoryEvent> deletedWrites = new HashSet<>();
+                    Set<MemoryCoreEvent> deletedWrites = new HashSet<>();
                     // A rf-edge (w1, r) is impossible, if there exists a write w2 such that
                     // - w2 is exec-implied by w1 or r (i.e. cf-implied + w2.cfImpliesExec)
                     // - w2 must alias with either w1 or r.
                     for (int i = 0; i < possibleWrites.size(); i++) {
-                        MemoryEvent w1 = possibleWrites.get(i);
-                        for (MemoryEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
+                        MemoryCoreEvent w1 = possibleWrites.get(i);
+                        for (MemoryCoreEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
                             // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
                             // executed
                             if ((exec.isImplied(w1, w2) || exec.isImplied(read, w2))
@@ -841,9 +838,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameAddress(Relation rel) {
             Set<Tuple> may = new HashSet<>();
-            List<MemoryEvent> events = program.getEvents(MemoryEvent.class);
-            for (MemoryEvent e1 : events) {
-                for (MemoryEvent e2 : events) {
+            List<MemoryCoreEvent> events = program.getEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
                     if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
@@ -851,7 +848,7 @@ public class RelationAnalysis {
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                if (alias.mustAlias((MemoryEvent) t.getFirst(), (MemoryEvent) t.getSecond())) {
+                if (alias.mustAlias((MemoryCoreEvent) t.getFirst(), (MemoryCoreEvent) t.getSecond())) {
                     must.add(t);
                 }
             }
@@ -1415,7 +1412,7 @@ public class RelationAnalysis {
             //TODO use transitivity
             Set<Tuple> e = new HashSet<>();
             for (Tuple xy : disabled) {
-                if (alias.mustAlias((MemoryEvent) xy.getFirst(), (MemoryEvent) xy.getSecond())) {
+                if (alias.mustAlias((MemoryCoreEvent) xy.getFirst(), (MemoryCoreEvent) xy.getSecond())) {
                     e.add(xy.getInverse());
                 }
             }

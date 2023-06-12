@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -68,12 +69,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemoryEvent x, MemoryEvent y) {
+    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(MemoryEvent x, MemoryEvent y) {
+    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 
@@ -84,9 +85,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ Processing ================================
 
     private void run(Program program) {
-        List<MemoryEvent> memEvents = program.getEvents(MemoryEvent.class);
+        List<MemoryCoreEvent> memEvents = program.getEvents(MemoryCoreEvent.class);
         List<Local> locals = program.getEvents(Local.class);
-        for (MemoryEvent e : memEvents) {
+        for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
         for (Local e : locals) {
@@ -96,13 +97,13 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (Local e : locals) {
             processResults(e);
         }
-        for (MemoryEvent e : memEvents) {
+        for (MemoryCoreEvent e : memEvents) {
             processResults(e);
         }
     }
 
-    private void processLocs(MemoryEvent e) {
-        IExpr address = e.getMemoryAccess().address();
+    private void processLocs(MemoryCoreEvent e) {
+        IExpr address = e.getAddress();
         // Collect for each v events of form: p = *v, *v = q
         if (address instanceof Register) {
             addEvent((Register) address, e);
@@ -237,8 +238,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private void processResults(MemoryEvent e) {
-        IExpr address = e.getMemoryAccess().address();
+    private void processResults(MemoryCoreEvent e) {
+        IExpr address = e.getAddress();
         Set<Location> addresses;
         if (address instanceof Register) {
             Set<Location> target = targets.get(address);
