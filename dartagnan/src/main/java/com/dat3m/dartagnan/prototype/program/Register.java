@@ -25,7 +25,7 @@ public class Register extends LeafExpressionBase<Type, ExpressionKind.Leaf> {
         return new Register(type, name, owner);
     }
 
-    public static void collectRegisterReads(Expression expr, UsageType depType, Set<Read> collector) {
+    public static Set<Read> collectRegisterReads(Expression expr, UsageType depType, Set<Read> collector) {
         if (expr instanceof Register reg) {
             collector.add(new Read(reg, depType));
         } else {
@@ -33,6 +33,7 @@ public class Register extends LeafExpressionBase<Type, ExpressionKind.Leaf> {
                 collectRegisterReads(child, depType, collector);
             }
         }
+        return collector;
     }
 
     public String getName() {
