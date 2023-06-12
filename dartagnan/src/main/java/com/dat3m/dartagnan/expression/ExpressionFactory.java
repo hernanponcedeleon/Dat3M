@@ -68,14 +68,6 @@ public final class ExpressionFactory {
         return new IValue(value, type);
     }
 
-    public IExpr makeInteger(IntegerType targetType, Expression operand) {
-        Type operandType = operand.getType();
-        if (operandType instanceof BooleanType) {
-            return makeConditional(operand, makeOne(targetType), makeZero(targetType));
-        }
-        throw new UnsupportedOperationException(String.format("makeInteger with unknown-typed operand %s.", operand));
-    }
-
     public IExpr makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
         return new IfExpr(condition, ifTrue, ifFalse);
     }
@@ -128,6 +120,9 @@ public final class ExpressionFactory {
     }
 
     public IExpr makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
+        if (operand.getType() instanceof BooleanType) {
+            return makeConditional(operand, makeOne(targetType), makeZero(targetType));
+        }
         return makeUnary(signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED, operand, targetType);
     }
 
