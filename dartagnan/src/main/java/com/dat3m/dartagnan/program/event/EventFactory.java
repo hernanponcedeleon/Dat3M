@@ -7,6 +7,9 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -601,6 +604,33 @@ public class EventFactory {
 
         public static Fence newLwSyncBarrier() {
             return newFence(LWSYNC);
+        }
+    }
+
+    // =============================================================================================
+    // ============================================ PTX ============================================
+    // =============================================================================================
+    public static class PTX {
+        private PTX() {}
+
+        public static AtomOp newAtomOp(IExpr address, Register register, IExpr value,
+                                             IOpBin op, String mo, String scope) {
+            // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
+            AtomOp atom = new AtomOp(address, register, value, op, mo);
+            atom.addFilters(scope);
+            return atom;
+        }
+
+        public static RedOp newRedOp(IExpr address, Register register, IExpr value,
+                                           IOpBin op, String mo, String scope) {
+            // PTX (currently) only generates memory orders ACQ_REL and RLX for red.
+            RedOp red = new RedOp(address, register, value, op, mo);
+            red.addFilters(scope);
+            return red;
+        }
+
+        public static FenceWithId newFenceWithId(String name, IExpr fenceId) {
+            return new FenceWithId(name, fenceId);
         }
     }
 

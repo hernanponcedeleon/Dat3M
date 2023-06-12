@@ -4,8 +4,9 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.FilterAbstract;
 import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.SameScope;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
+import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -327,6 +328,18 @@ public class Wmm {
                 return intersection(r, getRelation(CTRL), getRelation(ISYNC));
             case CTRLISB:
                 return intersection(r, getRelation(CTRL), getRelation(ISB));
+            case SR:
+                return new SameScope(r);
+            case SCTA:
+                return new SameScope(r, Tag.PTX.CTA);
+            case SYNCBAR:
+                return new SyncBar(r);
+            case SYNC_BARRIER:
+                return intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
+            case SYNC_FENCE:
+                return new SyncFence(r);
+            case VLOC:
+                return new VirtualLocation(r);
             default:
                 throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         }

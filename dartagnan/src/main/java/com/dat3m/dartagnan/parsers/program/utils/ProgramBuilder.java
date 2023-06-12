@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.program.Program;
@@ -15,12 +18,11 @@ import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
+import java.util.HashSet;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -92,7 +94,6 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Declarators
-
     public void initLocEqLocPtr(String leftName, String rightName){
         initLocEqConst(leftName, getOrNewObject(rightName));
     }
@@ -212,5 +213,59 @@ public class ProgramBuilder {
                 throw new MalformedProgramException("Illegal jump to label " + labelName);
             }
         }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // PTX
+    
+    public void initScopedThread(String name, int id, int ctaID, int gpuID) {
+        if(!threads.containsKey(id)){
+            Skip threadEntry = EventFactory.newSkip();
+            threads.putIfAbsent(id, new PTXThread(name, id, threadEntry, gpuID, ctaID));
+        }
+    }
+
+    public void initScopedThread(int id, int ctaID, int gpuID) {
+        initScopedThread(String.valueOf(id), id, ctaID, gpuID);
+    }
+
+    public void initVirLocEqCon(String leftName, IConst iValue){
+        MemoryObject object = locations.computeIfAbsent(
+                leftName, k->memory.allocateVirtual(1, true, true, null));
+        object.setCVar(leftName);
+        object.setInitialValue(0, iValue);
+    }
+
+    public void initVirLocEqLoc(String leftName, String rightName){
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        if (rightLocation == null) {
+            throw new MalformedProgramException("Alias to non-exist location: " + rightName);
+        }
+        MemoryObject object = locations.computeIfAbsent(leftName,
+                k->memory.allocateVirtual(1, true, true, null));
+        object.setCVar(leftName);
+        object.setInitialValue(0,rightLocation.getInitialValue(0));
+    }
+
+    public void initVirLocEqLocAliasGen(String leftName, String rightName){
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        if (rightLocation == null) {
+            throw new MalformedProgramException("Alias to non-exist location: " + rightName);
+        }
+        MemoryObject object = locations.computeIfAbsent(leftName,
+                k->memory.allocateVirtual(1, true, true, rightLocation));
+        object.setCVar(leftName);
+        object.setInitialValue(0,rightLocation.getInitialValue(0));
+    }
+
+    public void initVirLocEqLocAliasProxy(String leftName, String rightName){
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        if (rightLocation == null) {
+            throw new MalformedProgramException("Alias to non-exist location: " + rightName);
+        }
+        MemoryObject object = locations.computeIfAbsent(
+                leftName, k->memory.allocateVirtual(1, true, false, rightLocation));
+        object.setCVar(leftName);
+        object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
 }

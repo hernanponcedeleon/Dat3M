@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.program.event;
 
+import java.util.Set;
+
+import com.dat3m.dartagnan.program.event.core.Event;
+
 /*
     Tags can be attached to any event.
     There are two types of tags:
@@ -254,6 +258,70 @@ public final class Tag {
                 case C11.MO_ACQUIRE_RELEASE:    return C11.MO_ACQUIRE;
                 case C11.MO_RELEASE:            return C11.MO_RELAXED;
                 default:                        return cMo;
+            }
+        }
+    }
+
+    // =============================================================================================
+    // =========================================== PTX =============================================
+    // =============================================================================================
+    public static final class PTX {
+        // Scopes
+        public static final String CTA = "CTA";
+        public static final String GPU = "GPU";
+        public static final String SYS = "SYS";
+        // Memory orders
+        public static final String WEAK = "WEAK";
+        public static final String RLX = "RLX"; // RELAXED
+        public static final String ACQ = "ACQ"; // ACQUIRE
+        public static final String REL = "REL"; // RELEASE
+        public static final String ACQ_REL = "ACQ_REL";
+        public static final String SC = "SC";
+        // Proxies
+        public static final String GEN = "GEN"; // GENERIC
+        public static final String TEX = "TEX"; // TEXTURE
+        public static final String SUR = "SUR"; // SURFACE
+        public static final String CON = "CON"; // CONSTANT
+        // Virtual memory
+        public static final String ALIAS = "ALIAS";
+        private PTX() {
+        }
+
+        public static Set<String> getScopeTags() {
+            return Set.of(CTA, GPU, SYS);
+        }
+
+        public static Set<String> getProxyTags() {
+            return Set.of(GEN, TEX, SUR, CON);
+        }
+
+        public static String getScopeTag(Event e) {
+            return getScopeTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+        }
+    
+        public static String getProxyTag(Event e) {
+            return getProxyTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+        }
+        
+        public static String loadMO(String mo) {
+            switch (mo) {
+                case ACQ_REL:
+                    return ACQ;
+                case RLX:
+                    return RLX;
+                default:
+                    return "";
+            }
+        }
+
+        public static String storeMO(String mo) {
+            switch (mo) {
+                case ACQ_REL:
+                    return REL;
+                case RLX:
+                    return RLX;
+                default:
+                    return "";
             }
         }
     }

@@ -1,0 +1,11 @@
+PTX _Atom-minus-location
+"RMW minus op"
+{
+P0:r0=0;
+P1:r0=0;
+x=2;
+}
+ P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
+ atom.acq_rel.sys.minus r0, x, 1  | atom.acq_rel.sys.minus r0, x, 1  ;
+forall
+(x == 0)

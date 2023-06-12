@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.configuration.Alias;
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.MemEvent;
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,9 @@ public interface AliasAnalysis {
                 throw new UnsupportedOperationException("Alias method not recognized");
         }
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
+        if (Arch.supportsVirtualAddressing(program.getArch())) {
+            a = VirtualAliasAnalysis.wrap(a);
+        }
 
         long t1 = System.currentTimeMillis();
         logger.info("Finished alias analysis in {}ms", t1 - t0);

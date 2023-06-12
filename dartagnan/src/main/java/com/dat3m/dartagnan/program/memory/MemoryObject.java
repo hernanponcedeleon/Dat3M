@@ -24,6 +24,7 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
+
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
     // Generally, this is no necessarily true for structs, but right now we

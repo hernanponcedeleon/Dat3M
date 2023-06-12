@@ -1,0 +1,11 @@
+PTX _Red-minus-location
+"Atomicity of Read Modify Write(RMW): location should receive updates from both threads"
+{
+P0:r0=0;
+P1:r0=0;
+x=2;
+}
+ P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
+ red.acq_rel.sys.minus x, 1       | red.acq_rel.sys.minus x, 1       ;
+forall
+(x == 0)

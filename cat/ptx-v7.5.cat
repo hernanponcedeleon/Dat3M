@@ -1,0 +1,107 @@
+PTX
+(* NVIDIA. Parallel Thread Execution ISA Version 7.5 *)
+
+// Base relations:
+// vloc: virtual address mapping to the same generic address
+// sr: same-scope
+// scta: same-cta
+// sync_barrier: synchronize by barriers with same logical barrier resource (barID)
+// sync_fence: synchronize by morally strong fence.sc
+
+// Scope Tags:
+// CTA: Cooperative thread array, is an array of threads that execute a kernel concurrently or in parallel.
+//      The CTA scope is the set of all threads executing in the same CTA as the current thread.
+// GPU: Graphics processing unit. The GPU scope is the set of all threads executing in the same cluster as the current thread.
+// SYS: System. The SYS scope is the set of all threads in the current program.
+
+// Proxy Tags:
+// GEN: Generic memory space, this is the memory space that proxy-less PTX memory model(ptx-v6.0) applies to.
+// SUR: Surface memory, used by graphics workloads
+// TEX: Texture memory, used by graphics workloads
+// CON: Constant memory, is a small, distinct address space reserved to hold fixed values.
+
+// Comparing to the ptx-v7.5 model written in Alloy (https://github.com/NVlabs/mixedproxy)
+// The ptx-v7.5 alloy model uses this Causality-axiom "irreflexive ((rf | co | fr)?; cause)".
+// The ptx-v6.0 alloy model uses "irreflexive ((rf | fr)?; cause)".
+// The ASPLOS'19 paper and the documentation refer to "rf | fr" (non-optional). 
+// We follow the later.
+
+(*******************)
+(*   Auxiliaries   *)
+(*******************)
+
+// Explicitly add transitivity for coherence since the co in PTX is not total
+let co = co+
+
+(* Events *)
+let strong-write = W & (RLX | REL)
+let strong-read = R & (RLX | ACQ)
+let strong-m = strong-write | strong-read
+let strong-operation = strong-m | F
+
+(* Proxy *)
+let same-proxy = GEN * GEN | SUR * SUR | TEX * TEX | CON * CON
+let po-vloc = po & vloc
+
+(* Relations *)
+// The operations are related in program order, or each operation is strong and
+// specifies a scope that includes the thread executing the other operation.
+let ms1 = (po | po^-1) | ([strong-operation]; sr; [strong-operation])
+// Both operations are performed via the same proxy.
+let ms2 = same-proxy
+// If both are memory operations, then they overlap completely
+let ms3 = ((M * M) & vloc) | ((_ * _) \ (M * M))
+let morally-strong = (ms1 & ms2 & ms3) \ id
+
+// This is probably equivalent to 
+// let rec observation = (morally-strong & rf) | (observation; rmw; observation)
+// We opt to avoid the recursion
+let observation = (morally-strong & rf) | rmw
+
+let release-pattern = ([W & REL]; po-vloc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+
+let acquire-pattern = ([strong-read]; po-vloc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+
+let sync = morally-strong & (release-pattern; observation; acquire-pattern)
+let cause-base = (po?; ((sync | sync_fence | sync_barrier); po?)+) | po
+
+(*******************)
+
+(* Proxy-aware causality ordering *)
+let proxy-fence-ops = [F]; (same-proxy & scta); [M]
+let proxy-preserved-cause-base
+                = ([GEN]; (vloc & cause-base); [GEN])
+                | ([M]; (same-proxy & scta & vloc & cause-base); [M])
+                | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; [GEN])
+                | vloc & ([GEN]; cause-base; cause-base & proxy-fence-ops)
+                | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; cause-base & proxy-fence-ops)
+                // The alloy model does not support the constant proxy below
+                | loc & ([M & CON]; cause-base; [F & CON]; cause-base; [M & CON])
+                | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; [GEN])
+                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
+                | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
+                | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
+let cause = observation?; proxy-preserved-cause-base
+
+(******************************)
+(*  PTX Memory Model Axioms   *)
+(******************************)
+
+(* Axiom Coherence *)
+empty ((([W]; cause; [W]) & loc) \ co) as axiom-Coherence
+// Make sure that all morally strong same-loc writes are related by co in either direction
+empty (([W]; morally-strong; [W]) & loc) \ (co | co^-1) as axiom-Coherence2
+
+(* Axiom FenceSC *)
+// This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
+empty (([F & SC]; cause; [F & SC]) \ sync_fence) as axiom-FenceSC
+
+(* Axiom Atomicity *)
+empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
+
+(* Axiom No-Thin-Air *)
+let dep = addr | data | ctrl
+acyclic (rf | dep) as axiom-NoThinAir
+
+(* Axiom Causality *)
+irreflexive ((rf | fr); cause) as axiom-Causality
