@@ -11,8 +11,8 @@ import static com.dat3m.dartagnan.program.event.Tag.RMW;
 public class LKMMLockWrite extends RMWStore {
 
 	public LKMMLockWrite(Load lockRead, IExpr lock) {
-		super(lockRead, lock, IValue.ONE, Linux.MO_ONCE);
-		addTags(RMW, Linux.LOCK_WRITE);
+		super(lockRead, lock, IValue.ONE);
+		addTags(RMW, Linux.LOCK_WRITE, Linux.MO_ONCE);
 	}
 
 	@Override

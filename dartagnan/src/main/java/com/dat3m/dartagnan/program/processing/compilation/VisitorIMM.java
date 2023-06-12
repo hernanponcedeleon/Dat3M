@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,17 +32,21 @@ class VisitorIMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitLoad(Load e) {
-		String mo = e.getMo();
+		// FIXME: It is weird to compile a core-level load by transforming its tagging.
+		final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+		final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
         return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), mo.isEmpty() || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        		newLoad(e.getResultRegister(), e.getAddress(), isNonAtomic ? C11.MO_RELAXED : mo.value())
         );
 	}
 
 	@Override
 	public List<Event> visitStore(Store e) {
-		String mo = e.getMo();
+		// FIXME: It is weird to compile a core-level load by transforming its tagging.
+		final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
+		final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
         return eventSequence(
-        		newStore(e.getAddress(), e.getMemValue(), mo.isEmpty() || mo.equals(C11.NONATOMIC) ? C11.MO_RELAXED : mo)
+        		newStore(e.getAddress(), e.getMemValue(), isNonAtomic ? C11.MO_RELAXED : mo.value())
         );
 	}
 	

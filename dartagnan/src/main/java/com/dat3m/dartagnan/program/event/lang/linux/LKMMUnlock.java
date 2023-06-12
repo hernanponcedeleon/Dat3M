@@ -11,8 +11,8 @@ import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
 public class LKMMUnlock extends Store {
 
 	public LKMMUnlock(IExpr lock) {
-		super(lock, IValue.ZERO, MO_RELEASE);
-		addTags(Tag.Linux.UNLOCK);
+		super(lock, IValue.ZERO);
+		addTags(Tag.Linux.UNLOCK, MO_RELEASE);
 	}
 
     protected LKMMUnlock(LKMMUnlock other){

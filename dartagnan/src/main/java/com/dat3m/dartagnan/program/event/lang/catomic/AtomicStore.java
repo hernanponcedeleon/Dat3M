@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
-import com.dat3m.dartagnan.program.event.core.SingleAddressMemoryEvent;
+import com.dat3m.dartagnan.program.event.common.SingleAddressMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 

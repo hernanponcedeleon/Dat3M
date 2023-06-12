@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
-import com.dat3m.dartagnan.program.event.core.SingleAddressMemoryEvent;
+import com.dat3m.dartagnan.program.event.common.SingleAddressMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -52,8 +52,7 @@ public abstract class LlvmAbstractRMW extends SingleAddressMemoryEvent implement
 
     @Override
     public MemoryAccess getMemoryAccess() {
-        // TODO: Once we can return multiple MemoryAccesses, we need to add the LOAD here as well.
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
     // Visitor

@@ -10,12 +10,12 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
 
-public class Store extends SingleAddressMemoryEvent {
+public class Store extends AbstractMemoryCoreEvent {
 
     protected ExprInterface value;
 
-    public Store(IExpr address, ExprInterface value, String mo) {
-        super(address, mo);
+    public Store(IExpr address, ExprInterface value) {
+        super(address);
         this.value = value;
         addTags(Tag.WRITE);
     }
@@ -39,7 +39,6 @@ public class Store extends SingleAddressMemoryEvent {
     public String toString() {
         final MemoryOrder mo = getMetadata(MemoryOrder.class);
         return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
-        //return "store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 
     public ExprInterface getMemValue() {

@@ -16,8 +16,7 @@ public class Init extends Store {
     private final int offset;
 
     public Init(MemoryObject b, int o) {
-        super(b.add(o), b.getInitialValue(o), "");
-        //super(b.add(o), "");
+        super(b.add(o), b.getInitialValue(o));
         base = b;
         offset = o;
         addTags(Tag.INIT);

@@ -67,14 +67,12 @@ public class VisitorC11 extends VisitorBase {
 
         @Override
         public List<Event> visitLoad(Load e) {
-                return tagList(eventSequence(
-                        newLoad(e.getResultRegister(), e.getAddress(), e.getMo())));
+                return tagList(eventSequence(e.getCopy()));
         }
 
         @Override
         public List<Event> visitStore(Store e) {
-                return tagList(eventSequence(
-                        newStore(e.getAddress(), e.getMemValue(), e.getMo())));
+                return tagList(eventSequence(e.getCopy()));
         }
 
         // =============================================================================================

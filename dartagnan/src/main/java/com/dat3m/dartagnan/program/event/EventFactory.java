@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.*;
@@ -70,11 +71,21 @@ public class EventFactory {
     // ------------------------------------------ Memory events ------------------------------------------
 
     public static Load newLoad(Register register, IExpr address, String mo) {
-        return new Load(register, address, mo);
+        Load load = new Load(register, address);
+        if (mo != null && !mo.isEmpty()) {
+            load.setMetadata(new MemoryOrder(mo));
+            load.addTags(mo);
+        }
+        return load;
     }
 
     public static Store newStore(IExpr address, ExprInterface value, String mo) {
-        return new Store(address, value, mo);
+        Store store = new Store(address, value);
+        if (mo != null && !mo.isEmpty()) {
+            store.setMetadata(new MemoryOrder(mo));
+            store.addTags(mo);
+        }
+        return store;
     }
 
     public static Fence newFence(String name) {
@@ -159,17 +170,27 @@ public class EventFactory {
     }
 
     public static RMWStore newRMWStore(Load loadEvent, IExpr address, ExprInterface value, String mo) {
-        return new RMWStore(loadEvent, address, value, mo);
+        RMWStore store =  new RMWStore(loadEvent, address, value);
+        if (mo != null && !mo.isEmpty()) {
+            store.setMetadata(new MemoryOrder(mo));
+            store.addTags(mo);
+        }
+        return store;
     }
 
     public static Load newRMWLoadExclusive(Register reg, IExpr address, String mo) {
-        Load load = new Load(reg, address, mo);
+        Load load = newLoad(reg, address, mo);
         load.addTags(Tag.RMW, Tag.EXCL);
         return load;
     }
 
     public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-        return new RMWStoreExclusive(address, value, mo, isStrong, false);
+        RMWStoreExclusive store = new  RMWStoreExclusive(address, value, isStrong, false);
+        if (mo != null && !mo.isEmpty()) {
+            store.setMetadata(new MemoryOrder(mo));
+            store.addTags(mo);
+        }
+        return store;
     }
 
     public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, String mo) {
@@ -516,8 +537,12 @@ public class EventFactory {
         }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
             store.addTags(Tag.RISCV.STCOND);
+            if (mo != null && !mo.isEmpty()) {
+                store.setMetadata(new MemoryOrder(mo));
+                store.addTags(mo);
+            }
             return store;
         }
 
@@ -588,7 +613,12 @@ public class EventFactory {
         }
 
         public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
-            return new RMWStoreExclusive(address, value, mo, isStrong, true);
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
+            if (mo != null && !mo.isEmpty()) {
+                store.setMetadata(new MemoryOrder(mo));
+                store.addTags(mo);
+            }
+            return store;
         }
 
         public static Fence newISyncBarrier() {

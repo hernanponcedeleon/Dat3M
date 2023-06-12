@@ -31,8 +31,6 @@ public class AtomicCmpXchg extends AtomicAbstract {
         return !this.isStrong;
     }
 
-    //TODO: Override getDataRegs???
-
     public IExpr getExpectedAddr() {
         return expectedAddr;
     }
@@ -43,8 +41,7 @@ public class AtomicCmpXchg extends AtomicAbstract {
 
     @Override
     public MemoryAccess getMemoryAccess() {
-        // TODO: Once we can return multiple MemoryAccesses, we need to add the LOAD here as well.
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
     @Override

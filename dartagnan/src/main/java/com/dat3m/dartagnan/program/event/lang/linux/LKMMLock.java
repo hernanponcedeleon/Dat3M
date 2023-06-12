@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
-import com.dat3m.dartagnan.program.event.core.SingleAddressMemoryEvent;
+import com.dat3m.dartagnan.program.event.common.SingleAddressMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class LKMMLock extends SingleAddressMemoryEvent {
@@ -28,8 +28,7 @@ public class LKMMLock extends SingleAddressMemoryEvent {
 
     @Override
     public MemoryAccess getMemoryAccess() {
-        // TODO: Once we can return multiple MemoryAccesses, we need to add the LOAD here as well.
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
     // Unrolling
