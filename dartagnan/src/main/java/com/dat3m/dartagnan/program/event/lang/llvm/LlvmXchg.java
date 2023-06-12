@@ -1,14 +1,13 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class LlvmXchg extends LlvmAbstractRMW {
 
-    public LlvmXchg(Register register, IExpr address, IExpr value, String mo) {
+    public LlvmXchg(Register register, Expression address, Expression value, String mo) {
         super(address, register, value, mo);
     }
 
@@ -22,7 +21,7 @@ public class LlvmXchg extends LlvmAbstractRMW {
     }
 
     @Override
-    public ExprInterface getMemValue() {
+    public Expression getMemValue() {
     	return value;
     }
     

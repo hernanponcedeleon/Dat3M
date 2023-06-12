@@ -276,7 +276,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final HashSet<Register> register = new HashSet<>();
         Result result;
 
-        Collector(ExprInterface x) {
+        Collector(Expression x) {
             result = x.visit(this);
         }
 

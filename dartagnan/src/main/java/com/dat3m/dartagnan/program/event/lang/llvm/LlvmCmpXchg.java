@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -9,13 +8,13 @@ import java.util.Set;
 
 public class LlvmCmpXchg extends LlvmAbstractRMW {
 
-    private IExpr expectedValue;
+    private Expression expectedValue;
     private Register oldValueRegister;
     private Register cmpRegister;
     private boolean isStrong;
 
-    public LlvmCmpXchg(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedValue, IExpr value,
-                       String mo, boolean isStrong) {
+    public LlvmCmpXchg(Register oldValueRegister, Register cmpRegister, Expression address,
+                       Expression expectedValue, Expression value, String mo, boolean isStrong) {
         super(address, null, value, mo);
         this.expectedValue = expectedValue;
         this.oldValueRegister = oldValueRegister;
@@ -53,7 +52,7 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         }
     }
 
-    public ExprInterface getExpectedValue() {
+    public Expression getExpectedValue() {
     	return expectedValue;
     }
     

@@ -114,17 +114,14 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
    }
     
     private boolean mutuallyExclusiveIfs(CondJump jump, Event e) {
-        if (!(e instanceof CondJump)) {
+        if (!(e instanceof CondJump other)) {
             return false;
         }
-        final CondJump other = (CondJump) e;
-        if (jump.getGuard() instanceof BExprUn && ((BExprUn)jump.getGuard()).getInner().equals(other.getGuard())
-                || other.getGuard() instanceof BExprUn && ((BExprUn) other.getGuard()).getInner().equals(jump.getGuard())) {
+        if (jump.getGuard() instanceof BExprUn jumpGuard && jumpGuard.getInner().equals(other.getGuard())
+                || other.getGuard() instanceof BExprUn otherGuard && otherGuard.getInner().equals(jump.getGuard())) {
             return true;
         }
-        if (jump.getGuard() instanceof Atom && other.getGuard() instanceof Atom) {
-            final Atom a1 = (Atom) jump.getGuard();
-            final Atom a2 = (Atom) other.getGuard();
+        if (jump.getGuard() instanceof Atom a1 && other.getGuard() instanceof Atom a2) {
             return a1.getOp().inverted() == a2.getOp() && a1.getLHS().equals(a2.getLHS()) && a1.getRHS().equals(a2.getRHS());
         }
         return false;

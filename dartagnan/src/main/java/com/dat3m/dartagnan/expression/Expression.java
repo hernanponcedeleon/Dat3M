@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
-public interface ExprInterface {
+public interface Expression {
 
     Type getType();
 
@@ -16,4 +16,8 @@ public interface ExprInterface {
     <T> T visit(ExpressionVisitor<T> visitor);
 
     //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }
+
+    default IConst reduce() {
+        throw new UnsupportedOperationException("Reduce not supported for " + this);
+    }
 }

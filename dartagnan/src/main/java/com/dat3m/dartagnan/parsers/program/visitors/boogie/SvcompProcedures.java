@@ -84,7 +84,7 @@ public class SvcompProcedures {
 	}
 
 	private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
-    	ExprInterface expr = (ExprInterface)ctx.call_params().exprs().accept(visitor);
+    	Expression expr = (Expression)ctx.call_params().exprs().accept(visitor);
        	visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
 	}
 	

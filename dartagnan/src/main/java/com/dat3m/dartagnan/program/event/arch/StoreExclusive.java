@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.arch;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -16,7 +15,7 @@ public class StoreExclusive extends Store implements RegWriter {
 
     private final Register register;
 
-    public StoreExclusive(Register register, IExpr address, ExprInterface value, String mo) {
+    public StoreExclusive(Register register, Expression address, Expression value, String mo) {
         super(address, value, mo);
         this.register = register;
         addTags(Tag.EXCL);

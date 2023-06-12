@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -10,7 +10,7 @@ public class RMWOpAndTest extends RMWAbstract {
 
     private final IOpBin op;
 
-    public RMWOpAndTest(IExpr address, Register register, IExpr value, IOpBin op) {
+    public RMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {
         super(address, register, value, Tag.Linux.MO_MB);
         this.op = op;
     }

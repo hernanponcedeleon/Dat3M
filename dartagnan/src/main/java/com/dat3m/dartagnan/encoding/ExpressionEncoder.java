@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -39,7 +40,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return formulaManager.getBitvectorFormulaManager();
     }
 
-    BooleanFormula encodeAsBoolean(ExprInterface expression) {
+    BooleanFormula encodeAsBoolean(Expression expression) {
         Formula formula = expression.visit(this);
         if (formula instanceof BooleanFormula) {
             return (BooleanFormula) formula;
@@ -56,24 +57,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
     }
 
-    Formula encodeAsInteger(ExprInterface expression) {
-        Formula formula = expression.visit(this);
-        if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
-            return formula;
-        }
-        int precision = getArchPrecision();
-        Formula one;
-        Formula zero;
-        if(precision > -1) {
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            one = bitvectorFormulaManager.makeBitvector(precision, 1);
-            zero = bitvectorFormulaManager.makeBitvector(precision, 0);
-        } else {
-            IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-            one = integerFormulaManager.makeNumber(1);
-            zero = integerFormulaManager.makeNumber(0);
-        }
-        return booleanFormulaManager.ifThenElse((BooleanFormula) formula, one, zero);
+    Formula encodeAsInteger(Expression expression) {
+        return expression.visit(this);
     }
 
     static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
@@ -319,141 +304,45 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IExprUn iUn) {
+        //TODO if inner is a boolean formula, we still want to encode it as boolean in case of conversions
         Formula inner = encodeAsInteger(iUn.getInner());
-        if (inner instanceof IntegerFormula) {
-            IntegerFormula i = (IntegerFormula) inner;
-            switch (iUn.getOp()) {
-                case MINUS:
-                    return integerFormulaManager().subtract(integerFormulaManager().makeNumber(0), i);
-                case BV2UINT:
-                case BV2INT:
-                    return inner;
-                // ============ INT2BV ============
-                case INT2BV1:
-                    return bitvectorFormulaManager().makeBitvector(1, i);
-                case INT2BV8:
-                    return bitvectorFormulaManager().makeBitvector(8, i);
-                case INT2BV16:
-                    return bitvectorFormulaManager().makeBitvector(16, i);
-                case INT2BV32:
-                    return bitvectorFormulaManager().makeBitvector(32, i);
-                case INT2BV64:
-                    return bitvectorFormulaManager().makeBitvector(64, i);
-                // ============ TRUNC ============
-                case TRUNC6432:
-                case TRUNC6416:
-                case TRUNC3216:
-                case TRUNC648:
-                case TRUNC328:
-                case TRUNC168:
-                case TRUNC641:
-                case TRUNC321:
-                case TRUNC161:
-                case TRUNC81:
-                // ============ ZEXT ============
-                case ZEXT18:
-                case ZEXT116:
-                case ZEXT132:
-                case ZEXT164:
-                case ZEXT816:
-                case ZEXT832:
-                case ZEXT864:
-                case ZEXT1632:
-                case ZEXT1664:
-                case ZEXT3264:
-                // ============ SEXT ============
-                case SEXT18:
-                case SEXT116:
-                case SEXT132:
-                case SEXT164:
-                case SEXT816:
-                case SEXT832:
-                case SEXT864:
-                case SEXT1632:
-                case SEXT1664:
-                case SEXT3264:
-                    return inner;
-                default:
-                    // TODO CTLZ. Right now we assume constant propagation got rid of such instructions
-                    throw new UnsupportedOperationException("Encoding of IOpUn operation " + iUn.getOp() + " not supported on integer formulas.");
+        Type targetType = iUn.getType();
+        switch (iUn.getOp()) {
+            case MINUS -> {
+                if (inner instanceof IntegerFormula number) {
+                    return integerFormulaManager().negate(number);
+                }
+                if (inner instanceof BitvectorFormula number) {
+                    return bitvectorFormulaManager().negate(number);
+                }
             }
-        } else {
-            BitvectorFormula bv = (BitvectorFormula) inner;
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            switch (iUn.getOp()) {
-                case MINUS:
-                    return bitvectorFormulaManager.negate(bv);
-                case BV2UINT:
-                    return getArchPrecision() < 0 ? bitvectorFormulaManager.toIntegerFormula(bv, false)
-                            : bitvectorFormulaManager.extend(bv, getArchPrecision() - bitvectorFormulaManager.getLength(bv), false);
-                case BV2INT:
-                    return getArchPrecision() < 0 ? bitvectorFormulaManager.toIntegerFormula(bv, true)
-                            : bitvectorFormulaManager.extend(bv, getArchPrecision() - bitvectorFormulaManager.getLength(bv), true);
-                // ============ INT2BV ============
-                case INT2BV1:
-                case INT2BV8:
-                case INT2BV16:
-                case INT2BV32:
-                case INT2BV64:
-                    return inner;
-                // ============ TRUNC ============
-                case TRUNC6432:
-                    return bitvectorFormulaManager.extract(bv, 31, 0);
-                case TRUNC6416:
-                case TRUNC3216:
-                    return bitvectorFormulaManager.extract(bv, 15, 0);
-                case TRUNC648:
-                case TRUNC328:
-                case TRUNC168:
-                    return bitvectorFormulaManager.extract(bv, 7, 0);
-                case TRUNC641:
-                case TRUNC321:
-                case TRUNC161:
-                case TRUNC81:
-                    return bitvectorFormulaManager.extract(bv, 1, 0);
-                // ============ ZEXT ============
-                case ZEXT18:
-                    return bitvectorFormulaManager.extend(bv, 7, false);
-                case ZEXT116:
-                    return bitvectorFormulaManager.extend(bv, 15, false);
-                case ZEXT132:
-                    return bitvectorFormulaManager.extend(bv, 31, false);
-                case ZEXT164:
-                    return bitvectorFormulaManager.extend(bv, 63, false);
-                case ZEXT816:
-                    return bitvectorFormulaManager.extend(bv, 8, false);
-                case ZEXT832:
-                    return bitvectorFormulaManager.extend(bv, 24, false);
-                case ZEXT864:
-                    return bitvectorFormulaManager.extend(bv, 56, false);
-                case ZEXT1632:
-                    return bitvectorFormulaManager.extend(bv, 16, false);
-                case ZEXT1664:
-                    return bitvectorFormulaManager.extend(bv, 48, false);
-                case ZEXT3264:
-                    return bitvectorFormulaManager.extend(bv, 32, false);
-                // ============ SEXT ============
-                case SEXT18:
-                    return bitvectorFormulaManager.extend(bv, 7, true);
-                case SEXT116:
-                    return bitvectorFormulaManager.extend(bv, 15, true);
-                case SEXT132:
-                    return bitvectorFormulaManager.extend(bv, 31, true);
-                case SEXT164:
-                    return bitvectorFormulaManager.extend(bv, 63, true);
-                case SEXT816:
-                    return bitvectorFormulaManager.extend(bv, 8, true);
-                case SEXT832:
-                    return bitvectorFormulaManager.extend(bv, 24, true);
-                case SEXT864:
-                    return bitvectorFormulaManager.extend(bv, 56, true);
-                case SEXT1632:
-                    return bitvectorFormulaManager.extend(bv, 16, true);
-                case SEXT1664:
-                    return bitvectorFormulaManager.extend(bv, 48, true);
-                case SEXT3264:
-                    return bitvectorFormulaManager.extend(bv, 32, true);
-                case CTLZ:
+            case CAST_SIGNED, CAST_UNSIGNED -> {
+                boolean signed = iUn.getOp().equals(IOpUn.CAST_SIGNED);
+                if (targetType instanceof IntegerType integerTargetType) {
+                    if (integerTargetType.isMathematical()) {
+                        if (inner instanceof IntegerFormula) {
+                            return inner;
+                        }
+                        if (inner instanceof BitvectorFormula number) {
+                            return bitvectorFormulaManager().toIntegerFormula(number, signed);
+                        }
+                    }
+                    int bitWidth = integerTargetType.getBitWidth();
+                    if (inner instanceof IntegerFormula number) {
+                        return bitvectorFormulaManager().makeBitvector(bitWidth, number);
+                    }
+                    if (inner instanceof BitvectorFormula number) {
+                        int innerBitWidth = bitvectorFormulaManager().getLength(number);
+                        if (innerBitWidth < bitWidth) {
+                            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
+                        }
+                        return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
+                    }
+                }
+            }
+            case CTLZ -> {
+                if (inner instanceof BitvectorFormula bv) {
+                    BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
                     // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) ? 63 : 64)
                     int bvLength = bitvectorFormulaManager.getLength(bv);
                     BitvectorFormula bv1 = bitvectorFormulaManager.makeBitvector(1, 1);
@@ -464,10 +353,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                         enc = booleanFormulaManager.ifThenElse(bitvectorFormulaManager.equal(bvbit, bv1), bvi, enc);
                     }
                     return enc;
-                default:
-                    throw new UnsupportedOperationException("Encoding of IOpUn operation " + iUn.getOp() + " not supported on bitvector formulas.");
+                }
             }
         }
+        throw new UnsupportedOperationException(
+                String.format("Encoding of (%s) %s %s not supported.", targetType, iUn.getOp(), inner));
     }
 
     @Override

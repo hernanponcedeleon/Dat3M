@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -11,11 +10,11 @@ import java.util.Set;
 
 public interface MemoryEvent extends Event, RegReader {
 
-    IExpr getAddress();
-    void setAddress(IExpr address);
+    Expression getAddress();
+    void setAddress(Expression address);
 
-    ExprInterface getMemValue();
-    void setMemValue(ExprInterface value);
+    Expression getMemValue();
+    void setMemValue(Expression value);
 
     String getMo();
     void setMo(String mo);

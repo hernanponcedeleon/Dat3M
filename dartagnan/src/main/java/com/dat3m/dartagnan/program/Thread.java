@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
@@ -14,7 +13,6 @@ import java.util.stream.Collectors;
 
 public class Thread {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
     private String name;
     private final int id;
     private final Event entry;
@@ -82,19 +80,8 @@ public class Thread {
         return registers.get(name);
     }
 
-    @Deprecated
-    public Register newRegister(int precision) {
-        return newRegister(precision < 0 ? types.getIntegerType() : types.getIntegerType(precision));
-    }
-
     public Register newRegister(IntegerType type) {
         return newRegister("DUMMY_REG_" + dummyCount++, type);
-    }
-
-    @Deprecated
-    public Register newRegister(String name, int precision) {
-        IntegerType type = precision < 0 ? types.getIntegerType() : types.getIntegerType(precision);
-        return newRegister(name, type);
     }
 
     public Register newRegister(String name, IntegerType type) {
