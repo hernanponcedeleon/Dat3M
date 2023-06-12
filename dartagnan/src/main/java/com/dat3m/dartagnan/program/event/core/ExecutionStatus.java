@@ -62,7 +62,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter {
             } else {
                 BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
                 int bitWidth = integerType.getBitWidth();
-                one = bitvectorFormulaManager.makeBitvector(1, bitWidth);
+                one = bitvectorFormulaManager.makeBitvector(bitWidth, 1);
             }
             return booleanFormulaManager.and(super.encodeExec(context),
                     booleanFormulaManager.implication(eventExecuted,
