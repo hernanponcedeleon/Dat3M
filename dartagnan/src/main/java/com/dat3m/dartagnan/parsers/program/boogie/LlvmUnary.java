@@ -61,7 +61,7 @@ public class LlvmUnary {
             case BITVECTOR_TO_SIGNED_INTEGER, BITVECTOR_TO_UNSIGNED_INTEGER -> {
                 checkArgument(!integerType.isMathematical(), "Expected bv, got int.");
                 boolean signed = prefix.equals(BITVECTOR_TO_SIGNED_INTEGER);
-                return expressions.makeIntegerCast(inner, types.getIntegerType(), signed);
+                return expressions.makeIntegerCast(inner, types.getArchType(), signed);
             }
             case SIGNED_INTEGER_TO_BITVECTOR, UNSIGNED_INTEGER_TO_BITVECTOR -> {
                 checkArgument(integerType.isMathematical(), "Expected int, got %s.", integerType);

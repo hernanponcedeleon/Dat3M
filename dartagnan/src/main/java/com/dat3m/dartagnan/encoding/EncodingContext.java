@@ -303,8 +303,16 @@ public final class EncodingContext {
     }
 
     private NumeralFormula.IntegerFormula convertToIntegerFormula(Formula f) {
-        return f instanceof BitvectorFormula ?
-                formulaManager.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) :
-                (NumeralFormula.IntegerFormula) f;
+        if (f instanceof BitvectorFormula bitvector) {
+            return formulaManager.getBitvectorFormulaManager().toIntegerFormula(bitvector, false);
+        }
+        if (f instanceof BooleanFormula guard) {
+            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+            NumeralFormula.IntegerFormula zero = integerFormulaManager.makeNumber(0);
+            NumeralFormula.IntegerFormula one = integerFormulaManager.makeNumber(1);
+            return booleanFormulaManager.ifThenElse(guard, one, zero);
+        }
+        checkArgument(f instanceof NumeralFormula.IntegerFormula, "Unknown type of formula %s.", f);
+        return (NumeralFormula.IntegerFormula) f;
     }
 }

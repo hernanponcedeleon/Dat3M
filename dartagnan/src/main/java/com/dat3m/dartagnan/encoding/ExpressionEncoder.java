@@ -58,23 +58,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     Formula encodeAsInteger(Expression expression) {
-        Formula formula = expression.visit(this);
-        if (formula instanceof BitvectorFormula || formula instanceof IntegerFormula) {
-            return formula;
-        }
-        int precision = getArchPrecision();
-        Formula one;
-        Formula zero;
-        if(precision > -1) {
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            one = bitvectorFormulaManager.makeBitvector(precision, 1);
-            zero = bitvectorFormulaManager.makeBitvector(precision, 0);
-        } else {
-            IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-            one = integerFormulaManager.makeNumber(1);
-            zero = integerFormulaManager.makeNumber(0);
-        }
-        return booleanFormulaManager.ifThenElse((BooleanFormula) formula, one, zero);
+        return expression.visit(this);
     }
 
     static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
