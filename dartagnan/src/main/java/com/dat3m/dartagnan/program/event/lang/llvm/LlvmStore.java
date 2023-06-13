@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
@@ -16,9 +15,9 @@ import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 
 public class LlvmStore extends SingleAccessMemoryEvent {
 
-    private ExprInterface value;
+    private Expression value;
 
-    public LlvmStore(IExpr address, ExprInterface value, String mo) {
+    public LlvmStore(Expression address, Expression value, String mo){
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
@@ -42,11 +41,11 @@ public class LlvmStore extends SingleAccessMemoryEvent {
         return "llvm_store(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
-    public ExprInterface getMemValue() {
-        return value;
+    public Expression getMemValue() {
+    	return value;
     }
 
-    public void setMemValue(ExprInterface value) {
+    public void setMemValue(Expression value){
         this.value = value;
     }
 

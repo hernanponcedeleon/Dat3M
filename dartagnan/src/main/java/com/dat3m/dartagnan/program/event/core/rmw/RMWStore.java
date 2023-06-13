@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -15,7 +14,7 @@ public class RMWStore extends Store {
 
     protected Load loadEvent;
 
-    public RMWStore(Load loadEvent, IExpr address, ExprInterface value) {
+    public RMWStore(Load loadEvent, Expression address, Expression value) {
         super(address, value);
         Preconditions.checkArgument(loadEvent.hasTag(Tag.RMW), "The provided load event %s is not tagged RMW.", loadEvent);
         this.loadEvent = loadEvent;

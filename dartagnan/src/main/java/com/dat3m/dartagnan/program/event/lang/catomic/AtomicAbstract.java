@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -15,9 +14,9 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 public abstract class AtomicAbstract extends SingleAccessMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
-    protected ExprInterface value;
+    protected Expression value;
 
-    AtomicAbstract(IExpr address, Register register, IExpr value, String mo) {
+    AtomicAbstract(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         this.resultRegister = register;
@@ -41,11 +40,11 @@ public abstract class AtomicAbstract extends SingleAccessMemoryEvent implements 
         return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
-    public ExprInterface getMemValue() {
-        return value;
+    public Expression getMemValue() {
+    	return value;
     }
 
-    public void setMemValue(ExprInterface value) {
+    public void setMemValue(Expression value){
         this.value = value;
     }
 

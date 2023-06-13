@@ -1,10 +1,9 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprBin;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
@@ -29,17 +28,18 @@ import com.google.common.base.Preconditions;
 import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
 	protected boolean forceStart;
+	protected final TypeFactory types = TypeFactory.getInstance();
+	protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
 	protected VisitorBase(boolean forceStart) {
 		this.forceStart = forceStart;
 	}
-	
+
 	@Override
 	public List<Event> visitEvent(Event e) {
 		return Collections.singletonList(e);
@@ -47,21 +47,21 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
 	@Override
 	public List<Event> visitCondJump(CondJump e) {
-    	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
+		Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
 		return visitEvent(e);
 	};
 
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
+        Register statusRegister = e.getThread().newRegister(resultRegister.getType());
 
         return eventSequence(
                 forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null
+                forceStart ? newAssume(expressions.makeOr(resultRegister, statusRegister)) : null
         );
 	}
-	
+
 	@Override
 	public List<Event> visitInitLock(InitLock e) {
 		return eventSequence(
@@ -72,27 +72,33 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
     public List<Event> visitLock(Lock e) {
         Register resultRegister = e.getResultRegister();
+		IntegerType type = resultRegister.getType();
+		Expression zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoadWithMo(resultRegister, e.getAddress(), mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(new Atom(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
-                newRMWStoreWithMo(rmwLoad, e.getAddress(), IValue.ONE, mo)
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit()),
+                newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
         );
     }
     
     @Override
 	public List<Event> visitUnlock(Unlock e) {
         Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		IntegerType type = resultRegister.getType();
+		Expression zero = expressions.makeZero(type);
+		Expression one = expressions.makeOne(type);
+		Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load rmwLoad = newRMWLoadWithMo(resultRegister, address, mo);
 		return eventSequence(
                 rmwLoad,
-                newJump(new Atom(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
-                newRMWStoreWithMo(rmwLoad, address, IValue.ZERO, mo)
+                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit()),
+                newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
 	}
 
@@ -159,18 +165,18 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	@Override
 	public List<Event> visitRMW(RMW e) {
         Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+		Expression address = e.getAddress();
 		String mo = e.getMo();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 		Load load = newRMWLoadWithMo(dummyReg, address, mo);
         RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
 		return eventSequence(
-        		load,
+				load,
                 store,
                 newLocal(resultRegister, dummyReg)
         );
 	}
-	
+
 	@Override
 	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
 		throw error(e);
@@ -196,8 +202,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
 	}
 
 	private IllegalArgumentException error(Event e) {
-		return new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + 
+		return new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() +
 				" is not supported by " + getClass().getSimpleName());
 	}
-	
+
 }

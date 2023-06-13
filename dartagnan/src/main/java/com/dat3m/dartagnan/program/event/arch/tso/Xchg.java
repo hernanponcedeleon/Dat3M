@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.arch.tso;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
@@ -42,7 +42,7 @@ public class Xchg extends SingleAccessMemoryEvent implements RegWriter {
         return "xchg(*" + address + ", " + resultRegister + ")";
     }
 
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return resultRegister;
     }
 

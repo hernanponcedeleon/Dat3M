@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -18,8 +19,6 @@ import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.IMM.extractLoadMo;
 import static com.dat3m.dartagnan.program.event.Tag.IMM.extractStoreMo;
@@ -49,7 +48,7 @@ class VisitorIMM extends VisitorBase {
         		newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? C11.MO_RELAXED : mo.value())
         );
 	}
-	
+
 	@Override
 	public List<Event> visitCreate(Create e) {
         Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
@@ -62,33 +61,36 @@ class VisitorIMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitEnd(End e) {
+        //TODO boolean
         return eventSequence(
-        		newStoreWithMo(e.getAddress(), IValue.ZERO, C11.MO_RELEASE)
+                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), C11.MO_RELEASE)
         );
 	}
 
 	@Override
 	public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
+        Expression zero = expressions.makeZero(resultRegister.getType());
 		Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
-        
+
         return eventSequence(
-        		load,
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
+				load,
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
         );
 	}
 
 	@Override
 	public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        Expression one = expressions.makeOne(resultRegister.getType());
         Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
-        		load,
+				load,
 				super.visitStart(e),
-        		newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
+				newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
         );
 	}
 
@@ -99,22 +101,23 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
 		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
+        Expression address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-		IExpr expectedAddr = e.getExpectedAddr();
-		int precision = resultRegister.getPrecision();
+        Expression expectedAddr = e.getExpectedAddr();
+        IntegerType type = resultRegister.getType();
+        Expression one = expressions.makeOne(type);
 
-		Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoadWithMo(regExpected, expectedAddr, "");
+        Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
+        Load loadExpected = newLoad(regExpected, expectedAddr);
         loadExpected.addTags(Tag.IMM.CASDEPORIGIN);
-        Store storeExpected = newStoreWithMo(expectedAddr, regValue, "");
+        Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadWithMo(regValue, address, extractLoadMo(mo));
         Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), extractStoreMo(mo));
@@ -126,7 +129,7 @@ class VisitorIMM extends VisitorBase {
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                	optionalFenceStore,
+				optionalFenceStore,
                     storeValue,
                     gotoCasEnd,
                 casFail,
@@ -139,19 +142,19 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr address = e.getAddress();
+        Expression address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-		
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
+
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
-        		optionalFenceBefore,
+				optionalFenceBefore,
                 load,
-                newLocal(dummyReg, new IExprBin(resultRegister, op, (IExpr) e.getMemValue())),
-        		optionalFenceAfter,
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
+				optionalFenceAfter,
                 newRMWStoreWithMo(load, address, dummyReg, extractStoreMo(mo))
         );
 	}
@@ -161,8 +164,8 @@ class VisitorIMM extends VisitorBase {
 		String mo = e.getMo();
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
-        		optionalFence,
-        		newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
+				optionalFence,
+				newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
         );
 	}
 
@@ -171,8 +174,8 @@ class VisitorIMM extends VisitorBase {
 		String mo = e.getMo();
 		Fence optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
-        		optionalFence,
-        		newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
+				optionalFence,
+				newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
         );
 	}
 
@@ -183,15 +186,15 @@ class VisitorIMM extends VisitorBase {
 
 	@Override
 	public List<Event> visitAtomicXchg(AtomicXchg e) {
-		IExpr address = e.getAddress();
+        Expression address = e.getAddress();
 		String mo = e.getMo();
 		Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 		Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-		
-        Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
-        
+
+		Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
+
         return eventSequence(
-        		optionalFenceLoad,
+				optionalFenceLoad,
                 load,
                 optionalFenceStore,
                 newRMWStoreWithMo(load, address, e.getMemValue(), extractStoreMo(mo))
@@ -217,8 +220,8 @@ class VisitorIMM extends VisitorBase {
 	@Override
 	public List<Event> visitLlvmXchg(LlvmXchg e) {
 		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
 		String mo = e.getMo();
 
 		Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));
@@ -237,12 +240,12 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLlvmRMW(LlvmRMW e) {
 		Register resultRegister = e.getResultRegister();
 		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
 		String mo = e.getMo();
 
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
 		Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));
 		Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, IMM.extractStoreMo(mo));
@@ -261,15 +264,16 @@ class VisitorIMM extends VisitorBase {
 	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
 		Register oldValueRegister = e.getStructRegister(0);
 		Register resultRegister = e.getStructRegister(1);
+        Expression one = expressions.makeOne(resultRegister.getType());
 
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
 		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
+        Expression expectedValue = e.getExpectedValue();
 
-		Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
 		Label casEnd = newLabel("CAS_end");
-		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
 		Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, IMM.extractLoadMo(mo));
 		Store store = newRMWStoreExclusiveWithMo(address, value, true, IMM.extractStoreMo(mo));
@@ -279,7 +283,7 @@ class VisitorIMM extends VisitorBase {
 				load,
 				casCmpResult,
 				branchOnCasCmpResult,
-					store,
+                    store,
 				casEnd);
 	}
 

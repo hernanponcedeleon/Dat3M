@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -12,7 +13,6 @@ import static com.dat3m.dartagnan.program.Register.*;
 
 public interface MemoryEvent extends Event, RegReader {
 
-    // TODO: Make this a List<MemoryAccess> to properly support multi-access events like MemCopy and RMW
     List<MemoryAccess> getMemoryAccesses();
 
     @Override

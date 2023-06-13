@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -13,9 +13,9 @@ import java.util.Set;
 
 public class Assume extends AbstractEvent implements RegReader {
 
-	protected final ExprInterface expr;
+	protected final Expression expr;
 
-	public Assume(ExprInterface expr) {
+	public Assume(Expression expr) {
 		super();
 		this.expr = expr;
 	}
@@ -26,7 +26,7 @@ public class Assume extends AbstractEvent implements RegReader {
 	}
 
 
-	public ExprInterface getExpr(){
+	public Expression getExpr(){
 		return expr;
 	}
 

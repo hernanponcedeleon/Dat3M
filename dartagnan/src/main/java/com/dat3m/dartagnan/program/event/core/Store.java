@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -13,9 +12,9 @@ import java.util.Set;
 
 public class Store extends AbstractMemoryCoreEvent {
 
-    protected ExprInterface value;
+    protected Expression value;
 
-    public Store(IExpr address, ExprInterface value) {
+    public Store(Expression address, Expression value) {
         super(address);
         this.value = value;
         addTags(Tag.WRITE);
@@ -36,18 +35,17 @@ public class Store extends AbstractMemoryCoreEvent {
         return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE));
     }
 
-    @Override
-    public String toString() {
-        final MemoryOrder mo = getMetadata(MemoryOrder.class);
-        return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
-    }
-
-    public ExprInterface getMemValue() {
+    public Expression getMemValue() {
         return value;
     }
 
-    public void setMemValue(ExprInterface value) {
+    public void setMemValue(Expression value) {
         this.value = value;
+    }
+
+    public String toString() {
+        final MemoryOrder mo = getMetadata(MemoryOrder.class);
+        return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
     }
 
     // Unrolling

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -79,7 +79,7 @@ public class Register extends IExpr {
 
     // ============================== Static utility =============================
 
-    public static Set<Read> collectRegisterReads(ExprInterface expr, Register.UsageType usageType, Set<Read> collector) {
+    public static Set<Read> collectRegisterReads(Expression expr, Register.UsageType usageType, Set<Read> collector) {
         expr.getRegs().stream().map(r -> new Register.Read(r, usageType)).forEach(collector::add);
         return collector;
     }

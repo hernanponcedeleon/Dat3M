@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -23,12 +24,15 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
 public class EventFactory {
+
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     // Static class
     private EventFactory() {
@@ -70,21 +74,21 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Load newLoad(Register register, IExpr address) {
+    public static Load newLoad(Register register, Expression address) {
         return new Load(register, address);
     }
 
-    public static Load newLoadWithMo(Register register, IExpr address, String mo) {
+    public static Load newLoadWithMo(Register register, Expression address, String mo) {
         Load load = newLoad(register, address);
         load.setMemoryOrder(mo);
         return load;
     }
 
-    public static Store newStore(IExpr address, ExprInterface value) {
+    public static Store newStore(Expression address, Expression value) {
         return new Store(address, value);
     }
 
-    public static Store newStoreWithMo(IExpr address, ExprInterface value, String mo) {
+    public static Store newStoreWithMo(Expression address, Expression value, String mo) {
         Store store = newStore(address, value);
         store.setMemoryOrder(mo);
         return store;
@@ -101,7 +105,8 @@ public class EventFactory {
     }
 
     public static Init newInit(MemoryObject base, int offset) {
-        return new Init(base, offset);
+        IValue offsetExpression = expressions.makeValue(BigInteger.valueOf(offset), base.getType());
+        return new Init(base, offset, expressions.makeADD(base, offsetExpression));
     }
 
     // ------------------------------------------ Local events ------------------------------------------
@@ -122,7 +127,7 @@ public class EventFactory {
         return new StringAnnotation(annotation);
     }
 
-    public static Local newLocal(Register register, ExprInterface expr) {
+    public static Local newLocal(Register register, Expression expr) {
         return new Local(register, expr);
     }
 
@@ -130,80 +135,80 @@ public class EventFactory {
         return new Label(name);
     }
 
-    public static CondJump newJump(BExpr cond, Label target) {
+    public static CondJump newJump(Expression cond, Label target) {
         return new CondJump(cond, target);
     }
 
-    public static CondJump newJumpUnless(BExpr cond, Label target) {
-        if (cond.isFalse()) {
+    public static CondJump newJumpUnless(Expression cond, Label target) {
+        if (cond instanceof BConst constant && constant.isFalse()) {
             return newGoto(target);
         }
-        return newJump(new BExprUn(BOpUn.NOT, cond), target);
+        return new CondJump(expressions.makeNot(cond), target);
     }
 
-    public static IfAsJump newIfJump(BExpr expr, Label label, Label end) {
+    public static IfAsJump newIfJump(Expression expr, Label label, Label end) {
         return new IfAsJump(expr, label, end);
     }
 
-    public static IfAsJump newIfJumpUnless(ExprInterface expr, Label label, Label end) {
-        return newIfJump(new BExprUn(BOpUn.NOT, expr), label, end);
+    public static IfAsJump newIfJumpUnless(Expression expr, Label label, Label end) {
+        return newIfJump(expressions.makeNot(expr), label, end);
     }
 
     public static CondJump newGoto(Label target) {
-        return newJump(BConst.TRUE, target);
+        return newJump(expressions.makeTrue(), target);
     }
 
     public static CondJump newFakeCtrlDep(Register reg, Label target) {
-        CondJump jump = newJump(new Atom(reg, COpBin.EQ, reg), target);
+        CondJump jump = newJump(expressions.makeEQ(reg, reg), target);
         jump.addTags(Tag.NOOPT);
         return jump;
     }
 
-    public static Assume newAssume(ExprInterface expr) {
+    public static Assume newAssume(Expression expr) {
         return new Assume(expr);
     }
 
     // ------------------------------------------ RMW events ------------------------------------------
 
-    public static Load newRMWLoad(Register reg, IExpr address) {
+    public static Load newRMWLoad(Register reg, Expression address) {
         Load load = newLoad(reg, address);
         load.addTags(Tag.RMW);
         return load;
     }
 
-    public static Load newRMWLoadWithMo(Register reg, IExpr address, String mo) {
+    public static Load newRMWLoadWithMo(Register reg, Expression address, String mo) {
         Load load = newLoadWithMo(reg, address, mo);
         load.addTags(Tag.RMW);
         return load;
     }
 
-    public static RMWStore newRMWStore(Load loadEvent, IExpr address, ExprInterface value) {
+    public static RMWStore newRMWStore(Load loadEvent, Expression address, Expression value) {
         return new RMWStore(loadEvent, address, value);
     }
 
-    public static RMWStore newRMWStoreWithMo(Load loadEvent, IExpr address, ExprInterface value, String mo) {
+    public static RMWStore newRMWStoreWithMo(Load loadEvent, Expression address, Expression value, String mo) {
         RMWStore store = newRMWStore(loadEvent, address, value);
         store.setMemoryOrder(mo);
         return store;
     }
 
-    public static Load newRMWLoadExclusive(Register reg, IExpr address) {
+    public static Load newRMWLoadExclusive(Register reg, Expression address) {
         Load load = newLoad(reg, address);
         load.addTags(Tag.RMW, Tag.EXCL);
         return load;
     }
 
-    public static Load newRMWLoadExclusiveWithMo(Register reg, IExpr address, String mo) {
+    public static Load newRMWLoadExclusiveWithMo(Register reg, Expression address, String mo) {
         Load load = newRMWLoadExclusive(reg, address);
         load.setMemoryOrder(mo);
         return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(IExpr address, ExprInterface value, boolean isStrong) {
+    public static RMWStoreExclusive newRMWStoreExclusive(Expression address, Expression value, boolean isStrong) {
         return new RMWStoreExclusive(address, value, isStrong, false);
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusiveWithMo(IExpr address, ExprInterface value, boolean isStrong, String mo) {
+    public static RMWStoreExclusive newRMWStoreExclusiveWithMo(Expression address, Expression value, boolean isStrong, String mo) {
         RMWStoreExclusive store = newRMWStoreExclusive(address, value, isStrong);
         store.setMemoryOrder(mo);
         return store;
@@ -228,7 +233,7 @@ public class EventFactory {
         private Common() {
         }
 
-        public static StoreExclusive newExclusiveStore(Register register, IExpr address, ExprInterface value, String mo) {
+        public static StoreExclusive newExclusiveStore(Register register, Expression address, Expression value, String mo) {
             return new StoreExclusive(register, address, value, mo);
         }
     }
@@ -241,31 +246,31 @@ public class EventFactory {
         private Pthread() {
         }
 
-        public static Create newCreate(IExpr address, String routine) {
+        public static Create newCreate(Expression address, String routine) {
             return new Create(address, routine);
         }
 
-        public static End newEnd(IExpr address) {
+        public static End newEnd(Expression address) {
             return new End(address);
         }
 
-        public static InitLock newInitLock(String name, IExpr address, IExpr value) {
+        public static InitLock newInitLock(String name, Expression address, Expression value) {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register reg, IExpr expr) {
+        public static Join newJoin(Register reg, Expression expr) {
             return new Join(reg, expr);
         }
 
-        public static Lock newLock(String name, IExpr address, Register reg) {
+        public static Lock newLock(String name, Expression address, Register reg) {
             return new Lock(name, address, reg);
         }
 
-        public static Start newStart(Register reg, IExpr address, Event creationEvent) {
+        public static Start newStart(Register reg, Expression address, Event creationEvent) {
             return new Start(reg, address, creationEvent);
         }
 
-        public static Unlock newUnlock(String name, IExpr address, Register reg) {
+        public static Unlock newUnlock(String name, Expression address, Register reg) {
             return new Unlock(name, address, reg);
         }
     }
@@ -278,31 +283,31 @@ public class EventFactory {
         private Atomic() {
         }
 
-        public static AtomicCmpXchg newCompareExchange(Register register, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo, boolean isStrong) {
+        public static AtomicCmpXchg newCompareExchange(Register register, Expression address, Expression expectedAddr, Expression desiredValue, String mo, boolean isStrong) {
             return new AtomicCmpXchg(register, address, expectedAddr, desiredValue, mo, isStrong);
         }
 
-        public static AtomicCmpXchg newCompareExchange(Register register, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo) {
+        public static AtomicCmpXchg newCompareExchange(Register register, Expression address, Expression expectedAddr, Expression desiredValue, String mo) {
             return newCompareExchange(register, address, expectedAddr, desiredValue, mo, false);
         }
 
-        public static AtomicFetchOp newFetchOp(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
+        public static AtomicFetchOp newFetchOp(Register register, Expression address, Expression value, IOpBin op, String mo) {
             return new AtomicFetchOp(register, address, value, op, mo);
         }
 
-        public static AtomicFetchOp newFADD(Register register, IExpr address, IExpr value, String mo) {
+        public static AtomicFetchOp newFADD(Register register, Expression address, Expression value, String mo) {
             return newFetchOp(register, address, value, IOpBin.PLUS, mo);
         }
 
-        public static AtomicFetchOp newIncrement(Register register, IExpr address, String mo) {
-            return newFetchOp(register, address, IValue.ONE, IOpBin.PLUS, mo);
+        public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
+            return newFetchOp(register, address, expressions.makeOne(register.getType()), IOpBin.PLUS, mo);
         }
 
-        public static AtomicLoad newLoad(Register register, IExpr address, String mo) {
+        public static AtomicLoad newLoad(Register register, Expression address, String mo) {
             return new AtomicLoad(register, address, mo);
         }
 
-        public static AtomicStore newStore(IExpr address, ExprInterface value, String mo) {
+        public static AtomicStore newStore(Expression address, Expression value, String mo) {
             return new AtomicStore(address, value, mo);
         }
 
@@ -310,7 +315,7 @@ public class EventFactory {
             return new AtomicThreadFence(mo);
         }
 
-        public static AtomicXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
+        public static AtomicXchg newExchange(Register register, Expression address, Expression value, String mo) {
             return new AtomicXchg(register, address, value, mo);
         }
     }
@@ -322,27 +327,27 @@ public class EventFactory {
         private Llvm() {
         }
 
-        public static LlvmLoad newLoad(Register register, IExpr address, String mo) {
+        public static LlvmLoad newLoad(Register register, Expression address, String mo) {
             return new LlvmLoad(register, address, mo);
         }
 
-        public static LlvmStore newStore(IExpr address, ExprInterface value, String mo) {
+        public static LlvmStore newStore(Expression address, Expression value, String mo) {
             return new LlvmStore(address, value, mo);
         }
 
-        public static LlvmXchg newExchange(Register register, IExpr address, IExpr value, String mo) {
+        public static LlvmXchg newExchange(Register register, Expression address, Expression value, String mo) {
             return new LlvmXchg(register, address, value, mo);
         }
 
-        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo, boolean isStrong) {
+        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, Expression address, Expression expectedAddr, Expression desiredValue, String mo, boolean isStrong) {
             return new LlvmCmpXchg(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, isStrong);
         }
 
-        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, IExpr address, IExpr expectedAddr, IExpr desiredValue, String mo) {
+        public static LlvmCmpXchg newCompareExchange(Register oldValueRegister, Register cmpRegister, Expression address, Expression expectedAddr, Expression desiredValue, String mo) {
             return newCompareExchange(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, false);
         }
 
-        public static LlvmRMW newRMW(Register register, IExpr address, IExpr value, IOpBin op, String mo) {
+        public static LlvmRMW newRMW(Register register, Expression address, Expression value, IOpBin op, String mo) {
             return new LlvmRMW(register, address, value, op, mo);
         }
 
@@ -359,7 +364,7 @@ public class EventFactory {
     public static class Std {
         private Std() { }
 
-        public static Malloc newMalloc(Register resultReg, IExpr sizeExpr) {
+        public static Malloc newMalloc(Register resultReg, Expression sizeExpr) {
             return new Malloc(resultReg, sizeExpr);
         }
     }
@@ -457,39 +462,39 @@ public class EventFactory {
         private Linux() {
         }
 
-        public static LKMMLoad newLKMMLoad(Register reg, IExpr address, String mo) {
+        public static LKMMLoad newLKMMLoad(Register reg, Expression address, String mo) {
             return new LKMMLoad(reg, address, mo);
         }
 
-        public static LKMMStore newLKMMStore(IExpr address, ExprInterface value, String mo) {
+        public static LKMMStore newLKMMStore(Expression address, Expression value, String mo) {
             return new LKMMStore(address, value, mo);
         }
 
-        public static RMWAddUnless newRMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
+        public static RMWAddUnless newRMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
             return new RMWAddUnless(address, register, cmp, value);
         }
 
-        public static RMWCmpXchg newRMWCompareExchange(IExpr address, Register register, ExprInterface cmp, IExpr value, String mo) {
+        public static RMWCmpXchg newRMWCompareExchange(Expression address, Register register, Expression cmp, Expression value, String mo) {
             return new RMWCmpXchg(address, register, cmp, value, mo);
         }
 
-        public static RMWFetchOp newRMWFetchOp(IExpr address, Register register, IExpr value, IOpBin op, String mo) {
+        public static RMWFetchOp newRMWFetchOp(Expression address, Register register, Expression value, IOpBin op, String mo) {
             return new RMWFetchOp(address, register, value, op, mo);
         }
 
-        public static RMWOp newRMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
+        public static RMWOp newRMWOp(Expression address, Register register, Expression value, IOpBin op) {
             return new RMWOp(address, register, value, op);
         }
 
-        public static RMWOpAndTest newRMWOpAndTest(IExpr address, Register register, IExpr value, IOpBin op) {
+        public static RMWOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {
             return new RMWOpAndTest(address, register, value, op);
         }
 
-        public static RMWOpReturn newRMWOpReturn(IExpr address, Register register, IExpr value, IOpBin op, String mo) {
+        public static RMWOpReturn newRMWOpReturn(Expression address, Register register, Expression value, IOpBin op, String mo) {
             return new RMWOpReturn(address, register, value, op, mo);
         }
 
-        public static RMWXchg newRMWExchange(IExpr address, Register register, IExpr value, String mo) {
+        public static RMWXchg newRMWExchange(Expression address, Register register, Expression value, String mo) {
             return new RMWXchg(address, register, value, mo);
         }
 
@@ -501,23 +506,23 @@ public class EventFactory {
             return new LKMMFence(name);
         }
 
-        public static LKMMLockRead newLockRead(Register register, IExpr address) {
+        public static LKMMLockRead newLockRead(Register register, Expression address) {
             return new LKMMLockRead(register, address);
         }
 
-        public static LKMMLockWrite newLockWrite(Load lockRead, IExpr address) {
+        public static LKMMLockWrite newLockWrite(Load lockRead, Expression address) {
             return new LKMMLockWrite(lockRead, address);
         }
 
-        public static LKMMLock newLock(IExpr address) {
+        public static LKMMLock newLock(Expression address) {
             return new LKMMLock(address);
         }
 
-        public static LKMMUnlock newUnlock(IExpr address) {
+        public static LKMMUnlock newUnlock(Expression address) {
             return new LKMMUnlock(address);
         }
 
-        public static SrcuSync newSrcuSync(IExpr address) {
+        public static SrcuSync newSrcuSync(Expression address) {
             return new SrcuSync(address);
         }
 
@@ -548,7 +553,7 @@ public class EventFactory {
         private RISCV() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
             store.addTags(Tag.RISCV.STCOND);
             if (mo != null && !mo.isEmpty()) {
@@ -558,7 +563,7 @@ public class EventFactory {
             return store;
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo) {
+        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo) {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
 
@@ -611,7 +616,7 @@ public class EventFactory {
         private LISA() {
         }
 
-        public static RMW newRMW(IExpr address, Register register, IExpr value, String mo) {
+        public static RMW newRMW(Expression address, Register register, Expression value, String mo) {
             return new RMW(address, register, value, mo);
         }
     }
@@ -624,7 +629,7 @@ public class EventFactory {
         private Power() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(IExpr address, ExprInterface value, String mo, boolean isStrong) {
+        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
             if (mo != null && !mo.isEmpty()) {
                 store.setMetadata(new MemoryOrder(mo));

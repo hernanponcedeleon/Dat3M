@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -14,7 +14,7 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
 
     protected final Register resultRegister;
 
-    public Load(Register register, IExpr address) {
+    public Load(Register register, Expression address) {
         super(address);
         this.resultRegister = register;
         addTags(Tag.READ);

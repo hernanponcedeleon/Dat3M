@@ -37,7 +37,7 @@ public class IExprBin extends IExpr {
 	public IConst reduce() {
     	BigInteger v1 = lhs.reduce().getValue();
     	BigInteger v2 = rhs.reduce().getValue();
-		return new IValue(op.combine(v1, v2), lhs.getPrecision());
+		return new IValue(op.combine(v1, v2), lhs.getType());
 	}
 	
 	@Override

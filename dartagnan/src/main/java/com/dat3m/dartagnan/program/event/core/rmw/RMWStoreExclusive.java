@@ -1,8 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -14,7 +13,7 @@ public class RMWStoreExclusive extends Store {
     private final boolean isStrong;
     private final boolean requiresMatchingAddresses;
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value,
+    public RMWStoreExclusive(Expression address, Expression value,
                              boolean isStrong, boolean requiresMatchingAddresses) {
         super(address, value);
         addTags(Tag.EXCL, Tag.RMW);

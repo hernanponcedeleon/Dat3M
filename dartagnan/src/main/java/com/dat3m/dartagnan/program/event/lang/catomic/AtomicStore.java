@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
@@ -16,9 +15,9 @@ import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 
 public class AtomicStore extends SingleAccessMemoryEvent {
 
-    private ExprInterface value;
+    private Expression value;
 
-    public AtomicStore(IExpr address, ExprInterface value, String mo) {
+    public AtomicStore(Expression address, Expression value, String mo){
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
@@ -42,11 +41,11 @@ public class AtomicStore extends SingleAccessMemoryEvent {
         return "atomic_store(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }
 
-    public ExprInterface getMemValue() {
-        return value;
+    public Expression getMemValue() {
+    	return value;
     }
 
-    public void setMemValue(ExprInterface value) {
+    public void setMemValue(Expression value){
         this.value = value;
     }
 
