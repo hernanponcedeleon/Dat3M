@@ -69,14 +69,12 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLoad(Load e) {
-        return tagList(eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), e.getMo())));
+        return tagList(eventSequence(e.getCopy()));
     }
 
     @Override
     public List<Event> visitStore(Store e) {
-        return tagList(eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())));
+        return tagList(eventSequence(e.getCopy()));
     }
 
     // =============================================================================================
@@ -234,8 +232,8 @@ public class VisitorC11 extends VisitorBase {
         Expression one = expressions.makeOne(resultRegister.getType());
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
-        Load load = newRMWLoadExclusive(oldValueRegister, address, mo);
-        Store store = newRMWStoreExclusive(address, value, true, mo);
+        Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, mo);
+        Store store = newRMWStoreExclusiveWithMo(address, value, true, mo);
 
         return tagList(eventSequence(
                 // Indentation shows the branching structure

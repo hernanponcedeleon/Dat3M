@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
@@ -14,10 +14,10 @@ import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 @NoInterface
 public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements MemoryCoreEvent {
 
-    protected IExpr address;
+    protected Expression address;
     protected Type accessType;
 
-    public AbstractMemoryCoreEvent(IExpr address) {
+    public AbstractMemoryCoreEvent(Expression address) {
         this.address = address;
         this.accessType = TypeFactory.getInstance().getArchType(); // TODO: Add proper typing
         addTags(VISIBLE, MEMORY);
@@ -29,8 +29,8 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
         this.accessType = other.accessType;
     }
 
-    public IExpr getAddress() { return address; }
-    public void setAddress(IExpr address) { this.address = address; }
+    public Expression getAddress() { return address; }
+    public void setAddress(Expression address) { this.address = address; }
 
     public Type getAccessType() { return accessType; }
     public void setAccessType(Type type) { this.accessType = type; }

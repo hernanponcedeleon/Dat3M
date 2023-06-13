@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.common;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -12,7 +12,7 @@ public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWri
 
     protected final Register resultRegister;
 
-    public LoadBase(Register register, IExpr address, String mo) {
+    public LoadBase(Register register, Expression address, String mo) {
         super(address, mo);
         this.resultRegister = register;
         addTags(Tag.READ);

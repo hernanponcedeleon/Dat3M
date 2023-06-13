@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.common;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -11,9 +10,9 @@ import java.util.Set;
 @NoInterface
 public abstract class StoreBase extends SingleAccessMemoryEvent {
 
-    protected ExprInterface value;
+    protected Expression value;
 
-    public StoreBase(IExpr address, ExprInterface value, String mo) {
+    public StoreBase(Expression address, Expression value, String mo) {
         super(address, mo);
         this.value = value;
         addTags(Tag.WRITE);
@@ -24,10 +23,10 @@ public abstract class StoreBase extends SingleAccessMemoryEvent {
         this.value = other.value;
     }
 
-    public ExprInterface getMemValue() {
+    public Expression getMemValue() {
         return value;
     }
-    public void setMemValue(ExprInterface value) {
+    public void setMemValue(Expression value) {
         this.value = value;
     }
 

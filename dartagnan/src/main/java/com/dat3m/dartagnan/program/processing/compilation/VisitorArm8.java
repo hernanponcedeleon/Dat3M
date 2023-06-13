@@ -477,7 +477,7 @@ class VisitorArm8 extends VisitorBase {
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, ARMv8.extractStoreMoFromLKMo(mo), true);
+        Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;

@@ -11,13 +11,13 @@ import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 public class LKMMLockWrite extends RMWStore {
 
-	public LKMMLockWrite(Load lockRead, Expression lock) {
-		super(lockRead, lock, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()), Linux.MO_ONCE);
-		addTags(RMW, Linux.LOCK_WRITE, Linux.MO_ONCE);
-	}
+    public LKMMLockWrite(Load lockRead, Expression lock) {
+        super(lockRead, lock, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()));
+        addTags(RMW, Linux.LOCK_WRITE, Linux.MO_ONCE);
+    }
 
-	@Override
-	public String toString() {
-		return String.format("spin_lock_W(*%s)", address);
-	}
+    @Override
+    public String toString() {
+        return String.format("spin_lock_W(*%s)", address);
+    }
 }

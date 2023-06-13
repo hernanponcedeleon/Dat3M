@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
@@ -13,7 +13,7 @@ import java.util.Set;
 
 public interface MemoryCoreEvent extends MemoryEvent, RegReader {
 
-    IExpr getAddress();
+    Expression getAddress();
     Type getAccessType();
 
     @Override

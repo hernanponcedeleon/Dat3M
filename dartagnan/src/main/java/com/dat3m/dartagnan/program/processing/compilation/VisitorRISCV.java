@@ -593,7 +593,7 @@ class VisitorRISCV extends VisitorBase {
 		Register statusReg = e.getThread().newRegister(type);
 
 		Load load = newRMWLoadExclusive(dummy, address);
-        Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), true,  mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value),  mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
@@ -668,7 +668,7 @@ class VisitorRISCV extends VisitorBase {
 		Register statusReg = e.getThread().newRegister(type);
 
 		Load load = newRMWLoadExclusive(regValue, address);
-        Store store = RISCV.newRMWStoreConditional(address, expressions.makeADD(regValue, value), true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeADD(regValue, value),  mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");

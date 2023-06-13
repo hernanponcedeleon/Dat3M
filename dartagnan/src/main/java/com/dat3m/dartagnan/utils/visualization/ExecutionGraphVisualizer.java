@@ -72,7 +72,7 @@ public class ExecutionGraphVisualizer {
         for (EventData data : model.getEventList()) {
             if (data.isMemoryEvent()) {
                 MemoryCoreEvent m = (MemoryCoreEvent) data.getEvent();
-                IExpr addr = m.getAddress();
+                Expression addr = m.getAddress();
                 if (!(addr instanceof Register)) {
                     addresses.putIfAbsent(data.getAccessedAddress(), addr);
                 }
