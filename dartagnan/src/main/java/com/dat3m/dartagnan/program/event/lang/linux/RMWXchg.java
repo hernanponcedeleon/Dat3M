@@ -11,12 +11,12 @@ public class RMWXchg extends RMWAbstract {
         super(address, register, value, mo);
     }
 
-    private RMWXchg(RMWXchg other){
+    private RMWXchg(RMWXchg other) {
         super(other);
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_xchg" + Tag.Linux.toText(mo) + "(" + address + ", " + value + ")\t### LKMM";
     }
 
@@ -24,15 +24,15 @@ public class RMWXchg extends RMWAbstract {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RMWXchg getCopy(){
+    public RMWXchg getCopy() {
         return new RMWXchg(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWXchg(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitRMWXchg(this);
+    }
 }

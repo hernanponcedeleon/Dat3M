@@ -17,11 +17,11 @@ public class LKMMStore extends Store {
 	}
 
 	@Override
-    public String toString() {
+	public String defaultString() {
 		if(mo.equals(Tag.Linux.MO_ONCE)) {
 			return "STORE_ONCE(" + address + ", " + value + ")\t### LKMM";
 		}
-        return super.toString();
+        return super.defaultString();
     }
 
 	// Visitor

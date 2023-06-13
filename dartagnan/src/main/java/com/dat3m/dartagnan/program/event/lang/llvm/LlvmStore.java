@@ -37,7 +37,7 @@ public class LlvmStore extends SingleAccessMemoryEvent {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "llvm_store(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 

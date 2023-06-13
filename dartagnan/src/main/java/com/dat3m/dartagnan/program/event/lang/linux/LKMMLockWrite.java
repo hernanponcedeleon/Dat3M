@@ -17,7 +17,7 @@ public class LKMMLockWrite extends RMWStore {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return String.format("spin_lock_W(*%s)", address);
     }
 }

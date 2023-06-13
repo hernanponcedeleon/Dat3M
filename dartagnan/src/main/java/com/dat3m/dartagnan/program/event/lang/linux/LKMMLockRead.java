@@ -17,7 +17,7 @@ public class LKMMLockRead extends Load {
 	}
 
 	@Override
-	public String toString() {
+	public String defaultString() {
 		return String.format("%s <- spin_lock_R(*%s)", resultRegister, address);
 	}
 }

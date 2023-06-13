@@ -39,10 +39,10 @@ public class RMWStoreExclusive extends Store {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         String tag = isStrong ? " strong" : "";
         tag += requiresMatchingAddresses ? " addrmatch" : "";
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.defaultString()) + "# opt" + tag;
     }
 
     @Override

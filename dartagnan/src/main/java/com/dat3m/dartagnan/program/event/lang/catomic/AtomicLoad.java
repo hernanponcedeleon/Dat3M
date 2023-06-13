@@ -36,7 +36,7 @@ public class AtomicLoad extends SingleAccessMemoryEvent implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = atomic_load(*" + address + ", " + mo + ")\t### C11";
     }
 

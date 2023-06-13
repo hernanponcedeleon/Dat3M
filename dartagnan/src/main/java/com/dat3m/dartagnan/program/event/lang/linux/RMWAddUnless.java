@@ -22,7 +22,7 @@ public class RMWAddUnless extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")\t### LKMM";
     }
 

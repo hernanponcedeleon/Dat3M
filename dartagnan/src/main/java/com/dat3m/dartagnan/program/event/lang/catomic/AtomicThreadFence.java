@@ -20,7 +20,7 @@ public class AtomicThreadFence extends Fence {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return name + "(" + mo + ")\t### C11";
     }
 

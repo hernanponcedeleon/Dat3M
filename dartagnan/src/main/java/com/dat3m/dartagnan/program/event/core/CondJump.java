@@ -20,8 +20,8 @@ public class CondJump extends AbstractEvent implements RegReader {
     private Expression guard;
 
     public CondJump(Expression guard, Label label) {
-    	Preconditions.checkNotNull(label, "CondJump event requires non null label event");
-    	Preconditions.checkNotNull(guard, "CondJump event requires non null expression");
+        Preconditions.checkNotNull(label, "CondJump event requires non null label event");
+        Preconditions.checkNotNull(guard, "CondJump event requires non null expression");
         Preconditions.checkArgument(guard.getType() instanceof BooleanType,
                 "CondJump event with non-boolean guard %s.", guard);
         this.label = label;
@@ -31,27 +31,28 @@ public class CondJump extends AbstractEvent implements RegReader {
     }
 
     protected CondJump(CondJump other) {
-		super(other);
-		this.label = other.label;;
-		this.guard = other.guard;
+        super(other);
+        this.label = other.label;
+        this.guard = other.guard;
         this.label.getJumpSet().add(this);
     }
-    
+
     public boolean isGoto() {
-    	return guard instanceof BConst constant && constant.getValue();
+        return guard instanceof BConst constant && constant.getValue();
     }
 
     public boolean isDead() {
         return guard instanceof BConst constant && !constant.getValue();
     }
-    
-    public Label getLabel(){
+
+    public Label getLabel() {
         return label;
     }
 
     public Expression getGuard() {
         return guard;
     }
+
     public void setGuard(Expression guard) {
         this.guard = guard;
     }
@@ -65,18 +66,18 @@ public class CondJump extends AbstractEvent implements RegReader {
     }
 
     @Override
-    public Set<Register.Read> getRegisterReads(){
+    public Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(guard, Register.UsageType.CTRL, new HashSet<>());
     }
 
     @Override
-    public String toString(){
-    	String output;
-    	if(isGoto()) {
+    public String defaultString() {
+        String output;
+        if (isGoto()) {
             output = "goto " + label.getName();
-    	} else {
+        } else {
             output = "if(" + guard + "); then goto " + label.getName();
-    	}
+        }
         output = hasTag(Tag.BOUND) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### BOUND" : output;
         output = hasTag(Tag.SPINLOOP) ? String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", output) + "\t### SPINLOOP" : output;
         return output;
@@ -86,7 +87,7 @@ public class CondJump extends AbstractEvent implements RegReader {
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
         Label old = this.label;
-        this.label = (Label)updateMapping.getOrDefault(this.label, this.label);
+        this.label = (Label) updateMapping.getOrDefault(this.label, this.label);
         if (old != this.label) {
             old.getJumpSet().remove(this);
             this.label.getJumpSet().add(this);
@@ -103,15 +104,15 @@ public class CondJump extends AbstractEvent implements RegReader {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public CondJump getCopy(){
-    	return new CondJump(this);
+    public CondJump getCopy() {
+        return new CondJump(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitCondJump(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitCondJump(this);
+    }
 }

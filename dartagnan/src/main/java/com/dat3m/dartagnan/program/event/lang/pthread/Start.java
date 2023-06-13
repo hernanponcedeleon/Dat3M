@@ -13,39 +13,39 @@ public class Start extends LoadBase {
 
     private final Event creationEvent;
 
-	public Start(Register reg, Expression address, Event creationEvent){
-		super(reg, address, MO_SC);
+    public Start(Register reg, Expression address, Event creationEvent) {
+        super(reg, address, MO_SC);
         this.creationEvent = creationEvent;
         addTags(Tag.C11.PTHREAD);
     }
 
-	private Start(Start other){
-		super(other);
+    private Start(Start other) {
+        super(other);
         this.creationEvent = other.creationEvent;
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "start_thread()";
     }
 
     public Event getCreationEvent() {
         return creationEvent;
     }
-    
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Start getCopy(){
+    public Start getCopy() {
         return new Start(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitStart(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitStart(this);
+    }
 }

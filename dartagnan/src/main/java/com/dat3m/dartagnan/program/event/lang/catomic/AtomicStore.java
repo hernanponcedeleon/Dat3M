@@ -37,7 +37,7 @@ public class AtomicStore extends SingleAccessMemoryEvent {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "atomic_store(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }
 

@@ -18,11 +18,11 @@ public class LKMMLoad extends Load {
 	}
 
 	@Override
-    public String toString() {
+	public String defaultString() {
 		if(mo.equals(Tag.Linux.MO_ONCE)) {
 			return resultRegister + " := READ_ONCE(" + address + ")\t### LKMM";
 		}
-        return super.toString();
+        return super.defaultString();
     }
 
 	// Visitor

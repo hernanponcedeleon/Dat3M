@@ -40,11 +40,18 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
         this.sizeExpr = other.sizeExpr;
     }
 
-    public Expression getSizeExpr() { return sizeExpr; }
-    public void setSizeExpr(Expression sizeExpr) { this.sizeExpr = sizeExpr; }
+    public Expression getSizeExpr() {
+        return sizeExpr;
+    }
+
+    public void setSizeExpr(Expression sizeExpr) {
+        this.sizeExpr = sizeExpr;
+    }
 
     @Override
-    public Register getResultRegister() { return register; }
+    public Register getResultRegister() {
+        return register;
+    }
 
     @Override
     public Set<Register.Read> getRegisterReads() {
@@ -53,7 +60,7 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return String.format("%s <- malloc(%s)", register, sizeExpr);
     }
 

@@ -21,7 +21,7 @@ public class LKMMUnlock extends Store {
     }
 
 	@Override
-	public String toString() {
+	public String defaultString() {
 		return String.format("spin_unlock(*%s)", address);
 	}
 

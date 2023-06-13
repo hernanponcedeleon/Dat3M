@@ -14,33 +14,33 @@ public class LlvmFence extends Fence {
         this.mo = mo;
     }
 
-    private LlvmFence(LlvmFence other){
+    private LlvmFence(LlvmFence other) {
         super(other);
         this.mo = other.mo;
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return name + "(" + mo + ")\t### LLVM";
     }
 
     public String getMo() {
-    	return mo;
+        return mo;
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LlvmFence getCopy(){
+    public LlvmFence getCopy() {
         return new LlvmFence(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLlvmFence(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLlvmFence(this);
+    }
 }

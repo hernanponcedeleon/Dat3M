@@ -36,7 +36,7 @@ public class LlvmLoad extends SingleAccessMemoryEvent implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = llvm_load(*" + address + ", " + mo + ")\t### LLVM";
     }
 

@@ -19,7 +19,7 @@ public class SrcuSync extends AbstractMemoryCoreEvent {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "synchronize_srcu(" + address + ")\t### LKMM";
     }
 

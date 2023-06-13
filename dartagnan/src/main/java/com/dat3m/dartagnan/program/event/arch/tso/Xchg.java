@@ -38,7 +38,7 @@ public class Xchg extends SingleAccessMemoryEvent implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "xchg(*" + address + ", " + resultRegister + ")";
     }
 

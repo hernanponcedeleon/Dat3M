@@ -38,7 +38,7 @@ public class Label extends AbstractEvent {
     }
 
     @Override
-    public String toString(){
+    public String defaultString() {
         return name + ":" + (hasTag(Tag.SPINLOOP) ? "\t### SPINLOOP" : "");
     }
 

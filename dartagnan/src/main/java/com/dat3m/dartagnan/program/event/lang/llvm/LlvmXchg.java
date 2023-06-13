@@ -10,28 +10,28 @@ public class LlvmXchg extends LlvmAbstractRMW {
         super(address, register, value, mo);
     }
 
-    private LlvmXchg(LlvmXchg other){
+    private LlvmXchg(LlvmXchg other) {
         super(other);
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = llvm_xchg(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
-    
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LlvmXchg getCopy(){
+    public LlvmXchg getCopy() {
         return new LlvmXchg(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLlvmXchg(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLlvmXchg(this);
+    }
 }
