@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 @NoInterface
-public abstract class LoadBase extends SingleAddressMemoryEvent implements RegWriter {
+public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
 

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.arch.tso;
 import com.dat3m.dartagnan.expression.ExprInterface;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
-import com.dat3m.dartagnan.program.event.common.SingleAddressMemoryEvent;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -12,7 +12,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public class Xchg extends SingleAddressMemoryEvent implements RegWriter {
+public class Xchg extends SingleAccessMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
 
@@ -48,8 +48,7 @@ public class Xchg extends SingleAddressMemoryEvent implements RegWriter {
 
     @Override
     public MemoryAccess getMemoryAccess() {
-        // TODO: Once we can return List<MemoryAccess>, we need to return both
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD);
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
     // Unrolling

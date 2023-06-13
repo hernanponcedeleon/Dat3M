@@ -8,6 +8,9 @@ import com.dat3m.dartagnan.program.event.common.NoInterface;
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
+/*
+    This class is similar to SingleAccessMemoryEvent, but without a memory order.
+ */
 @NoInterface
 public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements MemoryCoreEvent {
 

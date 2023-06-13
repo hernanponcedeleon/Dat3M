@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import java.util.Set;
 
 @NoInterface
-public abstract class StoreBase extends SingleAddressMemoryEvent {
+public abstract class StoreBase extends SingleAccessMemoryEvent {
 
     protected ExprInterface value;
 

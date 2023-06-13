@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
-import com.dat3m.dartagnan.program.event.common.SingleAddressMemoryEvent;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -12,7 +12,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_RELEASE;
 import static com.dat3m.dartagnan.program.event.Tag.READ;
 
-public class LlvmLoad extends SingleAddressMemoryEvent implements RegWriter {
+public class LlvmLoad extends SingleAccessMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
 

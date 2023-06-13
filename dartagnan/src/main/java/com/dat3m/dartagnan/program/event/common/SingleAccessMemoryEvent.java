@@ -14,21 +14,23 @@ import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
 /*
-    A SingleAddressMemoryEvent may perform multiple memory accesses, but all of them are on the same address
-    with the same type.
+    A SingleAccessMemoryEvent is memory event that performs a single access to memory.
     This includes simple loads and stores but also RMW events or abstract events like SRCU.
     Complex events like MemCpy access two different addresses and hence are unable to
     reuse the implementation given by this class.
+
+    NOTE: This class is intended as a basis for language-level memory events which support a memory order (mo).
+
  */
 @NoInterface
-public abstract class SingleAddressMemoryEvent extends AbstractEvent implements MemoryEvent {
+public abstract class SingleAccessMemoryEvent extends AbstractEvent implements MemoryEvent {
 
     protected IExpr address;
     protected Type accessType;
     protected String mo;
 
     // The empty string means no memory order 
-    public SingleAddressMemoryEvent(IExpr address, String mo) {
+    public SingleAccessMemoryEvent(IExpr address, String mo) {
         Preconditions.checkNotNull(mo, "The memory ordering cannot be null");
         this.address = address;
         this.mo = mo;
@@ -40,7 +42,7 @@ public abstract class SingleAddressMemoryEvent extends AbstractEvent implements 
         }
     }
 
-    protected SingleAddressMemoryEvent(SingleAddressMemoryEvent other) {
+    protected SingleAccessMemoryEvent(SingleAccessMemoryEvent other) {
         super(other);
         this.address = other.address;
         this.mo = other.mo;
