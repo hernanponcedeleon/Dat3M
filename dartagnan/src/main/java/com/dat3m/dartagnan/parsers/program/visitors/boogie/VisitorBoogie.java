@@ -1,22 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
-import com.dat3m.dartagnan.parsers.program.boogie.Function;
-import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
-import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
-import com.dat3m.dartagnan.parsers.program.boogie.Scope;
-import com.dat3m.dartagnan.parsers.program.boogie.Types;
+import com.dat3m.dartagnan.parsers.program.boogie.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -716,7 +707,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				programBuilder.getOrNewObject(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
-			programBuilder.addChild(threadCount, EventFactory.newStoreWithMo(address, value, ""))
+			programBuilder.addChild(threadCount, EventFactory.newStore(address, value))
 					.setCFileInformation(currentLine, sourceCodeFile);
 			return null;
 		}
