@@ -27,11 +27,12 @@ public interface EventVisitor<T> {
 	default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
 	default T visitInit(Init e) { return visitStore(e); }
 	default T visitLabel(Label e) { return visitEvent(e); }
-	default T visitLoad(Load e) { return visitMemEvent(e); }
+	default T visitLoad(Load e) { return visitMemCoreEvent(e); }
 	default T visitLocal(Local e) { return visitEvent(e); }
 	default T visitMemEvent(MemoryEvent e) { return visitEvent(e); }
+	default T visitMemCoreEvent(MemoryCoreEvent e) { return visitMemEvent(e); }
 	default T visitSkip(Skip e) { return visitEvent(e); }
-	default T visitStore(Store e) { return visitMemEvent(e); }
+	default T visitStore(Store e) { return visitMemCoreEvent(e); }
 
 	// Annotations
 	default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
@@ -72,7 +73,7 @@ public interface EventVisitor<T> {
 	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); }
 
 	// Linux SRCU Events
-	default T visitSruSync(SrcuSync e) { return visitMemEvent(e); }
+	default T visitSrcuSync(SrcuSync e) { return visitMemCoreEvent(e); }
 
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }

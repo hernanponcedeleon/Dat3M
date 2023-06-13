@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.linux.SrcuSync;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -179,22 +178,15 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         @Override
+        public Void visitMemCoreEvent(MemoryCoreEvent e) {
+            e.setAddress(e.getAddress().visit(propagator));
+            return null;
+        }
+
+        @Override
         public Void visitStore(Store e) {
-            e.setAddress(e.getAddress().visit(propagator));
             e.setMemValue(e.getMemValue().visit(propagator));
-            return visitMemEvent(e);
-        }
-
-        @Override
-        public Void visitLoad(Load e) {
-            e.setAddress(e.getAddress().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitSruSync(SrcuSync e) {
-            e.setAddress(e.getAddress().visit(propagator));
-            return null;
+            return visitMemCoreEvent(e);
         }
 
         @Override

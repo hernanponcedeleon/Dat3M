@@ -3,15 +3,19 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
+import com.dat3m.dartagnan.program.event.core.AbstractMemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+
+import java.util.List;
 
 // This event is a MemEvent because it needs to contribute to the loc relation
 // (due to let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc).
-public class SrcuSync extends SingleAccessMemoryEvent {
+// FIXME: Add generic memory event in the core that can represent SRCU.
+public class SrcuSync extends AbstractMemoryCoreEvent {
 
     public SrcuSync(Expression address) {
-        super(address, Tag.Linux.SRCU_SYNC);
+        super(address);
+        tags.add(Tag.Linux.SRCU_SYNC);
     }
 
     @Override
@@ -20,8 +24,8 @@ public class SrcuSync extends SingleAccessMemoryEvent {
     }
 
     @Override
-    public MemoryAccess getMemoryAccess() {
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.OTHER);
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.OTHER));
     }
 
     // Visitor
@@ -29,6 +33,6 @@ public class SrcuSync extends SingleAccessMemoryEvent {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitSruSync(this);
+        return visitor.visitSrcuSync(this);
     }
 }

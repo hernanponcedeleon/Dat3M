@@ -14,6 +14,7 @@ import java.util.Set;
 public interface MemoryCoreEvent extends MemoryEvent, RegReader {
 
     Expression getAddress();
+    void setAddress(Expression address);
     Type getAccessType();
 
     @Override
