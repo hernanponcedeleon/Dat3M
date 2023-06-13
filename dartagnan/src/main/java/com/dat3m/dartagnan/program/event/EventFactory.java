@@ -629,13 +629,8 @@ public class EventFactory {
         private Power() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
-            if (mo != null && !mo.isEmpty()) {
-                store.setMetadata(new MemoryOrder(mo));
-                store.addTags(mo);
-            }
-            return store;
+        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, boolean isStrong) {
+            return new RMWStoreExclusive(address, value, isStrong, true);
         }
 
         public static Fence newISyncBarrier() {

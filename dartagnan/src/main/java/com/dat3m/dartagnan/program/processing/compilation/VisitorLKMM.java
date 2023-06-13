@@ -35,13 +35,13 @@ public class VisitorLKMM extends VisitorBase {
         );
     }
 
-        @Override
-        public List<Event> visitEnd(End e) {
-            //TODO boolean
-            return eventSequence(
-                    newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.Linux.MO_RELEASE)
-            );
-        }
+    @Override
+    public List<Event> visitEnd(End e) {
+        //TODO boolean
+        return eventSequence(
+                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.Linux.MO_RELEASE)
+        );
+    }
 
     @Override
     public List<Event> visitJoin(Join e) {
@@ -83,15 +83,15 @@ public class VisitorLKMM extends VisitorBase {
         Load rmwLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
-                    newLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
-                    newAssume(expressions.makeEQ(dummy, cmp)),
-                    newGoto(end),
+                newLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
+                newAssume(expressions.makeEQ(dummy, cmp)),
+                newGoto(end),
                 success, // RMW success branch
-                    Linux.newMemoryBarrier(),
-                    rmwLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
-                    newAssume(expressions.makeNEQ(dummy, cmp)),
-                    newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, value), Tag.Linux.MO_ONCE),
-                    Linux.newMemoryBarrier(),
+                Linux.newMemoryBarrier(),
+                rmwLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
+                newAssume(expressions.makeNEQ(dummy, cmp)),
+                newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, value), Tag.Linux.MO_ONCE),
+                Linux.newMemoryBarrier(),
                 end,
                 newLocal(resultRegister, expressions.makeNEQ(dummy, cmp))
         );
@@ -111,15 +111,15 @@ public class VisitorLKMM extends VisitorBase {
         Load casLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
-                    newLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
-                    newAssume(expressions.makeNEQ(dummy, cmp)),
-                    newGoto(end),
+                newLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
+                newAssume(expressions.makeNEQ(dummy, cmp)),
+                newGoto(end),
                 success, // CAS success branch
-                    mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
-                    casLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
-                    newAssume(expressions.makeEQ(dummy, cmp)),
-                    newRMWStoreWithMo(casLoad, address, value, Tag.Linux.storeMO(mo)),
-                    mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
+                mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
+                casLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
+                newAssume(expressions.makeEQ(dummy, cmp)),
+                newRMWStoreWithMo(casLoad, address, value, Tag.Linux.storeMO(mo)),
+                mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
                 end,
                 newLocal(resultRegister, dummy)
         );
@@ -229,7 +229,7 @@ public class VisitorLKMM extends VisitorBase {
         Load lockRead = Linux.newLockRead(dummy, e.getLock());
         Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeEQ(dummy, zero)) :
-                newJump(expressions.makeNEQ(dummy, zero), (Label)e.getThread().getExit());
+                newJump(expressions.makeNEQ(dummy, zero), (Label) e.getThread().getExit());
         return eventSequence(
                 lockRead,
                 middle,

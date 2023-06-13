@@ -108,7 +108,7 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ARMv8.MO_ACQ),
                 newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreExclusiveWithMo(e.getAddress(), one, true, ""));
+                newRMWStoreExclusive(e.getAddress(), one, true));
     }
 
     @Override
