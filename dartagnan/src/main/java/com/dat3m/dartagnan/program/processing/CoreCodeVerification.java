@@ -41,7 +41,7 @@ public class CoreCodeVerification implements ProgramProcessor {
         if (!nonCoreEvents.isEmpty()) {
             System.out.println("ERROR: Found non-core events.");
             for (Event e : nonCoreEvents) {
-                System.out.printf("%s\t%s\t%s \n", e.getGlobalId(), e, e.getClass().getSimpleName());
+                System.out.printf("%2s: %-30s  %s %n", e.getGlobalId(), e, e.getClass().getSimpleName());
             }
             throw new MalformedProgramException("ERROR: Found non-core events.");
         }
