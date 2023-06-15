@@ -62,7 +62,8 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitEnd(End e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.RISCV.MO_REL));
+                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.RISCV.MO_REL)
+        );
     }
 
     @Override
@@ -96,7 +97,8 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), e.getMemValue()));
+                newStore(e.getAddress(), e.getMemValue())
+        );
     }
 
     @Override
@@ -112,14 +114,16 @@ class VisitorRISCV extends VisitorBase {
                 newRMWLoadExclusive(dummy, e.getAddress()),
                 newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreExclusive(e.getAddress(), one, true),
-                RISCV.newRRWFence());
+                RISCV.newRRWFence()
+        );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType())));
+                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+        );
     }
 
     // =============================================================================================
@@ -136,7 +140,8 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 optionalBarrierBefore,
                 newLoad(e.getResultRegister(), e.getAddress()),
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
@@ -148,7 +153,8 @@ class VisitorRISCV extends VisitorBase {
 
         return eventSequence(
                 optionalBarrierBefore,
-                newStore(e.getAddress(), e.getMemValue()));
+                newStore(e.getAddress(), e.getMemValue())
+        );
     }
 
     @Override
@@ -172,7 +178,8 @@ class VisitorRISCV extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 store,
-                execStatus);
+                execStatus
+        );
     }
 
     @Override
@@ -203,7 +210,8 @@ class VisitorRISCV extends VisitorBase {
                 label,
                 localOp,
                 store,
-                execStatus);
+                execStatus
+        );
     }
 
     @Override
@@ -225,12 +233,12 @@ class VisitorRISCV extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, value, true, Tag.RISCV.extractStoreMoFromCMo(mo));
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
-                casEnd);
+                casEnd
+        );
     }
 
     @Override
@@ -252,7 +260,8 @@ class VisitorRISCV extends VisitorBase {
         }
 
         return eventSequence(
-                fence);
+                fence
+        );
     }
 
     // =============================================================================================
@@ -288,7 +297,6 @@ class VisitorRISCV extends VisitorBase {
         Local updateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
 
         return eventSequence(
-                // Indentation shows the branching structure
                 loadExpected,
                 loadValue,
                 casCmpResult,
@@ -410,6 +418,9 @@ class VisitorRISCV extends VisitorBase {
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================
+    // TODO: Many of the Linux-RMW compilations generate mo-less LL/SC instructions, though they do generated barriers.
+    //  This contrasts with the compilation of C11 atomics which generate LL/SC with fitting mo.
+    //  Is this mismatch intended?
 
     @Override
     public List<Event> visitLKMMLoad(LKMMLoad e) {
@@ -455,17 +466,17 @@ class VisitorRISCV extends VisitorBase {
             case Tag.Linux.MO_WMB:
                 optionalMemoryBarrier = RISCV.newWWFence();
                 break;
-			// ##define smp_mb__after_spinlock()	RISCV_FENCE(iorw,iorw)
-			// 		https://elixir.bootlin.com/linux/v6.1/source/arch/riscv/include/asm/barrier.h#L72
+            // ##define smp_mb__after_spinlock()	RISCV_FENCE(iorw,iorw)
+            // 		https://elixir.bootlin.com/linux/v6.1/source/arch/riscv/include/asm/barrier.h#L72
             // RISCV_FENCE(iorw,iorw) imposes ordering both on devices and memory
-			// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
+            // 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
             // Since the memory model says nothing about devices, we use RISCV_FENCE(rw,rw) which I think
             // gives the ordering we want wrt. memory
             case Tag.Linux.AFTER_SPINLOCK:
                 optionalMemoryBarrier = RISCV.newRWRWFence();
                 break;
-			// #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
-			// 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+            // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+            // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
             case Tag.Linux.AFTER_UNLOCK_LOCK:
@@ -491,7 +502,7 @@ class VisitorRISCV extends VisitorBase {
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
 
-        Load load = newRMWLoadExclusive(dummy, address); // No mo on the load?
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -500,7 +511,6 @@ class VisitorRISCV extends VisitorBase {
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 optionalMemoryBarrierBefore,
                 load,
                 branchOnCasCmpResult,
@@ -596,7 +606,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(type);
         Register statusReg = e.getThread().newRegister(type);
 
-        Load load = newRMWLoadExclusive(dummy, address);
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -634,7 +644,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getThread().newRegister(type);
         Register statusReg = e.getThread().newRegister(type);
 
-        Load load = newRMWLoadExclusive(dummy, address); // No mo on the load?
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
@@ -673,7 +683,7 @@ class VisitorRISCV extends VisitorBase {
         Register regValue = e.getThread().newRegister(type);
         Register statusReg = e.getThread().newRegister(type);
 
-        Load load = newRMWLoadExclusive(regValue, address);
+        Load load = newRMWLoadExclusive(regValue, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, expressions.makeADD(regValue, value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
@@ -687,7 +697,6 @@ class VisitorRISCV extends VisitorBase {
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
                 newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
@@ -704,9 +713,9 @@ class VisitorRISCV extends VisitorBase {
     ;
 
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();
@@ -722,7 +731,7 @@ class VisitorRISCV extends VisitorBase {
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
         Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, expressions.makeZero(type)));
 
-        Load load = newRMWLoadExclusive(dummy, address);
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = newRMWStoreExclusiveWithMo(address, retReg, true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");

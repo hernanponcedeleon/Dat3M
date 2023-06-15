@@ -105,19 +105,16 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitStoreExclusive(StoreExclusive e) {
         throw error(e);
-
     }
 
     @Override
     public List<Event> visitRMWAbstract(RMWAbstract e) {
         throw error(e);
-
     }
 
     @Override
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         throw error(e);
-
     }
 
     @Override
@@ -173,20 +170,17 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitAtomicAbstract(AtomicAbstract e) {
         throw error(e);
-
     }
 
     // LLVM Events
     @Override
     public List<Event> visitLlvmAbstract(LlvmAbstractRMW e) {
         throw error(e);
-
     }
 
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         throw error(e);
-
     }
 
     @Override

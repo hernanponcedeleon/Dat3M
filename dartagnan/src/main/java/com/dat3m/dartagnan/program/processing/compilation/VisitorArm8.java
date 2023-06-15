@@ -93,7 +93,8 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), ARMv8.MO_REL));
+                newStoreWithMo(e.getAddress(), e.getMemValue(), ARMv8.MO_REL)
+        );
     }
 
     @Override
@@ -108,13 +109,15 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
                 newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ARMv8.MO_ACQ),
                 newAssume(expressions.makeEQ(dummy, zero)),
-                newRMWStoreExclusive(e.getAddress(), one, true));
+                newRMWStoreExclusive(e.getAddress(), one, true)
+        );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), ARMv8.MO_REL));
+                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), ARMv8.MO_REL)
+        );
     }
 
     // =============================================================================================
@@ -203,11 +206,10 @@ class VisitorArm8 extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromCMo(mo));
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
-                    store,
+                store,
                 casEnd
         );
     }
@@ -260,17 +262,16 @@ class VisitorArm8 extends VisitorBase {
         }
 
         return eventSequence(
-                // Indentation shows the branching structure
                 loadExpected,
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                    storeValue,
-                    optionalExecStatus,
-                    optionalUpdateCasCmpResult,
-                    gotoCasEnd,
+                storeValue,
+                optionalExecStatus,
+                optionalUpdateCasCmpResult,
+                gotoCasEnd,
                 casFail,
-                    storeExpected,
+                storeExpected,
                 casEnd
         );
     }
@@ -454,13 +455,12 @@ class VisitorArm8 extends VisitorBase {
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
                 branchOnCasCmpResult,
-                    store,
-                    fakeCtrlDep,
-                    label,
-                    optionalMemoryBarrierAfter,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter,
                 casEnd,
                 newLocal(resultRegister, dummy)
         );
@@ -601,14 +601,13 @@ class VisitorArm8 extends VisitorBase {
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
                 newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
-                    store,
-                    fakeCtrlDep,
-                    label,
-                    optionalMemoryBarrierAfter,
+                store,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter,
                 cauEnd,
                 newLocal(resultRegister, dummy)
         );

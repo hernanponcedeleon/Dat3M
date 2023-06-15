@@ -342,7 +342,6 @@ public class VisitorPower extends VisitorBase {
         }
 
         return eventSequence(
-                // Indentation shows the branching structure
                 optionalBarrierBefore,
                 load,
                 casCmpResult,
@@ -421,7 +420,6 @@ public class VisitorPower extends VisitorBase {
         }
 
         return eventSequence(
-                // Indentation shows the branching structure
                 optionalBarrierBefore,
                 loadExpected,
                 loadValue,
@@ -450,7 +448,7 @@ public class VisitorPower extends VisitorBase {
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = Power.newRMWStoreConditional(address, dummyReg , true);
+        Store store = Power.newRMWStoreConditional(address, dummyReg, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -631,7 +629,7 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
 
     // Following
-	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
+    //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMLoad(LKMMLoad e) {
         Register resultRegister = e.getResultRegister();
@@ -649,7 +647,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     // Following
-	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
+    //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMStore(LKMMStore e) {
         Expression value = e.getMemValue();
@@ -666,7 +664,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     // Following
-	//		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
+    //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
         Fence optionalMemoryBarrier;
@@ -678,13 +676,13 @@ public class VisitorPower extends VisitorBase {
             case Tag.Linux.AFTER_ATOMIC:
                 optionalMemoryBarrier = Power.newSyncBarrier();
                 break;
-			// #define smp_mb__after_spinlock()	smp_mb()
-			// 		https://elixir.bootlin.com/linux/v6.1/source/arch/powerpc/include/asm/spinlock.h#L14
+            // #define smp_mb__after_spinlock()	smp_mb()
+            // 		https://elixir.bootlin.com/linux/v6.1/source/arch/powerpc/include/asm/spinlock.h#L14
             case Tag.Linux.AFTER_SPINLOCK:
                 optionalMemoryBarrier = Power.newSyncBarrier();
                 break;
-			// #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
-			// 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
+            // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
+            // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
             case Tag.Linux.AFTER_UNLOCK_LOCK:
@@ -700,29 +698,29 @@ public class VisitorPower extends VisitorBase {
     }
 
     // =============================================================================================
-	// 										GENERAL COMMENTS
+    // 										GENERAL COMMENTS
     // =============================================================================================
     // Methods with no suffix (e.g. atomic_xchg), which are those having MO_MB in our case,
     // are surrounded by a __atomic_pre_full_fence() or __atomic_post_full_fence()
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/fence
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/fence
     // which in turn are smp_mb__before_atomic and smp_mb__after_atomic
-	// 		https://elixir.bootlin.com/linux/v5.18/source/include/linux/atomic.h
+    // 		https://elixir.bootlin.com/linux/v5.18/source/include/linux/atomic.h
     // which in turn are __smp_mb()
-	// 		https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
+    // 		https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
     // which in turn is just a sync
-	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
+    // 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     //
     // Methods with acquire or release as a suffix
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/acquire
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/release
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/acquire
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/release
     // which result in a isync (acquire) or lwsync (release)
-	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
-	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/synch.h
+    // 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
+    // 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/synch.h
     //
     // Most compilations have this snippet
-	// 1:	ldarx	%0,0,%2
-	//  	stdcx	%3,0,%2
-	// bne	1b
+    // 1:	ldarx	%0,0,%2
+    //  	stdcx	%3,0,%2
+    // bne	1b
     // Since we compile after unrolling, and our encoding enforces that the RMW pair is successful,
     // we just need the final iteration of the control dependency, thus we use a newFakeCtrlDep.
     // =============================================================================================
@@ -749,7 +747,6 @@ public class VisitorPower extends VisitorBase {
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 optionalMemoryBarrierBefore,
                 load,
                 branchOnCasCmpResult,
@@ -888,9 +885,9 @@ public class VisitorPower extends VisitorBase {
     }
 
     // The implementation relies on arch_atomic_fetch_add_unless
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/add_unless
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/add_unless
     // which uses a sub at the end to return the value before the operation
-	// 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
+    // 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
     // Since RMWAddUnless does not care about any returned value, we don't need the final sub
     @Override
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
@@ -919,7 +916,6 @@ public class VisitorPower extends VisitorBase {
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 optionalMemoryBarrierBefore,
                 load,
                 newLocal(dummy, expressions.makeNEQ(regValue, unless)),
@@ -936,9 +932,9 @@ public class VisitorPower extends VisitorBase {
     ;
 
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
         Register resultRegister = e.getResultRegister();

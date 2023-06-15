@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
-import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
@@ -556,10 +555,7 @@ public class EventFactory {
         public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
             RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
             store.addTags(Tag.RISCV.STCOND);
-            if (mo != null && !mo.isEmpty()) {
-                store.setMetadata(new MemoryOrder(mo));
-                store.addTags(mo);
-            }
+            store.setMemoryOrder(mo);
             return store;
         }
 

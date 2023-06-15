@@ -32,14 +32,16 @@ public class VisitorC11 extends VisitorBase {
         store.addTags(C11.PTHREAD);
 
         return tagList(eventSequence(
-                store));
+                store
+        ));
     }
 
     @Override
     public List<Event> visitEnd(End e) {
         //TODO boolean
         return tagList(eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.C11.MO_RELEASE)));
+                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.C11.MO_RELEASE)
+        ));
     }
 
     @Override
@@ -51,7 +53,8 @@ public class VisitorC11 extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newJumpUnless(expressions.makeEQ(resultRegister, zero), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeEQ(resultRegister, zero), (Label) e.getThread().getExit())
+        ));
     }
 
     @Override
@@ -64,14 +67,17 @@ public class VisitorC11 extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 super.visitStart(e),
-                newJumpUnless(expressions.makeEQ(resultRegister, one), (Label) e.getThread().getExit())));
+                newJumpUnless(expressions.makeEQ(resultRegister, one), (Label) e.getThread().getExit())
+        ));
     }
 
+    //TODO: Is it really mandatory to copy the load here?
     @Override
     public List<Event> visitLoad(Load e) {
         return tagList(eventSequence(e.getCopy()));
     }
 
+    //TODO: Is it really mandatory to copy the store here?
     @Override
     public List<Event> visitStore(Store e) {
         return tagList(eventSequence(e.getCopy()));
@@ -102,15 +108,14 @@ public class VisitorC11 extends VisitorBase {
         Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), mo);
 
         return tagList(eventSequence(
-                // Indentation shows the branching structure
                 loadExpected,
                 loadValue,
                 casCmpResult,
                 branchOnCasCmpResult,
-                    storeValue,
-                    gotoCasEnd,
+                storeValue,
+                gotoCasEnd,
                 casFail,
-                    storeExpected,
+                storeExpected,
                 casEnd
         ));
     }
@@ -149,7 +154,8 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         return tagList(eventSequence(
-                newFence(e.getMo())));
+                newFence(e.getMo())
+        ));
     }
 
     @Override
@@ -173,13 +179,15 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         return tagList(eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), e.getMo())));
+                newLoadWithMo(e.getResultRegister(), e.getAddress(), e.getMo())
+        ));
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
         return tagList(eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())));
+                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
+        ));
     }
 
     @Override
@@ -194,7 +202,8 @@ public class VisitorC11 extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                store));
+                store
+        ));
     }
 
     @Override
@@ -214,7 +223,8 @@ public class VisitorC11 extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 localOp,
-                store));
+                store
+        ));
     }
 
     @Override
@@ -236,18 +246,19 @@ public class VisitorC11 extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, value, true, mo);
 
         return tagList(eventSequence(
-                // Indentation shows the branching structure
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
-                    store,
-                casEnd));
+                store,
+                casEnd
+        ));
     }
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         return tagList(eventSequence(
-                newFence(e.getMo())));
+                newFence(e.getMo())
+        ));
     }
 
     private List<Event> tagList(List<Event> in) {
@@ -256,7 +267,7 @@ public class VisitorC11 extends VisitorBase {
     }
 
     private void tagEvent(Event e) {
-        if(e instanceof MemoryEvent) {
+        if (e instanceof MemoryEvent) {
             final MemoryOrder mo = e.getMetadata(MemoryOrder.class);
             final boolean canRace = mo == null || mo.value().equals(C11.NONATOMIC);
             e.addTags(canRace ? C11.NONATOMIC : C11.ATOMIC);

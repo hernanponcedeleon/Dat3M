@@ -123,7 +123,6 @@ class VisitorIMM extends VisitorBase {
         Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), extractStoreMo(mo));
 
         return eventSequence(
-                // Indentation shows the branching structure
                 loadExpected,
                 optionalFenceLoad,
                 loadValue,
@@ -208,13 +207,15 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         return eventSequence(
-                newLoadWithMo(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo())));
+                newLoadWithMo(e.getResultRegister(), e.getAddress(), IMM.extractLoadMo(e.getMo()))
+        );
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo())));
+                newStoreWithMo(e.getAddress(), e.getMemValue(), IMM.extractStoreMo(e.getMo()))
+        );
     }
 
     @Override
@@ -233,7 +234,8 @@ class VisitorIMM extends VisitorBase {
                 load,
                 fakeCtrlDep,
                 label,
-                store);
+                store
+        );
     }
 
     @Override
@@ -257,7 +259,8 @@ class VisitorIMM extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 localOp,
-                store);
+                store
+        );
     }
 
     @Override
@@ -279,18 +282,19 @@ class VisitorIMM extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, value, true, IMM.extractStoreMo(mo));
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
-                casEnd);
+                casEnd
+        );
     }
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         return eventSequence(
-                newFence(e.getMo()));
+                newFence(e.getMo())
+        );
     }
 
 }

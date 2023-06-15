@@ -32,7 +32,8 @@ class VisitorTso extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 newRMWStore(load, address, resultRegister),
-                newLocal(resultRegister, dummyReg)));
+                newLocal(resultRegister, dummyReg)
+        ));
     }
 
     // =============================================================================================
@@ -46,14 +47,16 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 store,
-                X86.newMemoryFence()));
+                X86.newMemoryFence()
+        ));
     }
 
     @Override
     public List<Event> visitEnd(End e) {
         return tagList(eventSequence(
                 // Nothing comes after an End event thus no need for a fence
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))));
+                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+        ));
     }
 
     @Override
@@ -66,7 +69,8 @@ class VisitorTso extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 newJump(expressions.makeNEQ(resultRegister, zero),
-                        (Label) e.getThread().getExit())));
+                        (Label) e.getThread().getExit())
+        ));
     }
 
     @Override
@@ -80,13 +84,15 @@ class VisitorTso extends VisitorBase {
                 load,
                 super.visitStart(e),
                 newJump(expressions.makeNEQ(resultRegister, one),
-                        (Label) e.getThread().getExit())));
+                        (Label) e.getThread().getExit())
+        ));
     }
 
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 newStore(e.getAddress(), e.getMemValue()),
-                X86.newMemoryFence());
+                X86.newMemoryFence()
+        );
     }
 
     @Override
@@ -99,14 +105,16 @@ class VisitorTso extends VisitorBase {
         return eventSequence(
                 load,
                 newAssume(expressions.makeEQ(dummy, expressions.makeZero(type))),
-                newRMWStore(load, e.getAddress(), expressions.makeOne(type)));
+                newRMWStore(load, e.getAddress(), expressions.makeOne(type))
+        );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 newStore(e.getAddress(), expressions.makeZero(types.getArchType())),
-                X86.newMemoryFence());
+                X86.newMemoryFence()
+        );
     }
 
     // =============================================================================================
@@ -116,7 +124,8 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         return eventSequence(
-                newLoad(e.getResultRegister(), e.getAddress()));
+                newLoad(e.getResultRegister(), e.getAddress())
+        );
     }
 
     @Override
@@ -125,7 +134,8 @@ class VisitorTso extends VisitorBase {
 
         return eventSequence(
                 newStore(e.getAddress(), e.getMemValue()),
-                optionalMFence);
+                optionalMFence
+        );
     }
 
     @Override
@@ -135,7 +145,8 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue())));
+                newRMWStore(load, address, e.getMemValue())
+        ));
     }
 
     @Override
@@ -149,7 +160,8 @@ class VisitorTso extends VisitorBase {
         return tagList(eventSequence(
                 load,
                 newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue())),
-                newRMWStore(load, address, dummyReg)));
+                newRMWStore(load, address, dummyReg)
+        ));
     }
 
     @Override
@@ -170,12 +182,12 @@ class VisitorTso extends VisitorBase {
         Store store = newRMWStore(load, address, value);
 
         return tagList(eventSequence(
-                // Indentation shows the branching structure
                 load,
                 casCmpResult,
                 branchOnCasCmpResult,
                 store,
-                casEnd));
+                casEnd
+        ));
     }
 
     @Override
@@ -183,7 +195,8 @@ class VisitorTso extends VisitorBase {
         Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
         return eventSequence(
-                optionalFence);
+                optionalFence
+        );
     }
 
     // =============================================================================================
@@ -213,7 +226,6 @@ class VisitorTso extends VisitorBase {
         Store storeExpected = newStore(expectedAddr, regValue);
 
         return tagList(eventSequence(
-                // Indentation shows the branching structure
                 loadExpected,
                 loadValue,
                 casCmpResult,
@@ -222,7 +234,8 @@ class VisitorTso extends VisitorBase {
                 gotoCasEnd,
                 casFail,
                 storeExpected,
-                casEnd));
+                casEnd
+        ));
     }
 
     @Override
@@ -231,13 +244,13 @@ class VisitorTso extends VisitorBase {
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
 
         Expression address = e.getAddress();
-        String mo = e.getMo();
         Load load = newRMWLoad(resultRegister, address);
 
         return tagList(eventSequence(
                 load,
                 newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue())),
-                newRMWStore(load, address, dummyReg)));
+                newRMWStore(load, address, dummyReg)
+        ));
     }
 
     @Override
@@ -254,14 +267,17 @@ class VisitorTso extends VisitorBase {
 
         return eventSequence(
                 newStore(e.getAddress(), e.getMemValue()),
-                optionalMFence);
+                optionalMFence
+        );
     }
 
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         Fence optionalFence = e.getMo().equals(Tag.C11.MO_SC) ? X86.newMemoryFence() : null;
 
-        return eventSequence(optionalFence);
+        return eventSequence(
+                optionalFence
+        );
     }
 
     @Override
@@ -271,7 +287,8 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue())));
+                newRMWStore(load, address, e.getMemValue())
+        ));
     }
 
     private List<Event> tagList(List<Event> in) {
