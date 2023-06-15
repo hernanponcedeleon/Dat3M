@@ -6,27 +6,28 @@ import com.dat3m.dartagnan.program.event.MemoryAccess;
 import java.util.List;
 
 /*
-    This is a generic notion memory event that neither loads nor stores but "abstractly" accesses memory.
-    By assigning a distinct tag to instance of this event, one can model abstract memory events like SRCU and hazard pointers.
+    This is a generic notion of memory event that neither loads nor stores but "abstractly" accesses memory.
+    By assigning a distinct tag to instances of this event, one can model abstract memory events like SRCU and hazard pointers.
     In that sense, a GenericMemoryEvent is similar to a Fence that carries an actual address.
  */
 public class GenericMemoryEvent extends AbstractMemoryCoreEvent implements MemoryCoreEvent {
 
-    private final String name;
+    // This is a name for printing only.
+    private final String displayName;
 
-    public GenericMemoryEvent(Expression address, String name) {
+    public GenericMemoryEvent(Expression address, String displayName) {
         super(address);
-        this.name = name;
+        this.displayName = displayName;
     }
 
     protected GenericMemoryEvent(GenericMemoryEvent other) {
         super(other);
-        this.name = other.name;
+        this.displayName = other.displayName;
     }
 
     @Override
     protected String defaultString() {
-        return String.format("%s(%s)", name, address);
+        return String.format("%s(%s)", displayName, address);
     }
 
     @Override

@@ -521,8 +521,10 @@ public class EventFactory {
             return new LKMMUnlock(address);
         }
 
-        public static SrcuSync newSrcuSync(Expression address) {
-            return new SrcuSync(address);
+        public static GenericMemoryEvent newSrcuSync(Expression address) {
+            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, "synchronize_srcu");
+            srcuSync.addTags(Tag.Linux.SRCU_SYNC);
+            return srcuSync;
         }
 
     }

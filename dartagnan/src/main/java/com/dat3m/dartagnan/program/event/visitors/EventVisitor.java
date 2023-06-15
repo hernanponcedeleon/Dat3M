@@ -72,9 +72,6 @@ public interface EventVisitor<T> {
     default T visitLKMMLock(LKMMLock e) { return visitMemEvent(e); }
     default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); }
 
-    // Linux SRCU Events
-    default T visitSrcuSync(SrcuSync e) { return visitMemCoreEvent(e); }
-
     // ------------------ TSO Events ------------------
     default T visitXchg(Xchg e) { return visitMemEvent(e); }
 
