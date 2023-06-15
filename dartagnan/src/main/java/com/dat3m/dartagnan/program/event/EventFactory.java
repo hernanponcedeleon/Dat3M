@@ -497,11 +497,11 @@ public class EventFactory {
             return new RMWXchg(address, register, value, mo);
         }
 
-        public static Fence newMemoryBarrier() {
+        public static LKMMFence newMemoryBarrier() {
             return new LKMMFence(Tag.Linux.MO_MB);
         }
 
-        public static Fence newLKMMFence(String name) {
+        public static LKMMFence newLKMMFence(String name) {
             return new LKMMFence(name);
         }
 

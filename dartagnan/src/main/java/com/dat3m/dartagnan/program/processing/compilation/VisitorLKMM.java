@@ -25,6 +25,11 @@ public class VisitorLKMM extends VisitorBase {
         super(forceStart);
     }
 
+    // Helper method to construct core-level fences
+    private Fence newCoreMemoryBarrier() {
+        return newFence(Tag.Linux.MO_MB);
+    }
+
     @Override
     public List<Event> visitCreate(Create e) {
         Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
@@ -87,11 +92,11 @@ public class VisitorLKMM extends VisitorBase {
                 newAssume(expressions.makeEQ(dummy, cmp)),
                 newGoto(end),
                 success, // RMW success branch
-                Linux.newMemoryBarrier(),
+                newCoreMemoryBarrier(),
                 rmwLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeNEQ(dummy, cmp)),
                 newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, value), Tag.Linux.MO_ONCE),
-                Linux.newMemoryBarrier(),
+                newCoreMemoryBarrier(),
                 end,
                 newLocal(resultRegister, expressions.makeNEQ(dummy, cmp))
         );
@@ -115,11 +120,11 @@ public class VisitorLKMM extends VisitorBase {
                 newAssume(expressions.makeNEQ(dummy, cmp)),
                 newGoto(end),
                 success, // CAS success branch
-                mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
+                mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 casLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
                 newAssume(expressions.makeEQ(dummy, cmp)),
                 newRMWStoreWithMo(casLoad, address, value, Tag.Linux.storeMO(mo)),
-                mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null,
+                mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 end,
                 newLocal(resultRegister, dummy)
         );
@@ -133,9 +138,9 @@ public class VisitorLKMM extends VisitorBase {
         Expression value = e.getMemValue();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
-        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
+        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
-        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
+        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
@@ -171,12 +176,12 @@ public class VisitorLKMM extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
 
         return eventSequence(
-                Linux.newMemoryBarrier(),
+                newCoreMemoryBarrier(),
                 load,
                 newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), e.getMemValue())),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.MO_ONCE),
                 newLocal(resultRegister, expressions.makeEQ(dummy, expressions.makeZero(type))),
-                Linux.newMemoryBarrier()
+                newCoreMemoryBarrier()
         );
     }
 
@@ -188,8 +193,8 @@ public class VisitorLKMM extends VisitorBase {
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
-        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
-        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
+        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
@@ -202,6 +207,13 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
+    public List<Event> visitLKMMFence(LKMMFence e) {
+        return eventSequence(
+                newFence(e.getName())
+        );
+    }
+
+    @Override
     public List<Event> visitRMWXchg(RMWXchg e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
@@ -209,8 +221,8 @@ public class VisitorLKMM extends VisitorBase {
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
-        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
-        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? Linux.newMemoryBarrier() : null;
+        Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,

@@ -64,7 +64,7 @@ public interface EventVisitor<T> {
     default T visitRMWOpAndTest(RMWOpAndTest e) { return visitRMWAbstract(e); }
     default T visitRMWOpReturn(RMWOpReturn e) { return visitRMWAbstract(e); }
     default T visitRMWXchg(RMWXchg e) { return visitRMWAbstract(e); }
-    default T visitLKMMFence(LKMMFence e) { return visitFence(e); }
+    default T visitLKMMFence(LKMMFence e) { return visitEvent(e); }
     default T visitLKMMLoad(LKMMLoad e) { return visitLoad(e); }
     default T visitLKMMStore(LKMMStore e) { return visitStore(e); }
 
@@ -84,7 +84,7 @@ public interface EventVisitor<T> {
     default T visitAtomicFetchOp(AtomicFetchOp e) { return visitAtomicAbstract(e); }
     default T visitAtomicLoad(AtomicLoad e) { return visitMemEvent(e); }
     default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
-    default T visitAtomicThreadFence(AtomicThreadFence e) { return visitFence(e); }
+    default T visitAtomicThreadFence(AtomicThreadFence e) { return visitEvent(e); }
     default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); }
 
     // ------------------ LLVM Events ------------------
@@ -94,7 +94,7 @@ public interface EventVisitor<T> {
     default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
     default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
     default T visitLlvmXchg(LlvmXchg e) { return visitLlvmAbstract(e); }
-    default T visitLlvmFence(LlvmFence e) { return visitFence(e); }
+    default T visitLlvmFence(LlvmFence e) { return visitEvent(e); }
 
     // ------------------ SVCOMP Events ------------------
     default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
