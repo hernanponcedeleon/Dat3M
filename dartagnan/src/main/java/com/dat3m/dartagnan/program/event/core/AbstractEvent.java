@@ -199,9 +199,6 @@ public abstract class AbstractEvent implements Event {
     @Override
     public final String toString() {
         final CustomPrinting stringProvider = getMetadata(CustomPrinting.class);
-        if (stringProvider != null && this instanceof Load) {
-            int i = 5;
-        }
         final Optional<String> customString = Optional.ofNullable(stringProvider).flatMap(o -> o.stringify(this));
         return customString.orElseGet(this::defaultString);
     }
