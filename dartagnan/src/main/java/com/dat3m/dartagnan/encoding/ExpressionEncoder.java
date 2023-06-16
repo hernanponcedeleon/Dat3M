@@ -267,17 +267,18 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                         if (inner instanceof BitvectorFormula number) {
                             return bitvectorFormulaManager().toIntegerFormula(number, signed);
                         }
-                    }
-                    int bitWidth = integerTargetType.getBitWidth();
-                    if (inner instanceof IntegerFormula number) {
-                        return bitvectorFormulaManager().makeBitvector(bitWidth, number);
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        int innerBitWidth = bitvectorFormulaManager().getLength(number);
-                        if (innerBitWidth < bitWidth) {
-                            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
+                    } else {
+                        int bitWidth = integerTargetType.getBitWidth();
+                        if (inner instanceof IntegerFormula number) {
+                            return bitvectorFormulaManager().makeBitvector(bitWidth, number);
                         }
-                        return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
+                        if (inner instanceof BitvectorFormula number) {
+                            int innerBitWidth = bitvectorFormulaManager().getLength(number);
+                            if (innerBitWidth < bitWidth) {
+                                return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
+                            }
+                            return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
+                        }
                     }
                 }
             }
