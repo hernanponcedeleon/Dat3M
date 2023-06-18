@@ -338,7 +338,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public IExpr visitReReadNa(LitmusCParser.ReReadNaContext ctx){
         Register register = getReturnRegister(true);
-        Event event = EventFactory.newLoad(register, getAddress(ctx.address), C11.NONATOMIC);
+        Event event = EventFactory.newLoadWithMo(register, getAddress(ctx.address), C11.NONATOMIC);
         programBuilder.addChild(currentThread, event);
         return register;
     }
@@ -468,7 +468,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
         Expression value = (Expression)ctx.re().accept(this);
         if(variable instanceof MemoryObject || variable instanceof Register){
-            Event event = EventFactory.newStore(variable, value, C11.NONATOMIC);
+            Event event = EventFactory.newStoreWithMo(variable, value, C11.NONATOMIC);
             return programBuilder.addChild(currentThread, event);
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
@@ -526,14 +526,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             MemoryObject object = programBuilder.getObject(ctx.getText());
             if(object != null){
                 register = programBuilder.getOrNewRegister(scope, null, archType);
-                programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
+                programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
                 return register;
             }
             return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
         }
         MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
         Register register = programBuilder.getOrNewRegister(scope, null, archType);
-        programBuilder.addChild(currentThread, EventFactory.newLoad(register, object, C11.NONATOMIC));
+        programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;
     }
 

@@ -1,22 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
-import com.dat3m.dartagnan.parsers.program.boogie.Function;
-import com.dat3m.dartagnan.parsers.program.boogie.FunctionCall;
-import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
-import com.dat3m.dartagnan.parsers.program.boogie.Scope;
-import com.dat3m.dartagnan.parsers.program.boogie.Types;
+import com.dat3m.dartagnan.parsers.program.boogie.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -443,7 +434,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 						// These loads corresponding to pthread_joins
 						child = EventFactory.Pthread.newJoin(register, value);
 					} else {
-						child = EventFactory.newLoad(register, value, "");
+						child = EventFactory.newLoad(register, value);
 					}
 					programBuilder.addChild(threadCount, child)
 							.setCFileInformation(currentLine, sourceCodeFile);
@@ -457,7 +448,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             MemoryObject object = programBuilder.getObject(name);
             if(object != null){
                 // These events are eventually compiled and we need to compare its mo, thus it cannot be null
-				programBuilder.addChild(threadCount, EventFactory.newStore(object, value, ""))
+				programBuilder.addChild(threadCount, EventFactory.newStore(object, value))
 						.setCFileInformation(currentLine, sourceCodeFile);
                 continue;
             }
@@ -716,7 +707,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				programBuilder.getOrNewObject(text).appendInitialValue(rhs,value.reduce());
 				return null;
 			}
-			programBuilder.addChild(threadCount, EventFactory.newStore(address, value, ""))
+			programBuilder.addChild(threadCount, EventFactory.newStore(address, value))
 					.setCFileInformation(currentLine, sourceCodeFile);
 			return null;
 		}

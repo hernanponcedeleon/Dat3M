@@ -187,21 +187,21 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 	public Object visitLw(LitmusRISCVParser.LwContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
 	public Object visitSw(LitmusRISCVParser.SwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(ra, r1, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override
 	public Object visitLr(LitmusRISCVParser.LrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusive(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
+        return programBuilder.addChild(mainThread, EventFactory.newRMWLoadExclusiveWithMo(r1, ra, getMo(ctx.moRISCV(0), ctx.moRISCV(1))));
 	}
 
 	@Override

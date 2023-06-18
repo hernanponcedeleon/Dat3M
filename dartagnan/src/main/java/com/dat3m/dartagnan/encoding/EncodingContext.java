@@ -8,10 +8,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -193,7 +190,7 @@ public final class EncodingContext {
         }
     }
 
-    public BooleanFormula sameAddress(MemoryEvent first, MemoryEvent second) {
+    public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
         return aliasAnalysis.mustAlias(first, second) ? booleanFormulaManager.makeTrue() : equal(address(first), address(second));
     }
 
@@ -292,9 +289,13 @@ public final class EncodingContext {
             } else {
                 r = null;
             }
-            if (e instanceof MemoryEvent memEvent) {
+            if (e instanceof MemoryCoreEvent memEvent) {
                 addresses.put(e, encodeIntegerExpressionAt(memEvent.getAddress(), e));
-                values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(memEvent.getMemValue(), e));
+                if (e instanceof Load) {
+                    values.put(e, r);
+                } else if (e instanceof Store store) {
+                    values.put(e, encodeIntegerExpressionAt(store.getMemValue(), e));
+                }
             }
             if (r != null) {
                 results.put(e, r);

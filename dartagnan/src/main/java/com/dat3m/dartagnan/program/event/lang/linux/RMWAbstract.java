@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -10,7 +11,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWriter {
+public abstract class RMWAbstract extends SingleAccessMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
     protected Expression value;
@@ -22,7 +23,7 @@ public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWrit
         addTags(READ, WRITE, RMW);
     }
 
-    RMWAbstract(RMWAbstract other){
+    RMWAbstract(RMWAbstract other) {
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;
@@ -34,25 +35,30 @@ public abstract class RMWAbstract extends AbstractMemoryEvent implements RegWrit
     }
 
     @Override
-    public Set<Register.Read> getRegisterReads(){
+    public Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
-    @Override
     public Expression getMemValue(){
         return value;
     }
 
-    @Override
     public void setMemValue(Expression value){
         this.value = value;
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWAbstract(this);
-	}
+
+
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitRMWAbstract(this);
+    }
 }

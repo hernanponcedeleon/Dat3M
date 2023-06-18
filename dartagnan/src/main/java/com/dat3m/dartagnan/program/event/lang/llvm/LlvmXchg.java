@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class LlvmXchg extends LlvmAbstractRMW {
@@ -18,11 +17,6 @@ public class LlvmXchg extends LlvmAbstractRMW {
     @Override
     public String toString() {
         return resultRegister + " = llvm_xchg(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
-    }
-
-    @Override
-    public Expression getMemValue() {
-    	return value;
     }
     
     // Unrolling

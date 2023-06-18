@@ -14,9 +14,9 @@ public class RMWStore extends Store {
 
     protected Load loadEvent;
 
-    public RMWStore(Load loadEvent, Expression address, Expression value, String mo) {
-        super(address, value, mo);
-        Preconditions.checkArgument(loadEvent.hasTag(Tag.RMW), "The provided load event " + loadEvent + " is not tagged RMW.");
+    public RMWStore(Load loadEvent, Expression address, Expression value) {
+        super(address, value);
+        Preconditions.checkArgument(loadEvent.hasTag(Tag.RMW), "The provided load event %s is not tagged RMW.", loadEvent);
         this.loadEvent = loadEvent;
         addTags(Tag.RMW);
     }

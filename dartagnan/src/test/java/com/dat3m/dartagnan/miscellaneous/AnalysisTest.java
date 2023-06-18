@@ -136,10 +136,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
-        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
-        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);
@@ -180,10 +180,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
-        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
-        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -234,10 +234,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
-        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
-        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -278,10 +278,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
-        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
-        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -322,10 +322,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
-        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
-        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -366,10 +366,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemoryEvent me0 = (MemoryEvent) findMatchingEventAfterProcessing(program, e0);
-        MemoryEvent me1 = (MemoryEvent) findMatchingEventAfterProcessing(program, e1);
-        MemoryEvent me2 = (MemoryEvent) findMatchingEventAfterProcessing(program, e2);
-        MemoryEvent me3 = (MemoryEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -380,7 +380,7 @@ public class AnalysisTest {
     }
 
     private Load newLoad(Register value, Expression address) {
-        return EventFactory.newLoad(value, address, "");
+        return EventFactory.newLoad(value, address);
     }
 
     private Store newStore(Expression address) {
@@ -388,7 +388,7 @@ public class AnalysisTest {
     }
 
     private Store newStore(Expression address, Expression value) {
-        return EventFactory.newStore(address, value, "");
+        return EventFactory.newStore(address, value);
     }
 
     private Expression value(long v) {
@@ -409,7 +409,7 @@ public class AnalysisTest {
         return AliasAnalysis.fromConfig(program, Configuration.builder().setOption(ALIAS_METHOD, method.asStringOption()).build());
     }
 
-    private void assertAlias(Result expect, AliasAnalysis a, MemoryEvent x, MemoryEvent y) {
+    private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));

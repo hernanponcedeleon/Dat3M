@@ -2,16 +2,20 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class Load extends AbstractMemoryEvent implements RegWriter {
+import java.util.List;
+
+public class Load extends AbstractMemoryCoreEvent implements RegWriter {
 
     protected final Register resultRegister;
 
-    public Load(Register register, Expression address, String mo) {
-        super(address, mo);
+    public Load(Register register, Expression address) {
+        super(address);
         this.resultRegister = register;
         addTags(Tag.READ);
     }
@@ -28,12 +32,13 @@ public class Load extends AbstractMemoryEvent implements RegWriter {
 
     @Override
     public String toString() {
-        return resultRegister + " = load(*" + address + (!mo.isEmpty() ? ", " + mo : "") + ")";
+        final MemoryOrder mo = getMetadata(MemoryOrder.class);
+        return String.format("%s = load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
     }
 
     @Override
-    public Expression getMemValue() {
-        return resultRegister;
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD));
     }
 
     // Unrolling

@@ -1,27 +1,24 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.program.Register.*;
 
 public interface MemoryEvent extends Event, RegReader {
 
-    Expression getAddress();
-    void setAddress(Expression address);
-
-    Expression getMemValue();
-    void setMemValue(Expression value);
-
-    String getMo();
-    void setMo(String mo);
+    List<MemoryAccess> getMemoryAccesses();
 
     @Override
-    default Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(getAddress(), Register.UsageType.ADDR, new HashSet<>());
+    default Set<Read> getRegisterReads() {
+        final Set<Read> regReads = new HashSet<>();
+        getMemoryAccesses().forEach(access -> collectRegisterReads(access.address(), UsageType.ADDR, regReads));
+        return regReads;
     }
 
     @Override

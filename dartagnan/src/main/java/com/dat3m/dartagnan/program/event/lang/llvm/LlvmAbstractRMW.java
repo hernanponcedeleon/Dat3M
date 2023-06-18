@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -11,7 +12,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public abstract class LlvmAbstractRMW extends AbstractMemoryEvent implements RegWriter {
+public abstract class LlvmAbstractRMW extends SingleAccessMemoryEvent implements RegWriter {
 
     protected final Register resultRegister;
     protected Expression value;
@@ -40,21 +41,24 @@ public abstract class LlvmAbstractRMW extends AbstractMemoryEvent implements Reg
         return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
-    @Override
     public Expression getMemValue() {
     	return value;
     }
-    
-    @Override
+
     public void setMemValue(Expression value){
         this.value = value;
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLlvmAbstract(this);
-	}
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLlvmAbstract(this);
+    }
 }

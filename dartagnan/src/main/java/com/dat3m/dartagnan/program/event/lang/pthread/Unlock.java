@@ -4,12 +4,12 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.common.StoreBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
-public class Unlock extends Store {
+public class Unlock extends StoreBase {
 	
 	private final String name;
 	private final Register reg;

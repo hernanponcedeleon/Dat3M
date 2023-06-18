@@ -4,12 +4,12 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.common.StoreBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
-public class End extends Store {
+public class End extends StoreBase {
 
     public End(Expression address){
     	super(address, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_SC);

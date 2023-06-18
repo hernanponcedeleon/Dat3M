@@ -55,7 +55,7 @@ public class EventFactory {
             if (obj == null) {
                 continue;
             }
-            if (obj instanceof AbstractEvent) {
+            if (obj instanceof Event) {
                 retVal.add((Event) obj);
             } else if (obj instanceof Collection<?>) {
                 retVal.addAll((Collection<? extends Event>) obj);
@@ -73,12 +73,24 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Load newLoad(Register register, Expression address, String mo) {
-        return new Load(register, address, mo);
+    public static Load newLoad(Register register, Expression address) {
+        return new Load(register, address);
     }
 
-    public static Store newStore(Expression address, Expression value, String mo) {
-        return new Store(address, value, mo);
+    public static Load newLoadWithMo(Register register, Expression address, String mo) {
+        Load load = newLoad(register, address);
+        load.setMemoryOrder(mo);
+        return load;
+    }
+
+    public static Store newStore(Expression address, Expression value) {
+        return new Store(address, value);
+    }
+
+    public static Store newStoreWithMo(Expression address, Expression value, String mo) {
+        Store store = newStore(address, value);
+        store.setMemoryOrder(mo);
+        return store;
     }
 
     public static Fence newFence(String name) {
@@ -157,28 +169,48 @@ public class EventFactory {
 
     // ------------------------------------------ RMW events ------------------------------------------
 
-    public static Load newRMWLoad(Register reg, Expression address, String mo) {
-        Load load = newLoad(reg, address, mo);
+    public static Load newRMWLoad(Register reg, Expression address) {
+        Load load = newLoad(reg, address);
         load.addTags(Tag.RMW);
         return load;
     }
 
-    public static RMWStore newRMWStore(Load loadEvent, Expression address, Expression value, String mo) {
-        return new RMWStore(loadEvent, address, value, mo);
+    public static Load newRMWLoadWithMo(Register reg, Expression address, String mo) {
+        Load load = newLoadWithMo(reg, address, mo);
+        load.addTags(Tag.RMW);
+        return load;
     }
 
-    public static Load newRMWLoadExclusive(Register reg, Expression address, String mo) {
-        Load load = new Load(reg, address, mo);
+    public static RMWStore newRMWStore(Load loadEvent, Expression address, Expression value) {
+        return new RMWStore(loadEvent, address, value);
+    }
+
+    public static RMWStore newRMWStoreWithMo(Load loadEvent, Expression address, Expression value, String mo) {
+        RMWStore store = newRMWStore(loadEvent, address, value);
+        store.setMemoryOrder(mo);
+        return store;
+    }
+
+    public static Load newRMWLoadExclusive(Register reg, Expression address) {
+        Load load = newLoad(reg, address);
         load.addTags(Tag.RMW, Tag.EXCL);
         return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(Expression address, Expression value, String mo, boolean isStrong) {
-        return new RMWStoreExclusive(address, value, mo, isStrong, false);
+    public static Load newRMWLoadExclusiveWithMo(Register reg, Expression address, String mo) {
+        Load load = newRMWLoadExclusive(reg, address);
+        load.setMemoryOrder(mo);
+        return load;
     }
 
-    public static RMWStoreExclusive newRMWStoreExclusive(Expression address, Expression value, String mo) {
-        return newRMWStoreExclusive(address, value, mo, false);
+    public static RMWStoreExclusive newRMWStoreExclusive(Expression address, Expression value, boolean isStrong) {
+        return new RMWStoreExclusive(address, value, isStrong, false);
+    }
+
+    public static RMWStoreExclusive newRMWStoreExclusiveWithMo(Expression address, Expression value, boolean isStrong, String mo) {
+        RMWStoreExclusive store = newRMWStoreExclusive(address, value, isStrong);
+        store.setMemoryOrder(mo);
+        return store;
     }
 
     public static ExecutionStatus newExecutionStatus(Register register, Event event) {
@@ -521,8 +553,9 @@ public class EventFactory {
         }
 
         public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
-            RMWStoreExclusive store = new RMWStoreExclusive(address, value, mo, isStrong, true);
+            RMWStoreExclusive store = new RMWStoreExclusive(address, value, isStrong, true);
             store.addTags(Tag.RISCV.STCOND);
+            store.setMemoryOrder(mo);
             return store;
         }
 
@@ -592,8 +625,8 @@ public class EventFactory {
         private Power() {
         }
 
-        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, String mo, boolean isStrong) {
-            return new RMWStoreExclusive(address, value, mo, isStrong, true);
+        public static RMWStoreExclusive newRMWStoreConditional(Expression address, Expression value, boolean isStrong) {
+            return new RMWStoreExclusive(address, value, isStrong, true);
         }
 
         public static Fence newISyncBarrier() {

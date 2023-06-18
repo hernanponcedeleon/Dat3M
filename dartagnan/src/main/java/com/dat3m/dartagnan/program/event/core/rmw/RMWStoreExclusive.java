@@ -13,9 +13,9 @@ public class RMWStoreExclusive extends Store {
     private final boolean isStrong;
     private final boolean requiresMatchingAddresses;
 
-    public RMWStoreExclusive(Expression address, Expression value, String mo,
+    public RMWStoreExclusive(Expression address, Expression value,
                              boolean isStrong, boolean requiresMatchingAddresses) {
-        super(address, value, mo);
+        super(address, value);
         addTags(Tag.EXCL, Tag.RMW);
         this.isStrong = isStrong;
         this.requiresMatchingAddresses = requiresMatchingAddresses;

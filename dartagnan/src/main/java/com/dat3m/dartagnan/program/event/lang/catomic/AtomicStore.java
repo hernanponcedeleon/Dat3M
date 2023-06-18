@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
@@ -12,7 +13,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 
-public class AtomicStore extends AbstractMemoryEvent {
+public class AtomicStore extends SingleAccessMemoryEvent {
 
     private Expression value;
 
@@ -20,12 +21,12 @@ public class AtomicStore extends AbstractMemoryEvent {
         super(address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
-        		getClass().getName() + " can not have memory order: " + mo);
+                getClass().getName() + " can not have memory order: " + mo);
         this.value = value;
         addTags(WRITE);
     }
 
-    private AtomicStore(AtomicStore other){
+    private AtomicStore(AtomicStore other) {
         super(other);
         this.value = other.value;
     }
@@ -37,32 +38,35 @@ public class AtomicStore extends AbstractMemoryEvent {
 
     @Override
     public String toString() {
-        return "atomic_store(*" + address + ", " +  value + ", " + mo + ")\t### C11";
+        return "atomic_store(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }
 
-    @Override
     public Expression getMemValue() {
     	return value;
     }
-    
-    @Override
+
     public void setMemValue(Expression value){
         this.value = value;
+    }
+
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE);
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public AtomicStore getCopy(){
+    public AtomicStore getCopy() {
         return new AtomicStore(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitAtomicStore(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAtomicStore(this);
+    }
 }

@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program.event.arch.tso;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -11,7 +12,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public class Xchg extends AbstractMemoryEvent implements RegWriter {
+public class Xchg extends SingleAccessMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
 
@@ -41,9 +42,13 @@ public class Xchg extends AbstractMemoryEvent implements RegWriter {
         return "xchg(*" + address + ", " + resultRegister + ")";
     }
 
-    @Override
     public Expression getMemValue(){
         return resultRegister;
+    }
+
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
     // Unrolling
@@ -54,11 +59,11 @@ public class Xchg extends AbstractMemoryEvent implements RegWriter {
         return new Xchg(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitXchg(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitXchg(this);
+    }
 }

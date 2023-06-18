@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -69,12 +69,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemoryEvent x, MemoryEvent y) {
+    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(MemoryEvent x, MemoryEvent y) {
+    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return getMaxAddressSet(x).size() == 1 && getMaxAddressSet(x).containsAll(getMaxAddressSet(y));
     }
 
@@ -85,9 +85,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ Processing ================================
 
     private void run(Program program) {
-        List<MemoryEvent> memEvents = program.getEvents(MemoryEvent.class);
+        List<MemoryCoreEvent> memEvents = program.getEvents(MemoryCoreEvent.class);
         List<Local> locals = program.getEvents(Local.class);
-        for (MemoryEvent e : memEvents) {
+        for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
         for (Local e : locals) {
@@ -97,12 +97,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (Local e : locals) {
             processResults(e);
         }
-        for (MemoryEvent e : memEvents) {
+        for (MemoryCoreEvent e : memEvents) {
             processResults(e);
         }
     }
 
-    private void processLocs(MemoryEvent e) {
+    private void processLocs(MemoryCoreEvent e) {
         Expression address = e.getAddress();
         // Collect for each v events of form: p = *v, *v = q
         if (address instanceof Register) {
@@ -132,8 +132,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             return;
         }
         //event is a store operation
-        Verify.verify(e.hasTag(Tag.WRITE), "memory event that is neither tagged \"W\" nor a register writer");
-        Expression value = e.getMemValue();
+        Verify.verify(e instanceof Store,
+                "Encountered memory event that is neither store nor load: {}", e);
+        Expression value = ((Store)e).getMemValue();
         if (value instanceof Register) {
             addEdge(value, location);
             return;
@@ -178,16 +179,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                                 // Add location to variables if edge is new.
                                 variables.add(address);
                             }
-                        } else if (e instanceof Store) {
+                        } else if (e instanceof Store store && store.getMemValue() instanceof Register register) {
                             // *variable = register
-                            Expression value = e.getMemValue();
-                            if (value instanceof Register) {
-                                Register register = (Register) value;
-                                // Add edge from register to location
-                                if (addEdge(register, address)) {
-                                    // Add register to variables if edge is new.
-                                    variables.add(register);
-                                }
+                            // Add edge from register to location
+                            if (addEdge(register, address)) {
+                                // Add register to variables if edge is new.
+                                variables.add(register);
                             }
                         }
                     }
@@ -241,7 +238,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
     }
 
-    private void processResults(MemoryEvent e) {
+    private void processResults(MemoryCoreEvent e) {
         Expression address = e.getAddress();
         Set<Location> addresses;
         if (address instanceof Register) {

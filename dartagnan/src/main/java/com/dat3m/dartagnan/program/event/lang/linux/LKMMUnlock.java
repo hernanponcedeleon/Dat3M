@@ -12,8 +12,8 @@ import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
 public class LKMMUnlock extends Store {
 
 	public LKMMUnlock(Expression lock) {
-		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_RELEASE);
-		addTags(Tag.Linux.UNLOCK);
+		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
+		addTags(Tag.Linux.UNLOCK, MO_RELEASE);
 	}
 
     protected LKMMUnlock(LKMMUnlock other){

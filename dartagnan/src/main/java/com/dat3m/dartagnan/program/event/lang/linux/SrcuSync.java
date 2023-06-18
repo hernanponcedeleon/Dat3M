@@ -1,40 +1,38 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractMemoryEvent;
+import com.dat3m.dartagnan.program.event.core.AbstractMemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class SrcuSync extends AbstractMemoryEvent {
+import java.util.List;
 
-	public SrcuSync(Expression address) {
-		super(address, Tag.Linux.SRCU_SYNC);
-	}
+// This event is a MemEvent because it needs to contribute to the loc relation
+// (due to let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc).
+// FIXME: Add generic memory event in the core that can represent SRCU.
+public class SrcuSync extends AbstractMemoryCoreEvent {
 
-	@Override
+    public SrcuSync(Expression address) {
+        super(address);
+        tags.add(Tag.Linux.SRCU_SYNC);
+    }
+
+    @Override
     public String toString() {
         return "synchronize_srcu(" + address + ")\t### LKMM";
     }
 
-    // This event is a MemEvent because it needs to contribute to the loc relation
-	// (due to let srcu-rscs = ([Srcu-lock] ; pass-cookie ; [Srcu-unlock]) & loc).
-	// However it cannot contribute to the data flow over memory, thus the memValue
-	// we assign is irrelevant. However we still need to provide an implementation
-	// to be abel to run several analysis / passes. The value below should not affect
-	// the alias analysis and the result of passes like constant propagation is 
-	// irrelevant because this event does not contribute to any data flow.
-	@Override
-	public Expression getMemValue(){
-		return ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType());
-	}
+    @Override
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.OTHER));
+    }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitSruSync(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitSrcuSync(this);
+    }
 }

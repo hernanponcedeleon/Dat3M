@@ -7,8 +7,13 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class LKMMStore extends Store {
 
+	private String mo;
+	public String getMo() { return mo; }
+
 	public LKMMStore(Expression address, Expression value, String mo) {
-		super(address, value, mo);
+		super(address, value);
+		this.mo = mo;
+		addTags(mo);
 	}
 
 	@Override

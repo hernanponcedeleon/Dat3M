@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.event.arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.common.StoreBase;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
     This event is common among ARMv8, RISCV, and PPC.
     It gets compiled down to a pair of RMWStoreExclusive + ExecutionStatus.
  */
-public class StoreExclusive extends Store implements RegWriter {
+public class StoreExclusive extends StoreBase implements RegWriter {
 
     private final Register register;
 

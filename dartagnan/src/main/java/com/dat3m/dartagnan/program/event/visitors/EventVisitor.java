@@ -25,24 +25,25 @@ public interface EventVisitor<T> {
 	default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
 	default T visitFence(Fence e) { return visitEvent(e); }
 	default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
-	default T visitInit(Init e) { return visitMemEvent(e); }
+	default T visitInit(Init e) { return visitStore(e); }
 	default T visitLabel(Label e) { return visitEvent(e); }
-	default T visitLoad(Load e) { return visitMemEvent(e); }
+	default T visitLoad(Load e) { return visitMemCoreEvent(e); }
 	default T visitLocal(Local e) { return visitEvent(e); }
 	default T visitMemEvent(MemoryEvent e) { return visitEvent(e); }
+	default T visitMemCoreEvent(MemoryCoreEvent e) { return visitMemEvent(e); }
 	default T visitSkip(Skip e) { return visitEvent(e); }
-	default T visitStore(Store e) { return visitMemEvent(e); }
+	default T visitStore(Store e) { return visitMemCoreEvent(e); }
 
 	// Annotations
 	default T visitCodeAnnotation(CodeAnnotation e) { return visitEvent(e); }
 
 	// Pthread Events
-	default T visitCreate(Create e) { return visitStore(e); }
-	default T visitEnd(End e) { return visitStore(e); }
-	default T visitInitLock(InitLock e) { return visitStore(e); }
-	default T visitJoin(Join e) { return visitLoad(e); }
+	default T visitCreate(Create e) { return visitMemEvent(e); }
+	default T visitEnd(End e) { return visitMemEvent(e); }
+	default T visitInitLock(InitLock e) { return visitMemEvent(e); }
+	default T visitJoin(Join e) { return visitMemEvent(e); }
 	default T visitLock(Lock e) { return visitMemEvent(e); }
-	default T visitStart(Start e) { return visitLoad(e); }
+	default T visitStart(Start e) { return visitMemEvent(e); }
 	default T visitUnlock(Unlock e) { return visitMemEvent(e); }
 
 	// RMW Events
@@ -50,7 +51,7 @@ public interface EventVisitor<T> {
 	default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
 
 	// AARCH64 Events
-	default T visitStoreExclusive(StoreExclusive e) { return visitStore(e); }
+	default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
 
 	// Linux Events
 	default T visitRMWAbstract(RMWAbstract e) { return visitMemEvent(e); }
@@ -66,13 +67,13 @@ public interface EventVisitor<T> {
 	default T visitLKMMStore(LKMMStore e) { return visitStore(e); }
 
 	// Linux Lock Events
-	default T visitLKMMLock(LKMMLock e) { return visitEvent(e); }
+	default T visitLKMMLock(LKMMLock e) { return visitMemEvent(e); }
 	default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); }
-	default T visitLKMMLockRead(LKMMLockRead e) { return visitLoad(e); }
+	default T visitLKMMLockRead(LKMMLockRead e) { return visitMemEvent(e); }
 	default T visitLKMMLockWrite(LKMMLockWrite e) { return visitStore(e); }
 
 	// Linux SRCU Events
-	default T visitSruSync(SrcuSync e) { return visitMemEvent(e); }
+	default T visitSrcuSync(SrcuSync e) { return visitMemCoreEvent(e); }
 
 	// TSO Events
 	default T visitXchg(Xchg e) { return visitMemEvent(e); }
