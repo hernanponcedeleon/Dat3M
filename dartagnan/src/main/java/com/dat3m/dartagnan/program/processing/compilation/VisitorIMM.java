@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -21,6 +22,7 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.IMM.extractLoadMo;
 import static com.dat3m.dartagnan.program.event.Tag.IMM.extractStoreMo;
+import static com.google.common.base.Verify.verify;
 
 class VisitorIMM extends VisitorBase {
 
@@ -82,14 +84,14 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Expression one = expressions.makeOne(resultRegister.getType());
+        verify(resultRegister.getType() instanceof BooleanType);
         Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
+                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
         );
     }
 

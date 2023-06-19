@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -16,6 +17,7 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
+import static com.google.common.base.Verify.verify;
 
 public class VisitorPower extends VisitorBase {
 
@@ -80,7 +82,7 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Expression one = expressions.makeOne(resultRegister.getType());
+        verify(resultRegister.getType() instanceof BooleanType);
         Load load = newLoad(resultRegister, e.getAddress());
         load.addTags(Tag.STARTLOAD);
         Label label = newLabel("Jump_" + e.getGlobalId());
@@ -92,7 +94,7 @@ public class VisitorPower extends VisitorBase {
                 label,
                 Power.newISyncBarrier(),
                 super.visitStart(e),
-                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
+                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
         );
     }
 

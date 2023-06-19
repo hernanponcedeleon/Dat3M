@@ -222,7 +222,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (!procedures.containsKey("main")) {
             throw new ParsingException("Program shall have a main procedure");
         }
-        
+
         String nextThreadName = "main";
         do {
             resetScope();
@@ -386,7 +386,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (threadCount != 1) {
             // Used to allow execution of threads after they have been created (pthread_create)
             final Expression pointer = pool.getPtrFromInt(threadCount);
-            final Register reg = getOrNewScopedRegister(null);
+            final Register reg = getOrNewScopedRegister(null, types.getBooleanType());
             addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
         }
 

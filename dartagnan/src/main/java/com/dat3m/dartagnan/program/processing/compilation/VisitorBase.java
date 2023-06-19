@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.google.common.base.Verify.verify;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
@@ -52,6 +54,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
+        verify(resultRegister.getType() instanceof BooleanType);
         Register statusRegister = e.getFunction().newRegister(resultRegister.getType());
 
         return eventSequence(
