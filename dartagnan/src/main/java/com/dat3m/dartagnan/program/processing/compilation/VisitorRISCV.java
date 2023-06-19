@@ -464,6 +464,10 @@ class VisitorRISCV extends VisitorBase {
             case Tag.Linux.AFTER_UNLOCK_LOCK:
 				optionalMemoryBarrier = RISCV.newRWRWFence();
 				break;
+            // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
+            case Tag.Linux.BARRIER:
+                optionalMemoryBarrier = null;
+                break;
 			default:
 				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
