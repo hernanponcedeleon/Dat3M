@@ -31,7 +31,7 @@ public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWri
     @Override
     public String defaultString() {
         final MemoryOrder mo = getMetadata(MemoryOrder.class);
-        return String.format("%s = load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
+        return String.format("%s <- load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
     }
 
     @Override

@@ -2,45 +2,34 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
+import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 public class VisitorLKMM extends VisitorBase {
 
     protected VisitorLKMM(boolean forceStart) {
         super(forceStart);
-    }
-
-    // Helper method to construct core-level fences
-    private Fence newCoreMemoryBarrier() {
-        return newFence(Tag.Linux.MO_MB);
-    }
-
-    private Load newCoreLoad(Register reg, Expression addr, String mo) {
-        Load load = EventFactory.newLoadWithMo(reg, addr, mo);
-        load.setMetadata(LKMMLoad.CUSTOM_CORE_PRINTING);
-        return load;
-    }
-
-    private Store newCoreStore(Expression addr, Expression value, String mo) {
-        Store store = EventFactory.newStoreWithMo(addr, value, mo);
-        store.setMetadata(LKMMStore.CUSTOM_CORE_PRINTING);
-        return store;
     }
 
     @Override
@@ -264,15 +253,60 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitLKMMLock(LKMMLock e) {
         Register dummy = e.getThread().newRegister(types.getArchType());
         Expression zero = expressions.makeZero(dummy.getType());
+
+        Load lockRead = newLockRead(e.getLock(), dummy);
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
-        Load lockRead = Linux.newLockRead(dummy, e.getLock());
-        Event middle = e.getThread().getProgram().getFormat().equals(LITMUS) ?
+        Event checkLockValue = e.getThread().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeEQ(dummy, zero)) :
                 newJump(expressions.makeNEQ(dummy, zero), (Label) e.getThread().getExit());
         return eventSequence(
                 lockRead,
-                middle,
-                Linux.newLockWrite(lockRead, e.getLock())
+                checkLockValue,
+                newLockWrite(lockRead, e.getLock())
         );
     }
+
+    // ============================== Helper methods to lower LKMM events to core events ===========================
+    /*
+        The following helper methods are used to generate core-level events with additional metadata attached,
+        for example, with custom printing capabilities.
+     */
+
+    private static Fence newCoreMemoryBarrier() {
+        return newFence(Tag.Linux.MO_MB);
+    }
+
+    private static Load newCoreLoad(Register reg, Expression addr, String mo) {
+        Load load = EventFactory.newLoadWithMo(reg, addr, mo);
+        load.setMetadata(LKMMLoad.CUSTOM_CORE_PRINTING);
+        return load;
+    }
+
+    private static Store newCoreStore(Expression addr, Expression value, String mo) {
+        Store store = EventFactory.newStoreWithMo(addr, value, mo);
+        store.setMetadata(LKMMStore.CUSTOM_CORE_PRINTING);
+        return store;
+    }
+
+    private static Load newLockRead(Expression lock, Register dummy) {
+        Load lockRead = newLoadWithMo(dummy, lock, Tag.Linux.MO_ACQUIRE);
+        lockRead.addTags(RMW, Tag.Linux.LOCK_READ);
+        lockRead.setMetadata((CustomPrinting) (ev -> {
+            Load load = (Load)ev;
+            return Optional.of(String.format("%s <- spin_lock_R(*%s)", load.getResultRegister(), load.getAddress()));
+        }));
+        return lockRead;
+    }
+
+    private static RMWStore newLockWrite(Load lockRead, Expression lock) {
+        Expression one = ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType());
+        RMWStore lockWrite = newRMWStoreWithMo(lockRead, lock, one, Tag.Linux.MO_ONCE);
+        lockWrite.addTags(Tag.Linux.LOCK_WRITE);
+        lockWrite.setMetadata((CustomPrinting) (ev -> {
+            Store store = (Store)ev;
+            return Optional.of(String.format("spin_lock_W(*%s)", store.getAddress()));
+        }));
+        return lockWrite;
+    }
+
 }

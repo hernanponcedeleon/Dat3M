@@ -505,14 +505,6 @@ public class EventFactory {
             return new LKMMFence(name);
         }
 
-        public static LKMMLockRead newLockRead(Register register, Expression address) {
-            return new LKMMLockRead(register, address);
-        }
-
-        public static LKMMLockWrite newLockWrite(Load lockRead, Expression address) {
-            return new LKMMLockWrite(lockRead, address);
-        }
-
         public static LKMMLock newLock(Expression address) {
             return new LKMMLock(address);
         }
