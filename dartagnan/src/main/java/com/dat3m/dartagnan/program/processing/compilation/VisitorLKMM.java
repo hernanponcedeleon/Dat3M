@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -30,9 +31,21 @@ public class VisitorLKMM extends VisitorBase {
         return newFence(Tag.Linux.MO_MB);
     }
 
+    private Load newCoreLoad(Register reg, Expression addr, String mo) {
+        Load load = EventFactory.newLoadWithMo(reg, addr, mo);
+        load.setMetadata(LKMMLoad.CUSTOM_CORE_PRINTING);
+        return load;
+    }
+
+    private Store newCoreStore(Expression addr, Expression value, String mo) {
+        Store store = EventFactory.newStoreWithMo(addr, value, mo);
+        store.setMetadata(LKMMStore.CUSTOM_CORE_PRINTING);
+        return store;
+    }
+
     @Override
     public List<Event> visitCreate(Create e) {
-        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
+        Store store = newCoreStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
         store.addTags(C11.PTHREAD);
 
         return eventSequence(
@@ -44,7 +57,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitEnd(End e) {
         //TODO boolean
         return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.Linux.MO_RELEASE)
+                newCoreStore(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.Linux.MO_RELEASE)
         );
     }
 
@@ -52,7 +65,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
         IValue zero = expressions.makeZero(resultRegister.getType());
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
+        Load load = newCoreLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
 
         return eventSequence(
@@ -65,7 +78,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
         IValue one = expressions.makeOne(resultRegister.getType());
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
+        Load load = newCoreLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
@@ -88,7 +101,7 @@ public class VisitorLKMM extends VisitorBase {
         Load rmwLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
-                newLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
+                newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeEQ(dummy, cmp)),
                 newGoto(end),
                 success, // RMW success branch
@@ -116,7 +129,7 @@ public class VisitorLKMM extends VisitorBase {
         Load casLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
-                newLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
+                newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeNEQ(dummy, cmp)),
                 newGoto(end),
                 success, // CAS success branch
@@ -210,6 +223,20 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitLKMMFence(LKMMFence e) {
         return eventSequence(
                 newFence(e.getName())
+        );
+    }
+
+    @Override
+    public List<Event> visitLKMMLoad(LKMMLoad e) {
+        return eventSequence(
+                newCoreLoad(e.getResultRegister(), e.getAddress(), e.getMo())
+        );
+    }
+
+    @Override
+    public List<Event> visitLKMMStore(LKMMStore e) {
+        return eventSequence(
+                newCoreStore(e.getAddress(), e.getMemValue(), e.getMo())
         );
     }
 

@@ -65,8 +65,8 @@ public interface EventVisitor<T> {
     default T visitRMWOpReturn(RMWOpReturn e) { return visitRMWAbstract(e); }
     default T visitRMWXchg(RMWXchg e) { return visitRMWAbstract(e); }
     default T visitLKMMFence(LKMMFence e) { return visitEvent(e); }
-    default T visitLKMMLoad(LKMMLoad e) { return visitLoad(e); }
-    default T visitLKMMStore(LKMMStore e) { return visitStore(e); }
+    default T visitLKMMLoad(LKMMLoad e) { return visitMemEvent(e); }
+    default T visitLKMMStore(LKMMStore e) { return visitMemEvent(e); }
 
     // Linux Lock Events
     default T visitLKMMLock(LKMMLock e) { return visitMemEvent(e); }
