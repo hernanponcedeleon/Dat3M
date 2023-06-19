@@ -95,7 +95,7 @@ public class ProcessingManager implements ProgramProcessor {
                 MemoryAllocation.newInstance(),
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
-                //CoreCodeVerification.fromConfig(config),
+                CoreCodeVerification.fromConfig(config),
                 LogProgramStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);

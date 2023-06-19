@@ -4,40 +4,51 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.common.StoreBase;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_RELEASE;
 
-public class LKMMUnlock extends Store {
+public class LKMMUnlock extends StoreBase {
 
-	public LKMMUnlock(Expression lock) {
-		super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
-		addTags(Tag.Linux.UNLOCK, MO_RELEASE);
-	}
+    // A custom printer to make core stores appear like LKMMUnlock
+    public static final CustomPrinting CUSTOM_CORE_PRINTING = (e -> {
+        assert e instanceof Store;
+        Store store = (Store)e;
+        return Optional.of(String.format("spin_unlock(*%s)", store.getAddress()));
+    });
 
-    protected LKMMUnlock(LKMMUnlock other){
+    public LKMMUnlock(Expression lock) {
+        super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_RELEASE);
+        addTags(Tag.Linux.UNLOCK);
+    }
+
+    protected LKMMUnlock(LKMMUnlock other) {
         super(other);
     }
 
-	@Override
-	public String defaultString() {
-		return String.format("spin_unlock(*%s)", address);
-	}
+    @Override
+    public String defaultString() {
+        return String.format("spin_unlock(*%s)", address);
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LKMMUnlock getCopy(){
+    public LKMMUnlock getCopy() {
         return new LKMMUnlock(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLKMMUnlock(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLKMMUnlock(this);
+    }
 }

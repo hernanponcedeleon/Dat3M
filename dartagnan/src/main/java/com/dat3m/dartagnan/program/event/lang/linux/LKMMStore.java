@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public class LKMMStore extends StoreBase {
 
-    // A custom printer to make core stores appear like LKMMLoads
+    // A custom printer to make core stores appear like LKMMStore
     public static final CustomPrinting CUSTOM_CORE_PRINTING = (e -> {
         assert e instanceof Store;
         Store store = (Store)e;

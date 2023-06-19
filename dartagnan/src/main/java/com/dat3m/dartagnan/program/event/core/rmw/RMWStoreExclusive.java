@@ -42,7 +42,7 @@ public class RMWStoreExclusive extends Store {
     public String defaultString() {
         String tag = isStrong ? " strong" : "";
         tag += requiresMatchingAddresses ? " addrmatch" : "";
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.defaultString()) + "# opt" + tag;
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", "rmw " + super.defaultString()) + "# opt" + tag;
     }
 
     @Override

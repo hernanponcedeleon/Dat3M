@@ -70,7 +70,7 @@ public interface EventVisitor<T> {
 
     // Linux Lock Events
     default T visitLKMMLock(LKMMLock e) { return visitMemEvent(e); }
-    default T visitLKMMUnlock(LKMMUnlock e) { return visitStore(e); }
+    default T visitLKMMUnlock(LKMMUnlock e) { return visitMemEvent(e); }
 
     // ------------------ TSO Events ------------------
     default T visitXchg(Xchg e) { return visitMemEvent(e); }

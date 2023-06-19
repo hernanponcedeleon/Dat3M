@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 public class VisitorLKMM extends VisitorBase {
 
@@ -266,6 +265,16 @@ public class VisitorLKMM extends VisitorBase {
         );
     }
 
+    @Override
+    public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+        Store lockRelease = newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo());
+        lockRelease.addTags(Tag.Linux.UNLOCK);
+        lockRelease.setMetadata(LKMMUnlock.CUSTOM_CORE_PRINTING);
+        return eventSequence(
+                lockRelease
+        );
+    }
+
     // ============================== Helper methods to lower LKMM events to core events ===========================
     /*
         The following helper methods are used to generate core-level events with additional metadata attached,
@@ -289,8 +298,8 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     private static Load newLockRead(Expression lock, Register dummy) {
-        Load lockRead = newLoadWithMo(dummy, lock, Tag.Linux.MO_ACQUIRE);
-        lockRead.addTags(RMW, Tag.Linux.LOCK_READ);
+        Load lockRead = newRMWLoadWithMo(dummy, lock, Tag.Linux.MO_ACQUIRE);
+        lockRead.addTags(Tag.Linux.LOCK_READ);
         lockRead.setMetadata((CustomPrinting) (ev -> {
             Load load = (Load)ev;
             return Optional.of(String.format("%s <- spin_lock_R(*%s)", load.getResultRegister(), load.getAddress()));
