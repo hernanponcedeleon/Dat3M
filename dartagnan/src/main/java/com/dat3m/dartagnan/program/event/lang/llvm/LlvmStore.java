@@ -11,7 +11,7 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;
 public class LlvmStore extends StoreBase {
 
     public LlvmStore(Expression address, Expression value, String mo){
-        super(value, address, mo);
+        super(address, value, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
         Preconditions.checkArgument(!mo.equals(MO_ACQUIRE) && !mo.equals(MO_ACQUIRE_RELEASE),
                 getClass().getName() + " cannot have memory order: " + mo);
