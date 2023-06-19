@@ -306,14 +306,14 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
+        verify(resultRegister.getType() instanceof BooleanType);
 
-        Expression one = expressions.makeOne(resultRegister.getType());
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, e.getExpectedValue()));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
+        CondJump branchOnCasCmpResult = newJumpUnless(resultRegister, casEnd);
 
         Load load = newRMWLoadExclusive(oldValueRegister, address);
         Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);

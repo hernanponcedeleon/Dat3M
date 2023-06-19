@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.common;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -10,6 +11,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.Register.UsageType.DATA;
 import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.google.common.base.Preconditions.checkArgument;
 
 @NoInterface
 public abstract class RMWCmpXchgBase extends SingleAccessMemoryEvent implements RegWriter {
@@ -22,6 +24,7 @@ public abstract class RMWCmpXchgBase extends SingleAccessMemoryEvent implements 
     protected RMWCmpXchgBase(Register register, Expression address, Expression expectedValue, Expression storeValue,
                              boolean isStrong, String mo) {
         super(address, mo);
+        checkArgument(register.getType() instanceof BooleanType, "Non-boolean result of %s", getClass().getSimpleName());
         this.resultRegister = register;
         this.expectedValue = expectedValue;
         this.storeValue = storeValue;
