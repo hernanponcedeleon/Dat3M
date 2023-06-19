@@ -160,7 +160,7 @@ public final class Tag {
         public static final String MO_MB                    = "Mb";
         public static final String MO_RMB                   = "Rmb";
         public static final String MO_WMB                   = "Wmb";
-        public static final String BARRIER                  = "BARRIER";
+        public static final String BARRIER                  = "Barrier";
         public static final String MO_RELAXED               = "Relaxed";
         public static final String MO_RELEASE               = "Release";
         public static final String MO_ACQUIRE               = "Acquire";
