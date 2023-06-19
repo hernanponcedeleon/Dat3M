@@ -126,7 +126,7 @@ public class WitnessBuilder {
 					}
 				}
 
-				int cLine = e.hasMetadata(SourceLocation.class) ? e.getMetadata(SourceLocation.class).getLineNumber() : -1;
+				int cLine = e.hasMetadata(SourceLocation.class) ? e.getMetadata(SourceLocation.class).lineNumber() : -1;
 				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
 				edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
 				edge.addAttribute(STARTLINE.toString(), valueOf(cLine));
