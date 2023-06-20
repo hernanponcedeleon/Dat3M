@@ -90,6 +90,16 @@ public class Function {
         return register;
     }
 
+    public Register getOrNewRegister(String name, Type type) {
+        Register found = registers.get(name);
+        if (found == null) {
+            return newRegister(name, type);
+        }
+        Preconditions.checkState(found.getType().equals(type),
+                "Register type mismatch: Got %s, expected %s.", found.getType(), type);
+        return found;
+    }
+
     public void append(Event event){
         if (entry == null) {
             entry = exit = event;

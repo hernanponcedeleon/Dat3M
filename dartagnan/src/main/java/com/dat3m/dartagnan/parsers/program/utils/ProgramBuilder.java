@@ -190,8 +190,7 @@ public class ProgramBuilder {
     public Register getOrNewRegister(int fid, String name, Type type) {
         initThread(fid); // FIXME: Scary code!
         Function func = functions.get(fid);
-        Register register = name == null ? func.newRegister(type) : func.getRegister(name);
-        return register != null ? register : func.newRegister(name, type);
+        return name == null ? func.newRegister(type) : func.getOrNewRegister(name, type);
     }
 
     public Register getOrErrorRegister(int fid, String name){
