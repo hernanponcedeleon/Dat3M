@@ -20,12 +20,14 @@ public class RMWStore extends Store implements EventUser {
         super(address, value);
         Preconditions.checkArgument(loadEvent.hasTag(Tag.RMW), "The provided load event %s is not tagged RMW.", loadEvent);
         this.loadEvent = loadEvent;
+        this.loadEvent.registerUser(this);
         addTags(Tag.RMW);
     }
 
     protected RMWStore(RMWStore other) {
         super(other);
         this.loadEvent = other.loadEvent;
+        this.loadEvent.registerUser(this);
     }
 
     public Load getLoadEvent() { return loadEvent; }

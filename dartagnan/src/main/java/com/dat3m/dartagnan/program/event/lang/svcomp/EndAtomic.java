@@ -28,11 +28,13 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
         addTags(RMW, SVCOMPATOMIC);
+        this.begin.registerUser(this);
     }
 
     protected EndAtomic(EndAtomic other) {
         super(other);
         this.begin = other.begin;
+        this.begin.registerUser(this);
     }
 
     public BeginAtomic getBegin() {

@@ -22,6 +22,8 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
+
+        this.event.registerUser(this);
     }
 
     protected ExecutionStatus(ExecutionStatus other) {
@@ -29,6 +31,8 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         this.register = other.register;
         this.event = other.event;
         this.trackDep = other.trackDep;
+
+        this.event.registerUser(this);
     }
 
     @Override

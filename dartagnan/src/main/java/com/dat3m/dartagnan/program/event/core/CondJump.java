@@ -26,10 +26,9 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
         Preconditions.checkArgument(guard.getType() instanceof BooleanType,
                 "CondJump event with non-boolean guard %s.", guard);
         this.label = label;
-        this.thread = label.getThread();
         this.guard = guard;
+        this.thread = label.getThread();
 
-        this.label.getJumpSet().add(this);
         this.label.registerUser(this);
     }
 
@@ -37,7 +36,7 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
         super(other);
         this.label = other.label;
         this.guard = other.guard;
-        this.label.getJumpSet().add(this);
+
         this.label.registerUser(this);
     }
 
@@ -93,9 +92,7 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
         Label old = this.label;
         this.label = (Label) updateMapping.getOrDefault(this.label, this.label);
         if (old != this.label) {
-            old.getJumpSet().remove(this);
             old.removeUser(this);
-            this.label.getJumpSet().add(this);
             this.label.registerUser(this);
 ;        }
     }
@@ -108,7 +105,6 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
     @Override
     public void delete() {
         super.delete();
-        label.getJumpSet().remove(this);
         label.removeUser(this);
     }
 
