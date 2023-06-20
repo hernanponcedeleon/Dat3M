@@ -46,7 +46,7 @@ public class AtomicCmpXchg extends AtomicAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = atomic_compare_exchange" + (isStrong ? "_strong" : "_weak") +
                 "(*" + address + ", " + expectedAddr + ", " + value + ", " + mo + ")\t### C11";
     }

@@ -32,7 +32,7 @@ public class StoreExclusive extends StoreBase implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return register + " <- store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 

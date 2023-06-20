@@ -17,7 +17,7 @@ public class MetadataMap {
     @SuppressWarnings("unchecked") // The class guarantees that the unchecked cast is valid.
     public <T extends Metadata> T get(Class<T> metadataClass) {
         return (T)metadataList.stream()
-                .filter(m -> m.getClass() == metadataClass)
+                .filter(m -> metadataClass.isAssignableFrom(m.getClass()))
                 .findAny().orElse(null);
     }
 
@@ -26,7 +26,7 @@ public class MetadataMap {
         final Class<? extends Metadata> mClass = metadata.getClass();
         for (int i = 0; i < metadataList.size(); i++) {
             final Metadata m = metadataList.get(i);
-            if (m.getClass() == mClass) {
+            if (mClass.isAssignableFrom(m.getClass())) {
                 metadataList.set(i, metadata);
                 return (T)m;
             }

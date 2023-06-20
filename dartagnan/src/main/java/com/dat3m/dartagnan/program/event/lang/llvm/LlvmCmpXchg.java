@@ -22,7 +22,7 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         this.isStrong = isStrong;
     }
 
-    private LlvmCmpXchg(LlvmCmpXchg other){
+    private LlvmCmpXchg(LlvmCmpXchg other) {
         super(other);
         this.expectedValue = other.expectedValue;
         this.oldValueRegister = other.oldValueRegister;
@@ -30,7 +30,9 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
         this.isStrong = other.isStrong;
     }
 
-    public boolean isStrong() { return this.isStrong; }
+    public boolean isStrong() {
+        return this.isStrong;
+    }
 
     // The llvm instructions actually returns a structure.
     // In most cases the structure is not used as a whole, 
@@ -38,11 +40,11 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     // no need to support this method.
     @Override
     public Register getResultRegister() {
-		throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
+        throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
     }
 
     public Register getStructRegister(int idx) {
-		switch(idx) {
+        switch (idx) {
             case 0:
                 return oldValueRegister;
             case 1:
@@ -53,9 +55,9 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     }
 
     public Expression getExpectedValue() {
-    	return expectedValue;
+        return expectedValue;
     }
-    
+
     @Override
     public Set<Register.Read> getRegisterReads() {
         final Set<Register.Read> regReads = super.getRegisterReads();
@@ -65,24 +67,24 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + (isStrong ? "_strong" : "_weak") +
-            "(*" + address + ", " + expectedValue + ", " + value + ", " + mo + ")\t### LLVM";
+                "(*" + address + ", " + expectedValue + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LlvmCmpXchg getCopy(){
+    public LlvmCmpXchg getCopy() {
         return new LlvmCmpXchg(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLlvmCmpXchg(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLlvmCmpXchg(this);
+    }
 }

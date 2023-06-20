@@ -14,35 +14,35 @@ public class LlvmRMW extends LlvmAbstractRMW {
         this.op = op;
     }
 
-    private LlvmRMW(LlvmRMW other){
+    private LlvmRMW(LlvmRMW other) {
         super(other);
         this.op = other.op;
     }
 
     @Override
-    public String toString() {
-        return resultRegister + " = llvm_rmw_" + op.toLinuxName() + 
-            "(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
+    public String defaultString() {
+        return resultRegister + " = llvm_rmw_" + op.toLinuxName() +
+                "(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
     public IOpBin getOp() {
-    	return op;
+        return op;
     }
 
-    
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LlvmRMW getCopy(){
+    public LlvmRMW getCopy() {
         return new LlvmRMW(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLlvmRMW(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLlvmRMW(this);
+    }
 }

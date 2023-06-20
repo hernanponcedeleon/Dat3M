@@ -21,7 +21,7 @@ public class RMWOpReturn extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_" + op.toLinuxName() + "_return" + Tag.Linux.toText(mo) + "(" + value + ", " + address + ")\t### LKMM";
     }
 

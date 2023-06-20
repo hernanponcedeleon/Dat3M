@@ -21,7 +21,7 @@ public class RMWFetchOp extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_fetch_" + op.toLinuxName() + Tag.Linux.toText(mo) + "(" + value + ", " + address + ")\t### LKMM";
     }
 

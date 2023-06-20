@@ -21,7 +21,7 @@ public class AtomicFetchOp extends AtomicAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = atomic_fetch_" + op.toLinuxName() +
                 "(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }

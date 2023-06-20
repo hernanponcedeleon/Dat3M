@@ -497,20 +497,12 @@ public class EventFactory {
             return new RMWXchg(address, register, value, mo);
         }
 
-        public static Fence newMemoryBarrier() {
+        public static LKMMFence newMemoryBarrier() {
             return new LKMMFence(Tag.Linux.MO_MB);
         }
 
-        public static Fence newLKMMFence(String name) {
+        public static LKMMFence newLKMMFence(String name) {
             return new LKMMFence(name);
-        }
-
-        public static LKMMLockRead newLockRead(Register register, Expression address) {
-            return new LKMMLockRead(register, address);
-        }
-
-        public static LKMMLockWrite newLockWrite(Load lockRead, Expression address) {
-            return new LKMMLockWrite(lockRead, address);
         }
 
         public static LKMMLock newLock(Expression address) {
@@ -521,8 +513,10 @@ public class EventFactory {
             return new LKMMUnlock(address);
         }
 
-        public static SrcuSync newSrcuSync(Expression address) {
-            return new SrcuSync(address);
+        public static GenericMemoryEvent newSrcuSync(Expression address) {
+            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, "synchronize_srcu");
+            srcuSync.addTags(Tag.Linux.SRCU_SYNC);
+            return srcuSync;
         }
 
     }

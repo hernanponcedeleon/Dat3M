@@ -32,7 +32,7 @@ public class RMW extends SingleAccessMemoryEvent implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := rmw[" + mo + "](" + value + ", " + address + ")";
     }
 
