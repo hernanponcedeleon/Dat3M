@@ -83,7 +83,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "end_atomic()";
     }
 
@@ -112,5 +112,4 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitEndAtomic(this);
     }
-
 }

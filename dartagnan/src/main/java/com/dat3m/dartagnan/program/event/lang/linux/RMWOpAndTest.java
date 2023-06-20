@@ -21,7 +21,7 @@ public class RMWOpAndTest extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_" + op.toLinuxName() + "_and_test(" + value + ", " + address + ")\t### LKMM";
     }
 

@@ -22,7 +22,7 @@ public class RMWCmpXchg extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_cmpxchg" + Tag.Linux.toText(mo) + "(" + address + ", " + cmp + ", " + value + ")\t### LKMM";
     }
 

@@ -22,7 +22,7 @@ public class RMWOp extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "atomic_" + op.toLinuxName() + "(" + value + ", " + address + ")\t### LKMM";
     }
 

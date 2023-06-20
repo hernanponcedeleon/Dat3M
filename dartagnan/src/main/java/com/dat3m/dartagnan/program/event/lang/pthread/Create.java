@@ -11,8 +11,8 @@ import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class Create extends StoreBase {
 
-	private final String routine;
-	
+    private final String routine;
+
     public Create(Expression address, String routine) {
         super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()), MO_SC);
         this.routine = routine;
@@ -25,7 +25,7 @@ public class Create extends StoreBase {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "pthread_create(" + address + ", " + routine + ")";
     }
 

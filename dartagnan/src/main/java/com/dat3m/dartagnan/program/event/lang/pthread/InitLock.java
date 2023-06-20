@@ -7,21 +7,21 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 
 public class InitLock extends StoreBase {
-	
-	private final String name;
 
-	public InitLock(String name, Expression address, Expression value) {
-		super(address, value, MO_SC);
-		this.name = name;
+    private final String name;
+
+    public InitLock(String name, Expression address, Expression value) {
+        super(address, value, MO_SC);
+        this.name = name;
     }
 
-	private InitLock(InitLock other){
+    private InitLock(InitLock other) {
         super(other);
-		this.name = other.name;
+        this.name = other.name;
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "pthread_mutex_init(&" + name + ", " + value + ")";
     }
 
@@ -29,15 +29,15 @@ public class InitLock extends StoreBase {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public InitLock getCopy(){
+    public InitLock getCopy() {
         return new InitLock(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitInitLock(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitInitLock(this);
+    }
 }

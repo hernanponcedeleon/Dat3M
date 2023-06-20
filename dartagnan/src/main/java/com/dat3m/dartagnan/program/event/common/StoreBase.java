@@ -41,7 +41,7 @@ public abstract class StoreBase extends SingleAccessMemoryEvent {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return String.format("store(*%s, %s%s)", address, value, !mo.isEmpty() ? ", " + mo : "");
     }
 

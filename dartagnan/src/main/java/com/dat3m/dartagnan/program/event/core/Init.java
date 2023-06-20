@@ -51,7 +51,7 @@ public class Init extends Store {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return String.format("%s[%d] := %s", base, offset, getValue());
     }
 

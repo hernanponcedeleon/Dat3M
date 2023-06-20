@@ -47,7 +47,7 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         String str = register + " <- " + expr;
         if (this.hasTag(Tag.Std.MALLOC)) {
             str = str + "\t### " + Tag.Std.MALLOC;

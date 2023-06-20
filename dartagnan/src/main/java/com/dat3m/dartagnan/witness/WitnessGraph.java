@@ -83,7 +83,7 @@ public class WitnessGraph extends ElemWithAttributes {
 		for(Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
 			List<Event> events = program.getEvents(MemoryEvent.class).stream()
 					.filter(e -> e.hasMetadata(SourceLocation.class))
-					.filter(e -> e.getMetadata(SourceLocation.class).getLineNumber() == edge.getCline())
+					.filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline())
 					.collect(Collectors.toList());
 			if(!previous.isEmpty() && !events.isEmpty()) {
 				enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()

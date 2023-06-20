@@ -13,55 +13,55 @@ import java.util.Set;
 
 public class Assume extends AbstractEvent implements RegReader {
 
-	protected final Expression expr;
+    protected final Expression expr;
 
-	public Assume(Expression expr) {
-		super();
-		this.expr = expr;
-	}
+    public Assume(Expression expr) {
+        super();
+        this.expr = expr;
+    }
 
-	protected Assume(Assume other){
-		super(other);
-		this.expr = other.expr;
-	}
-
-
-	public Expression getExpr(){
-		return expr;
-	}
+    protected Assume(Assume other) {
+        super(other);
+        this.expr = other.expr;
+    }
 
 
-	@Override
-	public Set<Register.Read> getRegisterReads() {
-		return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new HashSet<>());
-	}
+    public Expression getExpr() {
+        return expr;
+    }
+
 
     @Override
-	public String toString() {
-		return "assume(" + expr + ")";
-	}
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new HashSet<>());
+    }
 
-	@Override
-	public BooleanFormula encodeExec(EncodingContext ctx) {
-		BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return bmgr.and(
-				super.encodeExec(ctx),
-				bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpressionAt(expr, this)));
-	}
+    @Override
+    public String defaultString() {
+        return "assume(" + expr + ")";
+    }
 
-	// Unrolling
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public BooleanFormula encodeExec(EncodingContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        return bmgr.and(
+                super.encodeExec(ctx),
+                bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpressionAt(expr, this)));
+    }
 
-	@Override
-	public Assume getCopy(){
-		return new Assume(this);
-	}
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public Assume getCopy() {
+        return new Assume(this);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitAssume(this);
-	}
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAssume(this);
+    }
 }

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
@@ -254,6 +255,15 @@ public abstract class AbstractEvent implements Event {
     }
 
     // ===============================================================================================
+
+    protected abstract String defaultString();
+
+    @Override
+    public final String toString() {
+        final CustomPrinting stringProvider = getMetadata(CustomPrinting.class);
+        final Optional<String> customString = Optional.ofNullable(stringProvider).flatMap(o -> o.stringify(this));
+        return customString.orElseGet(this::defaultString);
+    }
 
     // ======================================== Miscellaneous ========================================
 

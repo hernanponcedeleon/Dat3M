@@ -49,7 +49,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return register + " <- status(" + event.toString() + ")";
     }
 

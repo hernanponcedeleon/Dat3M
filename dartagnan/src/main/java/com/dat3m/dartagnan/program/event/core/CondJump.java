@@ -74,7 +74,7 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         String output;
         if (isGoto()) {
             output = "goto " + label.getName();
@@ -117,5 +117,4 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitCondJump(this);
     }
-
 }

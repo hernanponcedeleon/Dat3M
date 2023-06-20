@@ -32,6 +32,11 @@ public class RMWStore extends Store implements EventUser {
 
     public Load getLoadEvent() { return loadEvent; }
 
+    @Override
+    public String defaultString() {
+        return "rmw " + super.defaultString();
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

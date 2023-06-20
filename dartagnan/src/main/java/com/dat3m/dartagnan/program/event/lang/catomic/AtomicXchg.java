@@ -16,7 +16,7 @@ public class AtomicXchg extends AtomicAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = atomic_exchange(*" + address + ", " + value + ", " + mo + ")\t### C11";
     }
 
