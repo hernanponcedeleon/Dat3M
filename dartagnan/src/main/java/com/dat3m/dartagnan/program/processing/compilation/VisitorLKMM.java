@@ -251,7 +251,7 @@ public class VisitorLKMM extends VisitorBase {
         Register dummy = e.getThread().newRegister(types.getArchType());
         Expression zero = expressions.makeZero(dummy.getType());
 
-        Load lockRead = newLockRead(e.getLock(), dummy);
+        Load lockRead = newLockRead(dummy, e.getLock());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Event checkLockValue = e.getThread().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeEQ(dummy, zero)) :
@@ -290,15 +290,15 @@ public class VisitorLKMM extends VisitorBase {
         return EventFactory.newStoreWithMo(addr, value, mo);
     }
 
-    private static Load newLockRead(Expression lock, Register dummy) {
-        Load lockRead = newRMWLoadWithMo(dummy, lock, Tag.Linux.MO_ACQUIRE);
+    private static Load newLockRead(Register dummy, Expression lockAddr) {
+        Load lockRead = newRMWLoadWithMo(dummy, lockAddr, Tag.Linux.MO_ACQUIRE);
         lockRead.addTags(Tag.Linux.LOCK_READ);
         return lockRead;
     }
 
-    private static RMWStore newLockWrite(Load lockRead, Expression lock) {
+    private static RMWStore newLockWrite(Load lockRead, Expression lockAddr) {
         Expression one = ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType());
-        RMWStore lockWrite = newRMWStoreWithMo(lockRead, lock, one, Tag.Linux.MO_ONCE);
+        RMWStore lockWrite = newRMWStoreWithMo(lockRead, lockAddr, one, Tag.Linux.MO_ONCE);
         lockWrite.addTags(Tag.Linux.LOCK_WRITE);
         return lockWrite;
     }

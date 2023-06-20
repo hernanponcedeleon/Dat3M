@@ -33,7 +33,9 @@ public class CoreCodeVerification implements ProgramProcessor {
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, Fence.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
-            BeginAtomic.class, EndAtomic.class // We add SVCOMP atomic blocks here as well
+            BeginAtomic.class, EndAtomic.class
+            // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
+            // TODO: We might want to find a more systematic way to extend the core with these custom events.
     ));
 
     @Override
