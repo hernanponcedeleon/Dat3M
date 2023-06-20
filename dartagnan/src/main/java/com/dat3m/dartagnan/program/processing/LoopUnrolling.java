@@ -167,13 +167,10 @@ public class LoopUnrolling implements ProgramProcessor {
         final List<Event> copies = new ArrayList<>();
 
         Event cur = from;
-        Event lastCopy = null;
         while(cur != null && !cur.equals(until)){
             final Event copy = cur.getCopy();
-            copy.setPredecessor(lastCopy);
             copies.add(copy);
             copyContext.put(cur, copy);
-            lastCopy = copy;
             cur = cur.getSuccessor();
         }
 

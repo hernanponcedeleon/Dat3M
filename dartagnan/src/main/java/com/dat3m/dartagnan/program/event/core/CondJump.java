@@ -102,12 +102,6 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
         return Set.of(label);
     }
 
-    @Override
-    public void delete() {
-        super.delete();
-        label.removeUser(this);
-    }
-
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

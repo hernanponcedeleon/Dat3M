@@ -20,6 +20,8 @@ public interface Event extends Encoder, Comparable<Event> {
     int getGlobalId();
     void setGlobalId(int id);
 
+    // ============================== Metadata ==============================
+
     void copyAllMetadataFrom(Event other);
     void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass);
     boolean hasMetadata(Class<? extends Metadata> metadataClass);
@@ -30,6 +32,8 @@ public interface Event extends Encoder, Comparable<Event> {
     // TODO: Remove this
     Event setCFileInformation(int line, String sourceCodeFilePath);
 
+    // ============================== Tags ==============================
+
     // The set of tags should not be modified directly.
     Set<String> getTags();
     boolean hasTag(String tag);
@@ -37,6 +41,8 @@ public interface Event extends Encoder, Comparable<Event> {
     void addTags(String... tags);
     void removeTags(Collection<? extends String> tags);
     void removeTags(String... tags);
+
+    // ============================== Control-flow ==============================
 
     Event getSuccessor();
     Event getPredecessor();
@@ -50,10 +56,14 @@ public interface Event extends Encoder, Comparable<Event> {
     Thread getThread();
     void setThread(Thread thread);
 
+    void detach();
     void delete();
+    boolean tryDelete();
     void insertAfter(Event toBeInserted);
     void insertAfter(List<Event> toBeInserted);
     void replaceBy(Event replacement);
+
+    // ============================== Misc ==============================
 
     Set<EventUser> getUsers();
     boolean registerUser(EventUser user);

@@ -172,21 +172,51 @@ public abstract class AbstractEvent implements Event {
         return events;
     }
 
+    /*
+        Detaches this event from the control-flow graph.
+        This does not properly delete the event, and it may be reinserted elsewhere.
+        TODO: We need to special-case handle detaching the entry/exit event of a thread.
+     */
+    @Override
+    public void detach() {
+        Preconditions.checkState(thread == null || (this != thread.getEntry() && this != thread.getExit()),
+                "Cannot detach the entry or exit event %s of thread %s", this, getThread());
+        if (this.predecessor != null) {
+            this.predecessor.successor = successor;
+        }
+        if (this.successor != null) {
+            this.successor.predecessor = predecessor;
+        }
+        this.thread = null;
+        this.predecessor = null;
+        this.successor = null;
+    }
+
     @Override
     public void delete() {
-        if (getPredecessor() != null) {
-            getPredecessor().setSuccessor(this.getSuccessor());
-        } else if (getSuccessor() != null) {
-            this.getSuccessor().setPredecessor(null);
+        if (this instanceof EventUser user) {
+            user.getReferencedEvents().forEach(e -> e.removeUser(user));
+        }
+        this.detach();
+    }
+
+    @Override
+    public boolean tryDelete() {
+        if (this.currentUsers.isEmpty()) {
+            this.delete();
+            return true;
+        } else {
+            return false;
         }
     }
 
     @Override
     public void insertAfter(Event toBeInserted) {
-        if (this.successor != null) {
-            this.successor.setPredecessor(toBeInserted);
+        Preconditions.checkNotNull(toBeInserted);
+        insertBetween((AbstractEvent) toBeInserted, thread, this, successor);
+        if (thread.getExit() == this) {
+            thread.updateExit(toBeInserted);
         }
-        this.setSuccessor(toBeInserted);
     }
 
     @Override
@@ -200,8 +230,27 @@ public abstract class AbstractEvent implements Event {
 
     @Override
     public void replaceBy(Event replacement) {
+        if (replacement == this) {
+            return;
+        }
         this.insertAfter(replacement);
         this.delete();
+    }
+
+    private static void insertBetween(AbstractEvent toBeInserted, Thread thread, AbstractEvent pred, AbstractEvent succ) {
+        assert (pred == null || pred.successor == succ) && (succ == null || succ.predecessor == pred);
+        assert (toBeInserted != pred && toBeInserted != succ);
+        toBeInserted.detach(); // detach toBeInserted
+        toBeInserted.thread = thread;
+        toBeInserted.predecessor = pred;
+        toBeInserted.successor = succ;
+
+        if (pred != null) {
+            pred.successor = toBeInserted;
+        }
+        if (succ != null) {
+            succ.predecessor = toBeInserted;
+        }
     }
 
     // ===============================================================================================

@@ -102,18 +102,14 @@ public class Thread {
     }
 
     public void append(Event event){
-        exit.setSuccessor(event);
-        event.setThread(this);
-        updateExit(event);
+        exit.insertAfter(event);
     }
 
     public void updateExit(Event event){
         exit = event;
-        Event next = exit.getSuccessor();
-        while(next != null){
+        Event next;
+        while((next = exit.getSuccessor()) != null){
             exit = next;
-            exit.setThread(this);
-            next = next.getSuccessor();
         }
     }
 
