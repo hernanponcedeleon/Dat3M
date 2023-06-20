@@ -228,9 +228,6 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
-    public void updateReferences(Map<Event, Event> updateMapping) { }
-
-    @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitEvent(this);
     }

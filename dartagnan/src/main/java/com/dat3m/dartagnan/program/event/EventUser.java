@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.core.Event;
 
+import java.util.Map;
 import java.util.Set;
 
 /*
@@ -29,5 +30,7 @@ import java.util.Set;
  */
 
 public interface EventUser extends Event {
+
     Set<Event> getReferencedEvents();
+    void updateReferences(Map<Event, Event> updateMapping);
 }

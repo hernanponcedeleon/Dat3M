@@ -12,7 +12,6 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface Event extends Encoder, Comparable<Event> {
@@ -64,8 +63,6 @@ public interface Event extends Encoder, Comparable<Event> {
     int compareTo(Event e);
 
     Event getCopy();
-
-    void updateReferences(Map<Event, Event> updateMapping);
 
     <T> T accept(EventVisitor<T> visitor);
 
