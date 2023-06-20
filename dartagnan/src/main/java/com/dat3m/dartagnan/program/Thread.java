@@ -128,4 +128,9 @@ public class Thread {
 
         return id == ((Thread) obj).id;
     }
+
+    @Override
+    public String toString() {
+        return String.format("T%d:%s", id, name);
+    }
 }
