@@ -17,10 +17,8 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Create;
 import com.dat3m.dartagnan.program.event.lang.pthread.End;
 import com.dat3m.dartagnan.program.event.lang.pthread.Join;
 import com.dat3m.dartagnan.program.event.lang.pthread.Start;
-import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 
 import java.util.List;
-import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
@@ -269,7 +267,6 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         Store lockRelease = newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo());
         lockRelease.addTags(Tag.Linux.UNLOCK);
-        lockRelease.setMetadata(LKMMUnlock.CUSTOM_CORE_PRINTING);
         return eventSequence(
                 lockRelease
         );
@@ -286,24 +283,16 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     private static Load newCoreLoad(Register reg, Expression addr, String mo) {
-        Load load = EventFactory.newLoadWithMo(reg, addr, mo);
-        load.setMetadata(LKMMLoad.CUSTOM_CORE_PRINTING);
-        return load;
+        return EventFactory.newLoadWithMo(reg, addr, mo);
     }
 
     private static Store newCoreStore(Expression addr, Expression value, String mo) {
-        Store store = EventFactory.newStoreWithMo(addr, value, mo);
-        store.setMetadata(LKMMStore.CUSTOM_CORE_PRINTING);
-        return store;
+        return EventFactory.newStoreWithMo(addr, value, mo);
     }
 
     private static Load newLockRead(Expression lock, Register dummy) {
         Load lockRead = newRMWLoadWithMo(dummy, lock, Tag.Linux.MO_ACQUIRE);
         lockRead.addTags(Tag.Linux.LOCK_READ);
-        lockRead.setMetadata((CustomPrinting) (ev -> {
-            Load load = (Load)ev;
-            return Optional.of(String.format("%s <- spin_lock_R(*%s)", load.getResultRegister(), load.getAddress()));
-        }));
         return lockRead;
     }
 
@@ -311,10 +300,6 @@ public class VisitorLKMM extends VisitorBase {
         Expression one = ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType());
         RMWStore lockWrite = newRMWStoreWithMo(lockRead, lock, one, Tag.Linux.MO_ONCE);
         lockWrite.addTags(Tag.Linux.LOCK_WRITE);
-        lockWrite.setMetadata((CustomPrinting) (ev -> {
-            Store store = (Store)ev;
-            return Optional.of(String.format("spin_lock_W(*%s)", store.getAddress()));
-        }));
         return lockWrite;
     }
 
