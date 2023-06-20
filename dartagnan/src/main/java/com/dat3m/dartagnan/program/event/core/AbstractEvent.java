@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -22,6 +23,7 @@ public abstract class AbstractEvent implements Event {
     protected transient int globalId = -1; // (Global) ID within a program
     private transient AbstractEvent successor;
     private transient AbstractEvent predecessor;
+    private final Set<EventUser> currentUsers = new HashSet<>();
 
     protected AbstractEvent() {
         tags = new HashSet<>();
@@ -37,6 +39,24 @@ public abstract class AbstractEvent implements Event {
     public int getGlobalId() { return globalId; }
     @Override
     public void setGlobalId(int id) { this.globalId = id; }
+
+    @Override
+    public Thread getThread() { return thread; }
+    @Override
+    public void setThread(Thread thread) {
+        this.thread = Preconditions.checkNotNull(thread);
+    }
+
+    // ============================================ Users ============================================
+
+    @Override
+    public Set<EventUser> getUsers() { return this.currentUsers; }
+
+    @Override
+    public boolean registerUser(EventUser user) { return this.currentUsers.add(user); }
+
+    @Override
+    public boolean removeUser(EventUser user) { return this.currentUsers.remove(user); }
 
     // ============================================ Metadata ============================================
 
@@ -127,13 +147,6 @@ public abstract class AbstractEvent implements Event {
             event.setThread(this.thread);
         }
         predecessor = event;
-    }
-
-    @Override
-    public Thread getThread() { return thread; }
-    @Override
-    public void setThread(Thread thread) {
-        this.thread = Preconditions.checkNotNull(thread);
     }
 
     @Override

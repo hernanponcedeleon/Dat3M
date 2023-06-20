@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -9,8 +10,9 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import java.util.Map;
+import java.util.Set;
 
-public class RMWStore extends Store {
+public class RMWStore extends Store implements EventUser {
 
     protected Load loadEvent;
 
@@ -41,6 +43,11 @@ public class RMWStore extends Store {
         this.loadEvent = (Load) updateMapping.getOrDefault(loadEvent, loadEvent);
     }
 
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(loadEvent);
+    }
+
     // Visitor
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -48,4 +55,5 @@ public class RMWStore extends Store {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitRMWStore(this);
     }
+
 }

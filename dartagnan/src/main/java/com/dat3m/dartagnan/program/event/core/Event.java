@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
@@ -54,6 +55,10 @@ public interface Event extends Encoder, Comparable<Event> {
     void insertAfter(Event toBeInserted);
     void insertAfter(List<Event> toBeInserted);
     void replaceBy(Event replacement);
+
+    Set<EventUser> getUsers();
+    boolean registerUser(EventUser user);
+    boolean removeUser(EventUser user);
 
     @Override
     int compareTo(Event e);
