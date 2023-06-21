@@ -102,18 +102,14 @@ public class Thread {
     }
 
     public void append(Event event){
-        exit.setSuccessor(event);
-        event.setThread(this);
-        updateExit(event);
+        exit.insertAfter(event);
     }
 
     public void updateExit(Event event){
         exit = event;
-        Event next = exit.getSuccessor();
-        while(next != null){
+        Event next;
+        while((next = exit.getSuccessor()) != null){
             exit = next;
-            exit.setThread(this);
-            next = next.getSuccessor();
         }
     }
 
@@ -131,5 +127,10 @@ public class Thread {
         }
 
         return id == ((Thread) obj).id;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("T%d:%s", id, name);
     }
 }

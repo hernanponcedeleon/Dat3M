@@ -95,8 +95,7 @@ public class MemoryAllocation implements ProgramProcessor {
 
                 program.add(thread);
                 thread.setProgram(program);
-                thread.getEntry().setSuccessor(EventFactory.newLabel("END_OF_T" + thread.getId()));
-                thread.updateExit(thread.getEntry());
+                thread.getEntry().insertAfter(EventFactory.newLabel("END_OF_T" + thread.getId()));
             }
         }
     }

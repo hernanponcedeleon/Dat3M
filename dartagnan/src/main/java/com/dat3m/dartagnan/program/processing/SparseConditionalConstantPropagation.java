@@ -13,6 +13,8 @@ import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -33,6 +35,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIG
  */
 @Options
 public class SparseConditionalConstantPropagation implements ProgramProcessor {
+
+    private static final Logger logger = LogManager.getLogger(SparseConditionalConstantPropagation.class);
 
     @Option(name = PROPAGATE_COPY_ASSIGNMENTS,
             description = "Propagates copy assignments of the form 'reg2 := reg1' to eliminate " +
@@ -93,8 +97,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                 cur.accept(simplifier);
                 reachableEvents.add(cur);
 
-                if (cur instanceof Local) {
-                    final Local local = (Local) cur;
+                if (cur instanceof Local local) {
                     final Expression expr = local.getExpr();
                     final Expression valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
                     propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
@@ -103,8 +106,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                     propagationMap.remove(((RegWriter) cur).getResultRegister());
                 }
 
-                if (cur instanceof CondJump) {
-                    final CondJump jump = (CondJump) cur;
+                if (cur instanceof CondJump jump) {
                     final Label target = jump.getLabel();
                     if (jump.isGoto()) {
                         // The successor event is going to be dead (unless it is a label with other
@@ -117,6 +119,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                         final Map<Register, Expression> finalPropagationMap = propagationMap;
                         inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
                                 : join(v, finalPropagationMap));
+                    } else {
+                        // We consider dead jumps as not-reachable, so they get deleted.
+                        reachableEvents.remove(jump);
                     }
                 }
             }
@@ -134,7 +139,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                 // we could move the loop end marker into the last non-dead iteration.
                 continue;
             }
-            e.delete();
+            if (!e.tryDelete()) {
+                logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
+            }
         }
     }
 

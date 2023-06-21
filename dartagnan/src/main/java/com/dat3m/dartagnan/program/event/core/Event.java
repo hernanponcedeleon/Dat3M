@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
@@ -11,7 +12,6 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface Event extends Encoder, Comparable<Event> {
@@ -19,6 +19,8 @@ public interface Event extends Encoder, Comparable<Event> {
 
     int getGlobalId();
     void setGlobalId(int id);
+
+    // ============================== Metadata ==============================
 
     void copyAllMetadataFrom(Event other);
     void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass);
@@ -30,6 +32,8 @@ public interface Event extends Encoder, Comparable<Event> {
     // TODO: Remove this
     Event setCFileInformation(int line, String sourceCodeFilePath);
 
+    // ============================== Tags ==============================
+
     // The set of tags should not be modified directly.
     Set<String> getTags();
     boolean hasTag(String tag);
@@ -38,29 +42,48 @@ public interface Event extends Encoder, Comparable<Event> {
     void removeTags(Collection<? extends String> tags);
     void removeTags(String... tags);
 
-    Event getSuccessor();
-    Event getPredecessor();
-
-    List<Event> getSuccessors();
-    List<Event> getPredecessors();
-
-    void setSuccessor(Event event);
-    void setPredecessor(Event event);
+    // ============================== Control-flow ==============================
 
     Thread getThread();
     void setThread(Thread thread);
 
-    void delete();
+    Event getSuccessor();
+    Event getPredecessor();
+
+    /*
+        NOTE: These methods return a list including(!) this event.
+     */
+    List<Event> getSuccessors();
+    List<Event> getPredecessors();
+
+    /*
+        WARNING: Directly modifying successors/predecessors can lead to inconsistent state.
+        Use <insertAfter> and <replaceBy> if possible.
+     */
+    void setSuccessor(Event event);
+    void setPredecessor(Event event);
+
+    /*
+        Detaches an event from the control-flow graph, allowing it to be reinserted elsewhere.
+        Use <tryDelete> if the event will not get reinserted.
+     */
+    void detach();
+    void forceDelete(); // DANGEROUS: Deletes the event, including all events that reference it.
+    boolean tryDelete(); // Deletes the event only if no other event references it.
     void insertAfter(Event toBeInserted);
     void insertAfter(List<Event> toBeInserted);
     void replaceBy(Event replacement);
+
+    // ============================== Misc ==============================
+
+    Set<EventUser> getUsers();
+    boolean registerUser(EventUser user);
+    boolean removeUser(EventUser user);
 
     @Override
     int compareTo(Event e);
 
     Event getCopy();
-
-    void updateReferences(Map<Event, Event> updateMapping);
 
     <T> T accept(EventVisitor<T> visitor);
 

@@ -114,16 +114,29 @@ public class Compilation implements ProgramProcessor {
     private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
 
         Event pred = thread.getEntry();
-        Event toBeCompiled = pred.getSuccessor();
-        while (toBeCompiled != null) {
-            List<Event> compiledEvents = toBeCompiled.accept(visitor);
-            for (Event e : compiledEvents) {
-                e.copyAllMetadataFrom(toBeCompiled);
-                pred.setSuccessor(e);
-                pred = e;
+        while (pred.getSuccessor() != null) {
+            final Event toBeCompiled = pred.getSuccessor();
+            final List<Event> compiledEvents = toBeCompiled.accept(visitor);
+
+            if (compiledEvents.size() == 1 && compiledEvents.get(0) == toBeCompiled) {
+                // In the special case where the compilation does nothing to the event,
+                // we continue with the next
+                pred = toBeCompiled;
+                continue;
             }
-            toBeCompiled = toBeCompiled.getSuccessor();
+
+            // Delete compiled event in order to replace it.
+            if (!toBeCompiled.tryDelete()) {
+                final String error = String.format("Could not compile event '%d:  %s' because it is not deletable." +
+                        "The event is likely referenced by other events.", toBeCompiled.getGlobalId(), toBeCompiled);
+                throw new IllegalStateException(error);
+            }
+            if (!compiledEvents.isEmpty()) {
+                // Insert result of compilation
+                compiledEvents.forEach(e -> e.copyAllMetadataFrom(toBeCompiled));
+                pred.insertAfter(compiledEvents);
+                pred = compiledEvents.get(compiledEvents.size() - 1);
+            }
         }
-        thread.updateExit(thread.getEntry());
     }
 }

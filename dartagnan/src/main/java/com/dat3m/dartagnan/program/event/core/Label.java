@@ -3,38 +3,29 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Label extends AbstractEvent {
 
     private String name;
-    private final Set<CondJump> jumpSet;
 
     public Label(String name){
         this.name = name;
-        this.jumpSet = new HashSet<>();
     }
 
     protected Label(Label other){
         super(other);
-        this.jumpSet = new HashSet<>();
         this.name = other.name;
     }
 
     public String getName(){ return name; }
     public void setName(String name) { this.name = name;}
 
-    public Set<CondJump> getJumpSet() { return jumpSet; }
-
-    @Override
-    public void delete() {
-        // We delete all jumps that target this label to avoid broken jumps.
-        // We iterate over a snapshot to avoid probles due to the jumpSet being modified
-        // during the iteration.
-        Set<CondJump> copyJumpSet = new HashSet<>(jumpSet);
-        copyJumpSet.forEach(CondJump::delete);
-        super.delete();
+    public Set<CondJump> getJumpSet() {
+        return getUsers().stream()
+                .filter(CondJump.class::isInstance).map(CondJump.class::cast)
+                .collect(Collectors.toSet());
     }
 
     @Override

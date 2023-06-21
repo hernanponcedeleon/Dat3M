@@ -73,9 +73,16 @@ public class ProgramBuilder {
         initThread(String.valueOf(id), id);
     }
 
-    public Event addChild(int thread, Event child){
+    public Event addChild(int thread, Event child) {
         if(!threads.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
+        }
+        if (child.getThread() != null) {
+            //FIXME: This is a bad error message, but our tests require this for now.
+            final String error = String.format(
+                    "Trying to reinsert event %s from thread %s into thread %s",
+                    child, child.getThread().getId(), thread);
+            throw new MalformedProgramException(error);
         }
         threads.get(thread).append(child);
         // Every event in litmus tests is non-optimisable

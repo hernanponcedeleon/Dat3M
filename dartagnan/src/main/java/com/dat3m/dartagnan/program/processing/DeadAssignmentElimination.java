@@ -83,6 +83,6 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         // Here is the actual removal
         threadEvents.stream()
                 .filter(toBeRemoved::contains)
-                .forEach(Event::delete);
+                .forEach(Event::tryDelete);
     }
 }

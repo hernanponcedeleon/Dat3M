@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -15,7 +16,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 
@@ -150,8 +150,8 @@ public class LoopUnrolling implements ProgramProcessor {
                 if (iterCounter == 1) {
                     // This is the first unrolling; every outside jump to the loop header
                     // gets updated to jump to the first iteration instead.
-                    final List<Event> loopEntryJumps = loopBegin.getJumpSet().stream()
-                            .filter(j -> j != loopBackJump).collect(Collectors.toList());
+                    final List<CondJump> loopEntryJumps = loopBegin.getJumpSet().stream()
+                            .filter(j -> j != loopBackJump).toList();
                     loopEntryJumps.forEach(j -> j.updateReferences(copyCtx));
                 }
 
@@ -167,17 +167,16 @@ public class LoopUnrolling implements ProgramProcessor {
         final List<Event> copies = new ArrayList<>();
 
         Event cur = from;
-        Event lastCopy = null;
         while(cur != null && !cur.equals(until)){
             final Event copy = cur.getCopy();
-            copy.setPredecessor(lastCopy);
             copies.add(copy);
             copyContext.put(cur, copy);
-            lastCopy = copy;
             cur = cur.getSuccessor();
         }
 
-        copies.forEach(e -> e.updateReferences(copyContext));
+        copies.stream()
+                .filter(EventUser.class::isInstance).map(EventUser.class::cast)
+                .forEach(e -> e.updateReferences(copyContext));
         return copies;
     }
 }

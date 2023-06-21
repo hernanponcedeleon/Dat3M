@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -9,8 +10,9 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import java.util.Map;
+import java.util.Set;
 
-public class RMWStore extends Store {
+public class RMWStore extends Store implements EventUser {
 
     protected Load loadEvent;
 
@@ -18,12 +20,14 @@ public class RMWStore extends Store {
         super(address, value);
         Preconditions.checkArgument(loadEvent.hasTag(Tag.RMW), "The provided load event %s is not tagged RMW.", loadEvent);
         this.loadEvent = loadEvent;
+        this.loadEvent.registerUser(this);
         addTags(Tag.RMW);
     }
 
     protected RMWStore(RMWStore other) {
         super(other);
         this.loadEvent = other.loadEvent;
+        this.loadEvent.registerUser(this);
     }
 
     public Load getLoadEvent() { return loadEvent; }
@@ -43,7 +47,12 @@ public class RMWStore extends Store {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.loadEvent = (Load) updateMapping.getOrDefault(loadEvent, loadEvent);
+        this.loadEvent = (Load) EventUser.moveUserReference(this, this.loadEvent, updateMapping);
+    }
+
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(loadEvent);
     }
 
     // Visitor
@@ -53,4 +62,5 @@ public class RMWStore extends Store {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitRMWStore(this);
     }
+
 }

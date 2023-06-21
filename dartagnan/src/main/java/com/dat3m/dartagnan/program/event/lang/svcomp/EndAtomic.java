@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -11,16 +12,13 @@ import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
 
-public class EndAtomic extends AbstractEvent {
+public class EndAtomic extends AbstractEvent implements EventUser {
 
     private static final Logger logger = LogManager.getLogger(EndAtomic.class);
 
@@ -30,11 +28,13 @@ public class EndAtomic extends AbstractEvent {
     public EndAtomic(BeginAtomic begin) {
         this.begin = begin;
         addTags(RMW, SVCOMPATOMIC);
+        this.begin.registerUser(this);
     }
 
     protected EndAtomic(EndAtomic other) {
         super(other);
         this.begin = other.begin;
+        this.begin.registerUser(this);
     }
 
     public BeginAtomic getBegin() {
@@ -97,7 +97,12 @@ public class EndAtomic extends AbstractEvent {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.begin = (BeginAtomic) updateMapping.getOrDefault(this.begin, this.begin);
+        this.begin = (BeginAtomic) EventUser.moveUserReference(this, this.begin, updateMapping);
+    }
+
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(begin);
     }
 
     // Visitor

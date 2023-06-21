@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class CondJump extends AbstractEvent implements RegReader {
+public class CondJump extends AbstractEvent implements RegReader, EventUser {
 
     private Label label;
     private Expression guard;
@@ -25,16 +25,15 @@ public class CondJump extends AbstractEvent implements RegReader {
         Preconditions.checkArgument(guard.getType() instanceof BooleanType,
                 "CondJump event with non-boolean guard %s.", guard);
         this.label = label;
-        this.label.getJumpSet().add(this);
-        this.thread = label.getThread();
         this.guard = guard;
+        this.label.registerUser(this);
     }
 
     protected CondJump(CondJump other) {
         super(other);
         this.label = other.label;
         this.guard = other.guard;
-        this.label.getJumpSet().add(this);
+        this.label.registerUser(this);
     }
 
     public boolean isGoto() {
@@ -58,14 +57,6 @@ public class CondJump extends AbstractEvent implements RegReader {
     }
 
     @Override
-    public void setThread(Thread thread) {
-        super.setThread(thread);
-        if (label != null) {
-            label.setThread(thread);
-        }
-    }
-
-    @Override
     public Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(guard, Register.UsageType.CTRL, new HashSet<>());
     }
@@ -86,18 +77,12 @@ public class CondJump extends AbstractEvent implements RegReader {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        Label old = this.label;
-        this.label = (Label) updateMapping.getOrDefault(this.label, this.label);
-        if (old != this.label) {
-            old.getJumpSet().remove(this);
-            this.label.getJumpSet().add(this);
-        }
+        this.label = (Label) EventUser.moveUserReference(this, this.label, updateMapping);
     }
 
     @Override
-    public void delete() {
-        super.delete();
-        label.getJumpSet().remove(this);
+    public Set<Event> getReferencedEvents() {
+        return Set.of(label);
     }
 
     // Unrolling

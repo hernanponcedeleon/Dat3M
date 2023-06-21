@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
@@ -23,6 +24,7 @@ public abstract class AbstractEvent implements Event {
     protected transient int globalId = -1; // (Global) ID within a program
     private transient AbstractEvent successor;
     private transient AbstractEvent predecessor;
+    private final Set<EventUser> currentUsers = new HashSet<>();
 
     protected AbstractEvent() {
         tags = new HashSet<>();
@@ -38,6 +40,24 @@ public abstract class AbstractEvent implements Event {
     public int getGlobalId() { return globalId; }
     @Override
     public void setGlobalId(int id) { this.globalId = id; }
+
+    @Override
+    public Thread getThread() { return thread; }
+    @Override
+    public void setThread(Thread thread) {
+        this.thread = Preconditions.checkNotNull(thread);
+    }
+
+    // ============================================ Users ============================================
+
+    @Override
+    public Set<EventUser> getUsers() { return this.currentUsers; }
+
+    @Override
+    public boolean registerUser(EventUser user) { return this.currentUsers.add(user); }
+
+    @Override
+    public boolean removeUser(EventUser user) { return this.currentUsers.remove(user); }
 
     // ============================================ Metadata ============================================
 
@@ -94,48 +114,13 @@ public abstract class AbstractEvent implements Event {
 
     @Override
     public Event getSuccessor() { return successor; }
-
     @Override
-    public void setSuccessor(Event ev) {
-        final AbstractEvent event = (AbstractEvent) ev;
-        if (successor != null) {
-            successor.predecessor = null;
-        }
-        if (event != null) {
-            if (event.predecessor != null) {
-                event.predecessor.successor = null;
-            }
-            event.predecessor = this;
-            event.setThread(this.thread);
-        }
-        successor = event;
-    }
+    public void setSuccessor(Event ev) { successor = (AbstractEvent) ev; }
 
     @Override
     public Event getPredecessor() { return predecessor; }
-
     @Override
-    public void setPredecessor(Event ev) {
-        final AbstractEvent event = (AbstractEvent) ev;
-        if (predecessor != null) {
-            predecessor.successor = null;
-        }
-        if (event != null) {
-            if (event.successor != null) {
-                event.successor.predecessor = null;
-            }
-            event.successor = this;
-            event.setThread(this.thread);
-        }
-        predecessor = event;
-    }
-
-    @Override
-    public Thread getThread() { return thread; }
-    @Override
-    public void setThread(Thread thread) {
-        this.thread = Preconditions.checkNotNull(thread);
-    }
+    public void setPredecessor(Event ev) { predecessor = (AbstractEvent) ev; }
 
     @Override
     public final List<Event> getSuccessors() {
@@ -145,7 +130,6 @@ public abstract class AbstractEvent implements Event {
             events.add(cur);
             cur = cur.getSuccessor();
         }
-
         return events;
     }
 
@@ -160,21 +144,55 @@ public abstract class AbstractEvent implements Event {
         return events;
     }
 
+    /*
+        Detaches this event from the control-flow graph.
+        This does not properly delete the event, and it may be reinserted elsewhere.
+        TODO: We need to special-case handle detaching the entry/exit event of a thread.
+     */
     @Override
-    public void delete() {
-        if (getPredecessor() != null) {
-            getPredecessor().setSuccessor(this.getSuccessor());
-        } else if (getSuccessor() != null) {
-            this.getSuccessor().setPredecessor(null);
+    public void detach() {
+        Preconditions.checkState(thread == null || (this != thread.getEntry() && this != thread.getExit()),
+                "Cannot detach the entry or exit event %s of thread %s", this, getThread());
+        if (this.predecessor != null) {
+            this.predecessor.successor = successor;
+        }
+        if (this.successor != null) {
+            this.successor.predecessor = predecessor;
+        }
+        this.thread = null;
+        this.predecessor = null;
+        this.successor = null;
+    }
+
+    @Override
+    public void forceDelete() {
+        if (this instanceof EventUser user) {
+            user.getReferencedEvents().forEach(e -> e.removeUser(user));
+        }
+        this.detach();
+
+        for (Event user : currentUsers) {
+            user.forceDelete();
+        }
+    }
+
+    @Override
+    public boolean tryDelete() {
+        if (this.currentUsers.isEmpty()) {
+            this.forceDelete();
+            return true;
+        } else {
+            return false;
         }
     }
 
     @Override
     public void insertAfter(Event toBeInserted) {
-        if (this.successor != null) {
-            this.successor.setPredecessor(toBeInserted);
+        Preconditions.checkNotNull(toBeInserted);
+        insertBetween((AbstractEvent) toBeInserted, thread, this, successor);
+        if (thread.getExit() == this) {
+            thread.updateExit(toBeInserted);
         }
-        this.setSuccessor(toBeInserted);
     }
 
     @Override
@@ -188,8 +206,28 @@ public abstract class AbstractEvent implements Event {
 
     @Override
     public void replaceBy(Event replacement) {
+        if (replacement == this) {
+            return;
+        }
+        Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
-        this.delete();
+        this.forceDelete();
+    }
+
+    private static void insertBetween(AbstractEvent toBeInserted, Thread thread, AbstractEvent pred, AbstractEvent succ) {
+        assert (pred == null || pred.successor == succ) && (succ == null || succ.predecessor == pred);
+        assert (toBeInserted != pred && toBeInserted != succ);
+        toBeInserted.detach();
+        toBeInserted.thread = thread;
+        toBeInserted.predecessor = pred;
+        toBeInserted.successor = succ;
+
+        if (pred != null) {
+            pred.successor = toBeInserted;
+        }
+        if (succ != null) {
+            succ.predecessor = toBeInserted;
+        }
     }
 
     // ===============================================================================================
@@ -223,9 +261,6 @@ public abstract class AbstractEvent implements Event {
     public Event getCopy() {
         throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
     }
-
-    @Override
-    public void updateReferences(Map<Event, Event> updateMapping) { }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
