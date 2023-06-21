@@ -50,7 +50,6 @@ public class RMWStore extends Store implements EventUser {
         this.loadEvent = (Load) EventUser.moveUserReference(this, this.loadEvent, updateMapping);
     }
 
-
     @Override
     public Set<Event> getReferencedEvents() {
         return Set.of(loadEvent);

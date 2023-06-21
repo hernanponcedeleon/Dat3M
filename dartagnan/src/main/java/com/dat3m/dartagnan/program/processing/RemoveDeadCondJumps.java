@@ -38,9 +38,9 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before performing " + getClass().getSimpleName());
 
-        logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), +program.getEvents().size()));
+        logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), program.getEvents().size()));
         program.getThreads().forEach(this::eliminateDeadCondJumps);
-        logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), +program.getEvents().size()));
+        logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), program.getEvents().size()));
     }
 
     private void eliminateDeadCondJumps(Thread thread) {
