@@ -89,7 +89,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.event = updateMapping.getOrDefault(event, event);
+        this.event = EventUser.moveUserReference(this, this.event, updateMapping);
     }
 
     @Override

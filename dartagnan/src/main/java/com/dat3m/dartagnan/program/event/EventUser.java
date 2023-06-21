@@ -33,4 +33,16 @@ public interface EventUser extends Event {
 
     Set<Event> getReferencedEvents();
     void updateReferences(Map<Event, Event> updateMapping);
+
+    /*
+        Helper method to simplify implementation of <updateReference>
+     */
+    static Event moveUserReference(EventUser user, Event oldEv, Map<Event, Event> updateMapping) {
+        final Event newEv = updateMapping.getOrDefault(oldEv, oldEv);
+        if (oldEv != newEv) {
+            oldEv.removeUser(user);
+            newEv.registerUser(user);
+        }
+        return newEv;
+    }
 }

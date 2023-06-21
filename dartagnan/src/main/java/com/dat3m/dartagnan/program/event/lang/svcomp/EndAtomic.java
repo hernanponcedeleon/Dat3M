@@ -97,7 +97,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.begin = (BeginAtomic) updateMapping.getOrDefault(this.begin, this.begin);
+        this.begin = (BeginAtomic) EventUser.moveUserReference(this, this.begin, updateMapping);
     }
 
     @Override

@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
@@ -27,8 +26,6 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
                 "CondJump event with non-boolean guard %s.", guard);
         this.label = label;
         this.guard = guard;
-        this.thread = label.getThread();
-
         this.label.registerUser(this);
     }
 
@@ -36,7 +33,6 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
         super(other);
         this.label = other.label;
         this.guard = other.guard;
-
         this.label.registerUser(this);
     }
 
@@ -61,14 +57,6 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
     }
 
     @Override
-    public void setThread(Thread thread) {
-        super.setThread(thread);
-        if (label != null) {
-            label.setThread(thread);
-        }
-    }
-
-    @Override
     public Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(guard, Register.UsageType.CTRL, new HashSet<>());
     }
@@ -89,12 +77,7 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        Label old = this.label;
-        this.label = (Label) updateMapping.getOrDefault(this.label, this.label);
-        if (old != this.label) {
-            old.removeUser(this);
-            this.label.registerUser(this);
-;        }
+        this.label = (Label) EventUser.moveUserReference(this, this.label, updateMapping);
     }
 
     @Override
