@@ -23,7 +23,8 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(RemoveDeadCondJumps.class);
 
-    private RemoveDeadCondJumps() { }
+    private RemoveDeadCondJumps() {
+    }
 
     public static RemoveDeadCondJumps newInstance() {
         return new RemoveDeadCondJumps();
@@ -37,9 +38,9 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
     public void run(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before performing " + getClass().getSimpleName());
 
-        logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
+        logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), +program.getEvents().size()));
         program.getThreads().forEach(this::eliminateDeadCondJumps);
-        logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), + program.getEvents().size()));
+        logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), +program.getEvents().size()));
     }
 
     private void eliminateDeadCondJumps(Thread thread) {
@@ -50,30 +51,29 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         Event current = thread.getEntry();
         while (current != null) {
             final Event pred = current.getPredecessor();
-        	if (current instanceof CondJump) {
-        		final CondJump jump = (CondJump)current;
-        		// After constant propagation some jumps have False as condition and are dead
-        		if(jump.isDead()) {
-        			toBeRemoved.add(jump);
-        		} else {
+            if (current instanceof CondJump jump) {
+                // After constant propagation some jumps have False as condition and are dead
+                if (jump.isDead()) {
+                    toBeRemoved.add(jump);
+                } else {
                     immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), key -> new ArrayList<>()).add(jump);
-        		}
-        	} else if (current instanceof Label && !(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
-                immediateLabelPredecessors.computeIfAbsent((Label)current, key -> new ArrayList<>()).add(pred);
-        	}
-        	current = current.getSuccessor();
+                }
+            } else if (current instanceof Label && !(pred instanceof CondJump && ((CondJump) pred).isGoto())) {
+                immediateLabelPredecessors.computeIfAbsent((Label) current, key -> new ArrayList<>()).add(pred);
+            }
+            current = current.getSuccessor();
         }
 
         // We check which "ifs" can be removed
         for (Label label : immediateLabelPredecessors.keySet()) {
-        	final Event next = label.getSuccessor();
+            final Event next = label.getSuccessor();
             final List<Event> preds = immediateLabelPredecessors.get(label);
             if (next == null) {
                 continue;
             }
-			if (next instanceof CondJump && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump)next, e))) {
-				toBeRemoved.add(next);
-			}
+            if (next instanceof CondJump && preds.stream().allMatch(e -> mutuallyExclusiveIfs((CondJump) next, e))) {
+                toBeRemoved.add(next);
+            }
             if (preds.size() == 1 && preds.get(0).getSuccessor().equals(label)) {
                 toBeRemoved.add(label);
             }
@@ -87,32 +87,39 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         Event cur = thread.getEntry();
         while (cur != null) {
             final Event succ = cur.getSuccessor();
-            if(isCurDead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur,List.of()).isEmpty()) {
+            if (isCurDead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur, List.of()).isEmpty()) {
                 // We reached a label that has a non-dead predecessor, hence we reset the isCurDead flag.
                 isCurDead = false;
             }
-            if(isCurDead && cur instanceof CondJump && immediateLabelPredecessors.containsKey(((CondJump) cur).getLabel())) {
+            if (isCurDead && cur instanceof CondJump && immediateLabelPredecessors.containsKey(((CondJump) cur).getLabel())) {
                 // We encountered a dead jump, so we remove it as a possible predecessor of its jump target
                 immediateLabelPredecessors.get(((CondJump) cur).getLabel()).remove(cur);
             }
-            if(isCurDead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
+            if (isCurDead && immediateLabelPredecessors.containsKey(cur.getSuccessor())) {
                 // We encountered a dead event which is a predecessor of a label,
                 // so we remove it as a possible predecessor of the label.
                 immediateLabelPredecessors.get(cur.getSuccessor()).remove(cur);
             }
-            if((isCurDead || toBeRemoved.contains(cur)) && !cur.hasTag(Tag.NOOPT)) {
-                // If the current event is dead or can be removed for another reason, we delete it
-                cur.delete();
+            if ((isCurDead || toBeRemoved.contains(cur)) && !cur.hasTag(Tag.NOOPT)) {
+                // If the current event is dead or can be removed for another reason, we try to delete it
+                if (cur instanceof Label label) {
+                    //FIXME: We sometimes mark labels that still have jumps to them for deletion.
+                    // We should make sure to also mark the jumps for deletion, rather than explicitly deleting them here.
+                    label.getJumpSet().forEach(Event::tryDelete);
+                }
+                if (!cur.tryDelete()) {
+                    logger.warn("Failed to delete event: {}:   {}", cur.getGlobalId(), cur);
+                }
             }
-            if(cur instanceof CondJump && ((CondJump) cur).isGoto()) {
+            if (cur instanceof CondJump && ((CondJump) cur).isGoto()) {
                 // The immediate successor of a goto is dead by default
                 // (unless it is a label with other possible predecessors, which we check for in the first conditional)
                 isCurDead = true;
             }
             cur = succ;
         }
-   }
-    
+    }
+
     private boolean mutuallyExclusiveIfs(CondJump jump, Event e) {
         if (!(e instanceof CondJump other)) {
             return false;

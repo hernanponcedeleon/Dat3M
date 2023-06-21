@@ -125,7 +125,12 @@ public class Compilation implements ProgramProcessor {
                 continue;
             }
 
-            toBeCompiled.delete(); // Delete compiled event
+            // Delete compiled event in order to replace it.
+            if (!toBeCompiled.tryDelete()) {
+                final String error = String.format("Could not compile event '%d:  %s' because it is not deletable." +
+                        "The event is likely referenced by other events.", toBeCompiled.getGlobalId(), toBeCompiled);
+                throw new IllegalStateException(error);
+            }
             if (!compiledEvents.isEmpty()) {
                 // Insert result of compilation
                 compiledEvents.forEach(e -> e.copyAllMetadataFrom(toBeCompiled));

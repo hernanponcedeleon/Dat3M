@@ -58,8 +58,8 @@ public class SymmetryReduction implements ProgramProcessor {
             for (Thread t : c.stream().filter(x -> x != rep).collect(Collectors.toList())) {
                 for (Event e : t.getEvents()) {
                     if (e.hasTag(Tag.ASSERTION)) {
-                        e.getSuccessor().delete();
-                        e.delete();
+                        e.getSuccessor().forceDelete();
+                        e.forceDelete();
                     }
                 }
             }

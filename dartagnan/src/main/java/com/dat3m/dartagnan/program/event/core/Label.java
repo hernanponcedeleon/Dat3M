@@ -29,12 +29,6 @@ public class Label extends AbstractEvent {
     }
 
     @Override
-    public void delete() {
-        getJumpSet().forEach(CondJump::delete);
-        super.delete();
-    }
-
-    @Override
     public String defaultString() {
         return name + ":" + (hasTag(Tag.SPINLOOP) ? "\t### SPINLOOP" : "");
     }

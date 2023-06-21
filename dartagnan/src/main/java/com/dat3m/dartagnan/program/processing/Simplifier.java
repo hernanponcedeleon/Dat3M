@@ -74,7 +74,7 @@ public class Simplifier implements ProgramProcessor {
         final Event successor = jump.getSuccessor();
         final Expression guard = jump.getGuard();
         if(jumpTarget.equals(successor) && guard instanceof BConst) {
-            jump.delete();
+            jump.forceDelete();
             return true;
         }
         return false;
@@ -82,7 +82,7 @@ public class Simplifier implements ProgramProcessor {
 
     private boolean simplifyLabel(Label label) {
         if (label.getJumpSet().isEmpty() && label != label.getThread().getExit()) {
-            label.delete();
+            label.forceDelete();
             return true;
         }
         return false;
@@ -95,8 +95,8 @@ public class Simplifier implements ProgramProcessor {
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
-            call.delete();
-            successor.delete();
+            call.forceDelete();
+            successor.forceDelete();
             return true;
         }
         return false;

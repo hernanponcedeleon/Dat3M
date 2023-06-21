@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.event.EventUser;
+import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -114,41 +114,13 @@ public abstract class AbstractEvent implements Event {
 
     @Override
     public Event getSuccessor() { return successor; }
-
     @Override
-    public void setSuccessor(Event ev) {
-        final AbstractEvent event = (AbstractEvent) ev;
-        if (successor != null) {
-            successor.predecessor = null;
-        }
-        if (event != null) {
-            if (event.predecessor != null) {
-                event.predecessor.successor = null;
-            }
-            event.predecessor = this;
-            event.setThread(this.thread);
-        }
-        successor = event;
-    }
+    public void setSuccessor(Event ev) { successor = (AbstractEvent) ev; }
 
     @Override
     public Event getPredecessor() { return predecessor; }
-
     @Override
-    public void setPredecessor(Event ev) {
-        final AbstractEvent event = (AbstractEvent) ev;
-        if (predecessor != null) {
-            predecessor.successor = null;
-        }
-        if (event != null) {
-            if (event.successor != null) {
-                event.successor.predecessor = null;
-            }
-            event.successor = this;
-            event.setThread(this.thread);
-        }
-        predecessor = event;
-    }
+    public void setPredecessor(Event ev) { predecessor = (AbstractEvent) ev; }
 
     @Override
     public final List<Event> getSuccessors() {
@@ -158,7 +130,6 @@ public abstract class AbstractEvent implements Event {
             events.add(cur);
             cur = cur.getSuccessor();
         }
-
         return events;
     }
 
@@ -194,17 +165,21 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
-    public void delete() {
+    public void forceDelete() {
         if (this instanceof EventUser user) {
             user.getReferencedEvents().forEach(e -> e.removeUser(user));
         }
         this.detach();
+
+        for (Event user : currentUsers) {
+            user.forceDelete();
+        }
     }
 
     @Override
     public boolean tryDelete() {
         if (this.currentUsers.isEmpty()) {
-            this.delete();
+            this.forceDelete();
             return true;
         } else {
             return false;
@@ -234,14 +209,15 @@ public abstract class AbstractEvent implements Event {
         if (replacement == this) {
             return;
         }
+        Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
         this.insertAfter(replacement);
-        this.delete();
+        this.forceDelete();
     }
 
     private static void insertBetween(AbstractEvent toBeInserted, Thread thread, AbstractEvent pred, AbstractEvent succ) {
         assert (pred == null || pred.successor == succ) && (succ == null || succ.predecessor == pred);
         assert (toBeInserted != pred && toBeInserted != succ);
-        toBeInserted.detach(); // detach toBeInserted
+        toBeInserted.detach();
         toBeInserted.thread = thread;
         toBeInserted.predecessor = pred;
         toBeInserted.successor = succ;

@@ -51,7 +51,7 @@ public class UnreachableCodeElimination implements ProgramProcessor {
 
         thread.getEvents().stream()
                 .filter(e -> !reachableEvents.contains(e) && e != exit && !e.hasTag(Tag.NOOPT))
-                .forEach(Event::delete);
+                .forEach(Event::forceDelete);
     }
 
     // Modifies the second parameter

@@ -44,21 +44,32 @@ public interface Event extends Encoder, Comparable<Event> {
 
     // ============================== Control-flow ==============================
 
-    Event getSuccessor();
-    Event getPredecessor();
-
-    List<Event> getSuccessors();
-    List<Event> getPredecessors();
-
-    void setSuccessor(Event event);
-    void setPredecessor(Event event);
-
     Thread getThread();
     void setThread(Thread thread);
 
+    Event getSuccessor();
+    Event getPredecessor();
+
+    /*
+        NOTE: These methods return a list including(!) this event.
+     */
+    List<Event> getSuccessors();
+    List<Event> getPredecessors();
+
+    /*
+        WARNING: Directly modifying successors/predecessors can lead to inconsistent state.
+        Use <insertAfter> and <replaceBy> if possible.
+     */
+    void setSuccessor(Event event);
+    void setPredecessor(Event event);
+
+    /*
+        Detaches an event from the control-flow graph, allowing it to be reinserted elsewhere.
+        Use <tryDelete> if the event will not get reinserted.
+     */
     void detach();
-    void delete();
-    boolean tryDelete();
+    void forceDelete(); // Deletes the event, including all events that reference it
+    boolean tryDelete(); // Deletes the event only if no other event references it.
     void insertAfter(Event toBeInserted);
     void insertAfter(List<Event> toBeInserted);
     void replaceBy(Event replacement);
