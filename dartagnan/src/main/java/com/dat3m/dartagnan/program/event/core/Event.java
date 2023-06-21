@@ -68,7 +68,7 @@ public interface Event extends Encoder, Comparable<Event> {
         Use <tryDelete> if the event will not get reinserted.
      */
     void detach();
-    void forceDelete(); // Deletes the event, including all events that reference it
+    void forceDelete(); // DANGEROUS: Deletes the event, including all events that reference it.
     boolean tryDelete(); // Deletes the event only if no other event references it.
     void insertAfter(Event toBeInserted);
     void insertAfter(List<Event> toBeInserted);

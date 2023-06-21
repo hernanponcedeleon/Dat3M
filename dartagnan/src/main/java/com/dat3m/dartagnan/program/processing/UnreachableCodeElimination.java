@@ -51,15 +51,14 @@ public class UnreachableCodeElimination implements ProgramProcessor {
 
         thread.getEvents().stream()
                 .filter(e -> !reachableEvents.contains(e) && e != exit && !e.hasTag(Tag.NOOPT))
-                .forEach(Event::forceDelete);
+                .forEach(Event::tryDelete);
     }
 
     // Modifies the second parameter
     private void computeReachableEvents(Event start, Set<Event> reachable) {
         Event e = start;
         while (e != null && reachable.add(e)) {
-            if (e instanceof CondJump) {
-                final CondJump jump = (CondJump) e;
+            if (e instanceof CondJump jump) {
                 final Label jumpTarget = jump.getLabel();
 
                 if (jump.isGoto()) {
