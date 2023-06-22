@@ -11,8 +11,9 @@ public final class TypeFactory {
 
     private static TypeFactory instance = new TypeFactory();
     private final BooleanType booleanType = new BooleanType();
-    private final Map<Integer, IntegerType> integerTypeMap = new HashMap<>();
     private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
+
+    private final Map<Integer, IntegerType> integerTypeMap = new HashMap<>();
 
     private TypeFactory() {}
 
