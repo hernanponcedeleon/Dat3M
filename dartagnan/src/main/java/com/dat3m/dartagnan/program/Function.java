@@ -18,7 +18,7 @@ public class Function {
     protected int id;
     protected Event exit;
 
-    protected FunctionType functionType;
+    protected FunctionType functionType; // TODO: Not used right now
 
     protected Program program;
     protected Map<String, Register> registers = new HashMap<>();

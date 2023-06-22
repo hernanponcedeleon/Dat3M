@@ -265,11 +265,6 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
-    public Event getCopy() {
-        throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
-    }
-
-    @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitEvent(this);
     }
