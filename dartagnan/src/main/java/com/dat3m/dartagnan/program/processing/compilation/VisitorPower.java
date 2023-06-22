@@ -368,24 +368,25 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression one = expressions.makeOne(resultRegister.getType());
         Expression address = e.getAddress();
         Expression value = e.getStoreValue();
         String mo = e.getMo();
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
-
+        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
+                e.getThread().newRegister(types.getBooleanType());
+        Local castResult = type instanceof BooleanType ? null :
+                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getFunction().newRegister(type);
         Register regValue = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
+        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-
-        // Power does not have mo tags, thus we use the emptz string
+        // Power does not have mo tags, thus we use the empty string
         Load loadValue = newRMWLoadExclusive(regValue, address);
         Store storeValue = Power.newRMWStoreConditional(address, value, e.isStrong());
         ExecutionStatus optionalExecStatus = null;
@@ -393,12 +394,10 @@ public class VisitorPower extends VisitorBase {
         if (e.isWeak()) {
             Register statusReg = e.getFunction().newRegister(type);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-            optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
+            optionalUpdateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
         }
-
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;
-
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
@@ -420,7 +419,6 @@ public class VisitorPower extends VisitorBase {
                 optionalBarrierAfter = Power.newISyncBarrier();
                 break;
         }
-
         return eventSequence(
                 optionalBarrierBefore,
                 loadExpected,
@@ -434,7 +432,8 @@ public class VisitorPower extends VisitorBase {
                 casFail,
                 storeExpected,
                 casEnd,
-                optionalBarrierAfter
+                optionalBarrierAfter,
+                castResult
         );
     }
 

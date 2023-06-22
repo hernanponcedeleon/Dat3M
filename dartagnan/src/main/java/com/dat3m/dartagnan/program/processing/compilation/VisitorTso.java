@@ -211,20 +211,21 @@ class VisitorTso extends VisitorBase {
         Expression value = e.getStoreValue();
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
-        Expression one = expressions.makeOne(type);
-
+        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
+                e.getThread().newRegister(types.getBooleanType());
+        Local castResult = booleanResultRegister == resultRegister ? null :
+                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Register regValue = e.getThread().newRegister(type);
         Load loadValue = newRMWLoad(regValue, address);
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
         Label casFail = newLabel("CAS_fail");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
+        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         Store storeValue = newRMWStore(loadValue, address, value);
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);
         Store storeExpected = newStore(expectedAddr, regValue);
-
         return tagList(eventSequence(
                 loadExpected,
                 loadValue,
@@ -234,7 +235,8 @@ class VisitorTso extends VisitorBase {
                 gotoCasEnd,
                 casFail,
                 storeExpected,
-                casEnd
+                casEnd,
+                castResult
         ));
     }
 

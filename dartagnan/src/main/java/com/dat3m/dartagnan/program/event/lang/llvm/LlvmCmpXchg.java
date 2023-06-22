@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.RMWCmpXchgBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -15,6 +16,8 @@ public class LlvmCmpXchg extends RMWCmpXchgBase {
                        Expression expectedValue, Expression value, String mo, boolean isStrong) {
         super(oldValueRegister, address, expectedValue, value, isStrong, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
+        Preconditions.checkArgument(cmpRegister.getType() instanceof BooleanType,
+                "Non-boolean result register of LlvmCmpXchg.");
         this.cmpRegister = cmpRegister;
     }
 
