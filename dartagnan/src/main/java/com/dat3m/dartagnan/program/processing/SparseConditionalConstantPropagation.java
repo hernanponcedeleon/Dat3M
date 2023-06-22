@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -15,6 +14,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -22,7 +22,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -174,27 +173,13 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Expression visit(Register reg) {
-            final Expression retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof BConst constant && reg.getType() instanceof IntegerType integerType) {
-                BigInteger value = constant.getValue() ? BigInteger.ONE : BigInteger.ZERO;
-                return expressions.makeValue(value, integerType);
-            } else {
-                return retVal;
-            }
+            return propagationMap.getOrDefault(reg, reg);
         }
 
         @Override
         public Expression visit(Atom atom) {
-            Expression lhs = atom.getLHS().visit(this);
-            Expression rhs = atom.getRHS().visit(this);
-            if (lhs instanceof BConst constant) {
-                IntegerType type = rhs.getType() instanceof IntegerType t ? t : types.getIntegerType(1);
-                lhs = constant.getValue() ? expressions.makeOne(type) : expressions.makeZero(type);
-            }
-            if (rhs instanceof BConst constant) {
-                IntegerType type = lhs.getType() instanceof IntegerType t ? t : types.getIntegerType(1);
-                rhs = constant.getValue() ? expressions.makeOne(type) : expressions.makeZero(type);
-            }
+            Expression lhs = transform(atom.getLHS());
+            Expression rhs = transform(atom.getRHS());
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
                 return expressions.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));
             } else {
@@ -204,8 +189,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Expression visit(BExprBin bBin) {
-            Expression lhs = bBin.getLHS().visit(this);
-            Expression rhs = bBin.getRHS().visit(this);
+            Expression lhs = transform(bBin.getLHS());
+            Expression rhs = transform(bBin.getRHS());
             if (lhs instanceof BConst left && rhs instanceof BConst right) {
                 return expressions.makeValue(bBin.getOp().combine(left.getValue(), right.getValue()));
             } else {
@@ -215,7 +200,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Expression visit(BExprUn bUn) {
-            Expression inner = bUn.getInner().visit(this);
+            Expression inner = transform(bUn.getInner());
             if (inner instanceof BConst bc) {
                 return expressions.makeValue(bUn.getOp().combine(bc.getValue()));
             } else {
@@ -225,8 +210,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Expression visit(IExprBin iBin) {
-            Expression lhs = iBin.getLHS().visit(this);
-            Expression rhs = iBin.getRHS().visit(this);
+            Expression lhs = transform(iBin.getLHS());
+            Expression rhs = transform(iBin.getRHS());
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
                 return expressions.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
             } else {
@@ -236,26 +221,34 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
         @Override
         public Expression visit(IExprUn iUn) {
-            Expression inner = iUn.getInner().visit(this);
+            Expression inner = transform(iUn.getInner());
+            Expression result = expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
             if (inner instanceof IValue) {
-                return expressions.makeUnary(iUn.getOp(), inner, iUn.getType()).reduce();
+                return result.reduce();
             }
-            return expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
+            return result;
         }
 
         @Override
         public Expression visit(IfExpr ifExpr) {
-            Expression guard = ifExpr.getGuard().visit(this);
-            Expression trueBranch = ifExpr.getTrueBranch().visit(this);
-            Expression falseBranch = ifExpr.getFalseBranch().visit(this);
-            if (guard instanceof BConst constant && trueBranch instanceof IValue && falseBranch instanceof IValue) {
-                // We optimize ITEs only if all subexpressions are constant to avoid messing up
-                // data dependencies
-                return constant.getValue() ? trueBranch : falseBranch;
+            Expression guard = transform(ifExpr.getGuard());
+            Expression trueBranch = transform(ifExpr.getTrueBranch());
+            Expression falseBranch = transform(ifExpr.getFalseBranch());
+            // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
+            if (guard instanceof BConst constant && constant.getValue() && falseBranch.getRegs().isEmpty()) {
+                return trueBranch;
+            }
+            if (guard instanceof BConst constant && !constant.getValue() && trueBranch.getRegs().isEmpty()) {
+                return falseBranch;
             }
             return expressions.makeConditional(guard, trueBranch, falseBranch);
         }
 
+        private Expression transform(Expression expression) {
+            Expression result = expression.visit(this);
+            Verify.verify(result.getType().equals(expression.getType()), "Type mismatch in constant propagation.");
+            return result;
+        }
     }
 
 }

@@ -585,7 +585,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (register != null) {
                 final Event child;
                 if (!ctx.getText().contains("$load.")) {
-                    child = EventFactory.newLocal(register, value.visit(exprSimplifier));
+                    Expression simplified = value.visit(exprSimplifier);
+                    Expression cast = expressions.makeCast(simplified, register.getType());
+                    child = EventFactory.newLocal(register, cast);
                 } else if (allocations.contains(value)) {
                     // These loads corresponding to pthread_joins
                     child = EventFactory.Pthread.newJoin(register, value);
