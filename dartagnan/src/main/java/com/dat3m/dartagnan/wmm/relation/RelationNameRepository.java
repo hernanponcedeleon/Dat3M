@@ -43,6 +43,12 @@ public class RelationNameRepository {
 	public static final String CTRLISYNC = "ctrlisync";
 	public static final String CTRLISB = "ctrlisb";
 	public static final String CASDEP = "casdep";
+	public static final String SR = "sr";
+	public static final String SCTA = "scta"; // same-cta, the same as same_block_r in alloy
+	public static final String SYNC_BARRIER = "sync_barrier";
+	public static final String SYNC_FENCE = "sync_fence";
+	public static final String SYNCBAR = "syncbar";
+	public static final String VLOC = "vloc";
 	// Any new string must be also added to method contains() below
 
 	public static final ImmutableSet<String> RELATION_NAMES;

@@ -3,16 +3,20 @@ package com.dat3m.dartagnan.wmm.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
+import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -163,8 +167,9 @@ public class RelationAnalysis {
     }
 
     /*
-        Returns a set of co-edges (w1, w2) (subset of may set) whose clock-constraints
-        do not need to get encoded explicitly.
+        Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
+        clock-constraints do not need to get encoded explicitly.
+        e.g. for co relation: (e1 = w1, e2 = w2)
         The reason is that whenever we have co(w1,w2) then there exists an intermediary
         w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
         Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
@@ -189,9 +194,9 @@ public class RelationAnalysis {
             final MemoryEvent x = (MemoryEvent) t.getFirst();
             final MemoryEvent z = (MemoryEvent) t.getSecond();
             final boolean hasIntermediary = mustOut.apply(x).stream().map(Tuple::getSecond)
-                            .anyMatch(y -> y != x && y != z &&
-                                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
-                                    !k.containsMay(new Tuple(z, y))) ||
+                    .anyMatch(y -> y != x && y != z &&
+                            (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                            !k.containsMay(new Tuple(z, y))) ||
                     mustIn.apply(z).stream().map(Tuple::getFirst)
                             .anyMatch(y -> y != x && y != z &&
                                     (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
@@ -270,16 +275,20 @@ public class RelationAnalysis {
     public static final class Knowledge {
         private final Set<Tuple> may;
         private final Set<Tuple> must;
+
         private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = checkNotNull(maySet);
             must = checkNotNull(mustSet);
         }
+
         public Set<Tuple> getMaySet() {
             return may;
         }
+
         public boolean containsMay(Tuple t) {
             return may.contains(t);
         }
+
         public Function<Event, Collection<Tuple>> getMayIn() {
             final Map<Event, Collection<Tuple>> map = new HashMap<>();
             for (final Tuple t : may) {
@@ -287,6 +296,7 @@ public class RelationAnalysis {
             }
             return e -> map.getOrDefault(e, List.of());
         }
+
         public Function<Event, Collection<Tuple>> getMayOut() {
             final Map<Event, Collection<Tuple>> map = new HashMap<>();
             for (final Tuple t : may) {
@@ -294,12 +304,15 @@ public class RelationAnalysis {
             }
             return e -> map.getOrDefault(e, List.of());
         }
+
         public Set<Tuple> getMustSet() {
             return must;
         }
+
         public boolean containsMust(Tuple t) {
             return must.contains(t);
         }
+
         public Function<Event, Collection<Tuple>> getMustIn() {
             final Map<Event, Collection<Tuple>> map = new HashMap<>();
             for (final Tuple t : must) {
@@ -307,6 +320,7 @@ public class RelationAnalysis {
             }
             return e -> map.getOrDefault(e, List.of());
         }
+
         public Function<Event, Collection<Tuple>> getMustOut() {
             final Map<Event, Collection<Tuple>> map = new HashMap<>();
             for (final Tuple t : must) {
@@ -314,10 +328,12 @@ public class RelationAnalysis {
             }
             return e -> map.getOrDefault(e, List.of());
         }
+
         @Override
         public String toString() {
             return "(may:" + may.size() + ", must:" + must.size() + ")";
         }
+
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
             // NOTE optimization due to initial deltas carrying references to knowledge sets
@@ -337,6 +353,7 @@ public class RelationAnalysis {
             }
             return new Delta(maySet, mustSet);
         }
+
         private ExtendedDelta join(List<ExtendedDelta> l) {
             verify(!l.isEmpty(), "empty update in extended analysis");
             Set<Tuple> disableSet = new HashSet<>();
@@ -410,6 +427,7 @@ public class RelationAnalysis {
     public static final class Delta {
         public final Set<Tuple> may;
         public final Set<Tuple> must;
+
         Delta(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = maySet;
             must = mustSet;
@@ -420,6 +438,7 @@ public class RelationAnalysis {
     public static final class ExtendedDelta {
         final Set<Tuple> disabled;
         final Set<Tuple> enabled;
+
         public ExtendedDelta(Set<Tuple> d, Set<Tuple> e) {
             disabled = d;
             enabled = e;
@@ -429,6 +448,7 @@ public class RelationAnalysis {
     private final class Initializer implements Definition.Visitor<Knowledge> {
         final Program program = task.getProgram();
         final Knowledge defaultKnowledge;
+
         Initializer() {
             if (enable) {
                 defaultKnowledge = null;
@@ -443,10 +463,12 @@ public class RelationAnalysis {
                 defaultKnowledge = new Knowledge(may, EMPTY_SET);
             }
         }
+
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
             return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
         }
+
         @Override
         public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
             Set<Tuple> must = new HashSet<>();
@@ -461,6 +483,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitIdentity(Relation rel, Filter set) {
             Set<Tuple> must = new HashSet<>();
@@ -471,6 +494,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitExternal(Relation rel) {
             Set<Tuple> must = new HashSet<>();
@@ -491,6 +515,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitInternal(Relation rel) {
             Set<Tuple> must = new HashSet<>();
@@ -506,6 +531,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitProgramOrder(Relation rel, Filter type) {
             Set<Tuple> must = new HashSet<>();
@@ -523,6 +549,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitControl(Relation rel) {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
@@ -553,15 +580,18 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
             return computeInternalDependencies(EnumSet.of(ADDR));
         }
+
         @Override
         public Knowledge visitInternalDataDependency(Relation rel) {
             // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
             return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
         }
+
         @Override
         public Knowledge visitFences(Relation rel, Filter fence) {
             Set<Tuple> may = new HashSet<>();
@@ -594,6 +624,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
             Set<Tuple> must = new HashSet<>();
@@ -605,6 +636,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitCriticalSections(Relation rel) {
             Set<Tuple> may = new HashSet<>();
@@ -648,6 +680,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitReadModifyWrites(Relation rel) {
             //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
@@ -707,6 +740,7 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitCoherence(Relation rel) {
             logger.trace("Computing knowledge about memory order");
@@ -741,6 +775,7 @@ public class RelationAnalysis {
             logger.debug("Initial may set size for memory order: {}", may.size());
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitReadFrom(Relation rel) {
             logger.trace("Computing knowledge about read-from");
@@ -835,6 +870,7 @@ public class RelationAnalysis {
             logger.debug("Initial may set size for read-from: {}", may.size());
             return new Knowledge(may, enableMustSets ? new HashSet<>() : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitSameAddress(Relation rel) {
             Set<Tuple> may = new HashSet<>();
@@ -903,12 +939,88 @@ public class RelationAnalysis {
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
+        @Override
+        public Knowledge visitSameScope(Relation rel, String specificScope) {
+            Set<Tuple> must = new HashSet<>();
+            List<Event> events = new ArrayList<>();
+            // We avoid using MemEvent because we don't want to consider Init events
+            events.addAll(program.getEvents(Load.class));
+            events.addAll(program.getEvents(Store.class));
+            events.addAll(program.getEvents(Fence.class));
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    ScopedThread thread1 = (ScopedThread) e1.getThread();
+                    ScopedThread thread2 = (ScopedThread) e2.getThread();
+                    if (specificScope != null) { // scope specified
+                        if (thread1.sameAtHigherScope(thread2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    } else {
+                        String scope1 = Tag.PTX.getScopeTag(e1);
+                        String scope2 = Tag.PTX.getScopeTag(e2);
+                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)
+                                && !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
+        @Override
+        public Knowledge visitSyncBarrier(Relation sync_bar) {
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
+            List<FenceWithId> fenceEvents = program.getEvents(FenceWithId.class);
+            for (FenceWithId e1 : fenceEvents) {
+                for (FenceWithId e2 : fenceEvents) {
+                    if(exec.areMutuallyExclusive(e1, e2)) {
+                        continue;
+                    }
+                    may.add(new Tuple(e1, e2));
+                    if (e1.getFenceID().equals(e2.getFenceID())) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitSyncFence(Relation sync_fen) {
+            Set<Tuple> may = new HashSet<>();
+            List<Fence> fenceEvents = program.getEvents(Fence.class);
+            for (Fence e1 : fenceEvents) {
+                for (Fence e2 : fenceEvents) {
+                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+                        may.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(may, EMPTY_SET);
+        }
+
+        @Override
+        public Knowledge visitVirtualLocation(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            List<MemEvent> events = program.getEvents(MemEvent.class);
+            for (MemEvent e1 : events) {
+                for (MemEvent e2 : events) {
+                    if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
     }
 
     public final class Propagator implements Definition.Visitor<Delta> {
         public Relation source;
         public Set<Tuple> may;
         public Set<Tuple> must;
+
         @Override
         public Delta visitUnion(Relation rel, Relation... operands) {
             if (Arrays.asList(operands).contains(source)) {
@@ -916,6 +1028,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitIntersection(Relation rel, Relation... operands) {
             if (!Arrays.asList(operands).contains(source)) {
@@ -932,11 +1045,12 @@ public class RelationAnalysis {
                     .reduce(Sets::intersection)
                     .orElseThrow();
             return new Delta(
-                        new HashSet<>(maySet),
-                        enableMustSets ?
-                                new HashSet<>(mustSet) :
-                                EMPTY_SET);
+                    new HashSet<>(maySet),
+                    enableMustSets ?
+                            new HashSet<>(mustSet) :
+                            EMPTY_SET);
         }
+
         @Override
         public Delta visitDifference(Relation rel, Relation r1, Relation r2) {
             if (r1.equals(source)) {
@@ -948,6 +1062,7 @@ public class RelationAnalysis {
             // cannot handle updates from r2
             return EMPTY;
         }
+
         @Override
         public Delta visitComposition(Relation rel, Relation r1, Relation r2) {
             Set<Tuple> maySet = new HashSet<>();
@@ -1000,6 +1115,7 @@ public class RelationAnalysis {
             }
             return new Delta(maySet, mustSet);
         }
+
         @Override
         public Delta visitDomainIdentity(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1017,6 +1133,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitRangeIdentity(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1034,6 +1151,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitInverse(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1041,6 +1159,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitTransitiveClosure(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1458,5 +1577,19 @@ public class RelationAnalysis {
 
     private long countMustSet() {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
+    }
+
+    // GPU memory models make use of virtual addresses.
+    // This models same_alias_r from the PTX Alloy model
+    // Checking address1 and address2 hold the same generic address
+    private boolean sameGenericAddress(MemEvent e1, MemEvent e2) {
+        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
+        // then `x + offset` and `y + offset` should too
+        if (!(e1.getAddress() instanceof VirtualMemoryObject) || !(e2.getAddress() instanceof VirtualMemoryObject)) {
+            return false;
+        }
+        VirtualMemoryObject addr1 = (VirtualMemoryObject) e1.getAddress();
+        VirtualMemoryObject addr2 = (VirtualMemoryObject) e2.getAddress();
+        return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 }

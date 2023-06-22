@@ -91,6 +91,10 @@ public abstract class Definition implements Constraint {
         default T visitCoherence(Relation co) { return visitDefinition(co, List.of()); }
         default T visitSameAddress(Relation loc) { return visitDefinition(loc, List.of()); }
         default T visitReadFrom(Relation rf) { return visitDefinition(rf, List.of()); }
+        default T visitSameScope(Relation sc, String scope) { return visitDefinition(sc, List.of()); }
+        default T visitSyncBarrier(Relation sync_bar){ return visitDefinition(sync_bar, List.of()); }
+        default T visitSyncFence(Relation sync_fen){ return visitDefinition(sync_fen, List.of()); }
+        default T visitVirtualLocation(Relation vloc) { return visitDefinition(vloc, List.of()); }
     }
 
     public static final class Undefined extends Definition {

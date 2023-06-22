@@ -1,0 +1,13 @@
+PTX Proxy-SingleThread-rf-surW-surR
+"The rf from the same proxy should be guaranteed"
+{
+x = 0;
+t @ texture aliases x;
+s @ surface aliases x;
+P0:r0=0;
+}
+ P0@cta 0,gpu 0                   ;
+ sust.weak s, 1                   ;
+ suld.weak r0, s                  ;
+forall
+(P0:r0 == 1)

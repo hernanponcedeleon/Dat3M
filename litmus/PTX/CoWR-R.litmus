@@ -1,0 +1,13 @@
+PTX CoWR-R
+"Coherence, Write Read"
+{
+x=0;
+P1:r1=0;
+P1:r2=0;
+}
+ P0@cta 0,gpu 0         | P1@cta 1,gpu 1          ;
+ st.release.gpu x, 1    | st.release.sys x, 2     ;
+                        | ld.weak r1, x           ;
+                        | ld.weak r2, x           ;
+exists
+(P1:r1 == 1 /\ P1:r2 == 2)

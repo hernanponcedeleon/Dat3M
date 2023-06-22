@@ -117,7 +117,7 @@ public abstract class ModelChecker {
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
     public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), config));
+        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 

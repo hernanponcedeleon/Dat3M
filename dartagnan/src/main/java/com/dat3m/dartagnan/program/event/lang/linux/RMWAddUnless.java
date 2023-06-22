@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;

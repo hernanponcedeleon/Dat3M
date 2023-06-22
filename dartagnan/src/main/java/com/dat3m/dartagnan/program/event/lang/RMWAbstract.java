@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.lang.linux;
+package com.dat3m.dartagnan.program.event.lang;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
