@@ -6,12 +6,12 @@ import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
-// TODO: "abstract" is only here to avoid providing a complete implementation for now
 public class Return extends AbstractEvent implements RegReader {
 
-    protected Expression expression;
+    protected Expression expression; // May be NULL
 
     public Return(Expression expression) {
         this.expression = expression;
@@ -22,11 +22,17 @@ public class Return extends AbstractEvent implements RegReader {
         this.expression = other.expression;
     }
 
-    public Expression getValue() { return expression; }
+    public boolean hasValue() {
+        return expression != null;
+    }
+
+    public Optional<Expression> getValue() {
+        return Optional.ofNullable(expression);
+    }
 
     @Override
     protected String defaultString() {
-        return String.format("return %s", expression);
+        return hasValue() ? String.format("return %s", expression) : "return";
     }
 
     @Override
@@ -36,6 +42,9 @@ public class Return extends AbstractEvent implements RegReader {
 
     @Override
     public Set<Register.Read> getRegisterReads() {
+        if (!hasValue()) {
+            return new HashSet<>();
+        }
         return Register.collectRegisterReads(expression, Register.UsageType.DATA, new HashSet<>());
     }
 }
