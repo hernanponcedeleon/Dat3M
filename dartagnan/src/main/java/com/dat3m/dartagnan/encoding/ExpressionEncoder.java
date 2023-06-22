@@ -378,7 +378,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(Register reg) {
         String name = event == null ?
-                reg.getName() + "_" + reg.getThreadId() + "_final" :
+                reg.getName() + "_" + reg.getFunctionId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
         Type type = reg.getType();
         return makeVariable(type, name);

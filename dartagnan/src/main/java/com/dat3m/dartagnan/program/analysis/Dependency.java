@@ -109,16 +109,16 @@ public final class Dependency {
             if (!registers.isEmpty()) {
                 Map<Register, State> result = new HashMap<>();
                 for (Register register : registers) {
-                    if (register.getThreadId() == Register.NO_THREAD) {
+                    if (register.getFunctionId() == Register.NO_FUNCTION) {
                         continue;
                     }
                     State writers;
-                    if (register.getThreadId() != event.getThread().getId()) {
+                    if (register.getFunctionId() != event.getThread().getId()) {
                         writers = finalWriters.get(register);
                         checkArgument(writers != null,
                                 "Helper thread %s should be listed after their creator thread %s.",
                                 thread.getId(),
-                                register.getThreadId());
+                                register.getFunctionId());
                         if (writers.may.size() != 1) {
                             logger.warn("Writers {} for inter-thread register {} read by event {} of thread {}",
                                     writers.may,
@@ -198,10 +198,10 @@ public final class Dependency {
 
         @Override
         public boolean equals(Object o) {
-            return this == o || o instanceof Writer
+            return this == o || o instanceof Writer w
                     && (event == null
-                    ? ((Writer) o).event == null && register.equals(((Writer) o).register)
-                    : event.equals(((Writer) o).event));
+                    ? w.event == null && register.equals(w.register)
+                    : event.equals(w.event));
         }
 
         @Override

@@ -647,7 +647,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 		if(constantsTypeMap.containsKey(name)) {
 			// Dummy register needed to parse axioms
 			IntegerType type = constantsTypeMap.get(name);
-			return new Register(name, Register.NO_THREAD, type);
+			return new Register(name, Register.NO_FUNCTION, type);
 		}
         Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
         if(register != null){

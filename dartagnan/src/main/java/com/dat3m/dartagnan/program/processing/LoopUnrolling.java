@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -69,34 +69,33 @@ public class LoopUnrolling implements ProgramProcessor {
         }
         final int defaultBound = this.bound;
         program.getEvents().forEach(e -> e.setMetadata(new UnrollingId(e.getGlobalId()))); // Track ids before unrolling
-        program.getThreads().forEach(thread -> unrollLoopsInThread(thread, defaultBound));
+        program.getThreads().forEach(thread -> unrollLoopsInFunction(thread, defaultBound));
         program.markAsUnrolled(defaultBound);
         EventIdReassignment.newInstance().run(program); // Reassign ids because of newly created events
 
         logger.info("Program unrolled {} times", defaultBound);
     }
 
-    private void unrollLoopsInThread(Thread thread, int defaultBound){
-        final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(thread, defaultBound);
-        thread.getEvents().stream()
+    private void unrollLoopsInFunction(Function func, int defaultBound){
+        final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(func, defaultBound);
+        func.getEvents().stream()
                 .filter(CondJump.class::isInstance).map(CondJump.class::cast)
                 .filter(loopBoundsMap::containsKey)
                 .forEach(j -> unrollLoop(j, loopBoundsMap.get(j)));
     }
 
-    private Map<CondJump, Integer> computeLoopBoundsMap(Thread thread, int defaultBound) {
+    private Map<CondJump, Integer> computeLoopBoundsMap(Function func, int defaultBound) {
 
         LoopBound curBoundAnnotation = null;
         final Map<CondJump, Integer> loopBoundsMap = new HashMap<>();
-        for (Event event : thread.getEvents()) {
-            if (event instanceof LoopBound) {
+        for (Event event : func.getEvents()) {
+            if (event instanceof LoopBound boundAnnotation) {
                 // Track LoopBound annotation
                 if (curBoundAnnotation != null) {
                     logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
                 }
-                curBoundAnnotation = (LoopBound) event;
-            } else if (event instanceof Label) {
-                final Label label = (Label) event;
+                curBoundAnnotation = boundAnnotation;
+            } else if (event instanceof Label label) {
                 final Optional<CondJump> backjump = label.getJumpSet().stream()
                         .filter(j -> j.getGlobalId() > label.getGlobalId()).findFirst();
                 final boolean isLoop = backjump.isPresent();
@@ -118,6 +117,9 @@ public class LoopUnrolling implements ProgramProcessor {
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
         Preconditions.checkArgument(loopBegin.getGlobalId() < loopBackJump.getGlobalId(),
                 "The jump does not belong to a loop.");
+        // TODO: Get rid of this precondition
+        Preconditions.checkArgument(loopBackJump.getThread() != null,
+                "Cannot unroll loop of non-thread function. This limitation will get lifted in the future.");
 
         int iterCounter = 0;
         while (++iterCounter <= bound) {
@@ -128,6 +130,9 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
+                //TODO: In order to generalize this pass to arbitrary functions, we cannot
+                // insert terminating jumps (only after inlining!). We should create a terminator
+                // event that is replaced by terminating jumps after inlining and thread creation.
                 final Label threadExit = (Label) loopBackJump.getThread().getExit();
                 final CondJump boundEvent = EventFactory.newGoto(threadExit);
                 boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);

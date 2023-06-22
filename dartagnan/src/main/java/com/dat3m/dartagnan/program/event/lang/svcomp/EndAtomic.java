@@ -13,7 +13,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 import static com.dat3m.dartagnan.program.event.Tag.SVCOMP.SVCOMPATOMIC;
@@ -42,7 +41,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     }
 
     public List<Event> getBlock() {
-        Preconditions.checkState(getThread().getProgram().isCompiled(), "The program needs to get compiled first");
+        Preconditions.checkState(getFunction().getProgram().isCompiled(), "The program needs to get compiled first");
         return enclosedEvents;
     }
 
@@ -52,7 +51,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
         BranchEquivalence eq = context.requires(BranchEquivalence.class);
         List<Event> begins = this.function.getEvents()
                 .stream().filter(x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
-                .collect(Collectors.toList());
+                .toList();
         this.begin = (BeginAtomic) begins.get(begins.size() - 1);
         // =======================================================
 

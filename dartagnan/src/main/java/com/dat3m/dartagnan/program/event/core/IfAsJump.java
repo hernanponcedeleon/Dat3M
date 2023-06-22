@@ -25,7 +25,7 @@ public class IfAsJump extends CondJump {
 
     public List<Event> getBranchesEvents(){
     	// Because it is used for RelCtrlDirect
-    	Preconditions.checkState(getThread().getProgram().isCompiled(),
+    	Preconditions.checkState(getFunction().getProgram().isCompiled(),
 				"getBranchesEvents() must be called after compilation");
 		List<Event> events = new ArrayList<>();
 		Event next = getSuccessor();

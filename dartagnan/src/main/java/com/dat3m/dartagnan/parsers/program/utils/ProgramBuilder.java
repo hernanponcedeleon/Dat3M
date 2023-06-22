@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
-import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
@@ -11,6 +8,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -21,7 +19,9 @@ import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 
 import java.util.*;
 
@@ -76,6 +76,7 @@ public class ProgramBuilder {
     }
 
     public Event addChild(int thread, Event child) {
+        //TODO: Generalize to functions
         if(!threads.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }

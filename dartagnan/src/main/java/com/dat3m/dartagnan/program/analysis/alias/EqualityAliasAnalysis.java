@@ -31,7 +31,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
 
-        if (a.getThread() != b.getThread()
+        if (a.getFunction() != b.getFunction()
                 || !a.getAddress().equals(b.getAddress())) {
             return false;
         } else if (a == b) {
@@ -54,7 +54,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         Set<Register> addrRegs = a.getAddress().getRegs();
         Event e = a.getSuccessor();
         while (e != b) {
-            if (e instanceof RegWriter && addrRegs.contains(((RegWriter)e).getResultRegister())) {
+            if (e instanceof RegWriter w && addrRegs.contains(w.getResultRegister())) {
                 cache.put(t, Boolean.FALSE);
                 return false;
             }

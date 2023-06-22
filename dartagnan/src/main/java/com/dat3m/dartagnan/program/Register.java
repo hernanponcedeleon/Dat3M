@@ -12,16 +12,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Register extends IExpr {
 
-    public static final int NO_THREAD = -1;
+    public static final int NO_FUNCTION = -1;
 
     private final String name;
     private String cVar;
-    private final int threadId;
+    private final int funcId;
 
-    public Register(String name, int threadId, IntegerType type) {
+    public Register(String name, int funcId, IntegerType type) {
         super(type);
         this.name = checkNotNull(name);
-        this.threadId = threadId;
+        this.funcId = funcId;
     }
 
     public String getName() {
@@ -36,8 +36,8 @@ public class Register extends IExpr {
         this.cVar = name;
     }
 
-    public int getThreadId() {
-        return threadId;
+    public int getFunctionId() {
+        return funcId;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class Register extends IExpr {
 
     @Override
     public int hashCode() {
-        return name.hashCode() + threadId;
+        return name.hashCode() + funcId;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class Register extends IExpr {
         }
 
         Register rObj = (Register) obj;
-        return name.equals(rObj.name) && threadId == rObj.threadId;
+        return name.equals(rObj.name) && funcId == rObj.funcId;
     }
 
     @Override
