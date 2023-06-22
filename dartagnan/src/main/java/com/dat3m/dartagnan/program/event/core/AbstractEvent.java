@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventUser;
@@ -19,7 +20,7 @@ public abstract class AbstractEvent implements Event {
 
     protected final MetadataMap metadataMap = new MetadataMap();
     protected final Set<String> tags;
-    protected Thread thread; // The thread this event belongs to
+    protected Function function; // The thread this event belongs to
     // This id is dynamically changing during processing.
     protected transient int globalId = -1; // (Global) ID within a program
     private transient AbstractEvent successor;
@@ -33,7 +34,7 @@ public abstract class AbstractEvent implements Event {
     protected AbstractEvent(AbstractEvent other) {
         copyAllMetadataFrom(other);
         this.tags = other.tags; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
-        this.thread = other.thread;
+        this.function = other.function;
     }
 
     @Override
@@ -42,10 +43,16 @@ public abstract class AbstractEvent implements Event {
     public void setGlobalId(int id) { this.globalId = id; }
 
     @Override
-    public Thread getThread() { return thread; }
+    public Function getFunction() { return function; }
+
     @Override
-    public void setThread(Thread thread) {
-        this.thread = Preconditions.checkNotNull(thread);
+    public void setFunction(Function function) {
+        this.function = Preconditions.checkNotNull(function);
+    }
+
+    @Override
+    public Thread getThread() {
+        return getFunction() instanceof Thread ? (Thread) getFunction() : null;
     }
 
     // ============================================ Users ============================================
@@ -151,15 +158,15 @@ public abstract class AbstractEvent implements Event {
      */
     @Override
     public void detach() {
-        Preconditions.checkState(thread == null || (this != thread.getEntry() && this != thread.getExit()),
-                "Cannot detach the entry or exit event %s of thread %s", this, getThread());
+        Preconditions.checkState(function == null || (this != function.getEntry() && this != function.getExit()),
+                "Cannot detach the entry or exit event %s of function %s", this, getThread());
         if (this.predecessor != null) {
             this.predecessor.successor = successor;
         }
         if (this.successor != null) {
             this.successor.predecessor = predecessor;
         }
-        this.thread = null;
+        this.function = null;
         this.predecessor = null;
         this.successor = null;
     }
@@ -189,9 +196,9 @@ public abstract class AbstractEvent implements Event {
     @Override
     public void insertAfter(Event toBeInserted) {
         Preconditions.checkNotNull(toBeInserted);
-        insertBetween((AbstractEvent) toBeInserted, thread, this, successor);
-        if (thread.getExit() == this) {
-            thread.updateExit(toBeInserted);
+        insertBetween((AbstractEvent) toBeInserted, function, this, successor);
+        if (function.getExit() == this) {
+            function.updateExit(toBeInserted);
         }
     }
 
@@ -214,11 +221,11 @@ public abstract class AbstractEvent implements Event {
         this.forceDelete();
     }
 
-    private static void insertBetween(AbstractEvent toBeInserted, Thread thread, AbstractEvent pred, AbstractEvent succ) {
+    private static void insertBetween(AbstractEvent toBeInserted, Function func, AbstractEvent pred, AbstractEvent succ) {
         assert (pred == null || pred.successor == succ) && (succ == null || succ.predecessor == pred);
         assert (toBeInserted != pred && toBeInserted != succ);
         toBeInserted.detach();
-        toBeInserted.thread = thread;
+        toBeInserted.function = func;
         toBeInserted.predecessor = pred;
         toBeInserted.successor = succ;
 

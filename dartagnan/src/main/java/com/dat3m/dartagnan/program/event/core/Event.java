@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventUser;
@@ -44,8 +45,10 @@ public interface Event extends Encoder, Comparable<Event> {
 
     // ============================== Control-flow ==============================
 
+    Function getFunction();
+    void setFunction(Function function);
+
     Thread getThread();
-    void setThread(Thread thread);
 
     Event getSuccessor();
     Event getPredecessor();

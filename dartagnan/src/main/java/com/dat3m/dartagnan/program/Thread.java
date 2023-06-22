@@ -11,7 +11,7 @@ public class Thread extends Function {
         super(name, FunctionType.get(TypeFactory.getInstance().getArchType()), id, entry);
         Preconditions.checkArgument(id >= 0, "Invalid thread ID");
         Preconditions.checkNotNull(entry, "Thread entry event must be not null");
-        entry.setThread(this);
+        entry.setFunction(this);
     }
 
     public Thread(int id, Event entry){
