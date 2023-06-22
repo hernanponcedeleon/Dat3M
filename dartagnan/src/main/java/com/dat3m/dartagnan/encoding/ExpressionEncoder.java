@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -307,7 +306,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(INonDet iNonDet) {
         String name = iNonDet.getName();
         Type type = iNonDet.getType();
-        return makeVariable(type, name);
+        return context.makeVariable(name, type);
     }
 
     @Override
@@ -316,7 +315,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 reg.getName() + "_" + reg.getFunctionId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
         Type type = reg.getType();
-        return makeVariable(type, name);
+        return context.makeVariable(name, type);
     }
 
     @Override
@@ -330,20 +329,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
-    }
-
-    private Formula makeVariable(Type type, String name) {
-        if (type instanceof BooleanType) {
-            return booleanFormulaManager.makeVariable(name);
-        }
-        if (type instanceof IntegerType integerType) {
-            if (integerType.isMathematical()) {
-                return integerFormulaManager().makeVariable(name);
-            }
-            int bitWidth = integerType.getBitWidth();
-            return bitvectorFormulaManager().makeVariable(bitWidth, name);
-        }
-        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
 
     private Formula makeLiteral(Type type, BigInteger value) {
