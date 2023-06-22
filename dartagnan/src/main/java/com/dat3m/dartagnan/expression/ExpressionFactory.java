@@ -105,11 +105,21 @@ public final class ExpressionFactory {
         throw new IllegalArgumentException("Non-integer type " + type);
     }
 
+    public Expression makeCast(Expression expression, Type type) {
+        if (type instanceof BooleanType) {
+            return makeBooleanCast(expression);
+        }
+        if (type instanceof IntegerType integerType) {
+            return makeIntegerCast(expression, integerType, false);
+        }
+        throw new UnsupportedOperationException(String.format("Cast %s into %s.", expression, type));
+    }
+
     public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
         return new IfExpr(condition, ifTrue, ifFalse);
     }
 
-    public Expression makeBoolean(Expression operand) {
+    public Expression makeBooleanCast(Expression operand) {
         if (operand.getType() instanceof BooleanType) {
             return operand;
         }
