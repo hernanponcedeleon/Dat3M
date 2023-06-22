@@ -53,7 +53,7 @@ public class ProgramBuilder {
         for(Thread thread : threads.values()){
             addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
-            program.add(thread);
+            program.addThread(thread);
             thread.setProgram(program);
         }
         constants.forEach(program::addConstant);

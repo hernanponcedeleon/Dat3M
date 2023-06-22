@@ -105,7 +105,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(types.getArchType());
         Expression zero = expressions.makeZero(dummy.getType());
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
@@ -251,7 +251,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue()));
 
         // Power does not have mo tags, thus we use null
@@ -373,8 +373,8 @@ public class VisitorPower extends VisitorBase {
         Expression expectedAddr = e.getExpectedAddr();
         IntegerType type = resultRegister.getType();
 
-        Register regExpected = e.getThread().newRegister(type);
-        Register regValue = e.getThread().newRegister(type);
+        Register regExpected = e.getFunction().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
@@ -389,7 +389,7 @@ public class VisitorPower extends VisitorBase {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (e.isWeak()) {
-            Register statusReg = e.getThread().newRegister(type);
+            Register statusReg = e.getFunction().newRegister(type);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
         }
@@ -444,7 +444,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusive(resultRegister, address);
@@ -736,7 +736,7 @@ public class VisitorPower extends VisitorBase {
         Expression value = e.getMemValue();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
+        Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
 
@@ -770,7 +770,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, value, true);
         Label label = newLabel("FakeDep");
@@ -800,7 +800,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, op, value), true);
@@ -833,7 +833,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, dummy, true);
         Label label = newLabel("FakeDep");
@@ -866,7 +866,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), true);
         Label label = newLabel("FakeDep");
@@ -902,14 +902,14 @@ public class VisitorPower extends VisitorBase {
         IntegerType type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
 
-        Register regValue = e.getThread().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
         Store store = Power.newRMWStoreConditional(address, expressions.makeADD(regValue, value), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, zero), cauEnd);
@@ -949,8 +949,8 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(type);
-        Register retReg = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
+        Register retReg = e.getFunction().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
         Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, zero));
 
@@ -984,7 +984,7 @@ public class VisitorPower extends VisitorBase {
         IntegerType type = types.getArchType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         Label label = newLabel("FakeDep");
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         return eventSequence(

@@ -109,8 +109,8 @@ class VisitorIMM extends VisitorBase {
         IntegerType type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
 
-        Register regExpected = e.getThread().newRegister(type);
-        Register regValue = e.getThread().newRegister(type);
+        Register regExpected = e.getFunction().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         loadExpected.addTags(Tag.IMM.CASDEPORIGIN);
         Store storeExpected = newStore(expectedAddr, regValue);
@@ -146,7 +146,7 @@ class VisitorIMM extends VisitorBase {
         Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         Fence optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
 
         return eventSequence(
@@ -246,7 +246,7 @@ class VisitorIMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, IMM.extractLoadMo(mo));

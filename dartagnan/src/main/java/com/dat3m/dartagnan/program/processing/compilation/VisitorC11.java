@@ -95,8 +95,8 @@ public class VisitorC11 extends VisitorBase {
         Expression expectedAddr = e.getExpectedAddr();
         IntegerType type = resultRegister.getType();
 
-        Register regExpected = e.getThread().newRegister(type);
-        Register regValue = e.getThread().newRegister(type);
+        Register regExpected = e.getFunction().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
@@ -126,7 +126,7 @@ public class VisitorC11 extends VisitorBase {
         IOpBin op = e.getOp();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, mo);
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, mo);
 
@@ -214,7 +214,7 @@ public class VisitorC11 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, mo);

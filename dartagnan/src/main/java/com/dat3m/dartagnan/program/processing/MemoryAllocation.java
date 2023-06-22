@@ -93,7 +93,7 @@ public class MemoryAllocation implements ProgramProcessor {
                 final Event init = EventFactory.newInit(memObj, i);
                 final Thread thread = new Thread(nextThreadId++, init);
 
-                program.add(thread);
+                program.addThread(thread);
                 thread.setProgram(program);
                 thread.getEntry().insertAfter(EventFactory.newLabel("END_OF_T" + thread.getId()));
             }

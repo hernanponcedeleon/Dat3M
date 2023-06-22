@@ -77,7 +77,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Expression cmp = e.getCmp();
         Expression value = e.getMemValue();
         Expression address = e.getAddress();
@@ -111,7 +111,7 @@ public class VisitorLKMM extends VisitorBase {
 
         Label success = newLabel("CAS_success");
         Label end = newLabel("CAS_end");
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load casLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
@@ -136,7 +136,7 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
         Expression value = e.getMemValue();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
@@ -155,7 +155,7 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
         Register resultRegister = e.getResultRegister();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
         load.addTags(Tag.Linux.NORETURN);
 
@@ -171,7 +171,7 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
         IntegerType type = resultRegister.getType();
 
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
 
         return eventSequence(
@@ -190,7 +190,7 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
@@ -232,7 +232,7 @@ public class VisitorLKMM extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
@@ -248,12 +248,12 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getThread().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(types.getArchType());
         Expression zero = expressions.makeZero(dummy.getType());
 
         Load lockRead = newLockRead(dummy, e.getLock());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
-        Event checkLockValue = e.getThread().getProgram().getFormat().equals(LITMUS) ?
+        Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeEQ(dummy, zero)) :
                 newJump(expressions.makeNEQ(dummy, zero), (Label) e.getThread().getExit());
         return eventSequence(

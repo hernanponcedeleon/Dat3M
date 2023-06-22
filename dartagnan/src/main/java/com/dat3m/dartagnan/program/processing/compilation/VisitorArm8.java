@@ -102,7 +102,7 @@ class VisitorArm8 extends VisitorBase {
         IntegerType type = types.getArchType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.
@@ -170,7 +170,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
@@ -241,8 +241,8 @@ class VisitorArm8 extends VisitorBase {
         Expression expectedAddr = e.getExpectedAddr();
         IntegerType type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
-        Register regExpected = e.getThread().newRegister(type);
-        Register regValue = e.getThread().newRegister(type);
+        Register regExpected = e.getFunction().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
@@ -256,7 +256,7 @@ class VisitorArm8 extends VisitorBase {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (e.isWeak()) {
-            Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", type);
+            Register statusReg = e.getFunction().newRegister("status(" + e.getGlobalId() + ")", type);
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
         }
@@ -284,7 +284,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
@@ -446,7 +446,7 @@ class VisitorArm8 extends VisitorBase {
         Expression value = e.getMemValue();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
+        Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         // The real scheme uses XOR instead of comparison, but both are semantically
         // equivalent and XOR harms performance substantially.
@@ -479,7 +479,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
@@ -505,7 +505,7 @@ class VisitorArm8 extends VisitorBase {
         Expression value = e.getMemValue();
         Expression address = e.getAddress();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreExclusive(address, expressions.makeBinary(dummy, op, value), true);
         Label label = newLabel("FakeDep");
@@ -531,7 +531,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
@@ -560,7 +560,7 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, expressions.makeBinary(dummy, e.getOp(), value), true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
@@ -591,14 +591,14 @@ class VisitorArm8 extends VisitorBase {
         IntegerType type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
 
-        Register regValue = e.getThread().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         Load load = newRMWLoadExclusiveWithMo(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, expressions.makeADD(regValue, value), true, ARMv8.extractStoreMoFromLKMo(mo));
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, zero), cauEnd);
@@ -633,8 +633,8 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(type);
-        Register retReg = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
+        Register retReg = e.getFunction().newRegister(type);
         Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
         Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, zero));
 
@@ -663,7 +663,7 @@ class VisitorArm8 extends VisitorBase {
         IntegerType type = types.getArchType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         // With this we miss a ctrl dependency, but this does not matter
         // because the load is an acquire one.

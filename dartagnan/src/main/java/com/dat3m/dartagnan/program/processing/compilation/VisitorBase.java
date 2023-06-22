@@ -8,7 +8,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
@@ -52,7 +55,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Register statusRegister = e.getThread().newRegister(resultRegister.getType());
+        Register statusRegister = e.getFunction().newRegister(resultRegister.getType());
 
         return eventSequence(
                 forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
@@ -155,7 +158,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummyReg, address, mo);
         RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
         return eventSequence(
