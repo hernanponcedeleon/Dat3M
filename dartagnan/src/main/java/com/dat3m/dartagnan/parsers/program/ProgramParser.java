@@ -2,12 +2,15 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
+
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
 
 public class ProgramParser {
 
@@ -44,13 +47,14 @@ public class ProgramParser {
     }
 
     private boolean needsSmack(File f) {
-        return needsClang(f);
+        return needsClang(f) || f.getPath().endsWith(".ll");
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
         	case "c":
         	case "i":
+        	case "ll":
 				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
@@ -73,8 +77,6 @@ public class ProgramParser {
                 optimisedFile.delete();
                 bplFile.delete();
 	            return p;
-            case "ll":
-                return new ParserLlvm().parse(CharStreams.fromString(raw));
             case "bpl":
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
             case "litmus":
@@ -87,8 +89,6 @@ public class ProgramParser {
         String name = file.getName();
         String format = name.substring(name.lastIndexOf(".") + 1);
         switch (format) {
-            case "ll":
-                return new ParserLlvm();
             case "bpl":
                 return new ParserBoogie();
             case "litmus":
