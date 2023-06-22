@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -11,10 +11,10 @@ public class RMWOp extends RMWAbstract {
 
     private final IOpBin op;
 
-    public RMWOp(IExpr address, Register register, IExpr value, IOpBin op) {
+    public RMWOp(Expression address, Register register, Expression value, IOpBin op) {
         super(address, register, value, Tag.Linux.MO_ONCE);
         this.op = op;
-        addFilters(Tag.Linux.NORETURN);
+        addTags(Tag.Linux.NORETURN);
     }
 
     private RMWOp(RMWOp other){
@@ -23,7 +23,7 @@ public class RMWOp extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return "atomic_" + op.toLinuxName() + "(" + value + ", " + address + ")\t### LKMM";
     }
 

@@ -1,61 +1,66 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
 
-public class Store extends MemEvent implements RegReaderData {
+import java.util.List;
+import java.util.Set;
 
-    protected ExprInterface value;
+public class Store extends AbstractMemoryCoreEvent {
 
-    public Store(IExpr address, ExprInterface value, String mo){
-    	super(address, mo);
+    protected Expression value;
+
+    public Store(Expression address, Expression value) {
+        super(address);
         this.value = value;
-        addFilters(Tag.WRITE);
+        addTags(Tag.WRITE);
     }
-    
-    protected Store(Store other){
+
+    protected Store(Store other) {
         super(other);
         this.value = other.value;
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs(){
-        return value.getRegs();
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     @Override
-    public String toString() {
-        return "store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.STORE));
     }
 
-    @Override
-    public ExprInterface getMemValue(){
+    public Expression getMemValue() {
         return value;
     }
 
-    @Override
-    public void setMemValue(ExprInterface value){
+    public void setMemValue(Expression value) {
         this.value = value;
+    }
+
+    public String defaultString() {
+        final MemoryOrder mo = getMetadata(MemoryOrder.class);
+        return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Store getCopy(){
+    public Store getCopy() {
         return new Store(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitStore(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitStore(this);
+    }
 }

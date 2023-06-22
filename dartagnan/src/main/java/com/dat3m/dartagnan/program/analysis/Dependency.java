@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
 import org.apache.logging.log4j.LogManager;
@@ -101,14 +100,12 @@ public final class Dependency {
             if (j != null) {
                 state.addAll(j);
             }
-            //collecting dependencies, mixing 'data' and 'addr'
+            //collecting all register dependencies
             Set<Register> registers = new HashSet<>();
-            if (event instanceof RegReaderData) {
-                registers.addAll(((RegReaderData) event).getDataRegs());
+            if (event instanceof RegReader regReader) {
+                regReader.getRegisterReads().forEach( read -> registers.add(read.register()));
             }
-            if (event instanceof MemEvent) {
-                registers.addAll(((MemEvent) event).getAddress().getRegs());
-            }
+
             if (!registers.isEmpty()) {
                 Map<Register, State> result = new HashMap<>();
                 for (Register register : registers) {

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.arch.ptx;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 public class RedOp extends RMWAbstract {
 
     private final IOpBin op;
-    public RedOp(IExpr address, Register register, IExpr value, IOpBin op, String mo) {
+    public RedOp(Expression address, Register register, Expression value, IOpBin op, String mo) {
         super(address, register, value, mo);
         this.op = op;
     }
@@ -19,8 +19,10 @@ public class RedOp extends RMWAbstract {
         this.op = other.op;
     }
 
+
+
     @Override
-    public String toString() {
+    public String defaultString() {
         return "red_" + op.toString() + "(" + value + ", " + address + ")";
     }
 

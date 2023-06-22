@@ -4,19 +4,20 @@ import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 
 public class LoopBegin extends CodeAnnotation {
 
-	public LoopBegin() { }
-	
-	protected LoopBegin(LoopBegin other) {
-		super(other);
-	}
+    public LoopBegin() {
+    }
 
-	@Override
-	public LoopBegin getCopy() {
-		return new LoopBegin(this);
-	}
+    protected LoopBegin(LoopBegin other) {
+        super(other);
+    }
 
-	@Override
-	public String toString() {
-		return "#__VERIFIER_loop_begin";
-	}
+    @Override
+    public LoopBegin getCopy() {
+        return new LoopBegin(this);
+    }
+
+    @Override
+    public String defaultString() {
+        return "#__VERIFIER_loop_begin";
+    }
 }

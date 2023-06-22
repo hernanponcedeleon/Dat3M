@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -12,10 +12,10 @@ import java.util.stream.Stream;
 
 public class FenceGraph extends StaticWMMGraph {
 
-    private final FilterAbstract fenceFilter;
+    private final Filter fenceFilter;
     private Map<Thread, List<EventData>> threadFencesMap;
 
-    public FenceGraph(FilterAbstract fenceFilter) {
+    public FenceGraph(Filter fenceFilter) {
         this.fenceFilter = fenceFilter;
     }
 
@@ -39,7 +39,7 @@ public class FenceGraph extends StaticWMMGraph {
             threadFencesMap.put(t, new ArrayList<>());
         }
 
-        model.getEventList().stream().filter(e -> fenceFilter.filter(e.getEvent()))
+        model.getEventList().stream().filter(e -> fenceFilter.apply(e.getEvent()))
                 .forEach(fence -> threadFencesMap.get(fence.getThread()).add(fence));
 
         for (List<EventData> fenceList : threadFencesMap.values()) {

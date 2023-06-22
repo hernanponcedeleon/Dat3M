@@ -141,8 +141,7 @@ public class BranchReordering implements ProgramProcessor {
             }
             for (MovableBranch branch : movables) {
                 for (Event e : branch.events) {
-                    if (e instanceof CondJump) {
-                        final CondJump jump = (CondJump) e;
+                    if (e instanceof CondJump jump) {
                         final MovableBranch targetBranch = eventBranchMap.get(jump.getLabel());
                         if (targetBranch != startBranch && successorMap.containsKey(targetBranch)) {
                             successorMap.get(branch).add(targetBranch);
@@ -176,6 +175,9 @@ public class BranchReordering implements ProgramProcessor {
             Event pred = null;
             for (Event next : reorderedEvents) {
                 next.setPredecessor(pred);
+                if (pred != null) {
+                    pred.setSuccessor(next);
+                }
                 pred = next;
             }
             assert pred == thread.getExit();

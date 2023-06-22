@@ -1,55 +1,59 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class Load extends MemEvent implements RegWriter {
+import java.util.List;
+
+public class Load extends AbstractMemoryCoreEvent implements RegWriter {
 
     protected final Register resultRegister;
 
-    public Load(Register register, IExpr address, String mo) {
-        super(address, mo);
+    public Load(Register register, Expression address) {
+        super(address);
         this.resultRegister = register;
-        addFilters(Tag.READ);
+        addTags(Tag.READ);
     }
-    
-    protected Load(Load other){
+
+    protected Load(Load other) {
         super(other);
         this.resultRegister = other.resultRegister;
     }
 
     @Override
-    public Register getResultRegister(){
+    public Register getResultRegister() {
         return resultRegister;
     }
 
     @Override
-    public String toString() {
-        return resultRegister + " = load(*" + address + (!mo.isEmpty() ? ", " + mo : "") + ")";
+    public String defaultString() {
+        final MemoryOrder mo = getMetadata(MemoryOrder.class);
+        return String.format("%s = load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
     }
 
     @Override
-    public ExprInterface getMemValue(){
-        return resultRegister;
+    public List<MemoryAccess> getMemoryAccesses() {
+        return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD));
     }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Load getCopy(){
+    public Load getCopy() {
         return new Load(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLoad(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLoad(this);
+    }
 }

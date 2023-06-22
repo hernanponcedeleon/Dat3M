@@ -1,63 +1,46 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.common.LoadBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_RELEASE;
-import static com.dat3m.dartagnan.program.event.Tag.READ;
 
-public class LlvmLoad extends MemEvent implements RegWriter {
+public class LlvmLoad extends LoadBase {
 
-    private final Register resultRegister;
 
-    public LlvmLoad(Register register, IExpr address, String mo) {
-        super(address, mo);
+    public LlvmLoad(Register register, Expression address, String mo) {
+        super(register, address, mo);
         Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
-    	Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
-    			getClass().getName() + " cannot have memory order: " + mo);
-        this.resultRegister = register;
-        addFilters(READ);
+        Preconditions.checkArgument(!mo.equals(MO_RELEASE) && !mo.equals(MO_ACQUIRE_RELEASE),
+                getClass().getName() + " cannot have memory order: " + mo);
     }
 
-    private LlvmLoad(LlvmLoad other){
+    private LlvmLoad(LlvmLoad other) {
         super(other);
-        this.resultRegister = other.resultRegister;
     }
 
     @Override
-    public Register getResultRegister(){
-        return resultRegister;
-    }
-
-    @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " = llvm_load(*" + address + ", " + mo + ")\t### LLVM";
     }
 
-    @Override
-    public ExprInterface getMemValue(){
-        return resultRegister;
-    }
-
-	// Unrolling
+    // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public LlvmLoad getCopy(){
+    public LlvmLoad getCopy() {
         return new LlvmLoad(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLlvmLoad(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitLlvmLoad(this);
+    }
 }

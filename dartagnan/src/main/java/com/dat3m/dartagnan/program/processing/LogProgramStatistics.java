@@ -27,12 +27,12 @@ public class LogProgramStatistics implements ProgramProcessor {
         int fenceCount = 0;
         for (Event e : program.getEvents()) {
             totalEventCount++;
-            if (e instanceof Store) {
+            if (e instanceof Init) {
+                initCount++;
+            } else if (e instanceof Store) {
                 storeCount++;
             } else if (e instanceof Load) {
                 loadCount++;
-            } else if (e instanceof Init) {
-                initCount++;
             } else if (e instanceof Fence) {
                 fenceCount++;
             }

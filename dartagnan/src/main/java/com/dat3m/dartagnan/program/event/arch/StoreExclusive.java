@@ -1,10 +1,9 @@
 package com.dat3m.dartagnan.program.event.arch;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.common.StoreBase;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -12,14 +11,14 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
     This event is common among ARMv8, RISCV, and PPC.
     It gets compiled down to a pair of RMWStoreExclusive + ExecutionStatus.
  */
-public class StoreExclusive extends Store implements RegWriter {
+public class StoreExclusive extends StoreBase implements RegWriter {
 
     private final Register register;
 
-    public StoreExclusive(Register register, IExpr address, ExprInterface value, String mo) {
+    public StoreExclusive(Register register, Expression address, Expression value, String mo) {
         super(address, value, mo);
         this.register = register;
-        addFilters(Tag.EXCL);
+        addTags(Tag.EXCL);
     }
 
     private StoreExclusive(StoreExclusive other) {
@@ -33,7 +32,7 @@ public class StoreExclusive extends Store implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return register + " <- store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
 

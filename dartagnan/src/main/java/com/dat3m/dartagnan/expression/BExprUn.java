@@ -7,10 +7,10 @@ import com.google.common.collect.ImmutableSet;
 
 public class BExprUn extends BExpr {
 
-    private final ExprInterface b;
+    private final Expression b;
     private final BOpUn op;
 
-    public BExprUn(BOpUn op, ExprInterface b) {
+    public BExprUn(BOpUn op, Expression b) {
         this.b = b;
         this.op = op;
     }
@@ -19,7 +19,7 @@ public class BExprUn extends BExpr {
         return op;
     }
 
-    public ExprInterface getInner() {
+    public Expression getInner() {
         return b;
     }
 

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
@@ -22,6 +22,8 @@ import java.io.File;
 
 public class ExceptionsTest {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
         ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
@@ -34,9 +36,9 @@ public class ExceptionsTest {
         ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         pb.initThread(0);
         Thread t = pb.build().getThreads().get(0);
-        t.newRegister("r1", -1);
+        t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
-        t.newRegister("r1", -1);
+        t.newRegister("r1", types.getIntegerType());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -62,7 +64,9 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
+        Register a = new Register("a", 0, types.getIntegerType(32));
+        Register b = new Register("b", 0, types.getIntegerType(64));
+        ExpressionFactory.getInstance().makeADD(a, b);
     }
 
     @Test(expected = NullPointerException.class)

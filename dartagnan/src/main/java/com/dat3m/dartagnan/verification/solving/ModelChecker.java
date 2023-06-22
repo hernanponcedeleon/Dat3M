@@ -124,7 +124,7 @@ public abstract class ModelChecker {
     private static void computeSpecificationFromProgramAssertions(Program program) {
         // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
         // For litmus tests, this function should not be called.
-        List<Event> assertions = program.getEvents().stream().filter(e -> e.is(ASSERTION)).collect(toList());
+        List<Event> assertions = program.getEvents().stream().filter(e -> e.hasTag(ASSERTION)).collect(toList());
         AbstractAssert spec = new AssertTrue();
         if(!assertions.isEmpty()) {
             spec = new AssertInline((Local)assertions.get(0));

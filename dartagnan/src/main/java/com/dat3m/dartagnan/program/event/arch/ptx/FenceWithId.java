@@ -1,25 +1,27 @@
 package com.dat3m.dartagnan.program.event.arch.ptx;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Fence;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
-import com.google.common.collect.ImmutableSet;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 
-public class FenceWithId extends Fence implements RegReaderData {
-    private final IExpr fenceID;
+import java.util.HashSet;
+import java.util.Set;
 
-    public FenceWithId(String name, IExpr fenceID) {
+public class FenceWithId extends Fence implements RegReader {
+    private final Expression fenceID;
+
+    public FenceWithId(String name, Expression fenceID) {
         super(name);
         this.fenceID = fenceID;
     }
 
-    public IExpr getFenceID() {
+    public Expression getFenceID() {
         return fenceID;
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs() {
-        return fenceID.getRegs();
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(fenceID, Register.UsageType.OTHER, new HashSet<>());
     }
 }

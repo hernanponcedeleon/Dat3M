@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.common.configuration.Configuration;
@@ -29,15 +29,17 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mustAlias(MemEvent a, MemEvent b) {
-        if (a.getThread() != b.getThread() || !a.getAddress().equals(b.getAddress())) {
+    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+
+        if (a.getThread() != b.getThread()
+                || !a.getAddress().equals(b.getAddress())) {
             return false;
         } else if (a == b) {
             return true;
         }
         // Normalize direction
         if (a.getGlobalId() > b.getGlobalId()) {
-            MemEvent temp = a;
+            MemoryCoreEvent temp = a;
             a = b;
             b = temp;
         }
@@ -63,7 +65,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     }
 
     @Override
-    public boolean mayAlias(MemEvent a, MemEvent b) {
+    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
         return true;
     }
 }

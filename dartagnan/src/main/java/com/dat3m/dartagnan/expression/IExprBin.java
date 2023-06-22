@@ -15,7 +15,9 @@ public class IExprBin extends IExpr {
     private final IOpBin op;
 
     public IExprBin(IExpr lhs, IOpBin op, IExpr rhs) {
-    	Preconditions.checkArgument(lhs.getPrecision() == rhs.getPrecision(), "The type of " + lhs + " and " + rhs + " does not match");
+        super(lhs.getType());
+    	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
+                "The types of %s and %s do not match.", lhs, rhs);
         this.lhs = lhs;
         this.rhs = rhs;
         this.op = op;
@@ -35,12 +37,7 @@ public class IExprBin extends IExpr {
 	public IConst reduce() {
     	BigInteger v1 = lhs.reduce().getValue();
     	BigInteger v2 = rhs.reduce().getValue();
-		return new IValue(op.combine(v1, v2), lhs.getPrecision());
-	}
-
-	@Override
-	public int getPrecision() {
-		return lhs.getPrecision();
+		return new IValue(op.combine(v1, v2), lhs.getType());
 	}
 	
 	@Override

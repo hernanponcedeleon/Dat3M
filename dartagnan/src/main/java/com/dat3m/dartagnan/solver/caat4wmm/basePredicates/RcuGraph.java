@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
-import com.dat3m.dartagnan.program.filter.FilterBasic;
 import com.dat3m.dartagnan.solver.caat.misc.EdgeDirection;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
@@ -16,9 +14,6 @@ import java.util.stream.Stream;
 
 // Linux specific graph that matches RCU-LOCK with RCU-UNLOCK
 public class RcuGraph extends StaticWMMGraph {
-
-    private final static FilterAbstract LOCK_FILTER = FilterBasic.get(Tag.Linux.RCU_LOCK);
-    private final static FilterAbstract UNLOCK_FILTER = FilterBasic.get(Tag.Linux.RCU_UNLOCK);
 
     private BiMap<EventData, EventData> lockUnlockMap;
     private BiMap<EventData, EventData> unlockLockMap;
@@ -43,9 +38,9 @@ public class RcuGraph extends StaticWMMGraph {
         Stack<EventData> lastLocks = new Stack<>();
         for (List<EventData> events : model.getThreadEventsMap().values()) {
             for (EventData e : events) {
-                if (LOCK_FILTER.filter(e.getEvent())) {
+                if (e.hasTag(Tag.Linux.RCU_LOCK)) {
                     lastLocks.push(e);
-                } else if (UNLOCK_FILTER.filter(e.getEvent())) {
+                } else if (e.hasTag(Tag.Linux.RCU_UNLOCK)) {
                     if (!lastLocks.isEmpty()) {
                         lockUnlockMap.put(lastLocks.pop(), e);
                     } else {
