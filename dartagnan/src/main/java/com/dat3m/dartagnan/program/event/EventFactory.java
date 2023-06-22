@@ -3,11 +3,13 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -104,8 +106,11 @@ public class EventFactory {
     }
 
     public static Init newInit(MemoryObject base, int offset) {
-        IValue offsetExpression = expressions.makeValue(BigInteger.valueOf(offset), base.getType());
-        return new Init(base, offset, expressions.makeADD(base, offsetExpression));
+        //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
+        // meaning that <addr> and <addr + 0> are treated differently.
+        final Expression address = offset == 0 ? base :
+                expressions.makeADD(base, expressions.makeValue(BigInteger.valueOf(offset), base.getType()));
+        return new Init(base, offset, address);
     }
 
     // ------------------------------------------ Local events ------------------------------------------
@@ -633,6 +638,33 @@ public class EventFactory {
 
         public static Fence newLwSyncBarrier() {
             return newFence(LWSYNC);
+        }
+    }
+
+    // =============================================================================================
+    // ============================================ PTX ============================================
+    // =============================================================================================
+    public static class PTX {
+        private PTX() {}
+
+        public static AtomOp newAtomOp(Expression address, Register register, Expression value,
+                                             IOpBin op, String mo, String scope) {
+            // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
+            AtomOp atom = new AtomOp(address, register, value, op, mo);
+            atom.addTags(scope);
+            return atom;
+        }
+
+        public static RedOp newRedOp(Expression address, Register register, Expression value,
+                                           IOpBin op, String mo, String scope) {
+            // PTX (currently) only generates memory orders ACQ_REL and RLX for red.
+            RedOp red = new RedOp(address, register, value, op, mo);
+            red.addTags(scope);
+            return red;
+        }
+
+        public static FenceWithId newFenceWithId(String name, Expression fenceId) {
+            return new FenceWithId(name, fenceId);
         }
     }
 

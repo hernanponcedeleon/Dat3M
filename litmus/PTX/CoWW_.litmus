@@ -1,0 +1,10 @@
+PTX CoWW
+"Coherence, Write-Write"
+{
+x = 0;
+}
+ P0@cta 0,gpu 0             ;
+ st.weak x, 1               ;
+ st.weak x, 2               ;
+~exists
+(x == 1)

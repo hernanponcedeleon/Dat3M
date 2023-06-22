@@ -1,0 +1,13 @@
+PTX SB+acq_rel-cta
+"SB is allowed because cause-base not hold and thus not synchronize"
+{
+x=0;
+y=0;
+P0:r1=0;
+P1:r2=0;
+}
+ P0@cta 0,gpu 0                | P1@cta 0,gpu 0         ;
+ st.release.cta x, 1           | st.release.cta y, 1    ;
+ fence.acq_rel.cta             | fence.acq_rel.cta      ;
+ ld.acquire.cta r1, y          | ld.acquire.cta r2, x   ;
+exists (P0:r1 == 0 /\ P1:r2 == 0)

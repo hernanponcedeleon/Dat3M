@@ -480,11 +480,15 @@ class VisitorRISCV extends VisitorBase {
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
             case Tag.Linux.AFTER_UNLOCK_LOCK:
-                optionalMemoryBarrier = RISCV.newRWRWFence();
+				optionalMemoryBarrier = RISCV.newRWRWFence();
+				break;
+            // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
+            case Tag.Linux.BARRIER:
+                optionalMemoryBarrier = null;
                 break;
-            default:
-                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-        }
+			default:
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+		}
 
         return eventSequence(
                 optionalMemoryBarrier

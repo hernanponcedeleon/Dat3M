@@ -1,0 +1,15 @@
+PTX Cause-base-weak
+"https://github.com/NVlabs/mixedproxy/issues/4"
+{
+x=0;
+f1=0;
+f2=0;
+P1:r1=0;
+P2:r1=0;P2:r2=0;P2:r3=0;
+}
+ P0@cta 0,gpu 0         | P1@cta 1,gpu 0          | P2@cta 2,gpu 0         ;
+ st.weak x, 1           | st.release.gpu x, 2     | ld.acquire.sys r2, f1  ;
+                        | ld.weak r1, x           | ld.acquire.sys r3, f2  ;
+ st.release.sys f1, 1   | st.release.sys f2, 1    | ld.weak r4, x   ;
+exists
+(P1:r1 == 1 /\ P2:r2 == 1 /\ P2:r3 == 1 /\ P2:r4 == 2)

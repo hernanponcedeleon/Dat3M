@@ -688,10 +688,14 @@ public class VisitorPower extends VisitorBase {
             case Tag.Linux.AFTER_UNLOCK_LOCK:
                 optionalMemoryBarrier = Power.newSyncBarrier();
                 break;
-            default:
-                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-        }
-
+            // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
+            case Tag.Linux.BARRIER:
+                optionalMemoryBarrier = null;
+                break;
+			default:
+				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+		}
+		
         return eventSequence(
                 optionalMemoryBarrier
         );

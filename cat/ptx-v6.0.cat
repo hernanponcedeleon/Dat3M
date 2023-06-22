@@ -1,0 +1,73 @@
+PTX
+(* NVIDIA. Parallel Thread Execution ISA Version 6.0 *)
+
+// Base relations:
+// sr: same-scope
+// sync_barrier: synchronize by barriers with same logical barrier resource (barID)
+// sync_fence: synchronize by morally strong fence.sc
+
+// Scope Tags:
+// CTA: Cooperative thread array, is an array of threads that execute a kernel concurrently or in parallel.
+//      The CTA scope is the set of all threads executing in the same CTA as the current thread.
+// GPU: Graphics processing unit. The GPU scope is the set of all threads executing in the same cluster as the current thread.
+// SYS: System. The SYS scope is the set of all threads in the current program.
+
+(*******************)
+(*   Auxiliaries   *)
+(*******************)
+
+// Explicitly add transitivity for coherence since the co in PTX is not total
+let co = co+
+
+(* Events *)
+let strong-write = W & (RLX | REL)
+let strong-read = R & (RLX | ACQ)
+let strong-m = strong-write | strong-read
+let strong-operation = strong-m | F
+
+(* Relations *)
+// The operations are related in program order, or each operation is strong and
+// specifies a scope that includes the thread executing the other operation.
+let ms1 = (po | po^-1) | ([strong-operation]; sr; [strong-operation])
+// If both are memory operations, then they overlap completely
+let ms2 = ((M * M) & loc) | ((_ * _) \ (M * M))
+let morally-strong = (ms1 & ms2) \ id
+
+// The ASPLOS'19 paper uses the definition below
+// let rec observation = (morally-strong & rf) | (observation; rmw; observation)
+// but the ISCA'22 paper claims the one below is equivalent, thus we avoid the recursion
+let observation = (morally-strong & rf) | rmw
+
+let release-pattern = ([W & REL]; po-loc?; [strong-write]) | ([F & ACQ_REL]; po; [strong-write])
+
+let acquire-pattern = ([strong-read]; po-loc?; [R & ACQ]) | ([strong-read]; po; [F & ACQ_REL])
+
+let sync = morally-strong & (release-pattern; observation; acquire-pattern)
+let cause-base = po?; ((sync | sync_fence | sync_barrier); po?)+
+let cause = cause-base | (observation; (cause-base | po-loc))
+
+(******************************)
+(*  PTX Memory Model Axioms   *)
+(******************************)
+
+(* Axiom Coherence *)
+empty ((([W]; cause; [W]) & loc) \ co) as axiom-Coherence
+// Make sure that all morally strong same-loc writes are related by co in either direction
+empty (([W]; morally-strong; [W]) & loc) \ (co | co^-1) as axiom-Coherence2
+
+(* Axiom FenceSC *)
+// This is equivalent to: irreflexive (sync_fence ; cause) as axiom-FenceSC
+empty (([F & SC]; cause; [F & SC]) \ sync_fence) as axiom-FenceSC
+
+(* Axiom Atomicity *)
+empty (((morally-strong & fr); (morally-strong & co)) & rmw) as axiom-Atomicity
+
+(* Axiom No-Thin-Air *)
+let dep = addr | data | ctrl
+acyclic (rf | dep) as axiom-NoThinAir
+
+(* Axiom SC-per-Location *)
+acyclic ((morally-strong & (rf | co | fr)) | po-loc) as axiom-ScPerLocation
+
+(* Axiom Causality *)
+irreflexive ((rf | fr); cause) as axiom-Causality
