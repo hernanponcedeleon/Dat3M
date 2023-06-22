@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class Thread {
 
-	private String name;
+    private String name;
     private final int id;
     private final Event entry;
     private Event exit;
@@ -79,16 +80,16 @@ public class Thread {
         return registers.get(name);
     }
 
-    public Register newRegister(int precision) {
-        return newRegister("DUMMY_REG_" + dummyCount++, precision);
+    public Register newRegister(IntegerType type) {
+        return newRegister("DUMMY_REG_" + dummyCount++, type);
     }
 
-    public Register newRegister(String name, int precision){
-        if(registers.containsKey(name)){
+    public Register newRegister(String name, IntegerType type) {
+        if (registers.containsKey(name)) {
             throw new MalformedProgramException("Register " + id + ":" + name + " already exists");
         }
-        Register register = new Register(name, id, precision);
-        registers.put(register.getName(), register);
+        Register register = new Register(name, id, type);
+        registers.put(name, register);
         return register;
     }
 
@@ -101,18 +102,14 @@ public class Thread {
     }
 
     public void append(Event event){
-        exit.setSuccessor(event);
-        event.setThread(this);
-        updateExit(event);
+        exit.insertAfter(event);
     }
 
     public void updateExit(Event event){
         exit = event;
-        Event next = exit.getSuccessor();
-        while(next != null){
+        Event next;
+        while((next = exit.getSuccessor()) != null){
             exit = next;
-            exit.setThread(this);
-            next = next.getSuccessor();
         }
     }
 
@@ -130,5 +127,10 @@ public class Thread {
         }
 
         return id == ((Thread) obj).id;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("T%d:%s", id, name);
     }
 }

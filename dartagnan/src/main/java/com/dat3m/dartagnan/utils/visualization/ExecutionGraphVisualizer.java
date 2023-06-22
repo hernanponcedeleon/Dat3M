@@ -1,14 +1,15 @@
 package com.dat3m.dartagnan.utils.visualization;
 
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,7 +41,7 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private Map<BigInteger, IExpr> addresses = new HashMap<BigInteger, IExpr>();
+    private final Map<BigInteger, Expression> addresses = new HashMap<>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -70,9 +71,10 @@ public class ExecutionGraphVisualizer {
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) throws IOException {
         for (EventData data : model.getEventList()) {
             if (data.isMemoryEvent()) {
-                MemEvent m = (MemEvent) data.getEvent();
-                if (!(m.getAddress() instanceof Register)) {
-                    addresses.putIfAbsent(data.getAccessedAddress(), m.getAddress());
+                MemoryCoreEvent m = (MemoryCoreEvent) data.getEvent();
+                Expression addr = m.getAddress();
+                if (!(addr instanceof Register)) {
+                    addresses.putIfAbsent(data.getAccessedAddress(), addr);
                 }
             }
         }
@@ -87,7 +89,7 @@ public class ExecutionGraphVisualizer {
     }
 
     private boolean ignore(EventData e) {
-        return !e.getEvent().hasCLine() && !e.isInit();
+        return !e.getEvent().hasMetadata(SourceLocation.class) && !e.isInit();
     }
 
 
@@ -163,7 +165,7 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
-                .stream().filter(e -> e.is(Tag.VISIBLE)).collect(Collectors.toList());
+                .stream().filter(e -> e.hasTag(Tag.VISIBLE)).collect(Collectors.toList());
         if (threadEvents.size() <= 1) {
             return this;
         }
@@ -193,7 +195,7 @@ public class ExecutionGraphVisualizer {
     private String eventToNode(EventData e, ExecutionModel model) {
         if (e.isInit()) {
             return String.format("\"I(%s, %d)\"", addresses.get(e.getAccessedAddress()), e.getValue());
-        } else if (!e.getEvent().hasCLine()) {
+        } else if (!e.getEvent().hasMetadata(SourceLocation.class)) {
             // Special write of each thread
             int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
             if (e.getLocalId() <= threadSize / 2) {
@@ -207,11 +209,11 @@ public class ExecutionGraphVisualizer {
         if (e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
             BigInteger value = e.getValue();
-            String mo = ((MemEvent) e.getEvent()).getMo();
-            mo = mo.isEmpty() ? mo : ", " + mo;
+            MemoryOrder mo = e.getEvent().getMetadata(MemoryOrder.class);
+            String moString = mo == null ? "" : ", " + mo.value();
             tag = e.isWrite() ?
-                    String.format("W(%s, %d%s)", address, value, mo) :
-                    String.format("%s = R(%s%s)", value, address, mo);
+                    String.format("W(%s, %d%s)", address, value, moString) :
+                    String.format("%s = R(%s%s)", value, address, moString);
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");

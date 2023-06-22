@@ -1,15 +1,19 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
+public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
+
+    protected final TypeFactory types = TypeFactory.getInstance();
+    protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Override
-    public ExprInterface visit(Atom atom) {
-        return new Atom(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
+    public Expression visit(Atom atom) {
+        return expressions.makeBinary(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
     }
 
     @Override
@@ -19,12 +23,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public BExpr visit(BExprBin bBin) {
-        return new BExprBin(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
+        return expressions.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
     }
 
     @Override
     public BExpr visit(BExprUn bUn) {
-        return new BExprUn(bUn.getOp(), bUn.getInner().visit(this));
+        return expressions.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
     }
 
     @Override
@@ -39,17 +43,20 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
 
     @Override
     public IExpr visit(IExprBin iBin) {
-        return new IExprBin((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
+        return expressions.makeBinary(iBin.getLHS().visit(this), iBin.getOp(), iBin.getRHS().visit(this));
     }
 
     @Override
     public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
+        return expressions.makeUnary(iUn.getOp(), iUn.getInner().visit(this), iUn.getType());
     }
 
     @Override
-    public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), (IExpr)ifExpr.getTrueBranch().visit(this), (IExpr)ifExpr.getFalseBranch().visit(this));
+    public Expression visit(IfExpr ifExpr) {
+        return expressions.makeConditional(
+                ifExpr.getGuard().visit(this),
+                ifExpr.getTrueBranch().visit(this),
+                ifExpr.getFalseBranch().visit(this));
     }
 
     @Override
@@ -58,17 +65,17 @@ public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface
     }
 
     @Override
-    public ExprInterface visit(Register reg) {
+    public Expression visit(Register reg) {
         return reg;
     }
 
     @Override
-    public ExprInterface visit(MemoryObject address) {
+    public Expression visit(MemoryObject address) {
         return address;
     }
 
     @Override
-    public ExprInterface visit(Location location) {
+    public Expression visit(Location location) {
         return location;
     }
 }

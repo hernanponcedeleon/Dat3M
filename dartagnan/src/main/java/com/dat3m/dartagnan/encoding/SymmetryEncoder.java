@@ -125,7 +125,7 @@ public class SymmetryEncoder implements Encoder {
         for (Tuple t : maySet) {
             Event a = t.getFirst();
             Event b = t.getSecond();
-            if (!a.is(Tag.C11.PTHREAD) && !b.is(Tag.C11.PTHREAD)
+            if (!a.hasTag(Tag.C11.PTHREAD) && !b.hasTag(Tag.C11.PTHREAD)
                     && a.getThread() == t1 && symmClass.contains(b.getThread())) {
                 t1Tuples.add(t);
             }

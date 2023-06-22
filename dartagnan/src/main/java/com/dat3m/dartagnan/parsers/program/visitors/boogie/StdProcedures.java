@@ -11,8 +11,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-
 public class StdProcedures {
 
     public static List<String> STDPROCEDURES = Arrays.asList(
@@ -50,7 +48,7 @@ public class StdProcedures {
         if (name.equals("get_my_tid")) {
             String registerName = ctx.call_params().Ident(0).getText();
             Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
-            IValue tid = new IValue(BigInteger.valueOf(visitor.threadCount), getArchPrecision());
+            IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
             visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
             return;
         }
@@ -124,7 +122,7 @@ public class StdProcedures {
     }
 
     private static void __assert_fail(VisitorBoogie visitor) {
-        visitor.addAssertion(IValue.ZERO);
+        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getArchType()));
     }
 
 }

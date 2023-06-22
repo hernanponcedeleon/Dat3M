@@ -1,25 +1,23 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.expression.INonDetTypes;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import static com.dat3m.dartagnan.expression.INonDetTypes.*;
+import java.util.HashSet;
+import java.util.Set;
 
-public class Local extends Event implements RegWriter, RegReaderData {
+public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     protected final Register register;
-    protected ExprInterface expr;
+    protected Expression expr;
 
-    public Local(Register register, ExprInterface expr) {
+    public Local(Register register, Expression expr) {
         this.register = register;
         this.expr = expr;
     }
@@ -30,11 +28,11 @@ public class Local extends Event implements RegWriter, RegReaderData {
         this.expr = other.expr;
     }
 
-    public ExprInterface getExpr() {
+    public Expression getExpr() {
         return expr;
     }
 
-    public void setExpr(ExprInterface expr) {
+    public void setExpr(Expression expr) {
         this.expr = expr;
     }
 
@@ -44,14 +42,14 @@ public class Local extends Event implements RegWriter, RegReaderData {
     }
 
     @Override
-    public ImmutableSet<Register> getDataRegs() {
-        return expr.getRegs();
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(expr, Register.UsageType.DATA, new HashSet<>());
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         String str = register + " <- " + expr;
-        if (this.is(Tag.Std.MALLOC)) {
+        if (this.hasTag(Tag.Std.MALLOC)) {
             str = str + "\t### " + Tag.Std.MALLOC;
         }
         return str;
@@ -59,28 +57,9 @@ public class Local extends Event implements RegWriter, RegReaderData {
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        BooleanFormula enc = super.encodeExec(context);
-        Formula expression = context.encodeIntegerExpressionAt(expr, this);
-        if (expr instanceof INonDet) {
-            INonDet nonDet = (INonDet) expr;
-            long min = nonDet.getMin();
-            long max = nonDet.getMax();
-            if (expression instanceof BitvectorFormula) {
-                INonDetTypes type = nonDet.getType();
-                boolean signed = type.equals(INT) || type.equals(LONG) || type.equals(SHORT) || type.equals(CHAR);
-                BitvectorFormulaManager bvmgr = context.getFormulaManager().getBitvectorFormulaManager();
-                enc = bmgr.and(enc,
-                        bvmgr.greaterOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(nonDet.getPrecision(), min), signed),
-                        bvmgr.lessOrEquals((BitvectorFormula) expression, bvmgr.makeBitvector(nonDet.getPrecision(), max), signed));
-            } else {
-                IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
-                enc = bmgr.and(enc,
-                        imgr.greaterOrEquals((NumeralFormula.IntegerFormula) expression, imgr.makeNumber(min)),
-                        imgr.lessOrEquals((NumeralFormula.IntegerFormula) expression, imgr.makeNumber(max)));
-            }
-        }
-        return bmgr.and(enc, context.equal(context.result(this), expression));
+        return context.getBooleanFormulaManager().and(
+                super.encodeExec(context),
+                context.equal(context.result(this), context.encodeIntegerExpressionAt(expr, this)));
     }
 
     // Unrolling

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -10,10 +10,11 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -346,9 +347,9 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitFences(Relation rel, FilterAbstract fenceSet) {
+        public Void visitFences(Relation rel, Filter fenceSet) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-            List<Event> fences = program.getEvents().stream().filter(fenceSet::filter).collect(toList());
+            List<Event> fences = program.getEvents().stream().filter(fenceSet::apply).collect(toList());
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
                 Event e1 = tuple.getFirst();
@@ -436,7 +437,7 @@ public class WmmEncoder implements Encoder {
             for (RMWStoreExclusive store : program.getEvents(RMWStoreExclusive.class)) {
                 BooleanFormula storeExec = bmgr.makeFalse();
                 for (Tuple t : mayIn.apply(store)) {
-                    MemEvent load = (MemEvent) t.getFirst();
+                    MemoryCoreEvent load = (MemoryCoreEvent) t.getFirst();
                     BooleanFormula sameAddress = context.sameAddress(load, store);
                     // Encode if load and store form an exclusive pair
                     BooleanFormula isPair = exclPair(load, store);
@@ -473,9 +474,9 @@ public class WmmEncoder implements Encoder {
             // ---------- Encode actual RMW relation ----------
             EncodingContext.EdgeEncoder edge = context.edge(rmw);
             for (Tuple tuple : encodeSets.get(rmw)) {
-                MemEvent load = (MemEvent) tuple.getFirst();
-                MemEvent store = (MemEvent) tuple.getSecond();
-                if (!load.is(Tag.EXCL) || !(store instanceof RMWStoreExclusive)) {
+                MemoryCoreEvent load = (MemoryCoreEvent) tuple.getFirst();
+                MemoryCoreEvent store = (MemoryCoreEvent) tuple.getSecond();
+                if (!load.hasTag(Tag.EXCL) || !(store instanceof RMWStoreExclusive)) {
                     // Non-LL/SC type RMWs always hold
                     enc.add(bmgr.equivalence(edge.encode(tuple), context.execution(load, store)));
                 } else {
@@ -505,7 +506,7 @@ public class WmmEncoder implements Encoder {
             for (Tuple tuple : encodeSets.get(loc)) {
                 enc.add(bmgr.equivalence(edge.encode(tuple), bmgr.and(
                         execution(tuple),
-                        context.sameAddress((MemEvent) tuple.getFirst(), (MemEvent) tuple.getSecond())
+                        context.sameAddress((MemoryCoreEvent) tuple.getFirst(), (MemoryCoreEvent) tuple.getSecond())
                 )));
             }
             return null;
@@ -513,18 +514,18 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitReadFrom(Relation rf) {
-            Map<MemEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
+            Map<MemoryEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
             EncodingContext.EdgeEncoder edge = context.edge(rf);
             for (Tuple tuple : ra.getKnowledge(rf).getMaySet()) {
-                MemEvent w = (MemEvent) tuple.getFirst();
-                MemEvent r = (MemEvent) tuple.getSecond();
+                MemoryCoreEvent w = (MemoryCoreEvent) tuple.getFirst();
+                MemoryCoreEvent r = (MemoryCoreEvent) tuple.getSecond();
                 BooleanFormula e = edge.encode(tuple);
                 BooleanFormula sameAddress = context.sameAddress(w, r);
                 BooleanFormula sameValue = context.equal(context.value(w), context.value(r));
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(tuple), sameAddress, sameValue)));
             }
-            for (MemEvent r : edgeMap.keySet()) {
+            for (MemoryEvent r : edgeMap.keySet()) {
                 List<BooleanFormula> edges = edgeMap.get(r);
                 if (GlobalSettings.ALLOW_MULTIREADS) {
                     enc.add(bmgr.implication(context.execution(r), bmgr.or(edges)));
@@ -547,10 +548,10 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitCoherence(Relation co) {
             boolean idl = !context.useSATEncoding;
-            List<MemEvent> allWrites = program.getEvents(MemEvent.class).stream()
-                    .filter(e -> e.is(WRITE))
+            List<MemoryCoreEvent> allWrites = program.getEvents(MemoryCoreEvent.class).stream()
+                    .filter(e -> e.hasTag(WRITE))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
-                    .collect(toList());
+                    .toList();
             EncodingContext.EdgeEncoder edge = context.edge(co);
             RelationAnalysis.Knowledge k = ra.getKnowledge(co);
             Set<Tuple> transCo = idl ? ra.findTransitivelyImpliedCo(co) : null;
@@ -558,15 +559,15 @@ public class WmmEncoder implements Encoder {
             if (idl) {
                 // ---- Encode clock conditions (init = 0, non-init > 0) ----
                 NumeralFormula.IntegerFormula zero = imgr.makeNumber(0);
-                for (MemEvent w : allWrites) {
+                for (MemoryCoreEvent w : allWrites) {
                     NumeralFormula.IntegerFormula clock = context.memoryOrderClock(w);
-                    enc.add(w.is(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
+                    enc.add(w.hasTag(INIT) ? imgr.equal(clock, zero) : imgr.greaterThan(clock, zero));
                 }
             }
             // ---- Encode coherences ----
             for (int i = 0; i < allWrites.size() - 1; i++) {
-                MemEvent x = allWrites.get(i);
-                for (MemEvent z : allWrites.subList(i + 1, allWrites.size())) {
+                MemoryCoreEvent x = allWrites.get(i);
+                for (MemoryCoreEvent z : allWrites.subList(i + 1, allWrites.size())) {
                     Tuple xz = new Tuple(x, z);
                     Tuple zx = xz.getInverse();
                     boolean forwardPossible = k.containsMay(xz);
@@ -584,14 +585,14 @@ public class WmmEncoder implements Encoder {
                         enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
                     }
                     if (idl) {
-                        enc.add(bmgr.implication(coF, x.is(INIT) || transCo.contains(xz) ? bmgr.makeTrue() :
+                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(xz) ? bmgr.makeTrue() :
                                 imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));
-                        enc.add(bmgr.implication(coB, z.is(INIT) || transCo.contains(zx) ? bmgr.makeTrue() :
+                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(zx) ? bmgr.makeTrue() :
                                 imgr.lessThan(context.memoryOrderClock(z), context.memoryOrderClock(x))));
                     } else {
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
                         if (!k.containsMust(xz) && !k.containsMust(zx)) {
-                            for (MemEvent y : allWrites) {
+                            for (MemoryEvent y : allWrites) {
                                 Tuple xy = new Tuple(x, y);
                                 Tuple yz = new Tuple(y, z);
                                 if (forwardPossible && k.containsMay(xy) && k.containsMay(yz)) {
@@ -622,8 +623,8 @@ public class WmmEncoder implements Encoder {
                 if (k.containsMust(tuple)) {
                     sameId = bmgr.makeTrue();
                 } else {
-                    IExpr id1 = e1.getFenceID();
-                    IExpr id2 = e2.getFenceID();
+                    Expression id1 = e1.getFenceID();
+                    Expression id2 = e2.getFenceID();
                     sameId = context.equal(context.encodeIntegerExpressionAt(id1, e1),
                             context.encodeIntegerExpressionAt(id2, e2));
                 }
@@ -638,9 +639,9 @@ public class WmmEncoder implements Encoder {
         public Void visitSyncFence(Relation syncFence) {
             boolean idl = !context.useSATEncoding;
             List<Fence> allFenceSC = program.getEvents(Fence.class).stream()
-                    .filter(e -> e.is(Tag.PTX.SC))
+                    .filter(e -> e.hasTag(Tag.PTX.SC))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
-                    .collect(toList());
+                    .toList();
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;

@@ -1,68 +1,73 @@
 package com.dat3m.dartagnan.program.event.arch.lisa;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.RMW;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
-public class RMW extends MemEvent implements RegWriter, RegReaderData {
+public class RMW extends SingleAccessMemoryEvent implements RegWriter {
 
     private final Register resultRegister;
-    private final IExpr value;
+    private final Expression value;
     
 
-    public RMW(IExpr address, Register register, IExpr value, String mo) {
+    public RMW(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
-		this.resultRegister = register;
+        this.resultRegister = register;
         this.value = value;
-        addFilters(READ, WRITE, RMW);
+        addTags(READ, WRITE, RMW);
     }
 
-    private RMW(RMW other){
+    private RMW(RMW other) {
         super(other);
-		this.resultRegister = other.resultRegister;
+        this.resultRegister = other.resultRegister;
         this.value = other.value;
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := rmw[" + mo + "](" + value + ", " + address + ")";
     }
 
-    public ExprInterface getMemValue(){
+    public Expression getMemValue(){
         return value;
     }
 
-	@Override
-	public ImmutableSet<Register> getDataRegs() {
-		return value.getRegs();
-	}
+    @Override
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(value, Register.UsageType.DATA, super.getRegisterReads());
+    }
 
-	@Override
-	public Register getResultRegister() {
-		return resultRegister;
-	}
+    @Override
+    public Register getResultRegister() {
+        return resultRegister;
+    }
+
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
 
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public RMW getCopy(){
+    public RMW getCopy() {
         return new RMW(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMW(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitRMW(this);
+    }
 }

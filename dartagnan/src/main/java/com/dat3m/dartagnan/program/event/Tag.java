@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.event;
 
-import java.util.Set;
-
 import com.dat3m.dartagnan.program.event.core.Event;
+
+import java.util.Set;
 
 /*
     Tags can be attached to any event.
@@ -298,11 +298,11 @@ public final class Tag {
         }
 
         public static String getScopeTag(Event e) {
-            return getScopeTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+            return getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
         }
     
         public static String getProxyTag(Event e) {
-            return getProxyTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+            return getProxyTags().stream().filter(e::hasTag).findFirst().orElse("");
         }
         
         public static String loadMO(String mo) {

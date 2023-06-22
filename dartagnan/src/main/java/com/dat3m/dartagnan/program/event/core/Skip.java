@@ -2,33 +2,33 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class Skip extends Event {
-	
-	public Skip() {
-	}
+public class Skip extends AbstractEvent {
 
-	protected Skip(Skip other){
-		super(other);
-	}
+    public Skip() {
+    }
 
-	@Override
-	public String toString() {
-		return "skip";
-	}
+    protected Skip(Skip other) {
+        super(other);
+    }
 
-	// Unrolling
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public String defaultString() {
+        return "skip";
+    }
 
-	@Override
-	public Skip getCopy(){
-		return new Skip(this);
-	}
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public Skip getCopy() {
+        return new Skip(this);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitSkip(this);
-	}
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitSkip(this);
+    }
 }

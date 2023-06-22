@@ -5,14 +5,19 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Result;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.Model;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,7 +40,7 @@ import static java.lang.String.valueOf;
 
 @Options
 public class WitnessBuilder {
-	
+
 	private final EncodingContext context;
 	private final ProverEnvironment prover;
 	private final String type;
@@ -53,7 +58,7 @@ public class WitnessBuilder {
     // =====================================================================
 
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
-	
+
 	private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r) {
 		context = checkNotNull(c);
 		prover = checkNotNull(p);
@@ -82,7 +87,7 @@ public class WitnessBuilder {
 		graph.addAttribute(PROGRAMFILE.toString(), originalProgramFilePath);
 		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(originalProgramFilePath)));
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
-		
+
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 		df.setTimeZone(TimeZone.getTimeZone("UTC"));
 		// "If the timestamp is in UTC time, it ends with a 'Z'."
@@ -93,23 +98,22 @@ public class WitnessBuilder {
 		v0.addAttribute("entry", "true");
 		Node v1 = new Node("N1");
 		Node v2 = new Node("N2");
-		
-		Edge edge = new Edge(v0, v1); 
+
+		Edge edge = new Edge(v0, v1);
 		edge.addAttribute(CREATETHREAD.toString(), "0");
 		graph.addEdge(edge);
-		edge = new Edge(v1, v2); 
+		edge = new Edge(v1, v2);
 		edge.addAttribute(THREADID.toString(), "0");
 		edge.addAttribute(ENTERFUNCTION.toString(), "main");
 		graph.addEdge(edge);
-		
+
 		int nextNode = 2;
 		int threads = 1;
-		
+
 		if(type.equals("correctness")) {
 			return graph;
 		}
 
-		FormulaManager m = context.getFormulaManager();
 		try (Model model = prover.getModel()) {
 			List<Event> execution = reOrderBasedOnAtomicity(context.getTask().getProgram(), getSCExecutionOrder(model));
 
@@ -117,18 +121,19 @@ public class WitnessBuilder {
 				Event e = execution.get(i);
 				if (i + 1 < execution.size()) {
 					Event next = execution.get(i + 1);
-					if (e.getCLine() == next.getCLine() && e.getThread() == next.getThread()) {
+					if (e.hasEqualMetadata(next, SourceLocation.class) && e.getThread() == next.getThread()) {
 						continue;
 					}
 				}
 
+				int cLine = e.hasMetadata(SourceLocation.class) ? e.getMetadata(SourceLocation.class).lineNumber() : -1;
 				edge = new Edge(new Node("N" + nextNode), new Node("N" + (nextNode + 1)));
 				edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
-				edge.addAttribute(STARTLINE.toString(), valueOf(e.getCLine()));
-				
+				edge.addAttribute(STARTLINE.toString(), valueOf(cLine));
+
 				// End is also WRITE and PTHREAD, but it does not have
 				// CLines and thus won't create an edge (as expected)
-				if (e.hasFilter(WRITE) && e.hasFilter(PTHREAD)) {
+				if (e.hasTag(WRITE) && e.hasTag(PTHREAD)) {
 					edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
 					threads++;
 				}
@@ -153,7 +158,7 @@ public class WitnessBuilder {
 				graph.addEdge(edge);
 
 				nextNode++;
-				if (e.hasFilter(Tag.ASSERTION)) {
+				if (e.hasTag(Tag.ASSERTION)) {
 					break;
 				}
 			}
@@ -163,40 +168,39 @@ public class WitnessBuilder {
 		graph.getNode("N" + nextNode).addAttribute("violation", "true");
 		return graph;
 	}
-	
+
 	private List<Event> getSCExecutionOrder(Model model) {
-		List<Event> execEvents = new ArrayList<>();
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
-		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e))) &&  e.hasCLine();
-		execEvents.addAll(context.getTask().getProgram().getEvents(Init.class).stream().filter(executedCEvents).collect(Collectors.toList()));
-		execEvents.addAll(context.getTask().getProgram().getEvents().stream().filter(executedCEvents).collect(Collectors.toList()));
+		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e)))
+				&& e.hasMetadata(SourceLocation.class);
+		List<Event> execEvents = context.getTask().getProgram().getEvents().stream().filter(executedCEvents).toList();
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
-			if(e instanceof MemEvent && ((MemEvent)e).getMemValue() instanceof BConst && !((BConst)((MemEvent)e).getMemValue()).getValue()) {
+			if(e instanceof Store store && store.getMemValue() instanceof BConst bVal && bVal.isFalse()) {
 				continue;
 			}
-        	BigInteger var = model.evaluate(context.clockVariable("hb", e));
-        	if(var != null) {
-        		map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
-        	}
+			BigInteger var = model.evaluate(context.clockVariable("hb", e));
+			if(var != null) {
+				map.computeIfAbsent(var.intValue(), x -> new ArrayList<>()).add(e);
+			}
         }
 
         List<Event> exec = map.keySet().stream().sorted()
 				.flatMap(key -> map.get(key).stream()).collect(Collectors.toList());
         return exec.isEmpty() ? execEvents : exec;
 	}
-	
+
 	private List<Event> reOrderBasedOnAtomicity(Program program, List<Event> order) {
 		List<Event> result = new ArrayList<>();
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
 		List<List<Event>> atomicBlocks = program.getEvents().stream()
-				.filter(e -> e.is(Tag.SVCOMP.SVCOMPATOMIC))
+				.filter(e -> e.hasTag(Tag.SVCOMP.SVCOMPATOMIC))
 				.map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
 						collect(Collectors.toList()))
-				.collect(Collectors.toList());
+				.toList();
 
 		for (Event next : order) {
 			if (processedEvents.contains(next)) {
@@ -211,39 +215,38 @@ public class WitnessBuilder {
 		}
 		return result;
 	}
-	
+
 	private String getFileSHA256(File file) {
 		try {
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			
-		    //Get file input stream for reading the file content
-		    FileInputStream fis = new FileInputStream(file);
-		     
-		    //Create byte array to read data in chunks
-		    byte[] byteArray = new byte[1024];
-		    int bytesCount = 0; 
-		      
-		    //Read file data and update in message digest
-		    while ((bytesCount = fis.read(byteArray)) != -1) {
-		        digest.update(byteArray, 0, bytesCount);
-		    };
-		     
-		    //close the stream; We don't need it now.
-		    fis.close();
-		     
-		    //Get the hash's bytes
-		    byte[] bytes = digest.digest();
-		     
-		    //This bytes[] has bytes in decimal format;
-		    //Convert it to hexadecimal format
-		    StringBuilder sb = new StringBuilder();
-		    for(int i=0; i < bytes.length ;i++)
-		    {
-		        sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
-		    }
-		     
-		    //return complete hash
-		   return sb.toString();
+
+			//Get file input stream for reading the file content
+			FileInputStream fis = new FileInputStream(file);
+
+			//Create byte array to read data in chunks
+			byte[] byteArray = new byte[1024];
+			int bytesCount = 0;
+
+			//Read file data and update in message digest
+			while ((bytesCount = fis.read(byteArray)) != -1) {
+				digest.update(byteArray, 0, bytesCount);
+			};
+
+			//close the stream; We don't need it now.
+			fis.close();
+
+			//Get the hash's bytes
+			byte[] bytes = digest.digest();
+
+			//This bytes[] has bytes in decimal format;
+			//Convert it to hexadecimal format
+			StringBuilder sb = new StringBuilder();
+			for(int i=0; i < bytes.length ;i++) {
+				sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+			}
+
+			//return complete hash
+			return sb.toString();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

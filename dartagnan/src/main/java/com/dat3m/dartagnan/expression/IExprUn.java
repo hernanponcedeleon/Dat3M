@@ -2,19 +2,21 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
-import static com.dat3m.dartagnan.GlobalSettings.*;
-
 import java.math.BigInteger;
+
+import static com.google.common.base.Verify.verify;
 
 public class IExprUn extends IExpr {
 
     private final IExpr b;
     private final IOpUn op;
 
-    public IExprUn(IOpUn op, IExpr b) {
+    public IExprUn(IOpUn op, IExpr b, IntegerType t) {
+        super(t);
         this.b = b;
         this.op = op;
     }
@@ -39,55 +41,48 @@ public class IExprUn extends IExpr {
 
     @Override
     public IConst reduce() {
+        IntegerType innerType = b.getType();
         IConst inner = b.reduce();
+        verify(inner.getType().equals(innerType),
+                "Reduced to wrong type %s instead of %s.", inner.getType(), innerType);
+        BigInteger value = inner.getValue();
+        IntegerType targetType = getType();
         switch (op) {
-            case MINUS:
-            return new IValue(inner.getValue().negate(), b.getPrecision());
-            case BV2UINT: case BV2INT:
-            case INT2BV1: case INT2BV8: case INT2BV16: case INT2BV32: case INT2BV64: 
-            case TRUNC6432: case TRUNC6416: case TRUNC648: case TRUNC641: case TRUNC3216: case TRUNC328: case TRUNC321: case TRUNC168: case TRUNC161: case TRUNC81:
-            case ZEXT18: case ZEXT116: case ZEXT132: case ZEXT164: case ZEXT816: case ZEXT832: case ZEXT864: case ZEXT1632: case ZEXT1664: case ZEXT3264: 
-            case SEXT18: case SEXT116: case SEXT132: case SEXT164: case SEXT816: case SEXT832: case SEXT864: case SEXT1632: case SEXT1664: case SEXT3264:
-                return inner;
-            case CTLZ:
-                int leading;
-                int precision = inner.getPrecision();
-                switch (precision) {
-                    case 32:
-                        leading = Integer.numberOfLeadingZeros(inner.getValueAsInt());
-                        break;
-                    case 64:
-                        leading = Long.numberOfLeadingZeros(inner.getValueAsInt());
-                        break;
-                    default:
-                        throw new UnsupportedOperationException(
-                                "Reduce not supported for " + this + " with precision " + precision);
+            case CAST_SIGNED, CAST_UNSIGNED -> {
+                boolean signed = op.equals(IOpUn.CAST_SIGNED);
+                boolean truncate = !targetType.isMathematical() &&
+                        (innerType.isMathematical() || targetType.getBitWidth() < innerType.getBitWidth());
+                if (truncate) {
+                    BigInteger v = value;
+                    for (int i = targetType.getBitWidth(); i < value.bitLength(); i++) {
+                        v = v.clearBit(i);
+                    }
+                    return new IValue(v, targetType);
                 }
-                return new IValue(BigInteger.valueOf(leading), precision);
-            default:
-                throw new UnsupportedOperationException("Reduce not supported for " + this);
-        }
-    }
-
-    @Override
-    public int getPrecision() {
-        switch (op) {
-            case MINUS:
-                return b.getPrecision();
-            case BV2UINT: case BV2INT:
-                return getArchPrecision();
-            case INT2BV1: case TRUNC321: case TRUNC641: case TRUNC161: case TRUNC81:
-                return 1;
-            case INT2BV8: case TRUNC648: case TRUNC328: case TRUNC168: case ZEXT18: case SEXT18:
-                return 8;
-            case INT2BV16: case TRUNC6416: case TRUNC3216: case ZEXT116: case ZEXT816: case SEXT116: case SEXT816:
-                return 16;
-            case INT2BV32: case TRUNC6432: case ZEXT132: case ZEXT832: case ZEXT1632: case SEXT132: case SEXT832: case SEXT1632:
-                return 32;
-            case INT2BV64: case ZEXT164: case ZEXT864: case ZEXT1664: case ZEXT3264: case SEXT164: case SEXT864: case SEXT1664: case SEXT3264:
-                return 64;
-            default:
-                throw new UnsupportedOperationException("getPrecision not supported for " + this);
+                if (!innerType.isMathematical()) {
+                    verify(innerType.canContain(value), "");
+                    BigInteger result = innerType.applySign(value, signed);
+                    return new IValue(result, targetType);
+                }
+                return new IValue(value, targetType);
+            }
+            case MINUS -> {
+                return new IValue(value.negate(), targetType);
+            }
+            case CTLZ -> {
+                if (innerType.isMathematical()) {
+                    throw new UnsupportedOperationException(
+                            String.format("Counting leading zeroes in mathematical integer %s.", inner));
+                }
+                if (value.signum() == -1) {
+                    return new IValue(BigInteger.ZERO, targetType);
+                }
+                int bitWidth = innerType.getBitWidth();
+                int length = value.bitLength();
+                verify(length <= bitWidth, "Value %s returned by %s not in range of type %s.", value);
+                return new IValue(BigInteger.valueOf(bitWidth - length), targetType);
+            }
+            default -> throw new UnsupportedOperationException("Reduce not supported for " + this);
         }
     }
 

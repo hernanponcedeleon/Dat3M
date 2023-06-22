@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
+
+import java.util.Set;
 
 public class RMWAddUnless extends RMWAbstract {
 
-    private final ExprInterface cmp;
+    private final Expression cmp;
 
-    public RMWAddUnless(IExpr address, Register register, ExprInterface cmp, IExpr value) {
+    public RMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
         super(address, register, value, Tag.Linux.MO_MB);
         this.cmp = cmp;
     }
@@ -23,17 +23,17 @@ public class RMWAddUnless extends RMWAbstract {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")\t### LKMM";
     }
 
-    public ExprInterface getCmp() {
+    public Expression getCmp() {
     	return cmp;
     }
     
     @Override
-    public ImmutableSet<Register> getDataRegs(){
-        return new ImmutableSet.Builder<Register>().addAll(value.getRegs()).addAll(cmp.getRegs()).build();
+    public Set<Register.Read> getRegisterReads(){
+        return Register.collectRegisterReads(cmp, Register.UsageType.DATA, super.getRegisterReads());
     }
 
     // Unrolling
