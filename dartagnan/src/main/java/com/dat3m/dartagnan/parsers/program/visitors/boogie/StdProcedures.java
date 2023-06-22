@@ -135,7 +135,7 @@ public class StdProcedures {
     }
 
     private static void __assert_fail(VisitorBoogie visitor) {
-        visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getArchType()));
+        visitor.addAssertion(visitor.expressions.makeFalse());
     }
 
 }

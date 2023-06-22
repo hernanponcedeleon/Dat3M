@@ -931,19 +931,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return null;
     }
 
-    protected void addAssertion(Expression expr) {
+    protected void addAssertion(Expression condition) {
+        Expression expr = expressions.makeBooleanCast(condition);
         final Register ass = programBuilder.getOrNewRegister(threadCount, "assert_" + assertionIndex, expr.getType());
         assertionIndex++;
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
-            final IValue one = expressions.makeOne(expr.getType());
             final Label end = getOrNewLabel("END_OF_T" + threadCount);
-            final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
+            final CondJump jump = EventFactory.newJumpUnless(ass, end);
             jump.addTags(Tag.EARLYTERMINATION);
             addEvent(jump);
         } else {
-            final IValue zero = expressions.makeZero(expr.getType());
-            addEvent(EventFactory.newAbortIf(expressions.makeEQ(ass, zero)));
+            addEvent(EventFactory.newAbortIf(expressions.makeNot(ass)));
             //TODO: Check if EARLYTERMINATION tag should be added to the abort
         }
 
