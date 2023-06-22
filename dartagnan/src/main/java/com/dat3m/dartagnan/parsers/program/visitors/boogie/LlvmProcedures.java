@@ -23,12 +23,20 @@ public class LlvmProcedures {
 
     public static List<String> LLVMPROCEDURES = Arrays.asList(
             // Atomic operations
+            "__llvm_atomic8_load",
+            "__llvm_atomic16_load",
             "__llvm_atomic32_load",
             "__llvm_atomic64_load",
+            "__llvm_atomic8_store",
+            "__llvm_atomic16_store",
             "__llvm_atomic32_store",
             "__llvm_atomic64_store",
+            "__llvm_atomic8_cmpxchg",
+            "__llvm_atomic16_cmpxchg",
             "__llvm_atomic32_cmpxchg",
             "__llvm_atomic64_cmpxchg",
+            "__llvm_atomic8_rmw",
+            "__llvm_atomic16_rmw",
             "__llvm_atomic32_rmw",
             "__llvm_atomic64_rmw",
             "__llvm_atomic_fence",
@@ -64,15 +72,19 @@ public class LlvmProcedures {
         Atom cond;
 
         switch (name) {
+            case "__llvm_atomic8_load":
+            case "__llvm_atomic16_load":
             case "__llvm_atomic32_load":
             case "__llvm_atomic64_load":
                 mo = C11.intToMo(((IConst) p1).getValueAsInt());
                 visitor.programBuilder.addChild(visitor.threadCount, Llvm.newLoad(reg, (IExpr) p0, mo))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
                 return;
+            case "__llvm_atomic8_store":
+            case "__llvm_atomic16_store":
             case "__llvm_atomic32_store":
             case "__llvm_atomic64_store":
-                mo = C11.intToMo(((IConst) p2).getValueAsInt());
+                    mo = C11.intToMo(((IConst) p2).getValueAsInt());
                 visitor.programBuilder.addChild(visitor.threadCount, Llvm.newStore((IExpr) p0, (ExprInterface) p1, mo))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
                 return;
@@ -81,6 +93,8 @@ public class LlvmProcedures {
                 visitor.programBuilder.addChild(visitor.threadCount, Llvm.newFence(mo))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
                 return;
+            case "__llvm_atomic8_cmpxchg":
+            case "__llvm_atomic16_cmpxchg":
             case "__llvm_atomic32_cmpxchg":
             case "__llvm_atomic64_cmpxchg":
                 // Since we don't support struct types, we instead model each member as a
@@ -98,6 +112,8 @@ public class LlvmProcedures {
                         .addChild(visitor.threadCount, Llvm.newCompareExchange(oldValueRegister, cmpRegister, (IExpr) p0, (IExpr) p1, (IExpr) p2, mo, true))
                         .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
                 return;
+            case "__llvm_atomic8_rmw":
+            case "__llvm_atomic16_rmw":
             case "__llvm_atomic32_rmw":
             case "__llvm_atomic64_rmw":
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
