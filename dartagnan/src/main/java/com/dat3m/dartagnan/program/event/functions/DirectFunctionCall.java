@@ -1,6 +1,7 @@
-package com.dat3m.dartagnan.program.event;
+package com.dat3m.dartagnan.program.event.functions;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
@@ -11,22 +12,30 @@ import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class DirectFunctionCall extends AbstractEvent implements RegReader {
 
-    protected Function function; // TODO: Generalize to function pointer expressions
+    protected Function callTarget; // TODO: Generalize to function pointer expressions
     protected List<Expression> arguments;
 
     protected DirectFunctionCall(Function func, List<Expression> arguments) {
-        Preconditions.checkArgument(arguments.size() == func.getFunctionType().getParameterTypes().size());
-        this.function = func;
+        final List<Type> paramTypes = func.getFunctionType().getParameterTypes();
+                Preconditions.checkArgument(arguments.size() == paramTypes.size());
+        for (int i = 0; i < paramTypes.size(); i++) {
+            Preconditions.checkArgument(arguments.get(i).getType().equals(paramTypes.get(i)));
+        }
+        this.callTarget = func;
         this.arguments = arguments;
     }
 
     protected DirectFunctionCall(DirectFunctionCall other) {
-        this.function = other.function;
+        this.callTarget = other.callTarget;
         this.arguments = other.arguments;
     }
+
+    public Function getCallTarget() { return callTarget; }
+    public List<Expression> getArguments() { return arguments; }
 
     @Override
     public Set<Register.Read> getRegisterReads() {
@@ -36,7 +45,7 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
     }
 
     protected String argumentsToString() {
-        return String.join(", ", arguments.stream().map(expr -> (CharSequence)expr.toString())::iterator);
+        return arguments.stream().map(Expression::toString).collect(Collectors.joining(", "));
     }
 
 }

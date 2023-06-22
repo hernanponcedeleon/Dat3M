@@ -3,12 +3,11 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.google.common.base.Preconditions;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Function {
@@ -18,17 +17,27 @@ public class Function {
     protected int id;
     protected Event exit;
 
-    protected FunctionType functionType; // TODO: Not used right now
+    protected FunctionType functionType;
+    protected List<Register> parameterRegs;
 
     protected Program program;
     protected Map<String, Register> registers = new HashMap<>();
     protected int dummyCount = 0;
 
-    public Function(String name, FunctionType type, int id, Event entry) {
+    public Function(String name, FunctionType type, List<String> parameterNames, int id, Event entry) {
+        Preconditions.checkArgument(type.getParameterTypes().size() == parameterNames.size());
         this.name = name;
         this.functionType = type;
         this.id = id;
         this.entry = entry;
+
+        parameterRegs = new ArrayList<>(parameterNames.size());
+        int paramIndex = 0;
+        for (Type paramType : functionType.getParameterTypes()) {
+            //TODO: avoid cast to IntegerType
+            final Register paramReg = newRegister(parameterNames.get(paramIndex), (IntegerType) paramType);
+            parameterRegs.add(paramReg);
+        }
 
         updateExit(entry);
     }
