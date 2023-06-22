@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -13,9 +13,9 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
@@ -92,11 +92,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
     private AnalysisStats collectStats(List<IterationData> iterDataList) {
         int numPotentialSpinLoops = 0;
         int numStaticSpinLoops = 0;
-        Set<Integer> alreadyDetectedLoops = new HashSet<>(); // To avoid counting the same loop multiple times
+        Set<UnrollingId> alreadyDetectedLoops = new HashSet<>(); // To avoid counting the same loop multiple times
         for (IterationData data : iterDataList) {
             if (!data.isAlwaysSideEffectFull) {
                 // Potential spinning iteration
-                final int uIdOfLoop = data.iterationInfo.getIterationStart().getUId();
+                final UnrollingId uIdOfLoop = data.iterationInfo.getIterationStart().getMetadata(UnrollingId.class);
+                assert uIdOfLoop != null;
                 if (alreadyDetectedLoops.add(uIdOfLoop)) {
                     // A loop we did not count before
                     numPotentialSpinLoops++;
@@ -122,11 +123,12 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         final List<Register> trackingRegs = new ArrayList<>();
         Event insertionPoint = iterInfo.getIterationEnd();
+        IntegerType type = TypeFactory.getInstance().getArchType();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = thread.newRegister(
                     String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    GlobalSettings.getArchPrecision());
+                    type);
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -134,13 +136,14 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             insertionPoint = execCheck;
         }
 
-        final BExpr atLeastOneSideEffect = trackingRegs.stream()
-                .map(reg -> (BExpr) new Atom(reg, COpBin.EQ, IValue.ZERO))
-                .reduce(BConst.FALSE, (x, y) -> new BExprBin(x, BOpBin.OR, y));
+        ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+        final Expression atLeastOneSideEffect = trackingRegs.stream()
+                .map(reg -> expressionFactory.makeEQ(reg, expressionFactory.makeZero(reg.getType())))
+                .reduce(expressionFactory.makeFalse(), expressionFactory::makeOr);
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
-        assumeSideEffect.addFilters(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
+        assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
-        assumeSideEffect.copyMetadataFrom(spinloopStart);
+        assumeSideEffect.copyAllMetadataFrom(spinloopStart);
         insertionPoint.insertAfter(assumeSideEffect);
     }
 
@@ -178,23 +181,18 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         Event cur = iterStart;
         do {
-            if (cur instanceof MemEvent) {
-                if (cur.is(Tag.WRITE)) {
-                    sideEffects.add(cur); // Writes always cause side effects
-                    continue;
-                } else {
-                    final Set<Register> addrRegs = ((MemEvent) cur).getAddress().getRegs();
-                    unsafeRegisters.addAll(Sets.difference(addrRegs, safeRegisters));
-                }
+            if (cur.hasTag(Tag.WRITE)) {
+                sideEffects.add(cur); // Writes always cause side effects
+                continue;
             }
 
-            if (cur instanceof RegReaderData) {
-                final Set<Register> dataRegs = ((RegReaderData) cur).getDataRegs();
+            if (cur instanceof RegReader regReader) {
+                final Set<Register> dataRegs = regReader.getRegisterReads().stream()
+                        .map(Register.Read::register).collect(Collectors.toSet());
                 unsafeRegisters.addAll(Sets.difference(dataRegs, safeRegisters));
             }
 
-            if (cur instanceof RegWriter) {
-                final RegWriter writer = (RegWriter) cur;
+            if (cur instanceof RegWriter writer) {
                 if (unsafeRegisters.contains(writer.getResultRegister())) {
                     // The loop writes to a register it previously read from.
                     // This means the next loop iteration will observe the newly written value,
@@ -215,7 +213,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final Event start = iter.getIterationStart();
         final Event end = iter.getIterationEnd();
 
-        if (start.is(Tag.SPINLOOP)) {
+        if (start.hasTag(Tag.SPINLOOP)) {
             // If the iteration start is tagged as "SPINLOOP", we treat the iteration as side effect free
             data.isAlwaysSideEffectFull = false;
             data.sideEffects.clear();

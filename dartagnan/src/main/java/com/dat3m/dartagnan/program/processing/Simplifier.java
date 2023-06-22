@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -55,7 +55,7 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyEvent(Event next) {
-        if (next.is(Tag.NOOPT)) {
+        if (next.hasTag(Tag.NOOPT)) {
             return false;
         }
         boolean changed = false;
@@ -72,18 +72,16 @@ public class Simplifier implements ProgramProcessor {
     private boolean simplifyJump(CondJump jump) {
         final Label jumpTarget = jump.getLabel();
         final Event successor = jump.getSuccessor();
-        final BExpr guard = jump.getGuard();
+        final Expression guard = jump.getGuard();
         if(jumpTarget.equals(successor) && guard instanceof BConst) {
-            jump.delete();
-            return true;
+            return jump.tryDelete();
         }
         return false;
     }
 
     private boolean simplifyLabel(Label label) {
         if (label.getJumpSet().isEmpty() && label != label.getThread().getExit()) {
-            label.delete();
-            return true;
+            return label.tryDelete();
         }
         return false;
     }
@@ -95,8 +93,8 @@ public class Simplifier implements ProgramProcessor {
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
         if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
-            call.delete();
-            successor.delete();
+            call.tryDelete();
+            successor.tryDelete();
             return true;
         }
         return false;

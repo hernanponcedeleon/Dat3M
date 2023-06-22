@@ -76,25 +76,25 @@ public class EventData implements Comparable<EventData> {
     public int getCoherenceIndex() { return coIndex; }
     void setCoherenceIndex(int index) { coIndex = index; }
 
-    public boolean isMemoryEvent() { return event.is(MEMORY); }
+    public boolean isMemoryEvent() { return event.hasTag(MEMORY); }
     public boolean isInit() {
-        return event.is(INIT);
+        return event.hasTag(INIT);
     }
-    public boolean isWrite() { return event.is(WRITE); }
-    public boolean isRead() { return event.is(READ); }
-    public boolean isFence() { return event.is(FENCE); }
+    public boolean isWrite() { return event.hasTag(WRITE); }
+    public boolean isRead() { return event.hasTag(READ); }
+    public boolean isFence() { return event.hasTag(FENCE); }
     public boolean isJump() {
         return event instanceof CondJump;
     }
     public boolean isExclusive() {
-    	return event.is(EXCL);
+    	return event.hasTag(EXCL);
     }
     public boolean isRMW() {
-    	return event.is(RMW);
+    	return event.hasTag(RMW);
     }
 
-    public boolean is(String type) {
-    	return event.is(type);
+    public boolean hasTag(String tag) {
+    	return event.hasTag(tag);
     }
 
     @Override

@@ -7,8 +7,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.SpinStart;
 import com.google.common.base.Preconditions;
@@ -55,22 +54,22 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
     }
     private int detectAndMarkSpinLoops(Thread thread) {
         final List<Label> unmarkedLabels = thread.getEvents().stream()
-                .filter(e -> e instanceof Label && !e.is(Tag.SPINLOOP))
-                .map(Label.class::cast).collect(Collectors.toList());
+                .filter(e -> e instanceof Label && !e.hasTag(Tag.SPINLOOP))
+                .map(Label.class::cast).toList();
 
         int spinloopCounter = 0;
         for (final Label label : unmarkedLabels) {
             final List<CondJump> backjumps = label.getJumpSet()
                     .stream().filter(x -> x.getGlobalId() > label.getGlobalId())
-                    .collect(Collectors.toList());
+                    .toList();
             final boolean isLoop = !backjumps.isEmpty();
 
             if (isLoop) {
                 assert backjumps.size() == 1; // Invariant holds for all normalized loops
                 final CondJump backjump = backjumps.get(0);
                 if (isSideEffectFree(label, backjump)) {
-                    label.addFilters(Tag.SPINLOOP, Tag.NOOPT);
-                    backjump.addFilters(Tag.SPINLOOP, Tag.NOOPT);
+                    label.addTags(Tag.SPINLOOP, Tag.NOOPT);
+                    backjump.addTags(Tag.SPINLOOP, Tag.NOOPT);
                     spinloopCounter++;
                 }
             }
@@ -80,8 +79,8 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
 
     private boolean isSideEffectFree(Label loopBegin, CondJump loopEnd) {
         if (loopBegin.getSuccessor() instanceof SpinStart) {
-            // No need to check if the loop is side effect free
-            // The user guarantees this by using the annotation.
+            // No need to check if the loop is side effect free,
+            // the user guarantees this by using the annotation.
 
             // This checks assumes the following implementation of await_while
             // #define await_while(cond)                                                  \
@@ -97,22 +96,17 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
 
         Event cur = loopBegin;
         while ((cur = cur.getSuccessor()) != loopEnd) {
-            if (cur.is(Tag.WRITE)) {
+            if (cur.hasTag(Tag.WRITE)) {
                 return false;// Writes always cause side effects
             }
 
-            if (cur instanceof MemEvent) {
-                final Set<Register> addrRegs = ((MemEvent) cur).getAddress().getRegs();
-                unsafeRegisters.addAll(Sets.difference(addrRegs, safeRegisters));
+            if (cur instanceof RegReader regReader) {
+                final Set<Register> readRegs = regReader.getRegisterReads().stream()
+                        .map(Register.Read::register).collect(Collectors.toSet());
+                unsafeRegisters.addAll(Sets.difference(readRegs, safeRegisters));
             }
 
-            if (cur instanceof RegReaderData) {
-                final Set<Register> dataRegs = ((RegReaderData) cur).getDataRegs();
-                unsafeRegisters.addAll(Sets.difference(dataRegs, safeRegisters));
-            }
-
-            if (cur instanceof RegWriter) {
-                final RegWriter writer = (RegWriter) cur;
+            if (cur instanceof RegWriter writer) {
                 if (unsafeRegisters.contains(writer.getResultRegister())) {
                     // The loop writes to a register it previously read from.
                     // This means the next loop iteration will observe the newly written value,

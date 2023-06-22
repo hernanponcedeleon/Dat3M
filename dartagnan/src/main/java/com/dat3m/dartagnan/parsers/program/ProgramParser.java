@@ -58,7 +58,7 @@ public class ProgramParser {
 				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
-						// This is for the case where the user loaded the program 						
+						// This is for the case where the user loaded the program
 						new File(path, "dat3m.c");
                 try (FileWriter writer = new FileWriter(parsedFile)) {
                     writer.write(raw);

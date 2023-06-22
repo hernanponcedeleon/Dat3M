@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.GlobalSettings;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -18,299 +16,187 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.EQ;
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.Tag.Linux.MO_ACQUIRE;
 
+//FIXME: Some compilations generate simple load/store operations with memory orderings, however,
+// it seems that RISCV does not support mo's on arbitrary memory operations (only on LL/SC and AMOs).
 class VisitorRISCV extends VisitorBase {
-	// Some language memory models (e.g. RC11) are non-dependency tracking and might need a 
-	// strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
-	// "Repairing Sequential Consistency in C/C++11"
-	// "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
-	// talk about compilation to RISCV, but since it is closer to ARMv8 than Power
-	// we use the same scheme as AMRv8
-	private final boolean useRC11Scheme; 
+    // Some language memory models (e.g. RC11) are non-dependency tracking and might need a
+    // strong version of no-OOTA, thus we need to strength the compilation. None of the usual paper
+    // "Repairing Sequential Consistency in C/C++11"
+    // "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
+    // talk about compilation to RISCV, but since it is closer to ARMv8 than Power
+    // we use the same scheme as AMRv8
+    private final boolean useRC11Scheme;
 
-	protected VisitorRISCV(boolean forceStart, boolean useRC11Scheme) {
-		super(forceStart);
-		this.useRC11Scheme = useRC11Scheme;
-	}
-	
+    protected VisitorRISCV(boolean forceStart, boolean useRC11Scheme) {
+        super(forceStart);
+        this.useRC11Scheme = useRC11Scheme;
+    }
+
     @Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
+    public List<Event> visitStoreExclusive(StoreExclusive e) {
         RMWStoreExclusive store = RISCV.newRMWStoreConditional(e.getAddress(), e.getMemValue(), e.getMo());
 
         return eventSequence(
                 store,
                 newExecutionStatusWithDependencyTracking(e.getResultRegister(), store)
         );
-	}
+    }
 
     // =============================================================================================
     // ========================================= PTHREAD ===========================================
     // =============================================================================================
 
     @Override
-	public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
-        store.addFilters(C11.PTHREAD);
+    public List<Event> visitCreate(Create e) {
+        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
+        store.addTags(C11.PTHREAD);
 
         return eventSequence(
                 store
         );
-	}
+    }
 
-	@Override
-	public List<Event> visitEnd(End e) {
+    @Override
+    public List<Event> visitEnd(End e) {
         return eventSequence(
-        		newStore(e.getAddress(), IValue.ZERO, Tag.RISCV.MO_REL));
-	}
+                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.RISCV.MO_REL)
+        );
+    }
 
-	@Override
-	public List<Event> visitJoin(Join e) {
+    @Override
+    public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
-        load.addFilters(C11.PTHREAD);
+        Expression zero = expressions.makeZero(resultRegister.getType());
+        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
+        load.addTags(C11.PTHREAD);
 
         return eventSequence(
                 load,
-                newJumpUnless(new Atom(resultRegister, EQ, IValue.ZERO), (Label) e.getThread().getExit())
+                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
         );
-	}
+    }
 
-	@Override
-	public List<Event> visitStart(Start e) {
+    @Override
+    public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-		Load load = newLoad(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
-        load.addFilters(Tag.STARTLOAD);
+        Expression one = expressions.makeOne(resultRegister.getType());
+        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
+        load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
-        		load,
-				super.visitStart(e),
-                newJumpUnless(new Atom(resultRegister, EQ, IValue.ONE), (Label) e.getThread().getExit())
+                load,
+                super.visitStart(e),
+                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
         );
-	}
+    }
 
     @Override
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), e.getMemValue(), ""));
+                newStore(e.getAddress(), e.getMemValue())
+        );
     }
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
+        IntegerType type = types.getArchType();
+        Register dummy = e.getThread().newRegister(type);
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because of the fence.
         return eventSequence(
-                newRMWLoadExclusive(dummy, e.getAddress(), ""),
-                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getAddress(), IValue.ONE, "", true),
-                RISCV.newRRWFence());
+                newRMWLoadExclusive(dummy, e.getAddress()),
+                newAssume(expressions.makeEQ(dummy, zero)),
+                newRMWStoreExclusive(e.getAddress(), one, true),
+                RISCV.newRRWFence()
+        );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), IValue.ZERO, ""));
+                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+        );
     }
-    
-	// =============================================================================================
+
+    // =============================================================================================
     // =========================================== LLVM ============================================
     // =============================================================================================
 
-	@Override
-	public List<Event> visitLlvmLoad(LlvmLoad e) {
-		String mo = e.getMo();
-		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
-		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence()
-				: null;
-
-		return eventSequence(
-				optionalBarrierBefore,
-				newLoad(e.getResultRegister(), e.getAddress(), ""),
-				optionalBarrierAfter);
-	}
-
-	@Override
-	public List<Event> visitLlvmStore(LlvmStore e) {
-		String mo = e.getMo();
-		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme
-				? RISCV.newRWWFence()
-				: null;
-
-		return eventSequence(
-				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), ""));
-	}
-
-	@Override
-	public List<Event> visitLlvmXchg(LlvmXchg e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-
-		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-		Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
-		// We normally make the following optional.
-		// Here we make it mandatory to guarantee correct dependencies.
-		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
-		Label label = newLabel("FakeDep");
-		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-		return eventSequence(
-				load,
-				fakeCtrlDep,
-				label,
-				store,
-				execStatus);
-	}
-
-	@Override
-	public List<Event> visitLlvmRMW(LlvmRMW e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-
-		Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
-
-		Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-		Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-		Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
-		// We normally make the following optional.
-		// Here we make it mandatory to guarantee correct dependencies.
-		ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
-
-		Label label = newLabel("FakeDep");
-		Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-		return eventSequence(
-				load,
-				fakeCtrlDep,
-				label,
-				localOp,
-				store,
-				execStatus);
-	}
-
-	@Override
-	public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-		Register oldValueRegister = e.getStructRegister(0);
-		Register resultRegister = e.getStructRegister(1);
-
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		ExprInterface expectedValue = e.getExpectedValue();
-
-		Local casCmpResult = newLocal(resultRegister, new Atom(oldValueRegister, EQ, expectedValue));
-		Label casEnd = newLabel("CAS_end");
-		CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casEnd);
-
-		Load load = newRMWLoadExclusive(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-		Store store = newRMWStoreExclusive(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-
-		return eventSequence(
-				// Indentation shows the branching structure
-				load,
-				casCmpResult,
-				branchOnCasCmpResult,
-				store,
-				casEnd);
-	}
-
-	@Override
-	public List<Event> visitLlvmFence(LlvmFence e) {
-		Fence fence = null;
-		switch (e.getMo()) {
-			case Tag.C11.MO_ACQUIRE:
-				fence = RISCV.newRRWFence();
-				break;
-			case Tag.C11.MO_RELEASE:
-				fence = RISCV.newRWWFence();
-				break;
-			case Tag.C11.MO_ACQUIRE_RELEASE:
-				fence = RISCV.newTsoFence();
-				break;
-			case Tag.C11.MO_SC:
-				fence = RISCV.newRWRWFence();
-				break;
-		}
-
-		return eventSequence(
-				fence);
-	}
-
-    // =============================================================================================
-    // ============================================ C11 ============================================
-    // =============================================================================================
-
-	@Override
-	public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		ExprInterface value = e.getMemValue();
-		String mo = e.getMo();
-		IExpr expectedAddr = e.getExpectedAddr();
-		int precision = resultRegister.getPrecision();
-
-		Register regExpected = e.getThread().newRegister(precision);
-        Register regValue = e.getThread().newRegister(precision);
-        Load loadExpected = newLoad(regExpected, expectedAddr, "");
-        Store storeExpected = newStore(expectedAddr, regValue, "");
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, new Atom(regValue, EQ, regExpected));
-        CondJump branchOnCasCmpResult = newJump(new Atom(resultRegister, NEQ, IValue.ONE), casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
-
-        Load loadValue = newRMWLoadExclusive(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.isStrong());
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", precision);
-        // We normally make the following two events optional.
-        // Here we make them mandatory to guarantee correct dependencies.
-        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
-        Local updateCasCmpResult = newLocal(resultRegister, new BExprUn(BOpUn.NOT, statusReg));
+    @Override
+    public List<Event> visitLlvmLoad(LlvmLoad e) {
+        String mo = e.getMo();
+        Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
+        Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence()
+                : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
-                loadExpected,
-                loadValue,
-                casCmpResult,
-                branchOnCasCmpResult,
-                    storeValue,
-                    execStatus,
-                    updateCasCmpResult,
-                    gotoCasEnd,
-                casFail,
-                    storeExpected,
-                casEnd
+                optionalBarrierBefore,
+                newLoad(e.getResultRegister(), e.getAddress()),
+                optionalBarrierAfter
         );
-	}
-	
-	@Override
-	public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Local localOp = newLocal(dummyReg, new IExprBin(resultRegister, op, value));
+    }
 
-        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+    @Override
+    public List<Event> visitLlvmStore(LlvmStore e) {
+        String mo = e.getMo();
+        Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme
+                ? RISCV.newRWWFence()
+                : null;
+
+        return eventSequence(
+                optionalBarrierBefore,
+                newStore(e.getAddress(), e.getMemValue())
+        );
+    }
+
+    @Override
+    public List<Event> visitLlvmXchg(LlvmXchg e) {
+        Register resultRegister = e.getResultRegister();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
+        // We normally make the following optional.
+        // Here we make it mandatory to guarantee correct dependencies.
+        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        return eventSequence(
+                load,
+                fakeCtrlDep,
+                label,
+                store,
+                execStatus
+        );
+    }
+
+    @Override
+    public List<Event> visitLlvmRMW(LlvmRMW e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        IOpBin op = e.getOp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummyReg = e.getThread().newRegister(type);
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
+
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", type);
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -326,65 +212,194 @@ class VisitorRISCV extends VisitorBase {
                 store,
                 execStatus
         );
-	}
+    }
 
-	@Override
-	public List<Event> visitAtomicLoad(AtomicLoad e) {
-		String mo = e.getMo();
-		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() :  null;
-		Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() :  null;
+    @Override
+    public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
+        Register oldValueRegister = e.getStructRegister(0);
+        Register resultRegister = e.getStructRegister(1);
+        Expression one = expressions.makeOne(resultRegister.getType());
 
-		return eventSequence(
-				optionalBarrierBefore,
-				newLoad(e.getResultRegister(), e.getAddress(), ""),
-				optionalBarrierAfter
-		);
-	}
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+        Expression expectedValue = e.getExpectedValue();
 
-	@Override
-	public List<Event> visitAtomicStore(AtomicStore e) {
-		String mo = e.getMo();
-		Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() :  null;
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
+        Label casEnd = newLabel("CAS_end");
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
-		return eventSequence(
-				optionalBarrierBefore,
-				newStore(e.getAddress(), e.getMemValue(), "")
-		);
-	}
+        Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, value, true, Tag.RISCV.extractStoreMoFromCMo(mo));
 
-	@Override
-	public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-		Fence fence = null;
-		switch(e.getMo()) {
-			case Tag.C11.MO_ACQUIRE:
-				fence = RISCV.newRRWFence();
-				break;
-			case Tag.C11.MO_RELEASE:
-				fence = RISCV.newRWWFence();
-				break;
-			case Tag.C11.MO_ACQUIRE_RELEASE:
-				fence = RISCV.newTsoFence();
-				break;
-			case Tag.C11.MO_SC:
-				fence = RISCV.newRWRWFence();
-				break;
-		}
-			
-		return eventSequence(
-				fence
-		);
-	}
+        return eventSequence(
+                load,
+                casCmpResult,
+                branchOnCasCmpResult,
+                store,
+                casEnd
+        );
+    }
 
-	@Override
-	public List<Event> visitAtomicXchg(AtomicXchg e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
+    @Override
+    public List<Event> visitLlvmFence(LlvmFence e) {
+        Fence fence = null;
+        switch (e.getMo()) {
+            case Tag.C11.MO_ACQUIRE:
+                fence = RISCV.newRRWFence();
+                break;
+            case Tag.C11.MO_RELEASE:
+                fence = RISCV.newRWWFence();
+                break;
+            case Tag.C11.MO_ACQUIRE_RELEASE:
+                fence = RISCV.newTsoFence();
+                break;
+            case Tag.C11.MO_SC:
+                fence = RISCV.newRWRWFence();
+                break;
+        }
 
-        Load load = newRMWLoadExclusive(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        return eventSequence(
+                fence
+        );
+    }
+
+    // =============================================================================================
+    // ============================================ C11 ============================================
+    // =============================================================================================
+
+    @Override
+    public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        Expression one = expressions.makeOne(type);
+        Expression address = e.getAddress();
+        Expression value = e.getMemValue();
+        String mo = e.getMo();
+        Expression expectedAddr = e.getExpectedAddr();
+
+        Register regExpected = e.getThread().newRegister(type);
+        Register regValue = e.getThread().newRegister(type);
+        Load loadExpected = newLoad(regExpected, expectedAddr);
+        Store storeExpected = newStore(expectedAddr, regValue);
+        Label casFail = newLabel("CAS_fail");
+        Label casEnd = newLabel("CAS_end");
+        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
+        CondJump gotoCasEnd = newGoto(casEnd);
+
+        Load loadValue = newRMWLoadExclusiveWithMo(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.isStrong());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", type);
+        // We normally make the following two events optional.
+        // Here we make them mandatory to guarantee correct dependencies.
+        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);
+        Local updateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
+
+        return eventSequence(
+                loadExpected,
+                loadValue,
+                casCmpResult,
+                branchOnCasCmpResult,
+                storeValue,
+                execStatus,
+                updateCasCmpResult,
+                gotoCasEnd,
+                casFail,
+                storeExpected,
+                casEnd
+        );
+    }
+
+    @Override
+    public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        IOpBin op = e.getOp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummyReg = e.getThread().newRegister(type);
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
+
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
+        Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", type);
+        // We normally make the following optional.
+        // Here we make it mandatory to guarantee correct dependencies.
+        ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
+
+        Label label = newLabel("FakeDep");
+        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+
+        return eventSequence(
+                load,
+                fakeCtrlDep,
+                label,
+                localOp,
+                store,
+                execStatus
+        );
+    }
+
+    @Override
+    public List<Event> visitAtomicLoad(AtomicLoad e) {
+        String mo = e.getMo();
+        Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
+        Fence optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() : null;
+
+        return eventSequence(
+                optionalBarrierBefore,
+                newLoad(e.getResultRegister(), e.getAddress()),
+                optionalBarrierAfter
+        );
+    }
+
+    @Override
+    public List<Event> visitAtomicStore(AtomicStore e) {
+        String mo = e.getMo();
+        Fence optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() : null;
+
+        return eventSequence(
+                optionalBarrierBefore,
+                newStore(e.getAddress(), e.getMemValue())
+        );
+    }
+
+    @Override
+    public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
+        Fence fence = null;
+        switch (e.getMo()) {
+            case Tag.C11.MO_ACQUIRE:
+                fence = RISCV.newRRWFence();
+                break;
+            case Tag.C11.MO_RELEASE:
+                fence = RISCV.newRWWFence();
+                break;
+            case Tag.C11.MO_ACQUIRE_RELEASE:
+                fence = RISCV.newTsoFence();
+                break;
+            case Tag.C11.MO_SC:
+                fence = RISCV.newRWRWFence();
+                break;
+        }
+
+        return eventSequence(
+                fence
+        );
+    }
+
+    @Override
+    public List<Event> visitAtomicXchg(AtomicXchg e) {
+        Register resultRegister = e.getResultRegister();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
-        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getPrecision());
+        Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, store);
@@ -398,65 +413,68 @@ class VisitorRISCV extends VisitorBase {
                 store,
                 execStatus
         );
-	}
-	
+    }
+
     // =============================================================================================
     // =========================================== LKMM ============================================
     // =============================================================================================
+    // TODO: Many of the Linux-RMW compilations generate mo-less LL/SC instructions, though they do generated barriers.
+    //  This contrasts with the compilation of C11 atomics which generate LL/SC with fitting mo.
+    //  Is this mismatch intended?
 
-	@Override
-	public List<Event> visitLKMMLoad(LKMMLoad e) {
+    @Override
+    public List<Event> visitLKMMLoad(LKMMLoad e) {
         String mo = e.getMo();
-		Fence optionalMemoryBarrier = mo.equals(MO_ACQUIRE) ? RISCV.newRRWFence() : null;
-    
-		return eventSequence(
-        		newLoad(e.getResultRegister(), e.getAddress(), ""),
-        		optionalMemoryBarrier
+        Fence optionalMemoryBarrier = mo.equals(MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+
+        return eventSequence(
+                newLoad(e.getResultRegister(), e.getAddress()),
+                optionalMemoryBarrier
         );
 
-	}
+    }
 
-	@Override
-	public List<Event> visitLKMMStore(LKMMStore e) {
+    @Override
+    public List<Event> visitLKMMStore(LKMMStore e) {
         String mo = e.getMo();
-		Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
-		
-		return eventSequence(
-        		optionalMemoryBarrier,
-				newStore(e.getAddress(), e.getMemValue(), "")
+        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+
+        return eventSequence(
+                optionalMemoryBarrier,
+                newStore(e.getAddress(), e.getMemValue())
         );
 
-	}
+    }
 
-	@Override
-	public List<Event> visitLKMMFence(LKMMFence e) {
-		Fence optionalMemoryBarrier;
-		switch(e.getName()) {
-			// smp_mb()
-			case Tag.Linux.MO_MB:
-			// https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
-			// https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h 
-			case Tag.Linux.BEFORE_ATOMIC:
-			case Tag.Linux.AFTER_ATOMIC:
-				optionalMemoryBarrier = RISCV.newRWRWFence();
-				break;
-			// smp_rmb()
-			case Tag.Linux.MO_RMB:
-				optionalMemoryBarrier = RISCV.newRRFence();
-				break;
-			// smp_wmb()
-			case Tag.Linux.MO_WMB:
-				optionalMemoryBarrier = RISCV.newWWFence();
-				break;
-			// ##define smp_mb__after_spinlock()	RISCV_FENCE(iorw,iorw)    
+    @Override
+    public List<Event> visitLKMMFence(LKMMFence e) {
+        Fence optionalMemoryBarrier;
+        switch (e.getName()) {
+            // smp_mb()
+            case Tag.Linux.MO_MB:
+                // https://elixir.bootlin.com/linux/v5.18/source/include/asm-generic/barrier.h
+                // https://elixir.bootlin.com/linux/v5.18/source/arch/riscv/include/asm/barrier.h
+            case Tag.Linux.BEFORE_ATOMIC:
+            case Tag.Linux.AFTER_ATOMIC:
+                optionalMemoryBarrier = RISCV.newRWRWFence();
+                break;
+            // smp_rmb()
+            case Tag.Linux.MO_RMB:
+                optionalMemoryBarrier = RISCV.newRRFence();
+                break;
+            // smp_wmb()
+            case Tag.Linux.MO_WMB:
+                optionalMemoryBarrier = RISCV.newWWFence();
+                break;
+            // ##define smp_mb__after_spinlock()	RISCV_FENCE(iorw,iorw)
             // 		https://elixir.bootlin.com/linux/v6.1/source/arch/riscv/include/asm/barrier.h#L72
-			// RISCV_FENCE(iorw,iorw) imposes ordering both on devices and memory
-			// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
-			// Since the memory model says nothing about devices, we use RISCV_FENCE(rw,rw) which I think
-			// gives the ordering we want wrt. memory
+            // RISCV_FENCE(iorw,iorw) imposes ordering both on devices and memory
+            // 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/barrier.h
+            // Since the memory model says nothing about devices, we use RISCV_FENCE(rw,rw) which I think
+            // gives the ordering we want wrt. memory
             case Tag.Linux.AFTER_SPINLOCK:
-				optionalMemoryBarrier = RISCV.newRWRWFence();
-				break;
+                optionalMemoryBarrier = RISCV.newRWRWFence();
+                break;
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
             // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
@@ -464,68 +482,72 @@ class VisitorRISCV extends VisitorBase {
             case Tag.Linux.AFTER_UNLOCK_LOCK:
 				optionalMemoryBarrier = RISCV.newRWRWFence();
 				break;
+            // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
+            case Tag.Linux.BARRIER:
+                optionalMemoryBarrier = null;
+                break;
 			default:
 				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
 		}
 
-		return eventSequence(
+        return eventSequence(
                 optionalMemoryBarrier
         );
-	}
-	
-	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		ExprInterface value = e.getMemValue();
-		String mo = e.getMo();
+    }
 
-		Register dummy = e.getThread().newRegister(e.getResultRegister().getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+        Register resultRegister = e.getResultRegister();
+        Expression address = e.getAddress();
+        Expression value = e.getMemValue();
+        String mo = e.getMo();
+
+        Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
+        Register statusReg = e.getThread().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(new Atom(dummy, NEQ, e.getCmp()), casEnd);
-        
-        Load load = newRMWLoadExclusive(dummy, address, "");
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
+
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, value, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(types.getArchType())), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
-        
+
         return eventSequence(
-                // Indentation shows the branching structure
-        		optionalMemoryBarrierBefore,
+                optionalMemoryBarrierBefore,
                 load,
                 branchOnCasCmpResult,
-                    store,
-                    status,
-                    fakeCtrlDep,
-                    label,
-                    optionalMemoryBarrierAfter,
+                store,
+                status,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter,
                 casEnd,
                 newLocal(resultRegister, dummy)
         );
-	}
-	
-	// Following
-	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
-	// The linux kernel uses AMO instructions which we don't yet support
-	@Override
-	public List<Event> visitRMWXchg(RMWXchg e) {
-		Register resultRegister = e.getResultRegister();
-		ExprInterface value = e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
+    }
 
-		Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
-		String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
-        Load load = newRMWLoadExclusive(dummy, address, moLoad);
+    // Following
+    // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+    // The linux kernel uses AMO instructions which we don't yet support
+    @Override
+    public List<Event> visitRMWXchg(RMWXchg e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummy = e.getThread().newRegister(type);
+        Register statusReg = e.getThread().newRegister(type);
+        String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
-		Store store = RISCV.newRMWStoreConditional(address, value, moStore, true);
+        Store store = RISCV.newRMWStoreConditional(address, value, moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -537,28 +559,29 @@ class VisitorRISCV extends VisitorBase {
                 label,
                 optionalMemoryBarrierAfter
         );
-	}
-	
-	// Following
-	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
-	// The linux kernel uses AMO instructions which we don't yet support
-	@Override
-	public List<Event> visitRMWOp(RMWOp e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
+    }
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
-		String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
-        Load load = newRMWLoadExclusive(dummy, address, moLoad);
+    // Following
+    // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+    // The linux kernel uses AMO instructions which we don't yet support
+    @Override
+    public List<Event> visitRMWOp(RMWOp e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        IOpBin op = e.getOp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummy = e.getThread().newRegister(type);
+        Register statusReg = e.getThread().newRegister(type);
+        String moLoad = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_ACQUIRE) ? Tag.RISCV.MO_ACQ : "";
+        Load load = newRMWLoadExclusiveWithMo(dummy, address, moLoad);
         String moStore = mo.equals(Tag.Linux.MO_MB) || mo.equals(Tag.Linux.MO_RELEASE) ? Tag.RISCV.MO_ACQ_REL : "";
-        Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, op, value), moStore, true);
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, op, value), moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
 
         return eventSequence(
                 load,
@@ -567,33 +590,36 @@ class VisitorRISCV extends VisitorBase {
                 fakeCtrlDep,
                 label
         );
-	};
+    }
 
-	// The linux kernel uses AMO instructions which we don't yet support
-	// The scheme is not described in
-	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
-	// Since in VisitorArm8 this one is similar to visitRMWCmpXchg
-	// we also make it scheme similar to the one of visitRMWCmpXchg in this class
-	@Override
-	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+    ;
 
-		Load load = newRMWLoadExclusive(dummy, address, "");
-        Store store = RISCV.newRMWStoreConditional(address, new IExprBin(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+    // The linux kernel uses AMO instructions which we don't yet support
+    // The scheme is not described in
+    // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+    // Since in VisitorArm8 this one is similar to visitRMWCmpXchg
+    // we also make it scheme similar to the one of visitRMWCmpXchg in this class
+    @Override
+    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummy = e.getThread().newRegister(type);
+        Register statusReg = e.getThread().newRegister(type);
+
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
-        		optionalMemoryBarrierBefore,
+                optionalMemoryBarrierBefore,
                 load,
                 store,
                 status,
@@ -602,36 +628,38 @@ class VisitorRISCV extends VisitorBase {
                 label,
                 optionalMemoryBarrierAfter
         );
-	}
+    }
 
-	// The linux kernel uses AMO instructions which we don't yet support
-	// The scheme is not described in
-	// https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
-	// Since in VisitorArm8 this one is similar to visitRMWCmpXchg
-	// we also make it scheme similar to the one of visitRMWCmpXchg in this class
-	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+    // The linux kernel uses AMO instructions which we don't yet support
+    // The scheme is not described in
+    // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
+    // Since in VisitorArm8 this one is similar to visitRMWCmpXchg
+    // we also make it scheme similar to the one of visitRMWCmpXchg in this class
+    @Override
+    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        Expression zero = expressions.makeZero(type);
+        IOpBin op = e.getOp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
 
-        Load load = newRMWLoadExclusive(dummy, address, "");
+        Register dummy = e.getThread().newRegister(type);
+        Register statusReg = e.getThread().newRegister(type);
+
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(new Atom(statusReg, EQ, IValue.ZERO), label);
+        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, zero), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
-        
+
         return eventSequence(
-        		optionalMemoryBarrierBefore,
+                optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, new IExprBin(dummy, op, value)),
+                newLocal(dummy, expressions.makeBinary(dummy, op, value)),
                 store,
                 status,
                 newLocal(resultRegister, dummy),
@@ -639,77 +667,81 @@ class VisitorRISCV extends VisitorBase {
                 label,
                 optionalMemoryBarrierAfter
         );
-	};
-	
-	// This is a simplified version that should be correct according to the instruction's semantics.
-	// The implementation from the kernel is overly complicated, but since it relies on several macros
-	// (atomic_add_unless -> atomic_fetch_add_unless -> atomic_try_cmpxchg -> atomic_cmpxchg)
-	// and not on inlined assembly, we don't really need to test that the compilation is correct
-	// (the other methods implementing the macros are been tested already).
-	@Override
-	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
-		Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		ExprInterface value = e.getMemValue();
-		String mo = e.getMo();
-		int precision = resultRegister.getPrecision();
+    }
 
-        Register regValue = e.getThread().newRegister(precision);
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
+    ;
 
-		Load load = newRMWLoadExclusive(regValue, address, "");
-        Store store = RISCV.newRMWStoreConditional(address, new IExprBin(regValue, IOpBin.PLUS, (IExpr) value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+    // This is a simplified version that should be correct according to the instruction's semantics.
+    // The implementation from the kernel is overly complicated, but since it relies on several macros
+    // (atomic_add_unless -> atomic_fetch_add_unless -> atomic_try_cmpxchg -> atomic_cmpxchg)
+    // and not on inlined assembly, we don't really need to test that the compilation is correct
+    // (the other methods implementing the macros are been tested already).
+    @Override
+    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        Expression address = e.getAddress();
+        Expression value = e.getMemValue();
+        String mo = e.getMo();
+
+        Register regValue = e.getThread().newRegister(type);
+        Register statusReg = e.getThread().newRegister(type);
+
+        Load load = newRMWLoadExclusive(regValue, address); // TODO: No mo on the load?
+        Store store = RISCV.newRMWStoreConditional(address, expressions.makeADD(regValue, value), mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		ExprInterface unless = e.getCmp();
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(new Atom(dummy, EQ, IValue.ZERO), cauEnd);
+        CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, expressions.makeZero(type)), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
-                // Indentation shows the branching structure
                 load,
-                newLocal(dummy, new Atom(regValue, NEQ, unless)),
+                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
-                    store,
-                    status,
-                    fakeCtrlDep,
-                    label,
-                    optionalMemoryBarrierAfter,
+                store,
+                status,
+                fakeCtrlDep,
+                label,
+                optionalMemoryBarrierAfter,
                 cauEnd,
                 newLocal(resultRegister, dummy)
         );
-	};
-	
-	// The implementation is arch_${atomic}_op_return(i, v) == 0;
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
-	// 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
-	@Override
-	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-		Register resultRegister = e.getResultRegister();
-		IOpBin op = e.getOp();
-		IExpr value = (IExpr) e.getMemValue();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-		Register statusReg = e.getThread().newRegister(e.getResultRegister().getPrecision());
-        Register retReg = e.getThread().newRegister(resultRegister.getPrecision());
-        Local localOp = newLocal(retReg, new IExprBin(dummy, op, value));
-        Local testOp = newLocal(resultRegister, new Atom(retReg, EQ, IValue.ZERO));
+    }
 
-        Load load = newRMWLoadExclusive(dummy, address, "");
-        Store store = newRMWStoreExclusive(address, retReg, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
+    ;
+
+    // The implementation is arch_${atomic}_op_return(i, v) == 0;
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
+    // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
+    @Override
+    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+        Register resultRegister = e.getResultRegister();
+        IntegerType type = resultRegister.getType();
+        IOpBin op = e.getOp();
+        Expression value = e.getMemValue();
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+
+        Register dummy = e.getThread().newRegister(type);
+        Register statusReg = e.getThread().newRegister(type);
+        Register retReg = e.getThread().newRegister(type);
+        Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
+        Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, expressions.makeZero(type)));
+
+        Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
+        Store store = newRMWStoreExclusiveWithMo(address, retReg, true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
-        
+
         return eventSequence(
                 load,
                 localOp,
@@ -719,28 +751,33 @@ class VisitorRISCV extends VisitorBase {
                 label,
                 optionalMemoryBarrierAfter,
                 testOp
-        );	
-	};
-
-	@Override
-	public List<Event> visitLKMMLock(LKMMLock e) {
-	Register dummy = e.getThread().newRegister(GlobalSettings.getArchPrecision());
-    // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
-	// 		https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
-	// We replace AMO instructions with LL/SC
-	return eventSequence(
-				newRMWLoadExclusive(dummy, e.getLock(), ""),
-                newAssume(new Atom(dummy, COpBin.EQ, IValue.ZERO)),
-                newRMWStoreExclusive(e.getLock(), IValue.ONE, "", true),
-				RISCV.newRRWFence()
         );
-	}
+    }
+
+    ;
 
     @Override
-	public List<Event> visitLKMMUnlock(LKMMUnlock e) {
-	return eventSequence(
-				RISCV.newRWWFence(),
-				newStore(e.getAddress(), IValue.ZERO, "")
+    public List<Event> visitLKMMLock(LKMMLock e) {
+        IntegerType type = types.getArchType();
+        Expression one = expressions.makeOne(type);
+        Expression zero = expressions.makeZero(type);
+        Register dummy = e.getThread().newRegister(type);
+        // From this "unofficial" source (there is no RISCV specific implementation in the kernel)
+        // https://github.com/westerndigitalcorporation/RISC-V-Linux/blob/master/linux/arch/riscv/include/asm/spinlock.h
+        // We replace AMO instructions with LL/SC
+        return eventSequence(
+                newRMWLoadExclusive(dummy, e.getLock()),
+                newAssume(expressions.makeEQ(dummy, zero)),
+                newRMWStoreExclusive(e.getLock(), one, true),
+                RISCV.newRRWFence()
         );
-	}
+    }
+
+    @Override
+    public List<Event> visitLKMMUnlock(LKMMUnlock e) {
+        return eventSequence(
+                RISCV.newRWWFence(),
+                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+        );
+    }
 }

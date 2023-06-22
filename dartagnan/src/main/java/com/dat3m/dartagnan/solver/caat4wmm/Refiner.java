@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
@@ -119,16 +119,13 @@ public class Refiner {
     private BooleanFormula permuteAndConvert(CoreLiteral literal, Function<Event, Event> perm, EncodingContext encoder) {
         BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         BooleanFormula enc;
-        if (literal instanceof ExecLiteral) {
-            ExecLiteral lit = (ExecLiteral) literal;
+        if (literal instanceof ExecLiteral lit) {
             enc = encoder.execution(perm.apply(lit.getData()));
-        } else if (literal instanceof AddressLiteral) {
-            AddressLiteral loc = (AddressLiteral) literal;
-            MemEvent e1 = (MemEvent) perm.apply(loc.getFirst());
-            MemEvent e2 = (MemEvent) perm.apply(loc.getSecond());
+        } else if (literal instanceof AddressLiteral loc) {
+            MemoryCoreEvent e1 = (MemoryCoreEvent) perm.apply(loc.getFirst());
+            MemoryCoreEvent e2 = (MemoryCoreEvent) perm.apply(loc.getSecond());
             enc = encoder.sameAddress(e1, e2);
-        } else if (literal instanceof RelLiteral) {
-            RelLiteral lit = (RelLiteral) literal;
+        } else if (literal instanceof RelLiteral lit) {
             Relation rel = encoder.getTask().getMemoryModel().getRelation(lit.getName());
             enc = encoder.edge(rel,
                     perm.apply(lit.getData().getFirst()),

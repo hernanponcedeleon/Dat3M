@@ -5,6 +5,9 @@ import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
@@ -15,22 +18,21 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class ProgramBuilder {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final Map<Integer, Thread> threads = new HashMap<>();
-
+    private final List<INonDet> constants = new ArrayList<>();
     private final Map<String,MemoryObject> locations = new HashMap<>();
 
     private final Memory memory = new Memory();
@@ -54,10 +56,11 @@ public class ProgramBuilder {
             program.add(thread);
             thread.setProgram(program);
         }
+        constants.forEach(program::addConstant);
         program.setSpecification(ass);
         program.setFilterSpecification(assFilter);
         EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setOId(e.getGlobalId()));
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         return program;
     }
 
@@ -72,14 +75,21 @@ public class ProgramBuilder {
         initThread(String.valueOf(id), id);
     }
 
-    public Event addChild(int thread, Event child){
+    public Event addChild(int thread, Event child) {
         if(!threads.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
+        }
+        if (child.getThread() != null) {
+            //FIXME: This is a bad error message, but our tests require this for now.
+            final String error = String.format(
+                    "Trying to reinsert event %s from thread %s into thread %s",
+                    child, child.getThread().getId(), thread);
+            throw new MalformedProgramException(error);
         }
         threads.get(thread).append(child);
         // Every event in litmus tests is non-optimisable
         if(format.equals(LITMUS)) {
-            child.addFilters(Tag.NOOPT);
+            child.addTags(Tag.NOOPT);
         }
         return child;
     }
@@ -106,19 +116,19 @@ public class ProgramBuilder {
         getOrNewObject(locName).setInitialValue(0,iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, int precision){
+    public void initRegEqLocPtr(int regThread, String regName, String locName, IntegerType type) {
         MemoryObject object = getOrNewObject(locName);
-        Register reg = getOrCreateRegister(regThread, regName, precision);
+        Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread, EventFactory.newLocal(reg, object));
     }
 
-    public void initRegEqLocVal(int regThread, String regName, String locName, int precision){
-        Register reg = getOrCreateRegister(regThread, regName, precision);
+    public void initRegEqLocVal(int regThread, String regName, String locName, IntegerType type) {
+        Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread,EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrCreateRegister(regThread, regName, iValue.getPrecision()), iValue));
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
     }
 
     private IConst getInitialValue(String name) {
@@ -128,8 +138,10 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
 
-    public Event getLastEvent(int thread){
-        return threads.get(thread).getExit();
+    public INonDet newConstant(IntegerType type, boolean signed) {
+        var constant = new INonDet(constants.size(), type, signed);
+        constants.add(constant);
+        return constant;
     }
 
     public MemoryObject getObject(String name) {
@@ -156,15 +168,19 @@ public class ProgramBuilder {
         return null;
     }
 
-    public Register getOrCreateRegister(int threadId, String name, int precision){
+    public Register getOrNewRegister(int threadId, String name) {
+        return getOrNewRegister(threadId, name, types.getArchType());
+    }
+
+    public Register getOrNewRegister(int threadId, String name, IntegerType type) {
         initThread(threadId);
         Thread thread = threads.get(threadId);
         if(name == null) {
-            return thread.newRegister(precision);
+            return thread.newRegister(type);
         }
         Register register = thread.getRegister(name);
         if(register == null){
-            return thread.newRegister(name, precision);
+            return thread.newRegister(name, type);
         }
         return register;
     }
@@ -217,7 +233,7 @@ public class ProgramBuilder {
 
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
-    
+
     public void initScopedThread(String name, int id, int ctaID, int gpuID) {
         if(!threads.containsKey(id)){
             Skip threadEntry = EventFactory.newSkip();

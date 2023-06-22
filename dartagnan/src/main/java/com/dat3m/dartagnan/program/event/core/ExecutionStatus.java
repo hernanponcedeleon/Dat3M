@@ -1,18 +1,18 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.Map;
+import java.util.Set;
 
-public class ExecutionStatus extends Event implements RegWriter {
+public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
     private final Register register;
     private Event event;
@@ -22,6 +22,8 @@ public class ExecutionStatus extends Event implements RegWriter {
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
+
+        this.event.registerUser(this);
     }
 
     protected ExecutionStatus(ExecutionStatus other) {
@@ -29,6 +31,8 @@ public class ExecutionStatus extends Event implements RegWriter {
         this.register = other.register;
         this.event = other.event;
         this.trackDep = other.trackDep;
+
+        this.event.registerUser(this);
     }
 
     @Override
@@ -45,18 +49,34 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         return register + " <- status(" + event.toString() + ")";
     }
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return bmgr.and(super.encodeExec(context),
-                bmgr.implication(context.execution(event),
-                        context.equalZero(context.result(this))),
-                bmgr.or(context.execution(event),
-                        context.equal(context.result(this), context.encodeIntegerExpressionAt(IValue.ONE, this))));
+        FormulaManager formulaManager = context.getFormulaManager();
+        BooleanFormulaManager booleanFormulaManager = context.getBooleanFormulaManager();
+        Type type = register.getType();
+        BooleanFormula eventExecuted = context.execution(event);
+        Formula result = context.result(this);
+        if (type instanceof IntegerType integerType) {
+            Formula one;
+            if (integerType.isMathematical()) {
+                IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+                one = integerFormulaManager.makeNumber(1);
+            } else {
+                BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+                int bitWidth = integerType.getBitWidth();
+                one = bitvectorFormulaManager.makeBitvector(bitWidth, 1);
+            }
+            return booleanFormulaManager.and(super.encodeExec(context),
+                    booleanFormulaManager.implication(eventExecuted,
+                            context.equalZero(result)),
+                    booleanFormulaManager.or(eventExecuted,
+                            context.equal(result, one)));
+        }
+        throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }
 
     // Unrolling
@@ -69,7 +89,12 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.event = updateMapping.getOrDefault(event, event);
+        this.event = EventUser.moveUserReference(this, this.event, updateMapping);
+    }
+
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(event);
     }
 
     // Visitor
@@ -79,4 +104,5 @@ public class ExecutionStatus extends Event implements RegWriter {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitExecutionStatus(this);
     }
+
 }

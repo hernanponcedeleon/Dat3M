@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.event;
 
-import java.util.Set;
-
 import com.dat3m.dartagnan.program.event.core.Event;
+
+import java.util.Set;
 
 /*
     Tags can be attached to any event.
@@ -160,6 +160,7 @@ public final class Tag {
         public static final String MO_MB                    = "Mb";
         public static final String MO_RMB                   = "Rmb";
         public static final String MO_WMB                   = "Wmb";
+        public static final String BARRIER                  = "Barrier";
         public static final String MO_RELAXED               = "Relaxed";
         public static final String MO_RELEASE               = "Release";
         public static final String MO_ACQUIRE               = "Acquire";
@@ -199,6 +200,7 @@ public final class Tag {
                 case 10:    return BEFORE_ATOMIC;
                 case 11:    return AFTER_ATOMIC;
                 case 12:    return AFTER_SPINLOCK;
+                case 13:    return BARRIER;
                 default:
                     throw new UnsupportedOperationException("The memory order is not recognized");
             }
@@ -296,11 +298,11 @@ public final class Tag {
         }
 
         public static String getScopeTag(Event e) {
-            return getScopeTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+            return getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
         }
     
         public static String getProxyTag(Event e) {
-            return getProxyTags().stream().filter(tag -> e.is(tag)).findFirst().orElse("");
+            return getProxyTags().stream().filter(e::hasTag).findFirst().orElse("");
         }
         
         public static String loadMO(String mo) {

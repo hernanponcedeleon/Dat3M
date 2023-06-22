@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.verification.Context;
@@ -112,15 +111,15 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public Formula encodeFinalIntegerExpression(ExprInterface expression) {
+    public Formula encodeFinalIntegerExpression(Expression expression) {
         return new ExpressionEncoder(formulaManager, null).encodeAsInteger(expression);
     }
 
-    public BooleanFormula encodeBooleanExpressionAt(ExprInterface expression, Event event) {
+    public BooleanFormula encodeBooleanExpressionAt(Expression expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsBoolean(expression);
     }
 
-    public Formula encodeIntegerExpressionAt(ExprInterface expression, Event event) {
+    public Formula encodeIntegerExpressionAt(Expression expression, Event event) {
         return new ExpressionEncoder(formulaManager, event).encodeAsInteger(expression);
     }
 
@@ -192,15 +191,15 @@ public final class EncodingContext {
         }
     }
 
-    public BooleanFormula sameAddress(MemEvent first, MemEvent second) {
+    public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
         return aliasAnalysis.mustAlias(first, second) ? booleanFormulaManager.makeTrue() : equal(address(first), address(second));
     }
 
-    public Formula address(MemEvent event) {
+    public Formula address(MemoryEvent event) {
         return addresses.get(event);
     }
 
-    public Formula value(MemEvent event) {
+    public Formula value(MemoryEvent event) {
         return values.get(event);
     }
 
@@ -213,8 +212,8 @@ public final class EncodingContext {
     }
 
     public NumeralFormula.IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.is(WRITE), "Cannot get a clock-var for non-writes.");
-        if (write.is(INIT)) {
+        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.hasTag(INIT)) {
             return formulaManager.getIntegerFormulaManager().makeNumber(0);
         }
         return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
@@ -277,18 +276,27 @@ public final class EncodingContext {
             if (e instanceof RegWriter) {
                 Register register = ((RegWriter) e).getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                int precision = register.getPrecision();
-                if (precision > 0) {
-                    r = formulaManager.getBitvectorFormulaManager().makeVariable(precision, name);
+                Type type = register.getType();
+                if (type instanceof IntegerType integerType) {
+                    if (integerType.isMathematical()) {
+                        r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                    } else {
+                        int bitWidth = integerType.getBitWidth();
+                        r = formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
+                    }
                 } else {
-                    r = formulaManager.getIntegerFormulaManager().makeVariable(name);
+                    throw new UnsupportedOperationException(String.format("Encoding result of type %s.", type));
                 }
             } else {
                 r = null;
             }
-            if (e instanceof MemEvent) {
-                addresses.put(e, encodeIntegerExpressionAt(((MemEvent) e).getAddress(), e));
-                values.put(e, e instanceof Load ? r : encodeIntegerExpressionAt(((MemEvent) e).getMemValue(), e));
+            if (e instanceof MemoryCoreEvent memEvent) {
+                addresses.put(e, encodeIntegerExpressionAt(memEvent.getAddress(), e));
+                if (e instanceof Load) {
+                    values.put(e, r);
+                } else if (e instanceof Store store) {
+                    values.put(e, encodeIntegerExpressionAt(store.getMemValue(), e));
+                }
             }
             if (r != null) {
                 results.put(e, r);
@@ -297,8 +305,16 @@ public final class EncodingContext {
     }
 
     private NumeralFormula.IntegerFormula convertToIntegerFormula(Formula f) {
-        return f instanceof BitvectorFormula ?
-                formulaManager.getBitvectorFormulaManager().toIntegerFormula((BitvectorFormula) f, false) :
-                (NumeralFormula.IntegerFormula) f;
+        if (f instanceof BitvectorFormula bitvector) {
+            return formulaManager.getBitvectorFormulaManager().toIntegerFormula(bitvector, false);
+        }
+        if (f instanceof BooleanFormula guard) {
+            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+            NumeralFormula.IntegerFormula zero = integerFormulaManager.makeNumber(0);
+            NumeralFormula.IntegerFormula one = integerFormulaManager.makeNumber(1);
+            return booleanFormulaManager.ifThenElse(guard, one, zero);
+        }
+        checkArgument(f instanceof NumeralFormula.IntegerFormula, "Unknown type of formula %s.", f);
+        return (NumeralFormula.IntegerFormula) f;
     }
 }

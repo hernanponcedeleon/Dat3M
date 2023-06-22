@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -12,9 +13,9 @@ import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
@@ -40,6 +41,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -189,8 +191,8 @@ public class RelationAnalysis {
         final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
         final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
         for (final Tuple t : k.may) {
-            final Event x = t.getFirst();
-            final Event z = t.getSecond();
+            final MemoryEvent x = (MemoryEvent) t.getFirst();
+            final MemoryEvent z = (MemoryEvent) t.getSecond();
             final boolean hasIntermediary = mustOut.apply(x).stream().map(Tuple::getSecond)
                     .anyMatch(y -> y != x && y != z &&
                             (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
@@ -452,7 +454,7 @@ public class RelationAnalysis {
                 defaultKnowledge = null;
             } else {
                 Set<Tuple> may = new HashSet<>();
-                List<Event> events = program.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+                List<Event> events = program.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
                 for (Event x : events) {
                     for (Event y : events) {
                         may.add(new Tuple(x, y));
@@ -468,10 +470,10 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
+        public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
             Set<Tuple> must = new HashSet<>();
-            List<Event> l1 = program.getEvents().stream().filter(domain::filter).collect(toList());
-            List<Event> l2 = program.getEvents().stream().filter(range::filter).collect(toList());
+            List<Event> l1 = program.getEvents().stream().filter(domain::apply).collect(toList());
+            List<Event> l2 = program.getEvents().stream().filter(range::apply).collect(toList());
             for (Event e1 : l1) {
                 for (Event e2 : l2) {
                     if (!exec.areMutuallyExclusive(e1, e2)) {
@@ -483,10 +485,10 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
+        public Knowledge visitIdentity(Relation rel, Filter set) {
             Set<Tuple> must = new HashSet<>();
             for (Event e : program.getEvents()) {
-                if (set.filter(e)) {
+                if (set.apply(e)) {
                     must.add(new Tuple(e, e));
                 }
             }
@@ -531,10 +533,10 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
+        public Knowledge visitProgramOrder(Relation rel, Filter type) {
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
-                List<Event> events = t.getEvents().stream().filter(type::filter).collect(toList());
+                List<Event> events = t.getEvents().stream().filter(type::apply).collect(toList());
                 for (int i = 0; i < events.size(); i++) {
                     Event e1 = events.get(i);
                     for (int j = i + 1; j < events.size(); j++) {
@@ -581,16 +583,17 @@ public class RelationAnalysis {
 
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
-            return visitDependency(MemEvent.class, e -> ((MemEvent) e).getAddress().getRegs());
+            return computeInternalDependencies(EnumSet.of(ADDR));
         }
 
         @Override
         public Knowledge visitInternalDataDependency(Relation rel) {
-            return visitDependency(RegReaderData.class , e -> ((RegReaderData) e).getDataRegs());
+            // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
+            return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
         }
 
         @Override
-        public Knowledge visitFences(Relation rel, FilterAbstract fence) {
+        public Knowledge visitFences(Relation rel, Filter fence) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
@@ -598,7 +601,7 @@ public class RelationAnalysis {
                 int end = events.size();
                 for (int i = 0; i < end; i++) {
                     Event f = events.get(i);
-                    if (!fence.filter(f)) {
+                    if (!fence.apply(f)) {
                         continue;
                     }
                     for (Event x : events.subList(0, i)) {
@@ -626,7 +629,7 @@ public class RelationAnalysis {
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             for (Event e : program.getEvents()) {
-                if (e.is(IMM.CASDEPORIGIN)) {
+                if (e.hasTag(IMM.CASDEPORIGIN)) {
                     // The target of a CASDep is always the successor of the origin
                     must.add(new Tuple(e, e.getSuccessor()));
                 }
@@ -644,9 +647,9 @@ public class RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
-                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.is(Linux.RCU_LOCK)).collect(toList()));
+                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()));
                 for (Event unlock : thread.getEvents()) {
-                    if (!unlock.is(Linux.RCU_UNLOCK)) {
+                    if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
                         continue;
                     }
                     // iteration order assures that all intermediaries were already iterated
@@ -690,7 +693,7 @@ public class RelationAnalysis {
 
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getEvents(EndAtomic.class)) {
-                List<Event> block = end.getBlock().stream().filter(x -> x.is(VISIBLE)).collect(toList());
+                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).collect(toList());
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
@@ -704,7 +707,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
-                List<Event> events = thread.getEvents().stream().filter(e -> e.is(EXCL)).collect(toList());
+                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).collect(toList());
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
@@ -729,7 +732,7 @@ public class RelationAnalysis {
                         may.add(tuple);
                         if (enableMustSets &&
                                 intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
-                                (store.doesRequireMatchingAddresses() || alias.mustAlias((MemEvent) load, store))) {
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
                             must.add(tuple);
                         }
                     }
@@ -742,31 +745,29 @@ public class RelationAnalysis {
         public Knowledge visitCoherence(Relation rel) {
             logger.trace("Computing knowledge about memory order");
             List<Store> nonInitWrites = program.getEvents(Store.class);
+            nonInitWrites.removeIf(Init.class::isInstance);
             Set<Tuple> may = new HashSet<>();
-            for (Event w1 : program.getEvents()) {
-                if (!w1.is(WRITE)) {
-                    continue;
-                }
-                for (MemEvent w2 : nonInitWrites) {
+            for (Store w1 : program.getEvents(Store.class)) {
+                for (Store w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
-                            && alias.mayAlias((MemEvent) w1, w2)) {
+                            && alias.mayAlias(w1, w2)) {
                         may.add(new Tuple(w1, w2));
                     }
                 }
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                MemEvent w1 = (MemEvent) t.getFirst();
-                MemEvent w2 = (MemEvent) t.getSecond();
-                if (!w2.is(INIT) && alias.mustAlias(w1, w2) && w1.is(INIT)) {
+                MemoryCoreEvent w1 = (MemoryCoreEvent) t.getFirst();
+                MemoryCoreEvent w2 = (MemoryCoreEvent) t.getSecond();
+                if (!w2.hasTag(INIT) && alias.mustAlias(w1, w2) && w1.hasTag(INIT)) {
                     must.add(t);
                 }
             }
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
                 for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                    MemEvent w1 = (MemEvent) t.getFirst();
-                    MemEvent w2 = (MemEvent) t.getSecond();
+                    MemoryCoreEvent w1 = (MemoryCoreEvent) t.getFirst();
+                    MemoryCoreEvent w2 = (MemoryCoreEvent) t.getSecond();
                     if (alias.mustAlias(w1, w2) && t.isForward()) {
                         must.add(t);
                     }
@@ -781,12 +782,9 @@ public class RelationAnalysis {
             logger.trace("Computing knowledge about read-from");
             Set<Tuple> may = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
-            for (Event e1 : program.getEvents()) {
-                if (!e1.is(WRITE)) {
-                    continue;
-                }
+            for (Store e1 : program.getEvents(Store.class)) {
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias((MemEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -803,19 +801,19 @@ public class RelationAnalysis {
                 for (Load read : program.getEvents(Load.class)) {
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
-                    List<MemEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
-                            .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
-                            .map(x -> (MemEvent) x)
-                            .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)
+                    List<MemoryCoreEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
+                            .filter(e -> (e.getThread() == read.getThread() || e.hasTag(INIT)))
+                            .map(x -> (MemoryCoreEvent) x)
+                            .sorted((o1, o2) -> o1.hasTag(INIT) == o2.hasTag(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.hasTag(INIT) ? -1 : 1)
                             .collect(Collectors.toList());
                     // The set of writes that won't be readable due getting overwritten.
-                    Set<MemEvent> deletedWrites = new HashSet<>();
+                    Set<MemoryCoreEvent> deletedWrites = new HashSet<>();
                     // A rf-edge (w1, r) is impossible, if there exists a write w2 such that
                     // - w2 is exec-implied by w1 or r (i.e. cf-implied + w2.cfImpliesExec)
                     // - w2 must alias with either w1 or r.
                     for (int i = 0; i < possibleWrites.size(); i++) {
-                        MemEvent w1 = possibleWrites.get(i);
-                        for (MemEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
+                        MemoryCoreEvent w1 = possibleWrites.get(i);
+                        for (MemoryCoreEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
                             // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
                             // executed
                             if ((exec.isImplied(w1, w2) || exec.isImplied(read, w2))
@@ -874,9 +872,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameAddress(Relation rel) {
             Set<Tuple> may = new HashSet<>();
-            List<MemEvent> events = program.getEvents(MemEvent.class);
-            for (MemEvent e1 : events) {
-                for (MemEvent e2 : events) {
+            List<MemoryCoreEvent> events = program.getEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
                     if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
@@ -884,10 +882,58 @@ public class RelationAnalysis {
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
+                if (alias.mustAlias((MemoryCoreEvent) t.getFirst(), (MemoryCoreEvent) t.getSecond())) {
                     must.add(t);
                 }
             }
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
+        }
+
+        private Knowledge computeInternalDependencies(Set<UsageType> usageTypes) {
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
+
+            for (Event regReaderEvent : program.getEvents()) {
+                //TODO: Once "Event" is an interface and RegReader inherits from it,
+                // we can use program.getEvents(RegReader.class) here.
+                if (!(regReaderEvent instanceof RegReader regReader)) {
+                    continue;
+                }
+                for (Register.Read regRead : regReader.getRegisterReads()) {
+                    if (!usageTypes.contains(regRead.usageType())) {
+                        continue;
+                    }
+                    final Register register = regRead.register();
+                    // Register x0 is hardwired to the constant 0 in RISCV
+                    // https://en.wikichip.org/wiki/risc-v/registers,
+                    // and thus it generates no dependency, see
+                    // https://github.com/herd/herdtools7/issues/408
+                    // TODO: Can't we just replace all reads of "x0" by 0 in RISC-specific preprocessing?
+                    if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
+                        continue;
+                    }
+                    Dependency.State r = dep.of(regReaderEvent, register);
+                    for (Event regWriter : r.may) {
+                        may.add(new Tuple(regWriter, regReaderEvent));
+                    }
+                    for (Event regWriter : enableMustSets ? r.must : List.<Event>of()) {
+                        must.add(new Tuple(regWriter, regReaderEvent));
+                    }
+                }
+            }
+
+            // We need to track ExecutionStatus events separately, because they induce data-dependencies
+            // without reading from a register.
+            if (usageTypes.contains(DATA)) {
+                for (ExecutionStatus execStatus : program.getEvents(ExecutionStatus.class)) {
+                    if (execStatus.doesTrackDep()) {
+                        Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
+                        may.add(t);
+                        must.add(t);
+                    }
+                }
+            }
+
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
@@ -895,10 +941,10 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = new ArrayList<>();
-            // We avoid using MemEvent because we don't want to consider Init events
             events.addAll(program.getEvents(Load.class));
             events.addAll(program.getEvents(Store.class));
             events.addAll(program.getEvents(Fence.class));
+            events.removeIf(e -> e instanceof Init);
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     ScopedThread thread1 = (ScopedThread) e1.getThread();
@@ -945,7 +991,7 @@ public class RelationAnalysis {
             List<Fence> fenceEvents = program.getEvents(Fence.class);
             for (Fence e1 : fenceEvents) {
                 for (Fence e2 : fenceEvents) {
-                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (e1.hasTag(Tag.PTX.SC) && e2.hasTag(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -956,58 +1002,15 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitVirtualLocation(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            List<MemEvent> events = program.getEvents(MemEvent.class);
-            for (MemEvent e1 : events) {
-                for (MemEvent e2 : events) {
+            List<MemoryCoreEvent> events = program.getEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
                     if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
             }
             return new Knowledge(must, new HashSet<>(must));
-        }
-
-        private Knowledge visitDependency(Class<?> eventClass, Function<Event, Set<Register>> registers) {
-            Set<Tuple> may = new HashSet<>();
-            Set<Tuple> must = new HashSet<>();
-            // We need to track ExecutionStatus events separately, because they induce data-dependencies
-            // without reading from a register.
-            Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();
-            for (Event regReader : program.getEvents()) {
-                if (!eventClass.isInstance(regReader)) {
-                    //FIXME: It would be better to use program.getEvents(eventClass), but that doesn't work
-                    // because we call this method with RegReaderData.class, which (unfortunately) does not
-                    // inherit from Event.
-                    continue;
-                }
-                for (Register register : registers.apply(regReader)) {
-                    // Register x0 is hardwired to the constant 0 in RISCV
-                    // https://en.wikichip.org/wiki/risc-v/registers,
-                    // and thus it generates no dependency, see
-                    // https://github.com/herd/herdtools7/issues/408
-                    if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
-                        continue;
-                    }
-                    Dependency.State r = dep.of(regReader, register);
-                    for (Event regWriter : r.may) {
-                        may.add(new Tuple(regWriter, regReader));
-                        if (regWriter instanceof ExecutionStatus) {
-                            execStatusRegWriter.add((ExecutionStatus) regWriter);
-                        }
-                    }
-                    for (Event regWriter : enableMustSets ? r.must : List.<Event>of()) {
-                        must.add(new Tuple(regWriter, regReader));
-                    }
-                }
-            }
-            for (ExecutionStatus execStatus : execStatusRegWriter) {
-                if (execStatus.doesTrackDep()) {
-                    Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
-                    may.add(t);
-                    must.add(t);
-                }
-            }
-            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
     }
 
@@ -1526,9 +1529,7 @@ public class RelationAnalysis {
             //TODO use transitivity
             Set<Tuple> e = new HashSet<>();
             for (Tuple xy : disabled) {
-                MemEvent first = (MemEvent) xy.getFirst();
-                MemEvent second = (MemEvent) xy.getSecond();
-                if (alias.mustAlias(first, second)) {
+                if (alias.mustAlias((MemoryCoreEvent) xy.getFirst(), (MemoryCoreEvent) xy.getSecond())) {
                     e.add(xy.getInverse());
                 }
             }
@@ -1537,7 +1538,7 @@ public class RelationAnalysis {
     }
 
     private static List<Event> visibleEvents(Thread t) {
-        return t.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+        return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
     }
 
     private static Set<Tuple> inverse(Set<Tuple> set) {
@@ -1579,14 +1580,13 @@ public class RelationAnalysis {
     // GPU memory models make use of virtual addresses.
     // This models same_alias_r from the PTX Alloy model
     // Checking address1 and address2 hold the same generic address
-    private boolean sameGenericAddress(MemEvent e1, MemEvent e2) {
+    private boolean sameGenericAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
         // then `x + offset` and `y + offset` should too
-        if (!(e1.getAddress() instanceof VirtualMemoryObject) || !(e2.getAddress() instanceof VirtualMemoryObject)) {
+        if (!(e1.getAddress() instanceof VirtualMemoryObject addr1)
+                || !(e2.getAddress() instanceof VirtualMemoryObject addr2)) {
             return false;
         }
-        VirtualMemoryObject addr1 = (VirtualMemoryObject) e1.getAddress();
-        VirtualMemoryObject addr2 = (VirtualMemoryObject) e2.getAddress();
         return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 }

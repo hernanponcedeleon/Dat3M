@@ -1,65 +1,67 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
-public class Assume extends Event implements RegReaderData {
+import java.util.HashSet;
+import java.util.Set;
 
-	protected final ExprInterface expr;
+public class Assume extends AbstractEvent implements RegReader {
 
-	public Assume(ExprInterface expr) {
-		super();
-		this.expr = expr;
-	}
+    protected final Expression expr;
 
-	protected Assume(Assume other){
-		super(other);
-		this.expr = other.expr;
-	}
+    public Assume(Expression expr) {
+        super();
+        this.expr = expr;
+    }
 
-
-	public ExprInterface getExpr(){
-		return expr;
-	}
+    protected Assume(Assume other) {
+        super(other);
+        this.expr = other.expr;
+    }
 
 
-	@Override
-	public ImmutableSet<Register> getDataRegs(){
-		return expr.getRegs();
-	}
+    public Expression getExpr() {
+        return expr;
+    }
+
 
     @Override
-	public String toString() {
-		return "assume(" + expr + ")";
-	}
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(expr, Register.UsageType.OTHER, new HashSet<>());
+    }
 
-	@Override
-	public BooleanFormula encodeExec(EncodingContext ctx) {
-		BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return bmgr.and(
-				super.encodeExec(ctx),
-				bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpressionAt(expr, this)));
-	}
+    @Override
+    public String defaultString() {
+        return "assume(" + expr + ")";
+    }
 
-	// Unrolling
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public BooleanFormula encodeExec(EncodingContext ctx) {
+        BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        return bmgr.and(
+                super.encodeExec(ctx),
+                bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpressionAt(expr, this)));
+    }
 
-	@Override
-	public Assume getCopy(){
-		return new Assume(this);
-	}
+    // Unrolling
+    // -----------------------------------------------------------------------------------------------------------------
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public Assume getCopy() {
+        return new Assume(this);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitAssume(this);
-	}
+    // Visitor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAssume(this);
+    }
 }

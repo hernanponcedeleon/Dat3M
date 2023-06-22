@@ -1,22 +1,61 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.google.common.primitives.UnsignedInteger;
-import com.google.common.primitives.UnsignedLong;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+
+import java.math.BigInteger;
+import java.util.Optional;
 
 // TODO why is INonDet not a IConst?
 public class INonDet extends IExpr {
 
-    private final INonDetTypes type;
-    private final int precision;
+    private final int id;
+    private final boolean signed;
+    private BigInteger min;
+    private BigInteger max;
+    private String sourceName;
 
-    public INonDet(INonDetTypes type, int precision) {
-        this.type = type;
-        this.precision = precision;
+    // Should only be accessed from Program
+    public INonDet(int id, IntegerType type, boolean signed) {
+        super(type);
+        this.id = id;
+        this.signed = signed;
     }
 
-    public INonDetTypes getType() {
-        return type;
+    public String getName() {
+        return Integer.toString(id);
+    }
+
+    public boolean isSigned() {
+        return signed;
+    }
+
+    public Optional<BigInteger> getMin() {
+        return Optional.ofNullable(min);
+    }
+
+    public Optional<BigInteger> getMax() {
+        return Optional.ofNullable(max);
+    }
+
+    public void setMin(BigInteger bound) {
+        min = bound;
+    }
+
+    public void setMax(BigInteger bound) {
+        max = bound;
+    }
+
+    public void setSourceName(String name) {
+        sourceName = name;
+    }
+
+    @Override
+    public IConst reduce() {
+        if (min.equals(max)) {
+            return new IValue(min, getType());
+        }
+        return super.reduce();
     }
 
     @Override
@@ -26,70 +65,13 @@ public class INonDet extends IExpr {
 
     @Override
     public String toString() {
-        switch(type){
-            case INT:
-                return "nondet_int()";
-            case UINT:
-                return "nondet_uint()";
-            case LONG:
-                return "nondet_long()";
-            case ULONG:
-                return "nondet_ulong()";
-            case SHORT:
-                return "nondet_short()";
-            case USHORT:
-                return "nondet_ushort()";
-            case CHAR:
-                return "nondet_char()";
-            case UCHAR:
-                return "nondet_uchar()";
+        if (sourceName != null) {
+            return sourceName;
         }
-        throw new UnsupportedOperationException("toString() not supported for " + this);
-    }
-
-    public long getMin() {
-        switch(type){
-            case UINT:
-            case ULONG:
-            case USHORT:
-            case UCHAR:
-                return 0;
-            case INT:
-                return Integer.MIN_VALUE;
-            case LONG:
-                return Long.MIN_VALUE;
-            case SHORT:
-                return Short.MIN_VALUE;
-            case CHAR:
-                return -128;
+        IntegerType type = getType();
+        if (type.isMathematical()) {
+            return String.format("nondet_int(%d,%s,%s)", id, min, max);
         }
-        throw new UnsupportedOperationException("getMin() not supported for " + this);
-    }
-
-    public long getMax() {
-        switch(type){
-            case INT:
-                return Integer.MAX_VALUE;
-            case UINT:
-                return UnsignedInteger.MAX_VALUE.longValue();
-            case LONG:
-                return Long.MAX_VALUE;
-            case ULONG:
-                return UnsignedLong.MAX_VALUE.longValue();
-            case SHORT:
-                return Short.MAX_VALUE;
-            case USHORT:
-                return 65535;
-            case CHAR:
-                return 127;
-            case UCHAR:
-                return 255;
-        }
-        throw new UnsupportedOperationException("getMax() not supported for " + this);
-    }
-
-    @Override
-    public int getPrecision() {
-        return precision;
+        return String.format("nondet_%c%d(%d,%s,%s)", signed ? 's' : 'u', type.getBitWidth(), id, min, max);
     }
 }

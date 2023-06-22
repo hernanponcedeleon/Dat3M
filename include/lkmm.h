@@ -14,6 +14,7 @@ typedef enum memory_order {
   before_atomic,
   after_atomic,
   after_spinlock,
+  barrier,
 } memory_order;
 
 typedef enum operation {
@@ -42,7 +43,7 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
 
 /* Fences */
 
-#define barrier() __asm__ __volatile__ (""   : : : "memory")
+#define barrier() __LKMM_FENCE(barrier)
 
 #define smp_mb()  __LKMM_FENCE(mb)
 #define smp_rmb() __LKMM_FENCE(rmb)

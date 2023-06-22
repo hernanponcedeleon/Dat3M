@@ -1,8 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -14,14 +13,14 @@ public class RMWStoreExclusive extends Store {
     private final boolean isStrong;
     private final boolean requiresMatchingAddresses;
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo,
+    public RMWStoreExclusive(Expression address, Expression value,
                              boolean isStrong, boolean requiresMatchingAddresses) {
-        super(address, value, mo);
-        addFilters(Tag.EXCL, Tag.RMW);
+        super(address, value);
+        addTags(Tag.EXCL, Tag.RMW);
         this.isStrong = isStrong;
         this.requiresMatchingAddresses = requiresMatchingAddresses;
         if (isStrong) {
-            addFilters(Tag.STRONG);
+            addTags(Tag.STRONG);
         }
     }
 
@@ -40,10 +39,10 @@ public class RMWStoreExclusive extends Store {
     }
 
     @Override
-    public String toString() {
+    public String defaultString() {
         String tag = isStrong ? " strong" : "";
         tag += requiresMatchingAddresses ? " addrmatch" : "";
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", "excl " + super.defaultString()) + "# opt" + tag;
     }
 
     @Override
