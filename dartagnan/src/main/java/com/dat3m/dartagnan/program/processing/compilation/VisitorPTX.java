@@ -1,22 +1,17 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWLoad;
-import static com.dat3m.dartagnan.program.event.EventFactory.newRMWStore;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorPTX extends VisitorBase {
 
@@ -28,16 +23,14 @@ public class VisitorPTX extends VisitorBase {
     public List<Event> visitPtxAtomOp(AtomOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
-        IExpr address = e.getAddress();
-        ExprInterface value = e.getMemValue();
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(mo));
-        RMWStore store = newRMWStore(load, address,
-                new IExprBin(dummy, e.getOp(), (IExpr) value), Tag.PTX.storeMO(mo));
-        load.addFilters(Tag.PTX.getScopeTag(e));
-        load.addFilters(Tag.PTX.getProxyTag(e));
-        store.addFilters(Tag.PTX.getScopeTag(e));
-        store.addFilters(Tag.PTX.getProxyTag(e));
+        Expression address = e.getAddress();
+        Expression value = e.getMemValue();
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address,
+                expressions.makeBinary(dummy, e.getOp(), value), Tag.PTX.storeMO(mo));
+        load.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
+        store.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
         return eventSequence(
                 load,
                 store,
@@ -47,16 +40,14 @@ public class VisitorPTX extends VisitorBase {
 
     @Override
     public List<Event> visitPtxRedOp(RedOp e) {
-        IExpr address = e.getAddress();
+        Expression address = e.getAddress();
         Register resultRegister = e.getResultRegister();
-        Register dummy = e.getThread().newRegister(resultRegister.getPrecision());
-        Load load = newRMWLoad(dummy, address, Tag.PTX.loadMO(e.getMo()));
-        RMWStore store = newRMWStore(load, address,
-                new IExprBin(dummy, e.getOp(), (IExpr) e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
-        load.addFilters(Tag.PTX.getScopeTag(e));
-        load.addFilters(Tag.PTX.getProxyTag(e));
-        store.addFilters(Tag.PTX.getScopeTag(e));
-        store.addFilters(Tag.PTX.getProxyTag(e));
+        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
+        RMWStore store = newRMWStoreWithMo(load, address,
+                expressions.makeBinary(dummy, e.getOp(), e.getMemValue()), Tag.PTX.storeMO(e.getMo()));
+        load.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
+        store.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
         return eventSequence(
                 load,
                 store

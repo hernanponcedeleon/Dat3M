@@ -745,9 +745,10 @@ public class RelationAnalysis {
         public Knowledge visitCoherence(Relation rel) {
             logger.trace("Computing knowledge about memory order");
             List<Store> nonInitWrites = program.getEvents(Store.class);
+            nonInitWrites.removeIf(Init.class::isInstance);
             Set<Tuple> may = new HashSet<>();
             for (Store w1 : program.getEvents(Store.class)) {
-                for (MemoryCoreEvent w2 : nonInitWrites) {
+                for (Store w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && !exec.areMutuallyExclusive(w1, w2)
                             && alias.mayAlias(w1, w2)) {
                         may.add(new Tuple(w1, w2));
@@ -781,12 +782,9 @@ public class RelationAnalysis {
             logger.trace("Computing knowledge about read-from");
             Set<Tuple> may = new HashSet<>();
             List<Load> loadEvents = program.getEvents(Load.class);
-            for (Event e1 : program.getEvents()) {
-                if (!e1.hasTag(WRITE)) {
-                    continue;
-                }
+            for (Store e1 : program.getEvents(Store.class)) {
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias((MemoryCoreEvent) e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -943,10 +941,10 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = new ArrayList<>();
-            // We avoid using MemEvent because we don't want to consider Init events
             events.addAll(program.getEvents(Load.class));
             events.addAll(program.getEvents(Store.class));
             events.addAll(program.getEvents(Fence.class));
+            events.removeIf(e -> e instanceof Init);
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     ScopedThread thread1 = (ScopedThread) e1.getThread();
@@ -993,7 +991,7 @@ public class RelationAnalysis {
             List<Fence> fenceEvents = program.getEvents(Fence.class);
             for (Fence e1 : fenceEvents) {
                 for (Fence e2 : fenceEvents) {
-                    if (e1.is(Tag.PTX.SC) && e2.is(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (e1.hasTag(Tag.PTX.SC) && e2.hasTag(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -1004,9 +1002,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitVirtualLocation(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            List<MemEvent> events = program.getEvents(MemEvent.class);
-            for (MemEvent e1 : events) {
-                for (MemEvent e2 : events) {
+            List<MemoryCoreEvent> events = program.getEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
                     if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
@@ -1582,14 +1580,13 @@ public class RelationAnalysis {
     // GPU memory models make use of virtual addresses.
     // This models same_alias_r from the PTX Alloy model
     // Checking address1 and address2 hold the same generic address
-    private boolean sameGenericAddress(MemEvent e1, MemEvent e2) {
+    private boolean sameGenericAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
         // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
         // then `x + offset` and `y + offset` should too
-        if (!(e1.getAddress() instanceof VirtualMemoryObject) || !(e2.getAddress() instanceof VirtualMemoryObject)) {
+        if (!(e1.getAddress() instanceof VirtualMemoryObject addr1)
+                || !(e2.getAddress() instanceof VirtualMemoryObject addr2)) {
             return false;
         }
-        VirtualMemoryObject addr1 = (VirtualMemoryObject) e1.getAddress();
-        VirtualMemoryObject addr2 = (VirtualMemoryObject) e2.getAddress();
         return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 }

@@ -16,14 +16,14 @@ public abstract class RMWAbstract extends SingleAccessMemoryEvent implements Reg
     protected final Register resultRegister;
     protected Expression value;
 
-    RMWAbstract(Expression address, Register register, Expression value, String mo) {
+    protected RMWAbstract(Expression address, Register register, Expression value, String mo) {
         super(address, mo);
         this.resultRegister = register;
         this.value = value;
         addTags(READ, WRITE, RMW);
     }
 
-    RMWAbstract(RMWAbstract other) {
+    protected RMWAbstract(RMWAbstract other) {
         super(other);
         this.resultRegister = other.resultRegister;
         this.value = other.value;

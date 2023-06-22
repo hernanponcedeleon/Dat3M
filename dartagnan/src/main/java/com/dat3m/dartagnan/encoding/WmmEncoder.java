@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -623,8 +623,8 @@ public class WmmEncoder implements Encoder {
                 if (k.containsMust(tuple)) {
                     sameId = bmgr.makeTrue();
                 } else {
-                    IExpr id1 = e1.getFenceID();
-                    IExpr id2 = e2.getFenceID();
+                    Expression id1 = e1.getFenceID();
+                    Expression id2 = e2.getFenceID();
                     sameId = context.equal(context.encodeIntegerExpressionAt(id1, e1),
                             context.encodeIntegerExpressionAt(id2, e2));
                 }
@@ -639,9 +639,9 @@ public class WmmEncoder implements Encoder {
         public Void visitSyncFence(Relation syncFence) {
             boolean idl = !context.useSATEncoding;
             List<Fence> allFenceSC = program.getEvents(Fence.class).stream()
-                    .filter(e -> e.is(Tag.PTX.SC))
+                    .filter(e -> e.hasTag(Tag.PTX.SC))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
-                    .collect(toList());
+                    .toList();
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
