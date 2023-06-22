@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
@@ -52,6 +53,12 @@ public abstract class LlvmAbstractRMW extends SingleAccessMemoryEvent implements
     @Override
     public MemoryAccess getMemoryAccess() {
         return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.value = value.visit(exprTransformer);
     }
 
     // Visitor

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -49,6 +50,12 @@ public class AtomicCmpXchg extends AtomicAbstract {
     public String defaultString() {
         return resultRegister + " = atomic_compare_exchange" + (isStrong ? "_strong" : "_weak") +
                 "(*" + address + ", " + expectedAddr + ", " + value + ", " + mo + ")\t### C11";
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.expectedAddr = expectedAddr.visit(exprTransformer);
     }
 
     // Unrolling

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
@@ -10,7 +11,7 @@ import java.util.Set;
 
 public class RMWAddUnless extends RMWAbstract {
 
-    private final Expression cmp;
+    private Expression cmp;
 
     public RMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
         super(address, register, value, Tag.Linux.MO_MB);
@@ -34,6 +35,12 @@ public class RMWAddUnless extends RMWAbstract {
     @Override
     public Set<Register.Read> getRegisterReads(){
         return Register.collectRegisterReads(cmp, Register.UsageType.DATA, super.getRegisterReads());
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.cmp = cmp.visit(exprTransformer);
     }
 
     // Unrolling

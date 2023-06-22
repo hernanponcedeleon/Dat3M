@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -46,6 +47,12 @@ public class Store extends AbstractMemoryCoreEvent {
     public String defaultString() {
         final MemoryOrder mo = getMetadata(MemoryOrder.class);
         return String.format("store(*%s, %s%s)", address, value, mo != null ? ", " + mo.value() : "");
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.value = value.visit(exprTransformer);
     }
 
     // Unrolling

@@ -31,6 +31,8 @@ public class Unlock extends StoreBase {
         return "pthread_mutex_unlock(&" + name + ")";
     }
 
+    //TODO: Why does this have a ResultRegister without inheriting from RegWriter?
+    // Why is this even needed?
     public Register getResultRegister() {
         return reg;
     }

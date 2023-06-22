@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -87,6 +89,8 @@ public interface Event extends Encoder, Comparable<Event> {
     int compareTo(Event e);
 
     Event getCopy();
+
+    void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer);
 
     <T> T accept(EventVisitor<T> visitor);
 

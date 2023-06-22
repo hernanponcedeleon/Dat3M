@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -46,6 +47,12 @@ public abstract class AtomicAbstract extends SingleAccessMemoryEvent implements 
 
     public void setMemValue(Expression value){
         this.value = value;
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.value = value.visit(exprTransformer);
     }
 
     // Visitor

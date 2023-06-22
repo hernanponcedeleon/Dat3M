@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
@@ -52,7 +53,11 @@ public abstract class RMWAbstract extends SingleAccessMemoryEvent implements Reg
         return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
-
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.value = value.visit(exprTransformer);
+    }
 
     // Visitor
     // -----------------------------------------------------------------------------------------------------------------

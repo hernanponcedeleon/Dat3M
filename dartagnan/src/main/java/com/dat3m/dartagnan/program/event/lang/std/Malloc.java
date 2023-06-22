@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.lang.std;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -62,6 +63,11 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
     @Override
     public String defaultString() {
         return String.format("%s <- malloc(%s)", register, sizeExpr);
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.sizeExpr = sizeExpr.visit(exprTransformer);
     }
 
     @Override

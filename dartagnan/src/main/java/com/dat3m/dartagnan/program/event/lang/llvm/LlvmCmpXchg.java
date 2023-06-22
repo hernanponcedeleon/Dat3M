@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
@@ -61,9 +62,14 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     @Override
     public Set<Register.Read> getRegisterReads() {
         final Set<Register.Read> regReads = super.getRegisterReads();
-        Register.collectRegisterReads(value, Register.UsageType.DATA, regReads);
         Register.collectRegisterReads(expectedValue, Register.UsageType.DATA, regReads);
         return regReads;
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.expectedValue = expectedValue.visit(exprTransformer);
     }
 
     @Override

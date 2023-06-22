@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
@@ -60,6 +61,11 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
         return context.getBooleanFormulaManager().and(
                 super.encodeExec(context),
                 context.equal(context.result(this), context.encodeIntegerExpressionAt(expr, this)));
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.expr = expr.visit(exprTransformer);
     }
 
     // Unrolling

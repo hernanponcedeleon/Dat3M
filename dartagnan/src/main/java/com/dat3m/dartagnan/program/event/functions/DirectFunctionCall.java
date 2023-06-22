@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.functions;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -46,6 +47,11 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
 
     protected String argumentsToString() {
         return arguments.stream().map(Expression::toString).collect(Collectors.joining(", "));
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        arguments.replaceAll(expression -> expression.visit(exprTransformer));
     }
 
 }

@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventUser;
@@ -83,6 +84,11 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
     @Override
     public Set<Event> getReferencedEvents() {
         return Set.of(label);
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.guard = guard.visit(exprTransformer);
     }
 
     // Unrolling
