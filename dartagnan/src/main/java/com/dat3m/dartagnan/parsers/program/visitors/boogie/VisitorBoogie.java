@@ -358,6 +358,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         for(Local_varsContext localVarContext : body.local_vars()) {
             visitLocal_vars(localVarContext, threadCount);
         }
+		if (!inlineMode && ctx.proc_sign().proc_sign_out() != null) {
+			String typeString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where(0)
+							.typed_idents_where().typed_idents().type().getText();
+			programBuilder.getOrNewRegister(threadCount, currentScope.getID() + ":" + currentReturnName,
+					Types.parseIntegerType(typeString, types));
+		}
 
         visitChildren(body.stmt_list());
 
@@ -553,8 +559,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
 	@Override
 	public Object visitReturn_cmd(Return_cmdContext ctx) {
-		Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
-		programBuilder.addChild(threadCount, EventFactory.newGoto(label));
+		if (inlineMode) {
+			Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+			programBuilder.addChild(threadCount, EventFactory.newGoto(label));
+		} else {
+			Register returnReg = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + currentReturnName);
+			programBuilder.addChild(threadCount, EventFactory.newFunctionReturn(returnReg));
+		}
 		return null;
 	}
 
