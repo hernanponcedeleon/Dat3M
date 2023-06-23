@@ -46,8 +46,8 @@ public class StdProcedures {
             return;
         }
         if (name.equals("get_my_tid")) {
-            String registerName = ctx.call_params().Ident(0).getText();
-            Register register = visitor.programBuilder.getRegister(visitor.threadCount, visitor.currentScope.getID() + ":" + registerName);
+            String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
+            Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
             IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
             visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
             return;
@@ -110,7 +110,7 @@ public class StdProcedures {
     private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
         //Uniquely identify the allocated storage in the entire program
         final IExpr sizeExpr = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor));
-        final String ptrName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
+        final String ptrName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
         final Register reg = visitor.programBuilder.getRegister(visitor.threadCount, ptrName);
 
         visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Std.newMalloc(reg, sizeExpr));

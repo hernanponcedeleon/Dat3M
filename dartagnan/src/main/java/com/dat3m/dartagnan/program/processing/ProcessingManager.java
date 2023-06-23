@@ -46,7 +46,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
-    private boolean printBeforeProcessing = false;
+    private boolean printBeforeProcessing = true;
 
     @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
             description = "Prints the program after simplification.",

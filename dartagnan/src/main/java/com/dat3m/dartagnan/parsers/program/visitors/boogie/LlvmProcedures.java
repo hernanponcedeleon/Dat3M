@@ -43,7 +43,7 @@ public class LlvmProcedures {
         String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
         List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
 
-        String regName = visitor.currentScope.getID() + ":" + ctx.call_params().Ident(0).getText();
+        String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
         Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
 
         Expression p0 = (Expression) params.get(0).accept(visitor);
