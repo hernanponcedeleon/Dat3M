@@ -3,8 +3,10 @@ package com.dat3m.dartagnan.parsers.program.utils;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
@@ -31,7 +33,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private final Map<Integer, Thread> threads = new HashMap<>();
+    private final Map<Integer, Function> functions = new HashMap<>();
     private final List<INonDet> constants = new ArrayList<>();
     private final Map<String,MemoryObject> locations = new HashMap<>();
 
@@ -50,11 +52,22 @@ public class ProgramBuilder {
     
     public Program build(){
         Program program = new Program(memory, format);
-        for(Thread thread : threads.values()){
+        List<Thread> threads = functions.values().stream()
+                .filter(Thread.class::isInstance).map(Thread.class::cast)
+                .toList();
+        for(Thread thread : threads){
             addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
             validateLabels(thread);
             program.addThread(thread);
             thread.setProgram(program);
+        }
+
+        List<Function> funcs = functions.values().stream()
+                .filter(f -> !(f instanceof Thread))
+                .toList();
+        for (Function f : funcs) {
+            f.setProgram(program);
+            program.addFunction(f);
         }
         constants.forEach(program::addConstant);
         program.setSpecification(ass);
@@ -65,11 +78,21 @@ public class ProgramBuilder {
     }
 
     public void initThread(String name, int id){
-        if(!threads.containsKey(id)){
+        if(!functions.containsKey(id)){
             Skip threadEntry = EventFactory.newSkip();
-            threads.putIfAbsent(id, new Thread(name, id, threadEntry));
+            functions.putIfAbsent(id, new Thread(name, id, threadEntry));
         }
     }
+
+    public Function initFunction(String name, int id, FunctionType type, List<String> parameterNames) {
+        if(!functions.containsKey(id)){
+            Skip entry = EventFactory.newSkip();
+            functions.putIfAbsent(id, new Function(name, type, parameterNames, id, entry));
+            return functions.get(id);
+        }
+        return null;
+    }
+
 
     public void initThread(int id){
         initThread(String.valueOf(id), id);
@@ -77,7 +100,7 @@ public class ProgramBuilder {
 
     public Event addChild(int thread, Event child) {
         //TODO: Generalize to functions
-        if(!threads.containsKey(thread)){
+        if(!functions.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }
         if (child.getThread() != null) {
@@ -87,7 +110,7 @@ public class ProgramBuilder {
                     child, child.getThread().getId(), thread);
             throw new MalformedProgramException(error);
         }
-        threads.get(thread).append(child);
+        functions.get(thread).append(child);
         // Every event in litmus tests is non-optimisable
         if(format.equals(LITMUS)) {
             child.addTags(Tag.NOOPT);
@@ -163,8 +186,8 @@ public class ProgramBuilder {
     }
 
     public Register getRegister(int thread, String name){
-        if(threads.containsKey(thread)){
-            return threads.get(thread).getRegister(name);
+        if(functions.containsKey(thread)){
+            return functions.get(thread).getRegister(name);
         }
         return null;
     }
@@ -175,20 +198,20 @@ public class ProgramBuilder {
 
     public Register getOrNewRegister(int threadId, String name, IntegerType type) {
         initThread(threadId);
-        Thread thread = threads.get(threadId);
+        Function func = functions.get(threadId);
         if(name == null) {
-            return thread.newRegister(type);
+            return func.newRegister(type);
         }
-        Register register = thread.getRegister(name);
+        Register register = func.getRegister(name);
         if(register == null){
-            return thread.newRegister(name, type);
+            return func.newRegister(name, type);
         }
         return register;
     }
 
     public Register getOrErrorRegister(int thread, String name){
-        if(threads.containsKey(thread)){
-            Register register = threads.get(thread).getRegister(name);
+        if(functions.containsKey(thread)){
+            Register register = functions.get(thread).getRegister(name);
             if(register != null){
                 return register;
             }
@@ -236,9 +259,9 @@ public class ProgramBuilder {
     // PTX
 
     public void initScopedThread(String name, int id, int ctaID, int gpuID) {
-        if(!threads.containsKey(id)){
+        if(!functions.containsKey(id)){
             Skip threadEntry = EventFactory.newSkip();
-            threads.putIfAbsent(id, new PTXThread(name, id, threadEntry, gpuID, ctaID));
+            functions.putIfAbsent(id, new PTXThread(name, id, threadEntry, gpuID, ctaID));
         }
     }
 
