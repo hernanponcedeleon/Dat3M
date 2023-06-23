@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
@@ -17,6 +18,9 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.DirectVoidFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -111,6 +115,18 @@ public class EventFactory {
         final Expression address = offset == 0 ? base :
                 expressions.makeADD(base, expressions.makeValue(BigInteger.valueOf(offset), base.getType()));
         return new Init(base, offset, address);
+    }
+
+    public static DirectValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
+        return new DirectValueFunctionCall(resultRegister, function, arguments);
+    }
+
+    public static DirectVoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
+        return new DirectVoidFunctionCall(function, arguments);
+    }
+
+    public static Return newFunctionReturn(Expression returnExpression) {
+        return new Return(returnExpression);
     }
 
     // ------------------------------------------ Local events ------------------------------------------
