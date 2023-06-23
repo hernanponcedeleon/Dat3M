@@ -82,10 +82,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         // values and hence never produce BOT).
         Map<Register, Expression> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
-        final ConstantPropagator propagator = new ConstantPropagator(propagationMap);
 
+        final ConstantPropagator propagator = new ConstantPropagator();
         for (Event cur : thread.getEvents()) {
-
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
                 propagationMap = isTraversingDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
@@ -93,6 +92,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             }
 
             if (!isTraversingDeadBranch) {
+                propagator.propagationMap = propagationMap;
                 cur.transformExpressions(propagator);
                 reachableEvents.add(cur);
 
@@ -167,11 +167,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      */
     private static class ConstantPropagator extends ExprTransformer {
 
-        private final Map<Register, Expression> propagationMap;
-
-        public ConstantPropagator(Map<Register, Expression> propagationMap) {
-            this.propagationMap = propagationMap;
-        }
+        private Map<Register, Expression> propagationMap;
 
         @Override
         public Expression visit(Register reg) {
