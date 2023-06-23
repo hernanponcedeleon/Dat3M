@@ -12,7 +12,7 @@ import java.util.List;
 
 public class Load extends AbstractMemoryCoreEvent implements RegWriter {
 
-    protected final Register resultRegister;
+    protected Register resultRegister;
 
     public Load(Register register, Expression address) {
         super(address);
@@ -28,6 +28,11 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
     @Override
     public Register getResultRegister() {
         return resultRegister;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
     }
 
     @Override

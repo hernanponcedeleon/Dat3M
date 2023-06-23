@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.arch.lisa;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
@@ -14,8 +15,8 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public class RMW extends SingleAccessMemoryEvent implements RegWriter {
 
-    private final Register resultRegister;
-    private final Expression value;
+    private Register resultRegister;
+    private Expression value;
     
 
     public RMW(Expression address, Register register, Expression value, String mo) {
@@ -51,8 +52,19 @@ public class RMW extends SingleAccessMemoryEvent implements RegWriter {
     }
 
     @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
+    @Override
     public MemoryAccess getMemoryAccess() {
         return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.value = value.visit(exprTransformer);
     }
 
     // Unrolling

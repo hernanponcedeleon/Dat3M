@@ -14,7 +14,7 @@ import java.util.Set;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
-    private final Register register;
+    private Register register;
     private Event event;
     private final boolean trackDep;
 
@@ -38,6 +38,11 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     @Override
     public Register getResultRegister() {
         return register;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
     }
 
     public Event getStatusEvent() {

@@ -15,7 +15,7 @@ import java.util.Set;
 
 public class Local extends AbstractEvent implements RegWriter, RegReader {
 
-    protected final Register register;
+    protected Register register;
     protected Expression expr;
 
     public Local(Register register, Expression expr) {
@@ -40,6 +40,11 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
     @Override
     public Register getResultRegister() {
         return register;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
     }
 
     @Override

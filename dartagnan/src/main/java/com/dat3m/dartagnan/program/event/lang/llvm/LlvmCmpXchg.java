@@ -45,14 +45,21 @@ public class LlvmCmpXchg extends LlvmAbstractRMW {
     }
 
     public Register getStructRegister(int idx) {
+        return switch (idx) {
+            case 0 -> oldValueRegister;
+            case 1 -> cmpRegister;
+            default ->
+                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+        };
+    }
+
+    public void setStructRegister(int idx, Register register) {
         switch (idx) {
-            case 0:
-                return oldValueRegister;
-            case 1:
-                return cmpRegister;
-            default:
-                throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
-        }
+            case 0 -> oldValueRegister = register;
+            case 1 -> cmpRegister = register;
+            default ->
+                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+        };
     }
 
     public Expression getExpectedValue() {

@@ -14,7 +14,7 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public class Xchg extends SingleAccessMemoryEvent implements RegWriter {
 
-    private final Register resultRegister;
+    private Register resultRegister;
 
     public Xchg(MemoryObject address, Register register) {
         super(address, "");
@@ -30,6 +30,11 @@ public class Xchg extends SingleAccessMemoryEvent implements RegWriter {
     @Override
     public Register getResultRegister(){
         return resultRegister;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
     }
 
     @Override

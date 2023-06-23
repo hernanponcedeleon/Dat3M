@@ -25,7 +25,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class Malloc extends AbstractEvent implements RegWriter, RegReader {
 
-    protected final Register register;
+    protected Register register;
     protected Expression sizeExpr;
 
     public Malloc(Register register, Expression sizeExpr) {
@@ -52,6 +52,11 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
     @Override
     public Register getResultRegister() {
         return register;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
     }
 
     @Override

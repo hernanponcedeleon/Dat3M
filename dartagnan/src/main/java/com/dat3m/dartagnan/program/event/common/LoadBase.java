@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 @NoInterface
 public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWriter {
 
-    protected final Register resultRegister;
+    protected Register resultRegister;
 
     public LoadBase(Register register, Expression address, String mo) {
         super(address, mo);
@@ -26,6 +26,11 @@ public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWri
     @Override
     public Register getResultRegister() {
         return resultRegister;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
     }
 
     @Override

@@ -19,8 +19,6 @@ public class RedOp extends RMWAbstract {
         this.op = other.op;
     }
 
-
-
     @Override
     public String defaultString() {
         return "red_" + op.toString() + "(" + value + ", " + address + ")";

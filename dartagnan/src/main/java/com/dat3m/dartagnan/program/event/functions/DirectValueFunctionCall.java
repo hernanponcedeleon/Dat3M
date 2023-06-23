@@ -29,6 +29,11 @@ public class DirectValueFunctionCall extends DirectFunctionCall implements RegWr
     }
 
     @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
+    @Override
     protected String defaultString() {
         return String.format("%s <- call %s(%s)", resultRegister, callTarget.getName(), super.argumentsToString());
     }

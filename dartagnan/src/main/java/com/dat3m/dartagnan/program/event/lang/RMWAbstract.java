@@ -14,7 +14,7 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 
 public abstract class RMWAbstract extends SingleAccessMemoryEvent implements RegWriter {
 
-    protected final Register resultRegister;
+    protected Register resultRegister;
     protected Expression value;
 
     protected RMWAbstract(Expression address, Register register, Expression value, String mo) {
@@ -33,6 +33,11 @@ public abstract class RMWAbstract extends SingleAccessMemoryEvent implements Reg
     @Override
     public Register getResultRegister() {
         return resultRegister;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
     }
 
     @Override
