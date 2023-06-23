@@ -39,6 +39,7 @@ public class Function {
             parameterRegs.add(paramReg);
         }
 
+        entry.setFunction(this);
         updateExit(entry);
     }
 
@@ -97,6 +98,10 @@ public class Function {
 
     @Override
     public String toString() {
-        return id + ":" + getName();
+        final String prefix = getFunctionType().getReturnType() + " " + getName() + "(";
+        final String suffix = ")";
+        return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
+                .collect(Collectors.joining(", ", prefix, suffix));
+
     }
 }
