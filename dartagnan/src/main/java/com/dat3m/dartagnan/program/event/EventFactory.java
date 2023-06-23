@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectVoidFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -127,6 +128,10 @@ public class EventFactory {
 
     public static Return newFunctionReturn(Expression returnExpression) {
         return new Return(returnExpression);
+    }
+
+    public static AbortIf newAbortIf(Expression condition) {
+        return new AbortIf(condition);
     }
 
     // ------------------------------------------ Local events ------------------------------------------

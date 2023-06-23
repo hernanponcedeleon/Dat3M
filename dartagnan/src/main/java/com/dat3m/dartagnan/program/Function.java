@@ -85,7 +85,14 @@ public class Function {
     }
 
     public void append(Event event){
-        exit.insertAfter(event);
+        if (entry == null) {
+            entry = exit = event;
+            event.setFunction(this);
+            event.setSuccessor(null);
+            event.setPredecessor(null);
+        } else {
+            exit.insertAfter(event);
+        }
     }
 
     public void updateExit(Event event){
