@@ -35,7 +35,7 @@ public class Function {
         int paramIndex = 0;
         for (Type paramType : functionType.getParameterTypes()) {
             //TODO: avoid cast to IntegerType
-            final Register paramReg = newRegister(parameterNames.get(paramIndex), (IntegerType) paramType);
+            final Register paramReg = newRegister(parameterNames.get(paramIndex++), (IntegerType) paramType);
             parameterRegs.add(paramReg);
         }
 
