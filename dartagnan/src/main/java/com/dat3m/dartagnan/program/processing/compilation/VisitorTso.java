@@ -207,9 +207,8 @@ class VisitorTso extends VisitorBase {
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
-        String mo = e.getMo();
-        Expression expectedAddr = e.getExpectedAddr();
+        Expression value = e.getStoreValue();
+        Expression expectedAddr = e.getAddressOfExpected();
         IntegerType type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
 
@@ -248,7 +247,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
                 newRMWStore(load, address, dummyReg)
         ));
     }
@@ -287,7 +286,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue())
+                newRMWStore(load, address, e.getValue())
         ));
     }
 

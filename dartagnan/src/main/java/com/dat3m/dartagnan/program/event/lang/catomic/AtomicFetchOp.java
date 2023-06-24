@@ -3,48 +3,31 @@ package com.dat3m.dartagnan.program.event.lang.catomic;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.RMWFetchOpBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 
-public class AtomicFetchOp extends AtomicAbstract {
+public class AtomicFetchOp extends RMWFetchOpBase {
 
-    private final IOpBin op;
-
-    public AtomicFetchOp(Register register, Expression address, Expression value, IOpBin op, String mo) {
-        super(address, register, value, mo);
-        this.op = op;
+    public AtomicFetchOp(Register register, Expression address, IOpBin operator, Expression operand, String mo) {
+        super(register, address, operator, operand, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
     }
 
     private AtomicFetchOp(AtomicFetchOp other) {
         super(other);
-        this.op = other.op;
     }
 
     @Override
     public String defaultString() {
-        return resultRegister + " = atomic_fetch_" + op.toLinuxName() +
-                "(*" + address + ", " + value + ", " + mo + ")\t### C11";
+        return String.format("%s := atomic_fetch_%s(*%s, %s, %s)\t### C11",
+                resultRegister, operator.toLinuxName(), address, operand, mo);
     }
-
-    public IOpBin getOp() {
-        return op;
-    }
-
-    @Override
-    public MemoryAccess getMemoryAccess() {
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public AtomicFetchOp getCopy() {
         return new AtomicFetchOp(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

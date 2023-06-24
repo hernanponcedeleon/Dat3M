@@ -296,7 +296,7 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newFetchOp(Register register, Expression address, Expression value, IOpBin op, String mo) {
-            return new AtomicFetchOp(register, address, value, op, mo);
+            return new AtomicFetchOp(register, address, op, value, mo);
         }
 
         public static AtomicFetchOp newFADD(Register register, Expression address, Expression value, String mo) {

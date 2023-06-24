@@ -105,7 +105,7 @@ class VisitorIMM extends VisitorBase {
         String mo = e.getMo();
         Fence optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         Fence optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        Expression expectedAddr = e.getExpectedAddr();
+        Expression expectedAddr = e.getAddressOfExpected();
         IntegerType type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
 
@@ -120,7 +120,7 @@ class VisitorIMM extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadWithMo(regValue, address, extractLoadMo(mo));
-        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), extractStoreMo(mo));
+        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getStoreValue(), extractStoreMo(mo));
 
         return eventSequence(
                 loadExpected,
@@ -140,7 +140,6 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Fence optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
@@ -152,7 +151,7 @@ class VisitorIMM extends VisitorBase {
         return eventSequence(
                 optionalFenceBefore,
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
                 optionalFenceAfter,
                 newRMWStoreWithMo(load, address, dummyReg, extractStoreMo(mo))
         );
@@ -196,7 +195,7 @@ class VisitorIMM extends VisitorBase {
                 optionalFenceLoad,
                 load,
                 optionalFenceStore,
-                newRMWStoreWithMo(load, address, e.getMemValue(), extractStoreMo(mo))
+                newRMWStoreWithMo(load, address, e.getValue(), extractStoreMo(mo))
         );
     }
 

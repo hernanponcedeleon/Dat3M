@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.event.visitors;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -82,13 +82,12 @@ public interface EventVisitor<T> {
     default T visitRMW(RMW e) { return visitMemEvent(e); }
 
     // ------------------ C-Atomic Events ------------------
-    default T visitAtomicAbstract(AtomicAbstract e) { return visitMemEvent(e); }
-    default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitAtomicAbstract(e); }
-    default T visitAtomicFetchOp(AtomicFetchOp e) { return visitAtomicAbstract(e); }
+    default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitMemEvent(e); }
+    default T visitAtomicFetchOp(AtomicFetchOp e) { return visitMemEvent(e); }
     default T visitAtomicLoad(AtomicLoad e) { return visitMemEvent(e); }
     default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
     default T visitAtomicThreadFence(AtomicThreadFence e) { return visitEvent(e); }
-    default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); }
+    default T visitAtomicXchg(AtomicXchg e) { return visitMemEvent(e); }
 
     // ------------------ LLVM Events ------------------
     default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }

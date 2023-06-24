@@ -21,22 +21,15 @@ public class AtomicStore extends StoreBase {
         super(other);
     }
 
-
     @Override
     public String defaultString() {
-        return "atomic_store(*" + address + ", " + value + ", " + mo + ")\t### C11";
+        return String.format("atomic_store(*%s, %s, %s)\t### C11", address, value, mo);
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public AtomicStore getCopy() {
         return new AtomicStore(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

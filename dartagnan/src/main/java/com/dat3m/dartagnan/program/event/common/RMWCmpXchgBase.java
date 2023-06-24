@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 
 import java.util.Set;
 
+import static com.dat3m.dartagnan.program.Register.UsageType.DATA;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
 @NoInterface
@@ -59,7 +60,9 @@ public abstract class RMWCmpXchgBase extends SingleAccessMemoryEvent implements 
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(storeValue, Register.UsageType.DATA, super.getRegisterReads());
+        return Register.collectRegisterReads(storeValue, DATA,
+                Register.collectRegisterReads(expectedValue, DATA,
+                        super.getRegisterReads()));
     }
 
     @Override

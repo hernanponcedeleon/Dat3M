@@ -92,7 +92,7 @@ public class VisitorC11 extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Expression expectedAddr = e.getExpectedAddr();
+        Expression expectedAddr = e.getAddressOfExpected();
         IntegerType type = resultRegister.getType();
 
         Register regExpected = e.getThread().newRegister(type);
@@ -105,7 +105,7 @@ public class VisitorC11 extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, expressions.makeOne(type)), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadWithMo(regValue, address, mo);
-        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), mo);
+        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getStoreValue(), mo);
 
         return tagList(eventSequence(
                 loadExpected,
@@ -123,16 +123,17 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
         Expression address = e.getAddress();
         String mo = e.getMo();
+
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, mo);
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, mo);
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
+                localOp,
                 store
         ));
     }
@@ -164,7 +165,7 @@ public class VisitorC11 extends VisitorBase {
         String mo = e.getMo();
 
         Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
-        RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
 
         return tagList(eventSequence(
                 load,
