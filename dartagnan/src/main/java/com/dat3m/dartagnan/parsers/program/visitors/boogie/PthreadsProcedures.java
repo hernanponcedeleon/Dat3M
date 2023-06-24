@@ -69,8 +69,8 @@ public class PthreadsProcedures {
     private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
         // ----- TODO: Test code -----
         if (!visitor.inlineMode) {
-            visitor.programBuilder.addChild(visitor.threadCount,
-                    EventFactory.newFunctionCall("dummy pthread_create()"));
+            visitor.addEvent(EventFactory.newFunctionCall("dummy pthread_create()"));
+            // TODO: Create a proper function call, not just an annotation
             return;
         }
         // ----- TODO: Test code -----
@@ -85,7 +85,7 @@ public class PthreadsProcedures {
         visitor.pool.add(pointer, threadName, visitor.threadCount);
 
         Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
-        visitor.programBuilder.addChild(visitor.threadCount, matcher);
+        visitor.addEvent(matcher);
         visitor.pool.addMatcher(pointer, matcher);
 
         visitor.allocations.add(pointer);
@@ -94,7 +94,7 @@ public class PthreadsProcedures {
         String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
         Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
         Expression zero = visitor.expressions.makeZero(reg.getType());
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(reg, zero));
+        visitor.addEvent(EventFactory.newLocal(reg, zero));
     }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {

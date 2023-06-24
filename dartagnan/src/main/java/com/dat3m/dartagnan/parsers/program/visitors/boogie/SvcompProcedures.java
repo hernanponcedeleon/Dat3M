@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
@@ -43,12 +44,9 @@ public class SvcompProcedures {
         String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
         switch (name) {
             case "__VERIFIER_loop_bound" -> __VERIFIER_loop_bound(visitor, ctx);
-            case "__VERIFIER_loop_begin" ->
-                    visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBegin());
-            case "__VERIFIER_spin_start" ->
-                    visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newSpinStart());
-            case "__VERIFIER_spin_end" ->
-                    visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newSpinEnd());
+            case "__VERIFIER_loop_begin" -> visitor.addEvent(EventFactory.Svcomp.newLoopBegin());
+            case "__VERIFIER_spin_start" -> visitor.addEvent(EventFactory.Svcomp.newSpinStart());
+            case "__VERIFIER_spin_end" -> visitor.addEvent(EventFactory.Svcomp.newSpinEnd());
             case "__VERIFIER_assert" -> visitor.addAssertion((IExpr) ctx.call_params().exprs().accept(visitor));
             case "__VERIFIER_assume" -> __VERIFIER_assume(visitor, ctx);
             case "__VERIFIER_atomic_begin" -> __VERIFIER_atomic_begin(visitor);
@@ -66,19 +64,18 @@ public class SvcompProcedures {
 
     private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
         Expression expr = (Expression) ctx.call_params().exprs().accept(visitor);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newAssume(expr));
+        visitor.addEvent(EventFactory.newAssume(expr));
     }
 
     public static void __VERIFIER_atomic_begin(VisitorBoogie visitor) {
-        visitor.currentBeginAtomic = EventFactory.Svcomp.newBeginAtomic();
-        visitor.programBuilder.addChild(visitor.threadCount, visitor.currentBeginAtomic);
+        visitor.currentBeginAtomic = (BeginAtomic) visitor.addEvent(EventFactory.Svcomp.newBeginAtomic());
     }
 
     public static void __VERIFIER_atomic_end(VisitorBoogie visitor) {
         if (visitor.currentBeginAtomic == null) {
             throw new MalformedProgramException("__VERIFIER_atomic_end() does not have a matching __VERIFIER_atomic_begin()");
         }
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
+        visitor.addEvent(EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
         visitor.currentBeginAtomic = null;
     }
 

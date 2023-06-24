@@ -49,7 +49,7 @@ public class StdProcedures {
             String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
             Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
             IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, tid));
+            visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }
         if (name.equals("__assert_fail") || name.equals("__assert_rtn")) {
@@ -113,7 +113,7 @@ public class StdProcedures {
         final String ptrName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
         final Register reg = visitor.programBuilder.getRegister(visitor.threadCount, ptrName);
 
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Std.newMalloc(reg, sizeExpr));
+        visitor.addEvent(EventFactory.Std.newMalloc(reg, sizeExpr));
     }
 
     private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
