@@ -323,7 +323,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     private Relation parseAsRelation(Object o, ExpressionContext t) {
         if (o instanceof Relation relation) {
-            return rel;
+            return relation;
         }
         throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
