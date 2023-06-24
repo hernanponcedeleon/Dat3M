@@ -492,7 +492,7 @@ class VisitorRISCV extends VisitorBase {
         );
     }
 
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitRMWCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -528,7 +528,7 @@ class VisitorRISCV extends VisitorBase {
     // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
     // The linux kernel uses AMO instructions which we don't yet support
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitRMWXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
         IntegerType type = resultRegister.getType();
         Expression address = e.getAddress();
@@ -560,7 +560,7 @@ class VisitorRISCV extends VisitorBase {
     // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
     // The linux kernel uses AMO instructions which we don't yet support
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitRMWOp(LKMMOp e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
         IntegerType type = types.getArchType();
@@ -593,7 +593,7 @@ class VisitorRISCV extends VisitorBase {
     // Since in VisitorArm8 this one is similar to visitRMWCmpXchg
     // we also make it scheme similar to the one of visitRMWCmpXchg in this class
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitRMWFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
         IntegerType type = resultRegister.getType();
         Expression address = e.getAddress();
@@ -629,7 +629,7 @@ class VisitorRISCV extends VisitorBase {
     // Since in VisitorArm8 this one is similar to visitRMWCmpXchg
     // we also make it scheme similar to the one of visitRMWCmpXchg in this class
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitRMWOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
         IntegerType type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
@@ -668,7 +668,7 @@ class VisitorRISCV extends VisitorBase {
     // and not on inlined assembly, we don't really need to test that the compilation is correct
     // (the other methods implementing the macros are been tested already).
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitRMWAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         IntegerType type = resultRegister.getType();
         Expression address = e.getAddress();
@@ -711,7 +711,7 @@ class VisitorRISCV extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    public List<Event> visitRMWOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();

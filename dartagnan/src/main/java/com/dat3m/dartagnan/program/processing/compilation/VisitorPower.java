@@ -726,7 +726,7 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
 
     @Override
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitRMWCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -759,7 +759,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitRMWXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -787,7 +787,7 @@ public class VisitorPower extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitRMWOp(LKMMOp e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -818,7 +818,7 @@ public class VisitorPower extends VisitorBase {
     ;
 
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitRMWOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -850,7 +850,7 @@ public class VisitorPower extends VisitorBase {
     ;
 
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitRMWFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -883,7 +883,7 @@ public class VisitorPower extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/atomic.h
     // Since RMWAddUnless does not care about any returned value, we don't need the final sub
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitRMWAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -928,7 +928,7 @@ public class VisitorPower extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    public List<Event> visitRMWOpAndTest(LKMMOpAndTest e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummy = e.getThread().newRegister(types.getArchType());

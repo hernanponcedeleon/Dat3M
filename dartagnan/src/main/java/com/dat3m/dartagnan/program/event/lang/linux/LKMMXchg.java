@@ -6,13 +6,13 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class RMWXchg extends RMWXchgBase {
+public class LKMMXchg extends RMWXchgBase {
 
-    public RMWXchg(Expression address, Register register, Expression value, String mo) {
+    public LKMMXchg(Register register, Expression address, Expression value, String mo) {
         super(register, address, value, mo);
     }
 
-    private RMWXchg(RMWXchg other) {
+    private LKMMXchg(LKMMXchg other) {
         super(other);
     }
 
@@ -23,8 +23,8 @@ public class RMWXchg extends RMWXchgBase {
     }
 
     @Override
-    public RMWXchg getCopy() {
-        return new RMWXchg(this);
+    public LKMMXchg getCopy() {
+        return new LKMMXchg(this);
     }
 
     @Override

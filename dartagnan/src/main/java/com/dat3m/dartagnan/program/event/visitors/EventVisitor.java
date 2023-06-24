@@ -60,13 +60,13 @@ public interface EventVisitor<T> {
 
     // ------------------ Linux Events ------------------
     default T visitRMWAbstract(RMWAbstract e) { return visitMemEvent(e); }
-    default T visitRMWAddUnless(RMWAddUnless e) { return visitMemEvent(e); }
-    default T visitRMWCmpXchg(RMWCmpXchg e) { return visitMemEvent(e); }
-    default T visitRMWFetchOp(RMWFetchOp e) { return visitMemEvent(e); }
-    default T visitRMWOp(RMWOp e) { return visitMemEvent(e); }
-    default T visitRMWOpAndTest(RMWOpAndTest e) { return visitMemEvent(e); }
-    default T visitRMWOpReturn(RMWOpReturn e) { return visitMemEvent(e); }
-    default T visitRMWXchg(RMWXchg e) { return visitMemEvent(e); }
+    default T visitRMWAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
+    default T visitRMWCmpXchg(LKMMCmpXchg e) { return visitMemEvent(e); }
+    default T visitRMWFetchOp(LKMMFetchOp e) { return visitMemEvent(e); }
+    default T visitRMWOp(LKMMOp e) { return visitMemEvent(e); }
+    default T visitRMWOpAndTest(LKMMOpAndTest e) { return visitMemEvent(e); }
+    default T visitRMWOpReturn(LKMMOpReturn e) { return visitMemEvent(e); }
+    default T visitRMWXchg(LKMMXchg e) { return visitMemEvent(e); }
     default T visitLKMMFence(LKMMFence e) { return visitEvent(e); }
     default T visitLKMMLoad(LKMMLoad e) { return visitMemEvent(e); }
     default T visitLKMMStore(LKMMStore e) { return visitMemEvent(e); }

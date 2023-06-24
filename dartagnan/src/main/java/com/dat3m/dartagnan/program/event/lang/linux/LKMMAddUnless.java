@@ -12,13 +12,13 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.Register.UsageType.DATA;
 
-public class RMWAddUnless extends SingleAccessMemoryEvent implements RegWriter {
+public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter {
 
     private Register resultRegister;
     private Expression operand;
     private Expression cmp;
 
-    public RMWAddUnless(Register register, Expression address, Expression operand, Expression cmp) {
+    public LKMMAddUnless(Register register, Expression address, Expression operand, Expression cmp) {
         super(address, Tag.Linux.MO_MB);
         this.resultRegister = register;
         this.operand = operand;
@@ -26,7 +26,7 @@ public class RMWAddUnless extends SingleAccessMemoryEvent implements RegWriter {
         addTags(Tag.WRITE, Tag.READ, Tag.RMW);
     }
 
-    private RMWAddUnless(RMWAddUnless other){
+    private LKMMAddUnless(LKMMAddUnless other){
         super(other);
         this.resultRegister = other.resultRegister;
         this.operand = other.operand;
@@ -60,8 +60,8 @@ public class RMWAddUnless extends SingleAccessMemoryEvent implements RegWriter {
     }
 
     @Override
-    public RMWAddUnless getCopy(){
-        return new RMWAddUnless(this);
+    public LKMMAddUnless getCopy(){
+        return new LKMMAddUnless(this);
     }
 
     @Override

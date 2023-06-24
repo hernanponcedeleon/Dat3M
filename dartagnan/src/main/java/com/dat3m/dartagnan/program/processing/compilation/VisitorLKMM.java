@@ -74,7 +74,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitRMWAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Expression cmp = e.getCmp();
@@ -100,7 +100,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitRMWCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression cmp = e.getExpectedValue();
         Expression address = e.getAddress();
@@ -129,7 +129,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitRMWFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();
@@ -150,7 +150,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitRMWOp(LKMMOp e) {
         Expression address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(types.getArchType());
@@ -165,7 +165,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    public List<Event> visitRMWOpAndTest(LKMMOpAndTest e) {
         Expression address = e.getAddress();
         Register dummy = e.getThread().newRegister(types.getArchType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
@@ -181,7 +181,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitRMWOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -223,7 +223,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitRMWXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();

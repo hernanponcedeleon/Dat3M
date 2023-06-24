@@ -4,16 +4,16 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.common.RMWFetchOpBase;
+import com.dat3m.dartagnan.program.event.common.RMWOpResultBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class RMWOpAndTest extends RMWFetchOpBase {
+public class LKMMOpAndTest extends RMWOpResultBase {
 
-    public RMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {
-        super(register, address, op, value, Tag.Linux.MO_MB);
+    public LKMMOpAndTest(Register register, Expression address, IOpBin op, Expression operand) {
+        super(register, address, op, operand, Tag.Linux.MO_MB);
     }
 
-    private RMWOpAndTest(RMWOpAndTest other){
+    private LKMMOpAndTest(LKMMOpAndTest other){
         super(other);
     }
 
@@ -24,8 +24,8 @@ public class RMWOpAndTest extends RMWFetchOpBase {
     }
 
     @Override
-    public RMWOpAndTest getCopy(){
-        return new RMWOpAndTest(this);
+    public LKMMOpAndTest getCopy(){
+        return new LKMMOpAndTest(this);
     }
 
     @Override

@@ -4,32 +4,32 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.common.RMWFetchOpBase;
+import com.dat3m.dartagnan.program.event.common.RMWOpResultBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class RMWOpReturn extends RMWFetchOpBase {
+public class LKMMFetchOp extends RMWOpResultBase {
 
-    public RMWOpReturn(Expression address, Register register, Expression value, IOpBin op, String mo) {
-        super(register, address, op, value, mo);
+    public LKMMFetchOp(Register register, Expression address, IOpBin op, Expression operand, String mo) {
+        super(register, address, op, operand, mo);
     }
 
-    private RMWOpReturn(RMWOpReturn other){
+    private LKMMFetchOp(LKMMFetchOp other){
         super(other);
     }
 
     @Override
     public String defaultString() {
-        return String.format("%s := atomic_%s_return%s(%s, %s)\t### LKMM",
+        return String.format("%s := atomic_fetch_%s%s(%s, %s)\t### LKMM",
                 resultRegister, operator.toLinuxName(), Tag.Linux.toText(mo), operand, address);
     }
 
     @Override
-    public RMWOpReturn getCopy(){
-        return new RMWOpReturn(this);
+    public LKMMFetchOp getCopy(){
+        return new LKMMFetchOp(this);
     }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWOpReturn(this);
-	}
+        return visitor.visitRMWFetchOp(this);
+    }
 }

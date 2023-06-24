@@ -113,37 +113,37 @@ class VisitorBase implements EventVisitor<List<Event>> {
     }
 
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitRMWAddUnless(LKMMAddUnless e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitRMWCmpXchg(LKMMCmpXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitRMWFetchOp(LKMMFetchOp e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitRMWOp(LKMMOp e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    public List<Event> visitRMWOpAndTest(LKMMOpAndTest e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitRMWOpReturn(LKMMOpReturn e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitRMWXchg(LKMMXchg e) {
         throw error(e);
     }
 

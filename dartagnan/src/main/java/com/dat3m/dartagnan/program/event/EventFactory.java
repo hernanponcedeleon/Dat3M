@@ -474,32 +474,32 @@ public class EventFactory {
             return new LKMMStore(address, value, mo);
         }
 
-        public static RMWAddUnless newRMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
-            return new RMWAddUnless(register, address, value, cmp);
+        public static LKMMAddUnless newRMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
+            return new LKMMAddUnless(register, address, value, cmp);
         }
 
-        public static RMWCmpXchg newRMWCompareExchange(Expression address, Register register, Expression cmp, Expression value, String mo) {
-            return new RMWCmpXchg(address, register, cmp, value, mo);
+        public static LKMMCmpXchg newRMWCompareExchange(Expression address, Register register, Expression cmp, Expression value, String mo) {
+            return new LKMMCmpXchg(register, address, cmp, value, mo);
         }
 
-        public static RMWFetchOp newRMWFetchOp(Expression address, Register register, Expression value, IOpBin op, String mo) {
-            return new RMWFetchOp(address, register, value, op, mo);
+        public static LKMMFetchOp newRMWFetchOp(Expression address, Register register, Expression value, IOpBin op, String mo) {
+            return new LKMMFetchOp(register, address, op, value, mo);
         }
 
-        public static RMWOp newRMWOp(Expression address, Expression value, IOpBin op) {
-            return new RMWOp(address, op, value);
+        public static LKMMOp newRMWOp(Expression address, Expression value, IOpBin op) {
+            return new LKMMOp(address, op, value);
         }
 
-        public static RMWOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {
-            return new RMWOpAndTest(address, register, value, op);
+        public static LKMMOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {
+            return new LKMMOpAndTest(register, address, op, value);
         }
 
-        public static RMWOpReturn newRMWOpReturn(Expression address, Register register, Expression value, IOpBin op, String mo) {
-            return new RMWOpReturn(address, register, value, op, mo);
+        public static LKMMOpReturn newRMWOpReturn(Expression address, Register register, Expression value, IOpBin op, String mo) {
+            return new LKMMOpReturn(register, address, op, value, mo);
         }
 
-        public static RMWXchg newRMWExchange(Expression address, Register register, Expression value, String mo) {
-            return new RMWXchg(address, register, value, mo);
+        public static LKMMXchg newRMWExchange(Expression address, Register register, Expression value, String mo) {
+            return new LKMMXchg(register, address, value, mo);
         }
 
         public static LKMMFence newMemoryBarrier() {
