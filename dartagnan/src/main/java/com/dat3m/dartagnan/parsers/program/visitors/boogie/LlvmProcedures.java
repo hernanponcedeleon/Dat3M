@@ -57,28 +57,22 @@ public class LlvmProcedures {
         Expression cond;
 
         switch (name) {
-            case "__llvm_atomic32_load":
-            case "__llvm_atomic64_load":
+            case "__llvm_atomic32_load", "__llvm_atomic64_load" -> {
                 mo = C11.intToMo(((IConst) p1).getValueAsInt());
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newLoad(reg, p0, mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "__llvm_atomic32_store":
-            case "__llvm_atomic64_store":
+                visitor.addEvent(Llvm.newLoad(reg, p0, mo));
+            }
+            case "__llvm_atomic32_store", "__llvm_atomic64_store" -> {
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newStore(p0, p1, mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "__llvm_atomic_fence":
+                visitor.addEvent(Llvm.newStore(p0, p1, mo));
+            }
+            case "__llvm_atomic_fence" -> {
                 mo = C11.intToMo(((IConst) p0).getValueAsInt());
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newFence(mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "__llvm_atomic32_cmpxchg":
-            case "__llvm_atomic64_cmpxchg":
+                visitor.addEvent(Llvm.newFence(mo));
+            }
+            case "__llvm_atomic32_cmpxchg", "__llvm_atomic64_cmpxchg" -> {
                 // Since we don't support struct types, we instead model each member as a
                 // register.
-                // It is the responsibility of each LLVM istruction creating a structure to
+                // It is the responsibility of each LLVM instruction creating a structure to
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
@@ -87,67 +81,38 @@ public class LlvmProcedures {
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, Llvm.newCompareExchange(oldValueRegister, cmpRegister, p0, p1, p2, mo, true))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "__llvm_atomic32_rmw":
-            case "__llvm_atomic64_rmw":
+                visitor.addEvent(Llvm.newCompareExchange(oldValueRegister, cmpRegister, p0, p1, p2, mo, true));
+            }
+            case "__llvm_atomic32_rmw", "__llvm_atomic64_rmw" -> {
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
                 IOpBin op;
                 switch (((IConst) p3).getValueAsInt()) {
-                    case 0:
-                        visitor.programBuilder
-                                .addChild(visitor.threadCount, Llvm.newExchange(reg, p0, p1, mo))
-                                .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+                    case 0 -> {
+                        visitor.addEvent(Llvm.newExchange(reg, p0, p1, mo));
                         return;
-                    case 1:
-                        op = IOpBin.PLUS;
-                        break;
-                    case 2:
-                        op = IOpBin.MINUS;
-                        break;
-                    case 3:
-                        op = IOpBin.AND;
-                        break;
-                    case 4:
-                        op = IOpBin.OR;
-                        break;
-                    case 5:
-                        op = IOpBin.XOR;
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
+                    }
+                    case 1 -> op = IOpBin.PLUS;
+                    case 2 -> op = IOpBin.MINUS;
+                    case 3 -> op = IOpBin.AND;
+                    case 4 -> op = IOpBin.OR;
+                    case 5 -> op = IOpBin.XOR;
+                    default ->
+                            throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
                 }
-                visitor.programBuilder.addChild(visitor.threadCount, Llvm.newRMW(reg, p0, p1, op, mo))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "llvm.smax.i32":
-            case "llvm.smax.i64":
-            case "llvm.umax.i32":
-            case "llvm.umax.i64":
+                visitor.addEvent(Llvm.newRMW(reg, p0, p1, op, mo));
+            }
+            case "llvm.smax.i32", "llvm.smax.i64", "llvm.umax.i32", "llvm.umax.i64" -> {
                 cond = visitor.expressions.makeGT(p0, p1, name.contains("smax"));
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "llvm.smin.i32":
-            case "llvm.smin.i64":
-            case "llvm.umin.i32":
-            case "llvm.umin.i64":
+                visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)));
+            }
+            case "llvm.smin.i32", "llvm.smin.i64", "llvm.umin.i32", "llvm.umin.i64" -> {
                 cond = visitor.expressions.makeLT(p0, p1, name.contains("smin"));
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            case "llvm.ctlz.i32":
-            case "llvm.ctlz.i64":
-                visitor.programBuilder
-                        .addChild(visitor.threadCount, EventFactory.newLocal(reg, visitor.expressions.makeCTLZ(p0, (IntegerType) p0.getType())))
-                        .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
-                return;
-            default:
-                throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
+                visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)));
+            }
+            case "llvm.ctlz.i32", "llvm.ctlz.i64" -> {
+                visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeCTLZ(p0, (IntegerType) p0.getType())));
+            }
+            default -> throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
         }
     }
 }

@@ -89,8 +89,8 @@ public class PthreadsProcedures {
         visitor.pool.addMatcher(pointer, matcher);
 
         visitor.allocations.add(pointer);
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newCreate(pointer, threadName))
-                .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+        visitor.addEvent(EventFactory.Pthread.newCreate(pointer, threadName));
+
         String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
         Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
         Expression zero = visitor.expressions.makeZero(reg.getType());
@@ -102,8 +102,7 @@ public class PthreadsProcedures {
         IExpr lockAddress = (IExpr) lock.accept(visitor);
         IExpr value = (IExpr) ctx.call_params().exprs().expr(1).accept(visitor);
         if (lockAddress != null) {
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newInitLock(lock.getText(), lockAddress, value))
-                    .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+            visitor.addEvent(EventFactory.Pthread.newInitLock(lock.getText(), lockAddress, value));
         }
     }
 
@@ -112,8 +111,7 @@ public class PthreadsProcedures {
         Register register = visitor.programBuilder.getOrNewRegister(visitor.threadCount, null);
         IExpr lockAddress = (IExpr) lock.accept(visitor);
         if (lockAddress != null) {
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newLock(lock.getText(), lockAddress, register))
-                    .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+            visitor.addEvent(EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
         }
     }
 
@@ -122,8 +120,7 @@ public class PthreadsProcedures {
         Register register = visitor.programBuilder.getOrNewRegister(visitor.threadCount, null);
         IExpr lockAddress = (IExpr) lock.accept(visitor);
         if (lockAddress != null) {
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register))
-                    .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+            visitor.addEvent(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));
         }
     }
 }

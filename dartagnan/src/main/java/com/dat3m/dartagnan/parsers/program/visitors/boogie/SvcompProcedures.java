@@ -112,8 +112,7 @@ public class SvcompProcedures {
             INonDet expression = visitor.programBuilder.newConstant(register.getType(), signed);
             expression.setMin(min);
             expression.setMax(max);
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, expression))
-                    .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+            visitor.addEvent(EventFactory.newLocal(register, expression));
         }
     }
 
@@ -121,14 +120,12 @@ public class SvcompProcedures {
         String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
         Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
         if (register != null) {
-            visitor.programBuilder.addChild(visitor.threadCount, EventFactory.newLocal(register, new BNonDet()))
-                    .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+            visitor.addEvent(EventFactory.newLocal(register, new BNonDet()));
         }
     }
 
     private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
         int bound = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
-        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Svcomp.newLoopBound(bound))
-                .setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
+        visitor.addEvent(EventFactory.Svcomp.newLoopBound(bound));
     }
 }

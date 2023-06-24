@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
@@ -128,9 +129,24 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return false;
     }
 
+    // ==================== Utility function ====================
+
     protected String getScopedName(String name) {
         return currentScope.getID() + ":" + name;
     }
+
+    protected Event addEvent(Event e) {
+        if (currentLine != -1) {
+            e.setMetadata(new SourceLocation(sourceCodeFile, currentLine));
+        }
+        return programBuilder.addChild(threadCount, e);
+    }
+
+    protected Register getOrNewRegister(String name) {
+        return programBuilder.getOrNewRegister(threadCount, name);
+    }
+
+    // ======================================== ====================
 
     @Override
     public Object visitMain(MainContext ctx) {
@@ -167,7 +183,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         //currentScope = new Scope(nextScopeID, null);
         // ----- TODO: Test code -----
 
-        IExpr next = programBuilder.getOrNewRegister(threadCount, getScopedName("ptrMain"));
+        IExpr next = getOrNewRegister(getScopedName("ptrMain"));
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
             next = pool.next();
@@ -351,8 +367,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                         IntegerType type = Types.parseIntegerType(typeString, types);
                         Register register = programBuilder.getOrNewRegister(threadCount, getScopedName(ident.getText()), type);
                         Expression value = callingValues.get(index);
-                        programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-                                .setCFileInformation(currentLine, sourceCodeFile);
+                        addEvent(EventFactory.newLocal(register, value));
                         index++;
                     }
                 }
@@ -503,8 +518,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             atomicMode = null;
             SvcompProcedures.__VERIFIER_atomic_end(this);
         }
-        programBuilder.addChild(threadCount, EventFactory.newFunctionReturn(name))
-                .setCFileInformation(currentLine, sourceCodeFile);
+        addEvent(EventFactory.newFunctionReturn(name));
         if (name.equals("$initialize")) {
             initMode = false;
         }
@@ -543,27 +557,23 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     } else {
                         child = EventFactory.newLoad(register, value);
                     }
-                    programBuilder.addChild(threadCount, child)
-                            .setCFileInformation(currentLine, sourceCodeFile);
+                    addEvent(child);
                     continue;
                 }
                 value = value.visit(exprSimplifier);
-                programBuilder.addChild(threadCount, EventFactory.newLocal(register, value))
-                        .setCFileInformation(currentLine, sourceCodeFile);
+                addEvent(EventFactory.newLocal(register, value));
                 continue;
             }
             MemoryObject object = programBuilder.getObject(name);
             if (object != null) {
-                // These events are eventually compiled and we need to compare its mo, thus it cannot be null
-                programBuilder.addChild(threadCount, EventFactory.newStore(object, value))
-                        .setCFileInformation(currentLine, sourceCodeFile);
+                // These events are eventually compiled, and we need to compare its mo, thus it cannot be null
+                addEvent(EventFactory.newStore(object, value));
                 continue;
             }
             if (currentReturnName.equals(name)) {
                 if (!returnRegister.isEmpty()) {
                     Register ret = returnRegister.remove(returnRegister.size() - 1);
-                    programBuilder.addChild(threadCount, EventFactory.newLocal(ret, value))
-                            .setCFileInformation(currentLine, sourceCodeFile);
+                    addEvent(EventFactory.newLocal(ret, value));
                 }
                 continue;
             }
@@ -591,39 +601,41 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             sourceCodeFile = line.substring(line.indexOf('\"') + 1, line.indexOf(',') - 1);
             currentLine = Integer.parseInt(line.substring(line.indexOf(',') + 1, line.lastIndexOf(',')));
         }
-        // We can get rid of all the "assume true" statements
-        if (!ctx.proposition().expr().getText().equals("true")) {
-            Label pairingLabel;
-            if (!pairLabels.containsKey(currentLabel)) {
-                if (inlineMode) {
-                    // If the current label doesn't have a pairing label, we jump to the end of the program
-                    pairingLabel = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-                } else {
-                    pairingLabel = null;
-                }
+        if (ctx.proposition().expr().getText().equals("true")) {
+            // We can get rid of all the "assume true" statements
+            return null;
+        }
+
+        Label pairingLabel;
+        if (!pairLabels.containsKey(currentLabel)) {
+            if (inlineMode) {
+                // If the current label doesn't have a pairing label, we jump to the end of the program
+                pairingLabel = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
             } else {
-                pairingLabel = pairLabels.get(currentLabel);
+                pairingLabel = null;
             }
+        } else {
+            pairingLabel = pairLabels.get(currentLabel);
+        }
 
-            // ----- TODO: Test code -----
-            if (pairingLabel == null) {
-                Expression c = (Expression) ctx.proposition().expr().accept(this);
-                programBuilder.addChild(threadCount, EventFactory.newAbortIf(expressions.makeNot(c)));
-                return null;
-            }
-            // ----- TODO: Test code -----
-
-            // Smack converts any unreachable instruction into an "assume(false)".
-            // 		https://github.com/smackers/smack/blob/main/lib/smack/SmackInstGenerator.cpp#L329-L333
-            // There a mismatch between this and our Assume event semantics, thus we cannot use Assume.
-            // pairingLabel is guaranteed to be "END_OF_T"
-            if (ctx.proposition().expr().getText().equals("false")) {
-                programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
-            }
+        // ----- TODO: Test code -----
+        if (pairingLabel == null) {
             Expression c = (Expression) ctx.proposition().expr().accept(this);
-            if (c != null) {
-                programBuilder.addChild(threadCount, EventFactory.newJumpUnless(c, pairingLabel));
-            }
+            programBuilder.addChild(threadCount, EventFactory.newAbortIf(expressions.makeNot(c)));
+            return null;
+        }
+        // ----- TODO: Test code -----
+
+        // Smack converts any unreachable instruction into an "assume(false)".
+        // 		https://github.com/smackers/smack/blob/main/lib/smack/SmackInstGenerator.cpp#L329-L333
+        // There a mismatch between this and our Assume event semantics, thus we cannot use Assume.
+        // pairingLabel is guaranteed to be "END_OF_T"
+        if (ctx.proposition().expr().getText().equals("false")) {
+            programBuilder.addChild(threadCount, EventFactory.newGoto(pairingLabel));
+        }
+        Expression c = (Expression) ctx.proposition().expr().accept(this);
+        if (c != null) {
+            programBuilder.addChild(threadCount, EventFactory.newJumpUnless(c, pairingLabel));
         }
         return null;
     }
@@ -633,9 +645,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // Since we "inline" procedures, label names might clash
         // thus we use currentScope.getID() + ":"
         String labelName = getScopedName(ctx.children.get(0).getText());
-        Label label = (Label) programBuilder.getOrCreateLabel(labelName)
-                .setCFileInformation(currentLine, sourceCodeFile);
-        programBuilder.addChild(threadCount, label);
+        Label label = programBuilder.getOrCreateLabel(labelName);
+        addEvent(label);
         currentLabel = label;
         return null;
     }
@@ -832,8 +843,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 programBuilder.getOrNewObject(text).appendInitialValue(rhs, value.reduce());
                 return null;
             }
-            programBuilder.addChild(threadCount, EventFactory.newStore(address, value))
-                    .setCFileInformation(currentLine, sourceCodeFile);
+            addEvent(EventFactory.newStore(address, value));
             return null;
         }
         // push currentCall to the call stack
@@ -908,17 +918,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return null;
     }
 
-    protected Register getOrNewRegister(String name) {
-        return programBuilder.getOrNewRegister(threadCount, name);
-    }
-
     protected void addAssertion(IExpr expr) {
         Register ass = programBuilder.getOrNewRegister(threadCount, "assert_" + assertionIndex, expr.getType());
         IValue one = expressions.makeOne(expr.getType());
         assertionIndex++;
-        programBuilder.addChild(threadCount, EventFactory.newLocal(ass, expr))
-                .setCFileInformation(currentLine, sourceCodeFile)
-                .addTags(Tag.ASSERTION);
+        addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
             Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
             CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
@@ -926,8 +930,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             programBuilder.addChild(threadCount, jump);
         } else {
             IValue zero = expressions.makeZero(expr.getType());
-            programBuilder.addChild(threadCount,
-                    EventFactory.newAbortIf(expressions.makeEQ(ass, zero)));
+            programBuilder.addChild(threadCount, EventFactory.newAbortIf(expressions.makeEQ(ass, zero)));
         }
 
     }
