@@ -42,8 +42,8 @@ public class LlvmProcedures {
     public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromContext(ctx);
 
-        final String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        final Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
+        final String regName = ctx.call_params().Ident(0).getText();
+        final Register reg = visitor.getOrNewScopedRegister(regName);
         // TODO: See LkmmProcedures comment
 
         final List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
@@ -74,8 +74,8 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                Register oldValueRegister = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName + "(0)");
-                Register cmpRegister = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName + "(1)");
+                final Register oldValueRegister = visitor.getOrNewScopedRegister(regName + "(0)");
+                final Register cmpRegister = visitor.getOrNewScopedRegister(regName + "(1)");
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());

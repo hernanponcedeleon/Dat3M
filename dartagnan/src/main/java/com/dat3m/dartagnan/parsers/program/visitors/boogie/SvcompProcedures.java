@@ -79,19 +79,19 @@ public class SvcompProcedures {
     }
 
     private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {
-        String suffix = name.substring("__VERIFIER_nondet_".length());
+        final String suffix = name.substring("__VERIFIER_nondet_".length());
         boolean signed = switch (suffix) {
             case "int", "short", "long", "char" -> true;
             default -> false;
         };
-        BigInteger min = switch (suffix) {
+        final BigInteger min = switch (suffix) {
             case "long" -> BigInteger.valueOf(Long.MIN_VALUE);
             case "int" -> BigInteger.valueOf(Integer.MIN_VALUE);
             case "short" -> BigInteger.valueOf(Short.MIN_VALUE);
             case "char" -> BigInteger.valueOf(Byte.MIN_VALUE);
             default -> BigInteger.ZERO;
         };
-        BigInteger max = switch (suffix) {
+        final BigInteger max = switch (suffix) {
             case "int" -> BigInteger.valueOf(Integer.MAX_VALUE);
             case "uint", "unsigned_int" -> UnsignedInteger.MAX_VALUE.bigIntegerValue();
             case "short" -> BigInteger.valueOf(Short.MAX_VALUE);
@@ -102,10 +102,10 @@ public class SvcompProcedures {
             case "uchar" -> BigInteger.valueOf(255);
             default -> throw new ParsingException(name + " is not supported");
         };
-        String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
+        final String registerName = ctx.call_params().Ident(0).getText();
+        final Register register = visitor.getScopedRegister(registerName);
         if (register != null) {
-            INonDet expression = visitor.programBuilder.newConstant(register.getType(), signed);
+            final INonDet expression = visitor.programBuilder.newConstant(register.getType(), signed);
             expression.setMin(min);
             expression.setMax(max);
             visitor.addEvent(EventFactory.newLocal(register, expression));
@@ -113,15 +113,15 @@ public class SvcompProcedures {
     }
 
     private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
-        String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
+        final String registerName = ctx.call_params().Ident(0).getText();
+        final Register register = visitor.getScopedRegister(registerName);
         if (register != null) {
             visitor.addEvent(EventFactory.newLocal(register, new BNonDet()));
         }
     }
 
     private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
-        int bound = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
+        final int bound = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
         visitor.addEvent(EventFactory.Svcomp.newLoopBound(bound));
     }
 }

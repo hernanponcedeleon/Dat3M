@@ -77,48 +77,48 @@ public class PthreadsProcedures {
         visitor.currentThread++;
 
         visitor.threadCallingValues.put(visitor.currentThread, new ArrayList<>());
-        Expression callingValue = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
+        final Expression callingValue = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
         visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 
-        IExpr pointer = (IExpr) ctx.call_params().exprs().expr(0).accept(visitor);
-        String threadName = ctx.call_params().exprs().expr().get(2).getText();
+        final IExpr pointer = (IExpr) ctx.call_params().exprs().expr(0).accept(visitor);
+        final String threadName = ctx.call_params().exprs().expr().get(2).getText();
         visitor.pool.add(pointer, threadName, visitor.threadCount);
 
-        Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
+        final Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
         visitor.addEvent(matcher);
         visitor.pool.addMatcher(pointer, matcher);
 
         visitor.allocations.add(pointer);
         visitor.addEvent(EventFactory.Pthread.newCreate(pointer, threadName));
 
-        String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
-        Expression zero = visitor.expressions.makeZero(reg.getType());
+        final String regName = ctx.call_params().Ident(0).getText();
+        final Register reg = visitor.getOrNewScopedRegister(regName);
+        final Expression zero = visitor.expressions.makeZero(reg.getType());
         visitor.addEvent(EventFactory.newLocal(reg, zero));
     }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
-        ExprContext lock = ctx.call_params().exprs().expr(0);
-        IExpr lockAddress = (IExpr) lock.accept(visitor);
-        IExpr value = (IExpr) ctx.call_params().exprs().expr(1).accept(visitor);
+        final ExprContext lock = ctx.call_params().exprs().expr(0);
+        final Expression lockAddress = (Expression) lock.accept(visitor);
+        final Expression value = (Expression) ctx.call_params().exprs().expr(1).accept(visitor);
         if (lockAddress != null) {
             visitor.addEvent(EventFactory.Pthread.newInitLock(lock.getText(), lockAddress, value));
         }
     }
 
     private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
-        ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrNewRegister(visitor.threadCount, null);
-        IExpr lockAddress = (IExpr) lock.accept(visitor);
+        final ExprsContext lock = ctx.call_params().exprs();
+        final Register register = visitor.getOrNewScopedRegister(null);
+        final Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.addEvent(EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
         }
     }
 
     private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
-        ExprsContext lock = ctx.call_params().exprs();
-        Register register = visitor.programBuilder.getOrNewRegister(visitor.threadCount, null);
-        IExpr lockAddress = (IExpr) lock.accept(visitor);
+        final ExprsContext lock = ctx.call_params().exprs();
+        final Register register = visitor.getOrNewScopedRegister(null);
+        final Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
             visitor.addEvent(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));
         }

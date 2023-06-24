@@ -29,8 +29,8 @@ public class LkmmProcedures {
     public static void handleLkmmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromContext(ctx);
 
-        final String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        final Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, registerName);
+        final String registerName = ctx.call_params().Ident(0).getText();
+        final Register reg = visitor.getOrNewScopedRegister(registerName);
         //TODO: We want to do the following, but some events like RMWOp expect some register even though
         // they never write to that register...
         //final Register reg = visitor.programBuilder.getRegister(visitor.threadCount, registerName);

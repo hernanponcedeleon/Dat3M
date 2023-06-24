@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
@@ -48,9 +49,9 @@ public class StdProcedures {
         }
         if (funcName.equals("get_my_tid")) {
             // FIXME: In noinline mode, we cannot resolve the tId yet.
-            String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-            Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
-            IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
+            final String registerName = ctx.call_params().Ident(0).getText();
+            final Register register = visitor.getScopedRegister(registerName);
+            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
             visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }
@@ -111,9 +112,9 @@ public class StdProcedures {
 
     private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
         //Uniquely identify the allocated storage in the entire program
-        final IExpr sizeExpr = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor));
-        final String ptrName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        final Register reg = visitor.programBuilder.getRegister(visitor.threadCount, ptrName);
+        final Expression sizeExpr = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
+        final String ptrName = ctx.call_params().Ident(0).getText();
+        final Register reg = visitor.getScopedRegister(ptrName);
 
         visitor.addEvent(EventFactory.Std.newMalloc(reg, sizeExpr));
     }

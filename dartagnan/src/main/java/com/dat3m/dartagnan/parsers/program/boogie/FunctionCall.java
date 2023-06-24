@@ -1,19 +1,20 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import java.util.List;
-import java.util.stream.IntStream;
-
+import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_exprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.Var_or_typeContext;
-import com.dat3m.dartagnan.exception.ParsingException;
+
+import java.util.List;
+import java.util.stream.IntStream;
 
 public class FunctionCall {
 
 	private final Function function;
 	private final FunctionCall parent;
-	private final List<Object> call;
+	private final List<Expression> call;
     
-	public FunctionCall(Function function, List<Object> call, FunctionCall caller) {
+	public FunctionCall(Function function, List<Expression> call, FunctionCall caller) {
 		if(!(function.getSignature().size() == call.size())) {
 			throw new ParsingException("The number of parameters in the function call does not match " + function.getName() + "'s signature");
 		}
@@ -30,7 +31,7 @@ public class FunctionCall {
     	return function;
     }
 
-	public List<Object> getCallParam() {
+	public List<Expression> getCallParam() {
     	return call;
     }
 
