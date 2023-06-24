@@ -475,7 +475,7 @@ public class EventFactory {
         }
 
         public static RMWAddUnless newRMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
-            return new RMWAddUnless(address, register, cmp, value);
+            return new RMWAddUnless(register, address, value, cmp);
         }
 
         public static RMWCmpXchg newRMWCompareExchange(Expression address, Register register, Expression cmp, Expression value, String mo) {
@@ -486,8 +486,8 @@ public class EventFactory {
             return new RMWFetchOp(address, register, value, op, mo);
         }
 
-        public static RMWOp newRMWOp(Expression address, Register register, Expression value, IOpBin op) {
-            return new RMWOp(address, register, value, op);
+        public static RMWOp newRMWOp(Expression address, Expression value, IOpBin op) {
+            return new RMWOp(address, op, value);
         }
 
         public static RMWOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {

@@ -28,6 +28,10 @@ public class LKMMLoad extends LoadBase {
         super(register, address, mo);
     }
 
+    private LKMMLoad(LKMMLoad other) {
+        super(other);
+    }
+
     @Override
     public String defaultString() {
         if (mo.equals(Tag.Linux.MO_ONCE)) {
@@ -36,8 +40,10 @@ public class LKMMLoad extends LoadBase {
         return super.defaultString();
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public LKMMLoad getCopy() {
+        return new LKMMLoad(this);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -2,53 +2,75 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
 
-public class RMWAddUnless extends RMWAbstract {
+import static com.dat3m.dartagnan.program.Register.UsageType.DATA;
 
-    private final Expression cmp;
+public class RMWAddUnless extends SingleAccessMemoryEvent implements RegWriter {
 
-    public RMWAddUnless(Expression address, Register register, Expression cmp, Expression value) {
-        super(address, register, value, Tag.Linux.MO_MB);
+    private Register resultRegister;
+    private Expression operand;
+    private Expression cmp;
+
+    public RMWAddUnless(Register register, Expression address, Expression operand, Expression cmp) {
+        super(address, Tag.Linux.MO_MB);
+        this.resultRegister = register;
+        this.operand = operand;
         this.cmp = cmp;
+        addTags(Tag.WRITE, Tag.READ, Tag.RMW);
     }
 
     private RMWAddUnless(RMWAddUnless other){
         super(other);
+        this.resultRegister = other.resultRegister;
+        this.operand = other.operand;
         this.cmp = other.cmp;
     }
 
     @Override
     public String defaultString() {
-        return resultRegister + " := atomic_add_unless" + "(" + address + ", " + value + ", " + cmp + ")\t### LKMM";
+        return String.format("%s := atomic_add_unless(%s, %s, %s)\t### LKMM",
+                resultRegister, address, operand, cmp);
+    }
+
+    @Override
+    public Register getResultRegister() {
+        return resultRegister;
+    }
+
+    public Expression getOperand() {
+        return operand;
     }
 
     public Expression getCmp() {
-    	return cmp;
+        return cmp;
     }
     
     @Override
     public Set<Register.Read> getRegisterReads(){
-        return Register.collectRegisterReads(cmp, Register.UsageType.DATA, super.getRegisterReads());
+        return Register.collectRegisterReads(cmp, DATA,
+                Register.collectRegisterReads(operand, DATA,
+                super.getRegisterReads()));
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public RMWAddUnless getCopy(){
         return new RMWAddUnless(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
 		return visitor.visitRMWAddUnless(this);
 	}
+
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
 }

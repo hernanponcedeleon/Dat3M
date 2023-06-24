@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.Linux;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -79,7 +80,7 @@ public class LkmmProcedures {
 			return;
 		case "__LKMM_ATOMIC_OP":
 			op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
-	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp((IExpr) p0, reg, (IExpr) p1, op))
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp((IExpr) p0, (IExpr) p1, op))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_FENCE":

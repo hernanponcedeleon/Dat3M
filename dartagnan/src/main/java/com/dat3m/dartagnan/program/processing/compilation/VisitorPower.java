@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -689,10 +688,10 @@ public class VisitorPower extends VisitorBase {
             case Tag.Linux.BARRIER:
                 optionalMemoryBarrier = null;
                 break;
-			default:
-				throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-		}
-		
+            default:
+                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
+        }
+
         return eventSequence(
                 optionalMemoryBarrier
         );
@@ -730,15 +729,14 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
         String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, value, true);
+        Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -763,13 +761,12 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitRMWXchg(RMWXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, value, true);
+        Store store = Power.newRMWStoreConditional(address, e.getValue(), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -791,16 +788,14 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitRMWOp(RMWOp e) {
-        Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getThread().newRegister(types.getArchType());
+        Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, op, value), true);
+        Store store = Power.newRMWStoreConditional(address, storeValue, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -825,8 +820,6 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitRMWOpReturn(RMWOpReturn e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -845,7 +838,7 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, op, value)),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
                 fakeCtrlDep,
@@ -859,13 +852,12 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitRMWFetchOp(RMWFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummy = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOp(), value), true);
+        Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -894,7 +886,6 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitRMWAddUnless(RMWAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
         String mo = e.getMo();
         IntegerType type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
@@ -902,7 +893,7 @@ public class VisitorPower extends VisitorBase {
         Register regValue = e.getThread().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(regValue, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeADD(regValue, value), true);
+        Store store = Power.newRMWStoreConditional(address, expressions.makeADD(regValue, e.getOperand()), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
@@ -938,21 +929,15 @@ public class VisitorPower extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
     public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-        Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
-        Expression zero = expressions.makeZero(type);
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
-
-        Register dummy = e.getThread().newRegister(type);
-        Register retReg = e.getThread().newRegister(type);
-        Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, zero));
+        Register dummy = e.getThread().newRegister(types.getArchType());
+        Expression zero = expressions.makeZero(dummy.getType());
 
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, retReg, true);
+        Local localOp = newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
+        Store store = Power.newRMWStoreConditional(address, dummy, true);
+        Local testOp = newLocal(e.getResultRegister(), expressions.makeEQ(dummy, zero));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 

@@ -3,13 +3,13 @@ package com.dat3m.dartagnan.program.event.lang.linux;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
+import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class RMWXchg extends RMWAbstract {
+public class RMWXchg extends RMWXchgBase {
 
     public RMWXchg(Expression address, Register register, Expression value, String mo) {
-        super(address, register, value, mo);
+        super(register, address, value, mo);
     }
 
     private RMWXchg(RMWXchg other) {
@@ -18,19 +18,14 @@ public class RMWXchg extends RMWAbstract {
 
     @Override
     public String defaultString() {
-        return resultRegister + " := atomic_xchg" + Tag.Linux.toText(mo) + "(" + address + ", " + value + ")\t### LKMM";
+        return String.format("%s := atomic_xchg%s(%s, %s)\t### LKMM",
+                resultRegister, Tag.Linux.toText(mo), address, storeValue);
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public RMWXchg getCopy() {
         return new RMWXchg(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
