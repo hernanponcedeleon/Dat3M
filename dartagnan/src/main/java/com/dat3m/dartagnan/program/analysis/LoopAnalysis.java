@@ -148,11 +148,10 @@ public class LoopAnalysis {
     // A loop-related label has the form
     // "origLabel.loop/bound OR origLabel.loop/itr_N"
     private LoopLabelInfo tryParseLoopLabel(Event eventToParse) {
-        if (!(eventToParse instanceof Label && ((Label)eventToParse).getName().contains(LOOP_LABEL_IDENTIFIER))) {
+        if (!(eventToParse instanceof Label label && label.getName().contains(LOOP_LABEL_IDENTIFIER))) {
             return null;
         }
 
-        final Label label = (Label) eventToParse;
         final int labelInfoIndex = label.getName().lastIndexOf(LOOP_INFO_SEPARATOR);
         final String loopName = label.getName().substring(0, labelInfoIndex);
         final String labelInfo = label.getName().substring(labelInfoIndex + LOOP_INFO_SEPARATOR.length());

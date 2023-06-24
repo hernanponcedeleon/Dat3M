@@ -140,17 +140,17 @@ public final class Dependency {
                 map.put(event, result);
             }
             //update state, if changed by event
-            if (event instanceof RegWriter) {
-                Register register = ((RegWriter) event).getResultRegister();
+            if (event instanceof RegWriter rw) {
+                Register register = rw.getResultRegister();
                 if (event.cfImpliesExec()) {
                     state.removeIf(e -> e.register.equals(register));
                 }
                 state.add(new Writer(register, event));
             }
             //copy state, if branching
-            if (event instanceof CondJump) {
-                jumps.computeIfAbsent(((CondJump) event).getLabel(), k -> new HashSet<>()).addAll(state);
-                if (((CondJump) event).isGoto()) {
+            if (event instanceof CondJump jump) {
+                jumps.computeIfAbsent(jump.getLabel(), k -> new HashSet<>()).addAll(state);
+                if (jump.isGoto()) {
                     state.clear();
                 }
             }
@@ -198,9 +198,9 @@ public final class Dependency {
 
         @Override
         public boolean equals(Object o) {
-            return this == o || o instanceof Writer
+            return this == o || o instanceof Writer writer
                     && (event == null
-                    ? ((Writer) o).event == null && register.equals(((Writer) o).register)
+                    ? writer.event == null && register.equals(writer.register)
                     : event.equals(((Writer) o).event));
         }
 

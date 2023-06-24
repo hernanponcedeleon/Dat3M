@@ -42,14 +42,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     BooleanFormula encodeAsBoolean(Expression expression) {
         Formula formula = expression.visit(this);
-        if (formula instanceof BooleanFormula) {
-            return (BooleanFormula) formula;
+        if (formula instanceof BooleanFormula bForm) {
+            return bForm;
         }
-        if (formula instanceof BitvectorFormula) {
+        if (formula instanceof BitvectorFormula bvForm) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            int length = bitvectorFormulaManager.getLength((BitvectorFormula) formula);
+            int length = bitvectorFormulaManager.getLength(bvForm);
             BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
-            return bitvectorFormulaManager.greaterThan((BitvectorFormula) formula, zero, false);
+            return bitvectorFormulaManager.greaterThan(bvForm, zero, false);
         }
         assert formula instanceof IntegerFormula;
         IntegerFormulaManager integerFormulaManager = integerFormulaManager();
@@ -63,9 +63,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
         BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        if (lhs instanceof BooleanFormula && rhs instanceof BooleanFormula) {
-            BooleanFormula b1 = (BooleanFormula) lhs;
-            BooleanFormula b2 = (BooleanFormula) rhs;
+        if (lhs instanceof BooleanFormula b1 && rhs instanceof BooleanFormula b2) {
             switch (op) {
                 case EQ:
                     return bmgr.equivalence(b1, b2);
@@ -75,10 +73,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     throw new UnsupportedOperationException("Encoding of COpBin operation" + op + " not supported on boolean formulas.");
             }
         }
-        if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
+        if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
             IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-            IntegerFormula i1 = (IntegerFormula) lhs;
-            IntegerFormula i2 = (IntegerFormula) rhs;
             switch (op) {
                 case EQ:
                     return imgr.equal(i1, i2);
@@ -98,10 +94,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return imgr.greaterOrEquals(i1, i2);
             }
         }
-        if (lhs instanceof BitvectorFormula && rhs instanceof BitvectorFormula) {
+        if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
             BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-            BitvectorFormula bv1 = (BitvectorFormula) lhs;
-            BitvectorFormula bv2 = (BitvectorFormula) rhs;
             switch (op) {
                 case EQ:
                     return bvmgr.equal(bv1, bv2);
@@ -181,9 +175,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(IExprBin iBin) {
         Formula lhs = encodeAsInteger(iBin.getLHS());
         Formula rhs = encodeAsInteger(iBin.getRHS());
-        if (lhs instanceof IntegerFormula && rhs instanceof IntegerFormula) {
-            IntegerFormula i1 = (IntegerFormula) lhs;
-            IntegerFormula i2 = (IntegerFormula) rhs;
+        if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
             BitvectorFormulaManager bitvectorFormulaManager;
             IntegerFormulaManager integerFormulaManager = integerFormulaManager();
             switch (iBin.getOp()) {
@@ -253,9 +245,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 default:
                     throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on integer formulas.");
             }
-        } else if (lhs instanceof BitvectorFormula && rhs instanceof BitvectorFormula) {
-            BitvectorFormula bv1 = (BitvectorFormula) lhs;
-            BitvectorFormula bv2 = (BitvectorFormula) rhs;
+        } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             switch (iBin.getOp()) {
                 case PLUS:

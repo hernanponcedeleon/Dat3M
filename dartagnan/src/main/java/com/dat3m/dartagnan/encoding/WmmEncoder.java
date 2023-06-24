@@ -385,10 +385,10 @@ public class WmmEncoder implements Encoder {
             for (Tuple t : encodeSets.get(r)) {
                 Event writer = t.getFirst();
                 Event reader = t.getSecond();
-                if (!(writer instanceof RegWriter)) {
+                if (!(writer instanceof RegWriter rw)) {
                     enc.add(bmgr.not(edge.encode(t)));
                 } else {
-                    Dependency.State s = dep.of(reader, ((RegWriter) writer).getResultRegister());
+                    Dependency.State s = dep.of(reader, rw.getResultRegister());
                     if (s.must.contains(writer)) {
                         enc.add(bmgr.equivalence(edge.encode(t), context.execution(writer, reader)));
                     } else if (!s.may.contains(writer)) {

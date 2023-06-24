@@ -77,12 +77,10 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Void visitLetDefinition(LetDefinitionContext ctx) {
         String name = ctx.n.getText();
         Object definedPredicate = ctx.e.accept(this);
-        if (definedPredicate instanceof Relation) {
-            Relation rel = (Relation)definedPredicate;
+        if (definedPredicate instanceof Relation rel) {
             String alias = createUniqueName(name);
             wmm.addAlias(alias, rel);
-        } else if (definedPredicate instanceof Filter) {
-            Filter filter = (Filter) definedPredicate;
+        } else if (definedPredicate instanceof Filter filter) {
             String alias = createUniqueName(name);
             // NOTE: The support for re-defined filters is limited:
             // The Wmm will recognize all aliases, but the filter itself has a single name,
@@ -324,8 +322,8 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     private Relation parseAsRelation(Object o, ExpressionContext t) {
-        if (o instanceof Relation) {
-            return (Relation) o;
+        if (o instanceof Relation relation) {
+            return rel;
         }
         throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
@@ -335,8 +333,8 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     private static Filter parseAsFilter(Object o, ExpressionContext t) {
-        if (o instanceof Filter) {
-            return (Filter) o;
+        if (o instanceof Filter filter) {
+            return filter;
         }
         throw new ParsingException("Expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }

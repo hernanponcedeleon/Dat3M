@@ -176,7 +176,7 @@ public final class ExpressionFactory {
     }
 
     public IExpr makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
-        checkArgument(leftOperand instanceof IExpr && rightOperand instanceof IExpr,
+        checkArgument(leftOperand instanceof IExpr left && rightOperand instanceof IExpr right,
                 String.format("Non-integer operands for %s %s %s.", leftOperand, operator, rightOperand));
         return new IExprBin((IExpr) leftOperand, operator, (IExpr) rightOperand);
     }
