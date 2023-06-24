@@ -40,8 +40,8 @@ public class Wmm {
      * @param constraint Constraint over relations in this model, to be inserted.
      */
     public void addConstraint(Constraint constraint) {
-        if (constraint instanceof Definition) {
-            addDefinition((Definition) constraint);
+        if (constraint instanceof Definition def) {
+            addDefinition(def);
         }
         Collection<? extends Relation> constrainedRelations = constraint.getConstrainedRelations();
         checkArgument(relations.containsAll(constrainedRelations),
@@ -196,8 +196,8 @@ public class Wmm {
         }
 
         for (Constraint c : constraints) {
-            if (c instanceof Axiom) {
-                ((Axiom) c).configure(config);
+            if (c instanceof Axiom axiom) {
+                axiom.configure(config);
             }
         }
     }

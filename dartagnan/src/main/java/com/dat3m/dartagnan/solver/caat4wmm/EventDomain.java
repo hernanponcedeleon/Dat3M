@@ -33,8 +33,8 @@ public class EventDomain implements Domain<EventData> {
 
     @Override
     public int getId(Object obj) {
-        if (obj instanceof EventData) {
-            return ((EventData)obj).getId();
+        if (obj instanceof EventData evData) {
+            return evData.getId();
         } else {
             throw new IllegalArgumentException(obj + " is not of type EventData");
         }

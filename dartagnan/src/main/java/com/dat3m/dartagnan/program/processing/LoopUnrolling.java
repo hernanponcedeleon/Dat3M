@@ -95,8 +95,7 @@ public class LoopUnrolling implements ProgramProcessor {
                     logger.warn("Found loop bound annotation that overwrites a previous, unused annotation.");
                 }
                 curBoundAnnotation = (LoopBound) event;
-            } else if (event instanceof Label) {
-                final Label label = (Label) event;
+            } else if (event instanceof Label label) {
                 final Optional<CondJump> backjump = label.getJumpSet().stream()
                         .filter(j -> j.getGlobalId() > label.getGlobalId()).findFirst();
                 final boolean isLoop = backjump.isPresent();
