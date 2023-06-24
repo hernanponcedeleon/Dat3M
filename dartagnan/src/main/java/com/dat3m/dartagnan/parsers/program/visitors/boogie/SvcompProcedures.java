@@ -41,8 +41,8 @@ public class SvcompProcedures {
             "__VERIFIER_nondet_uchar");
 
     public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-        switch (name) {
+        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        switch (funcName) {
             case "__VERIFIER_loop_bound" -> __VERIFIER_loop_bound(visitor, ctx);
             case "__VERIFIER_loop_begin" -> visitor.addEvent(EventFactory.Svcomp.newLoopBegin());
             case "__VERIFIER_spin_start" -> visitor.addEvent(EventFactory.Svcomp.newSpinStart());
@@ -56,9 +56,8 @@ public class SvcompProcedures {
                     "__VERIFIER_nondet_unsigned_int", "__VERIFIER_nondet_short",
                     "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                     "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
-                    "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" ->
-                    __VERIFIER_nondet(visitor, ctx, name);
-            default -> throw new UnsupportedOperationException(name + " procedure is not part of SVCOMPPROCEDURES");
+                    "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> __VERIFIER_nondet(visitor, ctx, funcName);
+            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of SVCOMPPROCEDURES");
         }
     }
 

@@ -40,71 +40,73 @@ public class StdProcedures {
             "llvm.lifetime.end");
 
     public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-        if (name.equals("$alloc") || name.equals("$malloc") || name.equals("calloc") || name.equals("malloc") || name.equals("external_alloc")) {
+        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        if (funcName.equals("$alloc") || funcName.equals("$malloc") || funcName.equals("calloc")
+                || funcName.equals("malloc") || funcName.equals("external_alloc")) {
             alloc(visitor, ctx);
             return;
         }
-        if (name.equals("get_my_tid")) {
+        if (funcName.equals("get_my_tid")) {
+            // FIXME: In noinline mode, we cannot resolve the tId yet.
             String registerName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
             Register register = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
             IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
             visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }
-        if (name.equals("__assert_fail") || name.equals("__assert_rtn")) {
+        if (funcName.equals("__assert_fail") || funcName.equals("__assert_rtn")) {
             __assert_fail(visitor);
             return;
         }
-        if (name.equals("assert_.i32")) {
+        if (funcName.equals("assert_.i32")) {
             __assert(visitor, ctx);
             return;
         }
-        if (name.startsWith("fopen")) {
+        if (funcName.startsWith("fopen")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("free")) {
+        if (funcName.startsWith("free")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("memcpy") | name.startsWith("$memcpy")) {
+        if (funcName.startsWith("memcpy") | funcName.startsWith("$memcpy")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("memset") || name.startsWith("$memset")) {
-            throw new ParsingException(name + " cannot be handled");
+        if (funcName.startsWith("memset") || funcName.startsWith("$memset")) {
+            throw new ParsingException(funcName + " cannot be handled");
         }
-        if (name.startsWith("nvram_read_byte")) {
-            throw new ParsingException(name + " cannot be handled");
+        if (funcName.startsWith("nvram_read_byte")) {
+            throw new ParsingException(funcName + " cannot be handled");
         }
-        if (name.startsWith("strcpy")) {
-            throw new ParsingException(name + " cannot be handled");
+        if (funcName.startsWith("strcpy")) {
+            throw new ParsingException(funcName + " cannot be handled");
         }
-        if (name.startsWith("strcmp")) {
+        if (funcName.startsWith("strcmp")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("strncpy")) {
-            throw new ParsingException(name + " cannot be handled");
+        if (funcName.startsWith("strncpy")) {
+            throw new ParsingException(funcName + " cannot be handled");
         }
-        if (name.startsWith("llvm.stackrestore")) {
+        if (funcName.startsWith("llvm.stackrestore")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("llvm.stacksave")) {
+        if (funcName.startsWith("llvm.stacksave")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("llvm.lifetime.start")) {
+        if (funcName.startsWith("llvm.lifetime.start")) {
             // TODO: Implement this
             return;
         }
-        if (name.startsWith("llvm.lifetime.end")) {
+        if (funcName.startsWith("llvm.lifetime.end")) {
             // TODO: Implement this
             return;
         }
-        throw new UnsupportedOperationException(name + " procedure is not part of STDPROCEDURES");
+        throw new UnsupportedOperationException(funcName + " procedure is not part of STDPROCEDURES");
     }
 
     private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -117,7 +119,7 @@ public class StdProcedures {
     }
 
     private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {
-        IExpr expr = (IExpr) ctx.call_params().exprs().accept(visitor);
+        final IExpr expr = (IExpr) ctx.call_params().exprs().accept(visitor);
         visitor.addAssertion(expr);
     }
 

@@ -35,8 +35,8 @@ public class PthreadsProcedures {
     );
 
     public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
-        String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-        switch (name) {
+        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        switch (funcName) {
             case "pthread_create":
                 pthread_create(visitor, ctx);
                 break;
@@ -62,7 +62,7 @@ public class PthreadsProcedures {
                 mutexUnlock(visitor, ctx);
                 break;
             default:
-                throw new ParsingException(name + " cannot be handled");
+                throw new ParsingException(funcName + " cannot be handled");
         }
     }
 

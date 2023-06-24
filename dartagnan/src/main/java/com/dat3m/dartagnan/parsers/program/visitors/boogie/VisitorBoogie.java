@@ -52,9 +52,10 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
+
     protected final TypeFactory types = TypeFactory.getInstance();
-    protected ProgramBuilder programBuilder;
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    protected ProgramBuilder programBuilder;
     protected int threadCount = 0;
     protected int currentThread = 0;
     private Set<String> threadLocalVariables = new HashSet<String>();
@@ -145,6 +146,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return programBuilder.getOrNewRegister(threadCount, name);
     }
 
+    protected String getFunctionNameFromContext(Call_cmdContext callCtx) {
+        return callCtx.call_params().Define() == null ?
+                callCtx.call_params().Ident(0).getText() :
+                callCtx.call_params().Ident(1).getText();
+    }
+
     // ======================================== ====================
 
     @Override
@@ -169,19 +176,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        // ----- TODO: Test code -----
-        inlineMode = false;
-        for (FunctionDeclaration decl : functionList) {
-            threadCount = decl.function().getId();
-            visitProc_decl(decl.ctx(), false, null);
-        }
-        inlineMode = true;
-        threadCount = 0;
-        // FIXME: Cannot reset scopes without triggering exceptions
-        //nextScopeID = 0;
-        //currentScope = new Scope(nextScopeID, null);
-        // ----- TODO: Test code -----
-
         IExpr next = getOrNewRegister(getScopedName("ptrMain"));
         pool.add(next, "main", -1);
         while (pool.canCreate()) {
@@ -192,6 +186,19 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
 
         logger.info("Number of threads (including main): " + threadCount);
+
+        // ----- TODO: Test code -----
+        // FIXME: Cannot reset scopes without triggering exceptions
+        //nextScopeID = 0;
+        //currentScope = new Scope(nextScopeID, null);
+        inlineMode = false;
+        int oldThreadCount = threadCount;
+        for (FunctionDeclaration decl : functionList) {
+            threadCount = decl.function().getId();
+            visitProc_decl(decl.ctx(), false, null);
+        }
+        threadCount = oldThreadCount;
+        // ----- TODO: Test code -----
 
         return programBuilder.build();
     }
@@ -260,9 +267,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitAxiom_decl(Axiom_declContext ctx) {
         Expression exp = (Expression) ctx.proposition().accept(this);
-        if (exp instanceof Atom && ((Atom) exp).getLHS() instanceof Register && ((Atom) exp).getOp().equals(EQ)) {
-            String name = ((Register) ((Atom) exp).getLHS()).getName();
-            Expression def = ((Atom) exp).getRHS();
+        if (exp instanceof Atom atom && atom.getLHS() instanceof Register reg && atom.getOp().equals(EQ)) {
+            String name = reg.getName();
+            Expression def = atom.getRHS();
             constantsMap.put(name, def);
         }
         return null;
@@ -398,12 +405,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         currentScope = currentScope.getParent();
 
-        if (create) {
-            if (threadCount != 1) {
-                // Used to mark the end of the execution of a thread (used by pthread_join)
-                IExpr pointer = pool.getPtrFromInt(threadCount);
-                addEvent(EventFactory.Pthread.newEnd(pointer));
-            }
+        if (create && threadCount != 1) {
+            // Used to mark the end of the execution of a thread (used by pthread_join)
+            IExpr pointer = pool.getPtrFromInt(threadCount);
+            addEvent(EventFactory.Pthread.newEnd(pointer));
         }
     }
 
@@ -564,7 +569,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             MemoryObject object = programBuilder.getObject(name);
             if (object != null) {
-                // These events are eventually compiled, and we need to compare its mo, thus it cannot be null
                 addEvent(EventFactory.newStore(object, value));
                 continue;
             }
@@ -595,6 +599,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitAssume_cmd(Assume_cmdContext ctx) {
         if (ctx.getText().contains("sourceloc")) {
+            // Smack attaches source information to "assume true" statements
             String line = ctx.getText();
             sourceCodeFile = line.substring(line.indexOf('\"') + 1, line.indexOf(',') - 1);
             currentLine = Integer.parseInt(line.substring(line.indexOf(',') + 1, line.lastIndexOf(',')));
@@ -605,36 +610,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
 
-        Label pairingLabel;
-        if (!pairLabels.containsKey(currentLabel)) {
-            if (inlineMode) {
-                // If the current label doesn't have a pairing label, we jump to the end of the program
-                pairingLabel = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-            } else {
-                pairingLabel = null;
-            }
-        } else {
-            pairingLabel = pairLabels.get(currentLabel);
-        }
-
-        // ----- TODO: Test code -----
-        if (pairingLabel == null) {
-            Expression c = (Expression) ctx.proposition().expr().accept(this);
-            addEvent(EventFactory.newAbortIf(expressions.makeNot(c)));
-            return null;
-        }
-        // ----- TODO: Test code -----
-
-        // Smack converts any unreachable instruction into an "assume(false)".
-        // 		https://github.com/smackers/smack/blob/main/lib/smack/SmackInstGenerator.cpp#L329-L333
-        // There a mismatch between this and our Assume event semantics, thus we cannot use Assume.
-        // pairingLabel is guaranteed to be "END_OF_T"
-        if (ctx.proposition().expr().getText().equals("false")) {
-            addEvent(EventFactory.newGoto(pairingLabel));
-        }
         Expression c = (Expression) ctx.proposition().expr().accept(this);
-        if (c != null) {
+        final Label pairingLabel = pairLabels.get(currentLabel);
+        if (pairingLabel != null) {
+            // if there is a pairing label, we jump to that (this assume belongs to a conditional jump)
             addEvent(EventFactory.newJumpUnless(c, pairingLabel));
+        } else if (inlineMode) {
+            // if there is no pairing label, we terminate the thread (inline mode)
+            final Label endOfThread = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+            addEvent(EventFactory.newJumpUnless(c, endOfThread));
+        } else {
+            // if we are not inlining, we instead create an abort
+            addEvent(EventFactory.newAbortIf(expressions.makeNot(c)));
         }
         return null;
     }
@@ -644,9 +631,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // Since we "inline" procedures, label names might clash
         // thus we use currentScope.getID() + ":"
         String labelName = getScopedName(ctx.children.get(0).getText());
-        Label label = programBuilder.getOrCreateLabel(labelName);
-        addEvent(label);
-        currentLabel = label;
+        currentLabel = programBuilder.getOrCreateLabel(labelName);
+        addEvent(currentLabel);
         return null;
     }
 
@@ -701,8 +687,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitAnd_expr(And_exprContext ctx) {
         Expression v1 = (Expression) ctx.rel_expr(0).accept(this);
         Expression v2;
-        for (int i = 0; i < ctx.rel_expr().size() - 1; i++) {
-            v2 = (Expression) ctx.rel_expr(i + 1).accept(this);
+        for (int i = 1; i < ctx.rel_expr().size(); i++) {
+            v2 = (Expression) ctx.rel_expr(i).accept(this);
             v1 = expressions.makeAnd(v1, v2);
         }
         return v1;
@@ -712,8 +698,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitOr_expr(Or_exprContext ctx) {
         Expression v1 = (Expression) ctx.rel_expr(0).accept(this);
         Expression v2;
-        for (int i = 0; i < ctx.rel_expr().size() - 1; i++) {
-            v2 = (Expression) ctx.rel_expr(i + 1).accept(this);
+        for (int i = 1; i < ctx.rel_expr().size(); i++) {
+            v2 = (Expression) ctx.rel_expr(i).accept(this);
             v1 = expressions.makeOr(v1, v2);
         }
         return v1;
@@ -723,9 +709,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitRel_expr(Rel_exprContext ctx) {
         Expression v1 = (Expression) ctx.bv_term(0).accept(this);
         Expression v2;
-        for (int i = 0; i < ctx.bv_term().size() - 1; i++) {
-            v2 = (Expression) ctx.bv_term(i + 1).accept(this);
-            v1 = switch (ctx.rel_op(i).op) {
+        for (int i = 1 ; i < ctx.bv_term().size(); i++) {
+            v2 = (Expression) ctx.bv_term(i).accept(this);
+            v1 = switch (ctx.rel_op(i - 1).op) {
                 case EQ -> expressions.makeEQ(v1, v2);
                 case NEQ -> expressions.makeNEQ(v1, v2);
                 case GTE -> expressions.makeGTE(v1, v2, true);
@@ -745,8 +731,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitTerm(TermContext ctx) {
         Expression v1 = (Expression) ctx.factor(0).accept(this);
         Expression v2;
-        for (int i = 0; i < ctx.factor().size() - 1; i++) {
-            v2 = (Expression) ctx.factor(i + 1).accept(this);
+        for (int i = 1; i < ctx.factor().size(); i++) {
+            v2 = (Expression) ctx.factor(i).accept(this);
             v1 = expressions.makeADD(v1, v2);
         }
         return v1;
@@ -756,8 +742,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitFactor(FactorContext ctx) {
         Expression v1 = (Expression) ctx.power(0).accept(this);
         Expression v2;
-        for (int i = 0; i < ctx.power().size() - 1; i++) {
-            v2 = (Expression) ctx.power(i + 1).accept(this);
+        for (int i = 1; i < ctx.power().size(); i++) {
+            v2 = (Expression) ctx.power(i).accept(this);
             v1 = expressions.makeMUL(v1, v2);
         }
         return v1;
@@ -782,6 +768,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return register;
         }
         if (!inlineMode) {
+            //TODO: Here we use the unscoped name, because function parameter namers are unscoped when not inlining
             register = programBuilder.getRegister(threadCount, name);
             if (register != null) {
                 return register;
@@ -800,12 +787,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitFun_expr(Fun_exprContext ctx) {
-        String name = ctx.Ident().getText();
-        Function function = functions.get(name);
+        final String funcName = ctx.Ident().getText();
+        final Function function = functions.get(funcName);
+
         if (function == null) {
-            throw new ParsingException("Function " + name + " is not defined");
+            throw new ParsingException("Function " + funcName + " is not defined");
         }
-        if (name.startsWith("$extractvalue")) {
+
+        if (funcName.startsWith("$extractvalue")) {
             String structName = ctx.expr(0).getText();
             String idx = ctx.expr(1).getText();
             Register reg = programBuilder.getRegister(threadCount, String.format("%s(%s)", getScopedName(structName), idx));
@@ -816,22 +805,23 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             return reg;
         }
-        if (name.contains("$load.")) {
+        if (funcName.contains("$load.")) {
             return ctx.expr(1).accept(this);
         }
-        if (name.contains("$store.")) {
+        if (funcName.contains("$store.")) {
             if (doIgnoreVariable(ctx.expr(1).getText())) {
+                // Stores to "ignored" variables are skipped
                 return null;
             }
-            IExpr address = (IExpr) ctx.expr(1).accept(this);
-            IExpr value = (IExpr) ctx.expr(2).accept(this);
+            final IExpr address = (IExpr) ctx.expr(1).accept(this);
+            final IExpr value = (IExpr) ctx.expr(2).accept(this);
             // This improves the blow-up
             if (initMode && !(value instanceof MemoryObject)) {
                 Expression lhs = address;
                 int rhs = 0;
-                while (lhs instanceof IExprBin) {
-                    rhs += ((IExprBin) lhs).getRHS().reduce().getValueAsInt();
-                    lhs = ((IExprBin) lhs).getLHS();
+                while (lhs instanceof IExprBin expr) {
+                    rhs += expr.getRHS().reduce().getValueAsInt();
+                    lhs = expr.getLHS();
                 }
                 String text = ctx.expr(1).getText();
                 String[] split = text.split("add.ref");
@@ -845,32 +835,26 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newStore(address, value));
             return null;
         }
-        // push currentCall to the call stack
         List<Object> callParams = ctx.expr().stream().map(e -> e.accept(this)).collect(Collectors.toList());
-        currentCall = new FunctionCall(function, callParams, currentCall);
-        if (LLVMFUNCTIONS.stream().anyMatch(name::startsWith)) {
-            currentCall = currentCall.getParent();
-            return llvmFunction(name, callParams, expressions);
+        if (LLVMFUNCTIONS.stream().anyMatch(funcName::startsWith)) {
+            return llvmFunction(funcName, callParams, expressions);
         }
-        if (LLVMPREDICATES.stream().anyMatch(name::equals)) {
-            currentCall = currentCall.getParent();
-            return llvmPredicate(name, callParams, expressions);
+        if (LLVMPREDICATES.stream().anyMatch(funcName::equals)) {
+            return llvmPredicate(funcName, callParams, expressions);
         }
-        if (LLVMUNARY.stream().anyMatch(name::startsWith)) {
-            currentCall = currentCall.getParent();
-            return llvmUnary(name, callParams, expressions);
+        if (LLVMUNARY.stream().anyMatch(funcName::startsWith)) {
+            return llvmUnary(funcName, callParams, expressions);
         }
-        if (SMACKPREDICATES.stream().anyMatch(name::equals)) {
-            currentCall = currentCall.getParent();
-            return smackPredicate(name, callParams, expressions);
+        if (SMACKPREDICATES.stream().anyMatch(funcName::equals)) {
+            return smackPredicate(funcName, callParams, expressions);
         }
         // Some functions do not have a body
         if (function.getBody() == null) {
-            throw new ParsingException("Function " + name + " has no implementation");
+            throw new ParsingException("Function " + funcName + " has no implementation");
         }
+        currentCall = new FunctionCall(function, callParams, currentCall); // push currentCall to the call stack
         Object ret = function.getBody().accept(this);
-        // pop currentCall from the call stack
-        currentCall = currentCall.getParent();
+        currentCall = currentCall.getParent();  // pop currentCall from the call stack
         return ret;
     }
 
@@ -930,6 +914,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         } else {
             IValue zero = expressions.makeZero(expr.getType());
             addEvent(EventFactory.newAbortIf(expressions.makeEQ(ass, zero)));
+            //TODO: Check if EARLYTERMINATION tag should be added to the abort
         }
 
     }

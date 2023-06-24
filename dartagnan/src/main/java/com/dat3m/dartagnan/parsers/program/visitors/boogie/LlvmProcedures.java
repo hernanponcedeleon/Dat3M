@@ -40,23 +40,21 @@ public class LlvmProcedures {
             "llvm.ctlz.i64");
 
     public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        String name = ctx.call_params().Define() == null ? ctx.call_params().Ident(0).getText() : ctx.call_params().Ident(1).getText();
-        List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
+        final String funcName = visitor.getFunctionNameFromContext(ctx);
 
-        String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
-        Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
+        final String regName = visitor.getScopedName(ctx.call_params().Ident(0).getText());
+        final Register reg = visitor.programBuilder.getOrNewRegister(visitor.threadCount, regName);
+        // TODO: See LkmmProcedures comment
 
-        Expression p0 = (Expression) params.get(0).accept(visitor);
-        Expression p1 = params.size() > 1 ? (Expression) params.get(1).accept(visitor) : null;
-        Expression p2 = params.size() > 2 ? (Expression) params.get(2).accept(visitor) : null;
-        Expression p3 = params.size() > 3 ? (Expression) params.get(3).accept(visitor) : null;
+        final List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
+        final Expression p0 = (Expression) params.get(0).accept(visitor);
+        final Expression p1 = params.size() > 1 ? (Expression) params.get(1).accept(visitor) : null;
+        final Expression p2 = params.size() > 2 ? (Expression) params.get(2).accept(visitor) : null;
+        final Expression p3 = params.size() > 3 ? (Expression) params.get(3).accept(visitor) : null;
 
         String mo;
-
-        // For intrinsics
-        Expression cond;
-
-        switch (name) {
+        Expression cond; // For intrinsics
+        switch (funcName) {
             case "__llvm_atomic32_load", "__llvm_atomic64_load" -> {
                 mo = C11.intToMo(((IConst) p1).getValueAsInt());
                 visitor.addEvent(Llvm.newLoad(reg, p0, mo));
@@ -102,17 +100,17 @@ public class LlvmProcedures {
                 visitor.addEvent(Llvm.newRMW(reg, p0, p1, op, mo));
             }
             case "llvm.smax.i32", "llvm.smax.i64", "llvm.umax.i32", "llvm.umax.i64" -> {
-                cond = visitor.expressions.makeGT(p0, p1, name.contains("smax"));
+                cond = visitor.expressions.makeGT(p0, p1, funcName.contains("smax"));
                 visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)));
             }
             case "llvm.smin.i32", "llvm.smin.i64", "llvm.umin.i32", "llvm.umin.i64" -> {
-                cond = visitor.expressions.makeLT(p0, p1, name.contains("smin"));
+                cond = visitor.expressions.makeLT(p0, p1, funcName.contains("smin"));
                 visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeConditional(cond, p0, p1)));
             }
             case "llvm.ctlz.i32", "llvm.ctlz.i64" -> {
                 visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeCTLZ(p0, (IntegerType) p0.getType())));
             }
-            default -> throw new UnsupportedOperationException(name + " procedure is not part of LLVMPROCEDURES");
+            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of LLVMPROCEDURES");
         }
     }
 }
