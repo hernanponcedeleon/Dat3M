@@ -767,7 +767,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             IntegerType type = constantsTypeMap.get(name);
             return new Register(name, Register.NO_FUNCTION, type);
         }
-        Register register = programBuilder.getRegister(threadCount, currentScope.getID() + ":" + name);
+        Register register = programBuilder.getRegister(threadCount, getScopedName(name));
         if (register != null) {
             return register;
         }
