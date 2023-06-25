@@ -169,11 +169,11 @@ public final class EncodingContext {
     public BooleanFormula equal(Formula left, Formula right) {
         checkArgument(left instanceof NumeralFormula.IntegerFormula || left instanceof BitvectorFormula,
                 "generalEqual inputs must be IntegerFormula or BitvectorFormula");
-        if (left instanceof NumeralFormula.IntegerFormula && right instanceof NumeralFormula.IntegerFormula) {
-            return formulaManager.getIntegerFormulaManager().equal((NumeralFormula.IntegerFormula) left, (NumeralFormula.IntegerFormula) right);
+        if (left instanceof NumeralFormula.IntegerFormula lif && right instanceof NumeralFormula.IntegerFormula rif) {
+            return formulaManager.getIntegerFormulaManager().equal(lif, rif);
         }
-        if (left instanceof BitvectorFormula && right instanceof BitvectorFormula) {
-            return formulaManager.getBitvectorFormulaManager().equal((BitvectorFormula) left, (BitvectorFormula) right);
+        if (left instanceof BitvectorFormula lbvf && right instanceof BitvectorFormula rbvf) {
+            return formulaManager.getBitvectorFormulaManager().equal(lbvf, rbvf);
         }
         // Fallback
         return formulaManager.getIntegerFormulaManager().equal(convertToIntegerFormula(left), convertToIntegerFormula(right));
@@ -182,9 +182,9 @@ public final class EncodingContext {
     public BooleanFormula equalZero(Formula formula) {
         checkArgument(formula instanceof NumeralFormula.IntegerFormula || formula instanceof BitvectorFormula,
                 "generalEqualZero input must be IntegerFormula or BitvectorFormula");
-        if (formula instanceof NumeralFormula.IntegerFormula) {
+        if (formula instanceof NumeralFormula.IntegerFormula iForm) {
             IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return imgr.equal((NumeralFormula.IntegerFormula) formula, imgr.makeNumber(0));
+            return imgr.equal(iForm, imgr.makeNumber(0));
         } else {
             BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
             return bvmgr.equal((BitvectorFormula) formula, bvmgr.makeBitvector(bvmgr.getLength((BitvectorFormula) formula), 0));
@@ -273,8 +273,8 @@ public final class EncodingContext {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
             Formula r;
-            if (e instanceof RegWriter) {
-                Register register = ((RegWriter) e).getResultRegister();
+            if (e instanceof RegWriter rw) {
+                Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
                 Type type = register.getType();
                 if (type instanceof IntegerType integerType) {

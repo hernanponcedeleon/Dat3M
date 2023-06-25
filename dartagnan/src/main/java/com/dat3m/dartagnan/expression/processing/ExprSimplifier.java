@@ -34,27 +34,21 @@ public class ExprSimplifier extends ExprTransformer {
                     return BConst.FALSE;
             }
         }
-        if (lhs instanceof IConst && rhs instanceof  IConst) {
-            IConst lc = (IConst) lhs;
-            IConst rc = (IConst) rhs;
+        if (lhs instanceof IConst lc && rhs instanceof IConst rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
         // Due to constant propagation, and the lack of a proper type system
         // we can end up with comparisons like "False == 1"
-        if (lhs instanceof BConst && rhs instanceof IConst) {
-            BConst lc = (BConst) lhs;
-            IConst rc = (IConst) rhs;
+        if (lhs instanceof BConst lc && rhs instanceof IConst rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
-        if (lhs instanceof IConst && rhs instanceof BConst) {
-            IConst lc = (IConst) lhs;
-            BConst rc = (BConst) rhs;
+        if (lhs instanceof IConst lc && rhs instanceof BConst rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
-        if (lhs instanceof BExpr && rhs instanceof IConst) {
+        if (lhs instanceof BExpr && rhs instanceof IConst rc) {
             // Simplify "cond == 1" to just "cond"
             // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
-            if (atom.getOp() == COpBin.EQ && ((IConst) rhs).getValue().intValue() == 1) {
+            if (atom.getOp() == COpBin.EQ && rc.getValue().intValue() == 1) {
                 return lhs;
             }
         }
@@ -108,13 +102,12 @@ public class ExprSimplifier extends ExprTransformer {
         if (inner instanceof BConst) {
             return expressions.makeValue(!inner.isTrue());
         }
-        if (inner instanceof BExprUn && bUn.getOp() == BOpUn.NOT) {
-            return (BExpr) ((BExprUn)inner).getInner();
+        if (inner instanceof BExprUn innExpr && bUn.getOp() == BOpUn.NOT) {
+            return (BExpr) innExpr.getInner();
         }
 
-        if (inner instanceof Atom && bUn.getOp() == BOpUn.NOT) {
+        if (inner instanceof Atom atom && bUn.getOp() == BOpUn.NOT) {
             // Move negations into the atoms COp
-            Atom atom = (Atom)inner;
             return expressions.makeBinary(atom.getLHS(), atom.getOp().inverted(), atom.getRHS());
         }
         return expressions.makeUnary(bUn.getOp(), inner);
@@ -158,8 +151,7 @@ public class ExprSimplifier extends ExprTransformer {
             }
         }
 
-        if (lhs instanceof IConst) {
-            IConst lc = (IConst)lhs;
+        if (lhs instanceof IConst lc) {
             BigInteger val = lc.getValue();
             switch (op) {
                 case MULT:
@@ -196,8 +188,7 @@ public class ExprSimplifier extends ExprTransformer {
                 // Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
                 // Either op can be +/-, but this does not affect correctness
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
-                if(lhs instanceof IExprBin && ((IExprBin)lhs).getRHS() instanceof IConst  && ((IExprBin)lhs).getOp() != R_SHIFT) {
-                    IExprBin lhsBin = (IExprBin)lhs;
+                if(lhs instanceof IExprBin lhsBin && lhsBin.getRHS() instanceof IConst  && lhsBin.getOp() != R_SHIFT) {
                     IExpr newLHS = lhsBin.getLHS();
                     IExpr newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);
