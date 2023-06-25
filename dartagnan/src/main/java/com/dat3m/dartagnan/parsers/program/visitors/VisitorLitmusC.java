@@ -539,8 +539,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     private IExpr getAddress(LitmusCParser.ReContext ctx){
         Expression address = (Expression)ctx.accept(this);
-        if(address instanceof IExpr add){
-           return add;
+        if(address instanceof IExpr addr){
+           return addr;
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
