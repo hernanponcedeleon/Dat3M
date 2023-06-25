@@ -227,8 +227,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (Location target : targets.getOrDefault(base, Set.of())) {
             IExpr rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
-            if (rhs instanceof IConst) {
-                int o = target.offset + ((IConst) rhs).getValueAsInt();
+            if (rhs instanceof IConst rc) {
+                int o = target.offset + rc.getValueAsInt();
                 if (o < target.base.size()) {
                     addTarget(reg, new Location(target.base, o));
                 }
@@ -270,15 +270,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          */
         Constant(Expression x) {
             if (x instanceof IConst) {
-                location = x instanceof MemoryObject ? new Location((MemoryObject) x, 0) : null;
+                location = x instanceof MemoryObject mem ? new Location(mem, 0) : null;
                 failed = false;
                 return;
             }
-            if (x instanceof IExprBin && ((IExprBin) x).getOp() == PLUS) {
-                IExpr lhs = ((IExprBin) x).getLHS();
-                IExpr rhs = ((IExprBin) x).getRHS();
-                if (lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
-                    location = new Location((MemoryObject) lhs, ((IConst) rhs).getValueAsInt());
+            if (x instanceof IExprBin iBin && iBin .getOp() == PLUS) {
+                IExpr lhs = iBin .getLHS();
+                IExpr rhs = iBin .getRHS();
+                if (lhs instanceof MemoryObject mem && rhs instanceof IConst rc && !(rhs instanceof MemoryObject)) {
+                    location = new Location(mem, rc.getValueAsInt());
                     failed = false;
                     return;
                 }
