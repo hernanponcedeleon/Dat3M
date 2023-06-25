@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.event.visitors;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
-import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -105,6 +105,6 @@ public interface EventVisitor<T> {
 	default T visitMalloc(Malloc e) { return visitEvent(e); }
 
 	// ------------------ PTX Events ------------------
-	default T visitPtxRedOp(RedOp e) { return visitRMWAbstract(e); }
-	default T visitPtxAtomOp(AtomOp e) { return visitRMWAbstract(e); }
+	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
+	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
 }

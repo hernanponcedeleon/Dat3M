@@ -13,8 +13,8 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -226,7 +226,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        AtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, constant, op, mo, scope);
+        PTXAtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, constant, op, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -244,7 +244,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        AtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, register_operand, op, mo, scope);
+        PTXAtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, register_operand, op, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -254,7 +254,6 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
-        Register register_destination = programBuilder.getOrNewRegister(mainThread, null, TypeFactory.getInstance().getArchType());
         String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
@@ -262,7 +261,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
-        RedOp red = EventFactory.PTX.newRedOp(object, register_destination, constant, op, mo, scope);
+        PTXRedOp red = EventFactory.PTX.newRedOp(object, constant, op, mo, scope);
         red.addTags(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }
@@ -272,7 +271,6 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
         Register register_operand = (Register) ctx.register().accept(this);
         IOpBin op = ctx.operation().op;
-        Register register_destination = programBuilder.getOrNewRegister(mainThread, null, TypeFactory.getInstance().getArchType());
         String mo = ctx.mo().content;
         String scope;
         if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
@@ -280,7 +278,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         } else {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
-        RedOp red = EventFactory.PTX.newRedOp(object, register_destination, register_operand, op, mo, scope);
+        PTXRedOp red = EventFactory.PTX.newRedOp(object, register_operand, op, mo, scope);
         red.addTags(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }

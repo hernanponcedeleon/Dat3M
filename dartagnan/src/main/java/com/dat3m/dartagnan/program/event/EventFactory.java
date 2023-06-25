@@ -7,9 +7,9 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
-import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
-import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
@@ -647,24 +647,24 @@ public class EventFactory {
     public static class PTX {
         private PTX() {}
 
-        public static AtomOp newAtomOp(Expression address, Register register, Expression value,
-                                             IOpBin op, String mo, String scope) {
+        public static PTXAtomOp newAtomOp(Expression address, Register register, Expression value,
+                                          IOpBin op, String mo, String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
-            AtomOp atom = new AtomOp(address, register, value, op, mo);
+            PTXAtomOp atom = new PTXAtomOp(register, address, op, value, mo);
             atom.addTags(scope);
             return atom;
         }
 
-        public static RedOp newRedOp(Expression address, Register register, Expression value,
-                                           IOpBin op, String mo, String scope) {
+        public static PTXRedOp newRedOp(Expression address, Expression value,
+                                        IOpBin op, String mo, String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for red.
-            RedOp red = new RedOp(address, register, value, op, mo);
+            PTXRedOp red = new PTXRedOp(address, value, op, mo);
             red.addTags(scope);
             return red;
         }
 
-        public static FenceWithId newFenceWithId(String name, Expression fenceId) {
-            return new FenceWithId(name, fenceId);
+        public static PTXFenceWithId newFenceWithId(String name, Expression fenceId) {
+            return new PTXFenceWithId(name, fenceId);
         }
     }
 
