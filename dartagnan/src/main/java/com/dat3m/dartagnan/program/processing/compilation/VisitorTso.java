@@ -145,7 +145,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue())
+                newRMWStore(load, address, e.getValue())
         ));
     }
 
@@ -159,7 +159,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
                 newRMWStore(load, address, dummyReg)
         ));
     }
@@ -170,7 +170,6 @@ class VisitorTso extends VisitorBase {
         Register resultRegister = e.getStructRegister(1);
         Expression one = expressions.makeOne(resultRegister.getType());
 
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         Expression expectedValue = e.getExpectedValue();
 
@@ -179,7 +178,7 @@ class VisitorTso extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoad(oldValueRegister, address);
-        Store store = newRMWStore(load, address, value);
+        Store store = newRMWStore(load, address, e.getStoreValue());
 
         return tagList(eventSequence(
                 load,

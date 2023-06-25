@@ -206,7 +206,7 @@ public class VisitorPower extends VisitorBase {
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = Power.newRMWStoreConditional(address, e.getMemValue(), true);
+        Store store = Power.newRMWStoreConditional(address, e.getValue(), true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -251,7 +251,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue()));
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         // Power does not have mo tags, thus we use null
         Load load = newRMWLoadExclusive(resultRegister, address);
@@ -313,7 +313,7 @@ public class VisitorPower extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoadExclusive(oldValueRegister, address);
-        Store store = Power.newRMWStoreConditional(address, e.getMemValue(), true);
+        Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
 
         Fence optionalBarrierBefore = null;
         Fence optionalBarrierAfter = null;

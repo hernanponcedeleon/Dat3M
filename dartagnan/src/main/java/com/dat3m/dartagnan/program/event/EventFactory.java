@@ -352,7 +352,7 @@ public class EventFactory {
         }
 
         public static LlvmRMW newRMW(Register register, Expression address, Expression value, IOpBin op, String mo) {
-            return new LlvmRMW(register, address, value, op, mo);
+            return new LlvmRMW(register, address, op, value, mo);
         }
 
         public static LlvmFence newFence(String mo) {

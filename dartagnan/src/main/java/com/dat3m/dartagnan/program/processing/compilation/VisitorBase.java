@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
@@ -165,12 +164,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
                 store,
                 newLocal(resultRegister, dummyReg)
         );
-    }
-
-    // LLVM Events
-    @Override
-    public List<Event> visitLlvmAbstract(LlvmAbstractRMW e) {
-        throw error(e);
     }
 
     @Override

@@ -90,12 +90,11 @@ public interface EventVisitor<T> {
     default T visitAtomicXchg(AtomicXchg e) { return visitMemEvent(e); }
 
     // ------------------ LLVM Events ------------------
-    default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }
-    default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitLlvmAbstract(e); }
-    default T visitLlvmRMW(LlvmRMW e) { return visitLlvmAbstract(e); }
+    default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitMemEvent(e); }
+    default T visitLlvmRMW(LlvmRMW e) { return visitMemEvent(e); }
     default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
     default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
-    default T visitLlvmXchg(LlvmXchg e) { return visitLlvmAbstract(e); }
+    default T visitLlvmXchg(LlvmXchg e) { return visitMemEvent(e); }
     default T visitLlvmFence(LlvmFence e) { return visitEvent(e); }
 
     // ------------------ SVCOMP Events ------------------

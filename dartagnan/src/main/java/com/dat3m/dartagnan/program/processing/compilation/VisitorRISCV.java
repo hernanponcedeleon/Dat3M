@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -160,12 +159,11 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store store = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), true);
+        Store store = RISCV.newRMWStoreConditional(address, e.getValue(), Tag.RISCV.extractStoreMoFromCMo(mo), true);
         Register statusReg = e.getThread().newRegister("status(" + e.getGlobalId() + ")", resultRegister.getType());
         // We normally make the following optional.
         // Here we make it mandatory to guarantee correct dependencies.
@@ -186,13 +184,11 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLlvmRMW(LlvmRMW e) {
         Register resultRegister = e.getResultRegister();
         IntegerType type = resultRegister.getType();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummyReg = e.getThread().newRegister(type);
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store store = RISCV.newRMWStoreConditional(address, dummyReg, Tag.RISCV.extractStoreMoFromCMo(mo), true);
@@ -220,7 +216,6 @@ class VisitorRISCV extends VisitorBase {
         Register resultRegister = e.getStructRegister(1);
         Expression one = expressions.makeOne(resultRegister.getType());
 
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
@@ -230,7 +225,7 @@ class VisitorRISCV extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, Tag.RISCV.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, Tag.RISCV.extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, Tag.RISCV.extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
