@@ -30,10 +30,7 @@ public class LkmmProcedures {
         final String funcName = visitor.getFunctionNameFromContext(ctx);
 
         final String registerName = ctx.call_params().Ident(0).getText();
-        final Register reg = visitor.getOrNewScopedRegister(registerName);
-        //TODO: We want to do the following, but some events like RMWOp expect some register even though
-        // they never write to that register...
-        //final Register reg = visitor.programBuilder.getRegister(visitor.threadCount, registerName);
+        final Register reg = visitor.getScopedRegister(registerName); // May be NULL
 
         final List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
         final Expression p0 = (Expression) params.get(0).accept(visitor);

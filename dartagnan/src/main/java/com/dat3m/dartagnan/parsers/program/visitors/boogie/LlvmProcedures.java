@@ -43,8 +43,7 @@ public class LlvmProcedures {
         final String funcName = visitor.getFunctionNameFromContext(ctx);
 
         final String regName = ctx.call_params().Ident(0).getText();
-        final Register reg = visitor.getOrNewScopedRegister(regName);
-        // TODO: See LkmmProcedures comment
+        final Register reg = visitor.getScopedRegister(regName); // May be NULL
 
         final List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
         final Expression p0 = (Expression) params.get(0).accept(visitor);
