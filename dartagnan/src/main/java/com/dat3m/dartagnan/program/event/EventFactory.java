@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
 import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
@@ -534,8 +534,8 @@ public class EventFactory {
         private X86() {
         }
 
-        public static Xchg newExchange(MemoryObject address, Register register) {
-            return new Xchg(address, register);
+        public static TSOXchg newExchange(MemoryObject address, Register register) {
+            return new TSOXchg(address, register);
         }
 
         public static Fence newMemoryFence() {

@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -22,7 +22,7 @@ class VisitorTso extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitXchg(Xchg e) {
+    public List<Event> visitXchg(TSOXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 

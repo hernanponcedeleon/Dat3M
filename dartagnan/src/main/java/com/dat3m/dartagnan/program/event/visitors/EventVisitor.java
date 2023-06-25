@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -76,7 +76,7 @@ public interface EventVisitor<T> {
     default T visitLKMMUnlock(LKMMUnlock e) { return visitMemEvent(e); }
 
     // ------------------ TSO Events ------------------
-    default T visitXchg(Xchg e) { return visitMemEvent(e); }
+    default T visitXchg(TSOXchg e) { return visitMemEvent(e); }
 
     // ------------------ LISA Events ------------------
     default T visitRMW(RMW e) { return visitMemEvent(e); }

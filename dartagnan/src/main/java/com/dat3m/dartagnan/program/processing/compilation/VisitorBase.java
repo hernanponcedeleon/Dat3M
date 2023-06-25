@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -147,7 +147,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     }
 
     @Override
-    public List<Event> visitXchg(Xchg e) {
+    public List<Event> visitXchg(TSOXchg e) {
         throw error(e);
     }
 
