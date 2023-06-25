@@ -494,7 +494,7 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L38
     @Override
-    public List<Event> visitRMWOp(LKMMOp e) {
+    public List<Event> visitRMWOp(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(types.getArchType());

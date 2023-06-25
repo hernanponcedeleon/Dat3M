@@ -150,7 +150,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWOp(LKMMOp e) {
+    public List<Event> visitRMWOp(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(types.getArchType());

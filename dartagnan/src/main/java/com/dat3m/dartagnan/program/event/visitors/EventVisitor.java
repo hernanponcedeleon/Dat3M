@@ -63,7 +63,7 @@ public interface EventVisitor<T> {
     default T visitRMWAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
     default T visitRMWCmpXchg(LKMMCmpXchg e) { return visitMemEvent(e); }
     default T visitRMWFetchOp(LKMMFetchOp e) { return visitMemEvent(e); }
-    default T visitRMWOp(LKMMOp e) { return visitMemEvent(e); }
+    default T visitRMWOp(LKMMOpNoReturn e) { return visitMemEvent(e); }
     default T visitRMWOpAndTest(LKMMOpAndTest e) { return visitMemEvent(e); }
     default T visitRMWOpReturn(LKMMOpReturn e) { return visitMemEvent(e); }
     default T visitRMWXchg(LKMMXchg e) { return visitMemEvent(e); }

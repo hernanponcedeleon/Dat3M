@@ -6,14 +6,14 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.common.RMWOpBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class LKMMOp extends RMWOpBase {
+public class LKMMOpNoReturn extends RMWOpBase {
 
-    public LKMMOp(Expression address, IOpBin operator, Expression operand) {
+    public LKMMOpNoReturn(Expression address, IOpBin operator, Expression operand) {
         super(address, operator, operand, Tag.Linux.MO_ONCE);
         addTags(Tag.Linux.NORETURN);
     }
 
-    private LKMMOp(LKMMOp other){
+    private LKMMOpNoReturn(LKMMOpNoReturn other){
         super(other);
     }
 
@@ -23,8 +23,8 @@ public class LKMMOp extends RMWOpBase {
     }
 
     @Override
-    public LKMMOp getCopy(){
-        return new LKMMOp(this);
+    public LKMMOpNoReturn getCopy(){
+        return new LKMMOpNoReturn(this);
     }
 
     @Override

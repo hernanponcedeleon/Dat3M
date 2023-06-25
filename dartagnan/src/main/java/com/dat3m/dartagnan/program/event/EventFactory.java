@@ -486,8 +486,8 @@ public class EventFactory {
             return new LKMMFetchOp(register, address, op, value, mo);
         }
 
-        public static LKMMOp newRMWOp(Expression address, Expression value, IOpBin op) {
-            return new LKMMOp(address, op, value);
+        public static LKMMOpNoReturn newRMWOp(Expression address, Expression value, IOpBin op) {
+            return new LKMMOpNoReturn(address, op, value);
         }
 
         public static LKMMOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {

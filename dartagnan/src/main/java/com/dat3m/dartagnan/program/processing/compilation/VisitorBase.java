@@ -128,7 +128,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     }
 
     @Override
-    public List<Event> visitRMWOp(LKMMOp e) {
+    public List<Event> visitRMWOp(LKMMOpNoReturn e) {
         throw error(e);
     }
 

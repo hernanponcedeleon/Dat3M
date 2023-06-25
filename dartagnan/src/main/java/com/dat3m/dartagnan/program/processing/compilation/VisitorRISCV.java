@@ -560,7 +560,7 @@ class VisitorRISCV extends VisitorBase {
     // https://five-embeddev.com/riscv-isa-manual/latest/memory.html#sec:memory:porting
     // The linux kernel uses AMO instructions which we don't yet support
     @Override
-    public List<Event> visitRMWOp(LKMMOp e) {
+    public List<Event> visitRMWOp(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
         IntegerType type = types.getArchType();
