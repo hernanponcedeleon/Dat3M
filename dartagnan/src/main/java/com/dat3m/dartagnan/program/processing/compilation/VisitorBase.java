@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -152,13 +152,13 @@ class VisitorBase implements EventVisitor<List<Event>> {
     }
 
     @Override
-    public List<Event> visitRMW(RMW e) {
+    public List<Event> visitRMW(LISARMW e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummyReg, address, mo);
-        RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
         return eventSequence(
                 load,
                 store,

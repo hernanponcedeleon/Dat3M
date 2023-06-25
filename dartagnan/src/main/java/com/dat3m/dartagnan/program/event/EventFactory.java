@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
+import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
@@ -611,8 +611,8 @@ public class EventFactory {
         private LISA() {
         }
 
-        public static RMW newRMW(Expression address, Register register, Expression value, String mo) {
-            return new RMW(address, register, value, mo);
+        public static LISARMW newRMW(Expression address, Register register, Expression value, String mo) {
+            return new LISARMW(register, address, value, mo);
         }
     }
 
