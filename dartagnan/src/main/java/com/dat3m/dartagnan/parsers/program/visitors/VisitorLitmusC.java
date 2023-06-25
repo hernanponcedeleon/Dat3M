@@ -458,7 +458,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
         Expression variable = (Expression)ctx.varName().accept(this);
         if(ctx.Ast() == null){
-            if(variable instanceof Register returnRegister){
+            if(variable instanceof Register){
+                returnRegister = (Register)variable;
                 ctx.re().accept(this);
                 return null;
             }
