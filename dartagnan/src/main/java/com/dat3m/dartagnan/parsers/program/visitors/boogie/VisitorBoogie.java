@@ -174,8 +174,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	@Override
 	public Object visitAxiom_decl(Axiom_declContext ctx) {
 		Expression exp = (Expression)ctx.proposition().accept(this);
-		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Register && ((Atom)exp).getOp().equals(EQ)) {
-			String name = ((Register)((Atom)exp).getLHS()).getName();
+		if(exp instanceof Atom atom && atom.getLHS() instanceof Register reg && atom.getOp().equals(EQ)) {
+			String name = reg.getName();
 			Expression def = ((Atom)exp).getRHS();
 			constantsMap.put(name, def);
 		}
@@ -319,7 +319,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	public Object visitCall_cmd(Call_cmdContext ctx) {
 		if(ctx.getText().contains("boogie_si_record") && !ctx.getText().contains("smack")) {
 			Object local = ctx.call_params().exprs().expr(0).accept(this);
-			if(local instanceof Register) {
+			if(local instanceof Register reg) {
 				String txt = ctx.attr(0).getText();
 				String cVar;
 				if(ctx.getText().contains("arg:")) {
@@ -327,7 +327,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 				} else {
 					cVar = txt.substring(txt.indexOf("\"")+1, txt.lastIndexOf("\""));
 				}
-				((Register)local).setCVar(cVar);
+				reg.setCVar(cVar);
 			}
 
 		}
@@ -694,9 +694,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			if(initMode && !(value instanceof MemoryObject)) {
 				Expression lhs = address;
 				int rhs = 0;
-				while(lhs instanceof IExprBin) {
-					rhs += ((IExprBin)lhs).getRHS().reduce().getValueAsInt();
-					lhs = ((IExprBin)lhs).getLHS();
+				while(lhs instanceof IExprBin iBin) {
+					rhs += iBin.getRHS().reduce().getValueAsInt();
+					lhs = iBin.getLHS();
 				}
 				String text = ctx.expr(1).getText();
 				String[] split = text.split("add.ref");

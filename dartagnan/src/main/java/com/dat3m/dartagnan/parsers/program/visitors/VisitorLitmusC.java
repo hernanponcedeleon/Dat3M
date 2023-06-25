@@ -458,8 +458,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
         Expression variable = (Expression)ctx.varName().accept(this);
         if(ctx.Ast() == null){
-            if(variable instanceof Register){
-                returnRegister = (Register)variable;
+            if(variable instanceof Register returnRegister){
                 ctx.re().accept(this);
                 return null;
             }
@@ -539,8 +538,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     private IExpr getAddress(LitmusCParser.ReContext ctx){
         Expression address = (Expression)ctx.accept(this);
-        if(address instanceof IExpr){
-           return (IExpr)address;
+        if(address instanceof IExpr add){
+           return add;
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
     }
