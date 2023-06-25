@@ -75,7 +75,7 @@ public class WmmAnalysis {
                     throw new UnsupportedOperationException(String.format(
                             "Unary relation %s not supported in recursive definitions.", node.getContent()
                     ));
-                } else if (d instanceof Difference && scc.contains(depGraph.get(((Difference) d).complement))) {
+                } else if (d instanceof Difference diff && scc.contains(depGraph.get(diff.complement))) {
                     // Non-monotonic recursion gives ill-defined memory models.
                     throw new MalformedMemoryModelException(String.format(
                             "Non-monotonic recursion is not supported: %s", node.getContent()

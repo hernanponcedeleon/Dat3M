@@ -25,9 +25,9 @@ public abstract class AbstractProvider<T> extends ExternalResource implements Pr
 
     @Override
     protected void after() {
-        if (value instanceof AutoCloseable) {
+        if (value instanceof AutoCloseable closeable) {
             try {
-                ((AutoCloseable) value).close();
+                closeable.close();
             } catch (Exception e) {
                 LogManager.getRootLogger().error(e.getMessage());
             }

@@ -104,8 +104,8 @@ public class Dat3M extends JFrame implements ActionListener {
 		} catch (Exception e){
 			String msg = e.getMessage() == null? "Program cannot be parsed" : e.getMessage();
 			Throwable cause = e.getCause();
-			if(cause instanceof InputMismatchException) {
-				Token token = ((InputMismatchException)cause).getOffendingToken();
+			if(cause instanceof InputMismatchException exception) {
+				Token token = exception.getOffendingToken();
 				msg = "Problem with \"" + token.getText() + "\" at line " + token.getLine();
 			}
 			showError(msg, "Program error");

@@ -64,10 +64,10 @@ public class Reasoner {
     }
 
     public Conjunction<CAATLiteral> computeReason(CAATPredicate pred, Derivable prop) {
-        if (pred instanceof RelationGraph && prop instanceof Edge) {
-            return computeReason((RelationGraph) pred, (Edge) prop);
-        } else if (pred instanceof SetPredicate && prop instanceof Element) {
-            return computeReason((SetPredicate) pred, (Element) prop);
+        if (pred instanceof RelationGraph rg && prop instanceof Edge edge) {
+            return computeReason(rg, edge);
+        } else if (pred instanceof SetPredicate sp && prop instanceof Element elem) {
+            return computeReason(sp, elem);
         } else {
             return Conjunction.FALSE();
         }

@@ -517,8 +517,7 @@ public class RefinementSolver extends ModelChecker {
         BiPredicate<EventData, EventData> edgeFilter = (e1, e2) -> {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
-                    if (lit instanceof RelLiteral) {
-                        RelLiteral edgeLit = (RelLiteral) lit;
+                    if (lit instanceof RelLiteral edgeLit) {
                         if (model.getData(edgeLit.getData().getFirst()).get() == e1 &&
                                 model.getData(edgeLit.getData().getSecond()).get() == e2) {
                             return true;

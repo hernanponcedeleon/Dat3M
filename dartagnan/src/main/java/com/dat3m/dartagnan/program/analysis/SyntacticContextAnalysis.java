@@ -161,8 +161,8 @@ public class SyntacticContextAnalysis {
             infoMap.put(ev, new Info(ev, copyOfCurContextStack));
             // TODO: The above could be made more efficient by sharing unchanged context
 
-            if (ev instanceof FunCall) {
-                curContextStack.push(new CallContext((FunCall) ev));
+            if (ev instanceof FunCall fc) {
+                curContextStack.push(new CallContext(fc));
             } else if (ev instanceof FunRet) {
                 assert curContextStack.peek() instanceof CallContext;
                 curContextStack.pop();
