@@ -197,8 +197,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         branchMap.put(start, b);
         Event succ = start;
         do {
-            if (succ instanceof CondJump) {
-                CondJump jump = (CondJump) succ;
+            if (succ instanceof CondJump jump) {
                 if (!alwaysSplitOnJump && jump.isGoto()) {
                     // There is only one branch we can proceed on, so we don't need to split the current branch
                     succ = jump.getLabel();
@@ -220,7 +219,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             if (succ == null) {
                 finalBranchMap.put(b.events.get(b.events.size() - 1), b);
                 return b;
-            } else if ((succ instanceof Label && !((Label)succ).getJumpSet().isEmpty()) || branchMap.containsKey(succ)) {
+            } else if ((succ instanceof Label label && !label.getJumpSet().isEmpty()) || branchMap.containsKey(succ)) {
                 // We ran into a merge point
                 Branch b1 = computeBranches(succ, branchMap, finalBranchMap);
                 b1.parents.add(b);

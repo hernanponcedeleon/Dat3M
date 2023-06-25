@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -92,7 +91,7 @@ public class VisitorC11 extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Expression expectedAddr = e.getExpectedAddr();
+        Expression expectedAddr = e.getAddressOfExpected();
         IntegerType type = resultRegister.getType();
 
         Register regExpected = e.getFunction().newRegister(type);
@@ -105,7 +104,7 @@ public class VisitorC11 extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, expressions.makeOne(type)), casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadWithMo(regValue, address, mo);
-        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getMemValue(), mo);
+        Store storeValue = newRMWStoreWithMo(loadValue, address, e.getStoreValue(), mo);
 
         return tagList(eventSequence(
                 loadExpected,
@@ -123,16 +122,17 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
         Expression address = e.getAddress();
         String mo = e.getMo();
+
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, mo);
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, mo);
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, op, e.getMemValue())),
+                localOp,
                 store
         ));
     }
@@ -164,7 +164,7 @@ public class VisitorC11 extends VisitorBase {
         String mo = e.getMo();
 
         Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
-        RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
 
         return tagList(eventSequence(
                 load,
@@ -193,12 +193,11 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, mo);
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, mo);
+        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, mo);
 
         return tagList(eventSequence(
                 load,
@@ -209,13 +208,11 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitLlvmRMW(LlvmRMW e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, mo);
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, mo);
@@ -232,7 +229,6 @@ public class VisitorC11 extends VisitorBase {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
 
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
@@ -243,7 +239,7 @@ public class VisitorC11 extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, mo);
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, mo);
+        Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, mo);
 
         return tagList(eventSequence(
                 load,

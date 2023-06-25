@@ -27,7 +27,7 @@ public class LKMMStore extends StoreBase {
         super(address, value, mo);
     }
 
-    protected LKMMStore(LKMMStore other) {
+    private LKMMStore(LKMMStore other) {
         super(other);
     }
 
@@ -39,8 +39,10 @@ public class LKMMStore extends StoreBase {
         return super.defaultString();
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public LKMMStore getCopy() {
+        return new LKMMStore(this);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

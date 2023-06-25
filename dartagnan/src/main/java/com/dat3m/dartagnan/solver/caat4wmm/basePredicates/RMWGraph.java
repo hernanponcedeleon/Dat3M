@@ -46,8 +46,8 @@ public class RMWGraph extends MaterializedWMMGraph {
                         }
                         simpleGraph.add(new Edge(lastExclLoad.getId(), e.getId()));
                         lastExclLoad = null;
-                    } else if (e.getEvent() instanceof RMWStore) { // RMWStore
-                        EventData load = model.getData(((RMWStore) e.getEvent()).getLoadEvent()).get();
+                    } else if (e.getEvent() instanceof RMWStore rmwStore) { // RMWStore
+                        EventData load = model.getData(rmwStore.getLoadEvent()).get();
                         simpleGraph.add(new Edge(load.getId(), e.getId()));
                     }
                 }

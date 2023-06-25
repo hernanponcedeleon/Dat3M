@@ -236,12 +236,12 @@ public class ProgramBuilder {
         Set<String> referencedLabels = new HashSet<>();
         Event e = thread.getEntry();
         while(e != null){
-            if(e instanceof CondJump){
-                referencedLabels.add(((CondJump) e).getLabel().getName());
-            } else if(e instanceof Label){
-                Label label = labels.remove(((Label) e).getName());
+            if(e instanceof CondJump jump){
+                referencedLabels.add(jump.getLabel().getName());
+            } else if(e instanceof Label lb){
+                Label label = labels.remove(lb.getName());
                 if(label == null){
-                    throw new MalformedProgramException("Duplicated label " + ((Label) e).getName());
+                    throw new MalformedProgramException("Duplicated label " + lb.getName());
                 }
                 threadLabels.put(label.getName(), label);
             }

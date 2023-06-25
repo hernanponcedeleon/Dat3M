@@ -14,17 +14,14 @@ public class LKMMFence extends FenceBase {
     }
 
     @Override
-    public LKMMFence getCopy() {
-        return new LKMMFence(this);
-    }
-
-    @Override
     public String defaultString() {
         return name;
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public LKMMFence getCopy() {
+        return new LKMMFence(this);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

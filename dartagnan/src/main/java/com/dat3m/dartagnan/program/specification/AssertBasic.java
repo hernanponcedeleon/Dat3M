@@ -34,8 +34,8 @@ public class AssertBasic extends AbstractAssert {
     }
 
     private String valueToString(Expression value){
-        if(value instanceof Register){
-            return ((Register)value).getFunctionId() + ":" + value;
+        if(value instanceof Register register){
+            return register.getFunctionId() + ":" + value;
         }
         return value.toString();
     }
@@ -43,11 +43,11 @@ public class AssertBasic extends AbstractAssert {
 	@Override
 	public List<Register> getRegs() {
 		List<Register> regs = new ArrayList<>();
-		if(e1 instanceof Register) {
-			regs.add((Register) e1);
+		if(e1 instanceof Register r1) {
+			regs.add(r1);
 		}
-		if(e2 instanceof Register) {
-			regs.add((Register) e2);
+		if(e2 instanceof Register r2) {
+			regs.add(r2);
 		}
 		return regs;
 	}

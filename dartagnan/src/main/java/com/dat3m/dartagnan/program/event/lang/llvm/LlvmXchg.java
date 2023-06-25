@@ -2,12 +2,15 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 
-public class LlvmXchg extends LlvmAbstractRMW {
+public class LlvmXchg extends RMWXchgBase {
 
     public LlvmXchg(Register register, Expression address, Expression value, String mo) {
-        super(address, register, value, mo);
+        super(register, address, value, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
     }
 
     private LlvmXchg(LlvmXchg other) {
@@ -16,19 +19,14 @@ public class LlvmXchg extends LlvmAbstractRMW {
 
     @Override
     public String defaultString() {
-        return resultRegister + " = llvm_xchg(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
+        return String.format("%s := llvm_xchg(*%s, %s, %s)\t### LKMM",
+                resultRegister, address, storeValue, mo);
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public LlvmXchg getCopy() {
         return new LlvmXchg(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

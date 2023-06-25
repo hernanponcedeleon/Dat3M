@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -75,11 +74,10 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Expression cmp = e.getCmp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
 
         Label success = newLabel("RMW_success");
@@ -94,7 +92,7 @@ public class VisitorLKMM extends VisitorBase {
                 newCoreMemoryBarrier(),
                 rmwLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeNEQ(dummy, cmp)),
-                newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, value), Tag.Linux.MO_ONCE),
+                newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, e.getOperand()), Tag.Linux.MO_ONCE),
                 newCoreMemoryBarrier(),
                 end,
                 newLocal(resultRegister, expressions.makeNEQ(dummy, cmp))
@@ -102,10 +100,9 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression cmp = e.getCmp();
-        Expression value = e.getMemValue();
+        Expression cmp = e.getExpectedValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -115,14 +112,16 @@ public class VisitorLKMM extends VisitorBase {
         Load casLoad;
         return eventSequence(
                 newJump(new BNonDet(), success),
+                // Cas failure branch
                 newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeNEQ(dummy, cmp)),
                 newGoto(end),
-                success, // CAS success branch
+                success,
+                // CAS success branch
                 mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 casLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
                 newAssume(expressions.makeEQ(dummy, cmp)),
-                newRMWStoreWithMo(casLoad, address, value, Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(casLoad, address, e.getStoreValue(), Tag.Linux.storeMO(mo)),
                 mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 end,
                 newLocal(resultRegister, dummy)
@@ -130,62 +129,59 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Fence optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
         Fence optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
 
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newRMWStoreWithMo(load, address, expressions.makeBinary(dummy, e.getOp(), value), Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(load, address, storeValue, Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
         );
     }
 
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
-        Register resultRegister = e.getResultRegister();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
         load.addTags(Tag.Linux.NORETURN);
 
         return eventSequence(
                 load,
-                newRMWStoreWithMo(load, address, expressions.makeBinary(dummy, e.getOp(), e.getMemValue()), Tag.Linux.MO_ONCE)
+                newRMWStoreWithMo(load, address, storeValue, Tag.Linux.MO_ONCE)
         );
     }
 
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-        Register resultRegister = e.getResultRegister();
+    public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Expression address = e.getAddress();
-        IntegerType type = resultRegister.getType();
-
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = e.getFunction().newRegister(types.getArchType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
 
         return eventSequence(
                 newCoreMemoryBarrier(),
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), e.getMemValue())),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.MO_ONCE),
-                newLocal(resultRegister, expressions.makeEQ(dummy, expressions.makeZero(type))),
+                newLocal(e.getResultRegister(), expressions.makeEQ(dummy, expressions.makeZero(dummy.getType()))),
                 newCoreMemoryBarrier()
         );
     }
 
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -198,7 +194,7 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, e.getOp(), e.getMemValue())),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
@@ -227,7 +223,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitLKMMXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();
@@ -240,7 +236,7 @@ public class VisitorLKMM extends VisitorBase {
         return eventSequence(
                 optionalMbBefore,
                 load,
-                newRMWStoreWithMo(load, address, e.getMemValue(), Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(load, address, e.getValue(), Tag.Linux.storeMO(mo)),
                 newLocal(resultRegister, dummy),
                 optionalMbAfter
         );

@@ -60,12 +60,12 @@ public class Simplifier implements ProgramProcessor {
             return false;
         }
         boolean changed = false;
-        if (next instanceof CondJump) {
-            changed = simplifyJump((CondJump) next);
-        } else if (next instanceof Label) {
-            changed = simplifyLabel((Label) next);
-        } else if (next instanceof FunCall) {
-            changed = simplifyFunCall((FunCall) next);
+        if (next instanceof CondJump jump) {
+            changed = simplifyJump(jump);
+        } else if (next instanceof Label label) {
+            changed = simplifyLabel(label);
+        } else if (next instanceof FunCall fc) {
+            changed = simplifyFunCall(fc);
         }
         return changed;
     }

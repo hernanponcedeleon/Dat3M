@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.program.event.visitors;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.ptx.RedOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.AtomOp;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
+import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -59,14 +58,13 @@ public interface EventVisitor<T> {
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
 
     // ------------------ Linux Events ------------------
-    default T visitRMWAbstract(RMWAbstract e) { return visitMemEvent(e); }
-    default T visitRMWAddUnless(RMWAddUnless e) { return visitRMWAbstract(e); }
-    default T visitRMWCmpXchg(RMWCmpXchg e) { return visitRMWAbstract(e); }
-    default T visitRMWFetchOp(RMWFetchOp e) { return visitRMWAbstract(e); }
-    default T visitRMWOp(RMWOp e) { return visitRMWAbstract(e); }
-    default T visitRMWOpAndTest(RMWOpAndTest e) { return visitRMWAbstract(e); }
-    default T visitRMWOpReturn(RMWOpReturn e) { return visitRMWAbstract(e); }
-    default T visitRMWXchg(RMWXchg e) { return visitRMWAbstract(e); }
+    default T visitLKMMAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
+    default T visitLKMMCmpXchg(LKMMCmpXchg e) { return visitMemEvent(e); }
+    default T visitLKMMFetchOp(LKMMFetchOp e) { return visitMemEvent(e); }
+    default T visitLKMMOpNoReturn(LKMMOpNoReturn e) { return visitMemEvent(e); }
+    default T visitLKMMOpAndTest(LKMMOpAndTest e) { return visitMemEvent(e); }
+    default T visitLKMMOpReturn(LKMMOpReturn e) { return visitMemEvent(e); }
+    default T visitLKMMXchg(LKMMXchg e) { return visitMemEvent(e); }
     default T visitLKMMFence(LKMMFence e) { return visitEvent(e); }
     default T visitLKMMLoad(LKMMLoad e) { return visitMemEvent(e); }
     default T visitLKMMStore(LKMMStore e) { return visitMemEvent(e); }
@@ -76,27 +74,25 @@ public interface EventVisitor<T> {
     default T visitLKMMUnlock(LKMMUnlock e) { return visitMemEvent(e); }
 
     // ------------------ TSO Events ------------------
-    default T visitXchg(Xchg e) { return visitMemEvent(e); }
+    default T visitTSOXchg(TSOXchg e) { return visitMemEvent(e); }
 
     // ------------------ LISA Events ------------------
-    default T visitRMW(RMW e) { return visitMemEvent(e); }
+    default T visitLISARMW(LISARMW e) { return visitMemEvent(e); }
 
     // ------------------ C-Atomic Events ------------------
-    default T visitAtomicAbstract(AtomicAbstract e) { return visitMemEvent(e); }
-    default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitAtomicAbstract(e); }
-    default T visitAtomicFetchOp(AtomicFetchOp e) { return visitAtomicAbstract(e); }
+    default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitMemEvent(e); }
+    default T visitAtomicFetchOp(AtomicFetchOp e) { return visitMemEvent(e); }
     default T visitAtomicLoad(AtomicLoad e) { return visitMemEvent(e); }
     default T visitAtomicStore(AtomicStore e) { return visitMemEvent(e); }
     default T visitAtomicThreadFence(AtomicThreadFence e) { return visitEvent(e); }
-    default T visitAtomicXchg(AtomicXchg e) { return visitAtomicAbstract(e); }
+    default T visitAtomicXchg(AtomicXchg e) { return visitMemEvent(e); }
 
     // ------------------ LLVM Events ------------------
-    default T visitLlvmAbstract(LlvmAbstractRMW e) { return visitMemEvent(e); }
-    default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitLlvmAbstract(e); }
-    default T visitLlvmRMW(LlvmRMW e) { return visitLlvmAbstract(e); }
+    default T visitLlvmCmpXchg(LlvmCmpXchg e) { return visitMemEvent(e); }
+    default T visitLlvmRMW(LlvmRMW e) { return visitMemEvent(e); }
     default T visitLlvmLoad(LlvmLoad e) { return visitMemEvent(e); }
     default T visitLlvmStore(LlvmStore e) { return visitMemEvent(e); }
-    default T visitLlvmXchg(LlvmXchg e) { return visitLlvmAbstract(e); }
+    default T visitLlvmXchg(LlvmXchg e) { return visitMemEvent(e); }
     default T visitLlvmFence(LlvmFence e) { return visitEvent(e); }
 
     // ------------------ SVCOMP Events ------------------
@@ -107,6 +103,6 @@ public interface EventVisitor<T> {
 	default T visitMalloc(Malloc e) { return visitEvent(e); }
 
 	// ------------------ PTX Events ------------------
-	default T visitPtxRedOp(RedOp e) { return visitRMWAbstract(e); }
-	default T visitPtxAtomOp(AtomOp e) { return visitRMWAbstract(e); }
+	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
+	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
 }

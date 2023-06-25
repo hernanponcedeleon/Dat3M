@@ -116,8 +116,7 @@ public class ProgramEncoder implements Encoder {
         for(Event e : thread.getEntry().getSuccessors()) {
             // Immediate control flow
             BooleanFormula cfCond = pred == null ? bmgr.makeTrue() : context.controlFlow(pred);
-            if (pred instanceof CondJump) {
-                CondJump jump = (CondJump) pred;
+            if (pred instanceof CondJump jump) {
                 cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
                 // NOTE: we need to register the actual jumps here, because the
                 // listener sets of labels is too large (it contains old copies)

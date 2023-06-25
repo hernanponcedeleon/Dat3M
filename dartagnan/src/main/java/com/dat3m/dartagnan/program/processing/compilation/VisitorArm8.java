@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -145,12 +144,11 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitLlvmXchg(LlvmXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, ARMv8.extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -165,13 +163,11 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitLlvmRMW(LlvmRMW e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, ARMv8.extractStoreMoFromCMo(mo));
@@ -193,7 +189,6 @@ class VisitorArm8 extends VisitorBase {
         Register resultRegister = e.getStructRegister(1);
         Expression one = expressions.makeOne(resultRegister.getType());
 
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Expression expectedValue = e.getExpectedValue();
@@ -203,7 +198,7 @@ class VisitorArm8 extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, ARMv8.extractStoreMoFromCMo(mo));
 
         return eventSequence(
                 load,
@@ -236,9 +231,9 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
+        Expression value = e.getStoreValue();
         String mo = e.getMo();
-        Expression expectedAddr = e.getExpectedAddr();
+        Expression expectedAddr = e.getAddressOfExpected();
         IntegerType type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
         Register regExpected = e.getFunction().newRegister(type);
@@ -279,15 +274,13 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, op, value));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
+        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, ARMv8.extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
@@ -329,12 +322,11 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitAtomicXchg(AtomicXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, ARMv8.extractLoadMoFromCMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromCMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, ARMv8.extractStoreMoFromCMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
@@ -440,20 +432,19 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L259
     @Override
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = newLabel("CAS_end");
         // The real scheme uses XOR instead of comparison, but both are semantically
         // equivalent and XOR harms performance substantially.
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getCmp()), casEnd);
+        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromLKMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -473,15 +464,14 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/cmpxchg.h#L21
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitLKMMXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, value, true, ARMv8.extractStoreMoFromLKMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -499,15 +489,13 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L38
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
-        Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
+    public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadExclusive(dummy, address);
-        Store store = newRMWStoreExclusive(address, expressions.makeBinary(dummy, op, value), true);
+        Store store = newRMWStoreExclusive(address, storeValue, true);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
@@ -524,10 +512,8 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L56
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -540,7 +526,7 @@ class VisitorArm8 extends VisitorBase {
 
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, op, value)),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
                 newLocal(resultRegister, dummy),
                 fakeCtrlDep,
@@ -554,15 +540,15 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L78
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeBinary(dummy, e.getOp(), value), true, ARMv8.extractStoreMoFromLKMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()),
+                true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
@@ -583,17 +569,16 @@ class VisitorArm8 extends VisitorBase {
     // and not on inlined assembly, we don't really need to test that the compilation is correct
     // (the other methods implementing the macros are been tested already).
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
         String mo = e.getMo();
         IntegerType type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
 
         Register regValue = e.getFunction().newRegister(type);
         Load load = newRMWLoadExclusiveWithMo(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeADD(regValue, value), true, ARMv8.extractStoreMoFromLKMo(mo));
+        Store store = newRMWStoreExclusiveWithMo(address, expressions.makeADD(regValue, e.getOperand()), true, ARMv8.extractStoreMoFromLKMo(mo));
 
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
@@ -624,26 +609,20 @@ class VisitorArm8 extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
-        Expression zero = expressions.makeZero(type);
-        IOpBin op = e.getOp();
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
-
-        Register dummy = e.getFunction().newRegister(type);
-        Register retReg = e.getFunction().newRegister(type);
-        Local localOp = newLocal(retReg, expressions.makeBinary(dummy, op, value));
-        Local testOp = newLocal(resultRegister, expressions.makeEQ(retReg, zero));
+        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Expression zero = expressions.makeZero(dummy.getType());
 
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
-        Store store = newRMWStoreExclusiveWithMo(address, retReg, true, ARMv8.extractStoreMoFromLKMo(mo));
+        Local localOp = newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
+        Store store = newRMWStoreExclusiveWithMo(address, dummy, true, ARMv8.extractStoreMoFromLKMo(mo));
+        Local testOp = newLocal(resultRegister, expressions.makeEQ(dummy, zero));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
-
 
         return eventSequence(
                 load,

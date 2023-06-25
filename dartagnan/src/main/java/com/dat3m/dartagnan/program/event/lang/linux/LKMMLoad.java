@@ -28,7 +28,7 @@ public class LKMMLoad extends LoadBase {
         super(register, address, mo);
     }
 
-    protected LKMMLoad(LKMMLoad other) {
+    private LKMMLoad(LKMMLoad other) {
         super(other);
     }
 
@@ -40,8 +40,10 @@ public class LKMMLoad extends LoadBase {
         return super.defaultString();
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public LKMMLoad getCopy() {
+        return new LKMMLoad(this);
+    }
 
     @Override
     public LKMMLoad getCopy() {

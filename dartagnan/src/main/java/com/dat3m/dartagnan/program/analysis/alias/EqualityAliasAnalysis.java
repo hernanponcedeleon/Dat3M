@@ -54,7 +54,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
         Set<Register> addrRegs = a.getAddress().getRegs();
         Event e = a.getSuccessor();
         while (e != b) {
-            if (e instanceof RegWriter w && addrRegs.contains(w.getResultRegister())) {
+            if (e instanceof RegWriter rw && addrRegs.contains(rw.getResultRegister())) {
                 cache.put(t, Boolean.FALSE);
                 return false;
             }

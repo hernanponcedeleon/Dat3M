@@ -7,11 +7,16 @@ Here is the list of replacement functions:
 
 | Instruction    | Replacement function |
 | -------------- | -------------------- |
-| `load atomic`  | `i32 @__llvm_atomic32_load(i32* x, i32 mode);`<br>`i64 @__llvm_atomic64_load(i64* x, i32 mode);` |
-| `store atomic` | `void @__llvm_atomic32_store(i32* x, i32 y, i32 mode);`<br>`void @__llvm_atomic64_store(i64* x, i64 y, i32 mode);` |
-| `cmpxchg`      | `{ i32, i1 } @__llvm_atomic32_cmpxchg(i32* x, i32 expected, i32 desired, i32 mode_succ, i32 mode_fail);`<br>`{ i64, i1 } @__llvm_atomic64_cmpxchg(i64* x, i64 expected, i64 desired, i32 mode_succ, i32 mode_fail);` |
-| `atomicrmw op` | `i32 @__llvm_atomic32_rmw(i32* x, i32 y, i32 mode, i32 op);`<br>`i64 @__llvm_atomic64_rmw(i64* x, i64 y, i32 mode, i32 op);` |
+| `load atomic`  | `iN @__llvm_atomicN_load(iN* x, i32 mode);` |
+| `store atomic` | `void @__llvm_atomicN_store(iN* x, iN y, i32 mode);` |
+| `cmpxchg`      | `{ iN, i1 } @__llvm_atomicN_cmpxchg(iN* x, iN expected, iN desired, i32 mode_succ, i32 mode_fail);` |
+| `atomicrmw op` | `iN @__llvm_atomicN_rmw(iN* x, iN y, i32 mode, i32 op);` |
 | `fence`        | `void @__llvm_atomic_fence(i32 mode);` |
+
+All instructions except `fence` come in four variants, depending on the
+size of the arguments: `N` should be substituted with `8`, `16`, `32` or `64`.
+For example, 64-bit variant of `load atomic` will be replaced
+by `i64 @__llvm_atomic64_load(i64* x, i32 mode);`.
 
 In the table `mode`, `mode_succ` and `mode_fail` denote ordering semantics,
 and `op` denotes type of an RMW instruction (`xchg`, `add`, `sub`, `and`, `or`, `xor`).
