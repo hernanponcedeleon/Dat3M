@@ -30,6 +30,6 @@ public class LKMMOpReturn extends RMWOpResultBase {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWOpReturn(this);
+		return visitor.visitLKMMOpReturn(this);
 	}
 }

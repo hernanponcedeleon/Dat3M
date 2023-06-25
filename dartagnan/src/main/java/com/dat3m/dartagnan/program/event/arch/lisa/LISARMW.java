@@ -27,6 +27,6 @@ public class LISARMW extends RMWXchgBase {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitRMW(this);
+        return visitor.visitLISARMW(this);
     }
 }

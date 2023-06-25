@@ -106,47 +106,47 @@ class VisitorBase implements EventVisitor<List<Event>> {
     }
 
     @Override
-    public List<Event> visitRMWAddUnless(LKMMAddUnless e) {
+    public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWCmpXchg(LKMMCmpXchg e) {
+    public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWFetchOp(LKMMFetchOp e) {
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOp(LKMMOpNoReturn e) {
+    public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOpAndTest(LKMMOpAndTest e) {
+    public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOpReturn(LKMMOpReturn e) {
+    public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWXchg(LKMMXchg e) {
+    public List<Event> visitLKMMXchg(LKMMXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitXchg(TSOXchg e) {
+    public List<Event> visitTSOXchg(TSOXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMW(LISARMW e) {
+    public List<Event> visitLISARMW(LISARMW e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();

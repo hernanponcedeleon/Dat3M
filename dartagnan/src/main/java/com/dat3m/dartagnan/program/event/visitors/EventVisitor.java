@@ -58,13 +58,13 @@ public interface EventVisitor<T> {
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
 
     // ------------------ Linux Events ------------------
-    default T visitRMWAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
-    default T visitRMWCmpXchg(LKMMCmpXchg e) { return visitMemEvent(e); }
-    default T visitRMWFetchOp(LKMMFetchOp e) { return visitMemEvent(e); }
-    default T visitRMWOp(LKMMOpNoReturn e) { return visitMemEvent(e); }
-    default T visitRMWOpAndTest(LKMMOpAndTest e) { return visitMemEvent(e); }
-    default T visitRMWOpReturn(LKMMOpReturn e) { return visitMemEvent(e); }
-    default T visitRMWXchg(LKMMXchg e) { return visitMemEvent(e); }
+    default T visitLKMMAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
+    default T visitLKMMCmpXchg(LKMMCmpXchg e) { return visitMemEvent(e); }
+    default T visitLKMMFetchOp(LKMMFetchOp e) { return visitMemEvent(e); }
+    default T visitLKMMOpNoReturn(LKMMOpNoReturn e) { return visitMemEvent(e); }
+    default T visitLKMMOpAndTest(LKMMOpAndTest e) { return visitMemEvent(e); }
+    default T visitLKMMOpReturn(LKMMOpReturn e) { return visitMemEvent(e); }
+    default T visitLKMMXchg(LKMMXchg e) { return visitMemEvent(e); }
     default T visitLKMMFence(LKMMFence e) { return visitEvent(e); }
     default T visitLKMMLoad(LKMMLoad e) { return visitMemEvent(e); }
     default T visitLKMMStore(LKMMStore e) { return visitMemEvent(e); }
@@ -74,10 +74,10 @@ public interface EventVisitor<T> {
     default T visitLKMMUnlock(LKMMUnlock e) { return visitMemEvent(e); }
 
     // ------------------ TSO Events ------------------
-    default T visitXchg(TSOXchg e) { return visitMemEvent(e); }
+    default T visitTSOXchg(TSOXchg e) { return visitMemEvent(e); }
 
     // ------------------ LISA Events ------------------
-    default T visitRMW(LISARMW e) { return visitMemEvent(e); }
+    default T visitLISARMW(LISARMW e) { return visitMemEvent(e); }
 
     // ------------------ C-Atomic Events ------------------
     default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitMemEvent(e); }

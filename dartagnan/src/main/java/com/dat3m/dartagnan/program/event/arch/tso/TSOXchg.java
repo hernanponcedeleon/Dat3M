@@ -30,6 +30,6 @@ public class TSOXchg extends RMWXchgBase {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitXchg(this);
+        return visitor.visitTSOXchg(this);
     }
 }

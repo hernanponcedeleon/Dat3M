@@ -66,7 +66,7 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitRMWAddUnless(this);
+		return visitor.visitLKMMAddUnless(this);
 	}
 
     @Override

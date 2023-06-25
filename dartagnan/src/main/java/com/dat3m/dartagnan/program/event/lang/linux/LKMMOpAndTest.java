@@ -30,6 +30,6 @@ public class LKMMOpAndTest extends RMWOpResultBase {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitRMWOpAndTest(this);
+        return visitor.visitLKMMOpAndTest(this);
     }
 }

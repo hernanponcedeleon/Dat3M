@@ -22,7 +22,7 @@ class VisitorTso extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitXchg(TSOXchg e) {
+    public List<Event> visitTSOXchg(TSOXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 

@@ -30,6 +30,6 @@ public class LKMMFetchOp extends RMWOpResultBase {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitRMWFetchOp(this);
+        return visitor.visitLKMMFetchOp(this);
     }
 }

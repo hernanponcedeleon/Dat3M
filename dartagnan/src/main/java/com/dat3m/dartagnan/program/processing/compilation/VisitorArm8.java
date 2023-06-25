@@ -432,7 +432,7 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L259
     @Override
-    public List<Event> visitRMWCmpXchg(LKMMCmpXchg e) {
+    public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -464,7 +464,7 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/cmpxchg.h#L21
     @Override
-    public List<Event> visitRMWXchg(LKMMXchg e) {
+    public List<Event> visitLKMMXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -489,7 +489,7 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L38
     @Override
-    public List<Event> visitRMWOp(LKMMOpNoReturn e) {
+    public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
         Register dummy = e.getThread().newRegister(types.getArchType());
@@ -512,7 +512,7 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L56
     @Override
-    public List<Event> visitRMWOpReturn(LKMMOpReturn e) {
+    public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -540,7 +540,7 @@ class VisitorArm8 extends VisitorBase {
     // Following
     // 		https://elixir.bootlin.com/linux/v5.18/source/arch/arm64/include/asm/atomic_ll_sc.h#L78
     @Override
-    public List<Event> visitRMWFetchOp(LKMMFetchOp e) {
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -569,7 +569,7 @@ class VisitorArm8 extends VisitorBase {
     // and not on inlined assembly, we don't really need to test that the compilation is correct
     // (the other methods implementing the macros are been tested already).
     @Override
-    public List<Event> visitRMWAddUnless(LKMMAddUnless e) {
+    public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -609,7 +609,7 @@ class VisitorArm8 extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/inc_and_test
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
-    public List<Event> visitRMWOpAndTest(LKMMOpAndTest e) {
+    public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();

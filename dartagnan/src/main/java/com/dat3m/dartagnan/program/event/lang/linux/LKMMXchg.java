@@ -29,6 +29,6 @@ public class LKMMXchg extends RMWXchgBase {
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitRMWXchg(this);
+        return visitor.visitLKMMXchg(this);
     }
 }
