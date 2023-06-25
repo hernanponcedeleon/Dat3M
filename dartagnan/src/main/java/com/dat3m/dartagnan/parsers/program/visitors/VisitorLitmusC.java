@@ -1,11 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
@@ -423,8 +419,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
     	IExpr value = returnExpressionOrOne(ctx.value);
-        Register register = programBuilder.getOrNewRegister(scope, null, archType);
-        Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), register, value, ctx.op);
+        Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), value, ctx.op);
         return programBuilder.addChild(currentThread, event);
     }
 

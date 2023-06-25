@@ -3,43 +3,31 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.common.RMWOpResultBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 
-public class LlvmRMW extends LlvmAbstractRMW {
+public class LlvmRMW extends RMWOpResultBase {
 
-    private final IOpBin op;
-
-    public LlvmRMW(Register register, Expression address, Expression value, IOpBin op, String mo) {
-        super(address, register, value, mo);
-        this.op = op;
+    public LlvmRMW(Register register, Expression address, IOpBin op, Expression operand, String mo) {
+        super(register, address, op, operand, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
     }
 
     private LlvmRMW(LlvmRMW other) {
         super(other);
-        this.op = other.op;
     }
 
     @Override
     public String defaultString() {
-        return resultRegister + " = llvm_rmw_" + op.toLinuxName() +
-                "(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
+        return String.format("%s := llvm_rmw_%s(*%s, %s, %s)\t### LKMM",
+                resultRegister, operator.toLinuxName(), address, operand, mo);
     }
-
-    public IOpBin getOp() {
-        return op;
-    }
-
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public LlvmRMW getCopy() {
         return new LlvmRMW(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

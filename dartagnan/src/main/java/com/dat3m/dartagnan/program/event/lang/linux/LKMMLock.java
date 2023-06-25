@@ -31,16 +31,10 @@ public class LKMMLock extends SingleAccessMemoryEvent {
         return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public LKMMLock getCopy() {
         return new LKMMLock(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
