@@ -18,12 +18,20 @@ public class LlvmProcedures {
 
     public static List<String> LLVMPROCEDURES = Arrays.asList(
             // Atomic operations
+            "__llvm_atomic8_load",
+            "__llvm_atomic16_load",
             "__llvm_atomic32_load",
             "__llvm_atomic64_load",
+            "__llvm_atomic8_store",
+            "__llvm_atomic16_store",
             "__llvm_atomic32_store",
             "__llvm_atomic64_store",
+            "__llvm_atomic8_cmpxchg",
+            "__llvm_atomic16_cmpxchg",
             "__llvm_atomic32_cmpxchg",
             "__llvm_atomic64_cmpxchg",
+            "__llvm_atomic8_rmw",
+            "__llvm_atomic16_rmw",
             "__llvm_atomic32_rmw",
             "__llvm_atomic64_rmw",
             "__llvm_atomic_fence",
@@ -37,7 +45,8 @@ public class LlvmProcedures {
             "llvm.umin.i32",
             "llvm.umin.i64",
             "llvm.ctlz.i32",
-            "llvm.ctlz.i64");
+            "llvm.ctlz.i64"
+    );
 
     public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromContext(ctx);
@@ -54,11 +63,11 @@ public class LlvmProcedures {
         String mo;
         Expression cond; // For intrinsics
         switch (funcName) {
-            case "__llvm_atomic32_load", "__llvm_atomic64_load" -> {
+            case"__llvm_atomic8_load", "__llvm_atomic16_load", "__llvm_atomic32_load", "__llvm_atomic64_load" -> {
                 mo = C11.intToMo(((IConst) p1).getValueAsInt());
                 visitor.addEvent(Llvm.newLoad(reg, p0, mo));
             }
-            case "__llvm_atomic32_store", "__llvm_atomic64_store" -> {
+            case "__llvm_atomic8_store", "__llvm_atomic16_store", "__llvm_atomic32_store", "__llvm_atomic64_store" -> {
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
                 visitor.addEvent(Llvm.newStore(p0, p1, mo));
             }
@@ -66,7 +75,7 @@ public class LlvmProcedures {
                 mo = C11.intToMo(((IConst) p0).getValueAsInt());
                 visitor.addEvent(Llvm.newFence(mo));
             }
-            case "__llvm_atomic32_cmpxchg", "__llvm_atomic64_cmpxchg" -> {
+            case "__llvm_atomic8_cmpxchg", "__llvm_atomic16_cmpxchg", "__llvm_atomic32_cmpxchg", "__llvm_atomic64_cmpxchg" -> {
                 // Since we don't support struct types, we instead model each member as a
                 // register.
                 // It is the responsibility of each LLVM instruction creating a structure to
@@ -80,7 +89,7 @@ public class LlvmProcedures {
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());
                 visitor.addEvent(Llvm.newCompareExchange(oldValueRegister, cmpRegister, p0, p1, p2, mo, true));
             }
-            case "__llvm_atomic32_rmw", "__llvm_atomic64_rmw" -> {
+            case "__llvm_atomic8_rmw", "__llvm_atomic16_rmw", "__llvm_atomic32_rmw", "__llvm_atomic64_rmw" -> {
                 mo = C11.intToMo(((IConst) p2).getValueAsInt());
                 IOpBin op;
                 switch (((IConst) p3).getValueAsInt()) {
