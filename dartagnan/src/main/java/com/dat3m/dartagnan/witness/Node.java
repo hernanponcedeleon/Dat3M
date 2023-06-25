@@ -24,8 +24,8 @@ public class Node extends ElemWithAttributes implements Comparable<Node> {
 
 	@Override
     public boolean equals(Object o) {
-		if(o instanceof Node) {
-			return getId().equals(((Node)o).getId());
+		if(o instanceof Node node) {
+			return getId().equals(node.getId());
 		}
 		return false;
 	}

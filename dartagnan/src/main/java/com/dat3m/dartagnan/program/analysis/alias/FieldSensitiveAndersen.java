@@ -63,8 +63,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             processLocs(e);
         }
         for (Event e : program.getEvents()) {
-            if(e instanceof Local) {
-                processRegs((Local)e);
+            if(e instanceof Local local) {
+                processRegs(local);
             }
         }
         while(!variables.isEmpty()) {

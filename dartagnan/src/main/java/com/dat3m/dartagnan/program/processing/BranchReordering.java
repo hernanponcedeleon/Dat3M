@@ -118,7 +118,7 @@ public class BranchReordering implements ProgramProcessor {
                 if (e.equals(exit)) {
                     break;
                 }
-                if (e instanceof CondJump && ((CondJump) e).isGoto()) {
+                if (e instanceof CondJump jump && jump.isGoto()) {
                     curBranch = new MovableBranch();
                     curBranch.id = id++;
                     branches.add(curBranch);

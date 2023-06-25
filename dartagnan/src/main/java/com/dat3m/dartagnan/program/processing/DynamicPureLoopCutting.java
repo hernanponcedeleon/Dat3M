@@ -227,11 +227,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         for (Event e : iterBody.subList(1, iterBody.size())) {
             final List<Event> preds = new ArrayList<>();
             final Event pred = e.getPredecessor();
-            if (!(pred instanceof CondJump && ((CondJump)pred).isGoto())) {
+            if (!(pred instanceof CondJump jump && jump.isGoto())) {
                 preds.add(pred);
             }
-            if (e instanceof Label) {
-                preds.addAll(((Label)e).getJumpSet());
+            if (e instanceof Label label) {
+                preds.addAll(label.getJumpSet());
             }
             immPredMap.put(e, preds);
         }

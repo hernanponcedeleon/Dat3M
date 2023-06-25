@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022. Huawei Technologies Co., Ltd.
+ * Copyright (C) 2022-2023. Huawei Technologies Co., Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the MIT License.
@@ -37,6 +37,8 @@
                                                                                \
   ty MY_ATOMICS_NAME(rmw, n)(atomic_ptr_ty x, ty y, int mode, int op);
 
+MY_ATOMICS_DECLARE_FUNCTIONS(8, char, atomic_char *)
+MY_ATOMICS_DECLARE_FUNCTIONS(16, short, atomic_short *)
 MY_ATOMICS_DECLARE_FUNCTIONS(32, int, atomic_int *)
 MY_ATOMICS_DECLARE_FUNCTIONS(64, long long, atomic_llong *)
 

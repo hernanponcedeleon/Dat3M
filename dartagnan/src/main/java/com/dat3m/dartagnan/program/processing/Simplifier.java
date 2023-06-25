@@ -59,12 +59,12 @@ public class Simplifier implements ProgramProcessor {
             return false;
         }
         boolean changed = false;
-        if (next instanceof CondJump) {
-            changed = simplifyJump((CondJump) next);
-        } else if (next instanceof Label) {
-            changed = simplifyLabel((Label) next);
-        } else if (next instanceof FunCall) {
-            changed = simplifyFunCall((FunCall) next);
+        if (next instanceof CondJump jump) {
+            changed = simplifyJump(jump);
+        } else if (next instanceof Label label) {
+            changed = simplifyLabel(label);
+        } else if (next instanceof FunCall fc) {
+            changed = simplifyFunCall(fc);
         }
         return changed;
     }
@@ -92,7 +92,7 @@ public class Simplifier implements ProgramProcessor {
 
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
-        if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
+        if(successor instanceof FunRet fr && fr.getFunctionName().equals(call.getFunctionName())) {
             call.tryDelete();
             successor.tryDelete();
             return true;
