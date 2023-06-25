@@ -46,11 +46,6 @@ public class LKMMLoad extends LoadBase {
     }
 
     @Override
-    public LKMMLoad getCopy() {
-        return new LKMMLoad(this);
-    }
-
-    @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitLKMMLoad(this);
     }

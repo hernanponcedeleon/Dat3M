@@ -64,6 +64,13 @@ public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter 
     }
 
     @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
+
+
+    @Override
     public Set<Register.Read> getRegisterReads() {
         return  Register.collectRegisterReads(storeValue, DATA,
                 Register.collectRegisterReads(expectedAddr, ADDR, // note the address dependency here

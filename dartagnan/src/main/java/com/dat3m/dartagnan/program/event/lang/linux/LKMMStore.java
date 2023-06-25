@@ -49,8 +49,4 @@ public class LKMMStore extends StoreBase {
         return visitor.visitLKMMStore(this);
     }
 
-    @Override
-    public LKMMStore getCopy() {
-        return new LKMMStore(this);
-    }
 }

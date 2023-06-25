@@ -75,7 +75,7 @@ public class LkmmProcedures {
             }
             case "__LKMM_ATOMIC_OP" -> {
                 op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
-                visitor.addEvent(EventFactory.Linux.newRMWOp( p0, reg, p1, op));
+                visitor.addEvent(EventFactory.Linux.newRMWOp( p0, p1, op));
             }
             case "__LKMM_FENCE" -> {
                 String fence = Linux.intToMo(((IConst) p0).getValueAsInt());

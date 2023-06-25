@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -44,6 +45,11 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
         return resultRegister;
     }
 
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
     public Expression getOperand() {
         return operand;
     }
@@ -57,6 +63,13 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
         return Register.collectRegisterReads(cmp, DATA,
                 Register.collectRegisterReads(operand, DATA,
                 super.getRegisterReads()));
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.operand = operand.visit(exprTransformer);
+        this.cmp = operand.visit(exprTransformer);
     }
 
     @Override
