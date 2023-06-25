@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -59,7 +58,6 @@ public interface EventVisitor<T> {
     default T visitStoreExclusive(StoreExclusive e) { return visitMemEvent(e); }
 
     // ------------------ Linux Events ------------------
-    default T visitRMWAbstract(RMWAbstract e) { return visitMemEvent(e); }
     default T visitRMWAddUnless(LKMMAddUnless e) { return visitMemEvent(e); }
     default T visitRMWCmpXchg(LKMMCmpXchg e) { return visitMemEvent(e); }
     default T visitRMWFetchOp(LKMMFetchOp e) { return visitMemEvent(e); }

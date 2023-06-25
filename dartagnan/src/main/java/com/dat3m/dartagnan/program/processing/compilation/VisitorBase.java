@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
@@ -103,11 +102,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitStoreExclusive(StoreExclusive e) {
-        throw error(e);
-    }
-
-    @Override
-    public List<Event> visitRMWAbstract(RMWAbstract e) {
         throw error(e);
     }
 
