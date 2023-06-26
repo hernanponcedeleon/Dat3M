@@ -63,11 +63,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected int currentLine = -1;
     protected String sourceCodeFile = "";
 
+    // We use <pairLabels> to connect labels of a "goto l1, l2" statement.
     private Label currentLabel = null;
     private final Map<Label, Label> pairLabels = new HashMap<>();
 
-    private final Map<String, Function> functions = new HashMap<>();
-    private FunctionCall currentCall = null;
+    private final Map<String, BoogieFunction> boogieFunctions = new HashMap<>();
+    private BoogieFunctionCall currentCall = null;
 
     // Improves performance by initializing Locations rather than creating new write events
     private boolean initMode = false;
@@ -334,7 +335,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitFunc_decl(Func_declContext ctx) {
         final String name = ctx.Ident().getText();
-        functions.put(name, new Function(name, ctx.var_or_type(), ctx.expr()));
+        boogieFunctions.put(name, new BoogieFunction(name, ctx.var_or_type(), ctx.expr()));
         return null;
     }
 
@@ -647,18 +648,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
 
-        Expression c = (Expression) ctx.proposition().expr().accept(this);
+        final Expression cond = (Expression) ctx.proposition().expr().accept(this);
         final Label pairingLabel = pairLabels.get(currentLabel);
         if (pairingLabel != null) {
             // if there is a pairing label, we jump to that (this assume belongs to a conditional jump)
-            addEvent(EventFactory.newJumpUnless(c, pairingLabel));
+            addEvent(EventFactory.newJumpUnless(cond, pairingLabel));
         } else if (inlineMode) {
             // if there is no pairing label, we terminate the thread (inline mode)
             final Label endOfThread = getOrNewLabel("END_OF_T" + threadCount);
-            addEvent(EventFactory.newJumpUnless(c, endOfThread));
+            addEvent(EventFactory.newJumpUnless(cond, endOfThread));
         } else {
             // ... if we are not inlining, we instead create an abort
-            addEvent(EventFactory.newAbortIf(expressions.makeNot(c)));
+            addEvent(EventFactory.newAbortIf(expressions.makeNot(cond)));
         }
         return null;
     }
@@ -785,8 +786,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitVar_expr(Var_exprContext ctx) {
         String name = ctx.getText();
-        if (currentCall != null && currentCall.getFunction().getBody() != null) {
-            return currentCall.replaceVarsByExprs(ctx);
+        if (currentCall != null && currentCall.getFunction().body() != null) {
+            // we encountered a function parameter and replace it by the call argument
+            // NOTE: This notion of "function" refers to Boogie functions
+            return currentCall.replaceParamByArgument(ctx);
         }
         if (constantsMap.containsKey(name)) {
             return constantsMap.get(name);
@@ -796,7 +799,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             IntegerType type = constantsTypeMap.get(name);
             return new Register(name, Register.NO_FUNCTION, type);
         }
-        Register register = getScopedRegister(name);
+
+        final Register register = getScopedRegister(name);
         if (register != null) {
             return register;
         }
@@ -805,6 +809,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             //TODO: We cannot do this for non-inlined functions
             return programBuilder.getOrNewObject(String.format("%s(%s)", name, threadCount));
         }
+
         final MemoryObject object = programBuilder.getObject(name);
         if (object != null) {
             return object;
@@ -814,8 +819,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitFun_expr(Fun_exprContext ctx) {
+        //NOTE: This notion of "function" refers to Boogie functions like "add.ref" which are used
+        // without the "call" keyword.
+        // C-level (user-defined) functions are "procedure" in Boogie and not handled by this function.
         final String funcName = ctx.Ident().getText();
-        final Function function = functions.get(funcName);
+        final BoogieFunction function = boogieFunctions.get(funcName);
 
         if (function == null) {
             throw new ParsingException("Function " + funcName + " is not defined");
@@ -876,11 +884,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return smackPredicate(funcName, callParams, expressions);
         }
         // Some functions do not have a body
-        if (function.getBody() == null) {
+        if (function.body() == null) {
             throw new ParsingException("Function " + funcName + " has no implementation");
         }
-        currentCall = new FunctionCall(function, callParams, currentCall); // push currentCall to the call stack
-        Object ret = function.getBody().accept(this);
+        currentCall = new BoogieFunctionCall(function, callParams, currentCall); // push currentCall to the call stack
+        Object ret = function.body().accept(this);
         currentCall = currentCall.getParent();  // pop currentCall from the call stack
         return ret;
     }
