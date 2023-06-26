@@ -474,7 +474,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         }
         final String funcName = getFunctionNameFromContext(ctx);
-        if (funcName.equals("$initialize") && !inlineMode) {
+        if (funcName.equals("$initialize") && inlineMode) {
             initMode = true;
         }
 
