@@ -97,11 +97,13 @@ public class Program {
 
     public void addThread(Thread t) {
         threads.add(t);
+        t.setProgram(this);
     }
 
     public void addFunction(Function func) {
         Preconditions.checkArgument(!(func instanceof Thread), "Use addThread to add threads to the program");
         functions.add(func);
+        func.setProgram(this);
     }
 
     public List<Thread> getThreads() {

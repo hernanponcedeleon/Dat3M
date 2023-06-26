@@ -214,12 +214,12 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitLabel(LitmusRISCVParser.LabelContext ctx) {
-		return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(ctx.Label().getText()));
+		return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
 	}
 
 	@Override
 	public Object visitBranchCond(LitmusRISCVParser.BranchCondContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
         Expression expr = expressions.makeBinary(r1, ctx.cond().op, r2);

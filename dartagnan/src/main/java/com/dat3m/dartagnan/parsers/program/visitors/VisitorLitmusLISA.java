@@ -153,14 +153,14 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	@Override
 	public Object visitLabel(LitmusLISAParser.LabelContext ctx) {
 		String name = ctx.getText();
-        Label label = programBuilder.getOrCreateLabel(name.substring(0, name.length()-1));
+        Label label = programBuilder.getOrCreateLabel(mainThread, name.substring(0, name.length()-1));
 		programBuilder.addChild(mainThread, label);
 		return null;
 	}
 
 	@Override
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(ctx.labelName().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
 		Expression one = expressions.makeOne(reg.getType());
         Expression cond = expressions.makeEQ(reg, one);

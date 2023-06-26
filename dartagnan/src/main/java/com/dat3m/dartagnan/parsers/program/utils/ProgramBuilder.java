@@ -33,13 +33,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+
     private final Map<Integer, Function> functions = new HashMap<>();
-    private final List<INonDet> constants = new ArrayList<>();
-    private final Map<String,MemoryObject> locations = new HashMap<>();
+    private final Map<Integer, Map<String, Label>> function2LabelsMap = new HashMap<>();
 
     private final Memory memory = new Memory();
-
-    private final Map<String, Label> labels = new HashMap<>();
+    private final Map<String, MemoryObject> locations = new HashMap<>();
+    private final List<INonDet> constants = new ArrayList<>();
 
     private AbstractAssert ass;
     private AbstractAssert assFilter;
@@ -47,28 +47,21 @@ public class ProgramBuilder {
     private final SourceLanguage format;
 
     public ProgramBuilder(SourceLanguage format) {
-    	this.format = format;
+        this.format = format;
     }
     
-    public Program build(){
+    public Program build() {
         Program program = new Program(memory, format);
-        List<Thread> threads = functions.values().stream()
-                .filter(Thread.class::isInstance).map(Thread.class::cast)
-                .toList();
-        for(Thread thread : threads){
-            addChild(thread.getId(), getOrCreateLabel("END_OF_T" + thread.getId()));
-            validateLabels(thread);
-            program.addThread(thread);
-            thread.setProgram(program);
+        for (Function func : functions.values()) {
+            if (func instanceof Thread thread) {
+                addChild(thread.getId(), getOrCreateLabel(thread.getId(), "END_OF_T" + thread.getId()));
+                program.addThread(thread);
+            } else {
+                program.addFunction(func);
+            }
+            validateLabels(func);
         }
 
-        List<Function> funcs = functions.values().stream()
-                .filter(f -> !(f instanceof Thread))
-                .toList();
-        for (Function f : funcs) {
-            f.setProgram(program);
-            program.addFunction(f);
-        }
         constants.forEach(program::addConstant);
         program.setSpecification(ass);
         program.setFilterSpecification(assFilter);
@@ -77,7 +70,7 @@ public class ProgramBuilder {
         return program;
     }
 
-    public void initThread(String name, int id){
+    public void initThread(String name, int id) {
         if(!functions.containsKey(id)){
             Skip threadEntry = EventFactory.newSkip();
             functions.putIfAbsent(id, new Thread(name, id, threadEntry));
@@ -219,22 +212,23 @@ public class ProgramBuilder {
         throw new IllegalStateException("Register " + thread + ":" + name + " is not initialised");
     }
 
-    public boolean hasLabel(String name) {
-    	return labels.containsKey(name);
-    }
-    
-    public Label getOrCreateLabel(String name){
-        labels.putIfAbsent(name, EventFactory.newLabel(name));
-        return labels.get(name);
+    public Label getOrCreateLabel(int funcId, String name){
+        return function2LabelsMap
+                .computeIfAbsent(funcId, k -> new HashMap<>())
+                .computeIfAbsent(name, EventFactory::newLabel);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Private utility
 
-    private void validateLabels(Thread thread) throws MalformedProgramException {
-        Map<String, Label> threadLabels = new HashMap<>();
+    private void validateLabels(Function function) throws MalformedProgramException {
+        Map<String, Label> funcLabels = new HashMap<>();
         Set<String> referencedLabels = new HashSet<>();
-        Event e = thread.getEntry();
+        Event e = function.getEntry();
+        Map<String, Label> labels = function2LabelsMap.get(function.getId());
+        if (labels == null) {
+            return;
+        }
         while(e != null){
             if(e instanceof CondJump jump){
                 referencedLabels.add(jump.getLabel().getName());
@@ -243,13 +237,13 @@ public class ProgramBuilder {
                 if(label == null){
                     throw new MalformedProgramException("Duplicated label " + lb.getName());
                 }
-                threadLabels.put(label.getName(), label);
+                funcLabels.put(label.getName(), label);
             }
             e = e.getSuccessor();
         }
 
         for(String labelName : referencedLabels){
-            if(!threadLabels.containsKey(labelName)){
+            if(!funcLabels.containsKey(labelName)){
                 throw new MalformedProgramException("Illegal jump to label " + labelName);
             }
         }

@@ -192,7 +192,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitBranchCond(LitmusPPCParser.BranchCondContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(ctx.Label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
@@ -203,7 +203,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     @Override
     public Object visitLabel(LitmusPPCParser.LabelContext ctx) {
-        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(ctx.Label().getText()));
+        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
     }
 
     @Override

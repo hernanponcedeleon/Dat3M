@@ -131,9 +131,26 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     // ==================== Utility functions ====================
 
+    protected void resetScope() {
+        nextScopeID = 0;
+        currentScope = new Scope(nextScopeID, null);
+    }
+
+    protected void pushScope() {
+        currentScope = new Scope(nextScopeID++, currentScope);
+    }
+
+    protected void popScope() {
+        currentScope = currentScope.getParent();
+    }
+
     protected String getScopedName(String name) {
         if (name == null) {
             return null;
+        }
+        if (!inlineMode) {
+            // We don't need scoping if we do not inline.
+            return name;
         }
         return currentScope.getID() + ":" + name;
     }
@@ -143,6 +160,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             e.setMetadata(new SourceLocation(sourceCodeFile, currentLine));
         }
         return programBuilder.addChild(threadCount, e);
+    }
+
+    protected Label getOrNewLabel(String name) {
+        return programBuilder.getOrCreateLabel(threadCount, name);
+    }
+
+    protected Label getOrNewScopedLabel(String name) {
+        return getOrNewLabel(getScopedName(name));
     }
 
     protected Register getScopedRegister(String name) {
@@ -193,15 +218,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             next = pool.next();
             String nextName = pool.getNameFromPtr(next);
             pool.addIntPtr(threadCount + 1, next);
+            resetScope();
             visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));
         }
 
         logger.info("Number of threads (including main): " + threadCount);
 
         // ----- TODO: Test code -----
-        // FIXME: Cannot reset scopes without triggering exceptions
-        //nextScopeID = 0;
-        //currentScope = new Scope(nextScopeID, null);
         inlineMode = false;
         int oldThreadCount = threadCount;
         for (FunctionDeclaration decl : functionList) {
@@ -209,6 +232,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             visitProc_decl(decl.ctx(), false, null);
         }
         threadCount = oldThreadCount;
+        resetScope();
         // ----- TODO: Test code -----
 
         return programBuilder.build();
@@ -257,7 +281,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 parameterTypes.add(type);
             }
         }
-        Type returnType;
+        final Type returnType;
         if (ctx.proc_sign().proc_sign_out() != null) {
             // Parse output type
             final String typeString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres()
@@ -267,12 +291,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             returnType = types.getVoidType();
         }
 
-        FunctionType functionType = FunctionType.get(returnType, parameterTypes.toArray(new Type[0]));
+        final FunctionType functionType = FunctionType.get(returnType, parameterTypes.toArray(new Type[0]));
 
-        //System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
+        System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
         com.dat3m.dartagnan.program.Function func = programBuilder.initFunction(name, funcId++, functionType, parameterNames);
         functionList.add(new FunctionDeclaration(func, ctx));
-        // ----- TODO: Test code -----
+        // ----- TODO: Test code end -----
     }
 
     @Override
@@ -348,7 +372,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     private void visitProc_decl(Proc_declContext ctx, boolean create, List<Expression> callingValues) {
-        currentLine = -1;
+        if (!inlineMode) {
+            pairLabels.clear();
+        }
+
         if (ctx.proc_sign().proc_sign_out() != null) {
             for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
                 for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
@@ -369,13 +396,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
         }
 
-        currentScope = new Scope(nextScopeID, currentScope);
-        nextScopeID++;
-
         Impl_bodyContext body = ctx.impl_body();
         if (body == null) {
             throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
         }
+
+        pushScope();
 
         if (ctx.proc_sign().proc_sign_in() != null && inlineMode) {
             int index = 0;
@@ -404,19 +430,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
 
         visitChildren(body.stmt_list());
-        currentLine = -1;
 
         if (inlineMode) {
-            final Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+            final Label label = getOrNewLabel("END_OF_" + currentScope.getID());
             addEvent(label);
         } else {
-            //TODO: Do we need an end-marker for functions?
+            //TODO: Do we need an end-marker for non-inlined functions?
             final String funcName = ctx.proc_sign().Ident().getText();
-            final Label label = programBuilder.getOrCreateLabel("END_OF_" + funcName);
+            final Label label = getOrNewLabel("END_OF_" + funcName);
             addEvent(label);
         }
 
-        currentScope = currentScope.getParent();
+        popScope();
 
         if (create && threadCount != 1) {
             // Used to mark the end of the execution of a thread (used by pthread_join)
@@ -448,12 +473,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         }
         final String funcName = getFunctionNameFromContext(ctx);
-        if (funcName.equals("$initialize")) {
+        if (funcName.equals("$initialize") && !inlineMode) {
             initMode = true;
         }
+
         if (funcName.equals("abort")) {
             if (inlineMode) {
-                final Label label = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+                final Label label = getOrNewLabel("END_OF_T" + threadCount);
                 addEvent(EventFactory.newGoto(label));
             } else {
                 addEvent(EventFactory.newAbortIf(expressions.makeTrue()));
@@ -509,9 +535,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (!procedures.containsKey(funcName)) {
             throw new ParsingException("Procedure " + funcName + " is not defined");
         }
-        addEvent(EventFactory.newFunctionCall(funcName));
         if (inlineMode) {
+            addEvent(EventFactory.newFunctionCall(funcName));
             visitProc_decl(procedures.get(funcName), false, callingValues);
+            addEvent(EventFactory.newFunctionReturn(funcName));
         } else {
             // ----- TODO: Test code -----
             com.dat3m.dartagnan.program.Function func =
@@ -527,15 +554,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 }
                 addEvent(funcCall);
             } else {
-                //System.out.println("Warning: skipped call to " + funcName);
+                System.out.println("Warning: skipped call to " + funcName);
             }
-            // ----- TODO: Test code -----
+            // ----- TODO: Test code end -----
         }
         if (ctx.equals(atomicMode)) {
             atomicMode = null;
             SvcompProcedures.__VERIFIER_atomic_end(this);
         }
-        addEvent(EventFactory.newFunctionReturn(funcName));
         if (funcName.equals("$initialize")) {
             initMode = false;
         }
@@ -598,7 +624,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitReturn_cmd(Return_cmdContext ctx) {
         if (inlineMode) {
-            final Label label = programBuilder.getOrCreateLabel("END_OF_" + currentScope.getID());
+            final Label label = getOrNewLabel("END_OF_" + currentScope.getID());
             addEvent(EventFactory.newGoto(label));
         } else {
             final Register returnReg = getScopedRegister(currentReturnName);
@@ -628,10 +654,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newJumpUnless(c, pairingLabel));
         } else if (inlineMode) {
             // if there is no pairing label, we terminate the thread (inline mode)
-            final Label endOfThread = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
+            final Label endOfThread = getOrNewLabel("END_OF_T" + threadCount);
             addEvent(EventFactory.newJumpUnless(c, endOfThread));
         } else {
-            // if we are not inlining, we instead create an abort
+            // ... if we are not inlining, we instead create an abort
             addEvent(EventFactory.newAbortIf(expressions.makeNot(c)));
         }
         return null;
@@ -639,29 +665,25 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitLabel(LabelContext ctx) {
-        // Since we "inline" procedures, label names might clash
-        // thus we use currentScope.getID() + ":"
-        final String labelName = getScopedName(ctx.children.get(0).getText());
-        currentLabel = programBuilder.getOrCreateLabel(labelName);
+        currentLabel = getOrNewScopedLabel(ctx.children.get(0).getText());
         addEvent(currentLabel);
         return null;
     }
 
     @Override
     public Object visitGoto_cmd(Goto_cmdContext ctx) {
-        String labelName = getScopedName(ctx.idents().children.get(0).getText());
-        Label l1 = programBuilder.getOrCreateLabel(labelName);
+        final List<ParseTree> children = ctx.idents().children;
+        final Label l1 = getOrNewScopedLabel(children.get(0).getText());
         addEvent(EventFactory.newGoto(l1));
-        if (ctx.idents().children.size() > 1) {
-            for (int index = 2; index < ctx.idents().children.size(); index = index + 2) {
-                labelName = getScopedName(ctx.idents().children.get(index - 2).getText());
-                l1 = programBuilder.getOrCreateLabel(labelName);
-                // We know there are 2 labels and a comma in the middle
-                labelName = getScopedName(ctx.idents().children.get(index).getText());
-                Label l2 = programBuilder.getOrCreateLabel(labelName);
-                pairLabels.put(l1, l2);
-            }
+
+        if (children.size() > 3) {
+            throw new ParsingException("Cannot handle goto with 3 or more targets.");
+        } else if (children.size() > 1) {
+            // We know there are 2 labels and a comma in the middle
+            final Label l2 = getOrNewScopedLabel(children.get(2).getText());
+            pairLabels.put(l1, l2);
         }
+
         return null;
     }
 
@@ -778,15 +800,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (register != null) {
             return register;
         }
-        if (!inlineMode) {
-            //TODO: Here we use the unscoped name, because function parameter names are unscoped when not inlining
-            register = programBuilder.getRegister(threadCount, name);
-            if (register != null) {
-                return register;
-            }
-        }
 
         if (threadLocalVariables.contains(name)) {
+            //TODO: We cannot do this for non-inlined functions
             return programBuilder.getOrNewObject(String.format("%s(%s)", name, threadCount));
         }
         final MemoryObject object = programBuilder.getObject(name);
@@ -917,13 +933,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         assertionIndex++;
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
-            IValue one = expressions.makeOne(expr.getType());
-            Label end = programBuilder.getOrCreateLabel("END_OF_T" + threadCount);
-            CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
+            final IValue one = expressions.makeOne(expr.getType());
+            final Label end = getOrNewLabel("END_OF_T" + threadCount);
+            final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
             jump.addTags(Tag.EARLYTERMINATION);
             addEvent(jump);
         } else {
-            IValue zero = expressions.makeZero(expr.getType());
+            final IValue zero = expressions.makeZero(expr.getType());
             addEvent(EventFactory.newAbortIf(expressions.makeEQ(ass, zero)));
             //TODO: Check if EARLYTERMINATION tag should be added to the abort
         }

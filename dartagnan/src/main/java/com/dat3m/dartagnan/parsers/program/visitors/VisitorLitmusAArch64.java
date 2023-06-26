@@ -187,7 +187,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitBranch(LitmusAArch64Parser.BranchContext ctx) {
-        Label label = programBuilder.getOrCreateLabel(ctx.label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         if(ctx.branchCondition() == null){
             return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
         }
@@ -204,13 +204,13 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
         IValue zero = expressions.makeZero(register.getType());
         BExpr expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
-        Label label = programBuilder.getOrCreateLabel(ctx.label().getText());
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
     @Override
     public Object visitBranchLabel(LitmusAArch64Parser.BranchLabelContext ctx) {
-        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(ctx.label().getText()));
+        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.label().getText()));
     }
 
     @Override
