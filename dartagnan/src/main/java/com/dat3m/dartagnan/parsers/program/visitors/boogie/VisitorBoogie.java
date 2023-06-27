@@ -213,15 +213,19 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        IExpr next = getOrNewScopedRegister("ptrMain");
-        pool.add(next, "main", -1);
-        while (pool.canCreate()) {
-            next = pool.next();
-            String nextName = pool.getNameFromPtr(next);
-            pool.addIntPtr(threadCount + 1, next);
+        String nextThreadName = "main";
+        do {
             resetScope();
-            visitProc_decl(procedures.get(nextName), true, threadCallingValues.get(threadCount));
-        }
+            createThreadForProcedure(procedures.get(nextThreadName),  threadCallingValues.get(threadCount));
+
+            if (!pool.canCreate()) {
+                break;
+            }
+
+            IExpr next = pool.next();
+            pool.addIntPtr(threadCount + 1, next);
+            nextThreadName = pool.getNameFromPtr(next);
+        } while (true);
 
         logger.info("Number of threads (including main): " + threadCount);
 
@@ -230,11 +234,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         int oldThreadCount = threadCount;
         for (FunctionDeclaration decl : functionList) {
             threadCount = decl.function().getId();
-            visitProc_decl(decl.ctx(), false, null);
+            visitProc_decl(decl.ctx(),  null);
         }
         threadCount = oldThreadCount;
         resetScope();
-        // ----- TODO: Test code -----
+        // ----- TODO: Test code end -----
 
         return programBuilder.build();
     }
@@ -318,9 +322,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (ctx.getText().contains(":treadLocal")) {
                 threadLocalVariables.add(name);
             }
-            if (ctx.getText().contains("ref;") && !procedures.containsKey(name) && !doIgnoreVariable(name)) {
-                int size = ctx.getText().contains(":allocSize")
-                        ? Integer.parseInt(ctx.getText().split(":allocSize")[1].split("}")[0])
+            final String declText = ctx.getText();
+            if (declText.contains("ref;") && !procedures.containsKey(name) && !doIgnoreVariable(name)) {
+                int size = declText.contains(":allocSize")
+                        ? Integer.parseInt(declText.split(":allocSize")[1].split("}")[0])
                         : 1;
                 programBuilder.newObject(name, size);
             } else {
@@ -341,10 +346,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitVar_decl(Var_declContext ctx) {
+        String txt = ctx.getText();
         for (Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
             for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
                 final String name = ident.getText();
                 if (!doIgnoreVariable(name)) {
+                    //TODO: This code never gets reached: it seems all global var declarations are
+                    // Smack-specific and get skipped
                     programBuilder.newObject(name, 1);
                 }
             }
@@ -354,82 +362,90 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitLocal_vars(Local_varsContext ctx) {
-        for (Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
-            for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-                final String regName = ident.getText();
-                final String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-                final IntegerType type = Types.parseIntegerType(typeString, types);
-                if (constantsTypeMap.containsKey(regName)) {
-                    throw new ParsingException("Variable " + regName + " is already defined as a constant");
-                }
-                if (programBuilder.getObject(regName) != null) {
-                    throw new ParsingException("Variable " + regName + " is already defined globally");
-                }
-                // Declare new register
-                getOrNewScopedRegister(regName, type);
-            }
+        final String declString = ctx.typed_idents_wheres().attr_typed_idents_where(0).getText(); // regName:regType
+        final String[] declaration = declString.split(":"); // [regName, regType]
+        final String regName = declaration[0];
+        final IntegerType regType = Types.parseIntegerType(declaration[1], types);
+
+        if (constantsTypeMap.containsKey(regName)) {
+            throw new ParsingException("Register " + regName + " is already defined as a constant");
         }
+        if (programBuilder.getObject(regName) != null) {
+            throw new ParsingException("Register " + regName + " is already defined globally");
+        }
+        // Declare new register
+        getOrNewScopedRegister(regName, regType);
+
         return null;
     }
 
-    private void visitProc_decl(Proc_declContext ctx, boolean create, List<Expression> callingValues) {
-        if (!inlineMode) {
-            pairLabels.clear();
+    private void createThreadForProcedure(Proc_declContext ctx, List<Expression> callingValues) {
+        threadCount++;
+        final String procName = ctx.proc_sign().Ident().getText();
+        programBuilder.initThread(procName, threadCount);
+        if (threadCount != 1) {
+            // Used to allow execution of threads after they have been created (pthread_create)
+            final IExpr pointer = pool.getPtrFromInt(threadCount);
+            final Register reg = getOrNewScopedRegister(null);
+            addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
         }
 
-        if (ctx.proc_sign().proc_sign_out() != null) {
-            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where()) {
-                for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-                    currentReturnName = ident.getText();
-                }
-            }
-        }
+        // Traverse procedure body
+        visitProc_decl(ctx, callingValues);
 
-        if (create) {
-            threadCount++;
-            String name = ctx.proc_sign().Ident().getText();
-            programBuilder.initThread(name, threadCount);
-            if (threadCount != 1) {
-                // Used to allow execution of threads after they have been created (pthread_create)
-                final IExpr pointer = pool.getPtrFromInt(threadCount);
-                final Register reg = getOrNewScopedRegister(null);
-                addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
-            }
+        if (threadCount != 1) {
+            // Used to mark the end of the execution of a thread (used by pthread_join)
+            final IExpr pointer = pool.getPtrFromInt(threadCount);
+            addEvent(EventFactory.Pthread.newEnd(pointer));
         }
+    }
 
+    private void visitProc_decl(Proc_declContext ctx, List<Expression> callingValues) {
         Impl_bodyContext body = ctx.impl_body();
         if (body == null) {
             throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
         }
 
+        if (!inlineMode) {
+            pairLabels.clear();
+        }
+
         pushScope();
 
+        // Handle input parameters
         if (ctx.proc_sign().proc_sign_in() != null && inlineMode) {
             int index = 0;
-            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
-                for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-                    // To deal with references passed to created threads
-                    if (index < callingValues.size()) {
-                        final String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-                        final IntegerType type = Types.parseIntegerType(typeString, types);
-                        final Register register = getOrNewScopedRegister(ident.getText(), type);
-                        final Expression value = callingValues.get(index);
-                        addEvent(EventFactory.newLocal(register, value));
-                        index++;
-                    }
-                }
+            final List<Attr_typed_idents_whereContext> inputParameters
+                    = ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where();
+
+            assert callingValues.size() == inputParameters.size();
+            for (Attr_typed_idents_whereContext param : inputParameters) {
+                final String[] declaration = param.getText().split(":"); // [name, type]
+                final IntegerType type = Types.parseIntegerType(declaration[1], types);
+                final Register register = getOrNewScopedRegister(declaration[0], type);
+                final Expression argument = callingValues.get(index);
+                addEvent(EventFactory.newLocal(register, argument));
             }
         }
 
+        // Handle output parameters
+        if (ctx.proc_sign().proc_sign_out() != null) {
+            final String declString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where(0).getText();
+            final String[] declaration = declString.split(":"); // [name, type]
+            currentReturnName = declaration[0];
+
+            if (!inlineMode) {
+                // When not inlining, we properly handle the return parameter
+                getOrNewScopedRegister(currentReturnName, Types.parseIntegerType(declaration[1], types));
+            }
+        }
+
+        // Handle procedure-local register declarations
         for (Local_varsContext localVarContext : body.local_vars()) {
             visitLocal_vars(localVarContext);
         }
-        if (!inlineMode && ctx.proc_sign().proc_sign_out() != null) {
-            final String typeString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where(0)
-                    .typed_idents_where().typed_idents().type().getText();
-            getOrNewScopedRegister(currentReturnName, Types.parseIntegerType(typeString, types));
-        }
 
+        // Handle procedure body
         visitChildren(body.stmt_list());
 
         if (inlineMode) {
@@ -444,11 +460,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         popScope();
 
-        if (create && threadCount != 1) {
-            // Used to mark the end of the execution of a thread (used by pthread_join)
-            final IExpr pointer = pool.getPtrFromInt(threadCount);
-            addEvent(EventFactory.Pthread.newEnd(pointer));
-        }
     }
 
     @Override
@@ -538,7 +549,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
         if (inlineMode) {
             addEvent(EventFactory.newFunctionCall(funcName));
-            visitProc_decl(procedures.get(funcName), false, callingValues);
+            visitProc_decl(procedures.get(funcName), callingValues);
             addEvent(EventFactory.newFunctionReturn(funcName));
         } else {
             // ----- TODO: Test code -----
