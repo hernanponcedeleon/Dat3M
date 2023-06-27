@@ -174,9 +174,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 	@Override
 	public Object visitAxiom_decl(Axiom_declContext ctx) {
 		Expression exp = (Expression)ctx.proposition().accept(this);
-		if(exp instanceof Atom && ((Atom)exp).getLHS() instanceof Register && ((Atom)exp).getOp().equals(EQ)) {
-			String name = ((Register)((Atom)exp).getLHS()).getName();
-			Expression def = ((Atom)exp).getRHS();
+		if(exp instanceof Atom atom && atom.getLHS() instanceof Register reg && atom.getOp().equals(EQ)) {
+			String name = reg.getName();
+			Expression def = atom.getRHS();
 			constantsMap.put(name, def);
 		}
 		return null;
@@ -697,9 +697,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 			if(initMode && !(value instanceof MemoryObject)) {
 				Expression lhs = address;
 				int rhs = 0;
-				while(lhs instanceof IExprBin) {
-					rhs += ((IExprBin)lhs).getRHS().reduce().getValueAsInt();
-					lhs = ((IExprBin)lhs).getLHS();
+				while(lhs instanceof IExprBin left) {
+					rhs += left.getRHS().reduce().getValueAsInt();
+					lhs = left.getLHS();
 				}
 				String text = ctx.expr(1).getText();
 				String[] split = text.split("add.ref");

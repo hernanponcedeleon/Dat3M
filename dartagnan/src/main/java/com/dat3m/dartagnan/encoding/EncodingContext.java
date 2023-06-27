@@ -352,8 +352,8 @@ public final class EncodingContext {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
             Formula r;
-            if (e instanceof RegWriter) {
-                Register register = ((RegWriter) e).getResultRegister();
+            if (e instanceof RegWriter rw) {
+                Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
                 Type type = register.getType();
                 if (type instanceof BooleanType) {

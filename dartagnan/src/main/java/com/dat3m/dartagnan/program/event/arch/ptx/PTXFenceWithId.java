@@ -8,10 +8,10 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import java.util.HashSet;
 import java.util.Set;
 
-public class FenceWithId extends Fence implements RegReader {
+public class PTXFenceWithId extends Fence implements RegReader {
     private final Expression fenceID;
 
-    public FenceWithId(String name, Expression fenceID) {
+    public PTXFenceWithId(String name, Expression fenceID) {
         super(name);
         this.fenceID = fenceID;
     }

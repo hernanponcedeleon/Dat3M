@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -380,7 +380,7 @@ public class RelationAnalysis {
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
         Map<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
         for (Constraint c : memoryModel.getConstraints()) {
-            if (c instanceof Axiom && ((Axiom) c).isFlagged()) {
+            if (c instanceof Axiom axiom && axiom.isFlagged()) {
                 continue;
             }
             for (Relation r : c.getConstrainedRelations()) {
@@ -562,10 +562,10 @@ public class RelationAnalysis {
                     }
 
                     final List<Event> ctrlDependentEvents;
-                    if (jump instanceof IfAsJump) {
+                    if (jump instanceof IfAsJump ifJump) {
                         // Ctrl dependencies of Ifs (under Linux) only extend up until the merge point of both
                         // branches.
-                        ctrlDependentEvents = ((IfAsJump)jump).getBranchesEvents();
+                        ctrlDependentEvents = ifJump.getBranchesEvents();
                     } else {
                         // Regular jumps give dependencies to all successors.
                         ctrlDependentEvents = jump.getSuccessor().getSuccessors();
@@ -711,10 +711,9 @@ public class RelationAnalysis {
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
-                    if (!(events.get(end) instanceof RMWStoreExclusive)) {
+                    if (!(events.get(end) instanceof RMWStoreExclusive store)) {
                         continue;
                     }
-                    final RMWStoreExclusive store = (RMWStoreExclusive)events.get(end);
                     int start = iterate(end - 1, i -> i >= 0, i -> i - 1)
                             .filter(i -> exec.isImplied(store, events.get(i)))
                             .findFirst().orElse(0);
@@ -845,10 +844,10 @@ public class RelationAnalysis {
                     List<Store> writes = new ArrayList<>();
                     List<Load> reads = new ArrayList<>();
                     for (Event b : endAtomic.getBlock()) {
-                        if (b instanceof Load) {
-                            reads.add((Load) b);
-                        } else if (b instanceof Store) {
-                            writes.add((Store) b);
+                        if (b instanceof Load load) {
+                            reads.add(load);
+                        } else if (b instanceof Store store) {
+                            writes.add(store);
                         }
                     }
                     for (Load r : reads) {
@@ -970,9 +969,9 @@ public class RelationAnalysis {
         public Knowledge visitSyncBarrier(Relation sync_bar) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            List<FenceWithId> fenceEvents = program.getEvents(FenceWithId.class);
-            for (FenceWithId e1 : fenceEvents) {
-                for (FenceWithId e2 : fenceEvents) {
+            List<PTXFenceWithId> fenceEvents = program.getEvents(PTXFenceWithId.class);
+            for (PTXFenceWithId e1 : fenceEvents) {
+                for (PTXFenceWithId e2 : fenceEvents) {
                     if(exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }

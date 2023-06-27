@@ -17,20 +17,13 @@ public class AtomicThreadFence extends FenceBase {
 
     @Override
     public String defaultString() {
-        return name + "(" + mo + ")\t### C11";
+        return String.format("%s(%s)\t### C11", name, mo);
     }
-
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public AtomicThreadFence getCopy(){
         return new AtomicThreadFence(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

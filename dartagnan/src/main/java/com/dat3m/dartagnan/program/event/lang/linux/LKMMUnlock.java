@@ -36,16 +36,10 @@ public class LKMMUnlock extends StoreBase {
         return String.format("spin_unlock(*%s)", address);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public LKMMUnlock getCopy() {
         return new LKMMUnlock(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

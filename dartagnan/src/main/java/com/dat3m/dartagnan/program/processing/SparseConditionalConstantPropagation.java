@@ -101,9 +101,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
                     final Expression expr = local.getExpr();
                     final Expression valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
                     propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-                } else if (cur instanceof RegWriter) {
+                } else if (cur instanceof RegWriter rw) {
                     // We treat all other register writers as non-constant
-                    propagationMap.remove(((RegWriter) cur).getResultRegister());
+                    propagationMap.remove(rw.getResultRegister());
                 }
 
                 if (cur instanceof CondJump jump) {
@@ -260,8 +260,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public Expression visit(BExprUn bUn) {
             Expression inner = bUn.getInner().visit(this);
-            if (inner instanceof BConst) {
-                return expressions.makeValue(bUn.getOp().combine(((BConst) inner).getValue()));
+            if (inner instanceof BConst bc) {
+                return expressions.makeValue(bUn.getOp().combine(bc.getValue()));
             } else {
                 return expressions.makeUnary(bUn.getOp(), inner);
             }

@@ -6,14 +6,14 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.lang.RMWAbstract;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmAbstractRMW;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
@@ -106,74 +106,58 @@ class VisitorBase implements EventVisitor<List<Event>> {
     }
 
     @Override
-    public List<Event> visitRMWAbstract(RMWAbstract e) {
+    public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWAddUnless(RMWAddUnless e) {
+    public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWFetchOp(RMWFetchOp e) {
+    public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOp(RMWOp e) {
+    public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
+    public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWOpReturn(RMWOpReturn e) {
+    public List<Event> visitLKMMXchg(LKMMXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitRMWXchg(RMWXchg e) {
+    public List<Event> visitTSOXchg(TSOXchg e) {
         throw error(e);
     }
 
     @Override
-    public List<Event> visitXchg(Xchg e) {
-        throw error(e);
-    }
-
-    @Override
-    public List<Event> visitRMW(RMW e) {
+    public List<Event> visitLISARMW(LISARMW e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummyReg = e.getThread().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummyReg, address, mo);
-        RMWStore store = newRMWStoreWithMo(load, address, e.getMemValue(), mo);
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
         return eventSequence(
                 load,
                 store,
                 newLocal(resultRegister, dummyReg)
         );
-    }
-
-    @Override
-    public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-        throw error(e);
-    }
-
-    // LLVM Events
-    @Override
-    public List<Event> visitLlvmAbstract(LlvmAbstractRMW e) {
-        throw error(e);
     }
 
     @Override

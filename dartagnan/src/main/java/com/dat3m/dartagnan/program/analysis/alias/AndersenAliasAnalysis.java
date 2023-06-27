@@ -104,15 +104,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private void processLocs(MemoryCoreEvent e) {
         Expression address = e.getAddress();
         // Collect for each v events of form: p = *v, *v = q
-        if (address instanceof Register) {
-            addEvent((Register) address, e);
+        if (address instanceof Register register) {
+            addEvent(register, e);
             return;
         }
         Constant addressConstant = new Constant(address);
         if (addressConstant.failed) {
             // r = *(CompExpr) -> loc(r) = max
-            if (e instanceof RegWriter) {
-                Register register = ((RegWriter) e).getResultRegister();
+            if (e instanceof RegWriter rw) {
+                Register register = rw.getResultRegister();
                 addAllAddresses(register, maxAddressSet);
                 variables.add(register);
             }
@@ -126,8 +126,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             throw new RuntimeException("memory event accessing a pure constant address");
         }
         eventAddressSpaceMap.put(e, ImmutableSet.of(location));
-        if (e instanceof RegWriter) {
-            addEdge(location, ((RegWriter) e).getResultRegister());
+        if (e instanceof RegWriter rw) {
+            addEdge(location, rw.getResultRegister());
             return;
         }
         //event is a store operation
@@ -153,12 +153,12 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IExprBin && ((IExprBin) expr).getLHS() instanceof Register) {
+        } else if (expr instanceof IExprBin iBin && iBin.getLHS() instanceof Register) {
             addAllAddresses(register, maxAddressSet);
             variables.add(register);
-        } else if (expr instanceof MemoryObject) {
+        } else if (expr instanceof MemoryObject mem) {
             // r = &a
-            addAddress(register, new Location((MemoryObject) expr, 0));
+            addAddress(register, new Location(mem, 0));
             variables.add(register);
         }
         //FIXME if the expression is too complicated, the register should receive maxAddressSet
@@ -167,14 +167,14 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private void algorithm() {
         while (!variables.isEmpty()) {
             Object variable = variables.poll();
-            if (variable instanceof Register) {
+            if (variable instanceof Register reg) {
                 // Process rules with *variable:
                 for (Location address : getAddresses(variable)) {
-                    for (MemoryEvent e : getEvents((Register) variable)) {
+                    for (MemoryEvent e : getEvents(reg)) {
                         // p = *variable:
-                        if (e instanceof RegWriter) {
+                        if (e instanceof RegWriter rw) {
                             // Add edge from location to p
-                            if (addEdge(address, ((RegWriter) e).getResultRegister())) {
+                            if (addEdge(address, rw.getResultRegister())) {
                                 // Add location to variables if edge is new.
                                 variables.add(address);
                             }
@@ -201,19 +201,19 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     private void processResults(Local e) {
         Expression exp = e.getExpr();
         Register reg = e.getResultRegister();
-        if (exp instanceof MemoryObject) {
-            addTarget(reg, new Location((MemoryObject) exp, 0));
+        if (exp instanceof MemoryObject mem) {
+            addTarget(reg, new Location(mem, 0));
             return;
         }
-        if (!(exp instanceof IExprBin)) {
+        if (!(exp instanceof IExprBin iBin)) {
             return;
         }
-        Expression base = ((IExprBin) exp).getLHS();
-        if (base instanceof MemoryObject) {
-            Expression rhs = ((IExprBin) exp).getRHS();
+        Expression base = iBin.getLHS();
+        if (base instanceof MemoryObject mem) {
+            Expression rhs = iBin.getRHS();
             //FIXME Address extends IConst
-            if (rhs instanceof IConst) {
-                addTarget(reg, new Location((MemoryObject) base, ((IConst) rhs).getValueAsInt()));
+            if (rhs instanceof IConst ic) {
+                addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
                 addTargetArray(reg, (MemoryObject) base);
             }
@@ -226,8 +226,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (Location target : targets.getOrDefault(base, Set.of())) {
             Expression rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
-            if (rhs instanceof IConst) {
-                int o = target.offset + ((IConst) rhs).getValueAsInt();
+            if (rhs instanceof IConst ic) {
+                int o = target.offset + ic.getValueAsInt();
                 if (o < target.base.size()) {
                     addTarget(reg, new Location(target.base, o));
                 }
@@ -269,15 +269,15 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          */
         Constant(Expression x) {
             if (x instanceof IConst) {
-                location = x instanceof MemoryObject ? new Location((MemoryObject) x, 0) : null;
+                location = x instanceof MemoryObject mem ? new Location(mem, 0) : null;
                 failed = false;
                 return;
             }
-            if (x instanceof IExprBin && ((IExprBin) x).getOp() == PLUS) {
-                Expression lhs = ((IExprBin) x).getLHS();
-                Expression rhs = ((IExprBin) x).getRHS();
-                if (lhs instanceof MemoryObject && rhs instanceof IConst && !(rhs instanceof MemoryObject)) {
-                    location = new Location((MemoryObject) lhs, ((IConst) rhs).getValueAsInt());
+            if (x instanceof IExprBin iBin && iBin.getOp() == PLUS) {
+                Expression lhs = iBin.getLHS();
+                Expression rhs = iBin.getRHS();
+                if (lhs instanceof MemoryObject mem && rhs instanceof IConst ic && !(rhs instanceof MemoryObject)) {
+                    location = new Location(mem, ic.getValueAsInt());
                     failed = false;
                     return;
                 }
@@ -310,7 +310,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
         @Override
         public boolean equals(Object o) {
-            return this == o || o instanceof Location && base.equals(((Location) o).base) && offset == ((Location) o).offset;
+            return this == o || o instanceof Location loc && base.equals(loc.base) && offset == loc.offset;
         }
 
         @Override

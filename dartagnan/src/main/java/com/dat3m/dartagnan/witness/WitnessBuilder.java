@@ -142,14 +142,12 @@ public class WitnessBuilder {
 				//  If we generate a Witness and try to use it after adapting any processing pass
 				//  the matching will fail. In particular, a Witness can only be validated
 				//  by the version of Dartagnan that created it and only with identical configurations.
-				if(e instanceof Load) {
-					RegWriter l = (RegWriter)e;
+				if(e instanceof Load l) {
 					edge.addAttribute(EVENTID.toString(), valueOf(e.getGlobalId()));
 					edge.addAttribute(LOADEDVALUE.toString(), String.valueOf(model.evaluate(context.result(l))));
 				}
 
-				if(e instanceof Store) {
-					Store s = (Store)e;
+				if(e instanceof Store s) {
 					edge.addAttribute(EVENTID.toString(), valueOf(e.getGlobalId()));
 					Object valueObject = checkNotNull(model.evaluate(context.value(s)));
 					edge.addAttribute(STOREDVALUE.toString(), valueObject.toString());

@@ -23,22 +23,15 @@ public class AtomicLoad extends LoadBase {
         super(other);
     }
 
-
     @Override
     public String defaultString() {
-        return resultRegister + " = atomic_load(*" + address + ", " + mo + ")\t### C11";
+        return String.format("%s := atomic_load(*%s, %s)\t### C11", resultRegister, address, mo);
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public AtomicLoad getCopy() {
         return new AtomicLoad(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

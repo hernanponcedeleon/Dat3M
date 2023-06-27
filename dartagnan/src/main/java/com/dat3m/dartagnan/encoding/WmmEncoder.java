@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
@@ -385,10 +385,10 @@ public class WmmEncoder implements Encoder {
             for (Tuple t : encodeSets.get(r)) {
                 Event writer = t.getFirst();
                 Event reader = t.getSecond();
-                if (!(writer instanceof RegWriter)) {
+                if (!(writer instanceof RegWriter rw)) {
                     enc.add(bmgr.not(edge.encode(t)));
                 } else {
-                    Dependency.State s = dep.of(reader, ((RegWriter) writer).getResultRegister());
+                    Dependency.State s = dep.of(reader, rw.getResultRegister());
                     if (s.must.contains(writer)) {
                         enc.add(bmgr.equivalence(edge.encode(t), context.execution(writer, reader)));
                     } else if (!s.may.contains(writer)) {
@@ -616,8 +616,8 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
-                FenceWithId e1 = (FenceWithId) tuple.getFirst();
-                FenceWithId e2 = (FenceWithId) tuple.getSecond();
+                PTXFenceWithId e1 = (PTXFenceWithId) tuple.getFirst();
+                PTXFenceWithId e2 = (PTXFenceWithId) tuple.getSecond();
                 BooleanFormula sameId;
                 // If they are in must, they are guaranteed to have the same id
                 if (k.containsMust(tuple)) {

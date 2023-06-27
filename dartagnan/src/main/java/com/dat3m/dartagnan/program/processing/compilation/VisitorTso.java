@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -23,7 +23,7 @@ class VisitorTso extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitXchg(Xchg e) {
+    public List<Event> visitTSOXchg(TSOXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
@@ -146,7 +146,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue())
+                newRMWStore(load, address, e.getValue())
         ));
     }
 
@@ -160,7 +160,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
                 newRMWStore(load, address, dummyReg)
         ));
     }
@@ -171,7 +171,6 @@ class VisitorTso extends VisitorBase {
         Register resultRegister = e.getStructRegister(1);
         Expression one = expressions.makeOne(resultRegister.getType());
 
-        Expression value = e.getMemValue();
         Expression address = e.getAddress();
         Expression expectedValue = e.getExpectedValue();
 
@@ -180,7 +179,7 @@ class VisitorTso extends VisitorBase {
         CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
 
         Load load = newRMWLoad(oldValueRegister, address);
-        Store store = newRMWStore(load, address, value);
+        Store store = newRMWStore(load, address, e.getStoreValue());
 
         return tagList(eventSequence(
                 load,
@@ -208,9 +207,8 @@ class VisitorTso extends VisitorBase {
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
-        Expression value = e.getMemValue();
-        String mo = e.getMo();
-        Expression expectedAddr = e.getExpectedAddr();
+        Expression value = e.getStoreValue();
+        Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
 
@@ -249,7 +247,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOp(), e.getMemValue())),
+                newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand())),
                 newRMWStore(load, address, dummyReg)
         ));
     }
@@ -288,7 +286,7 @@ class VisitorTso extends VisitorBase {
 
         return tagList(eventSequence(
                 load,
-                newRMWStore(load, address, e.getMemValue())
+                newRMWStore(load, address, e.getValue())
         ));
     }
 

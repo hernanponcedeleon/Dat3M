@@ -1,4 +1,8 @@
+s/i16 @__llvm_atomic8_cmpxchg/{ i8, i1 } @__llvm_atomic8_cmpxchg/
+s/i32 @__llvm_atomic16_cmpxchg/{ i16, i1 } @__llvm_atomic16_cmpxchg/
 s/i64 @__llvm_atomic32_cmpxchg/{ i32, i1 } @__llvm_atomic32_cmpxchg/
 s/{ i64, i8 } @__llvm_atomic64_cmpxchg/{ i64, i1 } @__llvm_atomic64_cmpxchg/
+s/ret i16 \%19/ret { i8, i1 } \%14/
+s/ret i32 \%19/ret { i16, i1 } \%14/
 s/ret i64 \%19/ret { i32, i1 } \%14/
 s/ret { i64, i8 } \%19/ret { i64, i1 } \%14/
