@@ -35,7 +35,7 @@ public class PthreadsProcedures {
     );
 
     public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
             case "pthread_create":
                 pthread_create(visitor, ctx);

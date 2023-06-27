@@ -27,7 +27,7 @@ public class LkmmProcedures {
             "__LKMM_SPIN_UNLOCK");
 
     public static void handleLkmmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        final String funcName = visitor.getFunctionNameFromCallContext(ctx);
 
         final String registerName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getScopedRegister(registerName); // May be NULL

@@ -49,7 +49,7 @@ public class LlvmProcedures {
     );
 
     public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        final String funcName = visitor.getFunctionNameFromCallContext(ctx);
 
         final String regName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getScopedRegister(regName); // May be NULL

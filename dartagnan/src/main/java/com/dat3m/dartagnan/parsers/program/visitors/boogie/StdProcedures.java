@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Label;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.List;
 public class StdProcedures {
 
     public static List<String> STDPROCEDURES = Arrays.asList(
+            "abort",
             "get_my_tid",
             "devirtbounce",
             "external_alloc",
@@ -41,10 +43,19 @@ public class StdProcedures {
             "llvm.lifetime.end");
 
     public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         if (funcName.equals("$alloc") || funcName.equals("$malloc") || funcName.equals("calloc")
                 || funcName.equals("malloc") || funcName.equals("external_alloc")) {
             alloc(visitor, ctx);
+            return;
+        }
+        if (funcName.equals("abort")) {
+            if (visitor.inlineMode) {
+                final Label label = visitor.getOrNewLabel("END_OF_T" + visitor.threadCount);
+                visitor.addEvent(EventFactory.newGoto(label));
+            } else {
+                visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
+            }
             return;
         }
         if (funcName.equals("get_my_tid")) {

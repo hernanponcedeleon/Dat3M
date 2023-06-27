@@ -20,6 +20,7 @@ import java.util.List;
 public class SvcompProcedures {
 
     public static List<String> SVCOMPPROCEDURES = Arrays.asList(
+            "reach_error", // Only used in SVCOMP
             "__VERIFIER_assert",
             // "__VERIFIER_assume",
             "__VERIFIER_loop_bound",
@@ -41,8 +42,9 @@ public class SvcompProcedures {
             "__VERIFIER_nondet_uchar");
 
     public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final String funcName = visitor.getFunctionNameFromContext(ctx);
+        final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
+            case "reach_error" -> visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getArchType()));
             case "__VERIFIER_loop_bound" -> __VERIFIER_loop_bound(visitor, ctx);
             case "__VERIFIER_loop_begin" -> visitor.addEvent(EventFactory.Svcomp.newLoopBegin());
             case "__VERIFIER_spin_start" -> visitor.addEvent(EventFactory.Svcomp.newSpinStart());
