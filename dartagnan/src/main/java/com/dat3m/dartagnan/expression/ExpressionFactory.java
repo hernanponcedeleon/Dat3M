@@ -2,10 +2,9 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.expression.type.*;
+import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 public final class ExpressionFactory {
 
@@ -120,13 +119,13 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBooleanCast(Expression operand) {
-        if (operand.getType() instanceof BooleanType) {
+        Type operandType = operand.getType();
+        if (operandType instanceof BooleanType) {
             return operand;
         }
-        if (operand.getType() instanceof IntegerType integerType) {
-            return makeNEQ(operand, makeZero(integerType));
-        }
-        throw new UnsupportedOperationException(String.format("makeBoolean with unknown-typed operand %s.", operand));
+        Preconditions.checkArgument(operandType instanceof IntegerType,
+                "makeBoolean with unknown-typed operand %s.", operand);
+        return makeNEQ(operand, makeZero(operandType));
     }
 
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
@@ -173,8 +172,8 @@ public final class ExpressionFactory {
     }
 
     public Expression makeUnary(IOpUn operator, Expression operand, IntegerType targetType) {
-        checkArgument(operand.getType() instanceof IntegerType,
-                String.format("Non-integer operand for %s %s.", operator, operand));
+        Preconditions.checkArgument(operand.getType() instanceof IntegerType,
+                "Non-integer operand for %s %s.", operator, operand);
         return new IExprUn(operator, operand, targetType);
     }
 
@@ -223,10 +222,8 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
-        if (!(leftOperand.getType() instanceof IntegerType type)) {
-            throw new IllegalArgumentException(
-                    String.format("Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand));
-        }
-        return new IExprBin(type, leftOperand, operator, rightOperand);
+        Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
+                "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
+        return new IExprBin((IntegerType) leftOperand.getType(), leftOperand, operator, rightOperand);
     }
 }

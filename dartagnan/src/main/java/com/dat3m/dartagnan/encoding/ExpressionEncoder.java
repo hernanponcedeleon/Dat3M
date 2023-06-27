@@ -244,12 +244,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(IExprUn iUn) {
         Formula inner = encode(iUn.getInner());
-        Type targetType = iUn.getType();
         switch (iUn.getOp()) {
             case MINUS -> {
-                if (inner instanceof BooleanFormula bool) {
-                    return bool;
-                }
                 if (inner instanceof IntegerFormula number) {
                     return integerFormulaManager().negate(number);
                 }
@@ -259,26 +255,27 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
             case CAST_SIGNED, CAST_UNSIGNED -> {
                 boolean signed = iUn.getOp().equals(IOpUn.CAST_SIGNED);
-                if (targetType instanceof IntegerType integerTargetType) {
-                    if (integerTargetType.isMathematical()) {
-                        if (inner instanceof IntegerFormula) {
-                            return inner;
+                if (inner instanceof BooleanFormula bool) {
+                    return bool;
+                }
+                if (iUn.getType().isMathematical()) {
+                    if (inner instanceof IntegerFormula) {
+                        return inner;
+                    }
+                    if (inner instanceof BitvectorFormula number) {
+                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
+                    }
+                } else {
+                    int bitWidth = iUn.getType().getBitWidth();
+                    if (inner instanceof IntegerFormula number) {
+                        return bitvectorFormulaManager().makeBitvector(bitWidth, number);
+                    }
+                    if (inner instanceof BitvectorFormula number) {
+                        int innerBitWidth = bitvectorFormulaManager().getLength(number);
+                        if (innerBitWidth < bitWidth) {
+                            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
                         }
-                        if (inner instanceof BitvectorFormula number) {
-                            return bitvectorFormulaManager().toIntegerFormula(number, signed);
-                        }
-                    } else {
-                        int bitWidth = integerTargetType.getBitWidth();
-                        if (inner instanceof IntegerFormula number) {
-                            return bitvectorFormulaManager().makeBitvector(bitWidth, number);
-                        }
-                        if (inner instanceof BitvectorFormula number) {
-                            int innerBitWidth = bitvectorFormulaManager().getLength(number);
-                            if (innerBitWidth < bitWidth) {
-                                return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
-                            }
-                            return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
-                        }
+                        return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
                     }
                 }
             }
@@ -299,7 +296,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
         }
         throw new UnsupportedOperationException(
-                String.format("Encoding of (%s) %s %s not supported.", targetType, iUn.getOp(), inner));
+                String.format("Encoding of (%s) %s %s not supported.", iUn.getType(), iUn.getOp(), inner));
     }
 
     @Override

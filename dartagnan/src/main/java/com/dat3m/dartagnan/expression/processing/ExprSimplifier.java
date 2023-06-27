@@ -64,21 +64,23 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(BExprBin bBin) {
-        Expression left = bBin.getLHS().visit(this);
-        Expression right = bBin.getRHS().visit(this);
+        Expression l = bBin.getLHS().visit(this);
+        Expression r = bBin.getRHS().visit(this);
+        Expression left = l instanceof BConst || !(r instanceof BConst) ? l : r;
+        Expression right = left == l ? r : l;
         if (left instanceof BConst constant) {
             boolean value = constant.getValue();
-            return switch (bBin.getOp()) {
-                case OR -> value ? left : right;
-                case AND -> value ? right : left;
+            boolean neutralValue = switch (bBin.getOp()) {
+                case OR -> false;
+                case AND -> true;
             };
-        }
-        if (right instanceof BConst constant) {
-            boolean value = constant.getValue();
-            return switch (bBin.getOp()) {
-                case OR -> value ? right : left;
-                case AND -> value ? left : right;
-            };
+            if (value == neutralValue) {
+                return right;
+            }
+            // otherwise value is the absorbing value
+            if (right.getRegs().isEmpty()) {
+                return left;
+            }
         }
         return expressions.makeBinary(left, bBin.getOp(), right);
     }
@@ -86,16 +88,16 @@ public class ExprSimplifier extends ExprTransformer {
     @Override
     public Expression visit(BExprUn bUn) {
         Expression inner = bUn.getInner().visit(this);
+        assert bUn.getOp() == BOpUn.NOT;
         if (inner instanceof BConst constant) {
             return expressions.makeValue(!constant.getValue());
         }
-        if (inner instanceof BExprUn && bUn.getOp() == BOpUn.NOT) {
-            return ((BExprUn)inner).getInner();
+        if (inner instanceof BExprUn innerUnary && innerUnary.getOp() == BOpUn.NOT) {
+            return innerUnary.getInner();
         }
 
-        if (inner instanceof Atom && bUn.getOp() == BOpUn.NOT) {
+        if (inner instanceof Atom atom) {
             // Move negations into the atoms COp
-            Atom atom = (Atom)inner;
             return expressions.makeBinary(atom.getLHS(), atom.getOp().inverted(), atom.getRHS());
         }
         return expressions.makeUnary(bUn.getOp(), inner);

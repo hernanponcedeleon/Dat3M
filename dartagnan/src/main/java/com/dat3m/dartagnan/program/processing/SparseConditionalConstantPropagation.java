@@ -219,11 +219,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         @Override
         public Expression visit(Register reg) {
             final Expression retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof BConst constant) {
-                // We only have integral registers, so we need to implicitly convert booleans to
-                // integers.
+            if (retVal instanceof BConst constant && reg.getType() instanceof IntegerType integerType) {
                 BigInteger value = constant.getValue() ? BigInteger.ONE : BigInteger.ZERO;
-                return expressions.makeValue(value, reg.getType());
+                return expressions.makeValue(value, integerType);
             } else {
                 return retVal;
             }

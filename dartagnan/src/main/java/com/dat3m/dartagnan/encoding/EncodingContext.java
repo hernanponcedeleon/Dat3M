@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -117,7 +116,7 @@ public final class EncodingContext {
         return new ExpressionEncoder(this, null).encode(expression);
     }
 
-    public BooleanFormula encodeBooleanExpressionAt(Expression expression, Event event) {
+    public BooleanFormula encodeExpressionAsBooleanAt(Expression expression, Event event) {
         return new ExpressionEncoder(this, event).encodeAsBoolean(expression);
     }
 
@@ -164,7 +163,7 @@ public final class EncodingContext {
     }
 
     public BooleanFormula jumpCondition(CondJump event) {
-        return encodeBooleanExpressionAt(event.getGuard(), event);
+        return encodeExpressionAsBooleanAt(event.getGuard(), event);
     }
 
     public BooleanFormula execution(Event event) {
