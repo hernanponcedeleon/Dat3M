@@ -97,6 +97,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private final ExprSimplifier exprSimplifier = new ExprSimplifier();
 
+    private record VarDeclaration(String varName, IntegerType type) {}
+
     // ----- TODO: Test code -----
     private record FunctionDeclaration(String funcName, FunctionType funcType,
                                        List<String> parameterNames, Proc_declContext ctx) { }
@@ -133,6 +135,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     // ==================== Utility functions ====================
+
+    protected VarDeclaration parseVarDeclaration(String varDeclString) {
+        final String[] decl = varDeclString.split(":");
+        return new VarDeclaration(decl[0], Types.parseIntegerType(decl[1], types));
+    }
 
     protected void resetScope() {
         nextScopeID = 0;
@@ -251,11 +258,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
             threadCallingValues.put(threadCount, new ArrayList<>());
             for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
-                for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-                    String typeString = atiwC.typed_idents_where().typed_idents().type().getText();
-                    IntegerType type = Types.parseIntegerType(typeString, types);
-                    threadCallingValues.get(threadCount).add(getOrNewScopedRegister(ident.getText(), type));
-                }
+                final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
+                threadCallingValues.get(threadCount).add(getOrNewScopedRegister(decl.varName, decl.type));
             }
         }
         procedures.put(name, ctx);
@@ -278,12 +282,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where();
             for (Attr_typed_idents_whereContext param : params) {
                 // Parse input parameters
-                final String typeString = param.typed_idents_where().typed_idents().type().getText();
-                final String paramName = param.typed_idents_where().typed_idents().idents().getText();
-                final IntegerType type = Types.parseIntegerType(typeString, types);
-
-                parameterNames.add(paramName);
-                parameterTypes.add(type);
+                final VarDeclaration decl = parseVarDeclaration(param.getText());
+                parameterNames.add(decl.varName);
+                parameterTypes.add(decl.type);
             }
         }
         final Type returnType;
@@ -361,9 +362,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitLocal_vars(Local_varsContext ctx) {
         final String declString = ctx.typed_idents_wheres().attr_typed_idents_where(0).getText(); // regName:regType
-        final String[] declaration = declString.split(":"); // [regName, regType]
-        final String regName = declaration[0];
-        final IntegerType regType = Types.parseIntegerType(declaration[1], types);
+        final VarDeclaration decl = parseVarDeclaration(declString);
+        final String regName = decl.varName;
+        final IntegerType regType = decl.type;
 
         if (constantsTypeMap.containsKey(regName)) {
             throw new ParsingException("Register " + regName + " is already defined as a constant");
@@ -399,7 +400,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     private void visitProc_decl(Proc_declContext ctx, List<Expression> callingValues) {
-        Impl_bodyContext body = ctx.impl_body();
+        final Impl_bodyContext body = ctx.impl_body();
         if (body == null) {
             throw new ParsingException(ctx.proc_sign().Ident().getText() + " cannot be handled");
         }
@@ -416,9 +417,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     = ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where();
             assert callingValues.size() == inputParameters.size();
             for (int i = 0; i < inputParameters.size(); i++) {
-                final String[] declaration = inputParameters.get(i).getText().split(":"); // [name, type]
-                final IntegerType type = Types.parseIntegerType(declaration[1], types);
-                final Register register = getOrNewScopedRegister(declaration[0], type);
+                final VarDeclaration decl = parseVarDeclaration(inputParameters.get(i).getText());
+                final Register register = getOrNewScopedRegister(decl.varName, decl.type);
                 final Expression argument = callingValues.get(i);
                 addEvent(EventFactory.newLocal(register, argument));
             }
@@ -426,13 +426,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         // Handle output parameters
         if (ctx.proc_sign().proc_sign_out() != null) {
-            final String declString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where(0).getText();
-            final String[] declaration = declString.split(":"); // [name, type]
-            currentReturnName = declaration[0];
-
+            final VarDeclaration decl = parseVarDeclaration(
+                    ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where(0).getText());
+            currentReturnName = decl.varName;
             if (!inlineMode) {
                 // When not inlining, we properly handle the return parameter
-                getOrNewScopedRegister(currentReturnName, Types.parseIntegerType(declaration[1], types));
+                getOrNewScopedRegister(currentReturnName, decl.type);
             }
         }
 
@@ -448,7 +447,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             final Label label = getOrNewLabel("END_OF_" + currentScope.getID());
             addEvent(label);
         } else {
-            //TODO: Do we need an end-marker for non-inlined functions?
+            //TODO: Do we even need an end marker for non-inlined functions?
             final String funcName = ctx.proc_sign().Ident().getText();
             final Label label = getOrNewLabel("END_OF_" + funcName);
             addEvent(label);
