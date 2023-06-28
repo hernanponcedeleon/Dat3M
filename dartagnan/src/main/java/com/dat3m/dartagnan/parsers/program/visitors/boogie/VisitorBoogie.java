@@ -299,7 +299,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         final FunctionType functionType = FunctionType.get(returnType, parameterTypes.toArray(new Type[0]));
 
-        System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
+        //System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
         functionDeclarations.add(new FunctionDeclaration(name, functionType, parameterNames, ctx));
         // ----- TODO: Test code end -----
     }
@@ -546,7 +546,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 }
                 addEvent(funcCall);
             } else {
-                System.out.println("Warning: skipped call to " + funcName);
+                //System.out.println("Warning: skipped call to " + funcName);
             }
             // ----- TODO: Test code end -----
         }
