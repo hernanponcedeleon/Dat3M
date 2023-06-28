@@ -55,16 +55,10 @@ public class Assume extends AbstractEvent implements RegReader {
         this.expr = expr.visit(exprTransformer);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Assume getCopy() {
         return new Assume(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

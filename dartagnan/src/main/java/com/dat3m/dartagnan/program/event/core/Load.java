@@ -46,16 +46,10 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
         return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Load getCopy() {
         return new Load(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

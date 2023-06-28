@@ -80,16 +80,10 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
         throw new UnsupportedOperationException("Cannot encode Malloc events.");
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Malloc getCopy() {
         return new Malloc(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

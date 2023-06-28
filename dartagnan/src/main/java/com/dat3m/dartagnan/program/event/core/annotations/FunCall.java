@@ -2,27 +2,24 @@ package com.dat3m.dartagnan.program.event.core.annotations;
 
 public class FunCall extends StringAnnotation {
 
-	private final String funName;
-	
-	public FunCall(String funName) {
-		super("=== Calling " + funName + " ===");
-		this.funName = funName;
-	}
-	
-	protected FunCall(FunCall other){
-		super(other);
-		this.funName = other.funName;
-	}
+    private final String funName;
 
-    public String getFunctionName() {
-    	return funName;
+    public FunCall(String funName) {
+        super("=== Calling " + funName + " ===");
+        this.funName = funName;
     }
 
-	// Unrolling
-	// -----------------------------------------------------------------------------------------------------------------
+    protected FunCall(FunCall other) {
+        super(other);
+        this.funName = other.funName;
+    }
 
-	@Override
-	public FunCall getCopy(){
-		return new FunCall(this);
-	}
+    public String getFunctionName() {
+        return funName;
+    }
+
+    @Override
+    public FunCall getCopy() {
+        return new FunCall(this);
+    }
 }

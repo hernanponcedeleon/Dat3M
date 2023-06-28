@@ -2,27 +2,24 @@ package com.dat3m.dartagnan.program.event.core.annotations;
 
 public class FunRet extends StringAnnotation {
 
-	private final String funName;
-	
-	public FunRet(String funName) {
-		super("=== Returning from " + funName + " ===");
-		this.funName = funName;
-	}
-	
-	protected FunRet(FunRet other){
-		super(other);
-		this.funName = other.funName;
-	}
+    private final String funName;
 
-    public String getFunctionName() {
-    	return funName;
+    public FunRet(String funName) {
+        super("=== Returning from " + funName + " ===");
+        this.funName = funName;
     }
 
-	// Unrolling
-	// -----------------------------------------------------------------------------------------------------------------
+    protected FunRet(FunRet other) {
+        super(other);
+        this.funName = other.funName;
+    }
 
-	@Override
-	public FunRet getCopy(){
-		return new FunRet(this);
-	}
+    public String getFunctionName() {
+        return funName;
+    }
+
+    @Override
+    public FunRet getCopy() {
+        return new FunRet(this);
+    }
 }

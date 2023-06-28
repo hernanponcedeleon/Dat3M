@@ -84,9 +84,6 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Event getCopy() {
         return new ExecutionStatus(this);
@@ -101,9 +98,6 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     public Set<Event> getReferencedEvents() {
         return Set.of(event);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

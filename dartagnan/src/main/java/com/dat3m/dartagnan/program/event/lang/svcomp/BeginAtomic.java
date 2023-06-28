@@ -19,16 +19,10 @@ public class BeginAtomic extends AbstractEvent {
         return "begin_atomic()";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public BeginAtomic getCopy() {
         return new BeginAtomic(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -28,16 +28,10 @@ public class LlvmLoad extends LoadBase {
         return resultRegister + " = llvm_load(*" + address + ", " + mo + ")\t### LLVM";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public LlvmLoad getCopy() {
         return new LlvmLoad(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

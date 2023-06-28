@@ -23,17 +23,10 @@ public class Join extends LoadBase {
         return resultRegister + " <- pthread_join(" + getAddress() + ")";
     }
 
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Join getCopy() {
         return new Join(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

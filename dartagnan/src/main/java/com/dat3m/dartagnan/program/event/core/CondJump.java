@@ -91,16 +91,10 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
         this.guard = guard.visit(exprTransformer);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public CondJump getCopy() {
         return new CondJump(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

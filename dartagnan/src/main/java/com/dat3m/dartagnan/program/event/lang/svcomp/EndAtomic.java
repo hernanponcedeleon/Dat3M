@@ -86,9 +86,6 @@ public class EndAtomic extends AbstractEvent implements EventUser {
         return "end_atomic()";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public EndAtomic getCopy() {
         return new EndAtomic(this);
@@ -103,9 +100,6 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     public Set<Event> getReferencedEvents() {
         return Set.of(begin);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

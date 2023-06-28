@@ -32,9 +32,6 @@ public interface Event extends Encoder, Comparable<Event> {
     <T extends Metadata> T setMetadata(T metadata);
     boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass);
 
-    // TODO: Remove this
-    Event setCFileInformation(int line, String sourceCodeFilePath);
-
     // ============================== Tags ==============================
 
     // The set of tags should not be modified directly.

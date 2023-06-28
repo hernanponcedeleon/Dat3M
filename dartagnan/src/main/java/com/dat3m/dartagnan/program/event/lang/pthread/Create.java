@@ -29,16 +29,10 @@ public class Create extends StoreBase {
         return "pthread_create(" + address + ", " + routine + ")";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Create getCopy() {
         return new Create(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -37,16 +37,10 @@ public class Unlock extends StoreBase {
         return reg;
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Unlock getCopy() {
         return new Unlock(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

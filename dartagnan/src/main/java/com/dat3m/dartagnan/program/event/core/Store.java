@@ -55,16 +55,10 @@ public class Store extends AbstractMemoryCoreEvent {
         this.value = value.visit(exprTransformer);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Store getCopy() {
         return new Store(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

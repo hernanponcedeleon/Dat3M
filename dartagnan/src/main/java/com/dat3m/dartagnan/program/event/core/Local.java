@@ -73,16 +73,10 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
         this.expr = expr.visit(exprTransformer);
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Local getCopy() {
         return new Local(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

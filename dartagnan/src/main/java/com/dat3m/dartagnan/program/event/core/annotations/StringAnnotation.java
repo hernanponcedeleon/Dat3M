@@ -18,9 +18,6 @@ public class StringAnnotation extends CodeAnnotation {
         return annotation;
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public StringAnnotation getCopy() {
         return new StringAnnotation(this);
