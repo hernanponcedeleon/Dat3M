@@ -165,7 +165,7 @@ public class EventFactory {
     }
 
     public static CondJump newJumpUnless(Expression cond, Label target) {
-        if (cond instanceof BConst constant && constant.isFalse()) {
+        if (cond instanceof BConst constant && !constant.getValue()) {
             return newGoto(target);
         }
         return new CondJump(expressions.makeNot(cond), target);

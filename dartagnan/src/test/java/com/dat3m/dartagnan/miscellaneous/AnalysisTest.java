@@ -53,8 +53,8 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
-        Label alt = b.getOrCreateLabel(0,"alt");
-        b.addChild(0, newJump(new BNonDet(), alt));
+        Label alt = b.getOrCreateLabel(0, "alt");
+        b.addChild(0, newJump(new BNonDet(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);

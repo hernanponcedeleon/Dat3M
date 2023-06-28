@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -131,13 +132,13 @@ public class ProgramBuilder {
         getOrNewObject(locName).setInitialValue(0,iValue);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, IntegerType type) {
+    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
         MemoryObject object = getOrNewObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread, EventFactory.newLocal(reg, object));
     }
 
-    public void initRegEqLocVal(int regThread, String regName, String locName, IntegerType type) {
+    public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
         Register reg = getOrNewRegister(regThread, regName, type);
         addChild(regThread,EventFactory.newLocal(reg,getInitialValue(locName)));
     }
@@ -187,7 +188,7 @@ public class ProgramBuilder {
         return getOrNewRegister(threadId, name, types.getArchType());
     }
 
-    public Register getOrNewRegister(int threadId, String name, IntegerType type) {
+    public Register getOrNewRegister(int threadId, String name, Type type) {
         initThread(threadId);
         Function func = functions.get(threadId);
         if(name == null) {

@@ -336,7 +336,13 @@ public class ExecutionModel {
             }
 
             if (data.isRead()) {
-                data.setValue(new BigInteger(model.evaluate(encodingContext.result((RegWriter) e)).toString()));
+                String valueString = String.valueOf(model.evaluate(encodingContext.result((RegWriter) e)));
+                BigInteger value = switch(valueString) {
+                    case "false" -> BigInteger.ZERO;
+                    case "true" -> BigInteger.ONE;
+                    default -> new BigInteger(valueString);
+                };
+                data.setValue(value);
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
                 Object valueObject = checkNotNull(model.evaluate(encodingContext.value((MemoryEvent) e)));

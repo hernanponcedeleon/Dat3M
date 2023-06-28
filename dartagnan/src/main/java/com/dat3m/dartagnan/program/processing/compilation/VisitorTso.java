@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -208,7 +209,7 @@ class VisitorTso extends VisitorBase {
         Expression address = e.getAddress();
         Expression value = e.getStoreValue();
         Expression expectedAddr = e.getAddressOfExpected();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
 
         Register regExpected = e.getThread().newRegister(type);

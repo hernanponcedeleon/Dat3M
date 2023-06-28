@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -183,7 +184,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLlvmRMW(LlvmRMW e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -266,7 +267,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitAtomicCmpXchg(AtomicCmpXchg e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression one = expressions.makeOne(type);
         Expression address = e.getAddress();
         Expression value = e.getStoreValue();
@@ -309,7 +310,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -525,7 +526,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMXchg(LKMMXchg e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -590,7 +591,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -626,7 +627,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -665,7 +666,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression address = e.getAddress();
         String mo = e.getMo();
 

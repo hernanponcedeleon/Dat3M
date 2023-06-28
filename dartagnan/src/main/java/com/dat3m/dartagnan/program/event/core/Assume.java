@@ -47,7 +47,7 @@ public class Assume extends AbstractEvent implements RegReader {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
         return bmgr.and(
                 super.encodeExec(ctx),
-                bmgr.implication(ctx.execution(this), ctx.encodeBooleanExpressionAt(expr, this)));
+                bmgr.implication(ctx.execution(this), ctx.encodeExpressionAsBooleanAt(expr, this)));
     }
 
     @Override

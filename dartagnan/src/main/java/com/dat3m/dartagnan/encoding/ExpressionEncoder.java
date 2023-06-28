@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -22,12 +22,14 @@ import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
+    private final EncodingContext context;
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final Event event;
 
-    public ExpressionEncoder(FormulaManager formulaManager, Event event) {
-        this.formulaManager = formulaManager;
+    ExpressionEncoder(EncodingContext context, Event event) {
+        this.context = context;
+        this.formulaManager = context.getFormulaManager();
         this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
         this.event = event;
     }
@@ -57,65 +59,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
     }
 
-    Formula encodeAsInteger(Expression expression) {
+    Formula encode(Expression expression) {
         return expression.visit(this);
-    }
-
-    static BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs, FormulaManager fmgr) {
-        BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
-        if (lhs instanceof BooleanFormula b1 && rhs instanceof BooleanFormula b2) {
-            switch (op) {
-                case EQ:
-                    return bmgr.equivalence(b1, b2);
-                case NEQ:
-                    return bmgr.not(bmgr.equivalence(b1, b2));
-                default:
-                    throw new UnsupportedOperationException("Encoding of COpBin operation" + op + " not supported on boolean formulas.");
-            }
-        }
-        if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
-            IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-            switch (op) {
-                case EQ:
-                    return imgr.equal(i1, i2);
-                case NEQ:
-                    return bmgr.not(imgr.equal(i1, i2));
-                case LT:
-                case ULT:
-                    return imgr.lessThan(i1, i2);
-                case LTE:
-                case ULTE:
-                    return imgr.lessOrEquals(i1, i2);
-                case GT:
-                case UGT:
-                    return imgr.greaterThan(i1, i2);
-                case GTE:
-                case UGTE:
-                    return imgr.greaterOrEquals(i1, i2);
-            }
-        }
-        if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
-            BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-            switch (op) {
-                case EQ:
-                    return bvmgr.equal(bv1, bv2);
-                case NEQ:
-                    return bmgr.not(bvmgr.equal(bv1, bv2));
-                case LT:
-                case ULT:
-                    return bvmgr.lessThan(bv1, bv2, op.equals(COpBin.LT));
-                case LTE:
-                case ULTE:
-                    return bvmgr.lessOrEquals(bv1, bv2, op.equals(COpBin.LTE));
-                case GT:
-                case UGT:
-                    return bvmgr.greaterThan(bv1, bv2, op.equals(COpBin.GT));
-                case GTE:
-                case UGTE:
-                    return bvmgr.greaterOrEquals(bv1, bv2, op.equals(COpBin.GTE));
-            }
-        }
-        throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
     }
 
     static Formula getLastMemValueExpr(MemoryObject object, int offset, FormulaManager formulaManager) {
@@ -130,9 +75,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(Atom atom) {
-        Formula lhs = encodeAsInteger(atom.getLHS());
-        Formula rhs = encodeAsInteger(atom.getRHS());
-        return encodeComparison(atom.getOp(), lhs, rhs, formulaManager);
+        Formula lhs = encode(atom.getLHS());
+        Formula rhs = encode(atom.getRHS());
+        return context.encodeComparison(atom.getOp(), lhs, rhs);
     }
 
     @Override
@@ -173,8 +118,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IExprBin iBin) {
-        Formula lhs = encodeAsInteger(iBin.getLHS());
-        Formula rhs = encodeAsInteger(iBin.getRHS());
+        Formula lhs = encode(iBin.getLHS());
+        Formula rhs = encode(iBin.getRHS());
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
             BitvectorFormulaManager bitvectorFormulaManager;
             IntegerFormulaManager integerFormulaManager = integerFormulaManager();
@@ -294,9 +239,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IExprUn iUn) {
-        //TODO if inner is a boolean formula, we still want to encode it as boolean in case of conversions
-        Formula inner = encodeAsInteger(iUn.getInner());
-        Type targetType = iUn.getType();
+        Formula inner = encode(iUn.getInner());
         switch (iUn.getOp()) {
             case MINUS -> {
                 if (inner instanceof IntegerFormula number) {
@@ -308,16 +251,18 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
             case CAST_SIGNED, CAST_UNSIGNED -> {
                 boolean signed = iUn.getOp().equals(IOpUn.CAST_SIGNED);
-                if (targetType instanceof IntegerType integerTargetType) {
-                    if (integerTargetType.isMathematical()) {
-                        if (inner instanceof IntegerFormula) {
-                            return inner;
-                        }
-                        if (inner instanceof BitvectorFormula number) {
-                            return bitvectorFormulaManager().toIntegerFormula(number, signed);
-                        }
+                if (inner instanceof BooleanFormula bool) {
+                    return bool;
+                }
+                if (iUn.getType().isMathematical()) {
+                    if (inner instanceof IntegerFormula) {
+                        return inner;
                     }
-                    int bitWidth = integerTargetType.getBitWidth();
+                    if (inner instanceof BitvectorFormula number) {
+                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
+                    }
+                } else {
+                    int bitWidth = iUn.getType().getBitWidth();
                     if (inner instanceof IntegerFormula number) {
                         return bitvectorFormulaManager().makeBitvector(bitWidth, number);
                     }
@@ -347,14 +292,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
         }
         throw new UnsupportedOperationException(
-                String.format("Encoding of (%s) %s %s not supported.", targetType, iUn.getOp(), inner));
+                String.format("Encoding of (%s) %s %s not supported.", iUn.getType(), iUn.getOp(), inner));
     }
 
     @Override
     public Formula visit(IfExpr ifExpr) {
         BooleanFormula guard = encodeAsBoolean(ifExpr.getGuard());
-        Formula tBranch = encodeAsInteger(ifExpr.getTrueBranch());
-        Formula fBranch = encodeAsInteger(ifExpr.getFalseBranch());
+        Formula tBranch = encode(ifExpr.getTrueBranch());
+        Formula fBranch = encode(ifExpr.getFalseBranch());
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
     }
 
@@ -388,6 +333,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     private Formula makeVariable(Type type, String name) {
+        if (type instanceof BooleanType) {
+            return booleanFormulaManager.makeVariable(name);
+        }
         if (type instanceof IntegerType integerType) {
             if (integerType.isMathematical()) {
                 return integerFormulaManager().makeVariable(name);

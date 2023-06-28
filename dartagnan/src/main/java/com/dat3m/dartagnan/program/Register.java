@@ -1,27 +1,27 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Register extends IExpr {
+public class Register implements Expression {
 
     public static final int NO_FUNCTION = -1;
 
     private final String name;
     private String cVar;
     private final int funcId;
+    private final Type type;
 
-    public Register(String name, int funcId, IntegerType type) {
-        super(type);
+    public Register(String name, int funcId, Type type) {
         this.name = checkNotNull(name);
         this.funcId = funcId;
+        this.type = checkNotNull(type);
     }
 
     public String getName() {
@@ -38,6 +38,11 @@ public class Register extends IExpr {
 
     public int getFunctionId() {
         return funcId;
+    }
+
+    @Override
+    public Type getType() {
+        return type;
     }
 
     @Override
@@ -70,11 +75,6 @@ public class Register extends IExpr {
     @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    @Override
-    public IExpr getBase() {
-        return this;
     }
 
     // ============================== Static utility =============================
