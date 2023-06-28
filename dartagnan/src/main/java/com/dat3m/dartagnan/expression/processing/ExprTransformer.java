@@ -17,37 +17,37 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public BExpr visit(BConst bConst) {
+    public Expression visit(BConst bConst) {
         return bConst;
     }
 
     @Override
-    public BExpr visit(BExprBin bBin) {
+    public Expression visit(BExprBin bBin) {
         return expressions.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
     }
 
     @Override
-    public BExpr visit(BExprUn bUn) {
+    public Expression visit(BExprUn bUn) {
         return expressions.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
     }
 
     @Override
-    public BExpr visit(BNonDet bNonDet) {
+    public Expression visit(BNonDet bNonDet) {
         return bNonDet;
     }
 
     @Override
-    public IValue visit(IValue iValue) {
+    public Expression visit(IValue iValue) {
         return iValue;
     }
 
     @Override
-    public IExpr visit(IExprBin iBin) {
+    public Expression visit(IExprBin iBin) {
         return expressions.makeBinary(iBin.getLHS().visit(this), iBin.getOp(), iBin.getRHS().visit(this));
     }
 
     @Override
-    public IExpr visit(IExprUn iUn) {
+    public Expression visit(IExprUn iUn) {
         return expressions.makeUnary(iUn.getOp(), iUn.getInner().visit(this), iUn.getType());
     }
 
@@ -60,7 +60,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public IExpr visit(INonDet iNonDet) {
+    public Expression visit(INonDet iNonDet) {
         return iNonDet;
     }
 

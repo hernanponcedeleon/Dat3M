@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 
 public class BConst extends BExpr {
 
-	public final static BConst TRUE = new BConst(true);
-	public final static BConst FALSE = new BConst(false);
-
 	private final boolean value;
 	
-	public BConst(boolean value) {
+	public BConst(BooleanType type, boolean value) {
+		super(type);
 		this.value = value;
 	}
 

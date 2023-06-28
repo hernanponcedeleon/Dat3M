@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -70,7 +70,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitLock(Lock e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         String mo = e.getMo();
@@ -86,7 +86,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitUnlock(Unlock e) {
         Register resultRegister = e.getResultRegister();
-        IntegerType type = resultRegister.getType();
+        Type type = resultRegister.getType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Expression address = e.getAddress();

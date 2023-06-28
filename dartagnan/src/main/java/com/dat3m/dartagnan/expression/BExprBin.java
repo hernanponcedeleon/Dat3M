@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
@@ -11,7 +12,8 @@ public class BExprBin extends BExpr {
     private final Expression b2;
     private final BOpBin op;
 
-    public BExprBin(Expression b1, BOpBin op, Expression b2) {
+    public BExprBin(BooleanType type, Expression b1, BOpBin op, Expression b2) {
+        super(type);
         this.b1 = b1;
         this.b2 = b2;
         this.op = op;

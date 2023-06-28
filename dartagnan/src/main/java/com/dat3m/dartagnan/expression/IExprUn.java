@@ -12,10 +12,10 @@ import static com.google.common.base.Verify.verify;
 
 public class IExprUn extends IExpr {
 
-    private final IExpr b;
+    private final Expression b;
     private final IOpUn op;
 
-    public IExprUn(IOpUn op, IExpr b, IntegerType t) {
+    public IExprUn(IOpUn op, Expression b, IntegerType t) {
         super(t);
         this.b = b;
         this.op = op;
@@ -25,7 +25,7 @@ public class IExprUn extends IExpr {
         return op;
     }
 
-    public IExpr getInner() {
+    public Expression getInner() {
         return b;
     }
 
@@ -41,7 +41,9 @@ public class IExprUn extends IExpr {
 
     @Override
     public IConst reduce() {
-        IntegerType innerType = b.getType();
+        if (!(b.getType() instanceof IntegerType innerType)) {
+            throw new IllegalStateException(String.format("Non-integer operand %s.", b));
+        }
         IConst inner = b.reduce();
         verify(inner.getType().equals(innerType),
                 "Reduced to wrong type %s instead of %s.", inner.getType(), innerType);

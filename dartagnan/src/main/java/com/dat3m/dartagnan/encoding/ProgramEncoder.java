@@ -75,7 +75,7 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
         for (INonDet constant : context.getTask().getProgram().getConstants()) {
-            Formula formula = context.encodeFinalIntegerExpression(constant);
+            Formula formula = context.encodeFinalExpression(constant);
             if (formula instanceof BitvectorFormula bitvector) {
                 boolean signed = constant.isSigned();
                 var bitvectorFormulaManager = context.getFormulaManager().getBitvectorFormulaManager();
@@ -147,13 +147,13 @@ public class ProgramEncoder implements Encoder {
         if(getArchPrecision() > -1) {
         	final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             addrExprs = memory.getObjects().stream()
-                    .map(addr -> bvmgr.equal((BitvectorFormula) context.encodeFinalIntegerExpression(addr),
+                    .map(addr -> bvmgr.equal((BitvectorFormula) context.encodeFinalExpression(addr),
                     		bvmgr.makeBitvector(getArchPrecision(), addr.getValue().intValue())))
                     .toArray(BooleanFormula[]::new);        	
         } else {
             final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
             addrExprs = memory.getObjects().stream()
-                    .map(addr -> imgr.equal((IntegerFormula) context.encodeFinalIntegerExpression(addr),
+                    .map(addr -> imgr.equal((IntegerFormula) context.encodeFinalExpression(addr),
                     		imgr.makeNumber(addr.getValue().intValue())))
                     .toArray(BooleanFormula[]::new);        	
         }
@@ -174,7 +174,7 @@ public class ProgramEncoder implements Encoder {
         for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
             final Event reader = e.getKey();
             for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
-                final Formula value = context.encodeIntegerExpressionAt(r.getKey(), reader);
+                final Formula value = context.encodeExpressionAt(r.getKey(), reader);
                 final Dependency.State state = r.getValue();
                 List<BooleanFormula> overwrite = new ArrayList<>();
                 for(Event writer : reverse(state.may)) {
@@ -225,7 +225,7 @@ public class ProgramEncoder implements Encoder {
         logger.info("Encoding final register values");
         List<BooleanFormula> enc = new ArrayList<>();
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
-            final Formula value = context.encodeFinalIntegerExpression(e.getKey());
+            final Formula value = context.encodeFinalExpression(e.getKey());
             final Dependency.State state = e.getValue();
             final List<Event> writers = state.may;
             if(initializeRegisters && !state.initialized) {

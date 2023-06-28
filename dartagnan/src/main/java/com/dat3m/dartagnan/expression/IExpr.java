@@ -12,18 +12,6 @@ public abstract class IExpr implements Expression {
 		this.type = checkNotNull(type);
 	}
 
-	public IExpr getBase() {
-		throw new UnsupportedOperationException("getBase() not supported for " + this);
-	}
-
-	public boolean isBV() {
-		return !getType().isMathematical();
-	}
-
-	public boolean isInteger() {
-		return getType().isMathematical();
-	}
-
 	@Override
 	public final IntegerType getType() {
 		return type;
