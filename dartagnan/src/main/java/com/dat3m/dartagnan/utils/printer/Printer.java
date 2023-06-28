@@ -73,20 +73,21 @@ public class Printer {
         return firstEvent.getSuccessor() != null && !(firstEvent instanceof Init);
     }
 
-    private void appendThread(Thread thread){
+    private void appendThread(Thread thread) {
+        result.append("\n[").append(thread.getId()).append("] ");
         try {
             Integer.parseInt(thread.getName());
-            result.append("\nthread_").append(thread.getName()).append("\n");
-        } catch (Exception e) {
-            result.append("\n").append(thread.getName()).append("\n");        	
-        }
+            result.append("thread_");
+        } catch (Exception ignored) { }
+        result.append(thread.getName()).append("\n");
         for (Event e : thread.getEvents()) {
             appendEvent(e);
         }
     }
 
     private void appendFunction(Function func) {
-        result.append("\n function ").append(func).append("\n");
+        result.append("\n[").append(func.getId()).append("] ");
+        result.append("function ").append(func).append("\n");
         for (Event e : func.getEvents()) {
             appendEvent(e);
         }

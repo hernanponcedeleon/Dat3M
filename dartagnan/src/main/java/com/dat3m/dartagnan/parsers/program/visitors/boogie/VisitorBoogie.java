@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
 import com.dat3m.dartagnan.parsers.program.boogie.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -97,15 +98,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private final ExprSimplifier exprSimplifier = new ExprSimplifier();
 
     // ----- TODO: Test code -----
-    // FIXME: We use a high func id to not conflict with thread ids.
-    protected int funcId = 100;
-    protected List<FunctionDeclaration> functionList = new ArrayList<>();
+    private record FunctionDeclaration(String funcName, FunctionType funcType,
+                                       List<String> parameterNames, Proc_declContext ctx) { }
+
+    protected List<FunctionDeclaration> functionDeclarations = new ArrayList<>();
+    protected List<Function> functions = new ArrayList<>();
     protected boolean inlineMode = true;
     // ----- TODO: Test code end -----
-
-
-    private record FunctionDeclaration(com.dat3m.dartagnan.program.Function function, Proc_declContext ctx) {
-    }
 
 
     public VisitorBoogie(ProgramBuilder pb) {
@@ -234,12 +233,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         // ----- TODO: Test code -----
         inlineMode = false;
-        int oldThreadCount = threadCount;
-        for (FunctionDeclaration decl : functionList) {
-            threadCount = decl.function().getId();
+        for (FunctionDeclaration decl : functionDeclarations) {
+            functions.add(programBuilder.initFunction(decl.funcName, ++threadCount,decl.funcType, decl.parameterNames));
             visitProc_decl(decl.ctx(),  null);
         }
-        threadCount = oldThreadCount;
         resetScope();
         // ----- TODO: Test code end -----
 
@@ -302,8 +299,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final FunctionType functionType = FunctionType.get(returnType, parameterTypes.toArray(new Type[0]));
 
         System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
-        com.dat3m.dartagnan.program.Function func = programBuilder.initFunction(name, funcId++, functionType, parameterNames);
-        functionList.add(new FunctionDeclaration(func, ctx));
+        functionDeclarations.add(new FunctionDeclaration(name, functionType, parameterNames, ctx));
         // ----- TODO: Test code end -----
     }
 
@@ -539,15 +535,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newFunctionReturn(funcName));
         } else {
             // ----- TODO: Test code -----
-            com.dat3m.dartagnan.program.Function func =
-                    functionList.stream().filter(f -> f.function.getName().equals(funcName)).findFirst()
-                            .map(FunctionDeclaration::function).orElse(null);
+            final Function func = functions.stream().filter(f -> f.getName().equals(funcName))
+                    .findFirst().orElse(null);
             if (func != null) {
                 final Event funcCall;
                 if (func.getFunctionType().getReturnType().equals(types.getVoidType())) {
                     funcCall = EventFactory.newVoidFunctionCall(func, callArguments);
                 } else {
-                    Register resultReg = returnRegister.get(returnRegister.size() - 1);
+                    final Register resultReg = returnRegister.get(returnRegister.size() - 1);
                     funcCall = EventFactory.newValueFunctionCall(resultReg, func, callArguments);
                 }
                 addEvent(funcCall);

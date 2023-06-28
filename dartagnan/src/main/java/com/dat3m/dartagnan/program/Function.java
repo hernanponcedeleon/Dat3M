@@ -39,8 +39,12 @@ public class Function {
             parameterRegs.add(paramReg);
         }
 
-        entry.setFunction(this);
-        updateExit(entry);
+        Event cur = entry;
+        while (cur != null) {
+            cur.setFunction(this);
+            exit = cur;
+            cur = cur.getSuccessor();
+        }
     }
 
     public String getName() { return this.name; }
@@ -49,6 +53,8 @@ public class Function {
     public int getId() { return id; }
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
+
+    public boolean isIntrinsic() { return entry == null; }
 
     public Event getEntry() { return entry; }
 

@@ -79,13 +79,11 @@ public class ProgramBuilder {
 
     public Function initFunction(String name, int id, FunctionType type, List<String> parameterNames) {
         if(!functions.containsKey(id)){
-            Skip entry = EventFactory.newSkip();
-            functions.putIfAbsent(id, new Function(name, type, parameterNames, id, entry));
+            functions.putIfAbsent(id, new Function(name, type, parameterNames, id, null));
             return functions.get(id);
         }
         return null;
     }
-
 
     public void initThread(int id){
         initThread(String.valueOf(id), id);
