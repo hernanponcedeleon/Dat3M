@@ -80,7 +80,7 @@ public class LkmmProcedures {
 			return;
 		case "__LKMM_ATOMIC_OP":
 			op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
-	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp(p0, reg, op))
+	        visitor.programBuilder.addChild(visitor.threadCount, EventFactory.Linux.newRMWOp(p0, p1, op))
 					.setCFileInformation(visitor.currentLine, visitor.sourceCodeFile);
 			return;
 		case "__LKMM_FENCE":
