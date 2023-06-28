@@ -50,7 +50,7 @@ public class SvcompProcedures {
             case "__VERIFIER_loop_begin" -> visitor.addEvent(EventFactory.Svcomp.newLoopBegin());
             case "__VERIFIER_spin_start" -> visitor.addEvent(EventFactory.Svcomp.newSpinStart());
             case "__VERIFIER_spin_end" -> visitor.addEvent(EventFactory.Svcomp.newSpinEnd());
-            case "__VERIFIER_assert" -> visitor.addAssertion((IExpr) ctx.call_params().exprs().accept(visitor));
+            case "__VERIFIER_assert" -> visitor.addAssertion((Expression) ctx.call_params().exprs().accept(visitor));
             case "__VERIFIER_assume" -> __VERIFIER_assume(visitor, ctx);
             case "__VERIFIER_atomic_begin" -> __VERIFIER_atomic_begin(visitor);
             case "__VERIFIER_atomic_end" -> __VERIFIER_atomic_end(visitor);
