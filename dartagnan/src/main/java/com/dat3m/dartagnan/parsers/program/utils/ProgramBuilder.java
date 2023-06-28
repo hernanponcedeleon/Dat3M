@@ -91,7 +91,6 @@ public class ProgramBuilder {
     }
 
     public Event addChild(int thread, Event child) {
-        //TODO: Generalize to functions
         if(!functions.containsKey(thread)){
             throw new MalformedProgramException("Thread " + thread + " is not initialised");
         }

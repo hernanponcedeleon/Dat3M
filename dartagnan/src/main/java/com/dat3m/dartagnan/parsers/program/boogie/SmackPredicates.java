@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.type.Type;
 
 import java.util.Arrays;
 import java.util.List;

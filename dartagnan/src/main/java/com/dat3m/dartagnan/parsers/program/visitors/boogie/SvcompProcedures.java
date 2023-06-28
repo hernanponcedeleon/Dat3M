@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -107,7 +108,10 @@ public class SvcompProcedures {
         final String registerName = ctx.call_params().Ident(0).getText();
         final Register register = visitor.getScopedRegister(registerName);
         if (register != null) {
-            final INonDet expression = visitor.programBuilder.newConstant(register.getType(), signed);
+            if (!(register.getType() instanceof IntegerType type)) {
+                throw new ParsingException(String.format("Non-integer result register %s.", register));
+            }
+            final INonDet expression = visitor.programBuilder.newConstant(type, signed);
             expression.setMin(min);
             expression.setMax(max);
             visitor.addEvent(EventFactory.newLocal(register, expression));
@@ -118,7 +122,7 @@ public class SvcompProcedures {
         final String registerName = ctx.call_params().Ident(0).getText();
         final Register register = visitor.getScopedRegister(registerName);
         if (register != null) {
-            visitor.addEvent(EventFactory.newLocal(register, new BNonDet()));
+            visitor.addEvent(EventFactory.newLocal(register, new BNonDet(visitor.types.getBooleanType())));
         }
     }
 

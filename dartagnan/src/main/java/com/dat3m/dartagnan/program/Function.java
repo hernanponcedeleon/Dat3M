@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
@@ -34,8 +33,7 @@ public class Function {
         parameterRegs = new ArrayList<>(parameterNames.size());
         int paramIndex = 0;
         for (Type paramType : functionType.getParameterTypes()) {
-            //TODO: avoid cast to IntegerType
-            final Register paramReg = newRegister(parameterNames.get(paramIndex++), (IntegerType) paramType);
+            final Register paramReg = newRegister(parameterNames.get(paramIndex++), paramType);
             parameterRegs.add(paramReg);
         }
 
@@ -76,11 +74,11 @@ public class Function {
         return registers.get(name);
     }
 
-    public Register newRegister(IntegerType type) {
+    public Register newRegister(Type type) {
         return newRegister("DUMMY_REG_" + dummyCount++, type);
     }
 
-    public Register newRegister(String name, IntegerType type) {
+    public Register newRegister(String name, Type type) {
         if (registers.containsKey(name)) {
             final String error = String.format("Register %s already exists in function %s", name, this);
             throw new MalformedProgramException(error);

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
@@ -80,7 +79,7 @@ public class PthreadsProcedures {
         final Expression callingValue = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
         visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 
-        final IExpr pointer = (IExpr) ctx.call_params().exprs().expr(0).accept(visitor);
+        final Expression pointer = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         final String threadName = ctx.call_params().exprs().expr().get(2).getText();
         visitor.pool.add(pointer, threadName, visitor.threadCount);
 

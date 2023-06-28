@@ -54,6 +54,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
 
+    private record VarDeclaration(String varName, Type type) { }
+
     protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
     protected ProgramBuilder programBuilder;
@@ -86,7 +88,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private final Map<String, Expression> constantsMap = new HashMap<>();
     private final Map<String, IntegerType> constantsTypeMap = new HashMap<>();
 
-    protected final Set<IExpr> allocations = new HashSet<>();
+    protected final Set<Expression> allocations = new HashSet<>();
 
     protected Map<Integer, List<Expression>> threadCallingValues = new HashMap<>();
 
@@ -97,7 +99,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private final ExprSimplifier exprSimplifier = new ExprSimplifier();
 
-    private record VarDeclaration(String varName, IntegerType type) {}
 
     // ----- TODO: Test code -----
     private record FunctionDeclaration(String funcName, FunctionType funcType,
@@ -188,7 +189,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return getOrNewScopedRegister(name, types.getArchType());
     }
 
-    protected Register getOrNewScopedRegister(String name, IntegerType type) {
+    protected Register getOrNewScopedRegister(String name, Type type) {
         return programBuilder.getOrNewRegister(threadCount, getScopedName(name), type);
     }
 
@@ -231,7 +232,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 break;
             }
 
-            IExpr next = pool.next();
+            Expression next = pool.next();
             pool.addIntPtr(threadCount + 1, next);
             nextThreadName = pool.getNameFromPtr(next);
         } while (true);
@@ -364,7 +365,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final String declString = ctx.typed_idents_wheres().attr_typed_idents_where(0).getText(); // regName:regType
         final VarDeclaration decl = parseVarDeclaration(declString);
         final String regName = decl.varName;
-        final IntegerType regType = decl.type;
+        final Type regType = decl.type;
 
         if (constantsTypeMap.containsKey(regName)) {
             throw new ParsingException("Register " + regName + " is already defined as a constant");
@@ -384,7 +385,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         programBuilder.initThread(procName, threadCount);
         if (threadCount != 1) {
             // Used to allow execution of threads after they have been created (pthread_create)
-            final IExpr pointer = pool.getPtrFromInt(threadCount);
+            final Expression pointer = pool.getPtrFromInt(threadCount);
             final Register reg = getOrNewScopedRegister(null);
             addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
         }
@@ -394,7 +395,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         if (threadCount != 1) {
             // Used to mark the end of the execution of a thread (used by pthread_join)
-            final IExpr pointer = pool.getPtrFromInt(threadCount);
+            final Expression pointer = pool.getPtrFromInt(threadCount);
             addEvent(EventFactory.Pthread.newEnd(pointer));
         }
     }
@@ -459,7 +460,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitAssert_cmd(Assert_cmdContext ctx) {
-        addAssertion((IExpr) ctx.proposition().expr().accept(this));
+        addAssertion((Expression) ctx.proposition().expr().accept(this));
         return null;
     }
 
@@ -698,8 +699,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitMinus_expr(Minus_exprContext ctx) {
-        IExpr v = (IExpr) ctx.unary_expr().accept(this);
-        return expressions.makeNEG(v, v.getType());
+        Expression operand = (Expression) ctx.unary_expr().accept(this);
+        if (!(operand.getType() instanceof IntegerType type)) {
+            throw new ParsingException(String.format("Non-integer expression -%s", operand));
+        }
+        return expressions.makeNEG(operand, type);
     }
 
     @Override
@@ -839,8 +843,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 // Stores to "ignored" variables are skipped
                 return null;
             }
-            final IExpr address = (IExpr) ctx.expr(1).accept(this);
-            final IExpr value = (IExpr) ctx.expr(2).accept(this);
+            final Expression address = (Expression) ctx.expr(1).accept(this);
+            final Expression value = (Expression) ctx.expr(2).accept(this);
             // This improves the blow-up
             if (initMode && !(value instanceof MemoryObject)) {
                 Expression lhs = address;
@@ -927,7 +931,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return null;
     }
 
-    protected void addAssertion(IExpr expr) {
+    protected void addAssertion(Expression expr) {
         final Register ass = programBuilder.getOrNewRegister(threadCount, "assert_" + assertionIndex, expr.getType());
         assertionIndex++;
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
