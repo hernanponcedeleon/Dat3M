@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -69,33 +69,33 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register resultRegister = e.getResultRegister();
-        Type type = resultRegister.getType();
+        IntegerType type = types.getArchType(); // TODO: Boolean should be sufficient
+        Register dummy = e.getThread().newRegister(type);
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         String mo = e.getMo();
 
-        Load rmwLoad = newRMWLoadWithMo(resultRegister, e.getAddress(), mo);
+        Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
         return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit()),
+                newJump(expressions.makeNEQ(dummy, zero), (Label) e.getThread().getExit()),
                 newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        Register resultRegister = e.getResultRegister();
-        Type type = resultRegister.getType();
+        IntegerType type = types.getArchType(); // TODO: Boolean should be sufficient
+        Register dummy = e.getThread().newRegister(type);
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load rmwLoad = newRMWLoadWithMo(resultRegister, address, mo);
+        Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
         return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit()),
+                newJump(expressions.makeNEQ(dummy, one), (Label) e.getThread().getExit()),
                 newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
     }

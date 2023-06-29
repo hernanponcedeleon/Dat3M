@@ -287,16 +287,16 @@ public class EventFactory {
             return new Join(reg, expr);
         }
 
-        public static Lock newLock(String name, Expression address, Register reg) {
-            return new Lock(name, address, reg);
+        public static Lock newLock(String name, Expression address) {
+            return new Lock(name, address);
         }
 
         public static Start newStart(Register reg, Expression address, Event creationEvent) {
             return new Start(reg, address, creationEvent);
         }
 
-        public static Unlock newUnlock(String name, Expression address, Register reg) {
-            return new Unlock(name, address, reg);
+        public static Unlock newUnlock(String name, Expression address) {
+            return new Unlock(name, address);
         }
     }
 

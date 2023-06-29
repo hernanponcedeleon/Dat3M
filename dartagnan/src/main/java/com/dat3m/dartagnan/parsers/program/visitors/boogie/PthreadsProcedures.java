@@ -107,19 +107,17 @@ public class PthreadsProcedures {
 
     private static void mutexLock(VisitorBoogie visitor, Call_cmdContext ctx) {
         final ExprsContext lock = ctx.call_params().exprs();
-        final Register register = visitor.getOrNewScopedRegister(null);
         final Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
-            visitor.addEvent(EventFactory.Pthread.newLock(lock.getText(), lockAddress, register));
+            visitor.addEvent(EventFactory.Pthread.newLock(lock.getText(), lockAddress));
         }
     }
 
     private static void mutexUnlock(VisitorBoogie visitor, Call_cmdContext ctx) {
         final ExprsContext lock = ctx.call_params().exprs();
-        final Register register = visitor.getOrNewScopedRegister(null);
         final Expression lockAddress = (Expression) lock.accept(visitor);
         if (lockAddress != null) {
-            visitor.addEvent(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress, register));
+            visitor.addEvent(EventFactory.Pthread.newUnlock(lock.getText(), lockAddress));
         }
     }
 }
