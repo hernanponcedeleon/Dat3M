@@ -71,37 +71,37 @@ public class ProgramBuilder {
         return program;
     }
 
-    public void initThread(String name, int id) {
-        if(!functions.containsKey(id)){
+    public void initThread(String name, int tid) {
+        if(!functions.containsKey(tid)){
             Skip threadEntry = EventFactory.newSkip();
-            functions.putIfAbsent(id, new Thread(name, id, threadEntry));
+            functions.putIfAbsent(tid, new Thread(name, tid, threadEntry));
         }
     }
 
-    public Function initFunction(String name, int id, FunctionType type, List<String> parameterNames) {
-        if(!functions.containsKey(id)){
-            functions.putIfAbsent(id, new Function(name, type, parameterNames, id, null));
-            return functions.get(id);
+    public Function initFunction(String name, int fid, FunctionType type, List<String> parameterNames) {
+        if(!functions.containsKey(fid)){
+            functions.putIfAbsent(fid, new Function(name, type, parameterNames, fid, null));
+            return functions.get(fid);
         }
         return null;
     }
 
-    public void initThread(int id){
-        initThread(String.valueOf(id), id);
+    public void initThread(int tid){
+        initThread(String.valueOf(tid), tid);
     }
 
-    public Event addChild(int thread, Event child) {
-        if(!functions.containsKey(thread)){
-            throw new MalformedProgramException("Thread " + thread + " is not initialised");
+    public Event addChild(int fid, Event child) {
+        if(!functions.containsKey(fid)){
+            throw new MalformedProgramException("Function " + fid + " is not initialised");
         }
         if (child.getThread() != null) {
             //FIXME: This is a bad error message, but our tests require this for now.
             final String error = String.format(
                     "Trying to reinsert event %s from thread %s into thread %s",
-                    child, child.getThread().getId(), thread);
+                    child, child.getThread().getId(), fid);
             throw new MalformedProgramException(error);
         }
-        functions.get(thread).append(child);
+        functions.get(fid).append(child);
         // Every event in litmus tests is non-optimisable
         if(format.equals(LITMUS)) {
             child.addTags(Tag.NOOPT);
@@ -176,38 +176,32 @@ public class ProgramBuilder {
         return result;
     }
 
-    public Register getRegister(int thread, String name){
-        if(functions.containsKey(thread)){
-            return functions.get(thread).getRegister(name);
+    public Register getRegister(int fid, String name){
+        if(functions.containsKey(fid)){
+            return functions.get(fid).getRegister(name);
         }
         return null;
     }
 
-    public Register getOrNewRegister(int threadId, String name) {
-        return getOrNewRegister(threadId, name, types.getArchType());
+    public Register getOrNewRegister(int fid, String name) {
+        return getOrNewRegister(fid, name, types.getArchType());
     }
 
-    public Register getOrNewRegister(int threadId, String name, Type type) {
-        initThread(threadId);
-        Function func = functions.get(threadId);
-        if(name == null) {
-            return func.newRegister(type);
-        }
-        Register register = func.getRegister(name);
-        if(register == null){
-            return func.newRegister(name, type);
-        }
-        return register;
+    public Register getOrNewRegister(int fid, String name, Type type) {
+        initThread(fid); // FIXME: Scary code!
+        Function func = functions.get(fid);
+        Register register = name == null ? func.newRegister(type) : func.getRegister(name);
+        return register != null ? register : func.newRegister(name, type);
     }
 
-    public Register getOrErrorRegister(int thread, String name){
-        if(functions.containsKey(thread)){
-            Register register = functions.get(thread).getRegister(name);
+    public Register getOrErrorRegister(int fid, String name){
+        if(functions.containsKey(fid)){
+            Register register = functions.get(fid).getRegister(name);
             if(register != null){
                 return register;
             }
         }
-        throw new IllegalStateException("Register " + thread + ":" + name + " is not initialised");
+        throw new IllegalStateException("Register " + fid + ":" + name + " is not initialised");
     }
 
     public Label getOrCreateLabel(int funcId, String name){

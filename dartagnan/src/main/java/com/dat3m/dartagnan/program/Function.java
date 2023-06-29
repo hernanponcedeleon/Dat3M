@@ -25,6 +25,8 @@ public class Function {
 
     public Function(String name, FunctionType type, List<String> parameterNames, int id, Event entry) {
         Preconditions.checkArgument(type.getParameterTypes().size() == parameterNames.size());
+        Preconditions.checkArgument(entry == null || entry.getPredecessor() == null,
+                "The entry event of a function is not allowed to have predecessors.");
         this.name = name;
         this.functionType = type;
         this.id = id;

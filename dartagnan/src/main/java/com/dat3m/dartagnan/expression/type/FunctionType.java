@@ -47,7 +47,8 @@ public class FunctionType implements Type {
 
     @Override
     public String toString() {
-        return String.format("%s (%s)", returnType,
-                String.join(", ", Iterables.transform(Arrays.asList(parameterTypes), Object::toString)));
+        return String.format("(%s) -> %s",
+                String.join(", ", Iterables.transform(Arrays.asList(parameterTypes), Object::toString)),
+                returnType);
     }
 }
