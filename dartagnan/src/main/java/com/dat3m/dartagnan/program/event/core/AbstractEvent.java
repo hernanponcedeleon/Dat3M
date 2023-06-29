@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -256,11 +254,6 @@ public abstract class AbstractEvent implements Event {
             throw new IllegalStateException(error);
         }
         return result;
-    }
-
-    @Override
-    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        // WARNING: This should get overwritten by any event that reads Expressions
     }
 
     @Override

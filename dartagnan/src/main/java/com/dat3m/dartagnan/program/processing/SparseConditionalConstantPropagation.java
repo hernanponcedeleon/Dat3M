@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -93,7 +94,9 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
             if (!isTraversingDeadBranch) {
                 propagator.propagationMap = propagationMap;
-                cur.transformExpressions(propagator);
+                if (cur instanceof RegReader regReader) {
+                    regReader.transformExpressions(propagator);
+                }
                 reachableEvents.add(cur);
 
                 if (cur instanceof Local local) {
