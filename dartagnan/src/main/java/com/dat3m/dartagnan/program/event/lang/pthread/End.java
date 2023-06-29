@@ -25,16 +25,10 @@ public class End extends StoreBase {
         return "end_thread()";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public End getCopy() {
         return new End(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

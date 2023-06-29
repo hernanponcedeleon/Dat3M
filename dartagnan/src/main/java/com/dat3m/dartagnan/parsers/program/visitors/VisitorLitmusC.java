@@ -199,8 +199,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     	Expression expr = (Expression) ctx.re().accept(this);
 
     	ifId++;
-        Label elseL = programBuilder.getOrCreateLabel("else_" + ifId);
-        Label endL = programBuilder.getOrCreateLabel("end_" + ifId);
+        Label elseL = programBuilder.getOrCreateLabel(currentThread,"else_" + ifId);
+        Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + ifId);
 
         IfAsJump ifEvent = EventFactory.newIfJumpUnless(expr, elseL, endL);
         programBuilder.addChild(currentThread, ifEvent);

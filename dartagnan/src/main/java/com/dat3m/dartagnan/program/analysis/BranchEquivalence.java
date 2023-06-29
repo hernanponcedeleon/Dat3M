@@ -97,7 +97,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     public boolean isReachableFrom(Event start, Event target) {
-        return start.getThread() == target.getThread() && start.getGlobalId() <= target.getGlobalId() && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
+        return start.getFunction() == target.getFunction()
+                && start.getGlobalId() <= target.getGlobalId()
+                && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
     }
 
     public Set<Event> getExclusiveEvents(Event e) {
@@ -314,7 +316,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
                 Event e1 = c1.getRepresentative();
                 Event e2 = c2.getRepresentative();
-                if ( e1.getThread() == e2.getThread() && e1.getGlobalId() < e2.getGlobalId()) {
+                if ( e1.getFunction() == e2.getFunction() && e1.getGlobalId() < e2.getGlobalId()) {
                     if (!c1.reachableClasses.contains(c2)) {
                         excl.add(c2);
                         c2.exclusiveClasses.add(c1);

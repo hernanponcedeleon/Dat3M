@@ -48,4 +48,5 @@ public class LKMMStore extends StoreBase {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitLKMMStore(this);
     }
+
 }

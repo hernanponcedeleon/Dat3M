@@ -19,7 +19,7 @@ public class LlvmXchg extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := llvm_xchg(*%s, %s, %s)\t### LKMM",
+        return String.format("%s := llvm_xchg(*%s, %s, %s)\t### LLVM",
                 resultRegister, address, storeValue, mo);
     }
 

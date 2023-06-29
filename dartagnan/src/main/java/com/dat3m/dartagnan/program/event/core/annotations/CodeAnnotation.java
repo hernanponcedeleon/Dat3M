@@ -17,11 +17,8 @@ public abstract class CodeAnnotation extends AbstractEvent {
         super(other);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitCodeAnnotation(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitCodeAnnotation(this);
+    }
 }

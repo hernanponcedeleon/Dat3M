@@ -26,16 +26,10 @@ public class LlvmStore extends StoreBase {
         return "llvm_store(*" + address + ", " + value + ", " + mo + ")\t### LLVM";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public LlvmStore getCopy() {
         return new LlvmStore(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

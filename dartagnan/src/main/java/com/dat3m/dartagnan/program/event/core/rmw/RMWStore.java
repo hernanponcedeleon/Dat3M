@@ -37,9 +37,6 @@ public class RMWStore extends Store implements EventUser {
         return "rmw " + super.defaultString();
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public RMWStore getCopy() {
         return new RMWStore(this);
@@ -54,9 +51,6 @@ public class RMWStore extends Store implements EventUser {
     public Set<Event> getReferencedEvents() {
         return Set.of(loadEvent);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -26,16 +26,10 @@ public class Fence extends AbstractEvent {
         return getName();
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Fence getCopy() {
         return new Fence(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

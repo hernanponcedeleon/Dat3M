@@ -7,10 +7,12 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import org.apache.logging.log4j.LogManager;
@@ -69,7 +71,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
     }
 
     private void run(Thread thread) {
-        final EventSimplifier simplifier = new EventSimplifier();
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
@@ -83,8 +84,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         Map<Register, Expression> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
+        final ConstantPropagator propagator = new ConstantPropagator();
         for (Event cur : thread.getEvents()) {
-
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
                 propagationMap = isTraversingDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
@@ -92,9 +93,10 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             }
 
             if (!isTraversingDeadBranch) {
-                simplifier.setPropagationMap(propagationMap);
-                // We only simplify non-dead code
-                cur.accept(simplifier);
+                propagator.propagationMap = propagationMap;
+                if (cur instanceof RegReader regReader) {
+                    regReader.transformExpressions(propagator);
+                }
                 reachableEvents.add(cur);
 
                 if (cur instanceof Local local) {
@@ -156,52 +158,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         return joined;
     }
 
-    /*
-     * Simplifies the expressions of events by inserting known constant values.
-     */
-    private static class EventSimplifier implements EventVisitor<Void> {
-
-        private final ConstantPropagator propagator = new ConstantPropagator();
-
-        public void setPropagationMap(Map<Register, Expression> propagationMap) {
-            this.propagator.propagationMap = propagationMap;
-        }
-
-        @Override
-        public Void visitEvent(Event e) {
-            return null;
-        }
-
-        @Override
-        public Void visitCondJump(CondJump e) {
-            e.setGuard(e.getGuard().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitLocal(Local e) {
-            e.setExpr(e.getExpr().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitMemCoreEvent(MemoryCoreEvent e) {
-            e.setAddress(e.getAddress().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitStore(Store e) {
-            e.setMemValue(e.getMemValue().visit(propagator));
-            return visitMemCoreEvent(e);
-        }
-
-        @Override
-        public Void visitMalloc(Malloc e) {
-            e.setSizeExpr(e.getSizeExpr().visit(propagator));
-            return null;
-        }
-    }
 
     /*
      * A simple expression transformer that
@@ -214,7 +170,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      */
     private static class ConstantPropagator extends ExprTransformer {
 
-        private Map<Register, Expression> propagationMap = new HashMap<>();
+        private Map<Register, Expression> propagationMap;
 
         @Override
         public Expression visit(Register reg) {

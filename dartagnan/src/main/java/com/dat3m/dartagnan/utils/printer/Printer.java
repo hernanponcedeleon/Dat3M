@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.utils.printer;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -36,6 +37,14 @@ public class Printer {
                 appendThread(thread);
             }
         }
+
+        for (Function function : program.getFunctions()) {
+            if (function instanceof Thread) {
+                continue;
+            }
+            appendFunction(function);
+        }
+
         idType = origType;
         return result.toString();
     }
@@ -64,14 +73,22 @@ public class Printer {
         return firstEvent.getSuccessor() != null && !(firstEvent instanceof Init);
     }
 
-    private void appendThread(Thread thread){
+    private void appendThread(Thread thread) {
+        result.append("\n[").append(thread.getId()).append("] ");
         try {
             Integer.parseInt(thread.getName());
-            result.append("\nthread_").append(thread.getName()).append("\n");
-        } catch (Exception e) {
-            result.append("\n").append(thread.getName()).append("\n");        	
-        }
+            result.append("thread_");
+        } catch (Exception ignored) { }
+        result.append(thread.getName()).append("\n");
         for (Event e : thread.getEvents()) {
+            appendEvent(e);
+        }
+    }
+
+    private void appendFunction(Function func) {
+        result.append("\n[").append(func.getId()).append("] ");
+        result.append("function ").append(func).append("\n");
+        for (Event e : func.getEvents()) {
             appendEvent(e);
         }
     }

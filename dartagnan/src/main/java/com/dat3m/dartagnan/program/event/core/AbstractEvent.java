@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.CustomPrinting;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.MetadataMap;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
@@ -19,7 +19,7 @@ public abstract class AbstractEvent implements Event {
 
     protected final MetadataMap metadataMap = new MetadataMap();
     protected final Set<String> tags;
-    protected Thread thread; // The thread this event belongs to
+    protected Function function; // The thread this event belongs to
     // This id is dynamically changing during processing.
     protected transient int globalId = -1; // (Global) ID within a program
     private transient AbstractEvent successor;
@@ -33,7 +33,7 @@ public abstract class AbstractEvent implements Event {
     protected AbstractEvent(AbstractEvent other) {
         copyAllMetadataFrom(other);
         this.tags = other.tags; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
-        this.thread = other.thread;
+        this.function = other.function;
     }
 
     @Override
@@ -42,10 +42,16 @@ public abstract class AbstractEvent implements Event {
     public void setGlobalId(int id) { this.globalId = id; }
 
     @Override
-    public Thread getThread() { return thread; }
+    public Function getFunction() { return function; }
+
     @Override
-    public void setThread(Thread thread) {
-        this.thread = Preconditions.checkNotNull(thread);
+    public void setFunction(Function function) {
+        this.function = Preconditions.checkNotNull(function);
+    }
+
+    @Override
+    public Thread getThread() {
+        return getFunction() instanceof Thread ? (Thread) getFunction() : null;
     }
 
     // ============================================ Users ============================================
@@ -81,13 +87,6 @@ public abstract class AbstractEvent implements Event {
     @Override
     public boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass) {
         return Objects.equals(getMetadata(metadataClass), other.getMetadata(metadataClass));
-    }
-
-    // TODO: Remove this
-    @Override
-    public Event setCFileInformation(int line, String sourceCodeFilePath) {
-        setMetadata(new SourceLocation(sourceCodeFilePath, line));
-        return this;
     }
 
     // ===============================================================================================
@@ -147,19 +146,19 @@ public abstract class AbstractEvent implements Event {
     /*
         Detaches this event from the control-flow graph.
         This does not properly delete the event, and it may be reinserted elsewhere.
-        TODO: We need to special-case handle detaching the entry/exit event of a thread.
+        TODO: We need to special-case handle detaching the entry/exit event of a function.
      */
     @Override
     public void detach() {
-        Preconditions.checkState(thread == null || (this != thread.getEntry() && this != thread.getExit()),
-                "Cannot detach the entry or exit event %s of thread %s", this, getThread());
+        Preconditions.checkState(function == null || (this != function.getEntry() && this != function.getExit()),
+                "Cannot detach the entry or exit event %s of function %s", this, getFunction());
         if (this.predecessor != null) {
             this.predecessor.successor = successor;
         }
         if (this.successor != null) {
             this.successor.predecessor = predecessor;
         }
-        this.thread = null;
+        this.function = null;
         this.predecessor = null;
         this.successor = null;
     }
@@ -189,9 +188,9 @@ public abstract class AbstractEvent implements Event {
     @Override
     public void insertAfter(Event toBeInserted) {
         Preconditions.checkNotNull(toBeInserted);
-        insertBetween((AbstractEvent) toBeInserted, thread, this, successor);
-        if (thread.getExit() == this) {
-            thread.updateExit(toBeInserted);
+        insertBetween((AbstractEvent) toBeInserted, function, this, successor);
+        if (function.getExit() == this) {
+            function.updateExit(toBeInserted);
         }
     }
 
@@ -214,11 +213,11 @@ public abstract class AbstractEvent implements Event {
         this.forceDelete();
     }
 
-    private static void insertBetween(AbstractEvent toBeInserted, Thread thread, AbstractEvent pred, AbstractEvent succ) {
+    private static void insertBetween(AbstractEvent toBeInserted, Function func, AbstractEvent pred, AbstractEvent succ) {
         assert (pred == null || pred.successor == succ) && (succ == null || succ.predecessor == pred);
         assert (toBeInserted != pred && toBeInserted != succ);
         toBeInserted.detach();
-        toBeInserted.thread = thread;
+        toBeInserted.function = func;
         toBeInserted.predecessor = pred;
         toBeInserted.successor = succ;
 
@@ -255,11 +254,6 @@ public abstract class AbstractEvent implements Event {
             throw new IllegalStateException(error);
         }
         return result;
-    }
-
-    @Override
-    public Event getCopy() {
-        throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
     }
 
     @Override

@@ -10,9 +10,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 public final class TypeFactory {
 
     private static TypeFactory instance = new TypeFactory();
+    private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
-    private final Map<Integer, IntegerType> integerTypeMap = new HashMap<>();
     private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
+
+    private final Map<Integer, IntegerType> integerTypeMap = new HashMap<>();
 
     private TypeFactory() {}
 
@@ -24,6 +26,8 @@ public final class TypeFactory {
     public BooleanType getBooleanType() {
         return booleanType;
     }
+
+    public VoidType getVoidType() { return voidType; }
 
     public IntegerType getIntegerType() {
         return mathematicalIntegerType;

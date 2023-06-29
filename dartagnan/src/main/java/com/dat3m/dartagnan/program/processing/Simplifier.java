@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -18,7 +19,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 public class Simplifier implements ProgramProcessor {
 
-	private static final Logger logger = LogManager.getLogger(Simplifier.class);
+    private static final Logger logger = LogManager.getLogger(Simplifier.class);
 
     private Simplifier() { }
 
@@ -41,8 +42,8 @@ public class Simplifier implements ProgramProcessor {
         logger.info("post-simplification: " + program.getEvents().size() + " events");
     }
 
-    private void simplify(Thread t) {
-        Event cur = t.getEntry();
+    private void simplify(Function func) {
+        Event cur = func.getEntry();
         Event next;
         while ((next = cur.getSuccessor()) != null) {
             // Some simplifications are only applicable after others.
@@ -80,7 +81,7 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyLabel(Label label) {
-        if (label.getJumpSet().isEmpty() && label != label.getThread().getExit()) {
+        if (label.getJumpSet().isEmpty() && label != label.getFunction().getExit()) {
             return label.tryDelete();
         }
         return false;
@@ -92,7 +93,7 @@ public class Simplifier implements ProgramProcessor {
 
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
-        if(successor instanceof FunRet fr && fr.getFunctionName().equals(call.getFunctionName())) {
+        if(successor instanceof FunRet funRet && funRet.getFunctionName().equals(call.getFunctionName())) {
             call.tryDelete();
             successor.tryDelete();
             return true;

@@ -13,9 +13,8 @@ public interface Expression {
         return ImmutableSet.of();
     }
 
+    // TODO: Rename to "accept"
     <T> T visit(ExpressionVisitor<T> visitor);
-
-    //default ExprInterface simplify() { return visit(ExprSimplifier.SIMPLIFIER); }
 
     default IConst reduce() {
         throw new UnsupportedOperationException("Reduce not supported for " + this);

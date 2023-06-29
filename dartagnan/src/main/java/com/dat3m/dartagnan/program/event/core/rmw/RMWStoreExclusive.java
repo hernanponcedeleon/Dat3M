@@ -50,16 +50,10 @@ public class RMWStoreExclusive extends Store {
         return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public RMWStoreExclusive getCopy(){
         return new RMWStoreExclusive(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

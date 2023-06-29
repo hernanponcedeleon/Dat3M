@@ -14,7 +14,7 @@ import java.util.Set;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
-    private final Register register;
+    private Register register;
     private Event event;
     private final boolean trackDep;
 
@@ -38,6 +38,11 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     @Override
     public Register getResultRegister() {
         return register;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
     }
 
     public Event getStatusEvent() {
@@ -79,9 +84,6 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Event getCopy() {
         return new ExecutionStatus(this);
@@ -96,9 +98,6 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     public Set<Event> getReferencedEvents() {
         return Set.of(event);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

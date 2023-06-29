@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.common;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
@@ -64,6 +65,11 @@ public abstract class SingleAccessMemoryEvent extends AbstractEvent implements M
     @Override
     public List<MemoryAccess> getMemoryAccesses() {
         return List.of(getMemoryAccess());
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.address = address.visit(exprTransformer);
     }
 }
 

@@ -34,5 +34,10 @@ public class GenericMemoryEvent extends AbstractMemoryCoreEvent implements Memor
     public List<MemoryAccess> getMemoryAccesses() {
         return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.OTHER));
     }
+
+    @Override
+    public GenericMemoryEvent getCopy() {
+        return new GenericMemoryEvent(this);
+    }
 }
 

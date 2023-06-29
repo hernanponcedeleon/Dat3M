@@ -20,16 +20,10 @@ public class LlvmFence extends FenceBase {
         return name + "(" + mo + ")\t### LLVM";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public LlvmFence getCopy() {
         return new LlvmFence(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

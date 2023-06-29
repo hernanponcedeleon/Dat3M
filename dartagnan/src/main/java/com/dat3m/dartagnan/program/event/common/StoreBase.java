@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.common;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -45,4 +46,9 @@ public abstract class StoreBase extends SingleAccessMemoryEvent {
         return String.format("store(*%s, %s%s)", address, value, !mo.isEmpty() ? ", " + mo : "");
     }
 
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.value = value.visit(exprTransformer);
+    }
 }

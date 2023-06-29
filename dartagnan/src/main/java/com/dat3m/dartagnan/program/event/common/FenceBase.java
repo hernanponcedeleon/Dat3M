@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 
 @NoInterface
-public class FenceBase extends AbstractEvent {
+public abstract class FenceBase extends AbstractEvent {
 
     protected final String name;
     protected final String mo; // May be NULL or empty for fences that do not support a mo.
@@ -37,14 +37,6 @@ public class FenceBase extends AbstractEvent {
         } else {
             return String.format("%s(%s)", name, mo);
         }
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public FenceBase getCopy() {
-        return new FenceBase(this);
     }
 
 }

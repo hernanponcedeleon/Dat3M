@@ -53,13 +53,13 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
-        Label alt = b.getOrCreateLabel("alt");
+        Label alt = b.getOrCreateLabel(0, "alt");
         b.addChild(0, newJump(new BNonDet(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);
         b.addChild(0, e1);
-        Label join = b.getOrCreateLabel("join");
+        Label join = b.getOrCreateLabel(0,"join");
         b.addChild(0, newGoto(join));
         b.addChild(0, alt);
         Local e2 = newLocal(r1, value(2));
@@ -211,7 +211,7 @@ public class AnalysisTest {
         b.initThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, b.newConstant(type, true)));
-        Label l0 = b.getOrCreateLabel("l0");
+        Label l0 = b.getOrCreateLabel(0,"l0");
         b.addChild(0, newJump(expressions.makeOr(
                 expressions.makeGT(r0, expressions.makeOne(type), true),
                 expressions.makeLT(r0, expressions.makeZero(type), true)), l0));

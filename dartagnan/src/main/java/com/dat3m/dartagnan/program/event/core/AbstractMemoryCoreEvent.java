@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
@@ -34,5 +35,10 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
 
     public Type getAccessType() { return accessType; }
     public void setAccessType(Type type) { this.accessType = type; }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.address = address.visit(exprTransformer);
+    }
 }
 

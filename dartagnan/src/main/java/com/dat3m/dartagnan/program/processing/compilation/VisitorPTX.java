@@ -24,7 +24,7 @@ public class VisitorPTX extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         String mo = e.getMo();
         Expression address = e.getAddress();
-        Register dummy = e.getThread().newRegister(resultRegister.getType());
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
@@ -40,7 +40,7 @@ public class VisitorPTX extends VisitorBase {
     @Override
     public List<Event> visitPtxRedOp(PTXRedOp e) {
         Expression address = e.getAddress();
-        Register dummy = e.getThread().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(types.getArchType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));

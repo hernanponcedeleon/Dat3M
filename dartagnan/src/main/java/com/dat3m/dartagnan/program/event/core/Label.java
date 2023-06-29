@@ -33,16 +33,10 @@ public class Label extends AbstractEvent {
         return name + ":" + (hasTag(Tag.SPINLOOP) ? "\t### SPINLOOP" : "");
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Label getCopy(){
         return new Label(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -63,6 +64,11 @@ public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter 
     }
 
     @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
+    @Override
     public Set<Register.Read> getRegisterReads() {
         return  Register.collectRegisterReads(storeValue, DATA,
                 Register.collectRegisterReads(expectedAddr, ADDR, // note the address dependency here
@@ -79,6 +85,13 @@ public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter 
         final String strongSuffix = isStrong ? "strong" : "weak";
         return String.format("%s := atomic_compare_exchange_%s(*%s, %s, %s, %s)\t### C11",
                 resultRegister, strongSuffix, address, expectedAddr, storeValue, mo);
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.storeValue = storeValue.visit(exprTransformer);
+        this.expectedAddr = expectedAddr.visit(exprTransformer);
     }
 
     @Override

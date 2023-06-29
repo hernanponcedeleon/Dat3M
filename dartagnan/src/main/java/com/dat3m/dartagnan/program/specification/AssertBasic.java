@@ -35,7 +35,7 @@ public class AssertBasic extends AbstractAssert {
 
     private String valueToString(Expression value){
         if(value instanceof Register register){
-            return register.getThreadId() + ":" + value;
+            return register.getFunctionId() + ":" + value;
         }
         return value.toString();
     }
