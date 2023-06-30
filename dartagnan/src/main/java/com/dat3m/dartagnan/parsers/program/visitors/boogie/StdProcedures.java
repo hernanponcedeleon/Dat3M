@@ -50,7 +50,7 @@ public class StdProcedures {
         }
         if (funcName.equals("abort")) {
             if (visitor.inlineMode) {
-                final Label label = visitor.getOrNewLabel("END_OF_T" + visitor.threadCount);
+                final Label label = visitor.programBuilder.getEndOfThreadLabel(visitor.threadCount);
                 visitor.addEvent(EventFactory.newGoto(label));
             } else {
                 visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));

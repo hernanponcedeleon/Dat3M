@@ -182,6 +182,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return getOrNewLabel(getScopedName(name));
     }
 
+    protected Label getOrNewEndOfScopeLabel() {
+        return getOrNewLabel("END_OF_" + currentScope.getID());
+    }
+
     protected Register getScopedRegister(String name) {
         return programBuilder.getRegister(threadCount, getScopedName(name));
     }
@@ -448,12 +452,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         visitChildren(body.stmt_list());
 
         if (inlineMode) {
-            final Label label = getOrNewLabel("END_OF_" + currentScope.getID());
-            addEvent(label);
-        } else {
-            //TODO: Do we even need an end marker for non-inlined functions?
-            final String funcName = ctx.proc_sign().Ident().getText();
-            final Label label = getOrNewLabel("END_OF_" + funcName);
+            final Label label = getOrNewEndOfScopeLabel();
             addEvent(label);
         }
 
@@ -620,7 +619,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitReturn_cmd(Return_cmdContext ctx) {
         if (inlineMode) {
-            final Label label = getOrNewLabel("END_OF_" + currentScope.getID());
+            final Label label = getOrNewEndOfScopeLabel();
             addEvent(EventFactory.newGoto(label));
         } else {
             final Register returnReg = getScopedRegister(currentReturnName);
@@ -650,7 +649,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newJumpUnless(cond, pairingLabel));
         } else if (inlineMode) {
             // if there is no pairing label, we terminate the thread (inline mode)
-            final Label endOfThread = getOrNewLabel("END_OF_T" + threadCount);
+            final Label endOfThread = programBuilder.getEndOfThreadLabel(threadCount);
             addEvent(EventFactory.newJumpUnless(cond, endOfThread));
         } else {
             // ... if we are not inlining, we instead create an abort
@@ -940,7 +939,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
             final IValue one = expressions.makeOne(expr.getType());
-            final Label end = getOrNewLabel("END_OF_T" + threadCount);
+            final Label end = programBuilder.getEndOfThreadLabel(threadCount);
             final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
             jump.addTags(Tag.EARLYTERMINATION);
             addEvent(jump);

@@ -71,7 +71,9 @@ public class ProgramBuilder {
     
     public Program build() {
         for (Thread thread : program.getThreads()) {
-            addChild(thread.getId(), getOrCreateLabel(thread.getId(), "END_OF_T" + thread.getId()));
+            final Label endOfThread = getEndOfThreadLabel(thread.getId());
+            assert endOfThread.getFunction() == null; // The terminator should not get inserted somewhere beforehand.
+            addChild(thread.getId(), endOfThread);
         }
         id2FunctionsMap.values().forEach(this::validateFunction);
 
@@ -228,6 +230,10 @@ public class ProgramBuilder {
         return fid2LabelsMap
                 .computeIfAbsent(funcId, k -> new SymbolTable<>())
                 .computeIfAbsent(name, EventFactory::newLabel);
+    }
+
+    public Label getEndOfThreadLabel(int tid) {
+        return getOrCreateLabel(tid, "END_OF_T" + tid);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
