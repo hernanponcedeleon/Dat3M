@@ -27,15 +27,14 @@ public class ExceptionsTest {
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        // Thread 1 does not exists
+        // Thread 1 does not exist
         pb.addChild(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Thread t = pb.build().getThreads().get(0);
+        Thread t = pb.newThread(0);
         t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
         t.newRegister("r1", types.getIntegerType());
@@ -44,7 +43,7 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void reorderAfterUnrollException() throws Exception {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        pb.initThread(0);
+        pb.newThread(0);
         Program p = pb.build();
         LoopUnrolling.newInstance().run(p);
         // Reordering cannot be called after unrolling
@@ -54,7 +53,7 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void analyzeBeforeUnrollException() throws Exception {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        pb.initThread(0);
+        pb.newThread(0);
         Program p = pb.build();
         Configuration config = Configuration.defaultConfiguration();
         // The program must be unrolled before being able to construct an Encoder for it

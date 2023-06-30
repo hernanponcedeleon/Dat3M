@@ -81,7 +81,7 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         if(ctx.threadId() != null) {
             return programBuilder.getOrErrorRegister(ctx.threadId().id,name);
         }
-        MemoryObject base = programBuilder.getObject(name);
+        MemoryObject base = programBuilder.getMemoryObject(name);
         checkState(base != null, "uninitialized location %s", name);
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());

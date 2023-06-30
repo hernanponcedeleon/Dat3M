@@ -85,7 +85,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusLISAParser.ThreadDeclaratorListContext ctx) {
         for (LitmusLISAParser.ThreadIdContext threadCtx : ctx.threadId()) {
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;
@@ -170,7 +170,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
     @Override
     public Object visitLocation(LitmusLISAParser.LocationContext ctx) {
-        return programBuilder.getOrNewObject(ctx.getText());
+        return programBuilder.getOrNewMemoryObject(ctx.getText());
     }
 
     @Override

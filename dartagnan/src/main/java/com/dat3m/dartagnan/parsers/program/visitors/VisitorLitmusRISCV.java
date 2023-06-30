@@ -90,7 +90,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusRISCVParser.ThreadDeclaratorListContext ctx) {
         for(LitmusRISCVParser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;

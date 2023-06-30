@@ -104,7 +104,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusAArch64Parser.ThreadDeclaratorListContext ctx) {
         for(LitmusAArch64Parser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;

@@ -93,7 +93,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusX86Parser.ThreadDeclaratorListContext ctx) {
         for(LitmusX86Parser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;
@@ -122,13 +122,13 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(register, object));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, constant));
     }
@@ -136,14 +136,14 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, register));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.X86.newExchange(object, register));
     }
 

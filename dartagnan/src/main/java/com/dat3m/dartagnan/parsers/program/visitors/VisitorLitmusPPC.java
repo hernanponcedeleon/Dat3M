@@ -108,7 +108,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusPPCParser.ThreadDeclaratorListContext ctx) {
         for(LitmusPPCParser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;

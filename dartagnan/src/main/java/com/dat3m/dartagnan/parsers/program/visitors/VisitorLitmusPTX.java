@@ -134,7 +134,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitStoreConstant(LitmusPTXParser.StoreConstantContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
         String mo = ctx.mo().content;
         String scope;
@@ -155,7 +155,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitStoreRegister(LitmusPTXParser.StoreRegisterContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Register register = (Register) ctx.register().accept(this);
         String mo = ctx.mo().content;
         String scope;
@@ -184,7 +184,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitLoadLocation(LitmusPTXParser.LoadLocationContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        MemoryObject location = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         String mo = ctx.mo().content;
         String scope;
         switch (mo) {
@@ -205,7 +205,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitAtomConstant(LitmusPTXParser.AtomConstantContext ctx) {
         Register register_destination = (Register) ctx.register().accept(this);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
@@ -223,7 +223,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitAtomRegister(LitmusPTXParser.AtomRegisterContext ctx) {
         Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().get(0).getText(), TypeFactory.getInstance().getArchType());
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Register register_operand = programBuilder.getOrNewRegister(mainThread, ctx.register().get(1).getText(), TypeFactory.getInstance().getArchType());
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
@@ -240,7 +240,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitRedConstant(LitmusPTXParser.RedConstantContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
@@ -257,7 +257,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitRedRegister(LitmusPTXParser.RedRegisterContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Register register_operand = (Register) ctx.register().accept(this);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;

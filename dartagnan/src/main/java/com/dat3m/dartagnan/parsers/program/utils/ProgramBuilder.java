@@ -32,7 +32,7 @@ import com.dat3m.dartagnan.utils.SymbolTable;
 import java.util.*;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 public class ProgramBuilder {
 
@@ -47,6 +47,8 @@ public class ProgramBuilder {
 
     private final Program program;
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // Construction
     private ProgramBuilder(SourceLanguage format) {
         this.program = new Program(new Memory(), format);
     }
@@ -61,14 +63,6 @@ public class ProgramBuilder {
         return new ProgramBuilder(format);
     }
 
-    public TypeFactory getTypeFactory() {
-        return types;
-    }
-
-    public ExpressionFactory getExpressionFactory() {
-        return expressions;
-    }
-    
     public Program build() {
         for (Thread thread : program.getThreads()) {
             final Label endOfThread = getEndOfThreadLabel(thread.getId());
@@ -82,47 +76,15 @@ public class ProgramBuilder {
         return program;
     }
 
-    public void initThread(String name, int tid) {
-        if(id2FunctionsMap.containsKey(tid)) {
-            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
-        }
-        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newSkip());
-        id2FunctionsMap.put(tid, thread);
-        program.addThread(thread);
+    // ----------------------------------------------------------------------------------------------------------------
+    // Misc
+
+    public TypeFactory getTypeFactory() {
+        return types;
     }
 
-    public Function initFunction(String name, int fid, FunctionType type, List<String> parameterNames) {
-        if(id2FunctionsMap.containsKey(fid)) {
-            throw new MalformedProgramException("Function or thread with id " + fid + " already exists.");
-        }
-        final Function func = new Function(name, type, parameterNames, fid, null);
-        id2FunctionsMap.put(fid, func);
-        program.addFunction(func);
-        return func;
-    }
-
-    public void initThread(int tid) {
-        initThread(String.valueOf(tid), tid);
-    }
-
-    public Thread getOrNewThread(int tid) {
-        if (!id2FunctionsMap.containsKey(tid)) {
-            initThread(tid);
-        }
-        return (Thread)id2FunctionsMap.get(tid);
-    }
-
-    public Event addChild(int fid, Event child) {
-        final Function func = id2FunctionsMap.get(fid);
-        if(func == null){
-            throw new MalformedProgramException("Function " + fid + " is not initialised");
-        }
-        func.append(child);
-        // Every event in litmus tests is non-optimisable
-        if(program.getFormat().equals(LITMUS)) {
-            child.addTags(Tag.NOOPT);
-        }
-        return child;
+    public ExpressionFactory getExpressionFactory() {
+        return expressions;
     }
 
     public void setAssert(AbstractAssert ass) {
@@ -134,40 +96,35 @@ public class ProgramBuilder {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Declarators
-    public void initLocEqLocPtr(String leftName, String rightName){
-        initLocEqConst(leftName, getOrNewObject(rightName));
+    // Threads and Functions
+
+    public Thread newThread(String name, int tid) {
+        if(id2FunctionsMap.containsKey(tid)) {
+            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
+        }
+        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newSkip());
+        id2FunctionsMap.put(tid, thread);
+        program.addThread(thread);
+        return thread;
     }
 
-    public void initLocEqLocVal(String leftName, String rightName){
-        initLocEqConst(leftName,getInitialValue(rightName));
+    public Function newFunction(String name, int fid, FunctionType type, List<String> parameterNames) {
+        if(id2FunctionsMap.containsKey(fid)) {
+            throw new MalformedProgramException("Function or thread with id " + fid + " already exists.");
+        }
+        final Function func = new Function(name, type, parameterNames, fid, null);
+        id2FunctionsMap.put(fid, func);
+        program.addFunction(func);
+        return func;
     }
 
-    public void initLocEqConst(String locName, IConst iValue){
-        getOrNewObject(locName).setInitialValue(0,iValue);
+    public Thread newThread(int tid) {
+        return newThread(String.valueOf(tid), tid);
     }
 
-    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
-        MemoryObject object = getOrNewObject(locName);
-        Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg, object));
+    public Thread getOrNewThread(int tid) {
+        return (Thread)id2FunctionsMap.computeIfAbsent(tid, this::newThread);
     }
-
-    public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
-        Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread,EventFactory.newLocal(reg,getInitialValue(locName)));
-    }
-
-    public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
-    }
-
-    private IConst getInitialValue(String name) {
-        return getOrNewObject(name).getInitialValue(0);
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Utility
 
     public boolean functionExists(int fid) {
         return id2FunctionsMap.containsKey(fid);
@@ -181,28 +138,79 @@ public class ProgramBuilder {
         throw new MalformedProgramException("Function or Thread with id " + fid + " does not exist");
     }
 
+    public Event addChild(int fid, Event child) {
+        final Function func = getFunctionOrError(fid);
+        func.append(child);
+        // Every event in litmus tests is non-optimisable
+        if(program.getFormat().equals(LITMUS)) {
+            child.addTags(Tag.NOOPT);
+        }
+        return child;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Memory & Constants
+
+    public MemoryObject getMemoryObject(String name) {
+        return locations.get(name);
+    }
+
+    public MemoryObject getOrNewMemoryObject(String name) {
+        final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
+        mem.setCVar(name);
+        return mem;
+    }
+
+    public MemoryObject newMemoryObject(String name, int size) {
+        checkState(!locations.containsKey(name),
+                "Illegal allocation. Memory object %s is already defined", name);
+        final MemoryObject mem = program.getMemory().allocate(size, true);
+        mem.setCVar(name);
+        locations.put(name, mem);
+        return mem;
+    }
+
     public INonDet newConstant(IntegerType type, boolean signed) {
         var constant = new INonDet(program.getConstants().size(), type, signed);
         program.addConstant(constant);
         return constant;
     }
 
-    public MemoryObject getObject(String name) {
-        return locations.get(name);
+    // ----------------------------------------------------------------------------------------------------------------
+    // Declarators
+    public void initLocEqLocPtr(String leftName, String rightName) {
+        initLocEqConst(leftName, getOrNewMemoryObject(rightName));
     }
 
-    public MemoryObject getOrNewObject(String name) {
-        MemoryObject object = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
-        object.setCVar(name);
-        return object;
+    public void initLocEqLocVal(String leftName, String rightName){
+        initLocEqConst(leftName,getInitialValue(rightName));
     }
 
-    public MemoryObject newObject(String name, int size) {
-        checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        MemoryObject result = program.getMemory().allocate(size, true);
-        locations.put(name, result);
-        return result;
+    public void initLocEqConst(String locName, IConst iValue){
+        getOrNewMemoryObject(locName).setInitialValue(0,iValue);
     }
+
+    public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
+        MemoryObject object = getOrNewMemoryObject(locName);
+        Register reg = getOrNewRegister(regThread, regName, type);
+        addChild(regThread, EventFactory.newLocal(reg, object));
+    }
+
+    public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
+        Register reg = getOrNewRegister(regThread, regName, type);
+        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
+    }
+
+    public void initRegEqConst(int regThread, String regName, IConst iValue){
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
+    }
+
+    private IConst getInitialValue(String name) {
+        return getOrNewMemoryObject(name).getInitialValue(0);
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Utility
 
     public Register getRegister(int fid, String name){
         return getFunctionOrError(fid).getRegister(name);
@@ -289,7 +297,7 @@ public class ProgramBuilder {
     }
 
     public void initVirLocEqLoc(String leftName, String rightName){
-        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getMemoryObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
@@ -300,7 +308,7 @@ public class ProgramBuilder {
     }
 
     public void initVirLocEqLocAliasGen(String leftName, String rightName){
-        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getMemoryObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
@@ -311,7 +319,7 @@ public class ProgramBuilder {
     }
 
     public void initVirLocEqLocAliasProxy(String leftName, String rightName){
-        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getObject(rightName);
+        VirtualMemoryObject rightLocation = (VirtualMemoryObject) getMemoryObject(rightName);
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }

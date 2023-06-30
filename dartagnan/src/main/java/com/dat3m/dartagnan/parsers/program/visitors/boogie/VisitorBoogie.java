@@ -247,7 +247,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // ----- TODO: Test code -----
         inlineMode = false;
         for (FunctionDeclaration decl : functionDeclarations) {
-            functions.add(programBuilder.initFunction(decl.funcName, ++threadCount,decl.funcType, decl.parameterNames));
+            functions.add(programBuilder.newFunction(decl.funcName, ++threadCount,decl.funcType, decl.parameterNames));
             visitProc_decl(decl.ctx(),  null);
         }
         resetScope();
@@ -326,7 +326,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 int size = declText.contains(":allocSize")
                         ? Integer.parseInt(declText.split(":allocSize")[1].split("}")[0])
                         : 1;
-                programBuilder.newObject(name, size);
+                programBuilder.newMemoryObject(name, size);
             } else {
                 final String typeString = ctx.typed_idents().type().getText();
                 final IntegerType type = Types.parseIntegerType(typeString, types);
@@ -351,7 +351,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 if (!doIgnoreVariable(name)) {
                     //TODO: This code never gets reached: it seems all global var declarations are
                     // Smack-specific and get skipped
-                    programBuilder.newObject(name, 1);
+                    programBuilder.newMemoryObject(name, 1);
                 }
             }
         }
@@ -366,10 +366,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final Type regType = decl.type;
 
         if (constantsTypeMap.containsKey(regName)) {
-            throw new ParsingException("Register " + regName + " is already defined as a constant");
+            throw new ParsingException("Register name" + regName + " conflicts with a global constant.");
         }
-        if (programBuilder.getObject(regName) != null) {
-            throw new ParsingException("Register " + regName + " is already defined globally");
+        if (programBuilder.getMemoryObject(regName) != null) {
+            throw new ParsingException("Register name " + regName + " conflicts with a global variable.");
         }
         // Declare new register
         getOrNewScopedRegister(regName, regType);
@@ -379,7 +379,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private void createThreadForProcedure(Proc_declContext ctx) {
         final String procName = ctx.proc_sign().Ident().getText();
-        programBuilder.initThread(procName, ++threadCount);
+        programBuilder.newThread(procName, ++threadCount);
         List<Expression> callingValues = new ArrayList<>();
         if (threadCount > 1) {
             // Used to allow execution of threads after they have been created (pthread_create)
@@ -598,7 +598,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 continue;
             }
 
-            final MemoryObject object = programBuilder.getObject(name);
+            final MemoryObject object = programBuilder.getMemoryObject(name);
             if (object != null) {
                 addEvent(EventFactory.newStore(object, value));
                 continue;
@@ -804,10 +804,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         if (threadLocalVariables.contains(name)) {
             //TODO: We cannot do this for non-inlined functions, because we don't have threads yet
-            return programBuilder.getOrNewObject(String.format("%s(%s)", name, threadCount));
+            return programBuilder.getOrNewMemoryObject(String.format("%s(%s)", name, threadCount));
         }
 
-        final MemoryObject object = programBuilder.getObject(name);
+        final MemoryObject object = programBuilder.getMemoryObject(name);
         if (object != null) {
             return object;
         }
@@ -861,7 +861,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                     text = split[split.length - 1];
                     text = text.substring(text.indexOf("(") + 1, text.indexOf(","));
                 }
-                programBuilder.getOrNewObject(text).appendInitialValue(rhs, value.reduce());
+                programBuilder.getMemoryObject(text).appendInitialValue(rhs, value.reduce());
                 return null;
             }
             addEvent(EventFactory.newStore(address, value));

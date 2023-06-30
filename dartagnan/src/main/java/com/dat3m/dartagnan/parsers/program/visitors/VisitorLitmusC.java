@@ -95,7 +95,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            MemoryObject object = programBuilder.getObject(rightName);
+            MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), object);
             } else {
@@ -113,7 +113,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
         } else {
             String rightName = ctx.varName(1).getText();
-            MemoryObject object = programBuilder.getObject(rightName);
+            MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
@@ -129,7 +129,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.newObject(name,size);
+            programBuilder.newMemoryObject(name,size);
             return null;
         }
         if(ctx.initArray() != null){
@@ -141,16 +141,16 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                     } else {
                         String varName = elCtx.varName().getText();
                         //see test/resources/arrays/ok/C-array-ok-17.litmus
-                        MemoryObject object = programBuilder.getObject(varName);
+                        MemoryObject object = programBuilder.getMemoryObject(varName);
                         if(object != null){
                             values.add(object);
                         } else {
-                            object = programBuilder.getOrNewObject(varName);
+                            object = programBuilder.getOrNewMemoryObject(varName);
                             values.add(elCtx.Ast() == null ? object : object.getInitialValue(0));
                         }
                     }
                 }
-                MemoryObject object = programBuilder.newObject(name,values.size());
+                MemoryObject object = programBuilder.newMemoryObject(name,values.size());
                 for(int i = 0; i < values.size(); i++) {
                     object.setInitialValue(i,values.get(i));
                 }
@@ -184,7 +184,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             int id = 0;
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                MemoryObject object = programBuilder.getOrNewObject(name);
+                MemoryObject object = programBuilder.getOrNewMemoryObject(name);
                 PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(id);
                 if(pType != null) {
                     BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
@@ -526,7 +526,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             if(register != null){
                 return register;
             }
-            MemoryObject object = programBuilder.getObject(ctx.getText());
+            MemoryObject object = programBuilder.getMemoryObject(ctx.getText());
             if(object != null){
                 register = programBuilder.getOrNewRegister(scope, null, archType);
                 programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
@@ -534,7 +534,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
         }
-        MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
+        MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), 1);
         Register register = programBuilder.getOrNewRegister(scope, null, archType);
         programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;
