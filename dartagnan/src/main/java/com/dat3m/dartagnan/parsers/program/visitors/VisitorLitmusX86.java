@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -21,15 +23,14 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     private final static ImmutableSet<String> fences = ImmutableSet.of(MFENCE);
 
-    private final TypeFactory types = TypeFactory.getInstance();
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.TSO);
+    private final TypeFactory types = programBuilder.getTypeFactory();
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = types.getArchType();
     private int mainThread;
     private int threadCount = 0;
 
-    public VisitorLitmusX86(ProgramBuilder pb){
-        this.programBuilder = pb;
+    public VisitorLitmusX86(){
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -179,7 +180,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitFence(LitmusX86Parser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
-        if(fences.contains(name)){
+        if(fences.contains(name)) {
             return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);

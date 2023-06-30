@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPTXParser;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -22,12 +24,11 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
-    private final ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.PTX);
     private int mainThread;
     private int threadCount = 0;
 
-    public VisitorLitmusPTX(ProgramBuilder pb) {
-        this.programBuilder = pb;
+    public VisitorLitmusPTX() {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -138,18 +139,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String scope;
         switch (mo) {
-            case Tag.PTX.WEAK:
+            case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
                 }
                 scope = Tag.PTX.SYS;
-                break;
-            case Tag.PTX.REL:
-            case Tag.PTX.RLX:
-                scope = ctx.scope().content;
-                break;
-            default:
-                throw new ParsingException("Store instruction doesn't support mo: " + mo);
+            }
+            case Tag.PTX.REL, Tag.PTX.RLX -> scope = ctx.scope().content;
+            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
         store.addTags(scope, ctx.store().storeProxy, Tag.PTX.CON);
@@ -163,18 +160,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String scope;
         switch (mo) {
-            case Tag.PTX.WEAK:
+            case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
                 }
                 scope = Tag.PTX.SYS;
-                break;
-            case Tag.PTX.REL:
-            case Tag.PTX.RLX:
-                scope = ctx.scope().content;
-                break;
-            default:
-                throw new ParsingException("Store instruction doesn't support mo: " + mo);
+            }
+            case Tag.PTX.REL, Tag.PTX.RLX -> scope = ctx.scope().content;
+            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, ctx.store().storeProxy);
@@ -195,18 +188,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String scope;
         switch (mo) {
-            case Tag.PTX.WEAK:
+            case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak load instruction doesn't need scope: " + ctx.scope().content);
                 }
                 scope = Tag.PTX.SYS;
-                break;
-            case Tag.PTX.ACQ:
-            case Tag.PTX.RLX:
-                scope = ctx.scope().content;
-                break;
-            default:
-                throw new ParsingException("Load instruction doesn't support mo: " + mo);
+            }
+            case Tag.PTX.ACQ, Tag.PTX.RLX -> scope = ctx.scope().content;
+            default -> throw new ParsingException("Load instruction doesn't support mo: " + mo);
         }
         Load load = EventFactory.newLoadWithMo(register, location, mo);
         load.addTags(scope, ctx.load().loadProxy);

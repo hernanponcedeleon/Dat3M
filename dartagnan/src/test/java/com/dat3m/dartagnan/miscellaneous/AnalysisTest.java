@@ -48,7 +48,7 @@ public class AnalysisTest {
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         b.initThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
@@ -112,7 +112,7 @@ public class AnalysisTest {
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
         MemoryObject x = b.newObject("x", 2);
         MemoryObject y = b.getOrNewObject("y");
@@ -160,7 +160,7 @@ public class AnalysisTest {
     }
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.newObject("x", 3);
         x.setInitialValue(0, x);
 
@@ -204,7 +204,7 @@ public class AnalysisTest {
     }
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         IntegerType type = types.getArchType();
         MemoryObject x = b.newObject("x", 3);
 
@@ -258,7 +258,7 @@ public class AnalysisTest {
     }
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.newObject("x", 3);
         x.setInitialValue(0, x);
 
@@ -302,7 +302,7 @@ public class AnalysisTest {
     }
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.getOrNewObject("x");
         MemoryObject y = b.getOrNewObject("y");
         MemoryObject z = b.getOrNewObject("z");
@@ -346,7 +346,7 @@ public class AnalysisTest {
     }
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.getOrNewObject("x");
         MemoryObject y = b.getOrNewObject("y");
         MemoryObject z = b.getOrNewObject("z");

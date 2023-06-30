@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
@@ -31,16 +30,15 @@ import static com.dat3m.dartagnan.program.event.Tag.C11;
 
 public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ProgramBuilder programBuilder;
-    private final IntegerType archType = TypeFactory.getInstance().getArchType();
+    private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
     private int currentThread;
     private int scope;
     private int ifId = 0;
     private Register returnRegister;
 
-    public VisitorLitmusC(ProgramBuilder pb){
-        this.programBuilder = pb;
+    public VisitorLitmusC(){
     }
 
     // ----------------------------------------------------------------------------------------------------------------

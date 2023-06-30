@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.parsers.LitmusPPCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPPCParser;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -35,16 +37,15 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 
     private final static ImmutableSet<String> fences = ImmutableSet.of(SYNC, LWSYNC, ISYNC);
 
-    private final TypeFactory types = TypeFactory.getInstance();
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.POWER);
+    private final TypeFactory types = programBuilder.getTypeFactory();
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = types.getArchType();
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private int mainThread;
     private int threadCount = 0;
 
-    public VisitorLitmusPPC(ProgramBuilder pb){
-        this.programBuilder = pb;
+    public VisitorLitmusPPC() {
     }
 
     // ----------------------------------------------------------------------------------------------------------------

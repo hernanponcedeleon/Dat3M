@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.*;
 import com.dat3m.dartagnan.parsers.program.boogie.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -56,9 +57,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private record VarDeclaration(String varName, Type type) { }
 
-    protected final TypeFactory types = TypeFactory.getInstance();
-    protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    protected ProgramBuilder programBuilder;
+    protected final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.BOOGIE);
+    protected final TypeFactory types = programBuilder.getTypeFactory();
+    protected final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+
     protected int threadCount = 0;
     protected int currentThread = 0;
     private Set<String> threadLocalVariables = new HashSet<String>();
@@ -110,8 +112,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     // ----- TODO: Test code end -----
 
 
-    public VisitorBoogie(ProgramBuilder pb) {
-        this.programBuilder = pb;
+    public VisitorBoogie() {
     }
 
     private final List<String> smackDummyVariables =

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -26,14 +26,14 @@ public class ExceptionsTest {
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         // Thread 1 does not exists
         pb.addChild(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         pb.initThread(0);
         Thread t = pb.build().getThreads().get(0);
         t.newRegister("r1", types.getIntegerType());
@@ -43,7 +43,7 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void reorderAfterUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         pb.initThread(0);
         Program p = pb.build();
         LoopUnrolling.newInstance().run(p);
@@ -53,7 +53,7 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void analyzeBeforeUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         pb.initThread(0);
         Program p = pb.build();
         Configuration config = Configuration.defaultConfiguration();

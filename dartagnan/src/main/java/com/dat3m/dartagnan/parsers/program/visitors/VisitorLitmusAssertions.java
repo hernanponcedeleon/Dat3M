@@ -1,16 +1,15 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
-import com.dat3m.dartagnan.program.specification.*;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.Location;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -18,11 +17,13 @@ import static com.google.common.base.Preconditions.checkState;
 public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
 
     private final ProgramBuilder programBuilder;
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final IntegerType archType = TypeFactory.getInstance().getArchType();
+    private final ExpressionFactory expressions;
+    private final IntegerType archType;
 
-    public VisitorLitmusAssertions(ProgramBuilder programBuilder){
+    public VisitorLitmusAssertions(ProgramBuilder programBuilder) {
         this.programBuilder = programBuilder;
+        this.expressions = programBuilder.getExpressionFactory();
+        this.archType = programBuilder.getTypeFactory().getArchType();
     }
 
     @Override

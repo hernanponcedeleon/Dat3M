@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
@@ -43,8 +44,18 @@ public class ProgramBuilder {
 
     private final Program program;
 
-    public ProgramBuilder(SourceLanguage format) {
+    private ProgramBuilder(SourceLanguage format) {
         this.program = new Program(new Memory(), format);
+    }
+
+    public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
+        final ProgramBuilder programBuilder = forLanguage(format);
+        programBuilder.program.setArch(arch);
+        return programBuilder;
+    }
+
+    public static ProgramBuilder forLanguage(SourceLanguage format) {
+        return new ProgramBuilder(format);
     }
 
     public TypeFactory getTypeFactory() {

@@ -20,7 +20,7 @@ class ParserLlvm implements ParserInterface {
 
         LLVMIRParser parser = new LLVMIRParser(tokenStream);
         parser.setErrorHandler(new BailErrorStrategy());
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         ParserRuleContext parserEntryPoint = parser.compilationUnit();
         VisitorLlvm visitor = new VisitorLlvm(pb);
 
