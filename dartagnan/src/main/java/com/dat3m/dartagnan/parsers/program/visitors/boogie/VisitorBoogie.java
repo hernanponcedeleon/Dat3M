@@ -227,7 +227,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         String nextThreadName = "main";
         do {
             resetScope();
-            createThreadForProcedure(procedures.get(nextThreadName),  threadCallingValues.get(threadCount));
+            createThreadForProcedure(procedures.get(nextThreadName));
 
             if (!pool.canCreate()) {
                 break;
@@ -256,13 +256,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         String name = ctx.proc_sign().Ident().getText();
         if (procedures.containsKey(name)) {
             throw new ParsingException("Procedure " + name + " is already defined");
-        }
-        if (name.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
-            threadCallingValues.put(threadCount, new ArrayList<>());
-            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
-                final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
-                threadCallingValues.get(threadCount).add(getOrNewScopedRegister(decl.varName, decl.type));
-            }
         }
         procedures.put(name, ctx);
 
@@ -380,21 +373,30 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return null;
     }
 
-    private void createThreadForProcedure(Proc_declContext ctx, List<Expression> callingValues) {
-        threadCount++;
+    private void createThreadForProcedure(Proc_declContext ctx) {
         final String procName = ctx.proc_sign().Ident().getText();
-        programBuilder.initThread(procName, threadCount);
-        if (threadCount != 1) {
+        programBuilder.initThread(procName, ++threadCount);
+        List<Expression> callingValues = new ArrayList<>();
+        if (threadCount > 1) {
             // Used to allow execution of threads after they have been created (pthread_create)
             final Expression pointer = pool.getPtrFromInt(threadCount);
             final Register reg = getOrNewScopedRegister(null);
             addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
+            callingValues = threadCallingValues.get(threadCount - 1);
+        } else if (threadCount == 1 && procName.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
+            // We create the first thread for main, and main has parameters.
+            // We cheat here and replace all thread parameters by themselves (cause there is no caller)
+            threadCallingValues.put(0, new ArrayList<>());
+            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
+                callingValues.add(getOrNewScopedRegister(decl.varName, decl.type));
+            }
         }
-
         // Traverse procedure body
         visitProc_decl(ctx, callingValues);
+        pairLabels.clear();
 
-        if (threadCount != 1) {
+        if (threadCount > 1) {
             // Used to mark the end of the execution of a thread (used by pthread_join)
             final Expression pointer = pool.getPtrFromInt(threadCount);
             addEvent(EventFactory.Pthread.newEnd(pointer));

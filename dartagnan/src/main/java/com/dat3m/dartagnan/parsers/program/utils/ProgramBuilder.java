@@ -27,6 +27,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.dat3m.dartagnan.utils.SymbolTable;
 
 import java.util.*;
 
@@ -41,8 +42,8 @@ public class ProgramBuilder {
             types.getFunctionType(types.getVoidType(), List.of());
 
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
-    private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
-    private final Map<String, MemoryObject> locations = new HashMap<>();
+    private final Map<Integer, SymbolTable<Label>> fid2LabelsMap = new HashMap<>();
+    private final SymbolTable<MemoryObject> locations = new SymbolTable<>();
 
     private final Program program;
 
@@ -72,7 +73,7 @@ public class ProgramBuilder {
         for (Thread thread : program.getThreads()) {
             addChild(thread.getId(), getOrCreateLabel(thread.getId(), "END_OF_T" + thread.getId()));
         }
-        id2FunctionsMap.values().forEach(this::validateLabels);
+        id2FunctionsMap.values().forEach(this::validateFunction);
 
         EventIdReassignment.newInstance().run(program);
         program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
@@ -225,37 +226,34 @@ public class ProgramBuilder {
 
     public Label getOrCreateLabel(int funcId, String name){
         return fid2LabelsMap
-                .computeIfAbsent(funcId, k -> new HashMap<>())
+                .computeIfAbsent(funcId, k -> new SymbolTable<>())
                 .computeIfAbsent(name, EventFactory::newLabel);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Private utility
 
-    private void validateLabels(Function function) throws MalformedProgramException {
-        Map<String, Label> funcLabels = new HashMap<>();
-        Set<String> referencedLabels = new HashSet<>();
-        Event e = function.getEntry();
-        Map<String, Label> labels = fid2LabelsMap.get(function.getId());
-        if (labels == null) {
-            return;
-        }
-        while(e != null){
-            if(e instanceof CondJump jump){
-                referencedLabels.add(jump.getLabel().getName());
-            } else if(e instanceof Label lb){
-                Label label = labels.remove(lb.getName());
-                if(label == null){
-                    throw new MalformedProgramException("Duplicated label " + lb.getName());
-                }
-                funcLabels.put(label.getName(), label);
+    private void validateFunction(Function function) throws MalformedProgramException {
+        Set<String> labelNames = new HashSet<>();
+        for (Event ev : function.getEvents()) {
+            if (ev.getFunction() != function) {
+                final String error = String.format("Event %s belongs to function %s but was found in function %s",
+                        ev, ev.getFunction(), function);
+                throw new MalformedProgramException(error);
             }
-            e = e.getSuccessor();
-        }
-
-        for(String labelName : referencedLabels){
-            if(!funcLabels.containsKey(labelName)){
-                throw new MalformedProgramException("Illegal jump to label " + labelName);
+            if (ev instanceof CondJump jump) {
+                if (jump.getFunction() != jump.getLabel().getFunction()) {
+                    final String error = String.format("Jump %s targets label %s of a different function",
+                            jump, jump.getLabel());
+                    throw new MalformedProgramException(error);
+                }
+            }
+            if (ev instanceof Label label) {
+                if (!labelNames.add(label.getName())) {
+                    final String error = String.format("Multiple labels with name %s in function %s",
+                            label.getName(), function);
+                    throw new MalformedProgramException(error);
+                }
             }
         }
     }
