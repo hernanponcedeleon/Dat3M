@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -78,6 +80,8 @@ public class MemoryAllocation implements ProgramProcessor {
     private void createInitEvents(Program program) {
         final List<Thread> threads = program.getThreads();
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
+        final TypeFactory types = TypeFactory.getInstance();
+        final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
         int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
@@ -91,7 +95,7 @@ public class MemoryAllocation implements ProgramProcessor {
 
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);
-                final Thread thread = new Thread(nextThreadId++, init);
+                final Thread thread = new Thread("Init", initThreadType, List.of(), nextThreadId++, init);
 
                 program.addThread(thread);
                 thread.setProgram(program);

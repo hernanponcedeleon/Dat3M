@@ -37,6 +37,8 @@ public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final FunctionType DEFAULT_THREAD_TYPE =
+            types.getFunctionType(types.getVoidType(), List.of());
 
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
@@ -81,7 +83,7 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
-        final Thread thread = new Thread(name, tid, EventFactory.newSkip());
+        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newSkip());
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
     }
@@ -266,7 +268,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         Skip threadEntry = EventFactory.newSkip();
-        PTXThread ptxThread = new PTXThread(name, id, threadEntry, gpuID, ctaID);
+        PTXThread ptxThread = new PTXThread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, gpuID, ctaID);
         id2FunctionsMap.put(id, ptxThread);
         program.addThread(ptxThread);
     }
