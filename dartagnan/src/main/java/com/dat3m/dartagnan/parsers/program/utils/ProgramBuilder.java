@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -34,87 +35,86 @@ import static com.google.common.base.Preconditions.checkArgument;
 public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private final Map<Integer, Function> functions = new HashMap<>();
-    private final Map<Integer, Map<String, Label>> function2LabelsMap = new HashMap<>();
-
-    private final Memory memory = new Memory();
+    private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
+    private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
-    private final List<INonDet> constants = new ArrayList<>();
 
-    private AbstractAssert ass;
-    private AbstractAssert assFilter;
-
-    private final SourceLanguage format;
+    private final Program program;
 
     public ProgramBuilder(SourceLanguage format) {
-        this.format = format;
+        this.program = new Program(new Memory(), format);
+    }
+
+    public TypeFactory getTypeFactory() {
+        return types;
+    }
+
+    public ExpressionFactory getExpressionFactory() {
+        return expressions;
     }
     
     public Program build() {
-        Program program = new Program(memory, format);
-        for (Function func : functions.values()) {
-            if (func instanceof Thread thread) {
-                addChild(thread.getId(), getOrCreateLabel(thread.getId(), "END_OF_T" + thread.getId()));
-                program.addThread(thread);
-            } else {
-                program.addFunction(func);
-            }
-            validateLabels(func);
+        for (Thread thread : program.getThreads()) {
+            addChild(thread.getId(), getOrCreateLabel(thread.getId(), "END_OF_T" + thread.getId()));
         }
+        id2FunctionsMap.values().forEach(this::validateLabels);
 
-        constants.forEach(program::addConstant);
-        program.setSpecification(ass);
-        program.setFilterSpecification(assFilter);
         EventIdReassignment.newInstance().run(program);
         program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         return program;
     }
 
     public void initThread(String name, int tid) {
-        if(!functions.containsKey(tid)){
-            Skip threadEntry = EventFactory.newSkip();
-            functions.putIfAbsent(tid, new Thread(name, tid, threadEntry));
+        if(id2FunctionsMap.containsKey(tid)) {
+            throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
+        final Thread thread = new Thread(name, tid, EventFactory.newSkip());
+        id2FunctionsMap.put(tid, thread);
+        program.addThread(thread);
     }
 
     public Function initFunction(String name, int fid, FunctionType type, List<String> parameterNames) {
-        if(!functions.containsKey(fid)){
-            functions.putIfAbsent(fid, new Function(name, type, parameterNames, fid, null));
-            return functions.get(fid);
+        if(id2FunctionsMap.containsKey(fid)) {
+            throw new MalformedProgramException("Function or thread with id " + fid + " already exists.");
         }
-        return null;
+        final Function func = new Function(name, type, parameterNames, fid, null);
+        id2FunctionsMap.put(fid, func);
+        program.addFunction(func);
+        return func;
     }
 
-    public void initThread(int tid){
+    public void initThread(int tid) {
         initThread(String.valueOf(tid), tid);
     }
 
+    public Thread getOrNewThread(int tid) {
+        if (!id2FunctionsMap.containsKey(tid)) {
+            initThread(tid);
+        }
+        return (Thread)id2FunctionsMap.get(tid);
+    }
+
     public Event addChild(int fid, Event child) {
-        if(!functions.containsKey(fid)){
+        final Function func = id2FunctionsMap.get(fid);
+        if(func == null){
             throw new MalformedProgramException("Function " + fid + " is not initialised");
         }
-        if (child.getThread() != null) {
-            //FIXME: This is a bad error message, but our tests require this for now.
-            final String error = String.format(
-                    "Trying to reinsert event %s from thread %s into thread %s",
-                    child, child.getThread().getId(), fid);
-            throw new MalformedProgramException(error);
-        }
-        functions.get(fid).append(child);
+        func.append(child);
         // Every event in litmus tests is non-optimisable
-        if(format.equals(LITMUS)) {
+        if(program.getFormat().equals(LITMUS)) {
             child.addTags(Tag.NOOPT);
         }
         return child;
     }
 
-    public void setAssert(AbstractAssert ass){
-        this.ass = ass;
+    public void setAssert(AbstractAssert ass) {
+        program.setSpecification(ass);
     }
 
-    public void setAssertFilter(AbstractAssert ass){
-        this.assFilter = ass;
+    public void setAssertFilter(AbstractAssert ass) {
+        program.setFilterSpecification(ass);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -153,9 +153,21 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Utility
 
+    public boolean functionExists(int fid) {
+        return id2FunctionsMap.containsKey(fid);
+    }
+
+    public Function getFunctionOrError(int fid) {
+        final Function function = id2FunctionsMap.get(fid);
+        if (function != null) {
+            return function;
+        }
+        throw new MalformedProgramException("Function or Thread with id " + fid + " does not exist");
+    }
+
     public INonDet newConstant(IntegerType type, boolean signed) {
-        var constant = new INonDet(constants.size(), type, signed);
-        constants.add(constant);
+        var constant = new INonDet(program.getConstants().size(), type, signed);
+        program.addConstant(constant);
         return constant;
     }
 
@@ -164,23 +176,20 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewObject(String name) {
-        MemoryObject object = locations.computeIfAbsent(name, k -> memory.allocate(1, true));
+        MemoryObject object = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
         object.setCVar(name);
         return object;
     }
 
     public MemoryObject newObject(String name, int size) {
         checkArgument(!locations.containsKey(name), "Illegal malloc. Array " + name + " is already defined");
-        MemoryObject result = memory.allocate(size, true);
-        locations.put(name,result);
+        MemoryObject result = program.getMemory().allocate(size, true);
+        locations.put(name, result);
         return result;
     }
 
     public Register getRegister(int fid, String name){
-        if(functions.containsKey(fid)){
-            return functions.get(fid).getRegister(name);
-        }
-        return null;
+        return getFunctionOrError(fid).getRegister(name);
     }
 
     public Register getOrNewRegister(int fid, String name) {
@@ -188,24 +197,21 @@ public class ProgramBuilder {
     }
 
     public Register getOrNewRegister(int fid, String name, Type type) {
-        initThread(fid); // FIXME: Scary code!
-        Function func = functions.get(fid);
+        Function func = getFunctionOrError(fid);
         Register register = name == null ? func.newRegister(type) : func.getRegister(name);
         return register != null ? register : func.newRegister(name, type);
     }
 
-    public Register getOrErrorRegister(int fid, String name){
-        if(functions.containsKey(fid)){
-            Register register = functions.get(fid).getRegister(name);
-            if(register != null){
-                return register;
-            }
+    public Register getOrErrorRegister(int fid, String name) {
+        final Register register = getFunctionOrError(fid).getRegister(name);
+        if (register != null) {
+            return register;
         }
         throw new IllegalStateException("Register " + fid + ":" + name + " is not initialised");
     }
 
     public Label getOrCreateLabel(int funcId, String name){
-        return function2LabelsMap
+        return fid2LabelsMap
                 .computeIfAbsent(funcId, k -> new HashMap<>())
                 .computeIfAbsent(name, EventFactory::newLabel);
     }
@@ -217,7 +223,7 @@ public class ProgramBuilder {
         Map<String, Label> funcLabels = new HashMap<>();
         Set<String> referencedLabels = new HashSet<>();
         Event e = function.getEntry();
-        Map<String, Label> labels = function2LabelsMap.get(function.getId());
+        Map<String, Label> labels = fid2LabelsMap.get(function.getId());
         if (labels == null) {
             return;
         }
@@ -245,10 +251,13 @@ public class ProgramBuilder {
     // PTX
 
     public void initScopedThread(String name, int id, int ctaID, int gpuID) {
-        if(!functions.containsKey(id)){
-            Skip threadEntry = EventFactory.newSkip();
-            functions.putIfAbsent(id, new PTXThread(name, id, threadEntry, gpuID, ctaID));
+        if(id2FunctionsMap.containsKey(id)) {
+            throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
+        Skip threadEntry = EventFactory.newSkip();
+        PTXThread ptxThread = new PTXThread(name, id, threadEntry, gpuID, ctaID);
+        id2FunctionsMap.put(id, ptxThread);
+        program.addThread(ptxThread);
     }
 
     public void initScopedThread(int id, int ctaID, int gpuID) {
@@ -257,7 +266,7 @@ public class ProgramBuilder {
 
     public void initVirLocEqCon(String leftName, IConst iValue){
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->memory.allocateVirtual(1, true, true, null));
+                leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);
         object.setInitialValue(0, iValue);
     }
@@ -268,7 +277,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->memory.allocateVirtual(1, true, true, null));
+                k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
@@ -279,7 +288,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->memory.allocateVirtual(1, true, true, rightLocation));
+                k->program.getMemory().allocateVirtual(1, true, true, rightLocation));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
@@ -290,7 +299,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->memory.allocateVirtual(1, true, false, rightLocation));
+                leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }

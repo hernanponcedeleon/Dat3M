@@ -795,7 +795,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return new Register(name, Register.NO_FUNCTION, type);
         }
 
-        final Register register = getScopedRegister(name);
+        final Register register = programBuilder.functionExists(threadCount) ? getScopedRegister(name) : null;
         if (register != null) {
             return register;
         }
