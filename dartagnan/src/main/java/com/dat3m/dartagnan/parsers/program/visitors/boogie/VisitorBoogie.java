@@ -298,7 +298,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             returnType = types.getVoidType();
         }
 
-        final FunctionType functionType = FunctionType.get(returnType, parameterTypes.toArray(new Type[0]));
+        final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
 
         //System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
         functionDeclarations.add(new FunctionDeclaration(name, functionType, parameterNames, ctx));
