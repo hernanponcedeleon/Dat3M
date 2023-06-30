@@ -65,13 +65,12 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress());
         load.addTags(C11.PTHREAD);
 
         return tagList(eventSequence(
                 load,
-                newJump(expressions.makeNEQ(resultRegister, zero),
+                newJump(expressions.makeBooleanCast(resultRegister),
                         (Label) e.getThread().getExit())
         ));
     }

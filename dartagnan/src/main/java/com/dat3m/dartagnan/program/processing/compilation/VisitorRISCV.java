@@ -71,13 +71,12 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(C11.PTHREAD);
 
         return eventSequence(
                 load,
-                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
         );
     }
 
@@ -541,7 +540,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, e.getValue(), moStore, true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
+        Event fakeCtrlDep = newJumpUnless(expressions.makeBooleanCast(statusReg), label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -606,7 +605,7 @@ class VisitorRISCV extends VisitorBase {
                 mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, expressions.makeZero(type)), label);
+        Event fakeCtrlDep = newJumpUnless(expressions.makeBooleanCast(statusReg), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
@@ -631,7 +630,6 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
         Register resultRegister = e.getResultRegister();
         Type type = resultRegister.getType();
-        Expression zero = expressions.makeZero(type);
         Expression address = e.getAddress();
         String mo = e.getMo();
 
@@ -642,7 +640,7 @@ class VisitorRISCV extends VisitorBase {
         Store store = RISCV.newRMWStoreConditional(address, dummy, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "", true);
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newJump(expressions.makeEQ(statusReg, zero), label);
+        Event fakeCtrlDep = newJumpUnless(expressions.makeBooleanCast(statusReg), label);
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
@@ -686,7 +684,7 @@ class VisitorRISCV extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, expressions.makeZero(type)), cauEnd);
+        CondJump branchOnCauCmpResult = newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
@@ -720,7 +718,7 @@ class VisitorRISCV extends VisitorBase {
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
         Local localOp = newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, mo.equals(Tag.Linux.MO_MB) ? Tag.RISCV.MO_REL : "");
-        Local testOp = newLocal(resultRegister, expressions.makeEQ(dummy, expressions.makeZero(dummy.getType())));
+        Local testOp = newLocal(resultRegister, expressions.makeNot(expressions.makeBooleanCast(dummy)));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;

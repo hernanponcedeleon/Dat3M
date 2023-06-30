@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -61,7 +62,10 @@ public class StdProcedures {
             // FIXME: In noinline mode, we cannot resolve the tId yet.
             final String registerName = ctx.call_params().Ident(0).getText();
             final Register register = visitor.getScopedRegister(registerName);
-            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
+            if (!(register.getType() instanceof IntegerType integerType)) {
+                throw new ParsingException("Fetching get_my_tid with non-integer register.");
+            }
+            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), integerType);
             visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }

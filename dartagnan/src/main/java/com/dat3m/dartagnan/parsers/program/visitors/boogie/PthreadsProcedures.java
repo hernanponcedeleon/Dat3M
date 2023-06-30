@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
@@ -90,9 +91,10 @@ public class PthreadsProcedures {
         visitor.allocations.add(pointer);
         visitor.addEvent(EventFactory.Pthread.newCreate(pointer, threadName));
 
+        final IntegerType type = visitor.types.getArchType();
         final String regName = ctx.call_params().Ident(0).getText();
-        final Register reg = visitor.getOrNewScopedRegister(regName);
-        final Expression zero = visitor.expressions.makeZero(reg.getType());
+        final Register reg = visitor.getOrNewScopedRegister(regName, type);
+        final Expression zero = visitor.expressions.makeZero(type);
         visitor.addEvent(EventFactory.newLocal(reg, zero));
     }
 

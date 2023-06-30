@@ -60,48 +60,16 @@ public final class ExpressionFactory {
         return makeValue(BigInteger.ZERO, type);
     }
 
-    @Deprecated
-    public IValue makeZero(Type type) {
-        if (type instanceof IntegerType t) {
-            return makeZero(t);
-        }
-        throw new IllegalArgumentException("Non-integer type " + type);
-    }
-
     public IValue makeOne(IntegerType type) {
         return makeValue(BigInteger.ONE, type);
-    }
-
-    @Deprecated
-    public IValue makeOne(Type type) {
-        if (type instanceof IntegerType t) {
-            return makeOne(t);
-        }
-        throw new IllegalArgumentException("Non-integer type " + type);
     }
 
     public IValue parseValue(String text, IntegerType type) {
         return makeValue(new BigInteger(text), type);
     }
 
-    @Deprecated
-    public IValue parseValue(String text, Type type) {
-        if (type instanceof IntegerType t) {
-            return parseValue(text, t);
-        }
-        throw new IllegalArgumentException("Non-integer type " + type);
-    }
-
     public IValue makeValue(BigInteger value, IntegerType type) {
         return new IValue(value, type);
-    }
-
-    @Deprecated
-    public IValue makeValue(BigInteger value, Type type) {
-        if (type instanceof IntegerType t) {
-            return makeValue(value, t);
-        }
-        throw new IllegalArgumentException("Non-integer type " + type);
     }
 
     public Expression makeCast(Expression expression, Type type) {
@@ -125,7 +93,7 @@ public final class ExpressionFactory {
         }
         Preconditions.checkArgument(operandType instanceof IntegerType,
                 "makeBoolean with unknown-typed operand %s.", operand);
-        return makeNEQ(operand, makeZero(operandType));
+        return makeNEQ(operand, makeZero((IntegerType) operandType));
     }
 
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {

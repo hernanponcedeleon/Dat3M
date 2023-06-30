@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -51,13 +50,12 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        IValue zero = expressions.makeZero(resultRegister.getType());
         Load load = newCoreLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
 
         return eventSequence(
                 load,
-                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
         );
     }
 
@@ -177,7 +175,7 @@ public class VisitorLKMM extends VisitorBase {
                 load,
                 newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.MO_ONCE),
-                newLocal(e.getResultRegister(), expressions.makeEQ(dummy, expressions.makeZero(dummy.getType()))),
+                newLocal(e.getResultRegister(), expressions.makeNot(expressions.makeBooleanCast(dummy))),
                 newCoreMemoryBarrier()
         );
     }
@@ -247,13 +245,13 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
         Register dummy = e.getFunction().newRegister(types.getArchType());
-        Expression zero = expressions.makeZero(dummy.getType());
+        Expression nonzeroDummy = expressions.makeBooleanCast(dummy);
 
         Load lockRead = newLockRead(dummy, e.getLock());
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
-                newAssume(expressions.makeEQ(dummy, zero)) :
-                newJump(expressions.makeNEQ(dummy, zero), (Label) e.getThread().getExit());
+                newAssume(expressions.makeNot(nonzeroDummy)) :
+                newJump(nonzeroDummy, (Label) e.getThread().getExit());
         return eventSequence(
                 lockRead,
                 checkLockValue,

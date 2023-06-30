@@ -48,13 +48,12 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
         load.addTags(C11.PTHREAD);
 
         return tagList(eventSequence(
                 load,
-                newJumpUnless(expressions.makeEQ(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
         ));
     }
 

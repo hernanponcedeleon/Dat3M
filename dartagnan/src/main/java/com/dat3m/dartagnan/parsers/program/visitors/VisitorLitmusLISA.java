@@ -161,8 +161,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitJump(LitmusLISAParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
-		Expression one = expressions.makeOne(reg.getType());
-        Expression cond = expressions.makeEQ(reg, one);
+        Expression cond = expressions.makeBooleanCast(reg);
 		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
 		return null;
 	}
