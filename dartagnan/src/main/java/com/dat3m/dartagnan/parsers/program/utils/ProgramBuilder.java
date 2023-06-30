@@ -123,7 +123,10 @@ public class ProgramBuilder {
     }
 
     public Thread getOrNewThread(int tid) {
-        return (Thread)id2FunctionsMap.computeIfAbsent(tid, this::newThread);
+        if (!id2FunctionsMap.containsKey(tid)) {
+            return newThread(tid);
+        }
+        return (Thread) id2FunctionsMap.get(tid);
     }
 
     public boolean functionExists(int fid) {

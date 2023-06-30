@@ -64,7 +64,7 @@ public class Function {
     public Event getExit() { return exit; }
 
     public List<Event> getEvents() {
-        return entry.getSuccessors();
+        return entry == null ? List.of() : entry.getSuccessors();
     }
 
     public <T extends Event> List<T> getEvents(Class<T> cls) {
