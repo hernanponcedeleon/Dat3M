@@ -122,7 +122,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        MemoryObject object = programBuilder.getMemoryObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(register, object));
     }
 
