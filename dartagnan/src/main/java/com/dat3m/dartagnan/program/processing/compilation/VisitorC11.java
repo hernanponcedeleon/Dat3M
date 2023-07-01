@@ -30,6 +30,8 @@ public class VisitorC11 extends VisitorBase {
         Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
         store.addTags(C11.PTHREAD);
 
+        e.replaceAllUsages(store); // The store represents the creation event
+
         return tagList(eventSequence(
                 store
         ));

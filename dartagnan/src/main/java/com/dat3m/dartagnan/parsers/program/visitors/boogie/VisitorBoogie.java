@@ -394,7 +394,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             // Used to allow execution of threads after they have been created (pthread_create)
             final Expression pointer = pool.getPtrFromInt(threadCount);
             final Register reg = getOrNewScopedRegister(null);
-            addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
+            addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getThreadCreator(pool.getPtrFromInt(threadCount))));
             callingValues = threadCallingValues.get(threadCount - 1);
         }
         // Traverse procedure body

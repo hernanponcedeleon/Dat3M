@@ -14,12 +14,7 @@ public class PthreadPool {
     private final Map<Expression, List<String>> mapPtrName = new HashMap<>();
     private final Map<Expression, List<Integer>> mapPtrCreator = new HashMap<>();
     private final Map<Integer, Expression> mapIntPtr = new HashMap<>();
-    // This is needed during the compilation pass to match a Start
-    // with its corresponding Create. Both events access the same address,
-    // i.e. the communication channel (cc), which we only use for modeling
-    // purposes. During the compilation of Start the Create was already
-    // compiled and thus we use an annotation event which remains after the compilation."
-    private final Map<Expression, Event> mapCcMatcher = new HashMap<>();
+    private final Map<Expression, Event> mapCreator = new HashMap<>();
 
     public void add(Expression ptr, String name, int creator) {
         threads.add(ptr);
@@ -51,12 +46,12 @@ public class PthreadPool {
         return threads.remove(0);
     }
 
-    public void addMatcher(Expression cc, Event e) {
-        mapCcMatcher.put(cc, e);
+    public void addThreadCreator(Expression cc, Event e) {
+        mapCreator.put(cc, e);
     }
 
-    public Event getMatcher(Expression cc) {
-        return mapCcMatcher.get(cc);
+    public Event getThreadCreator(Expression cc) {
+        return mapCreator.get(cc);
     }
 
 }

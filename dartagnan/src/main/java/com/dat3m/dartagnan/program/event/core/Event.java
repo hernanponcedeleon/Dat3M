@@ -79,6 +79,7 @@ public interface Event extends Encoder, Comparable<Event> {
     Set<EventUser> getUsers();
     boolean registerUser(EventUser user);
     boolean removeUser(EventUser user);
+    void replaceAllUsages(Event replacement);
 
     @Override
     int compareTo(Event e);

@@ -79,15 +79,14 @@ public class PthreadsProcedures {
         final String regName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getOrNewScopedRegister(regName);
         final Expression zero = visitor.expressions.makeZero(reg.getType());
-        final Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
+        final Event pthreadCreate = EventFactory.Pthread.newCreate(pointer, threadName);
 
         visitor.threadCallingValues.put(visitor.threadCallingValues.size(), List.of(callingValue));
         visitor.pool.add(pointer, threadName, visitor.threadCount);
         visitor.allocations.add(pointer);
-        visitor.pool.addMatcher(pointer, matcher);
+        visitor.pool.addThreadCreator(pointer, pthreadCreate);
 
-        visitor.addEvent(matcher);
-        visitor.addEvent(EventFactory.Pthread.newCreate(pointer, threadName));
+        visitor.addEvent(pthreadCreate);
         visitor.addEvent(EventFactory.newLocal(reg, zero));
     }
 

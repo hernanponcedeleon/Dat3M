@@ -65,6 +65,12 @@ public abstract class AbstractEvent implements Event {
     @Override
     public boolean removeUser(EventUser user) { return this.currentUsers.remove(user); }
 
+    @Override
+    public void replaceAllUsages(Event replacement) {
+        final Map<Event, Event> replacementMap = Map.of(this, replacement);
+        getUsers().forEach(e -> e.updateReferences(replacementMap));
+    }
+
     // ============================================ Metadata ============================================
 
     @Override
