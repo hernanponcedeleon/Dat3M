@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -60,47 +61,46 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.BOOGIE);
     protected final TypeFactory types = programBuilder.getTypeFactory();
     protected final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    protected final ExprSimplifier exprSimplifier = new ExprSimplifier();
+
+    private final Map<String, Proc_declContext> procedures = new HashMap<>();
+    private final Map<String, BoogieFunction> boogieFunctions = new HashMap<>();
+    private final Map<String, Expression> constantsValueMap = new HashMap<>();
+    private final Map<String, ConstantSymbol> name2ConstantSymbolMap = new HashMap<>();
+    private final Set<String> threadLocalVariables = new HashSet<>();
 
     protected int threadCount = 0;
+
     protected int currentThread = 0;
-    private Set<String> threadLocalVariables = new HashSet<String>();
+    private BoogieFunctionCall currentCall = null;
+    private Label currentLabel = null;
+    protected BeginAtomic currentBeginAtomic = null;
+    private String currentReturnRegName = null;
+
+    private final Deque<Register> returnRegister = new ArrayDeque<>();
+
+    // We use <pairLabels> to connect labels of a "goto l1, l2" statement.
+    private final Map<Label, Label> pairLabels = new HashMap<>();
+
+    // Improves performance by initializing Locations rather than creating new write events
+    private boolean initMode = false;
+    protected Call_cmdContext atomicMode = null;
+
+
+    protected int assertionIndex = 0;
 
     protected int currentLine = -1;
     protected String sourceCodeFile = "";
 
-    // We use <pairLabels> to connect labels of a "goto l1, l2" statement.
-    private Label currentLabel = null;
-    private final Map<Label, Label> pairLabels = new HashMap<>();
-
-    private final Map<String, BoogieFunction> boogieFunctions = new HashMap<>();
-    private BoogieFunctionCall currentCall = null;
-
-    // Improves performance by initializing Locations rather than creating new write events
-    private boolean initMode = false;
-
-    private final Map<String, Proc_declContext> procedures = new HashMap<>();
-
     private int nextScopeID = 0;
     protected Scope currentScope = new Scope(nextScopeID, null);
 
-    private final List<Register> returnRegister = new ArrayList<>();
-    private String currentReturnName = null;
-
-    private final Map<String, Expression> constantsMap = new HashMap<>();
-    private final Map<String, IntegerType> constantsTypeMap = new HashMap<>();
-
-    protected int assertionIndex = 0;
-
-    protected BeginAtomic currentBeginAtomic = null;
-    protected Call_cmdContext atomicMode = null;
-
-    private final ExprSimplifier exprSimplifier = new ExprSimplifier();
 
     // TODO: clean up
     protected final List<ThreadCreation> threadCreations = new ArrayList<>();
     //FIXME: This map is cheating: we use it to associate an address expression "p" with a thread creation,
     // so that when we encounter a "load(p)", we treat it as a pthread_join with the p
-    protected final Map<Expression, Expression> expr2Tid = new HashMap<>();
+    protected final Map<Expression, Expression> expr2tid = new HashMap<>();
 
     protected Expression getNewCommunicationAddress(String name) {
         return programBuilder.getOrNewMemoryObject(name);
@@ -355,11 +355,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitAxiom_decl(Axiom_declContext ctx) {
-        Expression exp = (Expression) ctx.proposition().accept(this);
-        if (exp instanceof Atom atom && atom.getLHS() instanceof Register reg && atom.getOp().equals(EQ)) {
-            final String name = reg.getName();
-            final Expression def = atom.getRHS();
-            constantsMap.put(name, def);
+        final Expression exp = (Expression) ctx.proposition().accept(this);
+        if (exp instanceof Atom atom && atom.getLHS() instanceof ConstantSymbol c && atom.getOp().equals(EQ)) {
+            constantsValueMap.put(c.name, atom.getRHS());
         }
         return null;
     }
@@ -380,7 +378,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             } else {
                 final String typeString = ctx.typed_idents().type().getText();
                 final IntegerType type = Types.parseIntegerType(typeString, types);
-                constantsTypeMap.put(name, type);
+                name2ConstantSymbolMap.put(name, new ConstantSymbol(type, name));
             }
         }
         return null;
@@ -415,7 +413,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final String regName = decl.varName;
         final Type regType = decl.type;
 
-        if (constantsTypeMap.containsKey(regName)) {
+        if (name2ConstantSymbolMap.containsKey(regName)) {
             throw new ParsingException("Register name" + regName + " conflicts with a global constant.");
         }
         if (programBuilder.getMemoryObject(regName) != null) {
@@ -456,10 +454,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (ctx.proc_sign().proc_sign_out() != null) {
             final VarDeclaration decl = parseVarDeclaration(
                     ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres().attr_typed_idents_where(0).getText());
-            currentReturnName = decl.varName;
+            currentReturnRegName = decl.varName;
             if (!inlineMode) {
                 // When not inlining, we properly handle the return parameter
-                getOrNewScopedRegister(currentReturnName, decl.type);
+                getOrNewScopedRegister(currentReturnRegName, decl.type);
             }
         }
 
@@ -538,13 +536,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // TODO: double check this
         // Some procedures might have an empty implementation.
         // There will be no return for them.
-        if (ctx.call_params().Define() != null && procedures.get(funcName).impl_body() != null) {
-            final Register register = getScopedRegister(ctx.call_params().Ident(0).getText());
-            if (register != null) {
-                returnRegister.add(register);
-            }
-        }
-
         final List<Expression> callArguments = new ArrayList<>();
         if (ctx.call_params().exprs() != null) {
             ctx.call_params().exprs().expr().stream()
@@ -552,9 +543,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
 
         if (inlineMode) {
+            boolean hasRetReg = false;
+            if (ctx.call_params().Define() != null && procedures.get(funcName).impl_body() != null) {
+                final Register register = getScopedRegister(ctx.call_params().Ident(0).getText());
+                if (register != null) {
+                    returnRegister.push(register);
+                    hasRetReg = true;
+                }
+            }
             addEvent(EventFactory.newFunctionCall(funcName));
             visitProc_decl(procedures.get(funcName), callArguments);
             addEvent(EventFactory.newFunctionReturn(funcName));
+            if (hasRetReg) {
+                returnRegister.pop();
+            }
         } else {
             // ----- TODO: Test code -----
             final Function func = functions.stream().filter(f -> f.getName().equals(funcName))
@@ -564,7 +566,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 if (func.getFunctionType().getReturnType().equals(types.getVoidType())) {
                     funcCall = EventFactory.newVoidFunctionCall(func, callArguments);
                 } else {
-                    final Register resultReg = returnRegister.get(returnRegister.size() - 1);
+                    final Register resultReg = getScopedRegister(ctx.call_params().Ident(0).getText());;
                     funcCall = EventFactory.newValueFunctionCall(resultReg, func, callArguments);
                 }
                 addEvent(funcCall);
@@ -589,54 +591,49 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (ctx.Ident().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
         }
-        for (int i = 0; i < ctx.Ident().size(); i++) {
-            final String name = ctx.Ident(i).getText();
-            final Expression value = (Expression) exprs.expr(i).accept(this);
-            if (value == null || doIgnoreVariable(name)) {
-                continue;
-            }
 
-            if (constantsTypeMap.containsKey(name)) {
-                throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
-            }
-            if (initMode) {
-                programBuilder.initLocEqConst(name, value.reduce());
-                continue;
-            }
-            final Register register = getScopedRegister(name);
-            if (register != null) {
-                final Event child;
-                if (!ctx.getText().contains("$load.")) {
-                    child = EventFactory.newLocal(register, value.visit(exprSimplifier));
-                } else if (expr2Tid.containsKey(value)) {
-                    //FIXME: Technically, this load should be a proper load which reads the tid stored at address <value>
-                    // We cheat here and do a form of constant propagation, directly setting "reg := tid"
-                    // The value of this load is usually passed to a pthread_join call
-                    child = EventFactory.newLocal(register, expr2Tid.get(value));
-                    expr2Tid.put(register, expr2Tid.get(value)); // Remember "reg == tid".
-                } else {
-                    child = EventFactory.newLoad(register, value);
-                }
-                addEvent(child);
-                continue;
-            }
-
-            final MemoryObject object = programBuilder.getMemoryObject(name);
-            if (object != null) {
-                addEvent(EventFactory.newStore(object, value));
-                continue;
-            }
-
-            if (currentReturnName.equals(name)) {
-                if (!returnRegister.isEmpty()) {
-                    Register ret = returnRegister.remove(returnRegister.size() - 1);
-                    addEvent(EventFactory.newLocal(ret, value));
-                }
-                continue;
-            }
-            throw new ParsingException("Variable " + name + " is not defined");
+        final String name = ctx.Ident(0).getText();
+        final Expression value = (Expression) exprs.expr(0).accept(this);
+        if (value == null || doIgnoreVariable(name)) {
+            return null;
         }
-        return null;
+
+        if (name2ConstantSymbolMap.containsKey(name)) {
+            throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
+        }
+        if (initMode) {
+            programBuilder.initLocEqConst(name, value.reduce());
+            return null;
+        }
+        final Register register = getScopedRegister(name);
+        if (register != null) {
+            final Event child;
+            if (!ctx.getText().contains("$load.")) {
+                child = EventFactory.newLocal(register, value.visit(exprSimplifier));
+            } else if (expr2tid.containsKey(value)) {
+                //FIXME: Technically, this load should be a proper load which reads the tid stored at address <value>
+                // We cheat here and do a form of constant propagation, directly setting "reg := tid"
+                // The value of this load is usually passed to a pthread_join call
+                child = EventFactory.newLocal(register, expr2tid.get(value));
+                expr2tid.put(register, expr2tid.get(value)); // Remember "reg == tid".
+            } else {
+                child = EventFactory.newLoad(register, value);
+            }
+            addEvent(child);
+            return null;
+        }
+
+        final MemoryObject object = programBuilder.getMemoryObject(name);
+        if (object != null) {
+            addEvent(EventFactory.newStore(object, value));
+            return null;
+        }
+
+        if (currentReturnRegName.equals(name)) {
+            addEvent(EventFactory.newLocal(returnRegister.peek(), value));
+            return null;
+        }
+        throw new ParsingException("Variable " + name + " is not defined");
     }
 
     @Override
@@ -645,7 +642,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             final Label label = getOrNewEndOfScopeLabel();
             addEvent(EventFactory.newGoto(label));
         } else {
-            final Register returnReg = getScopedRegister(currentReturnName);
+            final Register returnReg = getScopedRegister(currentReturnRegName);
             addEvent(EventFactory.newFunctionReturn(returnReg));
         }
         return null;
@@ -811,13 +808,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             // NOTE: This notion of "function" refers to Boogie functions
             return currentCall.getArgumentForParameter(ctx);
         }
-        if (constantsMap.containsKey(name)) {
-            return constantsMap.get(name);
+        if (constantsValueMap.containsKey(name)) {
+            return constantsValueMap.get(name);
         }
-        if (constantsTypeMap.containsKey(name)) {
-            // Dummy register needed to parse axioms
-            IntegerType type = constantsTypeMap.get(name);
-            return new Register(name, Register.NO_FUNCTION, type);
+
+        if (name2ConstantSymbolMap.containsKey(name)) {
+            return name2ConstantSymbolMap.get(name);
         }
 
         final Register register = programBuilder.functionExists(currentThread) ? getScopedRegister(name) : null;
@@ -1012,5 +1008,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                                  List<Expression> arguments,
                                  Event creationEvent,
                                  Expression communicationAddress) {}
+
+    private record ConstantSymbol(Type type, String name) implements Expression {
+        @Override
+        public Type getType() { return type; }
+
+        @Override
+        public <T> T visit(ExpressionVisitor<T> visitor) {
+            return null;
+        }
+
+    }
 
 }

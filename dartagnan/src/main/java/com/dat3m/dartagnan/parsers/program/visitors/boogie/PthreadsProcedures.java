@@ -82,7 +82,7 @@ public class PthreadsProcedures {
         Expression threadToJoinWith = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         //FIXME: The first parameter should be a proper register, but we do not know its constant value here
         // so we loop it up in a map.
-        threadToJoinWith = visitor.expr2Tid.getOrDefault(threadToJoinWith, threadToJoinWith);
+        threadToJoinWith = visitor.expr2tid.getOrDefault(threadToJoinWith, threadToJoinWith);
 
         if (!(threadToJoinWith instanceof IConst constId)) {
             throw new UnsupportedOperationException("Cannot handle pthread_join with dynamic thread parameter.");
@@ -121,12 +121,13 @@ public class PthreadsProcedures {
         visitor.addEvent(threadCreationEvent);
         /*
         FIXME: Technically, we should store the thread id into <threadAddr> (the first argument of pthread_create),
-          but instead we store the value in a special map.
+          but instead we store the value in a special map to do a sort of "constant propagation" to handle pthread_join
+          statically.
           This allows us to replace "reg := load(threadAddr)" by "reg := tid" in a form of "constant propagation".
         visitor.addEvent(EventFactory.newStore(threadAddr,
                 visitor.expressions.makeValue(BigInteger.valueOf(nextTid), visitor.types.getArchType())));
         */
-        visitor.expr2Tid.put(threadAddr, tIdExpr); // Substitute for the store
+        visitor.expr2tid.put(threadAddr, tIdExpr); // Substitute for the store
         visitor.addEvent(EventFactory.newLocal(reg, successBit));
 
         visitor.declareNewThread(function, List.of(argument), threadCreationEvent, comAddr);
