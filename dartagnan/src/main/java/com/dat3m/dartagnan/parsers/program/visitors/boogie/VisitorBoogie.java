@@ -233,6 +233,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
+        //FIXME: Some Svcomp loop benchmarks reference declared but unassigned constants!?
+        // Those should probably be non-deterministic, but we set them to zero here.
+        final Expression zero = expressions.makeZero(types.getArchType());
+        for (String constName : name2ConstantSymbolMap.keySet()) {
+            constantsValueMap.putIfAbsent(constName, zero);
+        }
+
         declareNewThread("main", null, null, null);
         for (int i = 0; i < threadCreations.size(); i++) {
             ThreadCreation threadCreation = threadCreations.get(i);
@@ -592,48 +599,53 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
         }
 
-        final String name = ctx.Ident(0).getText();
-        final Expression value = (Expression) exprs.expr(0).accept(this);
-        if (value == null || doIgnoreVariable(name)) {
-            return null;
-        }
-
-        if (name2ConstantSymbolMap.containsKey(name)) {
-            throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
-        }
-        if (initMode) {
-            programBuilder.initLocEqConst(name, value.reduce());
-            return null;
-        }
-        final Register register = getScopedRegister(name);
-        if (register != null) {
-            final Event child;
-            if (!ctx.getText().contains("$load.")) {
-                child = EventFactory.newLocal(register, value.visit(exprSimplifier));
-            } else if (expr2tid.containsKey(value)) {
-                //FIXME: Technically, this load should be a proper load which reads the tid stored at address <value>
-                // We cheat here and do a form of constant propagation, directly setting "reg := tid"
-                // The value of this load is usually passed to a pthread_join call
-                child = EventFactory.newLocal(register, expr2tid.get(value));
-                expr2tid.put(register, expr2tid.get(value)); // Remember "reg == tid".
-            } else {
-                child = EventFactory.newLoad(register, value);
+        for (int i = 0; i < ctx.Ident().size(); i++) {
+            final String name = ctx.Ident(i).getText();
+            Expression value = (Expression) exprs.expr(i).accept(this);
+            if (value == null || doIgnoreVariable(name)) {
+                continue;
             }
-            addEvent(child);
-            return null;
-        }
 
-        final MemoryObject object = programBuilder.getMemoryObject(name);
-        if (object != null) {
-            addEvent(EventFactory.newStore(object, value));
-            return null;
-        }
+            if (name2ConstantSymbolMap.containsKey(name)) {
+                throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
+            }
+            if (initMode) {
+                programBuilder.initLocEqConst(name, value.reduce());
+                continue;
+            }
+            final Register register = getScopedRegister(name);
+            if (register != null) {
+                final Event child;
+                if (!ctx.getText().contains("$load.")) {
+                    child = EventFactory.newLocal(register, value.visit(exprSimplifier));
+                } else if (expr2tid.containsKey(value)) {
+                    //FIXME: Technically, this load should be a proper load which reads the tid stored at address <value>
+                    // We cheat here and do a form of constant propagation, directly setting "reg := tid"
+                    // The value of this load is usually passed to a pthread_join call
+                    child = EventFactory.newLocal(register, expr2tid.get(value));
+                    expr2tid.put(register, expr2tid.get(value)); // Remember "reg == tid".
+                } else {
+                    child = EventFactory.newLoad(register, value);
+                }
+                addEvent(child);
+                continue;
+            }
 
-        if (currentReturnRegName.equals(name)) {
-            addEvent(EventFactory.newLocal(returnRegister.peek(), value));
-            return null;
+            final MemoryObject object = programBuilder.getMemoryObject(name);
+            if (object != null) {
+                addEvent(EventFactory.newStore(object, value));
+                continue;
+            }
+
+            if (currentReturnRegName.equals(name)) {
+                if (returnRegister.peek() != null) {
+                    addEvent(EventFactory.newLocal(returnRegister.peek(), value));
+                }
+                continue;
+            }
+            throw new ParsingException("Variable " + name + " is not defined");
         }
-        throw new ParsingException("Variable " + name + " is not defined");
+        return null;
     }
 
     @Override
@@ -1015,7 +1027,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         @Override
         public <T> T visit(ExpressionVisitor<T> visitor) {
-            return null;
+            throw new ParsingException("Visiting ConstantSymbols should not happen.");
         }
 
     }
