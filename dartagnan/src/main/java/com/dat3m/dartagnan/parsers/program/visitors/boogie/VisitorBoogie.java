@@ -10,7 +10,8 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.BoogieBaseVisitor;
 import com.dat3m.dartagnan.parsers.BoogieParser;
 import com.dat3m.dartagnan.parsers.BoogieParser.*;
-import com.dat3m.dartagnan.parsers.program.boogie.*;
+import com.dat3m.dartagnan.parsers.program.boogie.PthreadPool;
+import com.dat3m.dartagnan.parsers.program.boogie.Types;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -23,6 +24,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,8 +56,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
-
-    private record VarDeclaration(String varName, Type type) { }
 
     protected final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.BOOGIE);
     protected final TypeFactory types = programBuilder.getTypeFactory();
@@ -153,7 +153,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected void popScope() {
-        currentScope = currentScope.getParent();
+        currentScope = currentScope.parent;
     }
 
     protected String getScopedName(String name) {
@@ -164,7 +164,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             // We don't need scoping if we do not inline.
             return name;
         }
-        return currentScope.getID() + ":" + name;
+        return currentScope.id + ":" + name;
     }
 
     protected Event addEvent(Event e) {
@@ -183,7 +183,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected Label getOrNewEndOfScopeLabel() {
-        return getOrNewLabel("END_OF_" + currentScope.getID());
+        return getOrNewLabel("END_OF_" + currentScope.id);
     }
 
     protected Register getScopedRegister(String name) {
@@ -783,10 +783,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     @Override
     public Object visitVar_expr(Var_exprContext ctx) {
         String name = ctx.getText();
-        if (currentCall != null && currentCall.getFunction().body() != null) {
+        if (currentCall != null && currentCall.function().body() != null) {
             // we encountered a function parameter and replace it by the call argument
             // NOTE: This notion of "function" refers to Boogie functions
-            return currentCall.replaceParamByArgument(ctx);
+            return currentCall.getArgumentForParameter(ctx);
         }
         if (constantsMap.containsKey(name)) {
             return constantsMap.get(name);
@@ -886,7 +886,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
         currentCall = new BoogieFunctionCall(function, callParams, currentCall); // push currentCall to the call stack
         Object ret = function.body().accept(this);
-        currentCall = currentCall.getParent();  // pop currentCall from the call stack
+        currentCall = currentCall.parent();  // pop currentCall from the call stack
         return ret;
     }
 
@@ -950,4 +950,39 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
 
     }
+
+    // ------------------------------- Internal data structures -------------------------------
+    private record VarDeclaration(String varName, Type type) { }
+
+    private record Scope(int id, Scope parent) { }
+
+    public record BoogieFunction(String name, List<Var_or_typeContext> signature, ExprContext body) {  }
+
+    private record BoogieFunctionCall(BoogieFunction function, List<Expression> callArguments, BoogieFunctionCall parent) {
+
+        public BoogieFunctionCall {
+            if (!(function.signature().size() == callArguments.size())) {
+                throw new ParsingException("The number of arguments in the function call does not match " + function.name() + "'s signature");
+            }
+        }
+
+        public Expression getArgumentForParameter(Var_exprContext paramCtx) {
+            final List<String> signature = Lists.transform(function.signature(), s -> s.Ident().getText());
+            final String paramName = paramCtx.getText();
+            final int index = signature.indexOf(paramName);
+            if (index == -1) {
+                throw new ParsingException("Input " + paramName + " is not part of " + function.name() + " signature");
+            }
+
+            //TODO: I don't understand why we can go the topmost caller like this without updating the index in any way
+            // I guess it is wrong and only works because functions are either not nested or just pass their arguments
+            //  forward?
+            BoogieFunctionCall caller = this;
+            while (caller.parent != null) {
+                caller = caller.parent;
+            }
+            return caller.callArguments.get(index);
+        }
+    }
+
 }
