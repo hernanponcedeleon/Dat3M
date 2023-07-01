@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.utils.SymbolTable;
+import com.google.common.base.Verify;
 
 import java.util.*;
 
@@ -66,7 +67,8 @@ public class ProgramBuilder {
     public Program build() {
         for (Thread thread : program.getThreads()) {
             final Label endOfThread = getEndOfThreadLabel(thread.getId());
-            assert endOfThread.getFunction() == null; // The terminator should not get inserted somewhere beforehand.
+            // The terminator should not get inserted somewhere beforehand.
+            Verify.verify(endOfThread.getFunction() == null);
             addChild(thread.getId(), endOfThread);
         }
         id2FunctionsMap.values().forEach(this::validateFunction);
@@ -142,12 +144,11 @@ public class ProgramBuilder {
     }
 
     public Event addChild(int fid, Event child) {
-        final Function func = getFunctionOrError(fid);
-        func.append(child);
-        // Every event in litmus tests is non-optimisable
         if(program.getFormat().equals(LITMUS)) {
+            // Every event in litmus tests is non-optimisable
             child.addTags(Tag.NOOPT);
         }
+        getFunctionOrError(fid).append(child);
         return child;
     }
 
@@ -278,7 +279,7 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
 
-    public void initScopedThread(String name, int id, int ctaID, int gpuID) {
+    public void newScopedThread(String name, int id, int ctaID, int gpuID) {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
@@ -288,8 +289,8 @@ public class ProgramBuilder {
         program.addThread(ptxThread);
     }
 
-    public void initScopedThread(int id, int ctaID, int gpuID) {
-        initScopedThread(String.valueOf(id), id, ctaID, gpuID);
+    public void newScopedThread(int id, int ctaID, int gpuID) {
+        newScopedThread(String.valueOf(id), id, ctaID, gpuID);
     }
 
     public void initVirLocEqCon(String leftName, IConst iValue){
