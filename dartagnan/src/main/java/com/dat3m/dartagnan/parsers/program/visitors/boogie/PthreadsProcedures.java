@@ -79,15 +79,17 @@ public class PthreadsProcedures {
         final String regName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getOrNewScopedRegister(regName);
         final Expression zero = visitor.expressions.makeZero(reg.getType());
-        final Event pthreadCreate = EventFactory.Pthread.newCreate(pointer, threadName);
-
-        visitor.threadCallingValues.put(visitor.threadCallingValues.size(), List.of(callingValue));
-        visitor.pool.add(pointer, threadName, visitor.threadCount);
-        visitor.allocations.add(pointer);
-        visitor.pool.addThreadCreator(pointer, pthreadCreate);
+        final Expression cc = visitor.getNewCommunicationAddress();
+        final Event pthreadCreate = EventFactory.Pthread.newCreate(cc, threadName);
 
         visitor.addEvent(pthreadCreate);
         visitor.addEvent(EventFactory.newLocal(reg, zero));
+
+        final int tid = visitor.threadCreations.size() + 1;
+        VisitorBoogie.ThreadCreation tc = visitor.declareNewThread(threadName, tid, List.of(callingValue),
+                pthreadCreate, cc);
+        visitor.threadCreations.add(tc);
+        visitor.expr2ThreadCreation.put(pointer, tc);
     }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
