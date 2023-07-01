@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -73,26 +72,22 @@ public class PthreadsProcedures {
             return;
         }
         // ----- TODO: Test code end -----
-        visitor.currentThread++;
-
-        visitor.threadCallingValues.put(visitor.currentThread, new ArrayList<>());
-        final Expression callingValue = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
-        visitor.threadCallingValues.get(visitor.currentThread).add(callingValue);
 
         final Expression pointer = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         final String threadName = ctx.call_params().exprs().expr().get(2).getText();
-        visitor.pool.add(pointer, threadName, visitor.threadCount);
-
-        final Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
-        visitor.addEvent(matcher);
-        visitor.pool.addMatcher(pointer, matcher);
-
-        visitor.allocations.add(pointer);
-        visitor.addEvent(EventFactory.Pthread.newCreate(pointer, threadName));
-
+        final Expression callingValue = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
         final String regName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getOrNewScopedRegister(regName);
         final Expression zero = visitor.expressions.makeZero(reg.getType());
+        final Event matcher = EventFactory.newStringAnnotation("// Spawning thread associated to " + pointer);
+
+        visitor.threadCallingValues.put(visitor.threadCallingValues.size(), List.of(callingValue));
+        visitor.pool.add(pointer, threadName, visitor.threadCount);
+        visitor.allocations.add(pointer);
+        visitor.pool.addMatcher(pointer, matcher);
+
+        visitor.addEvent(matcher);
+        visitor.addEvent(EventFactory.Pthread.newCreate(pointer, threadName));
         visitor.addEvent(EventFactory.newLocal(reg, zero));
     }
 

@@ -62,7 +62,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected final ExpressionFactory expressions = programBuilder.getExpressionFactory();
 
     protected int threadCount = 0;
-    protected int currentThread = 0;
     private Set<String> threadLocalVariables = new HashSet<String>();
 
     protected int currentLine = -1;
@@ -381,20 +380,22 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final String procName = ctx.proc_sign().Ident().getText();
         programBuilder.newThread(procName, ++threadCount);
         List<Expression> callingValues = new ArrayList<>();
-        if (threadCount > 1) {
+        if (threadCount == 1) {
+            // We create the first thread ...
+            threadCallingValues.put(0, callingValues);
+            if (procName.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
+                // ... we cheat here and replace all thread parameters by themselves (cause there is no caller)
+                for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
+                    final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
+                    callingValues.add(getOrNewScopedRegister(decl.varName, decl.type));
+                }
+            }
+        } else {
             // Used to allow execution of threads after they have been created (pthread_create)
             final Expression pointer = pool.getPtrFromInt(threadCount);
             final Register reg = getOrNewScopedRegister(null);
             addEvent(EventFactory.Pthread.newStart(reg, pointer, pool.getMatcher(pool.getPtrFromInt(threadCount))));
             callingValues = threadCallingValues.get(threadCount - 1);
-        } else if (threadCount == 1 && procName.equals("main") && ctx.proc_sign().proc_sign_in() != null) {
-            // We create the first thread for main, and main has parameters.
-            // We cheat here and replace all thread parameters by themselves (cause there is no caller)
-            threadCallingValues.put(0, new ArrayList<>());
-            for (Attr_typed_idents_whereContext atiwC : ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
-                final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
-                callingValues.add(getOrNewScopedRegister(decl.varName, decl.type));
-            }
         }
         // Traverse procedure body
         visitProc_decl(ctx, callingValues);
