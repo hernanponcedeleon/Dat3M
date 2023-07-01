@@ -50,7 +50,7 @@ public class StdProcedures {
         }
         if (funcName.equals("abort")) {
             if (visitor.inlineMode) {
-                final Label label = visitor.programBuilder.getEndOfThreadLabel(visitor.threadCount);
+                final Label label = visitor.programBuilder.getEndOfThreadLabel(visitor.currentThread);
                 visitor.addEvent(EventFactory.newGoto(label));
             } else {
                 visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
@@ -61,7 +61,7 @@ public class StdProcedures {
             // FIXME: In noinline mode, we cannot resolve the tId yet.
             final String registerName = ctx.call_params().Ident(0).getText();
             final Register register = visitor.getScopedRegister(registerName);
-            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
+            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.currentThread), register.getType());
             visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }

@@ -62,6 +62,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected final ExpressionFactory expressions = programBuilder.getExpressionFactory();
 
     protected int threadCount = 0;
+    protected int currentThread = 0;
     private Set<String> threadLocalVariables = new HashSet<String>();
 
     protected int currentLine = -1;
@@ -99,12 +100,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected final List<ThreadCreation> threadCreations = new ArrayList<>();
     //FIXME: This map is cheating: we use it to associate an address expression "p" with a thread creation,
     // so that when we encounter a "load(p)", we treat it as a pthread_join with the p
-    protected final Map<Expression, ThreadCreation> expr2ThreadCreation = new HashMap<>();
+    protected final Map<Expression, Expression> expr2Tid = new HashMap<>();
 
-    int commCounter = 0;
-    protected Expression getNewCommunicationAddress() {
-        commCounter++;
-        return programBuilder.getOrNewMemoryObject("cc" + commCounter);
+    protected Expression getNewCommunicationAddress(String name) {
+        return programBuilder.getOrNewMemoryObject(name);
     }
 
 
@@ -177,11 +176,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (currentLine != -1) {
             e.setMetadata(new SourceLocation(sourceCodeFile, currentLine));
         }
-        return programBuilder.addChild(threadCount, e);
+        return programBuilder.addChild(currentThread, e);
     }
 
     protected Label getOrNewLabel(String name) {
-        return programBuilder.getOrCreateLabel(threadCount, name);
+        return programBuilder.getOrCreateLabel(currentThread, name);
     }
 
     protected Label getOrNewScopedLabel(String name) {
@@ -193,7 +192,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected Register getScopedRegister(String name) {
-        return programBuilder.getRegister(threadCount, getScopedName(name));
+        return programBuilder.getRegister(currentThread, getScopedName(name));
     }
 
     protected Register getOrNewScopedRegister(String name) {
@@ -201,7 +200,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected Register getOrNewScopedRegister(String name, Type type) {
-        return programBuilder.getOrNewRegister(threadCount, getScopedName(name), type);
+        return programBuilder.getOrNewRegister(currentThread, getScopedName(name), type);
     }
 
     protected String getFunctionNameFromCallContext(Call_cmdContext callCtx) {
@@ -234,31 +233,32 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        threadCreations.add(declareNewThread("main", 1, null, null, null));
+        declareNewThread("main", null, null, null);
         for (int i = 0; i < threadCreations.size(); i++) {
             ThreadCreation threadCreation = threadCreations.get(i);
             processThread(threadCreation);
         }
 
-        logger.info("Number of threads (including main): " + threadCount);
+        logger.info("Number of threads (including main): " + currentThread);
 
         // ----- TODO: Test code -----
         inlineMode = false;
-        int oldThreadCount = threadCount;
+        int oldThreadCount = currentThread;
         for (FunctionDeclaration decl : functionDeclarations) {
-            functions.add(programBuilder.newFunction(decl.funcName, ++threadCount,decl.funcType, decl.parameterNames));
+            functions.add(programBuilder.newFunction(decl.funcName, ++currentThread,decl.funcType, decl.parameterNames));
             visitProc_decl(decl.ctx(),  null);
         }
-        threadCount = oldThreadCount;
+        currentThread = oldThreadCount;
         resetScope();
         // ----- TODO: Test code end -----
 
         return programBuilder.build();
     }
 
-    protected ThreadCreation declareNewThread(String name, int id, List<Expression> arguments, Event creatorEvent, Expression comAddress) {
-        final Thread newThread = programBuilder.newThread(name, id);
-        final Proc_declContext procedure = procedures.get(name);
+    protected ThreadCreation declareNewThread(String functionName, List<Expression> arguments, Event creatorEvent,
+                                              Expression comAddress) {
+        final Thread newThread = programBuilder.newThread(functionName, ++threadCount);
+        final Proc_declContext procedure = procedures.get(functionName);
 
         final List<Expression> args;
         if (arguments != null) {
@@ -267,18 +267,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             // We have no arguments, so the parameters should take non-deterministic values.
             // We cheat here and map all parameters to themselves
             args = new ArrayList<>();
-            int oldThreadCount = threadCount;
-            threadCount = id;
+            final int oldThread = currentThread;
+            currentThread = threadCount;
             if (procedure.proc_sign().proc_sign_in() != null) {
                 for (Attr_typed_idents_whereContext atiwC : procedure.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
                     final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
                     args.add(getOrNewScopedRegister(decl.varName, decl.type));
                 }
             }
-            threadCount = oldThreadCount;
+            currentThread = oldThread;
         }
 
-        return new ThreadCreation(newThread, args, creatorEvent, comAddress);
+        var tc = new ThreadCreation(newThread, args, creatorEvent, comAddress);
+        threadCreations.add(tc);
+        return tc;
     }
 
     private void processThread(ThreadCreation creation) {
@@ -286,7 +288,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         Proc_declContext procedure = procedures.get(creation.spawnedThread.getName());
         List<Expression> args = creation.arguments;
 
-        threadCount = creation.spawnedThread.getId();
+        currentThread = creation.spawnedThread.getId();
         if (creation.creationEvent != null) {
             assert creation.communicationAddress != null;
             final Register reg = getOrNewScopedRegister(null);
@@ -606,9 +608,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 final Event child;
                 if (!ctx.getText().contains("$load.")) {
                     child = EventFactory.newLocal(register, value.visit(exprSimplifier));
-                } else if (expr2ThreadCreation.containsKey(value)) {
-                    // These loads corresponding to pthread_joins
-                    child = EventFactory.Pthread.newJoin(register, expr2ThreadCreation.get(value).communicationAddress);
+                } else if (expr2Tid.containsKey(value)) {
+                    //FIXME: Technically, this load should be a proper load which reads the tid stored at address <value>
+                    // We cheat here and do a form of constant propagation, directly setting "reg := tid"
+                    // The value of this load is usually passed to a pthread_join call
+                    child = EventFactory.newLocal(register, expr2Tid.get(value));
+                    expr2Tid.put(register, expr2Tid.get(value)); // Remember "reg == tid".
                 } else {
                     child = EventFactory.newLoad(register, value);
                 }
@@ -667,7 +672,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newJumpUnless(cond, pairingLabel));
         } else if (inlineMode) {
             // if there is no pairing label, we terminate the thread (inline mode)
-            final Label endOfThread = programBuilder.getEndOfThreadLabel(threadCount);
+            final Label endOfThread = programBuilder.getEndOfThreadLabel(currentThread);
             addEvent(EventFactory.newJumpUnless(cond, endOfThread));
         } else {
             // ... if we are not inlining, we instead create an abort
@@ -815,14 +820,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return new Register(name, Register.NO_FUNCTION, type);
         }
 
-        final Register register = programBuilder.functionExists(threadCount) ? getScopedRegister(name) : null;
+        final Register register = programBuilder.functionExists(currentThread) ? getScopedRegister(name) : null;
         if (register != null) {
             return register;
         }
 
         if (threadLocalVariables.contains(name)) {
             //TODO: We cannot do this for non-inlined functions, because we don't have threads yet
-            return programBuilder.getOrNewMemoryObject(String.format("%s(%s)", name, threadCount));
+            return programBuilder.getOrNewMemoryObject(String.format("%s(%s)", name, currentThread));
         }
 
         final MemoryObject object = programBuilder.getMemoryObject(name);
@@ -952,12 +957,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected void addAssertion(Expression expr) {
-        final Register ass = programBuilder.getOrNewRegister(threadCount, "assert_" + assertionIndex, expr.getType());
+        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionIndex, expr.getType());
         assertionIndex++;
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
             final IValue one = expressions.makeOne(expr.getType());
-            final Label end = programBuilder.getEndOfThreadLabel(threadCount);
+            final Label end = programBuilder.getEndOfThreadLabel(currentThread);
             final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
             jump.addTags(Tag.EARLYTERMINATION);
             addEvent(jump);
