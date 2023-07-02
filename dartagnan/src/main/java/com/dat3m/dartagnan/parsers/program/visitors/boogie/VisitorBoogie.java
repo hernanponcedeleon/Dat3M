@@ -69,7 +69,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private final Map<String, ConstantSymbol> constantSymbolMap = new HashMap<>();
     private final Set<String> threadLocalVariables = new HashSet<>();
 
-    protected int threadCount = 0;
+    protected final List<ThreadCreation> threadCreations = new ArrayList<>();
+    //FIXME: This map is cheating to handle thread creation:
+    // For stores and loads to/from address expr "p" that are supposed to write/read a (constant) thread id,
+    // instead write/read to this map. This allows us to do a sort of "constant propagation" over memory.
+    protected final Map<Expression, Expression> expr2tid = new HashMap<>();
 
     protected int currentThread = 0;
     private BoogieFunctionCall currentCall = null;
@@ -87,19 +91,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private boolean initMode = false;
     protected Call_cmdContext atomicMode = null;
 
-    protected int assertionIndex = 0;
+    protected int assertionCounter = 0;
 
     protected int currentLine = -1;
     protected String sourceCodeFile = "";
 
     private int nextScopeID = 0;
     protected Deque<Integer> scopes = new ArrayDeque<>();
-
-    protected final List<ThreadCreation> threadCreations = new ArrayList<>();
-    //FIXME: This map is cheating to handle thread creation:
-    // For stores and loads to/from address expr "p" that are supposed to write/read a (constant) thread id,
-    // instead write/read to this map. This allows us to do a sort of "constant propagation" over memory.
-    protected final Map<Expression, Expression> expr2tid = new HashMap<>();
 
     // ----- TODO: Test code -----
     private record FunctionDeclaration(String funcName, FunctionType funcType,
@@ -109,7 +107,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected List<Function> functions = new ArrayList<>();
     protected boolean inlineMode = true;
     // ----- TODO: Test code end -----
-
 
     public VisitorBoogie() {
     }
@@ -148,11 +145,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected String getScopedName(String name) {
-        if (name == null) {
-            return null;
-        }
-        if (!inlineMode) {
-            // We don't need scoping if we do not inline.
+        if (name == null || !inlineMode) {
+            // We don't need scoping if we do not inline or there is no name.
             return name;
         }
         return scopes.peek() + ":" + name;
@@ -206,13 +200,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        declareNewThread("main", null, null, null);
+        createNewThread("main", null, null, null);
         // This cannot be a foreach loop, because processThread can spawn new threads which are appended to the list.
         for (int i = 0; i < threadCreations.size(); i++) {
             processThreadCreation(threadCreations.get(i));
         }
 
-        logger.info("Number of threads (including main): " + threadCount);
+        logger.info("Number of threads (including main): " + threadCreations.size());
 
         // ----- TODO: Test code -----
         inlineMode = false;
@@ -250,9 +244,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
     }
 
-    protected void declareNewThread(String functionName, List<Expression> arguments, Event creatorEvent,
-                                              Expression comAddress) {
-        final Thread newThread = programBuilder.newThread(functionName, ++threadCount);
+    protected void createNewThread(String functionName, List<Expression> arguments, Event creatorEvent, Expression comAddress) {
+        final Thread newThread = programBuilder.newThread(functionName, threadCreations.size());
         final Proc_declContext procedure = procedures.get(functionName);
 
         final List<Expression> args;
@@ -263,7 +256,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             // We cheat here and map all parameters to themselves
             args = new ArrayList<>();
             final int oldThread = currentThread;
-            currentThread = threadCount;
+            currentThread = newThread.getId();
             if (procedure.proc_sign().proc_sign_in() != null) {
                 for (Attr_typed_idents_whereContext atiwC : procedure.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where()) {
                     final VarDeclaration decl = parseVarDeclaration(atiwC.getText());
@@ -277,7 +270,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     private void processThreadCreation(ThreadCreation creation) {
-
         final Proc_declContext procedure = procedures.get(creation.spawnedThread.getName());
         final List<Expression> args = creation.arguments;
 
@@ -288,6 +280,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.Pthread.newStart(reg, creation.communicationAddress, creation.creationEvent));
         }
 
+        // Handle procedure body
         visitProc_decl(procedure, args);
 
         if (creation.communicationAddress != null) {
@@ -464,8 +457,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         visitChildren(body.stmt_list());
 
         if (inlineMode) {
-            final Label label = getOrNewEndOfScopeLabel();
-            addEvent(label);
+            addEvent(getOrNewEndOfScopeLabel());
         }
 
         scopes.pop();
@@ -952,8 +944,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected void addAssertion(Expression expr) {
-        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionIndex, expr.getType());
-        assertionIndex++;
+        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionCounter, expr.getType());
+        assertionCounter++;
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
             final IValue one = expressions.makeOne(expr.getType());

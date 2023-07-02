@@ -110,7 +110,7 @@ public class PthreadsProcedures {
         final String function = ctx.call_params().exprs().expr().get(2).getText();
         final Expression argument = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
 
-        final int nextTid = visitor.threadCount + 1;
+        final int nextTid = visitor.threadCreations.size();
         final Expression comAddr = visitor.programBuilder.getOrNewMemoryObject(function + "_" + nextTid);
         final Event threadCreationEvent = EventFactory.Pthread.newCreate(comAddr, function);
         // FIXME: pthread_create actually returns a success bit (SUCCESS == 0, FAIL != 0),
@@ -130,7 +130,7 @@ public class PthreadsProcedures {
         visitor.expr2tid.put(threadAddr, tIdExpr); // Substitute for the store
         visitor.addEvent(EventFactory.newLocal(reg, successBit));
 
-        visitor.declareNewThread(function, List.of(argument), threadCreationEvent, comAddr);
+        visitor.createNewThread(function, List.of(argument), threadCreationEvent, comAddr);
     }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
