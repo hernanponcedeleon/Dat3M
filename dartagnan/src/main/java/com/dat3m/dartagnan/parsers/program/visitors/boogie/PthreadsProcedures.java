@@ -111,7 +111,7 @@ public class PthreadsProcedures {
         final Expression argument = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
 
         final int nextTid = visitor.threadCount + 1;
-        final Expression comAddr = visitor.getNewCommunicationAddress(function + "_" + nextTid);
+        final Expression comAddr = visitor.programBuilder.getOrNewMemoryObject(function + "_" + nextTid);
         final Event threadCreationEvent = EventFactory.Pthread.newCreate(comAddr, function);
         // FIXME: pthread_create actually returns a success bit (SUCCESS == 0, FAIL != 0),
         //  but we always return SUCCESS here
