@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Label;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -50,8 +49,7 @@ public class StdProcedures {
         }
         if (funcName.equals("abort")) {
             if (visitor.inlineMode) {
-                final Label label = visitor.programBuilder.getEndOfThreadLabel(visitor.currentThread);
-                visitor.addEvent(EventFactory.newGoto(label));
+                visitor.addEvent(EventFactory.newGoto(visitor.getEndOfThreadLabel()));
             } else {
                 visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
             }

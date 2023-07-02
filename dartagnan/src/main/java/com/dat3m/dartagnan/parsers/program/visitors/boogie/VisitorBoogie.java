@@ -72,7 +72,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     protected final List<ThreadCreation> threadCreations = new ArrayList<>();
     //FIXME: This map is cheating to handle thread creation:
     // For stores and loads to/from address expr "p" that are supposed to write/read a (constant) thread id,
-    // instead write/read to this map. This allows us to do a sort of "constant propagation" over memory.
+    // we instead write/read to this map. This allows us to do a sort of "constant propagation" over memory.
     protected final Map<Expression, Expression> expr2tid = new HashMap<>();
 
     protected int currentThread = 0;
@@ -82,6 +82,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     // The registers in "reg := call f();"
     private final Deque<Register> callerRegister = new ArrayDeque<>();
+    private int nextScopeID = 0;
+    private final Deque<Integer> scopes = new ArrayDeque<>();
 
     // We use <pairLabels> to connect labels of a "goto l1, l2" statement.
     private Label currentLabel = null;
@@ -91,13 +93,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private boolean initMode = false;
     protected Call_cmdContext atomicMode = null;
 
-    protected int assertionCounter = 0;
+    private int assertionCounter = 0;
 
-    protected int currentLine = -1;
-    protected String sourceCodeFile = "";
-
-    private int nextScopeID = 0;
-    protected Deque<Integer> scopes = new ArrayDeque<>();
+    private int currentLine = -1;
+    private String sourceCodeFile = "";
 
     // ----- TODO: Test code -----
     private record FunctionDeclaration(String funcName, FunctionType funcType,
@@ -154,6 +153,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected Event addEvent(Event e) {
         if (currentLine != -1) {
+            //TODO: We should probably make sure to reset currentLine to avoid attaching outdated information
             e.setMetadata(new SourceLocation(sourceCodeFile, currentLine));
         }
         return programBuilder.addChild(currentThread, e);
@@ -169,6 +169,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected Label getOrNewEndOfScopeLabel() {
         return getOrNewLabel("END_OF_" + scopes.peek());
+    }
+
+    protected Label getEndOfThreadLabel() {
+        return programBuilder.getEndOfThreadLabel(currentThread);
     }
 
     protected Register getScopedRegister(String name) {
@@ -295,10 +299,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     private void preProc_decl(Proc_declContext ctx) {
         final String name = ctx.proc_sign().Ident().getText();
-        if (procedures.containsKey(name)) {
+        if (procedures.put(name, ctx) != null) {
             throw new ParsingException("Procedure " + name + " is already defined");
         }
-        procedures.put(name, ctx);
 
         // ----- TODO: Test code -----
         // ====== Create function declaration ========
@@ -314,7 +317,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final List<Type> parameterTypes = new ArrayList<>();
 
         if (ctx.proc_sign().proc_sign_in() != null) {
-            List<BoogieParser.Attr_typed_idents_whereContext> params =
+            final List<BoogieParser.Attr_typed_idents_whereContext> params =
                     ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where();
             for (Attr_typed_idents_whereContext param : params) {
                 // Parse input parameters
@@ -332,9 +335,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         } else {
             returnType = types.getVoidType();
         }
-
         final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
-
         //System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
         functionDeclarations.add(new FunctionDeclaration(name, functionType, parameterNames, ctx));
         // ----- TODO: Test code end -----
@@ -643,7 +644,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public Object visitAssume_cmd(Assume_cmdContext ctx) {
         if (ctx.getText().contains("sourceloc")) {
             // Smack attaches source information to "assume true" statements
-            String line = ctx.getText();
+            final String line = ctx.getText();
             sourceCodeFile = line.substring(line.indexOf('\"') + 1, line.indexOf(',') - 1);
             currentLine = Integer.parseInt(line.substring(line.indexOf(',') + 1, line.lastIndexOf(',')));
         }
@@ -660,8 +661,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newJumpUnless(cond, pairingLabel));
         } else if (inlineMode) {
             // if there is no pairing label, we terminate the thread (inline mode)
-            final Label endOfThread = programBuilder.getEndOfThreadLabel(currentThread);
-            addEvent(EventFactory.newJumpUnless(cond, endOfThread));
+            addEvent(EventFactory.newJumpUnless(cond, getEndOfThreadLabel()));
         } else {
             // ... if we are not inlining, we instead create an abort
             addEvent(EventFactory.newAbortIf(expressions.makeNot(cond)));
@@ -793,35 +793,35 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitVar_expr(Var_exprContext ctx) {
-        String name = ctx.getText();
+        final String varName = ctx.getText();
         if (currentCall != null && currentCall.function().body() != null) {
             // we encountered a function parameter and replace it by the call argument
             // NOTE: This notion of "function" refers to Boogie functions
             return currentCall.getArgumentForParameter(ctx);
         }
-        if (constantsValueMap.containsKey(name)) {
-            return constantsValueMap.get(name);
+        if (constantsValueMap.containsKey(varName)) {
+            return constantsValueMap.get(varName);
         }
 
-        if (constantSymbolMap.containsKey(name)) {
-            return constantSymbolMap.get(name);
+        if (constantSymbolMap.containsKey(varName)) {
+            return constantSymbolMap.get(varName);
         }
 
-        final Register register = programBuilder.functionExists(currentThread) ? getScopedRegister(name) : null;
+        final Register register = programBuilder.functionExists(currentThread) ? getScopedRegister(varName) : null;
         if (register != null) {
             return register;
         }
 
-        if (threadLocalVariables.contains(name)) {
+        if (threadLocalVariables.contains(varName)) {
             //TODO: We cannot do this for non-inlined functions, because we don't have threads yet
-            return programBuilder.getOrNewMemoryObject(String.format("%s(%s)", name, currentThread));
+            return programBuilder.getOrNewMemoryObject(String.format("%s(%s)", varName, currentThread));
         }
 
-        final MemoryObject object = programBuilder.getMemoryObject(name);
+        final MemoryObject object = programBuilder.getMemoryObject(varName);
         if (object != null) {
             return object;
         }
-        throw new ParsingException("Variable " + name + " is not defined");
+        throw new ParsingException("Variable " + varName + " is not defined");
     }
 
     @Override
@@ -949,8 +949,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
         if (inlineMode) {
             final IValue one = expressions.makeOne(expr.getType());
-            final Label end = programBuilder.getEndOfThreadLabel(currentThread);
-            final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), end);
+            final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), getEndOfThreadLabel());
             jump.addTags(Tag.EARLYTERMINATION);
             addEvent(jump);
         } else {
@@ -961,7 +960,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     }
 
+    // ========================================================================================
     // ------------------------------- Internal data structures -------------------------------
+    // ========================================================================================
     private record VarDeclaration(String varName, Type type) { }
 
     public record BoogieFunction(String name, List<Var_or_typeContext> signature, ExprContext body) {  }
