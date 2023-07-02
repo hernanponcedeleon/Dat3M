@@ -27,7 +27,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
-import com.dat3m.dartagnan.utils.SymbolTable;
 import com.google.common.base.Verify;
 
 import java.util.*;
@@ -43,8 +42,8 @@ public class ProgramBuilder {
             types.getFunctionType(types.getVoidType(), List.of());
 
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
-    private final Map<Integer, SymbolTable<Label>> fid2LabelsMap = new HashMap<>();
-    private final SymbolTable<MemoryObject> locations = new SymbolTable<>();
+    private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
+    private final Map<String, MemoryObject> locations = new HashMap<>();
 
     private final Program program;
 
@@ -240,7 +239,7 @@ public class ProgramBuilder {
 
     public Label getOrCreateLabel(int funcId, String name){
         return fid2LabelsMap
-                .computeIfAbsent(funcId, k -> new SymbolTable<>())
+                .computeIfAbsent(funcId, k -> new HashMap<>())
                 .computeIfAbsent(name, EventFactory::newLabel);
     }
 
