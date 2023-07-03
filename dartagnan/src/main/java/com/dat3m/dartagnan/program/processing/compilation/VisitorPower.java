@@ -896,10 +896,10 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
 
-        Register dummy = e.getFunction().newRegister(type);
+        Register dummy = e.getFunction().newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
+        CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
 
         Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
@@ -916,7 +916,7 @@ public class VisitorPower extends VisitorBase {
                 label,
                 optionalMemoryBarrierAfter,
                 cauEnd,
-                newLocal(resultRegister, dummy)
+                newLocal(resultRegister, expressions.makeCast(dummy, resultRegister.getType()))
         );
     }
 
@@ -928,14 +928,16 @@ public class VisitorPower extends VisitorBase {
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/dec_and_test
     @Override
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
+        Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummy = e.getFunction().newRegister(types.getArchType());
+        Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address);
         Local localOp = newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = Power.newRMWStoreConditional(address, dummy, true);
-        Local testOp = newLocal(e.getResultRegister(), expressions.makeNot(expressions.makeBooleanCast(dummy)));
+        Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 

@@ -168,7 +168,7 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
-        Register result = e.getResultRegister();
+        Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         Expression operand = e.getOperand();
         Register dummy = e.getFunction().newRegister(operand.getType());
@@ -180,7 +180,7 @@ public class VisitorLKMM extends VisitorBase {
                 load,
                 newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), operand)),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.MO_ONCE),
-                newLocal(result, expressions.makeCast(testResult, result.getType())),
+                newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType())),
                 newCoreMemoryBarrier()
         );
     }
