@@ -222,14 +222,14 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 	public Object visitEq(LitmusLISAParser.EqContext ctx) {
 		Expression e1 = (Expression) ctx.expression(0).accept(this);
 		Expression e2 = (Expression) ctx.expression(1).accept(this);
-		return expressions.makeEQ(e1, e2);
+		return expressions.makeCast(expressions.makeEQ(e1, e2), archType);
 	}
 
 	@Override
 	public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
 		Expression e1 = (Expression) ctx.expression(0).accept(this);
 		Expression e2 = (Expression) ctx.expression(1).accept(this);
-		return expressions.makeNEQ(e1, e2);
+		return expressions.makeCast(expressions.makeNEQ(e1, e2), archType);
 	}
 
 	@Override
