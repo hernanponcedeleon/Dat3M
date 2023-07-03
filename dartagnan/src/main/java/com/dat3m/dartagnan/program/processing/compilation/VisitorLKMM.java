@@ -76,9 +76,11 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Expression operand = e.getOperand();
+        Register dummy = e.getFunction().newRegister(operand.getType());
         Expression cmp = e.getCmp();
         Expression address = e.getAddress();
+        Expression unexpected = expressions.makeNEQ(dummy, cmp);
 
         Label success = newLabel("RMW_success");
         Label end = newLabel("RMW_end");
@@ -91,11 +93,11 @@ public class VisitorLKMM extends VisitorBase {
                 success, // RMW success branch
                 newCoreMemoryBarrier(),
                 rmwLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE),
-                newAssume(expressions.makeNEQ(dummy, cmp)),
-                newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, e.getOperand()), Tag.Linux.MO_ONCE),
+                newAssume(unexpected),
+                newRMWStoreWithMo(rmwLoad, address, expressions.makeADD(dummy, operand), Tag.Linux.MO_ONCE),
                 newCoreMemoryBarrier(),
                 end,
-                newLocal(resultRegister, expressions.makeNEQ(dummy, cmp))
+                newLocal(resultRegister, expressions.makeCast(unexpected, resultRegister.getType()))
         );
     }
 
@@ -166,16 +168,19 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
+        Register result = e.getResultRegister();
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Expression operand = e.getOperand();
+        Register dummy = e.getFunction().newRegister(operand.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
+        Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         return eventSequence(
                 newCoreMemoryBarrier(),
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
+                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), operand)),
                 newRMWStoreWithMo(load, address, dummy, Tag.Linux.MO_ONCE),
-                newLocal(e.getResultRegister(), expressions.makeNot(expressions.makeBooleanCast(dummy))),
+                newLocal(result, expressions.makeCast(testResult, result.getType())),
                 newCoreMemoryBarrier()
         );
     }
