@@ -103,6 +103,9 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
+        // TODO: We use a default thread type with no parameters and no return type for now
+        //  because the function type is still ignored for threads. In the future, we will assign
+        //  proper types.
         final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newSkip());
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);

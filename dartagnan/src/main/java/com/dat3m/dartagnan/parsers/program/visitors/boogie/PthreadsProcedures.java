@@ -81,7 +81,7 @@ public class PthreadsProcedures {
         final Register reg = visitor.getScopedRegister(ctx.call_params().Ident(0).getText());
         Expression threadToJoinWith = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         //FIXME: The first parameter should be a proper register, but we do not know its constant value here
-        // so we loop it up in a map.
+        // so we look it up in a map.
         threadToJoinWith = visitor.expr2tid.getOrDefault(threadToJoinWith, threadToJoinWith);
 
         if (!(threadToJoinWith instanceof IConst constId)) {
