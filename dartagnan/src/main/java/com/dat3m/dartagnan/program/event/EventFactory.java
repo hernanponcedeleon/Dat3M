@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -325,7 +326,11 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
-            return newFetchOp(register, address, expressions.makeOne(register.getType()), IOpBin.PLUS, mo);
+            if (!(register.getType() instanceof IntegerType integerType)) {
+                throw new IllegalArgumentException(
+                        String.format("Non-integer type %s for increment operation.", register.getType()));
+            }
+            return newFetchOp(register, address, expressions.makeOne(integerType), IOpBin.PLUS, mo);
         }
 
         public static AtomicLoad newLoad(Register register, Expression address, String mo) {

@@ -352,7 +352,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Expression visitReOpCompare(LitmusCParser.ReOpCompareContext ctx){
-        //TODO boolean register
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
@@ -561,9 +560,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return register;
     }
 
-    private Expression assignToReturnRegister(Register register, Expression value){
-        if(register != null){
-            programBuilder.addChild(currentThread, EventFactory.newLocal(register, value));
+    private Expression assignToReturnRegister(Register register, Expression value) {
+        if (register != null) {
+            Expression cast = expressions.makeCast(value, register.getType());
+            programBuilder.addChild(currentThread, EventFactory.newLocal(register, cast));
         }
         return value;
     }

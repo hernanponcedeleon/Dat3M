@@ -356,18 +356,7 @@ public final class EncodingContext {
                 Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
                 Type type = register.getType();
-                if (type instanceof BooleanType) {
-                    r = booleanFormulaManager.makeVariable(name);
-                } else if (type instanceof IntegerType integerType) {
-                    if (integerType.isMathematical()) {
-                        r = formulaManager.getIntegerFormulaManager().makeVariable(name);
-                    } else {
-                        int bitWidth = integerType.getBitWidth();
-                        r = formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
-                    }
-                } else {
-                    throw new UnsupportedOperationException(String.format("Encoding result of type %s.", type));
-                }
+                r = makeVariable(name, type);
             } else {
                 r = null;
             }
@@ -383,5 +372,19 @@ public final class EncodingContext {
                 results.put(e, r);
             }
         }
+    }
+
+    Formula makeVariable(String name, Type type) {
+        if (type instanceof BooleanType) {
+            return booleanFormulaManager.makeVariable(name);
+        }
+        if (type instanceof IntegerType integerType) {
+            if (integerType.isMathematical()) {
+                return formulaManager.getIntegerFormulaManager().makeVariable(name);
+            }
+            int bitWidth = integerType.getBitWidth();
+            return formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
+        }
+        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
 }

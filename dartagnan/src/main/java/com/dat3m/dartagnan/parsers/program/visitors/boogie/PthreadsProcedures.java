@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
@@ -110,13 +111,17 @@ public class PthreadsProcedures {
         final String function = ctx.call_params().exprs().expr().get(2).getText();
         final Expression argument = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
 
+        if (!(reg.getType() instanceof IntegerType)) {
+            throw new ParsingException("Return value of pthread_create cannot be assigned to non-integer register");
+        }
+
         final int nextTid = visitor.threadCreations.size();
         final Expression comAddr = visitor.programBuilder.getOrNewMemoryObject(function + "_" + nextTid);
         final Event threadCreationEvent = EventFactory.Pthread.newCreate(comAddr, function);
         // FIXME: pthread_create actually returns a success bit (SUCCESS == 0, FAIL != 0),
         //  but we always return SUCCESS here
-        final Expression successBit = visitor.expressions.makeZero(reg.getType());
-        final Expression tIdExpr =  visitor.expressions.makeValue(BigInteger.valueOf(nextTid), visitor.types.getArchType());
+        final Expression successBit = visitor.expressions.makeZero((IntegerType) reg.getType());
+        final Expression tIdExpr = visitor.expressions.makeValue(BigInteger.valueOf(nextTid), visitor.types.getArchType());
 
         visitor.addEvent(threadCreationEvent);
         /*

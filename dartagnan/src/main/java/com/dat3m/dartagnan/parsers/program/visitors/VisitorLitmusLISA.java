@@ -160,11 +160,10 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
     public Object visitJump(LitmusLISAParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.labelName().getText());
         Register reg = (Register) ctx.register().accept(this);
-        Expression one = expressions.makeOne(reg.getType());
-        Expression cond = expressions.makeEQ(reg, one);
-        programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
-        return null;
-    }
+        Expression cond = expressions.makeBooleanCast(reg);
+		programBuilder.addChild(mainThread, EventFactory.newJump(cond, label));
+		return null;
+	}
 
     // Other
 
@@ -218,19 +217,19 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
         return expressions.makeAND(e1, e2);
     }
 
-    @Override
-    public Object visitEq(LitmusLISAParser.EqContext ctx) {
-        Expression e1 = (Expression) ctx.expression(0).accept(this);
-        Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeEQ(e1, e2);
-    }
+	@Override
+	public Object visitEq(LitmusLISAParser.EqContext ctx) {
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
+		return expressions.makeCast(expressions.makeEQ(e1, e2), archType);
+	}
 
-    @Override
-    public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
-        Expression e1 = (Expression) ctx.expression(0).accept(this);
-        Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeNEQ(e1, e2);
-    }
+	@Override
+	public Object visitNeq(LitmusLISAParser.NeqContext ctx) {
+		Expression e1 = (Expression) ctx.expression(0).accept(this);
+		Expression e2 = (Expression) ctx.expression(1).accept(this);
+		return expressions.makeCast(expressions.makeNEQ(e1, e2), archType);
+	}
 
     @Override
     public Object visitParaExpr(LitmusLISAParser.ParaExprContext ctx) {

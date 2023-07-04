@@ -108,7 +108,7 @@ public class ExprSimplifier extends ExprTransformer {
                 case OR:
                     return lhs;
                 case XOR:
-                    return expressions.makeZero(lhs.getType());
+                    return expressions.makeZero(iBin.getType());
             }
         }
         if (! (lhs instanceof IConst || rhs instanceof IConst)) {

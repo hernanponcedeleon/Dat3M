@@ -205,7 +205,10 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitBranchRegister(LitmusAArch64Parser.BranchRegisterContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
-        IValue zero = expressions.makeZero(register.getType());
+        if (!(register.getType() instanceof IntegerType integerType)) {
+            throw new ParsingException("Comparing non-integer register.");
+        }
+        IValue zero = expressions.makeZero(integerType);
         Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));

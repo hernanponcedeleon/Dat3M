@@ -83,7 +83,8 @@ public class LlvmProcedures {
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
                 final Register oldValueRegister = visitor.getOrNewScopedRegister(regName + "(0)");
-                final Register cmpRegister = visitor.getOrNewScopedRegister(regName + "(1)");
+                final Register cmpRegister = visitor.getOrNewScopedRegister(regName + "(1)",
+                        visitor.types.getBooleanType());
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
                 mo = C11.intToMo(((IConst) p3).getValueAsInt());

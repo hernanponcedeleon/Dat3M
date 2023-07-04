@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -18,6 +19,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.google.common.base.Verify.verify;
 
 class VisitorArm8 extends VisitorBase {
 
@@ -68,27 +70,26 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
         load.addTags(C11.PTHREAD);
 
         return eventSequence(
                 load,
-                newJump(expressions.makeNEQ(resultRegister, zero), (Label) e.getThread().getExit())
+                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
         );
     }
 
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Expression one = expressions.makeOne(resultRegister.getType());
+        verify(resultRegister.getType() instanceof BooleanType);
         Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeNEQ(resultRegister, one), (Label) e.getThread().getExit())
+                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
         );
     }
 
@@ -190,7 +191,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
-        Expression one = expressions.makeOne(resultRegister.getType());
+        verify(resultRegister.getType() instanceof BooleanType);
 
         Expression address = e.getAddress();
         String mo = e.getMo();
@@ -198,7 +199,7 @@ class VisitorArm8 extends VisitorBase {
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
+        CondJump branchOnCasCmpResult = newJumpUnless(resultRegister, casEnd);
 
         Load load = newRMWLoadExclusiveWithMo(oldValueRegister, address, ARMv8.extractLoadMoFromCMo(mo));
         Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, ARMv8.extractStoreMoFromCMo(mo));
@@ -238,27 +239,28 @@ class VisitorArm8 extends VisitorBase {
         String mo = e.getMo();
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
-        Expression one = expressions.makeOne(type);
+        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
+                e.getThread().newRegister(types.getBooleanType());
+        Local castResult = type instanceof BooleanType ? null :
+                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getFunction().newRegister(type);
         Register regValue = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Store storeExpected = newStore(expectedAddr, regValue);
         Label casFail = newLabel("CAS_fail");
         Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
+        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         CondJump gotoCasEnd = newGoto(casEnd);
-
         Load loadValue = newRMWLoadExclusiveWithMo(regValue, address, ARMv8.extractLoadMoFromCMo(mo));
         Store storeValue = newRMWStoreExclusiveWithMo(address, value, e.isStrong(), ARMv8.extractStoreMoFromCMo(mo));
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (e.isWeak()) {
-            Register statusReg = e.getFunction().newRegister("status(" + e.getGlobalId() + ")", type);
+            Register statusReg = e.getFunction().newRegister("status(" + e.getGlobalId() + ")", types.getBooleanType());
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-            optionalUpdateCasCmpResult = newLocal(resultRegister, expressions.makeNot(statusReg));
+            optionalUpdateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
         }
-
         return eventSequence(
                 loadExpected,
                 loadValue,
@@ -270,7 +272,8 @@ class VisitorArm8 extends VisitorBase {
                 gotoCasEnd,
                 casFail,
                 storeExpected,
-                casEnd
+                casEnd,
+                castResult
         );
     }
 
@@ -577,7 +580,6 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
         Type type = resultRegister.getType();
-        Expression zero = expressions.makeZero(type);
 
         Register regValue = e.getFunction().newRegister(type);
         Load load = newRMWLoadExclusiveWithMo(regValue, address, ARMv8.extractLoadMoFromLKMo(mo));
@@ -589,12 +591,12 @@ class VisitorArm8 extends VisitorBase {
         Register dummy = e.getFunction().newRegister(type);
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJump(expressions.makeEQ(dummy, zero), cauEnd);
+        CondJump branchOnCauCmpResult = newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,
-                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
+                newLocal(dummy, expressions.makeCast(expressions.makeNEQ(regValue, unless), dummy.getType())),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
@@ -617,12 +619,12 @@ class VisitorArm8 extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummy = e.getFunction().newRegister(types.getArchType());
-        Expression zero = expressions.makeZero(dummy.getType());
+        Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
         Local localOp = newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, ARMv8.extractStoreMoFromLKMo(mo));
-        Local testOp = newLocal(resultRegister, expressions.makeEQ(dummy, zero));
+        Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
         Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;

@@ -1,7 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -144,7 +147,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected String getScopedName(String name) {
-        if (name == null || !inlineMode) {
+        if (name == null || !inlineMode || scopes.isEmpty()) {
             // We don't need scoping if we do not inline or there is no name.
             return name;
         }
@@ -280,7 +283,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         currentThread = creation.spawnedThread.getId();
         if (creation.creationEvent != null) {
             assert creation.communicationAddress != null;
-            final Register reg = getOrNewScopedRegister(null);
+            final Register reg = getOrNewScopedRegister(null, types.getBooleanType());
             addEvent(EventFactory.Pthread.newStart(reg, creation.communicationAddress, creation.creationEvent));
         }
 
@@ -597,7 +600,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (register != null) {
                 final Event child;
                 if (!ctx.getText().contains("$load.")) {
-                    child = EventFactory.newLocal(register, value.visit(exprSimplifier));
+                    final Expression simplified = value.visit(exprSimplifier);
+                    final Expression cast = expressions.makeCast(simplified, register.getType());
+                    child = EventFactory.newLocal(register, cast);
                 } else if (expr2tid.containsKey(value)) {
                     //FIXME: Technically, this load should be a proper load which reads the tid stored at address <value>
                     // We cheat here and do a form of constant propagation, directly setting "reg := tid"
@@ -944,17 +949,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected void addAssertion(Expression expr) {
-        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionCounter, expr.getType());
+        final Expression condition = expressions.makeBooleanCast(expr);
+        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionCounter, condition.getType());
         assertionCounter++;
-        addEvent(EventFactory.newLocal(ass, expr)).addTags(Tag.ASSERTION);
+        addEvent(EventFactory.newLocal(ass, condition)).addTags(Tag.ASSERTION);
         if (inlineMode) {
-            final IValue one = expressions.makeOne(expr.getType());
-            final CondJump jump = EventFactory.newJump(expressions.makeNEQ(ass, one), getEndOfThreadLabel());
+            final CondJump jump = EventFactory.newJumpUnless(ass, getEndOfThreadLabel());
             jump.addTags(Tag.EARLYTERMINATION);
             addEvent(jump);
         } else {
-            final IValue zero = expressions.makeZero(expr.getType());
-            addEvent(EventFactory.newAbortIf(expressions.makeEQ(ass, zero)));
+            addEvent(EventFactory.newAbortIf(expressions.makeNot(ass)));
             //TODO: Check if EARLYTERMINATION tag should be added to the abort
         }
 

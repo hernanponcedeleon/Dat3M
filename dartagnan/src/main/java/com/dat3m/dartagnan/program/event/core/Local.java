@@ -20,8 +20,9 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
     protected Expression expr;
 
     public Local(Register register, Expression expr) {
-        this.register = Preconditions.checkNotNull(register);
-        this.expr = Preconditions.checkNotNull(expr);
+        Preconditions.checkArgument(register.getType().equals(expr.getType()));
+        this.register = register;
+        this.expr = expr;
     }
 
     protected Local(Local other) {

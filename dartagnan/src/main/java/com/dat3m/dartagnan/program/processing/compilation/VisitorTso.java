@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -15,6 +16,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.*;
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.google.common.base.Verify.verify;
 
 class VisitorTso extends VisitorBase {
 
@@ -65,13 +67,12 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitJoin(Join e) {
         Register resultRegister = e.getResultRegister();
-        Expression zero = expressions.makeZero(resultRegister.getType());
         Load load = newLoad(resultRegister, e.getAddress());
         load.addTags(C11.PTHREAD);
 
         return tagList(eventSequence(
                 load,
-                newJump(expressions.makeNEQ(resultRegister, zero),
+                newJump(expressions.makeBooleanCast(resultRegister),
                         (Label) e.getThread().getExit())
         ));
     }
@@ -79,15 +80,14 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitStart(Start e) {
         Register resultRegister = e.getResultRegister();
-        Expression one = expressions.makeOne(resultRegister.getType());
+        verify(resultRegister.getType() instanceof BooleanType);
         Load load = newLoad(resultRegister, e.getAddress());
         load.addTags(Tag.STARTLOAD);
 
         return tagList(eventSequence(
                 load,
                 super.visitStart(e),
-                newJump(expressions.makeNEQ(resultRegister, one),
-                        (Label) e.getThread().getExit())
+                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
         ));
     }
 
@@ -171,14 +171,14 @@ class VisitorTso extends VisitorBase {
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
         Register oldValueRegister = e.getStructRegister(0);
         Register resultRegister = e.getStructRegister(1);
-        Expression one = expressions.makeOne(resultRegister.getType());
+        verify(resultRegister.getType() instanceof BooleanType);
 
         Expression address = e.getAddress();
         Expression expectedValue = e.getExpectedValue();
 
         Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, expectedValue));
         Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casEnd);
+        CondJump branchOnCasCmpResult = newJumpUnless(resultRegister, casEnd);
 
         Load load = newRMWLoad(oldValueRegister, address);
         Store store = newRMWStore(load, address, e.getStoreValue());
@@ -212,20 +212,21 @@ class VisitorTso extends VisitorBase {
         Expression value = e.getStoreValue();
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
-        Expression one = expressions.makeOne(type);
-
+        Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
+                e.getThread().newRegister(types.getBooleanType());
+        Local castResult = booleanResultRegister == resultRegister ? null :
+                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getThread().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
         Register regValue = e.getThread().newRegister(type);
         Load loadValue = newRMWLoad(regValue, address);
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(regValue, regExpected));
+        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
         Label casFail = newLabel("CAS_fail");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(resultRegister, one), casFail);
+        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
         Store storeValue = newRMWStore(loadValue, address, value);
         Label casEnd = newLabel("CAS_end");
         CondJump gotoCasEnd = newGoto(casEnd);
         Store storeExpected = newStore(expectedAddr, regValue);
-
         return tagList(eventSequence(
                 loadExpected,
                 loadValue,
@@ -235,7 +236,8 @@ class VisitorTso extends VisitorBase {
                 gotoCasEnd,
                 casFail,
                 storeExpected,
-                casEnd
+                casEnd,
+                castResult
         ));
     }
 

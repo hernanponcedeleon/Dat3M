@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class Start extends LoadBase implements EventUser {
 
@@ -19,6 +21,7 @@ public class Start extends LoadBase implements EventUser {
 
     public Start(Register reg, Expression address, Event creationEvent) {
         super(reg, address, MO_SC);
+        checkArgument(reg.getType() instanceof BooleanType, "Non-boolean register for Start.");
         this.creationEvent = creationEvent;
         addTags(Tag.C11.PTHREAD);
 
