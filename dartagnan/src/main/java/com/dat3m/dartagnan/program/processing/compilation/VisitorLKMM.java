@@ -34,6 +34,8 @@ public class VisitorLKMM extends VisitorBase {
         Store store = newCoreStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
         store.addTags(C11.PTHREAD);
 
+        e.replaceAllUsages(store); // The store represents the creation event
+
         return eventSequence(
                 store
         );

@@ -56,6 +56,8 @@ class VisitorRISCV extends VisitorBase {
         Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.RISCV.MO_REL);
         store.addTags(C11.PTHREAD);
 
+        e.replaceAllUsages(store); // The store represents the creation event
+
         return eventSequence(
                 store
         );

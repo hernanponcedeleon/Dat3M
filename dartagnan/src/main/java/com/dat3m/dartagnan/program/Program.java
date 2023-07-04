@@ -28,7 +28,7 @@ public class Program {
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
-    private SourceLanguage format;
+    private final SourceLanguage format;
 
     public Program(Memory memory, SourceLanguage format) {
         this("", memory, format);

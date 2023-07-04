@@ -3,28 +3,35 @@ package com.dat3m.dartagnan.program.event.lang.pthread;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.common.LoadBase;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
+import java.util.Map;
+import java.util.Set;
+
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_SC;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class Start extends LoadBase {
+public class Start extends LoadBase implements EventUser {
 
-    private final Event creationEvent;
+    private Event creationEvent;
 
     public Start(Register reg, Expression address, Event creationEvent) {
         super(reg, address, MO_SC);
         checkArgument(reg.getType() instanceof BooleanType, "Non-boolean register for Start.");
         this.creationEvent = creationEvent;
         addTags(Tag.C11.PTHREAD);
+
+        this.creationEvent.registerUser(this);
     }
 
     private Start(Start other) {
         super(other);
         this.creationEvent = other.creationEvent;
+        creationEvent.registerUser(this);
     }
 
     @Override
@@ -44,5 +51,15 @@ public class Start extends LoadBase {
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitStart(this);
+    }
+
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(creationEvent);
+    }
+
+    @Override
+    public void updateReferences(Map<Event, Event> updateMapping) {
+        creationEvent = EventUser.moveUserReference(this, creationEvent, updateMapping);
     }
 }

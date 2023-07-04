@@ -48,8 +48,8 @@ public class AnalysisTest {
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        b.initThread(0);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
@@ -112,12 +112,12 @@ public class AnalysisTest {
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
-        MemoryObject x = b.newObject("x", 2);
-        MemoryObject y = b.getOrNewObject("y");
+        MemoryObject x = b.newMemoryObject("x", 2);
+        MemoryObject y = b.newMemoryObject("y", 1);
 
-        b.initThread(0);
+        b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
@@ -160,11 +160,11 @@ public class AnalysisTest {
     }
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 3);
         x.setInitialValue(0, x);
 
-        b.initThread(0);
+        b.newThread(0);
         Store e0 = newStore(plus(x, 1));
         b.addChild(0, e0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -204,11 +204,11 @@ public class AnalysisTest {
     }
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         IntegerType type = types.getArchType();
-        MemoryObject x = b.newObject("x", 3);
+        MemoryObject x = b.newMemoryObject("x", 3);
 
-        b.initThread(0);
+        b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, b.newConstant(type, true)));
         Label l0 = b.getOrCreateLabel(0,"l0");
@@ -258,11 +258,11 @@ public class AnalysisTest {
     }
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 3);
         x.setInitialValue(0, x);
 
-        b.initThread(0);
+        b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = newLoad(r0, x);
         b.addChild(0, e0);
@@ -302,12 +302,12 @@ public class AnalysisTest {
     }
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.getOrNewObject("x");
-        MemoryObject y = b.getOrNewObject("y");
-        MemoryObject z = b.getOrNewObject("z");
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject z = b.newMemoryObject("z", 1);
 
-        b.initThread(0);
+        b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, mult(x, 0)));
         b.addChild(0, newLocal(r0, y));
@@ -346,12 +346,12 @@ public class AnalysisTest {
     }
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.getOrNewObject("x");
-        MemoryObject y = b.getOrNewObject("y");
-        MemoryObject z = b.getOrNewObject("z");
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject z = b.newMemoryObject("z", 1);
 
-        b.initThread(0);
+        b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);

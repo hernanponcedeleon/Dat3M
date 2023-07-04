@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -10,6 +11,7 @@ import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusAArch64Parser;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -32,16 +34,15 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         }
     }
 
-    private final TypeFactory types = TypeFactory.getInstance();
+    private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.ARM8);
+    private final TypeFactory types = programBuilder.getTypeFactory();
     private final IntegerType archType = types.getArchType();
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ProgramBuilder programBuilder;
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private int mainThread;
     private int threadCount = 0;
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
 
-    public VisitorLitmusAArch64(ProgramBuilder pb){
-        this.programBuilder = pb;
+    public VisitorLitmusAArch64() {
     }
 
 
@@ -103,7 +104,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusAArch64Parser.ThreadDeclaratorListContext ctx) {
         for(LitmusAArch64Parser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;

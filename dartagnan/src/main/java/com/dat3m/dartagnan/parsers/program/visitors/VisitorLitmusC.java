@@ -1,9 +1,11 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
@@ -28,16 +30,15 @@ import static com.dat3m.dartagnan.program.event.Tag.C11;
 
 public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ProgramBuilder programBuilder;
-    private final IntegerType archType = TypeFactory.getInstance().getArchType();
+    private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
     private int currentThread;
     private int scope;
     private int ifId = 0;
     private Register returnRegister;
 
-    public VisitorLitmusC(ProgramBuilder pb){
-        this.programBuilder = pb;
+    public VisitorLitmusC(){
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -45,6 +46,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Program visitMain(LitmusCParser.MainContext ctx) {
+        //FIXME: We should visit thread declarations before variable declarations
+        // because variable declaration refer to threads.
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
         visitProgram(ctx.program());
         if(ctx.assertionList() != null){
@@ -78,6 +81,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorRegister(LitmusCParser.GlobalDeclaratorRegisterContext ctx) {
         if (ctx.initConstantValue() != null) {
+            // FIXME: We visit declarators before threads, so we need to create threads early
+            programBuilder.getOrNewThread(ctx.threadId().id);
             IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
             programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
         }
@@ -90,7 +95,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             programBuilder.initLocEqLocPtr(ctx.varName(0).getText(), ctx.varName(1).getText());
         } else {
             String rightName = ctx.varName(1).getText();
-            MemoryObject object = programBuilder.getObject(rightName);
+            MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
                 programBuilder.initLocEqConst(ctx.varName(0).getText(), object);
             } else {
@@ -102,11 +107,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitGlobalDeclaratorRegisterLocation(LitmusCParser.GlobalDeclaratorRegisterLocationContext ctx) {
+        // FIXME: We visit declarators before threads, so we need to create threads early
+        programBuilder.getOrNewThread(ctx.threadId().id);
         if(ctx.Ast() == null){
             programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.varName(0).getText(), ctx.varName(1).getText(), archType);
         } else {
             String rightName = ctx.varName(1).getText();
-            MemoryObject object = programBuilder.getObject(rightName);
+            MemoryObject object = programBuilder.getMemoryObject(rightName);
             if(object != null){
                 programBuilder.initRegEqConst(ctx.threadId().id, ctx.varName(0).getText(), object);
             } else {
@@ -122,7 +129,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Integer size = ctx.DigitSequence() != null ? Integer.parseInt(ctx.DigitSequence().getText()) : null;
 
         if(ctx.initArray() == null && size != null && size > 0){
-            programBuilder.newObject(name,size);
+            programBuilder.newMemoryObject(name,size);
             return null;
         }
         if(ctx.initArray() != null){
@@ -134,16 +141,16 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                     } else {
                         String varName = elCtx.varName().getText();
                         //see test/resources/arrays/ok/C-array-ok-17.litmus
-                        MemoryObject object = programBuilder.getObject(varName);
+                        MemoryObject object = programBuilder.getMemoryObject(varName);
                         if(object != null){
                             values.add(object);
                         } else {
-                            object = programBuilder.getOrNewObject(varName);
+                            object = programBuilder.getOrNewMemoryObject(varName);
                             values.add(elCtx.Ast() == null ? object : object.getInitialValue(0));
                         }
                     }
                 }
-                MemoryObject object = programBuilder.newObject(name,values.size());
+                MemoryObject object = programBuilder.newMemoryObject(name,values.size());
                 for(int i = 0; i < values.size(); i++) {
                     object.setInitialValue(i,values.get(i));
                 }
@@ -160,7 +167,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitThread(LitmusCParser.ThreadContext ctx) {
         scope = currentThread = ctx.threadId().id;
-        programBuilder.initThread(currentThread);
+        // Declarations in the preamble may have created the thread already
+        programBuilder.getOrNewThread(currentThread);
         visitThreadArguments(ctx.threadArguments());
 
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
@@ -173,10 +181,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitThreadArguments(LitmusCParser.ThreadArgumentsContext ctx){
         if(ctx != null){
-        	int id = 0;
+            int id = 0;
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
                 String name = varName.getText();
-                MemoryObject object = programBuilder.getOrNewObject(name);
+                MemoryObject object = programBuilder.getOrNewMemoryObject(name);
                 PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(id);
                 if(pType != null) {
                     BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
@@ -196,9 +204,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitIfExpression(LitmusCParser.IfExpressionContext ctx) {
-    	Expression expr = (Expression) ctx.re().accept(this);
+        Expression expr = (Expression) ctx.re().accept(this);
 
-    	ifId++;
+        ifId++;
         Label elseL = programBuilder.getOrCreateLabel(currentThread,"else_" + ifId);
         Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + ifId);
 
@@ -208,7 +216,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
             expressionContext.accept(this);
         CondJump jumpToEnd = EventFactory.newGoto(endL);
-		programBuilder.addChild(currentThread, jumpToEnd);
+        programBuilder.addChild(currentThread, jumpToEnd);
 
         programBuilder.addChild(currentThread, elseL);
         if(ctx.elseExpression() != null){
@@ -242,14 +250,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return register;
     }
 
-	@Override
-	public Expression visitC11AtomicOp(LitmusCParser.C11AtomicOpContext ctx) {
+    @Override
+    public Expression visitC11AtomicOp(LitmusCParser.C11AtomicOpContext ctx) {
         Register register = getReturnRegister(true);
         Expression value = returnExpressionOrOne(ctx.value);
         Event event = EventFactory.Atomic.newFetchOp(register, getAddress(ctx.address), value, ctx.op, ctx.c11Mo().mo);
         programBuilder.addChild(currentThread, event);
         return register;
-	}
+    }
 
 
     @Override
@@ -280,23 +288,23 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return register;
     }
 
-	@Override
-	public Expression visitReC11SCmpXchg(LitmusCParser.ReC11SCmpXchgContext ctx) {
+    @Override
+    public Expression visitReC11SCmpXchg(LitmusCParser.ReC11SCmpXchgContext ctx) {
         Register register = getReturnRegister(true);
         Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, true);
         programBuilder.addChild(currentThread, event);
         return register;
-	}
+    }
 
-	@Override
-	public Expression visitReC11WCmpXchg(LitmusCParser.ReC11WCmpXchgContext ctx) {
+    @Override
+    public Expression visitReC11WCmpXchg(LitmusCParser.ReC11WCmpXchgContext ctx) {
         Register register = getReturnRegister(true);
         Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Atomic.newCompareExchange(register, getAddress(ctx.address), getAddress(ctx.expectedAdd), value, ctx.c11Mo(0).mo, false);
         programBuilder.addChild(currentThread, event);
         return register;
-	}
+    }
 
     @Override
     public Expression visitReCmpXchg(LitmusCParser.ReCmpXchgContext ctx){
@@ -308,12 +316,12 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return register;
     }
 
-	@Override public Expression visitReC11Load(LitmusCParser.ReC11LoadContext ctx) {
+    @Override public Expression visitReC11Load(LitmusCParser.ReC11LoadContext ctx) {
         Register register = getReturnRegister(true);
         Event event = EventFactory.Atomic.newLoad(register, getAddress(ctx.address), ctx.c11Mo().mo);
         programBuilder.addChild(currentThread, event);
         return register;
-	}
+    }
 
     @Override
     public Expression visitReLoad(LitmusCParser.ReLoadContext ctx){
@@ -417,7 +425,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreAtomicOp(LitmusCParser.NreAtomicOpContext ctx){
-    	Expression value = returnExpressionOrOne(ctx.value);
+        Expression value = returnExpressionOrOne(ctx.value);
         Event event = EventFactory.Linux.newRMWOp(getAddress(ctx.address), value, ctx.op);
         return programBuilder.addChild(currentThread, event);
     }
@@ -441,12 +449,12 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         return programBuilder.addChild(currentThread, event);
     }
 
-	@Override
-	public Object visitNreC11Store(LitmusCParser.NreC11StoreContext ctx) {
+    @Override
+    public Object visitNreC11Store(LitmusCParser.NreC11StoreContext ctx) {
         Expression value = (Expression)ctx.value.accept(this);
         Event event = EventFactory.Atomic.newStore(getAddress(ctx.address), value, ctx.c11Mo().mo);
         return programBuilder.addChild(currentThread, event);
-	}
+    }
 
     @Override
     public Object visitNreAssignment(LitmusCParser.NreAssignmentContext ctx){
@@ -482,10 +490,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         throw new ParsingException("Register " + ctx.varName().getText() + " is already initialised");
     }
 
-	@Override
-	public Object visitNreC11Fence(LitmusCParser.NreC11FenceContext ctx) {
-		return programBuilder.addChild(currentThread, EventFactory.Atomic.newFence(ctx.c11Mo().mo));
-	}
+    @Override
+    public Object visitNreC11Fence(LitmusCParser.NreC11FenceContext ctx) {
+        return programBuilder.addChild(currentThread, EventFactory.Atomic.newFence(ctx.c11Mo().mo));
+    }
 
     @Override
     public Object visitNreFence(LitmusCParser.NreFenceContext ctx){
@@ -494,15 +502,15 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
     @Override
     public Object visitNreSpinLock(LitmusCParser.NreSpinLockContext ctx) {
-    	return programBuilder.addChild(currentThread, EventFactory.Linux.newLock(getAddress(ctx.address)));
+        return programBuilder.addChild(currentThread, EventFactory.Linux.newLock(getAddress(ctx.address)));
     }
 
     @Override
     public Object visitNreSpinUnlock(LitmusCParser.NreSpinUnlockContext ctx) {
-    	return programBuilder.addChild(currentThread, EventFactory.Linux.newUnlock(getAddress(ctx.address)));
+        return programBuilder.addChild(currentThread, EventFactory.Linux.newUnlock(getAddress(ctx.address)));
     }
 
-	@Override
+    @Override
     public Object visitNreSrcuSync(LitmusCParser.NreSrcuSyncContext ctx) {
         return programBuilder.addChild(currentThread, EventFactory.Linux.newSrcuSync(getAddress(ctx.address)));
     }
@@ -517,7 +525,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             if(register != null){
                 return register;
             }
-            MemoryObject object = programBuilder.getObject(ctx.getText());
+            MemoryObject object = programBuilder.getMemoryObject(ctx.getText());
             if(object != null){
                 register = programBuilder.getOrNewRegister(scope, null, archType);
                 programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
@@ -525,7 +533,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             }
             return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
         }
-        MemoryObject object = programBuilder.getOrNewObject(ctx.getText());
+        MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), 1);
         Register register = programBuilder.getOrNewRegister(scope, null, archType);
         programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;

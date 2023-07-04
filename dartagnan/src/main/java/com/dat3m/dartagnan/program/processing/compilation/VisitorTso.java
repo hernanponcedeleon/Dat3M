@@ -48,6 +48,8 @@ class VisitorTso extends VisitorBase {
         Store store = newStore(e.getAddress(), e.getMemValue());
         store.addTags(C11.PTHREAD);
 
+        e.replaceAllUsages(store); // The store represents the creation event
+
         return tagList(eventSequence(
                 store,
                 X86.newMemoryFence()

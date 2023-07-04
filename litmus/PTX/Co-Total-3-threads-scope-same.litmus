@@ -3,7 +3,6 @@ PTX Co-Total-3-threads-scope-same
 {
 x=0; f1=0; f2=0;
 P2:r0=0; P2:r1=0; P2:r2=0;
-P3:r0=0; P3:r1=0; P3:r2=0;
 }
  P0@cta 0,gpu 0         | P1@cta 0,gpu 0         | P2@cta 0,gpu 0         ;
  st.weak x, 1           | st.weak x, 2           | ld.acquire.sys r0, f1  ;

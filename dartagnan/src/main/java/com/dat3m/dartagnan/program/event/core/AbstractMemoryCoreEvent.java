@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
+import com.google.common.base.Preconditions;
 
 import static com.dat3m.dartagnan.program.event.Tag.MEMORY;
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
@@ -19,7 +20,7 @@ public abstract class AbstractMemoryCoreEvent extends AbstractEvent implements M
     protected Type accessType;
 
     public AbstractMemoryCoreEvent(Expression address) {
-        this.address = address;
+        this.address = Preconditions.checkNotNull(address);
         this.accessType = TypeFactory.getInstance().getArchType(); // TODO: Add proper typing
         addTags(VISIBLE, MEMORY);
     }
