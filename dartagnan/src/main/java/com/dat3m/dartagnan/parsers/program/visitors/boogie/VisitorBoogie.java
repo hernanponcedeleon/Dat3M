@@ -1,7 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Atom;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -144,7 +147,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected String getScopedName(String name) {
-        if (name == null || !inlineMode) {
+        if (name == null || !inlineMode || scopes.isEmpty()) {
             // We don't need scoping if we do not inline or there is no name.
             return name;
         }
@@ -280,7 +283,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         currentThread = creation.spawnedThread.getId();
         if (creation.creationEvent != null) {
             assert creation.communicationAddress != null;
-            final Register reg = getOrNewScopedRegister(null);
+            final Register reg = getOrNewScopedRegister(null, types.getBooleanType());
             addEvent(EventFactory.Pthread.newStart(reg, creation.communicationAddress, creation.creationEvent));
         }
 
@@ -947,7 +950,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected void addAssertion(Expression expr) {
         final Expression condition = expressions.makeBooleanCast(expr);
-        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionCounter, expr.getType());
+        final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionCounter, condition.getType());
         assertionCounter++;
         addEvent(EventFactory.newLocal(ass, condition)).addTags(Tag.ASSERTION);
         if (inlineMode) {

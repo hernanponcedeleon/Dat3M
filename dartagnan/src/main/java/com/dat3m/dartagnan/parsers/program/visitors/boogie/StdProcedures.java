@@ -63,7 +63,7 @@ public class StdProcedures {
             if (!(register.getType() instanceof IntegerType integerType)) {
                 throw new ParsingException("Fetching get_my_tid with non-integer register.");
             }
-            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), integerType);
+            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.currentThread), integerType);
             visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }
