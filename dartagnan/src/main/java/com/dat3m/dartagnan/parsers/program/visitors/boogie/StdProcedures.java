@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Label;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -50,8 +49,7 @@ public class StdProcedures {
         }
         if (funcName.equals("abort")) {
             if (visitor.inlineMode) {
-                final Label label = visitor.getOrNewLabel("END_OF_T" + visitor.threadCount);
-                visitor.addEvent(EventFactory.newGoto(label));
+                visitor.addEvent(EventFactory.newGoto(visitor.getEndOfThreadLabel()));
             } else {
                 visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
             }
@@ -61,7 +59,7 @@ public class StdProcedures {
             // FIXME: In noinline mode, we cannot resolve the tId yet.
             final String registerName = ctx.call_params().Ident(0).getText();
             final Register register = visitor.getScopedRegister(registerName);
-            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.threadCount), register.getType());
+            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.currentThread), register.getType());
             visitor.addEvent(EventFactory.newLocal(register, tid));
             return;
         }

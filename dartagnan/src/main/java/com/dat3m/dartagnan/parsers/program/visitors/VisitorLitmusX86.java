@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -21,15 +23,14 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     private final static ImmutableSet<String> fences = ImmutableSet.of(MFENCE);
 
-    private final TypeFactory types = TypeFactory.getInstance();
-    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final ProgramBuilder programBuilder;
+    private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.TSO);
+    private final TypeFactory types = programBuilder.getTypeFactory();
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = types.getArchType();
     private int mainThread;
     private int threadCount = 0;
 
-    public VisitorLitmusX86(ProgramBuilder pb){
-        this.programBuilder = pb;
+    public VisitorLitmusX86(){
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -92,7 +93,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitThreadDeclaratorList(LitmusX86Parser.ThreadDeclaratorListContext ctx) {
         for(LitmusX86Parser.ThreadIdContext threadCtx : ctx.threadId()){
-            programBuilder.initThread(threadCtx.id);
+            programBuilder.newThread(threadCtx.id);
             threadCount++;
         }
         return null;
@@ -121,13 +122,13 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadLocationToRegister(LitmusX86Parser.LoadLocationToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newLoad(register, object));
     }
 
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, constant));
     }
@@ -135,14 +136,14 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitStoreRegisterToLocation(LitmusX86Parser.StoreRegisterToLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, register));
     }
 
     @Override
     public Object visitExchangeRegisterLocation(LitmusX86Parser.ExchangeRegisterLocationContext ctx) {
         Register register = programBuilder.getOrErrorRegister(mainThread, ctx.register().getText());
-        MemoryObject object = programBuilder.getOrNewObject(ctx.location().getText());
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         return programBuilder.addChild(mainThread, EventFactory.X86.newExchange(object, register));
     }
 
@@ -179,7 +180,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitFence(LitmusX86Parser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
-        if(fences.contains(name)){
+        if(fences.contains(name)) {
             return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);

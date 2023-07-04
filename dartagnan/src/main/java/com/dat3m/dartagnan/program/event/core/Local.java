@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.HashSet;
@@ -19,8 +20,8 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
     protected Expression expr;
 
     public Local(Register register, Expression expr) {
-        this.register = register;
-        this.expr = expr;
+        this.register = Preconditions.checkNotNull(register);
+        this.expr = Preconditions.checkNotNull(expr);
     }
 
     protected Local(Local other) {
