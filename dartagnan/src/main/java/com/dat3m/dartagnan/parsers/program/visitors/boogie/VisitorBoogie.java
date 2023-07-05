@@ -50,7 +50,6 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.handleLkmmFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.LLVMPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.handleLlvmFunction;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.PTHREADPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
@@ -219,12 +218,16 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         inlineMode = false;
         int oldCurrentThread = currentThread;
         for (FunctionDeclaration decl : functionDeclarations) {
-            functions.add(programBuilder.newFunction(decl.funcName, ++currentThread, decl.funcType, decl.parameterNames));
+            final Function func = programBuilder.newFunction(decl.funcName, ++currentThread, decl.funcType, decl.parameterNames);
+            constantsValueMap.put(func.getName(), func);
+            functions.add(func);
         }
         currentThread = oldCurrentThread;
         for (FunctionDeclaration decl : functionDeclarations) {
             ++currentThread;
-            visitProc_decl(decl.ctx(),  null);
+            if (decl.ctx.impl_body() != null) {
+                visitProc_decl(decl.ctx(), null);
+            }
         }
         // ----- TODO: Test code end -----
 
@@ -316,7 +319,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // TODO: We skip some functions for now. Ideally, we skip smack/boogie functions
         //  but still create intrinsic functions for, e.g., pthread, malloc, and __VERIFIER__XYZ etc.
         if (name.startsWith("SMACK") || name.startsWith("$") || name.startsWith("llvm") || name.startsWith("__")
-                || name.startsWith("boogie") || name.startsWith("corral") || name.startsWith("pthread")
+                || name.startsWith("boogie") || name.startsWith("corral") //|| name.startsWith("pthread")
                 || name.startsWith("assert") || name.startsWith("malloc") || name.startsWith("abort")
                 || name.startsWith("reach_error") || name.startsWith("printf") || name.startsWith("fopen")) {
             return;
@@ -499,8 +502,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (DUMMYPROCEDURES.stream().anyMatch(funcName::startsWith)) {
             return null;
         }
-        if (PTHREADPROCEDURES.stream().anyMatch(funcName::contains)) {
-            handlePthreadsFunctions(this, ctx);
+        if (handlePthreadsFunctions(this, ctx)) {
             return null;
         }
         if (SVCOMPPROCEDURES.stream().anyMatch(funcName::contains)) {

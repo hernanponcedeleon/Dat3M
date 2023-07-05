@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
@@ -52,7 +53,7 @@ public class Function implements Expression {
 
     @Override
     public Type getType() {
-        return functionType;
+        return TypeFactory.getInstance().getArchType();
     }
 
     public String getName() { return this.name; }

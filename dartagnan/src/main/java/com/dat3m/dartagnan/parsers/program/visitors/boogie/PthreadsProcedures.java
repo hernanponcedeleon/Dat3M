@@ -36,48 +36,44 @@ public class PthreadsProcedures {
             "pthread_setspecific"
     );
 
-    public static void handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
             case "pthread_create":
-                pthread_create(visitor, ctx);
-                break;
+                return pthread_create(visitor, ctx);
             case "__pthread_join":
             case "pthread_join":
                 // VisitorBoogie already took care of creating the join event
                 // when it parsed the previous load.
-                pthread_join(visitor, ctx);
-                break;
+                return pthread_join(visitor, ctx);
             case "pthread_cond_init":
             case "pthread_cond_wait":
             case "pthread_cond_signal":
             case "pthread_cond_broadcast":
             case "pthread_exit":
             case "pthread_mutex_destroy":
-                break;
+                return true;
             case "pthread_mutex_init":
                 mutexInit(visitor, ctx);
-                break;
+                return true;
             case "pthread_mutex_lock":
                 mutexLock(visitor, ctx);
-                break;
+                return true;
             case "pthread_mutex_unlock":
                 mutexUnlock(visitor, ctx);
-                break;
+                return true;
             default:
-                throw new ParsingException(funcName + " cannot be handled");
+                return false;
         }
     }
 
-    private static void pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
-
+    private static boolean pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
         // ----- TODO: Test code -----
         if (!visitor.inlineMode) {
-            visitor.addEvent(EventFactory.newFunctionCall("dummy pthread_join()"));
-            // TODO: Create a proper function call, not just an annotation
-            return;
+            return false;
         }
         // ----- TODO: Test code end -----
+
         // reg := pthread_join(tid);
         final Register reg = visitor.getScopedRegister(ctx.call_params().Ident(0).getText());
         Expression threadToJoinWith = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
@@ -94,14 +90,13 @@ public class PthreadsProcedures {
                 .orElseThrow(() -> new MalformedProgramException("Failed to join with a thread: unknown thread id: " + tid))
                 .communicationAddress();
         visitor.addEvent(EventFactory.Pthread.newJoin(reg, comAddr));
+        return true;
     }
 
-    private static void pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
+    private static boolean pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
         // ----- TODO: Test code -----
         if (!visitor.inlineMode) {
-            visitor.addEvent(EventFactory.newFunctionCall("dummy pthread_create()"));
-            // TODO: Create a proper function call, not just an annotation
-            return;
+            return false;
         }
         // ----- TODO: Test code end -----
 
@@ -136,6 +131,7 @@ public class PthreadsProcedures {
         visitor.addEvent(EventFactory.newLocal(reg, successBit));
 
         visitor.createNewThread(function, List.of(argument), threadCreationEvent, comAddr);
+        return true;
     }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
