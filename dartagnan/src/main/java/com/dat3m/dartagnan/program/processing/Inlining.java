@@ -28,6 +28,7 @@ import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.RECURSION_BOUND;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @Options
 public class Inlining implements ProgramProcessor {
@@ -86,9 +87,9 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private void inlineBodyAfterCall(DirectFunctionCall call, Function callTarget, int count) {
+    private void inlineBodyAfterCall(DirectFunctionCall call, Function callTarget, int scope) {
         // All occurrences of return events will jump here instead.
-        Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.getName());
+        Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.getName() + "_" + scope);
         // Calls with result will write the return value to this register.
         Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
         var inlinedBody = new ArrayList<Event>();
@@ -97,8 +98,8 @@ public class Inlining implements ProgramProcessor {
         List<Expression> arguments = call.getArguments();
         assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
         // All registers have to be replaced
-        for (Register register : List.copyOf(callTarget.getRegisters())) {
-            String newName = count + ":" + register.getName();
+        for (Register register : callTarget.getRegisters()) {
+            String newName = scope + ":" + register.getName();
             registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
         }
         var parameterAssignments = new ArrayList<Event>();
@@ -118,22 +119,24 @@ public class Inlining implements ProgramProcessor {
                 replacementMap.put(functionEvent, copy);
             }
         }
-        inlinedBody.add(exitLabel);
+
+        //
         for (Event event : inlinedBody) {
             if (event instanceof EventUser user) {
                 user.updateReferences(replacementMap);
             }
             if (event instanceof Label label) {
-                label.setName(count + ":" + label.getName());
+                label.setName(scope + ":" + label.getName());
             }
         }
+
+        // Substitute registers in the copied body
         var substitution = new ExprTransformer() {
             @Override
             public Expression visit(Register register) {
-                return registerMap.getOrDefault(register, register);
+                return checkNotNull(registerMap.get(register));
             }
         };
-        assert inlinedBody.stream().allMatch(e -> e.getFunction() == null || e.getFunction() == callTarget);
         for (Event event : inlinedBody) {
             if (event instanceof RegReader reader) {
                 reader.transformExpressions(substitution);
@@ -146,9 +149,21 @@ public class Inlining implements ProgramProcessor {
                     writer.setResultRegister(newRegister);
                 }
             }
+            if (event instanceof LlvmCmpXchg cmpXchg) {
+                Register oldResultRegister = cmpXchg.getStructRegister(0);
+                Register newResultRegister = registerMap.get(oldResultRegister);
+                assert newResultRegister != null;
+                cmpXchg.setStructRegister(0, newResultRegister);
+                Register oldExpectationRegister = cmpXchg.getStructRegister(1);
+                Register newExpectationRegister = registerMap.get(oldExpectationRegister);
+                assert newExpectationRegister != null;
+                cmpXchg.setStructRegister(1, newExpectationRegister);
+            }
         }
+
         // Replace call with replacement
         // this places parameterAssignments before inlinedBody
+        call.insertAfter(exitLabel);
         call.insertAfter(inlinedBody);
         call.insertAfter(parameterAssignments);
     }

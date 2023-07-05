@@ -45,6 +45,15 @@ public class LlvmCmpXchg extends RMWCmpXchgBase {
         };
     }
 
+    public void setStructRegister(int idx, Register newRegister) {
+        switch (idx) {
+            case 0 -> resultRegister = newRegister;
+            case 1 -> cmpRegister = newRegister;
+            default ->
+                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+        }
+    }
+
     @Override
     public String defaultString() {
         final String strongSuffix = isStrong ? "strong" : "weak";
