@@ -14,7 +14,8 @@ import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -51,6 +52,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"SB-RMW", IMM, PASS, 1},
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
+                {"thread_chaining", IMM, PASS, 1},
         });
     }
 
