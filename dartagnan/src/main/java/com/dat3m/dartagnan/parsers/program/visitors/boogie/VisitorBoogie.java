@@ -45,15 +45,11 @@ import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.LLVMUNARY;
 import static com.dat3m.dartagnan.parsers.program.boogie.LlvmUnary.llvmUnary;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.SMACKPREDICATES;
 import static com.dat3m.dartagnan.parsers.program.boogie.SmackPredicates.smackPredicate;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.DUMMYPROCEDURES;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.LKMMPROCEDURES;
+import static com.dat3m.dartagnan.parsers.program.visitors.boogie.DummyProcedures.handleDummyProcedures;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LkmmProcedures.handleLkmmFunction;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.LLVMPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.LlvmProcedures.handleLlvmFunction;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.PthreadsProcedures.handlePthreadsFunctions;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.STDPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.StdProcedures.handleStdFunction;
-import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.SVCOMPPROCEDURES;
 import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedures.handleSvcompFunction;
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
@@ -499,28 +495,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             initMode = true;
         }
 
-        if (DUMMYPROCEDURES.stream().anyMatch(funcName::startsWith)) {
+        // Check if the function is a special one.
+        if (handleDummyProcedures(this, ctx) || handlePthreadsFunctions(this, ctx) ||
+                handleSvcompFunction(this, ctx) || handleStdFunction(this, ctx)
+                || handleLkmmFunction(this, ctx) || handleLlvmFunction(this, ctx)) {
             return null;
         }
-        if (handlePthreadsFunctions(this, ctx)) {
-            return null;
-        }
-        if (SVCOMPPROCEDURES.stream().anyMatch(funcName::contains)) {
-            handleSvcompFunction(this, ctx);
-            return null;
-        }
-        if (STDPROCEDURES.stream().anyMatch(funcName::startsWith)) {
-            handleStdFunction(this, ctx);
-            return null;
-        }
-        if (LKMMPROCEDURES.stream().anyMatch(funcName::equals)) {
-            handleLkmmFunction(this, ctx);
-            return null;
-        }
-        if (LLVMPROCEDURES.stream().anyMatch(funcName::equals)) {
-            handleLlvmFunction(this, ctx);
-            return null;
-        }
+
         if (!procedures.containsKey(funcName)) {
             throw new ParsingException("Procedure " + funcName + " is not defined");
         }

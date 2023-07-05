@@ -41,12 +41,12 @@ public class StdProcedures {
             "llvm.lifetime.start",
             "llvm.lifetime.end");
 
-    public static void handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         if (funcName.equals("$alloc") || funcName.equals("$malloc") || funcName.equals("calloc")
                 || funcName.equals("malloc") || funcName.equals("external_alloc")) {
             alloc(visitor, ctx);
-            return;
+            return true;
         }
         if (funcName.equals("abort")) {
             if (visitor.inlineMode) {
@@ -54,7 +54,7 @@ public class StdProcedures {
             } else {
                 visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
             }
-            return;
+            return true;
         }
         if (funcName.equals("get_my_tid")) {
             // FIXME: In noinline mode, we cannot resolve the tId yet.
@@ -65,27 +65,27 @@ public class StdProcedures {
             }
             final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.currentThread), integerType);
             visitor.addEvent(EventFactory.newLocal(register, tid));
-            return;
+            return true;
         }
         if (funcName.equals("__assert_fail") || funcName.equals("__assert_rtn")) {
             __assert_fail(visitor);
-            return;
+            return true;
         }
         if (funcName.equals("assert_.i32")) {
             __assert(visitor, ctx);
-            return;
+            return true;
         }
         if (funcName.startsWith("fopen")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("free")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("memcpy") | funcName.startsWith("$memcpy")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("memset") || funcName.startsWith("$memset")) {
             throw new ParsingException(funcName + " cannot be handled");
@@ -98,28 +98,28 @@ public class StdProcedures {
         }
         if (funcName.startsWith("strcmp")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("strncpy")) {
             throw new ParsingException(funcName + " cannot be handled");
         }
         if (funcName.startsWith("llvm.stackrestore")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("llvm.stacksave")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("llvm.lifetime.start")) {
             // TODO: Implement this
-            return;
+            return true;
         }
         if (funcName.startsWith("llvm.lifetime.end")) {
             // TODO: Implement this
-            return;
+            return true;
         }
-        throw new UnsupportedOperationException(funcName + " procedure is not part of STDPROCEDURES");
+        return false;
     }
 
     private static void alloc(VisitorBoogie visitor, Call_cmdContext ctx) {

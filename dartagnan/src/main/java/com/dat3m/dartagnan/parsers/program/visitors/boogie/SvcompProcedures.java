@@ -43,7 +43,7 @@ public class SvcompProcedures {
             "__VERIFIER_nondet_char",
             "__VERIFIER_nondet_uchar");
 
-    public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
             case "reach_error" -> visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getArchType()));
@@ -61,8 +61,11 @@ public class SvcompProcedures {
                     "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                     "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                     "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> __VERIFIER_nondet(visitor, ctx, funcName);
-            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of SVCOMPPROCEDURES");
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
