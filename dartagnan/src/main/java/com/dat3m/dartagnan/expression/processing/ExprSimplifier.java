@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
@@ -202,18 +201,5 @@ public class ExprSimplifier extends ExprTransformer {
         return expressions.makeConditional(cond, t, f);
     }
 
-    @Override
-    public Expression visit(INonDet iNonDet) {
-        return iNonDet;
-    }
 
-    @Override
-    public Expression visit(Register reg) {
-        return reg;
-    }
-
-    @Override
-    public Expression visit(MemoryObject address) {
-        return address;
-    }
 }

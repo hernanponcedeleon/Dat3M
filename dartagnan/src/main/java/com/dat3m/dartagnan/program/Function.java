@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -9,7 +12,7 @@ import com.google.common.base.Preconditions;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Function {
+public class Function implements Expression {
 
     protected String name;
     protected Event entry; // Can be null for intrinsics
@@ -45,6 +48,11 @@ public class Function {
             exit = cur;
             cur = cur.getSuccessor();
         }
+    }
+
+    @Override
+    public Type getType() {
+        return functionType;
     }
 
     public String getName() { return this.name; }
@@ -129,5 +137,15 @@ public class Function {
         return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
 
+    }
+
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    public IConst reduce() {
+        throw new UnsupportedOperationException("Cannot reduce functions");
     }
 }
