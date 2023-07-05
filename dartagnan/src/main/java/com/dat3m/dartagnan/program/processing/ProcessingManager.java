@@ -77,6 +77,7 @@ public class ProcessingManager implements ProgramProcessor {
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 Inlining.fromConfig(config),
+                ThreadCreation.fromConfig(config),
                 UnreachableCodeElimination.fromConfig(config),
                 ComplexBlockSplitting.newInstance(),
                 BranchReordering.fromConfig(config),

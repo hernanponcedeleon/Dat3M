@@ -80,27 +80,26 @@ public class Inlining implements ProgramProcessor {
                             String.format("Cannot call thread %s directly.",
                                     call.getCallTarget()));
                 }
-                inlineBodyAfterCall(call, callTarget, ++scopeCounter);
+                // Calls with result will write the return value to this register.
+                Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
+                inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);
                 event = call.getSuccessor();
                 call.forceDelete();
             }
         }
     }
 
-    private void inlineBodyAfterCall(DirectFunctionCall call, Function callTarget, int scope) {
+    static void inlineBodyAfterCall(Event entry, Register result, List<Expression> arguments, Function callTarget, int scope) {
         // All occurrences of return events will jump here instead.
         Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.getName() + "_" + scope);
-        // Calls with result will write the return value to this register.
-        Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
         var inlinedBody = new ArrayList<Event>();
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
-        List<Expression> arguments = call.getArguments();
         assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
         // All registers have to be replaced
         for (Register register : callTarget.getRegisters()) {
             String newName = scope + ":" + register.getName();
-            registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
+            registerMap.put(register, entry.getFunction().newRegister(newName, register.getType()));
         }
         var parameterAssignments = new ArrayList<Event>();
         for (int j = 0; j < arguments.size(); j++) {
@@ -163,12 +162,12 @@ public class Inlining implements ProgramProcessor {
 
         // Replace call with replacement
         // this places parameterAssignments before inlinedBody
-        call.insertAfter(exitLabel);
-        call.insertAfter(inlinedBody);
-        call.insertAfter(parameterAssignments);
+        entry.insertAfter(exitLabel);
+        entry.insertAfter(inlinedBody);
+        entry.insertAfter(parameterAssignments);
     }
 
-    private void checkReturnType(Register result, Expression expression) {
+    private static void checkReturnType(Register result, Expression expression) {
         if (result == null && expression != null) {
             throw new MalformedProgramException(
                     String.format("Return %s in function returning void.", expression));
