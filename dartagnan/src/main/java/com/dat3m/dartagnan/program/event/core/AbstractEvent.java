@@ -157,8 +157,7 @@ public abstract class AbstractEvent implements Event {
      */
     @Override
     public void detach() {
-        //TODO this may be required elsewhere
-        Preconditions.checkState(function == null || (this != function.getEntry()),
+        Preconditions.checkState(function == null || (this != function.getEntry() && this != function.getExit()),
                 "Cannot detach the entry or exit event %s of function %s", this, getFunction());
         if (this.predecessor != null) {
             this.predecessor.successor = successor;
