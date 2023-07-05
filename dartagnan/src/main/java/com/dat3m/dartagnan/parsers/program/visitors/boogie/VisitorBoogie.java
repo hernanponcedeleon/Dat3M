@@ -217,8 +217,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         // ----- TODO: Test code -----
         inlineMode = false;
+        int oldCurrentThread = currentThread;
         for (FunctionDeclaration decl : functionDeclarations) {
             functions.add(programBuilder.newFunction(decl.funcName, ++currentThread, decl.funcType, decl.parameterNames));
+        }
+        currentThread = oldCurrentThread;
+        for (FunctionDeclaration decl : functionDeclarations) {
+            ++currentThread;
             visitProc_decl(decl.ctx(),  null);
         }
         // ----- TODO: Test code end -----

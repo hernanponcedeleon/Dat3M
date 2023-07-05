@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.google.common.base.Preconditions;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +33,7 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
 
     protected DirectFunctionCall(DirectFunctionCall other) {
         this.callTarget = other.callTarget;
-        this.arguments = other.arguments;
+        this.arguments = new ArrayList<>(other.arguments);
     }
 
     public Function getCallTarget() { return callTarget; }

@@ -12,12 +12,13 @@ import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -46,17 +47,17 @@ public class Inlining implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        for (Thread thread : program.getThreads()) {
-            replaceAllCalls(thread);
+        for (Function function : program.getFunctions()) {
+            replaceAllCalls(function);
         }
     }
 
     private void replaceAllCalls(Function thread) {
-        Map<Function, Integer> counterMap = new HashMap<>();
+        int scopeCounter = 0;
         Map<Event, List<DirectFunctionCall>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
         Event event = thread.getEntry();
-        assert event instanceof Skip;
+        assert event instanceof Label;
         while (event != null) {
             exitToCallMap.remove(event);
             // Work with successor because when calls get removed, the loop variable would be invalidated.
@@ -80,32 +81,32 @@ public class Inlining implements ProgramProcessor {
                                     call.getCallTarget()));
                 }
                 // make sure that functions are identified by name
-                int count = counterMap.compute(callTarget, (k, v) -> v == null ? 0 : v + 1);
-                replaceCall(call, callTarget, count);
+                replaceCall(call, callTarget, ++scopeCounter);
             }
         }
     }
 
-    private void replaceCall(DirectFunctionCall call, Function function, int count) {
+    private void replaceCall(DirectFunctionCall call, Function callTarget, int count) {
         // All occurrences of return events will jump here instead.
-        Label exitLabel = newLabel("EXIT_OF_CALL_" + function.getName() + "_" + count);
+        Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.getName());
         // Calls with result will write the return value to this register.
         Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
         var replacement = new ArrayList<Event>();
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
         List<Expression> arguments = call.getArguments();
-        assert arguments.size() == function.getFunctionType().getParameterTypes().size();
+        assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
         // All registers have to be replaced
-        for (Register register : function.getRegisters()) {
-            String newName = register.getName() + "_" + function.getName() + "_" + count;
-            registerMap.put(register, call.getThread().newRegister(newName, register.getType()));
+        for (Register register : List.copyOf(callTarget.getRegisters())) {
+            String newName = count + ":" + register.getName();
+            registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
         }
+        var parameterAssignments = new ArrayList<Event>();
         for (int j = 0; j < arguments.size(); j++) {
-            Register register = function.getParameterRegisters().get(j);
-            replacement.add(newLocal(register, arguments.get(j)));
+            Register register = registerMap.get(callTarget.getParameterRegisters().get(j));
+            parameterAssignments.add(newLocal(register, arguments.get(j)));
         }
-        for (Event functionEvent : function.getEvents()) {
+        for (Event functionEvent : callTarget.getEvents()) {
             if (functionEvent instanceof Return returnEvent) {
                 Optional<Expression> expression = returnEvent.getValue();
                 checkReturnType(result, expression.orElse(null));
@@ -122,6 +123,9 @@ public class Inlining implements ProgramProcessor {
             if (event instanceof EventUser user) {
                 user.updateReferences(replacementMap);
             }
+            if (event instanceof Label label) {
+                label.setName(count + ":" + label.getName());
+            }
         }
         var substitution = new ExprTransformer() {
             @Override
@@ -129,18 +133,32 @@ public class Inlining implements ProgramProcessor {
                 return registerMap.getOrDefault(register, register);
             }
         };
+        assert replacement.stream().allMatch(e -> e.getFunction() == null || e.getFunction() == callTarget);
         for (Event event : replacement) {
             if (event instanceof RegReader reader) {
                 reader.transformExpressions(substitution);
             }
+            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg)) {
+                Register oldRegister = writer.getResultRegister();
+                Register newRegister = registerMap.get(oldRegister);
+                assert newRegister != null || writer.getResultRegister() == oldRegister;
+                if (newRegister != null) {
+                    writer.setResultRegister(newRegister);
+                }
+            }
         }
         // Replace call with replacement
         Event predecessor = call.getPredecessor();
-        for (Event current : replacement) {
-            predecessor.setSuccessor(current);
+        for (Event current : parameterAssignments) {
+            predecessor.insertAfter(current);
             predecessor = current;
         }
-        predecessor.setSuccessor(call.getSuccessor());
+        for (Event current : replacement) {
+            predecessor.insertAfter(current);
+            predecessor = current;
+        }
+        predecessor.insertAfter(call.getSuccessor());
+        call.forceDelete();
     }
 
     private void checkReturnType(Register result, Expression expression) {
