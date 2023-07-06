@@ -27,6 +27,8 @@ public class AbortIf extends AbstractEvent implements RegReader {
         this.condition = other.condition;
     }
 
+    public Expression getCondition() { return condition; }
+
     @Override
     protected String defaultString() {
         return String.format("abort if (%s)", condition);
