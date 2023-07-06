@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -313,7 +312,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // ====== Create function declaration ========
         // TODO: We skip some functions for now. Ideally, we skip smack/boogie functions
         //  but still create intrinsic functions for, e.g., pthread, malloc, and __VERIFIER__XYZ etc.
-        if (name.startsWith("SMACK") || name.startsWith("$") || name.startsWith("llvm") || name.startsWith("__")
+        if (name.startsWith("SMACK") || name.startsWith("__SMACK") || name.startsWith("$") || name.startsWith("llvm")
+                || (name.startsWith("__") && !name.contains("pthread_join") && !name.contains("__VERIFIER_atomic"))
                 || name.startsWith("boogie") || name.startsWith("corral") //|| name.startsWith("pthread")
                 || name.startsWith("assert") || name.startsWith("malloc") || name.startsWith("abort")
                 || name.startsWith("reach_error") || name.startsWith("printf") || name.startsWith("fopen")) {
@@ -548,7 +548,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 }
                 addEvent(funcCall);
             } else {
-                //System.out.println("Warning: skipped call to " + funcName);
+                System.out.println("Warning: skipped call to " + funcName);
             }
             // ----- TODO: Test code end -----
         }
@@ -646,7 +646,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
 
-        final Expression cond = (Expression) ctx.proposition().expr().accept(this);
+        Expression cond = (Expression) ctx.proposition().expr().accept(this);
         final Label pairingLabel = pairLabels.get(currentLabel);
         if (pairingLabel != null) {
             // if there is a pairing label, we jump to that (this assume belongs to a conditional jump)
@@ -656,7 +656,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             addEvent(EventFactory.newJumpUnless(cond, getEndOfThreadLabel()));
         } else {
             // ... if we are not inlining, we instead create an abort
-            addEvent(EventFactory.newAbortIf(expressions.makeNot(cond)));
+            if (cond.equals(expressions.makeFalse())) {
+                cond = expressions.makeTrue();
+            } else {
+                cond = expressions.makeNot(cond);
+            }
+            addEvent(EventFactory.newAbortIf(cond));
         }
         return null;
     }
@@ -939,15 +944,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final Expression condition = expressions.makeBooleanCast(expr);
         final Register ass = programBuilder.getOrNewRegister(currentThread, "assert_" + assertionCounter, condition.getType());
         assertionCounter++;
+        final Event terminator = inlineMode ?
+                EventFactory.newJumpUnless(ass, getEndOfThreadLabel()) :
+                EventFactory.newAbortIf(expressions.makeNot(ass));
         addEvent(EventFactory.newLocal(ass, condition)).addTags(Tag.ASSERTION);
-        if (inlineMode) {
-            final CondJump jump = EventFactory.newJumpUnless(ass, getEndOfThreadLabel());
-            jump.addTags(Tag.EARLYTERMINATION);
-            addEvent(jump);
-        } else {
-            addEvent(EventFactory.newAbortIf(expressions.makeNot(ass)));
-            //TODO: Check if EARLYTERMINATION tag should be added to the abort
-        }
+        addEvent(terminator).addTags(Tag.EARLYTERMINATION);
 
     }
 

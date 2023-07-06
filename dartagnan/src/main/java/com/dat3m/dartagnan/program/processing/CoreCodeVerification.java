@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.functions.ThreadCreationArguments;
+import com.dat3m.dartagnan.program.event.functions.ThreadParameter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
@@ -35,7 +37,8 @@ public class CoreCodeVerification implements ProgramProcessor {
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
             PTXFenceWithId.class, // For PTX
-            BeginAtomic.class, EndAtomic.class
+            BeginAtomic.class, EndAtomic.class,
+            ThreadCreationArguments.class, ThreadParameter.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
             // TODO: We might want to find a more systematic way to extend the core with these custom events.
     ));

@@ -12,15 +12,13 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -49,7 +47,7 @@ public class ThreadCreation implements ProgramProcessor {
         return new ThreadCreation();
     }
 
-    private Thread createThreadFromFunction(Function function, int tid, Event creator, Expression comAddr) {
+    private Thread createThreadFromFunction(Function function, int tid, Event creator, Expression comAddr, ThreadCreationArguments args) {
         //TODO: Handle parameters
 
         // Create new thread
@@ -99,7 +97,11 @@ public class ThreadCreation implements ProgramProcessor {
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
             if (e instanceof AbortIf abort) {
-                abort.replaceBy(EventFactory.newJump(abort.getCondition(), threadEnd));
+                final Event replacement = EventFactory.newJump(abort.getCondition(), threadEnd);
+                if (abort.hasTag(Tag.EARLYTERMINATION)) {
+                    replacement.addTags(Tag.EARLYTERMINATION);
+                }
+                abort.replaceBy(replacement);
             } else if (e instanceof Return ret) {
                 ret.insertAfter(EventFactory.newGoto(threadReturnLabel));
                 if (ret.hasValue()) {
@@ -110,8 +112,12 @@ public class ThreadCreation implements ProgramProcessor {
             }
         }
 
-        // Add Start & End events if this thread was spawned
+        // Add Start, End, and Parameter events if this thread was spawned
         if (creator != null) {
+            int index = 0;
+            for (Register parameter : thread.getParameterRegisters()) {
+                thread.getEntry().insertAfter(new ThreadParameter(parameter, args, index++));
+            }
             thread.getEntry().insertAfter(EventFactory.Pthread.newStart(comAddr, creator));
             threadReturnLabel.insertAfter(EventFactory.Pthread.newEnd(comAddr));
         }
@@ -121,11 +127,18 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+       /* if (true) {
+            return;
+        }*/
+        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
+            return;
+        }
+
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final IntegerType archType = types.getArchType();
 
-        // TODO:  test code
+        // TODO: test code
         program.getThreads().clear();
 
         int threadCounter = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
@@ -134,7 +147,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         final Function main = program.getFunctions().stream().filter(f -> f.getName().equals("main")).findFirst().get();
         final Queue<Thread> workingQueue = new ArrayDeque<>();
-        workingQueue.add(createThreadFromFunction(main, threadCounter, null, null));
+        workingQueue.add(createThreadFromFunction(main, threadCounter, null, null, null));
 
         while (!workingQueue.isEmpty()) {
             final Thread thread = workingQueue.remove();
@@ -168,12 +181,15 @@ public class ThreadCreation implements ProgramProcessor {
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         comAddress.setCVar("__com_" + name + "_" + nextTid);
                         final Event createEvent = newCreate(comAddress, name);
-                        call.replaceBy(createEvent);
+                        final ThreadCreationArguments args = new ThreadCreationArguments(List.of(argument));
+                        call.replaceBy(args);
+                        args.insertAfter(createEvent);
 
-                        workingQueue.add(createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress));
+
+                        workingQueue.add(createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress, args));
 
                         // Helper code to do constant propagation of generated tid's
-                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(thread.getId()), archType);
+                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
                         expr2TidMap.put(pidResultAddress, tidExpr);
                         tid2ComAddrMap.put(tidExpr, comAddress);
 

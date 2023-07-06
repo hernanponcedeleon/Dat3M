@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -80,6 +81,8 @@ public class Inlining implements ProgramProcessor {
                             String.format("Cannot call thread %s directly.",
                                     call.getCallTarget()));
                 }
+                call.getPredecessor().insertAfter(EventFactory.newFunctionCall(callTarget.getName()));
+                call.insertAfter(EventFactory.newFunctionReturn(callTarget.getName()));
                 // Calls with result will write the return value to this register.
                 Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
                 inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);
