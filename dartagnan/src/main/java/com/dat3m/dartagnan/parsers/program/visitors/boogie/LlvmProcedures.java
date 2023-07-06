@@ -48,8 +48,11 @@ public class LlvmProcedures {
             "llvm.ctlz.i64"
     );
 
-    public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
+        if (LLVMPROCEDURES.stream().noneMatch(funcName::equals)) {
+            return false;
+        }
 
         final String regName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getScopedRegister(regName); // May be NULL
@@ -96,7 +99,7 @@ public class LlvmProcedures {
                 switch (((IConst) p3).getValueAsInt()) {
                     case 0 -> {
                         visitor.addEvent(Llvm.newExchange(reg, p0, p1, mo));
-                        return;
+                        return true;
                     }
                     case 1 -> op = IOpBin.PLUS;
                     case 2 -> op = IOpBin.MINUS;
@@ -107,6 +110,7 @@ public class LlvmProcedures {
                             throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
                 }
                 visitor.addEvent(Llvm.newRMW(reg, p0, p1, op, mo));
+                return true;
             }
             case "llvm.smax.i32", "llvm.smax.i64", "llvm.umax.i32", "llvm.umax.i64" -> {
                 cond = visitor.expressions.makeGT(p0, p1, funcName.contains("smax"));
@@ -119,7 +123,10 @@ public class LlvmProcedures {
             case "llvm.ctlz.i32", "llvm.ctlz.i64" -> {
                 visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeCTLZ(p0, (IntegerType) p0.getType())));
             }
-            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of LLVMPROCEDURES");
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 }

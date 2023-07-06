@@ -26,8 +26,11 @@ public class LkmmProcedures {
             "__LKMM_SPIN_LOCK",
             "__LKMM_SPIN_UNLOCK");
 
-    public static void handleLkmmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handleLkmmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
+        if (LKMMPROCEDURES.stream().noneMatch(funcName::equals)) {
+            return false;
+        }
 
         final String registerName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getScopedRegister(registerName); // May be NULL
@@ -84,7 +87,10 @@ public class LkmmProcedures {
             case "__LKMM_SPIN_UNLOCK" -> {
                 visitor.addEvent(EventFactory.Linux.newUnlock(p0));
             }
-            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of LKMMPROCEDURES");
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 }

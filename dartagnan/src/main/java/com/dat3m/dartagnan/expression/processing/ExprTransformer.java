@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -78,4 +79,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     public Expression visit(Location location) {
         return location;
     }
+
+    @Override
+    public Expression visit(Function function) { return function; }
 }
