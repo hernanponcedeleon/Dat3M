@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -24,12 +25,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.Pthread.newCreate;
-import static com.dat3m.dartagnan.program.event.EventFactory.Pthread.newEnd;
-import static com.dat3m.dartagnan.program.event.EventFactory.Pthread.newJoin;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLabel;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
-import static com.dat3m.dartagnan.program.event.EventFactory.newSkip;
+import static com.dat3m.dartagnan.program.event.EventFactory.Pthread.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 /*
  * Replaces all occurrences of calls to pthread_create.
@@ -60,6 +57,10 @@ public class ThreadCreation implements ProgramProcessor {
             Thread thread = queue.remove();
             var threadIdMap = new HashMap<Expression, Expression>();
             for (Event event : List.copyOf(thread.getEvents())) {
+                if (event instanceof Load load && threadIdMap.containsKey(load.getAddress())) {
+                    threadIdMap.put(load.getResultRegister(), threadIdMap.get(load.getAddress()));
+                }
+
                 if (!(event instanceof DirectFunctionCall call)) {
                     continue;
                 }
@@ -96,11 +97,14 @@ public class ThreadCreation implements ProgramProcessor {
                         Register result = getResultRegister(call);
                         assert result.getType() instanceof IntegerType;
                         call.insertAfter(newLocal(result, expressions.makeZero((IntegerType) result.getType())));
-                        call.replaceBy(newCreate(communicationAddress, name));
+                        Event createEv = newCreate(communicationAddress, name);
+                        call.replaceBy(createEv);
+                        childThread.getEntry().insertAfter(newStart(communicationAddress, createEv));
                     }
                     case "pthread_join", "__pthread_join" -> {
-                        assert arguments.size() == 1;
+                        assert arguments.size() == 2;
                         Expression tid = arguments.get(0);
+                        // Expression returnAddr = arguments.get(1);
                         Expression threadToJoinWith = threadIdMap.getOrDefault(tid, tid);
                         if (!(threadToJoinWith instanceof MemoryObject communicationAddress)) {
                             throw new UnsupportedOperationException(
