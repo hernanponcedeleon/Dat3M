@@ -84,15 +84,13 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        verify(resultRegister.getType() instanceof BooleanType);
+        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
         Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.RISCV.MO_ACQ);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
                 load,
-                super.visitStart(e),
-                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
+                visitStartBase(load.getResultRegister(), e)
         );
     }
 

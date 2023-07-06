@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
@@ -84,15 +84,13 @@ class VisitorIMM extends VisitorBase {
 
     @Override
     public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        verify(resultRegister.getType() instanceof BooleanType);
+        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
         Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
         load.addTags(Tag.STARTLOAD);
 
         return eventSequence(
                 load,
-                super.visitStart(e),
-                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
+                visitStartBase(load.getResultRegister(), e)
         );
     }
 

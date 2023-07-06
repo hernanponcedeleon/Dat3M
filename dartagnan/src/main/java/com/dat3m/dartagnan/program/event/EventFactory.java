@@ -292,8 +292,8 @@ public class EventFactory {
             return new Lock(name, address);
         }
 
-        public static Start newStart(Register reg, Expression address, Event creationEvent) {
-            return new Start(reg, address, creationEvent);
+        public static Start newStart(Expression address, Event creationEvent) {
+            return new Start(address, creationEvent);
         }
 
         public static Unlock newUnlock(String name, Expression address) {

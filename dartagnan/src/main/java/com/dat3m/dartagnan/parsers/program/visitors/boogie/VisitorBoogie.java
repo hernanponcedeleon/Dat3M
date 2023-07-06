@@ -287,8 +287,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         currentThread = creation.spawnedThread.getId();
         if (creation.creationEvent != null) {
             assert creation.communicationAddress != null;
-            final Register reg = getOrNewScopedRegister(null, types.getBooleanType());
-            addEvent(EventFactory.Pthread.newStart(reg, creation.communicationAddress, creation.creationEvent));
+            addEvent(EventFactory.Pthread.newStart(creation.communicationAddress, creation.creationEvent));
         }
 
         // Handle procedure body

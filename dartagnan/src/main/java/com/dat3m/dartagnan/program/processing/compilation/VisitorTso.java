@@ -79,15 +79,13 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        verify(resultRegister.getType() instanceof BooleanType);
+        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
         Load load = newLoad(resultRegister, e.getAddress());
         load.addTags(Tag.STARTLOAD);
 
         return tagList(eventSequence(
                 load,
-                super.visitStart(e),
-                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
+                visitStartBase(load.getResultRegister(), e)
         ));
     }
 

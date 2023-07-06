@@ -82,8 +82,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        verify(resultRegister.getType() instanceof BooleanType);
+        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
         Load load = newLoad(resultRegister, e.getAddress());
         load.addTags(Tag.STARTLOAD);
         Label label = newLabel("Jump_" + e.getGlobalId());
@@ -94,8 +93,7 @@ public class VisitorPower extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 Power.newISyncBarrier(),
-                super.visitStart(e),
-                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
+                visitStartBase(load.getResultRegister(), e)
         );
     }
 
