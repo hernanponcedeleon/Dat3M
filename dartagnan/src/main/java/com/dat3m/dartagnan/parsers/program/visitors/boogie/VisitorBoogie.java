@@ -190,7 +190,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 callCtx.call_params().Ident(1).getText();
     }
 
-    // ======================================== ====================
+    // ============================================================
 
     @Override
     public Object visitMain(MainContext ctx) {
@@ -211,13 +211,12 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         // ----- TODO: Test code -----
         inlineMode = false;
-        int oldCurrentThread = currentThread;
+        int fid = currentThread;
         for (FunctionDeclaration decl : functionDeclarations) {
-            final Function func = programBuilder.newFunction(decl.funcName, ++currentThread, decl.funcType, decl.parameterNames);
+            final Function func = programBuilder.newFunction(decl.funcName, ++fid, decl.funcType, decl.parameterNames);
             constantsValueMap.put(func.getName(), func);
             functions.add(func);
         }
-        currentThread = oldCurrentThread;
         for (FunctionDeclaration decl : functionDeclarations) {
             ++currentThread;
             if (decl.ctx.impl_body() != null) {
@@ -229,18 +228,20 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         return programBuilder.build();
     }
 
+    // =========================== Declarations =================================
+
     private void visitDeclarations(MainContext ctx) {
         for (Func_declContext funDecContext : ctx.func_decl()) {
-            visitFunc_decl(funDecContext);
+            registerBoogieFunction(funDecContext);
         }
         for (Proc_declContext procDecContext : ctx.proc_decl()) {
-            preProc_decl(procDecContext);
+            registerProcedure(procDecContext);
         }
         for (Const_declContext constDecContext : ctx.const_decl()) {
-            visitConst_decl(constDecContext);
+            registerConstants(constDecContext);
         }
         for (Axiom_declContext axiomDecContext : ctx.axiom_decl()) {
-            visitAxiom_decl(axiomDecContext);
+            assignConstants(axiomDecContext);
         }
         for (Var_declContext varDecContext : ctx.var_decl()) {
             visitVar_decl(varDecContext);
@@ -252,6 +253,107 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         for (String constName : constantSymbolMap.keySet()) {
             constantsValueMap.putIfAbsent(constName, zero);
         }
+    }
+
+    public void registerBoogieFunction(Func_declContext ctx) {
+        final String funcName = ctx.Ident().getText();
+        boogieFunctions.put(funcName, new BoogieFunction(funcName, ctx.var_or_type(), ctx.expr()));
+    }
+
+    private boolean doIgnoreProcedure(String procName) {
+        // These procedures do not get declared in the program, and the body of these procedures is never parsed.
+        // Calls to any of these procedures must get resolved somehow by the parser (e.g., by removing or replacing the call)
+        if (procName.startsWith("SMACK") || procName.startsWith("__SMACK") || procName.startsWith("$") || procName.startsWith("llvm")
+                || (procName.startsWith("__VERIFIER") && !procName.contains("__VERIFIER_atomic"))
+                || procName.startsWith("boogie") || procName.startsWith("corral")
+                || procName.startsWith("assert") || procName.startsWith("malloc") || procName.startsWith("abort")
+                || procName.startsWith("reach_error") || procName.startsWith("printf") || procName.startsWith("fopen")) {
+            return true;
+        }
+        return false;
+    }
+
+    private void registerProcedure(Proc_declContext ctx) {
+        final String procName = ctx.proc_sign().Ident().getText();
+        if (procedures.put(procName, ctx) != null) {
+            throw new ParsingException("Procedure " + procName + " is already defined");
+        }
+
+        // ----- TODO: Test code -----
+        // ====== Create function declaration ========
+        // TODO: We skip some functions for now. Ideally, we skip smack/boogie functions
+        //  but still create intrinsic functions for, e.g., pthread, malloc, and __VERIFIER__XYZ etc.
+        if (doIgnoreProcedure(procName)) {
+            return;
+        }
+
+        final List<String> parameterNames = new ArrayList<>();
+        final List<Type> parameterTypes = new ArrayList<>();
+
+        if (ctx.proc_sign().proc_sign_in() != null) {
+            final List<BoogieParser.Attr_typed_idents_whereContext> params =
+                    ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where();
+            for (Attr_typed_idents_whereContext param : params) {
+                // Parse input parameters
+                final VarDeclaration decl = parseVarDeclaration(param.getText());
+                parameterNames.add(decl.varName);
+                parameterTypes.add(decl.type);
+            }
+        }
+        final Type returnType;
+        if (ctx.proc_sign().proc_sign_out() != null) {
+            // Parse output type
+            final String typeString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres()
+                    .attr_typed_idents_where(0).typed_idents_where().typed_idents().type().getText();
+            returnType = Types.parseIntegerType(typeString, types);
+        } else {
+            returnType = types.getVoidType();
+        }
+        final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
+        functionDeclarations.add(new FunctionDeclaration(procName, functionType, parameterNames, ctx));
+        // ----- TODO: Test code end -----
+    }
+
+    public void registerConstants(Const_declContext ctx) {
+        for (ParseTree ident : ctx.typed_idents().idents().Ident()) {
+            final String name = ident.getText();
+            if (ctx.getText().contains(":treadLocal")) {
+                threadLocalVariables.add(name);
+            }
+            final String declText = ctx.getText();
+            if (declText.contains("ref;") && !procedures.containsKey(name) && !doIgnoreVariable(name)) {
+                int size = declText.contains(":allocSize")
+                        ? Integer.parseInt(declText.split(":allocSize")[1].split("}")[0])
+                        : 1;
+                programBuilder.newMemoryObject(name, size);
+            } else {
+                final String typeString = ctx.typed_idents().type().getText();
+                final IntegerType type = Types.parseIntegerType(typeString, types);
+                constantSymbolMap.put(name, new ConstantSymbol(type, name));
+            }
+        }
+    }
+
+    public void assignConstants(Axiom_declContext ctx) {
+        final Expression exp = (Expression) ctx.proposition().accept(this);
+        if (exp instanceof Atom atom && atom.getLHS() instanceof ConstantSymbol c && atom.getOp().equals(EQ)) {
+            constantsValueMap.put(c.name, atom.getRHS());
+        }
+    }
+
+    @Override
+    public Object visitVar_decl(Var_declContext ctx) {
+        for (Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
+            for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
+                final String name = ident.getText();
+                if (!doIgnoreVariable(name)) {
+                    //TODO: This code never gets reached: it seems all global var declarations are
+                    // Smack-specific and get skipped
+                    programBuilder.newMemoryObject(name, 1);
+                }
+            }
+        }
+        return null;
     }
 
     protected void createNewThread(String functionName, List<Expression> arguments, Event creatorEvent, Expression comAddress) {
@@ -300,105 +402,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         pairLabels.clear();
         resetScopes();
         expr2tid.clear();
-    }
-
-    private void preProc_decl(Proc_declContext ctx) {
-        final String name = ctx.proc_sign().Ident().getText();
-        if (procedures.put(name, ctx) != null) {
-            throw new ParsingException("Procedure " + name + " is already defined");
-        }
-
-        // ----- TODO: Test code -----
-        // ====== Create function declaration ========
-        // TODO: We skip some functions for now. Ideally, we skip smack/boogie functions
-        //  but still create intrinsic functions for, e.g., pthread, malloc, and __VERIFIER__XYZ etc.
-        if (name.startsWith("SMACK") || name.startsWith("__SMACK") || name.startsWith("$") || name.startsWith("llvm")
-                || (name.startsWith("__VERIFIER") && !name.contains("__VERIFIER_atomic"))
-                //|| (name.startsWith("__") && !name.contains("pthread_join") && !name.contains("__VERIFIER_atomic"))
-                || name.startsWith("boogie") || name.startsWith("corral") //|| name.startsWith("pthread")
-                || name.startsWith("assert") || name.startsWith("malloc") || name.startsWith("abort")
-                || name.startsWith("reach_error") || name.startsWith("printf") || name.startsWith("fopen")) {
-            return;
-        }
-        final List<String> parameterNames = new ArrayList<>();
-        final List<Type> parameterTypes = new ArrayList<>();
-
-        if (ctx.proc_sign().proc_sign_in() != null) {
-            final List<BoogieParser.Attr_typed_idents_whereContext> params =
-                    ctx.proc_sign().proc_sign_in().attr_typed_idents_wheres().attr_typed_idents_where();
-            for (Attr_typed_idents_whereContext param : params) {
-                // Parse input parameters
-                final VarDeclaration decl = parseVarDeclaration(param.getText());
-                parameterNames.add(decl.varName);
-                parameterTypes.add(decl.type);
-            }
-        }
-        final Type returnType;
-        if (ctx.proc_sign().proc_sign_out() != null) {
-            // Parse output type
-            final String typeString = ctx.proc_sign().proc_sign_out().attr_typed_idents_wheres()
-                    .attr_typed_idents_where(0).typed_idents_where().typed_idents().type().getText();
-            returnType = Types.parseIntegerType(typeString, types);
-        } else {
-            returnType = types.getVoidType();
-        }
-        final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
-        //System.out.printf("Added function %s of type %s%n", ctx.proc_sign().getText(), functionType);
-        functionDeclarations.add(new FunctionDeclaration(name, functionType, parameterNames, ctx));
-        // ----- TODO: Test code end -----
-    }
-
-    @Override
-    public Object visitAxiom_decl(Axiom_declContext ctx) {
-        final Expression exp = (Expression) ctx.proposition().accept(this);
-        if (exp instanceof Atom atom && atom.getLHS() instanceof ConstantSymbol c && atom.getOp().equals(EQ)) {
-            constantsValueMap.put(c.name, atom.getRHS());
-        }
-        return null;
-    }
-
-    @Override
-    public Object visitConst_decl(Const_declContext ctx) {
-        for (ParseTree ident : ctx.typed_idents().idents().Ident()) {
-            final String name = ident.getText();
-            if (ctx.getText().contains(":treadLocal")) {
-                threadLocalVariables.add(name);
-            }
-            final String declText = ctx.getText();
-            if (declText.contains("ref;") && !procedures.containsKey(name) && !doIgnoreVariable(name)) {
-                int size = declText.contains(":allocSize")
-                        ? Integer.parseInt(declText.split(":allocSize")[1].split("}")[0])
-                        : 1;
-                programBuilder.newMemoryObject(name, size);
-            } else {
-                final String typeString = ctx.typed_idents().type().getText();
-                final IntegerType type = Types.parseIntegerType(typeString, types);
-                constantSymbolMap.put(name, new ConstantSymbol(type, name));
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public Object visitFunc_decl(Func_declContext ctx) {
-        final String name = ctx.Ident().getText();
-        boogieFunctions.put(name, new BoogieFunction(name, ctx.var_or_type(), ctx.expr()));
-        return null;
-    }
-
-    @Override
-    public Object visitVar_decl(Var_declContext ctx) {
-        for (Attr_typed_idents_whereContext atiwC : ctx.typed_idents_wheres().attr_typed_idents_where()) {
-            for (ParseTree ident : atiwC.typed_idents_where().typed_idents().idents().Ident()) {
-                final String name = ident.getText();
-                if (!doIgnoreVariable(name)) {
-                    //TODO: This code never gets reached: it seems all global var declarations are
-                    // Smack-specific and get skipped
-                    programBuilder.newMemoryObject(name, 1);
-                }
-            }
-        }
-        return null;
     }
 
     @Override
@@ -493,6 +496,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         final String funcName = getFunctionNameFromCallContext(ctx);
         if (funcName.equals("$initialize") && inlineMode) {
             initMode = true;
+            addEvent(EventFactory.newFunctionCall(funcName));
+            visitProc_decl(procedures.get(funcName), List.of());
+            addEvent(EventFactory.newFunctionReturn(funcName));
+            initMode = false;
+            return null;
         }
 
         // Check if the function is a special one.
@@ -556,9 +564,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         if (ctx.equals(atomicMode)) {
             atomicMode = null;
             SvcompProcedures.__VERIFIER_atomic_end(this);
-        }
-        if (funcName.equals("$initialize")) {
-            initMode = false;
         }
         return null;
     }
