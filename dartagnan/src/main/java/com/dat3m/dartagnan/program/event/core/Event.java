@@ -73,6 +73,7 @@ public interface Event extends Encoder, Comparable<Event> {
     void insertAfter(Event toBeInserted);
     void insertAfter(List<Event> toBeInserted);
     void replaceBy(Event replacement);
+    void replaceBy(List<Event> replacement);
 
     // ============================== Misc ==============================
 

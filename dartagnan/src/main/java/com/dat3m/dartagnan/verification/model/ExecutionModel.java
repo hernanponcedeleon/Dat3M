@@ -335,18 +335,19 @@ public class ExecutionModel {
                 addressWritesMap.put(address, new HashSet<>());
             }
 
-            if (data.isRead()) {
-                String valueString = String.valueOf(model.evaluate(encodingContext.result((RegWriter) e)));
+            if (data.isRead() || data.isWrite()) {
+                String valueString = String.valueOf(model.evaluate(encodingContext.value((MemoryEvent) e)));
                 BigInteger value = switch(valueString) {
                     case "false" -> BigInteger.ZERO;
                     case "true" -> BigInteger.ONE;
                     default -> new BigInteger(valueString);
                 };
                 data.setValue(value);
+            }
+
+            if (data.isRead()) {
                 addressReadsMap.get(address).add(data);
             } else if (data.isWrite()) {
-                Object valueObject = checkNotNull(model.evaluate(encodingContext.value((MemoryEvent) e)));
-                data.setValue(new BigInteger(valueObject.toString()));
                 addressWritesMap.get(address).add(data);
                 writeReadsMap.put(data, new HashSet<>());
                 if (data.isInit()) {

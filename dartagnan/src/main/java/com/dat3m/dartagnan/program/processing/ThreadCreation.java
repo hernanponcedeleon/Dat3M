@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -13,10 +14,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -30,26 +31,51 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.Pthread.newCreate;
-import static com.dat3m.dartagnan.program.event.EventFactory.Pthread.newJoin;
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
+import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
+import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
+import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 /*
- * Replaces all occurrences of calls to pthread_create.
- * Each reachable call is assigned an individual thread object.
- * The function that such a thread executes, gets copied and this copy becomes reachable code, itself.
+ * This pass handles (reachable) pthread-related function calls.
+ * - each pthread_create call spawns a new Thread object.
+ * - pthread_join calls are lowered to appropriate synchronization primitives.
+ * - get_my_tid calls are replaced by constant tid values.
+ * Initially, a single thread from the "main" function is spawned.
+ * Then the pass works iteratively by picking a (newly created) thread and handling all its pthread calls.
+ *
+ * TODO:
+ *  (1) Handle thread local variables
+ *  (2) Make sure that non-deterministic expressions are recreated properly (avoid wrong sharing)
+ *  (3) Make this pass able to run after compilation.
  */
+@Options
 public class ThreadCreation implements ProgramProcessor {
+
+    @Option(name = TARGET,
+            description = "The target architecture to which the program shall be compiled to.",
+            secure = true,
+            toUppercase = true)
+    private Arch compilationTarget = Arch.C11;
+
+    @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
+            description = "Calling pthread_create is guaranteed to succeed.",
+            secure = true,
+            toUppercase = true)
+    private boolean forceStart = false;
 
     private ThreadCreation() {}
 
-    public static ThreadCreation fromConfig(Configuration ignored) throws InvalidConfigurationException {
-        return new ThreadCreation();
+    public static ThreadCreation fromConfig(Configuration config) throws InvalidConfigurationException {
+        ThreadCreation creation = new ThreadCreation();
+        config.inject(creation);
+        return creation;
     }
 
     @Override
@@ -57,22 +83,26 @@ public class ThreadCreation implements ProgramProcessor {
         if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
             return;
         }
-
         // TODO: test code
-        program.getThreads().clear();
+        program.getThreads().clear(); // Clear old threads and create new ones
         // TODO -----------
 
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final IntegerType archType = types.getArchType();
 
-        int threadCounter = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
+        final Optional<Function> main = program.getFunctions().stream().filter(f -> f.getName().equals("main")).findFirst();
+        if (main.isEmpty()) {
+            throw new MalformedProgramException("Program contains no main function");
+        }
+
+        int maxId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
                 .mapToInt(Function::getId)
                 .max().orElse(0);
+        int nextTid = maxId + 1;
 
-        final Function main = program.getFunctions().stream().filter(f -> f.getName().equals("main")).findFirst().get();
         final Queue<Thread> workingQueue = new ArrayDeque<>();
-        workingQueue.add(createThreadFromFunction(main, threadCounter, null, null));
+        workingQueue.add(createThreadFromFunction(main.get(), nextTid++, null, null));
 
         while (!workingQueue.isEmpty()) {
             final Thread thread = workingQueue.remove();
@@ -98,22 +128,21 @@ public class ThreadCreation implements ProgramProcessor {
                     case "pthread_create" -> {
                         assert arguments.size() == 4;
                         final Expression pidResultAddress = arguments.get(0);
-                        //Expression attributes = arguments.get(1);
+                        //final Expression attributes = arguments.get(1);
                         final Function targetFunction = (Function)arguments.get(2);
                         final Expression argument = arguments.get(3);
 
-                        final String name = targetFunction.getName();
-                        final int nextTid = ++threadCounter;
-
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
-                        comAddress.setCVar("__com_" + name + "_" + nextTid);
-                        final ThreadCreate createEvent = new ThreadCreate(List.of(argument));
-                        final Event syncEvent = newCreate(comAddress, name);
+                        final ThreadCreate createEvent = newThreadCreate(List.of(argument));
+                        final Event startSignal = newReleaseStore(comAddress, expressions.makeTrue());
+                        comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
                         createEvent.copyAllMetadataFrom(call);
-                        syncEvent.copyAllMetadataFrom(call);
+                        startSignal.copyAllMetadataFrom(call);
 
-                        call.replaceBy(createEvent);
-                        createEvent.insertAfter(syncEvent);
+                        call.replaceBy(List.of(
+                                createEvent,
+                                startSignal
+                        ));
 
                         final Thread spawnedThread = createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
                         createEvent.setSpawnedThread(spawnedThread);
@@ -123,17 +152,24 @@ public class ThreadCreation implements ProgramProcessor {
                         final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
                         expr2TidMap.put(pidResultAddress, tidExpr);
                         tid2ComAddrMap.put(tidExpr, comAddress);
+
+                        nextTid++;
                     }
                     case "pthread_join", "__pthread_join" -> {
                         assert arguments.size() == 2;
                         final Expression tid = arguments.get(0);
-                        // Expression returnAddr = arguments.get(1);
+                        // final Expression returnAddr = arguments.get(1);
                         final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(expr2TidMap.get(tid));
                         if (comAddrOfThreadToJoinWith == null) {
                             throw new UnsupportedOperationException(
                                     "Cannot handle pthread_join with dynamic thread parameter.");
                         }
-                        call.replaceBy(newJoin(resultRegister, comAddrOfThreadToJoinWith));
+                        final Register joinDummyReg = thread.newRegister(types.getBooleanType());
+                        final Label threadEnd = (Label)thread.getExit();
+                        call.replaceBy(List.of(
+                                newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
+                                newJump(joinDummyReg, threadEnd)
+                        ));
                     }
                     case "get_my_tid" -> {
                         assert arguments.size() == 0;
@@ -150,11 +186,14 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
-        // Create new thread
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final TypeFactory types = TypeFactory.getInstance();
+
+        // ------------------- Create new thread -------------------
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
 
-        // Copy register from target function into new thread
+        // ------------------- Copy register from target function into new thread -------------------
         final Map<Register, Register> registerReplacement = new HashMap<>();
         for (Register reg : function.getRegisters()) {
             registerReplacement.put(reg, thread.getOrNewRegister(reg.getName(), reg.getType()));
@@ -166,7 +205,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
         };
 
-        // Copy, update, and append the function body to the thread
+        // ------------------- Copy, update, and append the function body to the thread -------------------
         final List<Event> body = new ArrayList<>();
         final Map<Event, Event> copyMap = new HashMap<>();
         function.getEvents().forEach(e -> body.add(copyMap.computeIfAbsent(e, Event::getCopy)));
@@ -186,13 +225,13 @@ public class ThreadCreation implements ProgramProcessor {
         }
         thread.getEntry().insertAfter(body);
 
-        // Add end & return label
+        // ------------------- Add end & return label -------------------
         final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
         final Label threadEnd = EventFactory.newLabel("END_OF_T" + tid);
         thread.append(threadReturnLabel);
         thread.append(threadEnd);
 
-        // Replace AbortIf and Return
+        // ------------------- Replace AbortIf and Return -------------------
         final Register returnRegister = function.getFunctionType().getReturnType() != null ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
@@ -211,14 +250,26 @@ public class ThreadCreation implements ProgramProcessor {
             }
         }
 
-        // Add Start, End, and Parameter events if this thread was spawned
+        // ------------------- Add Start, End, and Argument events if this thread was spawned -------------------
         if (creator != null) {
+            // Arguments
             final List<Register> params = thread.getParameterRegisters();
             for (int i = 0; i < params.size(); i++) {
-                thread.getEntry().insertAfter(new ThreadArgument(params.get(i), creator, i));
+                thread.getEntry().insertAfter(newThreadArgument(params.get(i), creator, i));
             }
-            thread.getEntry().insertAfter(EventFactory.Pthread.newStart(comAddr, creator));
-            threadReturnLabel.insertAfter(EventFactory.Pthread.newEnd(comAddr));
+
+            // Start
+            final Register startSignal = thread.newRegister(types.getBooleanType());
+            final Register creatorExecStatus = thread.newRegister(types.getBooleanType());
+            thread.getEntry().insertAfter(eventSequence(
+                    newAcquireLoad(startSignal, comAddr),
+                    forceStart ? newExecutionStatus(creatorExecStatus, creator) : null,
+                    forceStart ? newAssume(expressions.makeOr(startSignal, creatorExecStatus)) : null,
+                    newJumpUnless(startSignal, threadEnd)
+            ));
+
+            // End
+            threadReturnLabel.insertAfter(newReleaseStore(comAddr, expressions.makeFalse()));
         }
 
         return thread;
@@ -227,6 +278,18 @@ public class ThreadCreation implements ProgramProcessor {
     private Register getResultRegister(DirectFunctionCall call) {
         assert call instanceof DirectValueFunctionCall;
         return ((DirectValueFunctionCall) call).getResultRegister();
+    }
+
+    private Event newReleaseStore(Expression address, Expression storeValue) {
+        return compilationTarget == Arch.LKMM ?
+            EventFactory.Linux.newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
+            EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
+    }
+
+    private Event newAcquireLoad(Register resultRegister, Expression address) {
+        return compilationTarget == Arch.LKMM ?
+                EventFactory.Linux.newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
+                EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
     }
 
 
