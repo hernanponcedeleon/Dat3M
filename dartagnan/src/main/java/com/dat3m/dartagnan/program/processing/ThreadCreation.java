@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IExprUn;
+import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -18,6 +20,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -96,7 +99,7 @@ public class ThreadCreation implements ProgramProcessor {
             throw new MalformedProgramException("Program contains no main function");
         }
 
-        int maxId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
+        final int maxId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
                 .mapToInt(Function::getId)
                 .max().orElse(0);
         int nextTid = maxId + 1;
@@ -108,16 +111,8 @@ public class ThreadCreation implements ProgramProcessor {
             final Thread thread = workingQueue.remove();
             program.addThread(thread);
 
-            final Map<Expression, Expression> expr2TidMap = new HashMap<>();
             final Map<Expression, Expression> tid2ComAddrMap = new HashMap<>();
-
             for (Event event : thread.getEvents()) {
-                if (event instanceof Load load && expr2TidMap.containsKey(load.getAddress())) {
-                    // Do tid propagation over loads
-                    final Expression tidExpr = expr2TidMap.get(load.getAddress());
-                    load.replaceBy(newLocal(load.getResultRegister(), tidExpr));
-                    expr2TidMap.put(load.getResultRegister(), tidExpr);
-                }
                 if (!(event instanceof DirectFunctionCall call)) {
                     continue;
                 }
@@ -148,10 +143,9 @@ public class ThreadCreation implements ProgramProcessor {
                         createEvent.setSpawnedThread(spawnedThread);
                         workingQueue.add(spawnedThread);
 
-                        // Helper code to do constant propagation of generated tid's
                         final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
-                        expr2TidMap.put(pidResultAddress, tidExpr);
                         tid2ComAddrMap.put(tidExpr, comAddress);
+                        propagateThreadIds(tidExpr, pidResultAddress, createEvent);
 
                         nextTid++;
                     }
@@ -159,7 +153,7 @@ public class ThreadCreation implements ProgramProcessor {
                         assert arguments.size() == 2;
                         final Expression tid = arguments.get(0);
                         // final Expression returnAddr = arguments.get(1);
-                        final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(expr2TidMap.get(tid));
+                        final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tid);
                         if (comAddrOfThreadToJoinWith == null) {
                             throw new UnsupportedOperationException(
                                     "Cannot handle pthread_join with dynamic thread parameter.");
@@ -183,6 +177,54 @@ public class ThreadCreation implements ProgramProcessor {
         }
 
         EventIdReassignment.newInstance().run(program);
+    }
+
+
+    // Helper code to do constant propagation of generated tid's to pthread_join calls
+    // TODO: Ideally, this kind of propagation shouldn't be done here
+    private static void propagateThreadIds(Expression tidExpr, Expression tidResultAddress, ThreadCreate createEvent) {
+        Set<Expression> tidValues = new HashSet<>();
+        Set<Expression> tidPtrs = new HashSet<>();
+        tidPtrs.add(tidResultAddress);
+
+        // Backpropagation of pointers:
+        // "p1 <- p0; pthread_create(p1, ...)"   =>   p0 also points to an address holding a tid
+        for (Event pred : createEvent.getPredecessors()) {
+            if (pred instanceof Local local && tidPtrs.contains(local.getResultRegister())) {
+                tidPtrs.add(local.getExpr());
+            }
+        }
+        // Forward propagation
+        // (1) p1 <- p0     =>     p1 points to tid if p0 does
+        // (2) r1 <- r0     =>     r1 holds tid if r0 does
+        // (3) r <- load(p) =>     r holds tid if p points to tid
+        for (Event succ : createEvent.getSuccessors()) {
+            if (succ instanceof Load load && tidPtrs.contains(load.getAddress())) {
+                // Do tid propagation over loads
+                tidValues.add(load.getResultRegister());
+            }
+            if (succ instanceof Local local) {
+                Expression rhs = local.getExpr();
+                while (rhs instanceof IExprUn unExpr && unExpr.getOp() == IOpUn.CAST_UNSIGNED) {
+                    // Try to skip cast expressions
+                    rhs = unExpr.getInner();
+                }
+                if (tidPtrs.contains(rhs)) {
+                    tidPtrs.add(local.getResultRegister());
+                } else if (tidValues.contains(rhs)) {
+                    tidValues.add(local.getResultRegister());
+                }
+            }
+
+            // Here we actually change pthread_join's first argument to directly hold the target tid
+            if (succ instanceof DirectFunctionCall call && call.getCallTarget().getName().contains("pthread_join")) {
+                if (tidValues.contains(call.getArguments().get(0))) {
+                    // TODO: Direct access to call's argument list is fishy.
+                    //  Calls should have a setArgument function instead.
+                    call.getArguments().set(0, tidExpr);
+                }
+            }
+        }
     }
 
     private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
