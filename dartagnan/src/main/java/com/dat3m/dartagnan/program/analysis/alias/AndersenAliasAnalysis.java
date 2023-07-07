@@ -89,6 +89,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
+        //FIXME: Add handling for thread parameters (or get rid of this class)
         for (Local e : locals) {
             processRegs(e);
         }

@@ -313,7 +313,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // TODO: We skip some functions for now. Ideally, we skip smack/boogie functions
         //  but still create intrinsic functions for, e.g., pthread, malloc, and __VERIFIER__XYZ etc.
         if (name.startsWith("SMACK") || name.startsWith("__SMACK") || name.startsWith("$") || name.startsWith("llvm")
-                || (name.startsWith("__") && !name.contains("pthread_join") && !name.contains("__VERIFIER_atomic"))
+                || (name.startsWith("__VERIFIER") && !name.contains("__VERIFIER_atomic"))
+                //|| (name.startsWith("__") && !name.contains("pthread_join") && !name.contains("__VERIFIER_atomic"))
                 || name.startsWith("boogie") || name.startsWith("corral") //|| name.startsWith("pthread")
                 || name.startsWith("assert") || name.startsWith("malloc") || name.startsWith("abort")
                 || name.startsWith("reach_error") || name.startsWith("printf") || name.startsWith("fopen")) {

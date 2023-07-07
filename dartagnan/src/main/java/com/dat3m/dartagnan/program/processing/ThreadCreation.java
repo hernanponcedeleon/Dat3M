@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
@@ -12,13 +13,17 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.functions.*;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
+import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -47,9 +52,104 @@ public class ThreadCreation implements ProgramProcessor {
         return new ThreadCreation();
     }
 
-    private Thread createThreadFromFunction(Function function, int tid, Event creator, Expression comAddr, ThreadCreationArguments args) {
-        //TODO: Handle parameters
+    @Override
+    public void run(Program program) {
+        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
+            return;
+        }
 
+        // TODO: test code
+        program.getThreads().clear();
+        // TODO -----------
+
+        final TypeFactory types = TypeFactory.getInstance();
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final IntegerType archType = types.getArchType();
+
+        int threadCounter = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
+                .mapToInt(Function::getId)
+                .max().orElse(0);
+
+        final Function main = program.getFunctions().stream().filter(f -> f.getName().equals("main")).findFirst().get();
+        final Queue<Thread> workingQueue = new ArrayDeque<>();
+        workingQueue.add(createThreadFromFunction(main, threadCounter, null, null));
+
+        while (!workingQueue.isEmpty()) {
+            final Thread thread = workingQueue.remove();
+            program.addThread(thread);
+
+            final Map<Expression, Expression> expr2TidMap = new HashMap<>();
+            final Map<Expression, Expression> tid2ComAddrMap = new HashMap<>();
+
+            for (Event event : thread.getEvents()) {
+                if (event instanceof Load load && expr2TidMap.containsKey(load.getAddress())) {
+                    // Do tid propagation over loads
+                    final Expression tidExpr = expr2TidMap.get(load.getAddress());
+                    load.replaceBy(newLocal(load.getResultRegister(), tidExpr));
+                    expr2TidMap.put(load.getResultRegister(), tidExpr);
+                }
+                if (!(event instanceof DirectFunctionCall call)) {
+                    continue;
+                }
+
+                final List<Expression> arguments = call.getArguments();
+                final Register resultRegister = getResultRegister(call);
+                switch (call.getCallTarget().getName()) {
+                    case "pthread_create" -> {
+                        assert arguments.size() == 4;
+                        final Expression pidResultAddress = arguments.get(0);
+                        //Expression attributes = arguments.get(1);
+                        final Function targetFunction = (Function)arguments.get(2);
+                        final Expression argument = arguments.get(3);
+
+                        final String name = targetFunction.getName();
+                        final int nextTid = ++threadCounter;
+
+                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
+                        comAddress.setCVar("__com_" + name + "_" + nextTid);
+                        final ThreadCreate createEvent = new ThreadCreate(List.of(argument));
+                        final Event syncEvent = newCreate(comAddress, name);
+                        createEvent.copyAllMetadataFrom(call);
+                        syncEvent.copyAllMetadataFrom(call);
+
+                        call.replaceBy(createEvent);
+                        createEvent.insertAfter(syncEvent);
+
+                        final Thread spawnedThread = createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
+                        createEvent.setSpawnedThread(spawnedThread);
+                        workingQueue.add(spawnedThread);
+
+                        // Helper code to do constant propagation of generated tid's
+                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
+                        expr2TidMap.put(pidResultAddress, tidExpr);
+                        tid2ComAddrMap.put(tidExpr, comAddress);
+                    }
+                    case "pthread_join", "__pthread_join" -> {
+                        assert arguments.size() == 2;
+                        final Expression tid = arguments.get(0);
+                        // Expression returnAddr = arguments.get(1);
+                        final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(expr2TidMap.get(tid));
+                        if (comAddrOfThreadToJoinWith == null) {
+                            throw new UnsupportedOperationException(
+                                    "Cannot handle pthread_join with dynamic thread parameter.");
+                        }
+                        call.replaceBy(newJoin(resultRegister, comAddrOfThreadToJoinWith));
+                    }
+                    case "get_my_tid" -> {
+                        assert arguments.size() == 0;
+                        assert resultRegister.getType() instanceof IntegerType;
+                        call.replaceBy(newLocal(resultRegister, expressions.makeValue(
+                                BigInteger.valueOf(thread.getId()),
+                                (IntegerType) resultRegister.getType())));
+                    }
+                }
+            }
+        }
+
+        EventIdReassignment.newInstance().run(program);
+    }
+
+    private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
         // Create new thread
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
@@ -97,127 +197,31 @@ public class ThreadCreation implements ProgramProcessor {
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
             if (e instanceof AbortIf abort) {
-                final Event replacement = EventFactory.newJump(abort.getCondition(), threadEnd);
-                if (abort.hasTag(Tag.EARLYTERMINATION)) {
-                    replacement.addTags(Tag.EARLYTERMINATION);
-                }
-                abort.replaceBy(replacement);
+                final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
+                jumpToEnd.addTags(abort.getTags());
+                abort.replaceBy(jumpToEnd);
             } else if (e instanceof Return ret) {
                 ret.insertAfter(EventFactory.newGoto(threadReturnLabel));
-                if (ret.hasValue()) {
-                    ret.replaceBy(EventFactory.newLocal(returnRegister, ret.getValue().get()));
-                } else {
-                    ret.forceDelete();
+                if (returnRegister != null) {
+                    ret.insertAfter(EventFactory.newLocal(returnRegister, ret.getValue().get()));
+                }
+                if (!ret.tryDelete()) {
+                    throw new MalformedProgramException("Unable to delete " + ret);
                 }
             }
         }
 
         // Add Start, End, and Parameter events if this thread was spawned
         if (creator != null) {
-            int index = 0;
-            for (Register parameter : thread.getParameterRegisters()) {
-                thread.getEntry().insertAfter(new ThreadParameter(parameter, args, index++));
+            final List<Register> params = thread.getParameterRegisters();
+            for (int i = 0; i < params.size(); i++) {
+                thread.getEntry().insertAfter(new ThreadArgument(params.get(i), creator, i));
             }
             thread.getEntry().insertAfter(EventFactory.Pthread.newStart(comAddr, creator));
             threadReturnLabel.insertAfter(EventFactory.Pthread.newEnd(comAddr));
         }
 
         return thread;
-    }
-
-    @Override
-    public void run(Program program) {
-       /* if (true) {
-            return;
-        }*/
-        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
-            return;
-        }
-
-        final TypeFactory types = TypeFactory.getInstance();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final IntegerType archType = types.getArchType();
-
-        // TODO: test code
-        program.getThreads().clear();
-
-        int threadCounter = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
-                .mapToInt(Function::getId)
-                .max().orElse(0);
-
-        final Function main = program.getFunctions().stream().filter(f -> f.getName().equals("main")).findFirst().get();
-        final Queue<Thread> workingQueue = new ArrayDeque<>();
-        workingQueue.add(createThreadFromFunction(main, threadCounter, null, null, null));
-
-        while (!workingQueue.isEmpty()) {
-            final Thread thread = workingQueue.remove();
-            program.addThread(thread);
-
-            final Map<Expression, Expression> expr2TidMap = new HashMap<>();
-            final Map<Expression, Expression> tid2ComAddrMap = new HashMap<>();
-
-            for (Event event : thread.getEvents()) {
-                if (event instanceof Load load && expr2TidMap.containsKey(load.getAddress())) {
-                    final Expression tidExpr = expr2TidMap.get(load.getAddress());
-                    load.replaceBy(newLocal(load.getResultRegister(), tidExpr));
-                    expr2TidMap.put(load.getResultRegister(), tidExpr);
-                }
-
-                if (!(event instanceof DirectFunctionCall call)) {
-                    continue;
-                }
-                final List<Expression> arguments = call.getArguments();
-                switch (call.getCallTarget().getName()) {
-                    case "pthread_create" -> {
-                        assert arguments.size() == 4;
-                        final Expression pidResultAddress = arguments.get(0);
-                        //Expression attributes = arguments.get(1);
-                        final Function targetFunction = (Function)arguments.get(2);
-                        final Expression argument = arguments.get(3);
-
-                        final String name = targetFunction.getName();
-                        final int nextTid = ++threadCounter;
-
-                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
-                        comAddress.setCVar("__com_" + name + "_" + nextTid);
-                        final Event createEvent = newCreate(comAddress, name);
-                        final ThreadCreationArguments args = new ThreadCreationArguments(List.of(argument));
-                        call.replaceBy(args);
-                        args.insertAfter(createEvent);
-
-
-                        workingQueue.add(createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress, args));
-
-                        // Helper code to do constant propagation of generated tid's
-                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
-                        expr2TidMap.put(pidResultAddress, tidExpr);
-                        tid2ComAddrMap.put(tidExpr, comAddress);
-
-                    }
-                    case "pthread_join", "__pthread_join" -> {
-                        assert arguments.size() == 2;
-                        final Expression tid = arguments.get(0);
-                        // Expression returnAddr = arguments.get(1);
-                        final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(expr2TidMap.get(tid));
-                        if (comAddrOfThreadToJoinWith == null) {
-                            throw new UnsupportedOperationException(
-                                    "Cannot handle pthread_join with dynamic thread parameter.");
-                        }
-                        call.replaceBy(newJoin(getResultRegister(call), comAddrOfThreadToJoinWith));
-                    }
-                    case "get_my_tid" -> {
-                        assert arguments.size() == 0;
-                        final Register result = getResultRegister(call);
-                        assert result.getType() instanceof IntegerType;
-                        call.replaceBy(newLocal(result, expressions.makeValue(
-                                BigInteger.valueOf(thread.getId()),
-                                (IntegerType) result.getType())));
-                    }
-                }
-            }
-        }
-
-        EventIdReassignment.newInstance().run(program);
     }
 
     private Register getResultRegister(DirectFunctionCall call) {

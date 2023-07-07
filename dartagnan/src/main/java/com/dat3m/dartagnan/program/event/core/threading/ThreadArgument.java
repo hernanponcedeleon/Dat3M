@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.functions;
+package com.dat3m.dartagnan.program.event.core.threading;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
@@ -13,29 +13,32 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import java.util.Map;
 import java.util.Set;
 
-public class ThreadParameter extends AbstractEvent implements RegWriter, EventUser {
+public class ThreadArgument extends AbstractEvent implements RegWriter, EventUser {
 
     protected Register register;
-    protected ThreadCreationArguments arguments;
+    protected ThreadCreate creator;
     protected int argIndex;
 
-    public ThreadParameter(Register register, ThreadCreationArguments args, int argIndex) {
-        Preconditions.checkArgument(register.getType().equals(args.getArguments().get(argIndex).getType()));
+    public ThreadArgument(Register register, ThreadCreate creator, int argIndex) {
+        Preconditions.checkArgument(register.getType().equals(creator.getArguments().get(argIndex).getType()));
         this.register = register;
-        this.arguments = args;
+        this.creator = creator;
         this.argIndex = argIndex;
 
-        arguments.registerUser(this);
+        creator.registerUser(this);
     }
 
-    protected ThreadParameter(ThreadParameter other) {
+    protected ThreadArgument(ThreadArgument other) {
         super(other);
         this.register = other.register;
-        this.arguments = other.arguments;
+        this.creator = other.creator;
         this.argIndex = other.argIndex;
 
-        arguments.registerUser(this);
+        creator.registerUser(this);
     }
+
+    public ThreadCreate getCreator() { return creator; }
+    public int getIndex() { return argIndex; }
 
     @Override
     public Register getResultRegister() {
@@ -49,7 +52,7 @@ public class ThreadParameter extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public String defaultString() {
-        return String.format("%s := ThreadParameter(%s) from %s", register, argIndex, arguments);
+        return String.format("%s := Argument(%s) from %s", register, argIndex, creator);
     }
 
     @Override
@@ -57,13 +60,13 @@ public class ThreadParameter extends AbstractEvent implements RegWriter, EventUs
         return context.getBooleanFormulaManager().and(
                 super.encodeExec(context),
                 context.equal(context.result(this),
-                        context.encodeExpressionAt(arguments.getArguments().get(argIndex), arguments)));
+                        context.encodeExpressionAt(creator.getArguments().get(argIndex), creator)));
     }
 
 
     @Override
-    public ThreadParameter getCopy() {
-        return new ThreadParameter(this);
+    public ThreadArgument getCopy() {
+        return new ThreadArgument(this);
     }
 
     @Override
@@ -74,11 +77,11 @@ public class ThreadParameter extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public Set<Event> getReferencedEvents() {
-        return Set.of(arguments);
+        return Set.of(creator);
     }
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        arguments = (ThreadCreationArguments) EventUser.moveUserReference(this, arguments, updateMapping);
+        creator = (ThreadCreate) EventUser.moveUserReference(this, creator, updateMapping);
     }
 }

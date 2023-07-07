@@ -1,8 +1,9 @@
-package com.dat3m.dartagnan.program.event.functions;
+package com.dat3m.dartagnan.program.event.core.threading;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -13,30 +14,34 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ThreadCreationArguments extends AbstractEvent implements RegReader {
+public class ThreadCreate extends AbstractEvent implements RegReader {
 
     protected List<Expression> arguments;
+    protected Thread spawnedThread;
 
-    public ThreadCreationArguments(List<Expression> arguments) {
+    public ThreadCreate(List<Expression> arguments) {
         this.arguments = new ArrayList<>(arguments);
     }
 
-    protected ThreadCreationArguments(ThreadCreationArguments other) {
+    protected ThreadCreate(ThreadCreate other) {
         super(other);
         this.arguments = new ArrayList<>(other.arguments);
+        this.spawnedThread = null;
     }
 
     public List<Expression> getArguments() { return arguments; }
+    public Thread getSpawnedThread() { return spawnedThread; }
+    public void setSpawnedThread(Thread spawnedThread) { this.spawnedThread = spawnedThread; }
 
     @Override
     protected String defaultString() {
-        return "ThreadArguments" +
-                arguments.stream().map(Expression::toString).collect(Collectors.joining(", ", "(", ")"));
+        return String.format("ThreadCreate(%s, %s)", spawnedThread,
+                arguments.stream().map(Expression::toString).collect(Collectors.joining(", ")));
     }
 
     @Override
-    public ThreadCreationArguments getCopy() {
-        return new ThreadCreationArguments(this);
+    public ThreadCreate getCopy() {
+        return new ThreadCreate(this);
     }
 
     @Override
