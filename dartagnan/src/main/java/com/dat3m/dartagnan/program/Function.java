@@ -137,7 +137,6 @@ public class Function implements Expression {
         final String suffix = ")";
         return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
-
     }
 
     @Override

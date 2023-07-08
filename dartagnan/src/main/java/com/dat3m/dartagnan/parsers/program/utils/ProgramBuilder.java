@@ -123,7 +123,8 @@ public class ProgramBuilder {
     }
 
     public Thread newThread(int tid) {
-        return newThread(String.valueOf(tid), tid);
+        final String threadName = (program.getFormat() == LITMUS ? "P" : "__thread_") + tid;
+        return newThread(threadName, tid);
     }
 
     public Thread getOrNewThread(int tid) {
