@@ -494,15 +494,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
 
         }
-        final String funcName = getFunctionNameFromCallContext(ctx);
-        if (funcName.equals("$initialize") && inlineMode) {
-            initMode = true;
-            addEvent(EventFactory.newFunctionCall(funcName));
-            visitProc_decl(procedures.get(funcName), List.of());
-            addEvent(EventFactory.newFunctionReturn(funcName));
-            initMode = false;
-            return null;
-        }
 
         // Check if the function is a special one.
         if (handleDummyProcedures(this, ctx) || handlePthreadsFunctions(this, ctx) ||
@@ -511,8 +502,18 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return null;
         }
 
+        final String funcName = getFunctionNameFromCallContext(ctx);
         if (!procedures.containsKey(funcName)) {
             throw new ParsingException("Procedure " + funcName + " is not defined");
+        }
+
+        if (funcName.equals("$initialize") && inlineMode) {
+            initMode = true;
+            addEvent(EventFactory.newFunctionCall(funcName));
+            visitProc_decl(procedures.get(funcName), List.of());
+            addEvent(EventFactory.newFunctionReturn(funcName));
+            initMode = false;
+            return null;
         }
 
         if (funcName.contains("__VERIFIER_atomic_")) {
@@ -558,7 +559,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 }
                 addEvent(funcCall);
             } else {
-                System.out.println("Warning: skipped call to " + funcName);
+                // System.out.println("Warning: skipped call to " + funcName);
             }
             // ----- TODO: Test code end -----
         }
@@ -571,14 +572,14 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     @Override
     public Object visitAssign_cmd(Assign_cmdContext ctx) {
-        ExprsContext exprs = ctx.def_body().exprs();
+        final ExprsContext exprs = ctx.def_body().exprs();
         if (ctx.Ident().size() != 1 && exprs.expr().size() != ctx.Ident().size()) {
             throw new ParsingException("There should be one expression per variable\nor only one expression for all in " + ctx.getText());
         }
 
         for (int i = 0; i < ctx.Ident().size(); i++) {
             final String name = ctx.Ident(i).getText();
-            Expression value = (Expression) exprs.expr(i).accept(this);
+            final Expression value = (Expression) exprs.expr(i).accept(this);
             if (value == null || doIgnoreVariable(name)) {
                 continue;
             }
