@@ -151,14 +151,15 @@ public class ThreadCreation implements ProgramProcessor {
                     }
                     case "pthread_join", "__pthread_join" -> {
                         assert arguments.size() == 2;
-                        final Expression tid = arguments.get(0);
+                        final Expression tidExpr = arguments.get(0);
                         // final Expression returnAddr = arguments.get(1);
-                        final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tid);
+                        final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidExpr);
                         if (comAddrOfThreadToJoinWith == null) {
                             throw new UnsupportedOperationException(
                                     "Cannot handle pthread_join with dynamic thread parameter.");
                         }
-                        final Register joinDummyReg = thread.newRegister(types.getBooleanType());
+                        final int tid = tidExpr.reduce().getValueAsInt();
+                        final Register joinDummyReg = thread.getOrNewRegister("__joinT" + tid, types.getBooleanType());
                         final Label threadEnd = (Label)thread.getExit();
                         call.replaceBy(List.of(
                                 newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
@@ -302,7 +303,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
 
             // Start
-            final Register startSignal = thread.newRegister(types.getBooleanType());
+            final Register startSignal = thread.newRegister("__startT" + tid, types.getBooleanType());
             final Register creatorExecStatus = thread.newRegister(types.getBooleanType());
             thread.getEntry().insertAfter(eventSequence(
                     newAcquireLoad(startSignal, comAddr),
