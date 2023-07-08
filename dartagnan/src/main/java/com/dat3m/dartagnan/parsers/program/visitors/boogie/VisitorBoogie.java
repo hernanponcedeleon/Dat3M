@@ -317,7 +317,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     public void registerConstants(Const_declContext ctx) {
         for (ParseTree ident : ctx.typed_idents().idents().Ident()) {
             final String name = ident.getText();
-            if (ctx.getText().contains(":treadLocal")) {
+            final boolean isThreadLocal = ctx.getText().contains(":treadLocal");
+            if (isThreadLocal) {
                 threadLocalVariables.add(name);
             }
             final String declText = ctx.getText();
@@ -325,7 +326,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 int size = declText.contains(":allocSize")
                         ? Integer.parseInt(declText.split(":allocSize")[1].split("}")[0])
                         : 1;
-                programBuilder.newMemoryObject(name, size);
+                programBuilder.newMemoryObject(name, size).setIsThreadLocal(isThreadLocal);
             } else {
                 final String typeString = ctx.typed_idents().type().getText();
                 final IntegerType type = Types.parseIntegerType(typeString, types);
@@ -815,8 +816,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             return register;
         }
 
-        if (threadLocalVariables.contains(varName)) {
-            //TODO: We cannot do this for non-inlined functions, because we don't have threads yet
+        if (threadLocalVariables.contains(varName) && inlineMode) {
             return programBuilder.getOrNewMemoryObject(String.format("%s(%s)", varName, currentThread));
         }
 

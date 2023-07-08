@@ -29,6 +29,7 @@ import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -54,9 +55,8 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
  * Then the pass works iteratively by picking a (newly created) thread and handling all its pthread calls.
  *
  * TODO:
- *  (1) Handle thread local variables
- *  (2) Make sure that non-deterministic expressions are recreated properly (avoid wrong sharing)
- *  (3) Make this pass able to run after compilation.
+ *  (1) Make sure that non-deterministic expressions are recreated properly (avoid wrong sharing)
+ *  (2) Make this pass able to run after compilation.
  */
 @Options
 public class ThreadCreation implements ProgramProcessor {
@@ -181,23 +181,24 @@ public class ThreadCreation implements ProgramProcessor {
 
 
     // Helper code to do constant propagation of generated tid's to pthread_join calls
-    // TODO: Ideally, this kind of propagation shouldn't be done here
+    //TODO: Ideally, this kind of propagation shouldn't be done here.
+    // Also, it is currently unsound if the code is not in SSA, for example, after unrolling.
     private static void propagateThreadIds(Expression tidExpr, Expression tidResultAddress, ThreadCreate createEvent) {
         Set<Expression> tidValues = new HashSet<>();
         Set<Expression> tidPtrs = new HashSet<>();
         tidPtrs.add(tidResultAddress);
 
         // Backpropagation of pointers:
-        // "p1 <- p0; pthread_create(p1, ...)"   =>   p0 also points to an address holding a tid
+        // "p1 <- pExpr; pthread_create(pExpr, ...)"   =>   p1 also points to an address holding a tid
         for (Event pred : createEvent.getPredecessors()) {
             if (pred instanceof Local local && tidPtrs.contains(local.getResultRegister())) {
                 tidPtrs.add(local.getExpr());
             }
         }
         // Forward propagation
-        // (1) p1 <- p0     =>     p1 points to tid if p0 does
-        // (2) r1 <- r0     =>     r1 holds tid if r0 does
-        // (3) r <- load(p) =>     r holds tid if p points to tid
+        // (1) p1 <- pExpr       =>     p1 points to tid if pExpr does
+        // (2) r1 <- expr        =>     r1 holds tid if expr does
+        // (3) r  <- load(pExpr) =>     r holds tid if pExpr points to tid
         for (Event succ : createEvent.getSuccessors()) {
             if (succ instanceof Load load && tidPtrs.contains(load.getAddress())) {
                 // Do tid propagation over loads
@@ -313,6 +314,28 @@ public class ThreadCreation implements ProgramProcessor {
             // End
             threadReturnLabel.insertAfter(newReleaseStore(comAddr, expressions.makeFalse()));
         }
+
+        // ------------------- Create thread-local variables -------------------
+        final Memory memory = function.getProgram().getMemory();
+        final Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
+        final ExprTransformer transformer = new ExprTransformer() {
+            @Override
+            public Expression visit(MemoryObject memObj) {
+                if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
+                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
+                    final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
+                    threadLocalCopy.setCVar(varName);
+                    for (int i = 0; i < memObj.size(); i++) {
+                        threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
+                    }
+                    global2ThreadLocal.put(memObj, threadLocalCopy);
+                }
+                return global2ThreadLocal.getOrDefault(memObj, memObj);
+            }
+        };
+
+        thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
+        // TODO: After creating all thread-local copies, we might want to delete the original variable.
 
         return thread;
     }
