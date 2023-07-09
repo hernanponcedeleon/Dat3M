@@ -14,7 +14,9 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -46,50 +48,6 @@ class VisitorArm8 extends VisitorBase {
     // =============================================================================================
     // ========================================= PTHREAD ===========================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitCreate(Create e) {
-        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.ARMv8.MO_REL);
-        store.addTags(C11.PTHREAD);
-
-        e.replaceAllUsages(store); // The store represents the creation event
-
-        return eventSequence(
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitEnd(End e) {
-        Expression zero = expressions.makeZero(types.getArchType());
-        return eventSequence(
-                newStoreWithMo(e.getAddress(), zero, Tag.ARMv8.MO_REL)
-        );
-    }
-
-    @Override
-    public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
-        load.addTags(C11.PTHREAD);
-
-        return eventSequence(
-                load,
-                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
-        );
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.ARMv8.MO_ACQ);
-        load.addTags(Tag.STARTLOAD);
-
-        return eventSequence(
-                load,
-                visitStartBase(load.getResultRegister(), e)
-        );
-    }
 
     @Override
     public List<Event> visitInitLock(InitLock e) {

@@ -4,16 +4,11 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.List;
@@ -28,59 +23,13 @@ public class VisitorC11 extends VisitorBase {
     }
 
     @Override
-    public List<Event> visitCreate(Create e) {
-        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), Tag.C11.MO_RELEASE);
-        store.addTags(C11.PTHREAD);
-
-        e.replaceAllUsages(store); // The store represents the creation event
-
-        return tagList(eventSequence(
-                store
-        ));
-    }
-
-    @Override
-    public List<Event> visitEnd(End e) {
-        //TODO boolean
-        return tagList(eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.C11.MO_RELEASE)
-        ));
-    }
-
-    @Override
-    public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-        load.addTags(C11.PTHREAD);
-
-        return tagList(eventSequence(
-                load,
-                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
-        ));
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), Tag.C11.MO_ACQUIRE);
-        load.addTags(Tag.STARTLOAD);
-
-        return tagList(eventSequence(
-                load,
-                visitStartBase(load.getResultRegister(), e)
-        ));
-    }
-
-    //TODO: Is it really mandatory to copy the load here?
-    @Override
     public List<Event> visitLoad(Load e) {
-        return tagList(eventSequence(e.getCopy()));
+        return tagList(eventSequence(e));
     }
 
-    //TODO: Is it really mandatory to copy the store here?
     @Override
     public List<Event> visitStore(Store e) {
-        return tagList(eventSequence(e.getCopy()));
+        return tagList(eventSequence(e));
     }
 
     // =============================================================================================

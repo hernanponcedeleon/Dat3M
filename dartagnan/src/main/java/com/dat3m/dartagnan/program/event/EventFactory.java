@@ -28,7 +28,9 @@ import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -284,28 +286,12 @@ public class EventFactory {
         private Pthread() {
         }
 
-        public static Create newCreate(Expression address, String routine) {
-            return new Create(address, routine);
-        }
-
-        public static End newEnd(Expression address) {
-            return new End(address);
-        }
-
         public static InitLock newInitLock(String name, Expression address, Expression value) {
             return new InitLock(name, address, value);
         }
 
-        public static Join newJoin(Register reg, Expression expr) {
-            return new Join(reg, expr);
-        }
-
         public static Lock newLock(String name, Expression address) {
             return new Lock(name, address);
-        }
-
-        public static Start newStart(Expression address, Event creationEvent) {
-            return new Start(address, creationEvent);
         }
 
         public static Unlock newUnlock(String name, Expression address) {

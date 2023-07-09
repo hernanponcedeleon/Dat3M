@@ -11,7 +11,9 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -41,61 +43,6 @@ public class VisitorPower extends VisitorBase {
     // =============================================================================================
     // ========================================= PTHREAD ===========================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue());
-        store.addTags(C11.PTHREAD);
-
-        e.replaceAllUsages(store); // The store represents the creation event
-
-        return eventSequence(
-                Power.newSyncBarrier(),
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitEnd(End e) {
-        return eventSequence(
-                Power.newSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
-        );
-    }
-
-    @Override
-    public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress());
-        load.addTags(C11.PTHREAD);
-        Label label = newLabel("Jump_" + e.getGlobalId());
-        CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-        return eventSequence(
-                load,
-                fakeCtrlDep,
-                label,
-                Power.newISyncBarrier(),
-                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
-        );
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
-        Load load = newLoad(resultRegister, e.getAddress());
-        load.addTags(Tag.STARTLOAD);
-        Label label = newLabel("Jump_" + e.getGlobalId());
-        CondJump fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
-
-        return eventSequence(
-                load,
-                fakeCtrlDep,
-                label,
-                Power.newISyncBarrier(),
-                visitStartBase(load.getResultRegister(), e)
-        );
-    }
 
     @Override
     public List<Event> visitInitLock(InitLock e) {

@@ -10,10 +10,6 @@ import com.dat3m.dartagnan.program.event.Tag.IMM;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.Collections;
@@ -47,50 +43,6 @@ class VisitorIMM extends VisitorBase {
         final boolean isNonAtomic = (mo == null || mo.value().equals(C11.NONATOMIC));
         return eventSequence(
                 newStoreWithMo(e.getAddress(), e.getMemValue(), isNonAtomic ? C11.MO_RELAXED : mo.value())
-        );
-    }
-
-    @Override
-    public List<Event> visitCreate(Create e) {
-        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), C11.MO_RELEASE);
-        store.addTags(C11.PTHREAD);
-
-        e.replaceAllUsages(store); // The store represents the creation event
-
-        return eventSequence(
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitEnd(End e) {
-        //TODO boolean
-        return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), C11.MO_RELEASE)
-        );
-    }
-
-    @Override
-    public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
-        load.addTags(C11.PTHREAD);
-
-        return eventSequence(
-                load,
-                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
-        );
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
-        Load load = newLoadWithMo(resultRegister, e.getAddress(), C11.MO_ACQUIRE);
-        load.addTags(Tag.STARTLOAD);
-
-        return eventSequence(
-                load,
-                visitStartBase(load.getResultRegister(), e)
         );
     }
 

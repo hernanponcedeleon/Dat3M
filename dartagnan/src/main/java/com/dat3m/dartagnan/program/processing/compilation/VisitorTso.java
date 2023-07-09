@@ -6,12 +6,13 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 
 import java.util.List;
 
@@ -42,52 +43,6 @@ class VisitorTso extends VisitorBase {
     // =============================================================================================
     // ========================================= PTHREAD ===========================================
     // =============================================================================================
-
-    @Override
-    public List<Event> visitCreate(Create e) {
-        Store store = newStore(e.getAddress(), e.getMemValue());
-        store.addTags(C11.PTHREAD);
-
-        e.replaceAllUsages(store); // The store represents the creation event
-
-        return tagList(eventSequence(
-                store,
-                X86.newMemoryFence()
-        ));
-    }
-
-    @Override
-    public List<Event> visitEnd(End e) {
-        return tagList(eventSequence(
-                // Nothing comes after an End event thus no need for a fence
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
-        ));
-    }
-
-    @Override
-    public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newLoad(resultRegister, e.getAddress());
-        load.addTags(C11.PTHREAD);
-
-        return tagList(eventSequence(
-                load,
-                newJump(expressions.makeBooleanCast(resultRegister),
-                        (Label) e.getThread().getExit())
-        ));
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
-        Load load = newLoad(resultRegister, e.getAddress());
-        load.addTags(Tag.STARTLOAD);
-
-        return tagList(eventSequence(
-                load,
-                visitStartBase(load.getResultRegister(), e)
-        ));
-    }
 
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(

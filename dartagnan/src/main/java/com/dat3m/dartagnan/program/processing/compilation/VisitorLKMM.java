@@ -7,14 +7,9 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.Create;
-import com.dat3m.dartagnan.program.event.lang.pthread.End;
-import com.dat3m.dartagnan.program.event.lang.pthread.Join;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 
 import java.util.List;
 
@@ -25,50 +20,6 @@ public class VisitorLKMM extends VisitorBase {
 
     protected VisitorLKMM(boolean forceStart) {
         super(forceStart);
-    }
-
-    @Override
-    public List<Event> visitCreate(Create e) {
-        Store store = newCoreStore(e.getAddress(), e.getMemValue(), Tag.Linux.MO_RELEASE);
-        store.addTags(C11.PTHREAD);
-
-        e.replaceAllUsages(store); // The store represents the creation event
-
-        return eventSequence(
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitEnd(End e) {
-        //TODO boolean
-        return eventSequence(
-                newCoreStore(e.getAddress(), expressions.makeZero(types.getArchType()), Tag.Linux.MO_RELEASE)
-        );
-    }
-
-    @Override
-    public List<Event> visitJoin(Join e) {
-        Register resultRegister = e.getResultRegister();
-        Load load = newCoreLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
-        load.addTags(C11.PTHREAD);
-
-        return eventSequence(
-                load,
-                newJump(expressions.makeBooleanCast(resultRegister), (Label) e.getThread().getExit())
-        );
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getFunction().newRegister(types.getBooleanType());
-        Load load = newCoreLoad(resultRegister, e.getAddress(), Tag.Linux.MO_ACQUIRE);
-        load.addTags(Tag.STARTLOAD);
-
-        return eventSequence(
-                load,
-                visitStartBase(load.getResultRegister(), e)
-        );
     }
 
     @Override

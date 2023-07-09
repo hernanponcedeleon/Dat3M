@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
-import com.dat3m.dartagnan.program.event.lang.pthread.Start;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
@@ -47,20 +46,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
     public List<Event> visitCondJump(CondJump e) {
         Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
         return visitEvent(e);
-    }
-
-    @Override
-    public List<Event> visitStart(Start e) {
-        throw error(e);
-    }
-
-    protected List<Event> visitStartBase(Register resultRegister, Start e) {
-        Register statusRegister = e.getFunction().newRegister(types.getBooleanType());
-        return eventSequence(
-                forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(expressions.makeOr(resultRegister, statusRegister)) : null,
-                newJumpUnless(resultRegister, (Label) e.getThread().getExit())
-        );
     }
 
     @Override
