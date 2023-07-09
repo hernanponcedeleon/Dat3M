@@ -33,6 +33,8 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -61,6 +63,8 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
  */
 @Options
 public class ThreadCreation implements ProgramProcessor {
+
+    private static final Logger logger = LogManager.getLogger(ThreadCreation.class);
 
     @Option(name = TARGET,
             description = "The target architecture to which the program shall be compiled to.",
@@ -187,6 +191,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
 
         EventIdReassignment.newInstance().run(program);
+        logger.info("Number of threads (including main): " + program.getThreads().size());
     }
 
 

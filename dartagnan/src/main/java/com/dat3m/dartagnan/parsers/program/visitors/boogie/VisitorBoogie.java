@@ -198,13 +198,13 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Program shall have a main procedure");
         }
 
-        createNewThread("main", null, null, null);
+        /*createNewThread("main", null, null, null);
         // This cannot be a foreach loop, because processThread can spawn new threads which are appended to the list.
         for (int i = 0; i < threadCreations.size(); i++) {
             processThreadCreation(threadCreations.get(i));
-        }
+        }*/
 
-        logger.info("Number of threads (including main): " + threadCreations.size());
+        //logger.info("Number of threads (including main): " + threadCreations.size());
 
         // ----- TODO: Test code -----
         inlineMode = false;
