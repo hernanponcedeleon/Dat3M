@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -453,10 +454,13 @@ public class ExecutionModel {
                     // put a dependency to the paired exclusive load if the store failed to execute?
                 }
                 lastRegWrites.put(status.getResultRegister(), deps);
-            } else if (regWriter instanceof Local local) {
+            } else if (regWriter instanceof RegReader regReader) {
+                // Note: This code might work for more cases than the two we check for here,
+                // but we want to throw an exception if an unexpected event appears.
+                assert regWriter instanceof Local || regWriter instanceof ThreadArgument;
                 // ---- internal data dependency ----
                 final Set<EventData> dataDeps = new HashSet<>();
-                for (Register.Read regRead : local.getRegisterReads()) {
+                for (Register.Read regRead : regReader.getRegisterReads()) {
                     final Register reg = regRead.register();
                     final Set<EventData> visibleRootDependencies = lastRegWrites.get(reg);
                     if (visibleRootDependencies == null) {
@@ -467,7 +471,7 @@ public class ExecutionModel {
                     assert regRead.usageType() == Register.UsageType.DATA;
                     dataDeps.addAll(visibleRootDependencies);
                 }
-                lastRegWrites.put(local.getResultRegister(), dataDeps);
+                lastRegWrites.put(regWriter.getResultRegister(), dataDeps);
             }
         }
     }
