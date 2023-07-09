@@ -57,6 +57,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
  * TODO:
  *  (1) Make sure that non-deterministic expressions are recreated properly (avoid wrong sharing)
  *  (2) Make this pass able to run after compilation.
+ *  (3) Make sure that metadata is copied correctly.
  */
 @Options
 public class ThreadCreation implements ProgramProcessor {
@@ -112,13 +113,8 @@ public class ThreadCreation implements ProgramProcessor {
             program.addThread(thread);
 
             final Map<Expression, Expression> tid2ComAddrMap = new HashMap<>();
-            for (Event event : thread.getEvents()) {
-                if (!(event instanceof DirectFunctionCall call)) {
-                    continue;
-                }
-
+            for (DirectFunctionCall call : thread.getEvents(DirectFunctionCall.class)) {
                 final List<Expression> arguments = call.getArguments();
-                final Register resultRegister = getResultRegister(call);
                 switch (call.getCallTarget().getName()) {
                     case "pthread_create" -> {
                         assert arguments.size() == 4;
@@ -127,17 +123,21 @@ public class ThreadCreation implements ProgramProcessor {
                         final Function targetFunction = (Function)arguments.get(2);
                         final Expression argument = arguments.get(3);
 
+                        final Register resultRegister = getResultRegister(call);
+                        assert resultRegister.getType() instanceof IntegerType;
+
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
-                        final Event startSignal = newReleaseStore(comAddress, expressions.makeTrue());
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
-                        createEvent.copyAllMetadataFrom(call);
-                        startSignal.copyAllMetadataFrom(call);
 
-                        call.replaceBy(List.of(
+                        final List<Event> replacement = List.of(
                                 createEvent,
-                                startSignal
-                        ));
+                                newReleaseStore(comAddress, expressions.makeTrue()),
+                                // TODO: Allow to return failure value (!= 0)
+                                newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
+                        );
+                        replacement.forEach(e -> e.copyAllMetadataFrom(call));
+                        call.replaceBy(replacement);
 
                         final Thread spawnedThread = createThreadFromFunction(targetFunction, nextTid, createEvent, comAddress);
                         createEvent.setSpawnedThread(spawnedThread);
@@ -153,6 +153,9 @@ public class ThreadCreation implements ProgramProcessor {
                         assert arguments.size() == 2;
                         final Expression tidExpr = arguments.get(0);
                         // final Expression returnAddr = arguments.get(1);
+
+                        final Register resultRegister = getResultRegister(call);
+                        assert resultRegister.getType() instanceof IntegerType;
                         final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidExpr);
                         if (comAddrOfThreadToJoinWith == null) {
                             throw new UnsupportedOperationException(
@@ -160,18 +163,24 @@ public class ThreadCreation implements ProgramProcessor {
                         }
                         final int tid = tidExpr.reduce().getValueAsInt();
                         final Register joinDummyReg = thread.getOrNewRegister("__joinT" + tid, types.getBooleanType());
-                        final Label threadEnd = (Label)thread.getExit();
-                        call.replaceBy(List.of(
+                        final List<Event> replacement = List.of(
                                 newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
-                                newJump(joinDummyReg, threadEnd)
-                        ));
+                                newJump(joinDummyReg, (Label)thread.getExit()),
+                                // Note: In our modelling, pthread_join always succeeds if it returns
+                                newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
+                        );
+                        replacement.forEach(e -> e.copyAllMetadataFrom(call));
+                        call.replaceBy(replacement);
                     }
                     case "get_my_tid" -> {
-                        assert arguments.size() == 0;
+                        final Register resultRegister = getResultRegister(call);
                         assert resultRegister.getType() instanceof IntegerType;
-                        call.replaceBy(newLocal(resultRegister, expressions.makeValue(
-                                BigInteger.valueOf(thread.getId()),
-                                (IntegerType) resultRegister.getType())));
+                        assert arguments.size() == 0;
+                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(thread.getId()),
+                                (IntegerType) resultRegister.getType());
+                        final Local tidAssignment = newLocal(resultRegister, tidExpr);
+                        tidAssignment.copyAllMetadataFrom(call);
+                        call.replaceBy(tidAssignment);
                     }
                 }
             }
@@ -237,7 +246,7 @@ public class ThreadCreation implements ProgramProcessor {
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
 
-        // ------------------- Copy register from target function into new thread -------------------
+        // ------------------- Copy registers from target function into new thread -------------------
         final Map<Register, Register> registerReplacement = new HashMap<>();
         for (Register reg : function.getRegisters()) {
             registerReplacement.put(reg, thread.getOrNewRegister(reg.getName(), reg.getType()));
@@ -336,7 +345,7 @@ public class ThreadCreation implements ProgramProcessor {
         };
 
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
-        // TODO: After creating all thread-local copies, we might want to delete the original variable.
+        // TODO: After creating all thread-local copies, we might want to delete the original variable?
 
         return thread;
     }
