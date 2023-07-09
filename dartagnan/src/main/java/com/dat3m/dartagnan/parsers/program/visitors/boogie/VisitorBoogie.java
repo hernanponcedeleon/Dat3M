@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -86,8 +85,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     private Label currentLabel = null;
     private final Map<Label, Label> pairLabels = new HashMap<>();
 
-    // Improves performance by initializing Locations rather than creating new write events
-    private boolean initMode = false;
     protected Call_cmdContext atomicMode = null;
 
     private int assertionCounter = 0;
@@ -261,6 +258,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     private boolean doIgnoreProcedure(String procName) {
+        if (procName.equals("__SMACK_static_init")) {
+            // This is a special function that contains static initialization code.
+            // A pass will detect this function and initialize the static memory.
+            return false;
+        }
         // These procedures do not get declared in the program, and the body of these procedures is never parsed.
         // Calls to any of these procedures must get resolved somehow by the parser (e.g., by removing or replacing the call)
         if (procName.startsWith("SMACK") || procName.startsWith("__SMACK") || procName.startsWith("$") || procName.startsWith("llvm")
@@ -507,12 +509,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             throw new ParsingException("Procedure " + funcName + " is not defined");
         }
 
-        if (funcName.equals("$initialize") && inlineMode) {
-            initMode = true;
-            addEvent(EventFactory.newFunctionCall(funcName));
-            visitProc_decl(procedures.get(funcName), List.of());
-            addEvent(EventFactory.newFunctionReturn(funcName));
-            initMode = false;
+        if (funcName.equals("$initialize")) {
             return null;
         }
 
@@ -586,10 +583,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
             if (constantSymbolMap.containsKey(name)) {
                 throw new ParsingException("Constants cannot be assigned: " + ctx.getText());
-            }
-            if (initMode) {
-                programBuilder.initLocEqConst(name, value.reduce());
-                continue;
             }
             final Register register = getScopedRegister(name);
             if (register != null) {
@@ -861,23 +854,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             }
             final Expression address = (Expression) ctx.expr(1).accept(this);
             final Expression value = (Expression) ctx.expr(2).accept(this);
-            // This improves the blow-up
-            if (initMode && !(value instanceof MemoryObject)) {
-                Expression lhs = address;
-                int rhs = 0;
-                while (lhs instanceof IExprBin expr) {
-                    rhs += expr.getRHS().reduce().getValueAsInt();
-                    lhs = expr.getLHS();
-                }
-                String text = ctx.expr(1).getText();
-                final String[] split = text.split("add.ref");
-                if (split.length > 1) {
-                    text = split[split.length - 1];
-                    text = text.substring(text.indexOf("(") + 1, text.indexOf(","));
-                }
-                programBuilder.getMemoryObject(text).appendInitialValue(rhs, value.reduce());
-                return null;
-            }
             addEvent(EventFactory.newStore(address, value));
             return null;
         }
