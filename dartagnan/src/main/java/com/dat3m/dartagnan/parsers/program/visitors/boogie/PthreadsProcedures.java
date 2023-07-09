@@ -43,6 +43,7 @@ public class PthreadsProcedures {
             case "pthread_cond_broadcast":
             case "pthread_exit":
             case "pthread_mutex_destroy":
+                // TODO: These are skipped for now
                 return true;
             case "pthread_mutex_init":
                 mutexInit(visitor, ctx);
@@ -57,7 +58,6 @@ public class PthreadsProcedures {
                 return false;
         }
     }
-
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
         final ExprContext lock = ctx.call_params().exprs().expr(0);

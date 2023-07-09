@@ -2,13 +2,10 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -16,7 +13,6 @@ public class StdProcedures {
 
     public static List<String> STDPROCEDURES = Arrays.asList(
             "abort",
-            "get_my_tid",
             "devirtbounce",
             "external_alloc",
             "$alloc",
@@ -49,22 +45,7 @@ public class StdProcedures {
             return true;
         }
         if (funcName.equals("abort")) {
-            if (visitor.inlineMode) {
-                visitor.addEvent(EventFactory.newGoto(visitor.getEndOfThreadLabel()));
-            } else {
-                visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
-            }
-            return true;
-        }
-        if (funcName.equals("get_my_tid")) {
-            // FIXME: In noinline mode, we cannot resolve the tId yet.
-            final String registerName = ctx.call_params().Ident(0).getText();
-            final Register register = visitor.getScopedRegister(registerName);
-            if (!(register.getType() instanceof IntegerType integerType)) {
-                throw new ParsingException("Fetching get_my_tid with non-integer register.");
-            }
-            final IValue tid = visitor.expressions.makeValue(BigInteger.valueOf(visitor.currentThread), integerType);
-            visitor.addEvent(EventFactory.newLocal(register, tid));
+            visitor.addEvent(EventFactory.newAbortIf(visitor.expressions.makeTrue()));
             return true;
         }
         if (funcName.equals("__assert_fail") || funcName.equals("__assert_rtn")) {
@@ -126,7 +107,7 @@ public class StdProcedures {
         //Uniquely identify the allocated storage in the entire program
         final Expression sizeExpr = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         final String ptrName = ctx.call_params().Ident(0).getText();
-        final Register reg = visitor.getScopedRegister(ptrName);
+        final Register reg = visitor.getRegister(ptrName);
 
         visitor.addEvent(EventFactory.Std.newMalloc(reg, sizeExpr));
     }

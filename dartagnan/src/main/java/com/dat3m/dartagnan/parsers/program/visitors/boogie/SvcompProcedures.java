@@ -24,7 +24,7 @@ public class SvcompProcedures {
     public static List<String> SVCOMPPROCEDURES = Arrays.asList(
             "reach_error", // Only used in SVCOMP
             "__VERIFIER_assert",
-            // "__VERIFIER_assume",
+            "__VERIFIER_assume",
             "__VERIFIER_loop_bound",
             "__VERIFIER_loop_begin",
             "__VERIFIER_spin_start",
@@ -110,7 +110,7 @@ public class SvcompProcedures {
             default -> throw new ParsingException(name + " is not supported");
         };
         final String registerName = ctx.call_params().Ident(0).getText();
-        final Register register = visitor.getScopedRegister(registerName);
+        final Register register = visitor.getRegister(registerName);
         if (register != null) {
             if (!(register.getType() instanceof IntegerType type)) {
                 throw new ParsingException(String.format("Non-integer result register %s.", register));
@@ -124,7 +124,7 @@ public class SvcompProcedures {
 
     private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String registerName = ctx.call_params().Ident(0).getText();
-        final Register register = visitor.getScopedRegister(registerName);
+        final Register register = visitor.getRegister(registerName);
         if (register != null) {
             BooleanType booleanType = visitor.types.getBooleanType();
             var nondeterministicExpression = new BNonDet(booleanType);
