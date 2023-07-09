@@ -1,18 +1,11 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
-import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprContext;
 import com.dat3m.dartagnan.parsers.BoogieParser.ExprsContext;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Event;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,12 +33,10 @@ public class PthreadsProcedures {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
             case "pthread_create":
-                return pthread_create(visitor, ctx);
             case "__pthread_join":
             case "pthread_join":
-                // VisitorBoogie already took care of creating the join event
-                // when it parsed the previous load.
-                return pthread_join(visitor, ctx);
+                // These are handled by a dedicated pass
+                return false;
             case "pthread_cond_init":
             case "pthread_cond_wait":
             case "pthread_cond_signal":
@@ -67,72 +58,6 @@ public class PthreadsProcedures {
         }
     }
 
-    private static boolean pthread_join(VisitorBoogie visitor, Call_cmdContext ctx) {
-        // ----- TODO: Test code -----
-        if (!visitor.inlineMode) {
-            return false;
-        }
-        // ----- TODO: Test code end -----
-
-        // reg := pthread_join(tid);
-        final Register reg = visitor.getScopedRegister(ctx.call_params().Ident(0).getText());
-        Expression threadToJoinWith = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
-        //FIXME: The first parameter should be a proper register, but we do not know its constant value here
-        // so we look it up in a map.
-        threadToJoinWith = visitor.expr2tid.getOrDefault(threadToJoinWith, threadToJoinWith);
-
-        if (!(threadToJoinWith instanceof IConst constId)) {
-            throw new UnsupportedOperationException("Cannot handle pthread_join with dynamic thread parameter.");
-        }
-        final int tid = constId.getValueAsInt();
-        final Expression comAddr = visitor.threadCreations.stream().filter(tc -> tc.spawnedThread().getId() == tid)
-                .findFirst()
-                .orElseThrow(() -> new MalformedProgramException("Failed to join with a thread: unknown thread id: " + tid))
-                .communicationAddress();
-        visitor.addEvent(EventFactory.Pthread.newJoin(reg, comAddr));
-        return true;
-    }
-
-    private static boolean pthread_create(VisitorBoogie visitor, Call_cmdContext ctx) {
-        // ----- TODO: Test code -----
-        if (!visitor.inlineMode) {
-            return false;
-        }
-        // ----- TODO: Test code end -----
-
-        // reg := pthread_create(threadAddr, ???, functionPtr, argument);
-        final Register reg = visitor.getScopedRegister(ctx.call_params().Ident(0).getText());
-        final Expression threadAddr = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
-        final String function = ctx.call_params().exprs().expr().get(2).getText();
-        final Expression argument = (Expression) ctx.call_params().exprs().expr().get(3).accept(visitor);
-
-        if (!(reg.getType() instanceof IntegerType)) {
-            throw new ParsingException("Return value of pthread_create cannot be assigned to non-integer register");
-        }
-
-        final int nextTid = visitor.threadCreations.size();
-        final Expression comAddr = visitor.programBuilder.getOrNewMemoryObject(function + "_" + nextTid);
-        final Event threadCreationEvent = EventFactory.Pthread.newCreate(comAddr, function);
-        // FIXME: pthread_create actually returns a success bit (SUCCESS == 0, FAIL != 0),
-        //  but we always return SUCCESS here
-        final Expression successBit = visitor.expressions.makeZero((IntegerType) reg.getType());
-        final Expression tIdExpr = visitor.expressions.makeValue(BigInteger.valueOf(nextTid), visitor.types.getArchType());
-
-        visitor.addEvent(threadCreationEvent);
-        /*
-        FIXME: Technically, we should store the thread id into <threadAddr> (the first argument of pthread_create),
-          but instead we store the value in a special map to do a sort of "constant propagation" to handle pthread_join
-          statically.
-          This allows us to replace "reg := load(threadAddr)" by "reg := tid" in a form of "constant propagation".
-        visitor.addEvent(EventFactory.newStore(threadAddr,
-                visitor.expressions.makeValue(BigInteger.valueOf(nextTid), visitor.types.getArchType())));
-        */
-        visitor.expr2tid.put(threadAddr, tIdExpr); // Substitute for the store
-        visitor.addEvent(EventFactory.newLocal(reg, successBit));
-
-        visitor.createNewThread(function, List.of(argument), threadCreationEvent, comAddr);
-        return true;
-    }
 
     private static void mutexInit(VisitorBoogie visitor, Call_cmdContext ctx) {
         final ExprContext lock = ctx.call_params().exprs().expr(0);
