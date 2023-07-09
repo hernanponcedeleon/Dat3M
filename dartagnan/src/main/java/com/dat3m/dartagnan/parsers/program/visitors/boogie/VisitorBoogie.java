@@ -218,6 +218,8 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             ++currentThread;
             if (decl.ctx.impl_body() != null) {
                 visitProc_decl(decl.ctx(), null);
+            } else if (decl.funcName.equals("main")) {
+                throw new ParsingException("main has no implementation");
             }
         }
         // ----- TODO: Test code end -----
