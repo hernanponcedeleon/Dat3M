@@ -1,21 +1,12 @@
 package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.google.common.primitives.UnsignedInteger;
-import com.google.common.primitives.UnsignedLong;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,18 +21,7 @@ public class SvcompProcedures {
             "__VERIFIER_spin_start",
             "__VERIFIER_spin_end",
             "__VERIFIER_atomic_begin",
-            "__VERIFIER_atomic_end",
-            "__VERIFIER_nondet_bool",
-            "__VERIFIER_nondet_int",
-            "__VERIFIER_nondet_uint",
-            "__VERIFIER_nondet_unsigned_int",
-            "__VERIFIER_nondet_short",
-            "__VERIFIER_nondet_ushort",
-            "__VERIFIER_nondet_unsigned_short",
-            "__VERIFIER_nondet_long",
-            "__VERIFIER_nondet_ulong",
-            "__VERIFIER_nondet_char",
-            "__VERIFIER_nondet_uchar");
+            "__VERIFIER_atomic_end");
 
     public static boolean handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
@@ -55,12 +35,6 @@ public class SvcompProcedures {
             case "__VERIFIER_assume" -> __VERIFIER_assume(visitor, ctx);
             case "__VERIFIER_atomic_begin" -> __VERIFIER_atomic_begin(visitor);
             case "__VERIFIER_atomic_end" -> __VERIFIER_atomic_end(visitor);
-            case "__VERIFIER_nondet_bool" -> __VERIFIER_nondet_bool(visitor, ctx);
-            case "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint",
-                    "__VERIFIER_nondet_unsigned_int", "__VERIFIER_nondet_short",
-                    "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
-                    "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
-                    "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> __VERIFIER_nondet(visitor, ctx, funcName);
             default -> {
                 return false;
             }
@@ -83,54 +57,6 @@ public class SvcompProcedures {
         }
         visitor.addEvent(EventFactory.Svcomp.newEndAtomic(visitor.currentBeginAtomic));
         visitor.currentBeginAtomic = null;
-    }
-
-    private static void __VERIFIER_nondet(VisitorBoogie visitor, Call_cmdContext ctx, String name) {
-        final String suffix = name.substring("__VERIFIER_nondet_".length());
-        boolean signed = switch (suffix) {
-            case "int", "short", "long", "char" -> true;
-            default -> false;
-        };
-        final BigInteger min = switch (suffix) {
-            case "long" -> BigInteger.valueOf(Long.MIN_VALUE);
-            case "int" -> BigInteger.valueOf(Integer.MIN_VALUE);
-            case "short" -> BigInteger.valueOf(Short.MIN_VALUE);
-            case "char" -> BigInteger.valueOf(Byte.MIN_VALUE);
-            default -> BigInteger.ZERO;
-        };
-        final BigInteger max = switch (suffix) {
-            case "int" -> BigInteger.valueOf(Integer.MAX_VALUE);
-            case "uint", "unsigned_int" -> UnsignedInteger.MAX_VALUE.bigIntegerValue();
-            case "short" -> BigInteger.valueOf(Short.MAX_VALUE);
-            case "ushort", "unsigned_short" -> BigInteger.valueOf(65535);
-            case "long" -> BigInteger.valueOf(Long.MAX_VALUE);
-            case "ulong" -> UnsignedLong.MAX_VALUE.bigIntegerValue();
-            case "char" -> BigInteger.valueOf(Byte.MAX_VALUE);
-            case "uchar" -> BigInteger.valueOf(255);
-            default -> throw new ParsingException(name + " is not supported");
-        };
-        final String registerName = ctx.call_params().Ident(0).getText();
-        final Register register = visitor.getRegister(registerName);
-        if (register != null) {
-            if (!(register.getType() instanceof IntegerType type)) {
-                throw new ParsingException(String.format("Non-integer result register %s.", register));
-            }
-            final INonDet expression = visitor.programBuilder.newConstant(type, signed);
-            expression.setMin(min);
-            expression.setMax(max);
-            visitor.addEvent(EventFactory.newLocal(register, expression));
-        }
-    }
-
-    private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final String registerName = ctx.call_params().Ident(0).getText();
-        final Register register = visitor.getRegister(registerName);
-        if (register != null) {
-            BooleanType booleanType = visitor.types.getBooleanType();
-            var nondeterministicExpression = new BNonDet(booleanType);
-            Expression cast = visitor.expressions.makeCast(nondeterministicExpression, register.getType());
-            visitor.addEvent(EventFactory.newLocal(register, cast));
-        }
     }
 
     private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
