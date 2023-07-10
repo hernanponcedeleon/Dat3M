@@ -67,7 +67,7 @@ public class Function implements Expression {
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
 
-    public boolean hasBody() { return entry == null; }
+    public boolean hasBody() { return entry != null; }
     public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
 
     public Event getEntry() { return entry; }
