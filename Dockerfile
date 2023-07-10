@@ -15,7 +15,8 @@ RUN apt-get update && \
     apt-get install -y cmake && \
     apt-get install -y autoconf && \
     apt-get install -y automake && \
-    apt-get install -y graphviz
+    apt-get install -y graphviz && \
+    apt-get install -y curl    
 
 # Install SMACK
 RUN cd home && \
@@ -25,7 +26,7 @@ RUN cd home && \
 
 # Install Dat3M
 RUN cd home && \
-    git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
+    git clone --branch pldi https://github.com/hernanponcedeleon/Dat3M.git && \
     cd Dat3M && \
     chmod 755 Dartagnan-SVCOMP.sh && \
     mvn clean install -DskipTests
@@ -39,8 +40,16 @@ RUN cd home/Dat3M/llvm-passes/atomic-replace/ \
 # symlink for clang
 RUN ln -s clang-12 /usr/bin/clang
 
+# Clone CNA-verification repo
+RUN cd home && \
+    git clone https://github.com/huawei-drc/cna-verification.git && \
+    cd /home/cna-verification && \
+    make prepared
+
 ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
 ENV SMACK_FLAGS="-q -t --no-memory-splitting"
 ENV ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -simplifycfg -gvn"
+ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV CNA_VERIFICATION_HOME=/home/cna-verification
