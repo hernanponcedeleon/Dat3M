@@ -79,6 +79,7 @@ public class ProcessingManager implements ProgramProcessor {
                 StaticMemoryInitializer.newInstance(),
                 Inlining.fromConfig(config),
                 ThreadCreation.fromConfig(config),
+                IntrinsicsInlining.fromConfig(config),
                 UnreachableCodeElimination.fromConfig(config),
                 ComplexBlockSplitting.newInstance(),
                 BranchReordering.fromConfig(config),

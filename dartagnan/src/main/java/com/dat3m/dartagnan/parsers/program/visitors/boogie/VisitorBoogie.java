@@ -154,6 +154,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
         for (Function func : functions) {
             currentFunction = func.getId();
+            // Skip intrinsics, regardless of being user-defined
+            if (func.getName().startsWith("__VERIFIER_nondet_")) {
+                continue;
+            }
             BoogieParser.Proc_declContext funcCtx = procDeclarations.get(func.getName());
             if (funcCtx.impl_body() != null) {
                 visitProc_decl(funcCtx);
