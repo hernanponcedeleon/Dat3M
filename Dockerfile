@@ -16,6 +16,8 @@ RUN apt-get update && \
     apt-get install -y autoconf && \
     apt-get install -y automake && \
     apt-get install -y graphviz && \
+    apt-get install -y python3-matplotlib && \ 
+    apt-get install -y python3-pandas && \ 
     apt-get install -y curl    
 
 # Install SMACK
