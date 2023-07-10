@@ -11,7 +11,6 @@ import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 
-//TODO: This is buggy for now, because Addresses are treated as IConst
 public class ExprSimplifier extends ExprTransformer {
 
     @Override
@@ -173,7 +172,8 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(IExprUn iUn) {
-        return expressions.makeUnary(iUn.getOp(), iUn.getInner(), iUn.getType());
+        // TODO: Add simplifications
+        return super.visit(iUn);
     }
 
     @Override

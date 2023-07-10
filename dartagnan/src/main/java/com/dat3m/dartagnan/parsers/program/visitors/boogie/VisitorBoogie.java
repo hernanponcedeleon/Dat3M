@@ -391,11 +391,11 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
                 .findFirst().orElse(null);
         if (func != null) {
             final Event funcCall;
-            if (func.getFunctionType().getReturnType().equals(types.getVoidType())) {
-                funcCall = EventFactory.newVoidFunctionCall(func, callArguments);
-            } else {
+            if (func.hasReturnValue()) {
                 final Register resultReg = getRegister(ctx.call_params().Ident(0).getText());;
                 funcCall = EventFactory.newValueFunctionCall(resultReg, func, callArguments);
+            } else {
+                funcCall = EventFactory.newVoidFunctionCall(func, callArguments);
             }
             addEvent(funcCall);
         }

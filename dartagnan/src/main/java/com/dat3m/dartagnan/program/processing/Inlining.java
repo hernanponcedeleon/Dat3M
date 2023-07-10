@@ -50,11 +50,11 @@ public class Inlining implements ProgramProcessor {
     @Override
     public void run(Program program) {
         for (Function function : program.getFunctions()) {
-            replaceAllCalls(function);
+            inlineAllCalls(function);
         }
     }
 
-    private void replaceAllCalls(Function thread) {
+    private void inlineAllCalls(Function thread) {
         int scopeCounter = 0;
         Map<Event, List<DirectFunctionCall>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
@@ -62,7 +62,7 @@ public class Inlining implements ProgramProcessor {
         while (event != null) {
             exitToCallMap.remove(event);
             // Work with successor because when calls get removed, the loop variable would be invalidated.
-            if (!(event.getSuccessor() instanceof DirectFunctionCall call) || call.getCallTarget().isIntrinsic()) {
+            if (!(event.getSuccessor() instanceof DirectFunctionCall call) || !call.getCallTarget().hasBody()) {
                 event = event.getSuccessor();
                 continue;
             }

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
@@ -66,10 +67,10 @@ public class Function implements Expression {
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
 
-    public boolean isIntrinsic() { return entry == null; }
+    public boolean hasBody() { return entry == null; }
+    public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
 
     public Event getEntry() { return entry; }
-
     public Event getExit() { return exit; }
 
     public List<Event> getEvents() {
@@ -103,7 +104,7 @@ public class Function implements Expression {
     }
 
     public Register getOrNewRegister(String name, Type type) {
-        Register found = registers.get(name);
+        final Register found = registers.get(name);
         if (found == null) {
             return newRegister(name, type);
         }

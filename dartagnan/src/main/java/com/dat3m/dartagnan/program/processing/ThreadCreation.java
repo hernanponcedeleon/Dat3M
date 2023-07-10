@@ -290,7 +290,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.append(threadEnd);
 
         // ------------------- Replace AbortIf and Return -------------------
-        final Register returnRegister = function.getFunctionType().getReturnType() != null ?
+        final Register returnRegister = function.hasReturnValue() ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
             if (e instanceof AbortIf abort) {
