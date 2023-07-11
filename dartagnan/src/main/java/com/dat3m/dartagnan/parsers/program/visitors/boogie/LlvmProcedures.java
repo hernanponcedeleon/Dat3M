@@ -110,7 +110,6 @@ public class LlvmProcedures {
                             throw new UnsupportedOperationException("Operation " + params.get(3).getText() + " is not recognized.");
                 }
                 visitor.addEvent(Llvm.newRMW(reg, p0, p1, op, mo));
-                return true;
             }
             case "llvm.smax.i32", "llvm.smax.i64", "llvm.umax.i32", "llvm.umax.i64" -> {
                 cond = visitor.expressions.makeGT(p0, p1, funcName.contains("smax"));

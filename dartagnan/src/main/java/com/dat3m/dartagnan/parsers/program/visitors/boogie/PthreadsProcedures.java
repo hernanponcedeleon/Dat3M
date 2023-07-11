@@ -32,11 +32,6 @@ public class PthreadsProcedures {
     public static boolean handlePthreadsFunctions(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
-            case "pthread_create":
-            case "__pthread_join":
-            case "pthread_join":
-                // These are handled by a dedicated pass
-                return false;
             case "pthread_cond_init":
             case "pthread_cond_wait":
             case "pthread_cond_signal":
@@ -44,6 +39,8 @@ public class PthreadsProcedures {
             case "pthread_exit":
             case "pthread_mutex_destroy":
                 // TODO: These are skipped for now
+                VisitorBoogie.logger.warn(
+                        "Skipped call to {} because the function is not supported right now.", funcName);
                 return true;
             case "pthread_mutex_init":
                 mutexInit(visitor, ctx);
@@ -55,6 +52,7 @@ public class PthreadsProcedures {
                 mutexUnlock(visitor, ctx);
                 return true;
             default:
+                // pthread_create and pthread_join are handled by a dedicated pass, so we skip them here.
                 return false;
         }
     }

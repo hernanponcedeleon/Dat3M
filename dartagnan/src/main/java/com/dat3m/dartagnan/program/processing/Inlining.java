@@ -54,11 +54,11 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private void inlineAllCalls(Function thread) {
+    private void inlineAllCalls(Function function) {
         int scopeCounter = 0;
         Map<Event, List<DirectFunctionCall>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
-        Event event = thread.getEntry();
+        Event event = function.getEntry();
         while (event != null) {
             exitToCallMap.remove(event);
             // Work with successor because when calls get removed, the loop variable would be invalidated.
@@ -122,7 +122,6 @@ public class Inlining implements ProgramProcessor {
             }
         }
 
-        //
         for (Event event : inlinedBody) {
             if (event instanceof EventUser user) {
                 user.updateReferences(replacementMap);
