@@ -16,32 +16,8 @@ import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
 
 public class SvcompProcedures {
-
-    public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-            "reach_error", // Only used in SVCOMP
-            "__VERIFIER_assert",
-            "__VERIFIER_assume",
-            "__VERIFIER_loop_bound",
-            "__VERIFIER_loop_begin",
-            "__VERIFIER_spin_start",
-            "__VERIFIER_spin_end",
-            "__VERIFIER_atomic_begin",
-            "__VERIFIER_atomic_end",
-            "__VERIFIER_nondet_bool",
-            "__VERIFIER_nondet_int",
-            "__VERIFIER_nondet_uint",
-            "__VERIFIER_nondet_unsigned_int",
-            "__VERIFIER_nondet_short",
-            "__VERIFIER_nondet_ushort",
-            "__VERIFIER_nondet_unsigned_short",
-            "__VERIFIER_nondet_long",
-            "__VERIFIER_nondet_ulong",
-            "__VERIFIER_nondet_char",
-            "__VERIFIER_nondet_uchar");
 
     public static boolean handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);

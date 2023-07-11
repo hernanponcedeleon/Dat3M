@@ -6,36 +6,7 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 
-import java.util.Arrays;
-import java.util.List;
-
 public class StdProcedures {
-
-    public static List<String> STDPROCEDURES = Arrays.asList(
-            "abort",
-            "devirtbounce",
-            "external_alloc",
-            "$alloc",
-            "__assert_rtn", // generated on MacOS
-            "assert_.i32",
-            "__assert_fail",
-            "$malloc",
-            "calloc",
-            "malloc",
-            "fopen",
-            "free",
-            "memcpy",
-            "$memcpy",
-            "memset",
-            "$memset",
-            "nvram_read_byte",
-            "strcpy",
-            "strcmp",
-            "strncpy",
-            "llvm.stackrestore",
-            "llvm.stacksave",
-            "llvm.lifetime.start",
-            "llvm.lifetime.end");
 
     public static boolean handleStdFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);

@@ -67,6 +67,7 @@ public class Inlining implements ProgramProcessor {
                 continue;
             }
             // Check whether recursion bound was reached.
+            // FIXME: The recursion check does not work
             exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(call);
             long depth = exitToCallMap.values().stream().filter(c -> c.contains(call)).count();
             if (depth > bound) {
@@ -100,7 +101,7 @@ public class Inlining implements ProgramProcessor {
         var registerMap = new HashMap<Register, Register>();
         assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
         // All registers have to be replaced
-        for (Register register : callTarget.getRegisters()) {
+        for (Register register : List.copyOf(callTarget.getRegisters())) {
             String newName = scope + ":" + register.getName();
             registerMap.put(register, entry.getFunction().newRegister(newName, register.getType()));
         }
