@@ -48,11 +48,14 @@ public class LlvmProcedures {
             "llvm.ctlz.i64"
     );
 
-    public static void handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handleLlvmFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
+        if (LLVMPROCEDURES.stream().noneMatch(funcName::equals)) {
+            return false;
+        }
 
         final String regName = ctx.call_params().Ident(0).getText();
-        final Register reg = visitor.getScopedRegister(regName); // May be NULL
+        final Register reg = visitor.getRegister(regName); // May be NULL
 
         final List<BoogieParser.ExprContext> params = ctx.call_params().exprs().expr();
         final Expression p0 = (Expression) params.get(0).accept(visitor);
@@ -82,8 +85,8 @@ public class LlvmProcedures {
                 // create such registers,
                 // then when calling "extractvalue" we can check if the member was properly
                 // initialized
-                final Register oldValueRegister = visitor.getOrNewScopedRegister(regName + "(0)");
-                final Register cmpRegister = visitor.getOrNewScopedRegister(regName + "(1)",
+                final Register oldValueRegister = visitor.getOrNewRegister(regName + "(0)");
+                final Register cmpRegister = visitor.getOrNewRegister(regName + "(1)",
                         visitor.types.getBooleanType());
                 // The compilation of Llvm.newCompareExchange will
                 // assign the correct values to the registers above
@@ -96,7 +99,7 @@ public class LlvmProcedures {
                 switch (((IConst) p3).getValueAsInt()) {
                     case 0 -> {
                         visitor.addEvent(Llvm.newExchange(reg, p0, p1, mo));
-                        return;
+                        return true;
                     }
                     case 1 -> op = IOpBin.PLUS;
                     case 2 -> op = IOpBin.MINUS;
@@ -119,7 +122,10 @@ public class LlvmProcedures {
             case "llvm.ctlz.i32", "llvm.ctlz.i64" -> {
                 visitor.addEvent(EventFactory.newLocal(reg, visitor.expressions.makeCTLZ(p0, (IntegerType) p0.getType())));
             }
-            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of LLVMPROCEDURES");
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 }

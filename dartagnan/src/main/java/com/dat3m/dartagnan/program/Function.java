@@ -1,15 +1,20 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Function {
+public class Function implements Expression {
 
     protected String name;
     protected Event entry; // Can be null for intrinsics
@@ -47,17 +52,25 @@ public class Function {
         }
     }
 
+    @Override
+    public Type getType() {
+        return TypeFactory.getInstance().getArchType();
+    }
+
     public String getName() { return this.name; }
     public void setName(String name) { this.name = name; }
     public FunctionType getFunctionType() { return this.functionType; }
+    public List<Register> getParameterRegisters() {
+        return Collections.unmodifiableList(parameterRegs);
+    }
     public int getId() { return id; }
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
 
-    public boolean isIntrinsic() { return entry == null; }
+    public boolean hasBody() { return entry != null; }
+    public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
 
     public Event getEntry() { return entry; }
-
     public Event getExit() { return exit; }
 
     public List<Event> getEvents() {
@@ -91,7 +104,7 @@ public class Function {
     }
 
     public Register getOrNewRegister(String name, Type type) {
-        Register found = registers.get(name);
+        final Register found = registers.get(name);
         if (found == null) {
             return newRegister(name, type);
         }
@@ -125,6 +138,15 @@ public class Function {
         final String suffix = ")";
         return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
+    }
 
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    public IConst reduce() {
+        throw new UnsupportedOperationException("Cannot reduce functions");
     }
 }

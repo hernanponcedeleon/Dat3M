@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
 
+import java.util.stream.Collectors;
+
 public class Printer {
 
     private StringBuilder result;
@@ -32,9 +34,9 @@ public class Printer {
         }
         result.append(name).append("\n");
 
-        for(Thread thread : program.getThreads()){
+        for(Thread thread : program.getThreads()) {
             if(shouldPrintThread(thread)){
-                appendThread(thread);
+                appendFunction(thread);
             }
         }
 
@@ -73,24 +75,20 @@ public class Printer {
         return firstEvent.getSuccessor() != null && !(firstEvent instanceof Init);
     }
 
-    private void appendThread(Thread thread) {
-        result.append("\n[").append(thread.getId()).append("] ");
-        try {
-            Integer.parseInt(thread.getName());
-            result.append("thread_");
-        } catch (Exception ignored) { }
-        result.append(thread.getName()).append("\n");
-        for (Event e : thread.getEvents()) {
+    private void appendFunction(Function func) {
+        result.append("\n[").append(func.getId()).append("]");
+        result.append(func instanceof Thread ? " thread " : " function ");
+        result.append(functionSignatureToString(func)).append("\n");
+        for (Event e : func.getEvents()) {
             appendEvent(e);
         }
     }
 
-    private void appendFunction(Function func) {
-        result.append("\n[").append(func.getId()).append("] ");
-        result.append("function ").append(func).append("\n");
-        for (Event e : func.getEvents()) {
-            appendEvent(e);
-        }
+    public String functionSignatureToString(Function func) {
+        final String prefix = func.getFunctionType().getReturnType() + " " + func.getName() + "(";
+        final String suffix = ")";
+        return func.getParameterRegisters().stream().map(r -> r.getType() + " " + r.getName())
+                .collect(Collectors.joining(", ", prefix, suffix));
     }
 
     private void appendEvent(Event event){

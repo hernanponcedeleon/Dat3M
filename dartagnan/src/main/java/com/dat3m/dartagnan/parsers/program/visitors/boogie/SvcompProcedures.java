@@ -16,34 +16,10 @@ import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
 
 public class SvcompProcedures {
 
-    public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-            "reach_error", // Only used in SVCOMP
-            "__VERIFIER_assert",
-            // "__VERIFIER_assume",
-            "__VERIFIER_loop_bound",
-            "__VERIFIER_loop_begin",
-            "__VERIFIER_spin_start",
-            "__VERIFIER_spin_end",
-            "__VERIFIER_atomic_begin",
-            "__VERIFIER_atomic_end",
-            "__VERIFIER_nondet_bool",
-            "__VERIFIER_nondet_int",
-            "__VERIFIER_nondet_uint",
-            "__VERIFIER_nondet_unsigned_int",
-            "__VERIFIER_nondet_short",
-            "__VERIFIER_nondet_ushort",
-            "__VERIFIER_nondet_unsigned_short",
-            "__VERIFIER_nondet_long",
-            "__VERIFIER_nondet_ulong",
-            "__VERIFIER_nondet_char",
-            "__VERIFIER_nondet_uchar");
-
-    public static void handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
+    public static boolean handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
         switch (funcName) {
             case "reach_error" -> visitor.addAssertion(visitor.expressions.makeZero(visitor.types.getArchType()));
@@ -61,8 +37,11 @@ public class SvcompProcedures {
                     "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                     "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                     "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> __VERIFIER_nondet(visitor, ctx, funcName);
-            default -> throw new UnsupportedOperationException(funcName + " procedure is not part of SVCOMPPROCEDURES");
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     private static void __VERIFIER_assume(VisitorBoogie visitor, Call_cmdContext ctx) {
@@ -107,7 +86,7 @@ public class SvcompProcedures {
             default -> throw new ParsingException(name + " is not supported");
         };
         final String registerName = ctx.call_params().Ident(0).getText();
-        final Register register = visitor.getScopedRegister(registerName);
+        final Register register = visitor.getRegister(registerName);
         if (register != null) {
             if (!(register.getType() instanceof IntegerType type)) {
                 throw new ParsingException(String.format("Non-integer result register %s.", register));
@@ -121,7 +100,7 @@ public class SvcompProcedures {
 
     private static void __VERIFIER_nondet_bool(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String registerName = ctx.call_params().Ident(0).getText();
-        final Register register = visitor.getScopedRegister(registerName);
+        final Register register = visitor.getRegister(registerName);
         if (register != null) {
             BooleanType booleanType = visitor.types.getBooleanType();
             var nondeterministicExpression = new BNonDet(booleanType);

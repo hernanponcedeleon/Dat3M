@@ -21,6 +21,7 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
+    private boolean isThreadLocal;
 
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
@@ -37,6 +38,7 @@ public class MemoryObject extends IConst {
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
+        this.isThreadLocal = false;
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
@@ -58,6 +60,9 @@ public class MemoryObject extends IConst {
 
     public BigInteger getAddress() { return this.address; }
     public void setAddress(BigInteger addr) { this.address = addr; }
+
+    public boolean isThreadLocal() { return this.isThreadLocal; }
+    public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
 
     /**
      * @return Number of fields in this array.

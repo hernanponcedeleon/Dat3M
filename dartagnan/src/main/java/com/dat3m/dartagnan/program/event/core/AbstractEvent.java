@@ -220,6 +220,13 @@ public abstract class AbstractEvent implements Event {
         this.forceDelete();
     }
 
+    @Override
+    public void replaceBy(List<Event> replacement) {
+        Preconditions.checkState(currentUsers.isEmpty(), "Cannot replace event that is still in use.");
+        this.insertAfter(replacement);
+        this.forceDelete();
+    }
+
     private static void insertBetween(AbstractEvent toBeInserted, Function func, AbstractEvent pred, AbstractEvent succ) {
         assert (pred == null || pred.successor == succ) && (succ == null || succ.predecessor == pred);
         assert (toBeInserted != pred && toBeInserted != succ);

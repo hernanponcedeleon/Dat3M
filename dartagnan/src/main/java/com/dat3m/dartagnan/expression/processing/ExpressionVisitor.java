@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -19,4 +20,5 @@ public interface ExpressionVisitor<T> {
     default T visit(Register reg) { return null; }
     default T visit(MemoryObject address) { return null; }
     default T visit(Location location) { return null; }
+    default T visit(Function function) { return null; }
 }

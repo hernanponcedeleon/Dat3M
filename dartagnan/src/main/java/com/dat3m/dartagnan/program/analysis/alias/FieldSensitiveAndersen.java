@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -62,11 +64,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
-        for (Event e : program.getEvents()) {
-            if(e instanceof Local local) {
-                processRegs(local);
-            }
-        }
+        program.getEvents().forEach(this::processRegs);
         while(!variables.isEmpty()) {
             algorithm(variables.poll());
         }
@@ -120,9 +118,21 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected void processRegs(Local e) {
-        Register register = e.getResultRegister();
-        Collector collector = new Collector(e.getExpr());
+
+    protected void processRegs(Event e) {
+        if (!(e instanceof Local || e instanceof ThreadArgument)) {
+            return;
+        }
+        assert e instanceof RegWriter;
+        final Register register = ((RegWriter)e).getResultRegister();
+        final Expression expr;
+        if (e instanceof Local local) {
+            expr = local.getExpr();
+        } else {
+            final ThreadArgument arg = (ThreadArgument) e;
+            expr = arg.getCreator().getArguments().get(arg.getIndex());
+        }
+        final Collector collector = new Collector(expr);
         addAllAddresses(register,collector.address());
         for(Offset<Register> r : collector.register()) {
             addEdge(r.base,register,r.offset,r.alignment);

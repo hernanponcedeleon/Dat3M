@@ -12,7 +12,9 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
@@ -46,12 +48,8 @@ public interface EventVisitor<T> {
     // ============================== Language-level events ==============================
 
     // ------------------ Pthread Events ------------------
-    default T visitCreate(Create e) { return visitMemEvent(e); }
-    default T visitEnd(End e) { return visitMemEvent(e); }
     default T visitInitLock(InitLock e) { return visitMemEvent(e); }
-    default T visitJoin(Join e) { return visitMemEvent(e); }
     default T visitLock(Lock e) { return visitMemEvent(e); }
-    default T visitStart(Start e) { return visitMemEvent(e); }
     default T visitUnlock(Unlock e) { return visitMemEvent(e); }
 
     // ------------------ AARCH64 Events ------------------
