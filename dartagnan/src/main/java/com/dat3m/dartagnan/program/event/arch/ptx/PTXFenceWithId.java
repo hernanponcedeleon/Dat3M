@@ -23,7 +23,7 @@ public class PTXFenceWithId extends Fence implements RegReader {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.fenceID = fenceID.visit(exprTransformer);
+        this.fenceID = fenceID.accept(exprTransformer);
     }
 
     @Override

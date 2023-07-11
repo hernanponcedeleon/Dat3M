@@ -15,8 +15,8 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(Atom atom) {
-        Expression lhs = atom.getLHS().visit(this);
-        Expression rhs = atom.getRHS().visit(this);
+        Expression lhs = atom.getLHS().accept(this);
+        Expression rhs = atom.getRHS().accept(this);
         if (lhs.equals(rhs)) {
             switch(atom.getOp()) {
                 case EQ:
@@ -56,8 +56,8 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(BExprBin bBin) {
-        Expression l = bBin.getLHS().visit(this);
-        Expression r = bBin.getRHS().visit(this);
+        Expression l = bBin.getLHS().accept(this);
+        Expression r = bBin.getRHS().accept(this);
         Expression left = l instanceof BConst || !(r instanceof BConst) ? l : r;
         Expression right = left == l ? r : l;
         if (left instanceof BConst constant) {
@@ -79,7 +79,7 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(BExprUn bUn) {
-        Expression inner = bUn.getInner().visit(this);
+        Expression inner = bUn.getInner().accept(this);
         assert bUn.getOp() == BOpUn.NOT;
         if (inner instanceof BConst constant) {
             return expressions.makeValue(!constant.getValue());
@@ -97,8 +97,8 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(IExprBin iBin) {
-        Expression lhs = iBin.getLHS().visit(this);
-        Expression rhs = iBin.getRHS().visit(this);
+        Expression lhs = iBin.getLHS().accept(this);
+        Expression rhs = iBin.getRHS().accept(this);
         IOpBin op = iBin.getOp();
         if (lhs.equals(rhs)) {
             switch(op) {
@@ -178,9 +178,9 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(IfExpr ifExpr) {
-        Expression cond = ifExpr.getGuard().visit(this);
-        Expression t = ifExpr.getTrueBranch().visit(this);
-        Expression f = ifExpr.getFalseBranch().visit(this);
+        Expression cond = ifExpr.getGuard().accept(this);
+        Expression t = ifExpr.getTrueBranch().accept(this);
+        Expression f = ifExpr.getFalseBranch().accept(this);
 
         if (cond instanceof BConst constantGuard) {
             return constantGuard.getValue() ? t : f;

@@ -72,7 +72,7 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.sizeExpr = sizeExpr.visit(exprTransformer);
+        this.sizeExpr = sizeExpr.accept(exprTransformer);
     }
 
     @Override

@@ -45,7 +45,7 @@ public abstract class RMWXchgBase extends SingleAccessMemoryEvent implements Reg
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         super.transformExpressions(exprTransformer);
-        this.storeValue = storeValue.visit(exprTransformer);
+        this.storeValue = storeValue.accept(exprTransformer);
     }
 
     @Override

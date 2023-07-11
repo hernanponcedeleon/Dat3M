@@ -52,7 +52,7 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        arguments.replaceAll(expression -> expression.visit(exprTransformer));
+        arguments.replaceAll(expression -> expression.accept(exprTransformer));
     }
 
 }

@@ -245,7 +245,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         private Expression transform(Expression expression) {
-            Expression result = expression.visit(this);
+            Expression result = expression.accept(this);
             Verify.verify(result.getType().equals(expression.getType()), "Type mismatch in constant propagation.");
             return result;
         }

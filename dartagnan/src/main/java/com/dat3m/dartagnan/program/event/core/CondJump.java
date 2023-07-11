@@ -88,7 +88,7 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.guard = guard.visit(exprTransformer);
+        this.guard = guard.accept(exprTransformer);
     }
 
     @Override

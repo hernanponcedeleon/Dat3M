@@ -283,7 +283,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         Result result;
 
         Collector(Expression x) {
-            result = x.visit(this);
+            result = x.accept(this);
         }
 
         List<Location> address() {
@@ -306,8 +306,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
         @Override
         public Result visit(IExprBin x) {
-            Result l = x.getLHS().visit(this);
-            Result r = x.getRHS().visit(this);
+            Result l = x.getLHS().accept(this);
+            Result r = x.getRHS().accept(this);
             if(l == null || r == null || x.getOp() == R_SHIFT) {
                 return null;
             }
@@ -339,15 +339,15 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
         @Override
         public Result visit(IExprUn x) {
-            Result i = x.getInner().visit(this);
+            Result i = x.getInner().accept(this);
             return i == null ? null : x.getOp() != MINUS ? i
                     : new Result(null,null,i.offset.negate(),i.alignment==0?1:i.alignment);
         }
 
         @Override
         public Result visit(IfExpr x) {
-            x.getTrueBranch().visit(this);
-            x.getFalseBranch().visit(this);
+            x.getTrueBranch().accept(this);
+            x.getFalseBranch().accept(this);
             return null;
         }
 

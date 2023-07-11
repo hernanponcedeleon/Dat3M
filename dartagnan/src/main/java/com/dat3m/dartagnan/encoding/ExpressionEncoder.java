@@ -42,7 +42,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     BooleanFormula encodeAsBoolean(Expression expression) {
-        Formula formula = expression.visit(this);
+        Formula formula = expression.accept(this);
         if (formula instanceof BooleanFormula bForm) {
             return bForm;
         }
@@ -59,7 +59,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     Formula encode(Expression expression) {
-        return expression.visit(this);
+        return expression.accept(this);
     }
 
     static Formula getLastMemValueExpr(MemoryObject object, int offset, FormulaManager formulaManager) {
