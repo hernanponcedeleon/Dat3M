@@ -208,7 +208,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         // These procedures do not get declared in the program, and the body of these procedures is never parsed.
         // Calls to any of these procedures must get resolved somehow by the parser (e.g., by removing or replacing the call)
         if (procName.startsWith("SMACK") || procName.startsWith("__SMACK") || procName.startsWith("$") || procName.startsWith("llvm")
-                || (procName.startsWith("__VERIFIER") && !procName.contains("__VERIFIER_atomic"))
+                || (procName.startsWith("__VERIFIER") && !procName.contains("__VERIFIER_atomic") && !procName.startsWith("__VERIFIER_nondet_"))
                 || procName.startsWith("boogie") || procName.startsWith("corral")
                 || procName.startsWith("assert") || procName.startsWith("malloc") || procName.startsWith("abort")
                 || procName.startsWith("reach_error") || procName.startsWith("printf") || procName.startsWith("fopen")) {
