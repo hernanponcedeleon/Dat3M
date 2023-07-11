@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
+import java.util.List;
 
 public final class ExpressionFactory {
 
@@ -193,5 +194,15 @@ public final class ExpressionFactory {
         Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
                 "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
         return new IExprBin((IntegerType) leftOperand.getType(), leftOperand, operator, rightOperand);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Pointers
+
+    public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
+        //TODO getPointerType()
+        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+                "Applying offsets to non-pointer expression.");
+        return new GEPExpression(types.getArchType(), indexingType, base, offsets);
     }
 }

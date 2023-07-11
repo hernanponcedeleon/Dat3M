@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import java.util.ArrayList;
+
 public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     protected final TypeFactory types = TypeFactory.getInstance();
@@ -82,4 +84,14 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visit(Function function) { return function; }
+
+    @Override
+    public Expression visit(GEPExpression getElementPointer) {
+        Expression base = getElementPointer.getBaseExpression().accept(this);
+        final var offsets = new ArrayList<Expression>();
+        for (Expression offset : getElementPointer.getOffsetExpressions()) {
+            offsets.add(offset.accept(this));
+        }
+        return expressions.makeGetElementPointer(getElementPointer.getIndexingType(), base, offsets);
+    }
 }
