@@ -51,7 +51,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.boogie.SvcompProcedur
 
 public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
-    private static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
+    protected static final Logger logger = LogManager.getLogger(VisitorBoogie.class);
 
     protected final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.BOOGIE);
     protected final TypeFactory types = programBuilder.getTypeFactory();

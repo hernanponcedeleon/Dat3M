@@ -91,9 +91,6 @@ public class ThreadCreation implements ProgramProcessor {
         if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
             return;
         }
-        // TODO: test code
-        program.getThreads().clear(); // Clear old threads and create new ones
-        // TODO -----------
 
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();

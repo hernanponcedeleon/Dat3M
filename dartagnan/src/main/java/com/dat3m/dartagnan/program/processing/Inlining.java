@@ -54,11 +54,11 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private void inlineAllCalls(Function thread) {
+    private void inlineAllCalls(Function function) {
         int scopeCounter = 0;
         Map<Event, List<DirectFunctionCall>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
-        Event event = thread.getEntry();
+        Event event = function.getEntry();
         while (event != null) {
             exitToCallMap.remove(event);
             // Work with successor because when calls get removed, the loop variable would be invalidated.
@@ -67,6 +67,7 @@ public class Inlining implements ProgramProcessor {
                 continue;
             }
             // Check whether recursion bound was reached.
+            // FIXME: The recursion check does not work
             exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(call);
             long depth = exitToCallMap.values().stream().filter(c -> c.contains(call)).count();
             if (depth > bound) {
@@ -100,7 +101,7 @@ public class Inlining implements ProgramProcessor {
         var registerMap = new HashMap<Register, Register>();
         assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
         // All registers have to be replaced
-        for (Register register : callTarget.getRegisters()) {
+        for (Register register : List.copyOf(callTarget.getRegisters())) {
             String newName = scope + ":" + register.getName();
             registerMap.put(register, entry.getFunction().newRegister(newName, register.getType()));
         }
@@ -122,7 +123,6 @@ public class Inlining implements ProgramProcessor {
             }
         }
 
-        //
         for (Event event : inlinedBody) {
             if (event instanceof EventUser user) {
                 user.updateReferences(replacementMap);

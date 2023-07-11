@@ -7,21 +7,9 @@ import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 
-import java.util.Arrays;
-import java.util.List;
+import java.math.BigInteger;
 
 public class SvcompProcedures {
-
-    public static List<String> SVCOMPPROCEDURES = Arrays.asList(
-            "reach_error", // Only used in SVCOMP
-            "__VERIFIER_assert",
-            "__VERIFIER_assume",
-            "__VERIFIER_loop_bound",
-            "__VERIFIER_loop_begin",
-            "__VERIFIER_spin_start",
-            "__VERIFIER_spin_end",
-            "__VERIFIER_atomic_begin",
-            "__VERIFIER_atomic_end");
 
     public static boolean handleSvcompFunction(VisitorBoogie visitor, Call_cmdContext ctx) {
         final String funcName = visitor.getFunctionNameFromCallContext(ctx);
