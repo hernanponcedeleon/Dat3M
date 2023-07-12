@@ -29,6 +29,7 @@ import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -188,6 +189,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
 
         EventIdReassignment.newInstance().run(program);
+        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
         logger.info("Number of threads (including main): " + program.getThreads().size());
     }
 

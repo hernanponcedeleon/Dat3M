@@ -14,7 +14,7 @@ public abstract class FenceBase extends AbstractEvent {
         this.mo = mo;
         this.addTags(Tag.VISIBLE, Tag.FENCE);
         if (mo != null && !mo.isEmpty()) {
-            this.tags.add(mo);
+            addTags(mo);
         }
     }
 
