@@ -16,11 +16,29 @@ RUN apt-get update && \
     apt-get install -y autoconf && \
     apt-get install -y automake && \
     apt-get install -y graphviz && \
-    apt-get install -y python3-matplotlib && \ 
-    apt-get install -y python3-pandas && \ 
-    apt-get install -y curl    
+    apt-get install -y python3-matplotlib && \
+    apt-get install -y python3-pandas && \
+    apt-get install -y curl
 
-# Install SMACK
+# Install .NET SDK (required by SMACK)
+# See https://xhinker.medium.com/install-net-5-in-linux-step-by-step-478868105a33
+# As the .NET framework has been removed from the official ubuntu repository,
+# a personal package archive should be fetched instead.
+#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EB3E94ADBE1229CF && \
+#    apt-add-repository https://packages.microsoft.com/ubuntu/20.04/prod && \
+#    apt-get update && \
+#    apt-get install -y dotnet-sdk-5.0
+# TODO This variant is specialized for ARM processors,
+# as that PPA does not provide an implementation for this architecture.
+RUN wget https://download.visualstudio.microsoft.com/download/pr/27840e8b-d61c-472d-8e11-c16784d40091/ae9780ccda4499405cf6f0924f6f036a/dotnet-sdk-5.0.100-linux-arm64.tar.gz && \
+    mkdir /opt/dotnet && \
+    tar zxf dotnet-sdk-5.0.100-linux-arm64.tar.gz -C /opt/dotnet && \
+    ln -s /opt/dotnet/dotnet /usr/bin/dotnet && \
+    apt-get install -y equivs && \
+    echo Package: dotnet-sdk-5.0 >dotnet-sdk-5.0 && \
+    equivs-build dotnet-sdk-5.0 && \
+    dpkg -i dotnet-sdk-5.0_1.0_all.deb
+
 RUN cd home && \
     git clone https://github.com/smackers/smack.git && \
     cd smack && \
