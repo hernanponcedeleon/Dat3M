@@ -337,7 +337,7 @@ public class VisitorPower extends VisitorBase {
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (e.isWeak()) {
-            Register statusReg = e.getFunction().newRegister(type);
+            Register statusReg = e.getFunction().newRegister(types.getBooleanType());
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
         }

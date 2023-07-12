@@ -56,7 +56,7 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public String defaultString() {
-        return register + " <- status(" + event.toString() + ")";
+        return register + " <- not_exec(" + event + ")";
     }
 
     @Override
@@ -64,10 +64,11 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Type type = register.getType();
-        BooleanFormula eventExecuted = context.execution(event);
-        Formula result = context.result(this);
+        final BooleanFormula eventExecuted = context.execution(event);
+        final Formula result = context.result(this);
+
         if (type instanceof IntegerType integerType) {
-            Formula one;
+            final Formula one;
             if (integerType.isMathematical()) {
                 IntegerFormulaManager integerFormulaManager = fmgr.getIntegerFormulaManager();
                 one = integerFormulaManager.makeNumber(1);
@@ -77,10 +78,8 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
                 one = bitvectorFormulaManager.makeBitvector(bitWidth, 1);
             }
             return bmgr.and(super.encodeExec(context),
-                    bmgr.implication(eventExecuted,
-                            context.equalZero(result)),
-                    bmgr.or(eventExecuted,
-                            context.equal(result, one)));
+                    bmgr.ifThenElse(eventExecuted, context.equalZero(result), context.equal(result, one))
+            );
         } else if (type instanceof BooleanType) {
             //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
             // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
