@@ -112,39 +112,46 @@ public class RelationAnalysis {
     public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
         task.getConfig().inject(a);
-        logger.info("{}: {}", ENABLE_RELATION_ANALYSIS, a.enable);
+
+        final StringBuilder configSummary = new StringBuilder().append("\n");
+        configSummary.append("\t").append(ENABLE_RELATION_ANALYSIS).append(": ").append(a.enable).append("\n");
+        configSummary.append("\t").append(ENABLE_MUST_SETS).append(": ").append(a.enableMustSets).append("\n");
+        configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(a.enableExtended);
+        logger.info(configSummary);
+
         if (a.enableMustSets && !a.enable) {
             logger.warn("{} implies {}", ENABLE_MUST_SETS, ENABLE_RELATION_ANALYSIS);
             a.enableMustSets = false;
         }
-        logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
         if (a.enableExtended && !a.enable) {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
             a.enableExtended = false;
         }
-        logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
+
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
         logger.info("Finished regular analysis in {}ms", t1 - t0);
+
+        final StringBuilder summary = new StringBuilder()
+                .append("\n======== RelationAnalysis summary ======== \n");
         if (a.enableExtended) {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
             a.runExtended();
             logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
-            logger.info("Count of may-tuples removed: {}", mayCount - a.countMaySet());
-            logger.info("Count of must-tuples added: {}", a.countMustSet() - mustCount);
+            summary.append("\t#may-tuples removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
+            summary.append("\t#must-tuples added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }
         verify(a.enableMustSets || a.knowledgeMap.values().stream().allMatch(k -> k.must.isEmpty()));
-        logger.info("Number of may-tuples: {}", a.countMaySet());
-        logger.info("Number of must-tuples: {}", a.countMustSet());
-        logger.info("Number of mutually-exclusive tuples: {}", a.mutex.size());
         Knowledge rf = a.knowledgeMap.get(task.getMemoryModel().getRelation(RF));
-        logger.info("Number of may-read-from-tuples: {}", rf.may.size());
-        logger.info("Number of must-read-from-tuples: {}", rf.must.size());
         Knowledge co = a.knowledgeMap.get(task.getMemoryModel().getRelation(CO));
-        logger.info("Number of may-coherence-tuples: {}", co.may.size());
-        logger.info("Number of must-coherence-tuples: {}", co.must.size());
+        summary.append("\ttotal #must|may|exclusive tuples: ")
+                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.mutex.size()).append("\n");
+        summary.append("\t#must|may rf tuples: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
+        summary.append("\t#must|may co tuples: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
+        summary.append("===========================================");
+        logger.info(summary);
         return a;
     }
 

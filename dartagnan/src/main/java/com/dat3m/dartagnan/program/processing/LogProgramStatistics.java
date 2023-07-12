@@ -39,11 +39,6 @@ public class LogProgramStatistics implements ProgramProcessor {
         }
 
         int numNonInitThreads = (int)program.getThreads().stream().filter(t -> !(t.getEntry() instanceof Init)).count();
-        if (program.getFormat() == Program.SourceLanguage.BOOGIE) {
-            numNonInitThreads--; // We subtract 1, because for Boogie code we always create an extra empty thread
-            // TODO: Why do we do this?
-        }
-
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
                 .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::size).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()

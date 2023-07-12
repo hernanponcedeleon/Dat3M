@@ -3,25 +3,40 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.definition.SameScope;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 
 public class Wmm {
+
+    @Options
+    public static class Config {
+
+        @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
+                description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
+                        " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
+                secure = true)
+        private boolean reduceAcyclicityEncoding = true;
+
+        public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
+    }
 
     private static final Logger logger = LogManager.getLogger(Wmm.class);
 
@@ -31,9 +46,13 @@ public class Wmm {
     private final Map<String, Filter> filters = new HashMap<>();
     private final Set<Relation> relations = new HashSet<>();
 
+    private final Config config = new Config();
+
     public Wmm() {
         BASE_RELATIONS.forEach(this::getRelation);
     }
+
+    public Config getConfig() { return this.config; }
 
     /**
      * Inserts a constraint into this model.
@@ -115,7 +134,7 @@ public class Wmm {
      * @return The created relation.
      */
     public Relation newRelation() {
-        Relation relation = new Relation();
+        Relation relation = new Relation(this);
         relations.add(relation);
         return relation;
     }
@@ -128,7 +147,7 @@ public class Wmm {
     public Relation newRelation(String name) {
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
                 "Already bound name %s.", name);
-        Relation relation = new Relation();
+        Relation relation = new Relation(this);
         relation.names.add(name);
         relations.add(relation);
         return relation;
@@ -191,6 +210,7 @@ public class Wmm {
     // ====================== Utility Methods ====================
 
     public void configureAll(Configuration config) throws InvalidConfigurationException {
+        config.inject(this.config);
         for (Relation rel : getRelations()) {
             rel.configure(config);
         }
@@ -200,6 +220,8 @@ public class Wmm {
                 axiom.configure(config);
             }
         }
+
+        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
     }
 
     public void simplify() {
