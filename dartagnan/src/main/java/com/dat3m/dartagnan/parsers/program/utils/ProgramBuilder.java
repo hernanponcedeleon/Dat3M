@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Skip;
@@ -69,7 +68,7 @@ public class ProgramBuilder {
             Verify.verify(endOfThread.getFunction() == null);
             thread.appendParsed(endOfThread);
         }
-        id2FunctionsMap.values().forEach(this::validateFunction);
+        program.getFunctions().forEach(Function::validate);
 
         EventIdReassignment.newInstance().run(program);
         program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
@@ -244,34 +243,6 @@ public class ProgramBuilder {
 
     public Label getEndOfThreadLabel(int tid) {
         return getOrCreateLabel(tid, "END_OF_T" + tid);
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Private utility
-
-    private void validateFunction(Function function) throws MalformedProgramException {
-        Set<String> labelNames = new HashSet<>();
-        for (Event ev : function.getEvents()) {
-            if (ev.getFunction() != function) {
-                final String error = String.format("Event %s belongs to function %s but was found in function %s",
-                        ev, ev.getFunction(), function);
-                throw new MalformedProgramException(error);
-            }
-            if (ev instanceof CondJump jump) {
-                if (jump.getFunction() != jump.getLabel().getFunction()) {
-                    final String error = String.format("Jump %s targets label %s of a different function",
-                            jump, jump.getLabel());
-                    throw new MalformedProgramException(error);
-                }
-            }
-            if (ev instanceof Label label) {
-                if (!labelNames.add(label.getName())) {
-                    final String error = String.format("Multiple labels with name %s in function %s",
-                            label.getName(), function);
-                    throw new MalformedProgramException(error);
-                }
-            }
-        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

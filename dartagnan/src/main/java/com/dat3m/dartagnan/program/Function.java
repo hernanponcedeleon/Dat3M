@@ -9,7 +9,9 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -138,6 +140,31 @@ public class Function implements Expression {
         Event next;
         while((next = exit.getSuccessor()) != null){
             exit = next;
+        }
+    }
+
+    public void validate() {
+        final var labelNames = new HashSet<String>();
+        for (Event ev : getEvents()) {
+            if (ev.getFunction() != this) {
+                final String error = String.format("Event %s belongs to function %s but was found in function %s",
+                        ev, ev.getFunction(), this);
+                throw new MalformedProgramException(error);
+            }
+            if (ev instanceof CondJump jump) {
+                if (this != jump.getLabel().getFunction()) {
+                    final String error = String.format("Jump %s targets label %s of a different function",
+                            jump, jump.getLabel());
+                    throw new MalformedProgramException(error);
+                }
+            }
+            if (ev instanceof Label label) {
+                if (!labelNames.add(label.getName())) {
+                    final String error = String.format("Multiple labels with name %s in function %s",
+                            label.getName(), this);
+                    throw new MalformedProgramException(error);
+                }
+            }
         }
     }
 
