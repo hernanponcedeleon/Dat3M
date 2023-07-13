@@ -199,6 +199,10 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
 
+    public Expression makeConstruct(List<Expression> arguments) {
+        return new Construction(types, arguments);
+    }
+
     public Expression makeExtract(int fieldIndex, Expression object) {
         return new Extraction(fieldIndex, object);
     }
