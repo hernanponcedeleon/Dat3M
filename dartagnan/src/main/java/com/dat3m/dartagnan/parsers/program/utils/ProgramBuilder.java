@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -68,7 +67,7 @@ public class ProgramBuilder {
             final Label endOfThread = getEndOfThreadLabel(thread.getId());
             // The terminator should not get inserted somewhere beforehand.
             Verify.verify(endOfThread.getFunction() == null);
-            addChild(thread.getId(), endOfThread);
+            thread.appendParsed(endOfThread);
         }
         id2FunctionsMap.values().forEach(this::validateFunction);
 
@@ -147,11 +146,7 @@ public class ProgramBuilder {
     }
 
     public Event addChild(int fid, Event child) {
-        if(program.getFormat().equals(LITMUS)) {
-            // Every event in litmus tests is non-optimisable
-            child.addTags(Tag.NOOPT);
-        }
-        getFunctionOrError(fid).append(child);
+        getFunctionOrError(fid).appendParsed(child);
         return child;
     }
 
