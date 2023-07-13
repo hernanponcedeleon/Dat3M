@@ -43,10 +43,7 @@ public class IntrinsicsInlining implements ProgramProcessor {
     }
 
     private void run(Thread thread) {
-        for (Event event : List.copyOf(thread.getEvents())) {
-            if (!(event instanceof DirectFunctionCall call)) {
-                continue;
-            }
+        for (DirectFunctionCall call : thread.getEvents(DirectFunctionCall.class)) {
             assert !call.getCallTarget().hasBody();
 
             List<Event> replacement = switch (call.getCallTarget().getName()) {
@@ -59,8 +56,8 @@ public class IntrinsicsInlining implements ProgramProcessor {
                         String.format("Undefined function %s", call.getCallTarget().getName()));
             };
 
-            call.insertAfter(replacement);
-            call.forceDelete();
+            replacement.forEach(e -> e.copyAllMetadataFrom(call));
+            call.replaceBy(replacement);
         }
     }
 
@@ -70,9 +67,10 @@ public class IntrinsicsInlining implements ProgramProcessor {
         assert call instanceof DirectValueFunctionCall;
         Register register = ((DirectValueFunctionCall) call).getResultRegister();
         String name = call.getCallTarget().getName();
-        String prefix = name.startsWith("__V") ? "__VERIFIER_nondet_" : "__SMACK_nondet_";
-        assert name.startsWith(prefix);
-        String suffix = call.getCallTarget().getName().substring(prefix.length());
+        final String separator = "nondet_";
+        int index = name.indexOf(separator);
+        assert index > -1;
+        String suffix = name.substring(index + separator.length());
 
         // Nondeterministic booleans
         if (suffix.equals("bool")) {
@@ -109,9 +107,9 @@ public class IntrinsicsInlining implements ProgramProcessor {
             throw new ParsingException(String.format("Non-integer result register %s.", register));
         }
         var expression = new INonDet(constantId++, type, signed);
-        call.getFunction().getProgram().addConstant(expression);
         expression.setMin(min);
         expression.setMax(max);
+        call.getFunction().getProgram().addConstant(expression);
         return List.of(EventFactory.newLocal(register, expression));
     }
 }
