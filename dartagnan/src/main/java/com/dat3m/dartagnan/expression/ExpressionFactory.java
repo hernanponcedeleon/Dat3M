@@ -197,6 +197,13 @@ public final class ExpressionFactory {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Aggregates
+
+    public Expression makeExtract(int fieldIndex, Expression object) {
+        return new Extraction(fieldIndex, object);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {

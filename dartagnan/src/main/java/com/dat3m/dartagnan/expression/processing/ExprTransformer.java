@@ -86,6 +86,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     public Expression visit(Function function) { return function; }
 
     @Override
+    public Expression visit(Extraction extraction) {
+        Expression object = extraction.getObject().accept(this);
+        return expressions.makeExtract(extraction.getFieldIndex(), object);
+    }
+
+    @Override
     public Expression visit(GEPExpression getElementPointer) {
         Expression base = getElementPointer.getBaseExpression().accept(this);
         final var offsets = new ArrayList<Expression>();
