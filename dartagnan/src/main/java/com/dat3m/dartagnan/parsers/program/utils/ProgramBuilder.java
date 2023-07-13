@@ -68,11 +68,14 @@ public class ProgramBuilder {
             Verify.verify(endOfThread.getFunction() == null);
             thread.appendParsed(endOfThread);
         }
-        program.getFunctions().forEach(Function::validate);
+        processAfterParsing(program);
+        return program;
+    }
 
+    public static void processAfterParsing(Program program) {
+        program.getFunctions().forEach(Function::validate);
         EventIdReassignment.newInstance().run(program);
         program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
-        return program;
     }
 
     // ----------------------------------------------------------------------------------------------------------------

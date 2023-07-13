@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -48,7 +49,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public VisitorLlvm() {}
 
     public Program buildProgram() {
-        //TODO ProgramBuilder.build()
+        ProgramBuilder.processAfterParsing(program);
         return program;
     }
 
