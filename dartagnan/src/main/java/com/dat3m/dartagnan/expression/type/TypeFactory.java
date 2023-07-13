@@ -47,6 +47,12 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes.toArray(new Type[0])));
     }
 
+    public AggregateType getAggregateType(List<Type> fields) {
+        checkNotNull(fields);
+        checkArgument(fields.stream().noneMatch(t -> t == voidType), "Void fields are not allowed");
+        return typeNormalizer.normalize(new AggregateType(fields));
+    }
+
     public IntegerType getArchType() {
         final int archPrecision = GlobalSettings.getArchPrecision();
         return archPrecision < 0 ? getIntegerType() : getIntegerType(archPrecision);
