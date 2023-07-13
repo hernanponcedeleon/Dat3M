@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
-    This pass finds and marks simple loops that are totally side effect free (simple spin loops).
+    This pass finds and marks simple loops that are totally side-effect-free (simple spin loops).
     It will also mark side-effect-full loops if they are annotated by a SpinStart event
     (we assume the user guarantees the correctness of the annotation)
 
@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
 
     TODO: Instead of tagging labels as spinning and checking for that tag during loop unrolling
           we could let this pass produce LoopBound-Annotations to guide the unrolling implicitly.
+
+    TODO 2: Intrinsic calls need to get special treatment as they might be side-effect-full
+     (for now, all our intrinsics are side-effect-free, so it works fine).
  */
 public class SimpleSpinLoopDetection implements ProgramProcessor {
 

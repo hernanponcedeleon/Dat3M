@@ -56,7 +56,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"thread_inlining", IMM, PASS, 1},
                 {"thread_inlining_complex", IMM, PASS, 1},
                 {"thread_inlining_complex_2", IMM, PASS, 1},
-                {"thread_local", IMM, PASS, 1}
+                {"thread_local", IMM, PASS, 1},
+                {"nondet_loop", IMM, FAIL, 3}
         });
     }
 
