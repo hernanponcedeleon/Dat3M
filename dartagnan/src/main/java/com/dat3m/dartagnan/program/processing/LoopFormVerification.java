@@ -1,17 +1,20 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.function.ToIntFunction;
 
 /*
     Rather than a typical transformer, this pass checks that all loops in the program are in a normalized form
@@ -28,7 +31,7 @@ import java.util.stream.Collectors;
     NOTE: This should only be run after BranchReordering since it relies on the linear syntax produced by it.
  */
 
-public class LoopFormVerification implements ProgramProcessor {
+public class LoopFormVerification implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(LoopFormVerification.class);
 
@@ -38,20 +41,31 @@ public class LoopFormVerification implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        final int numberOfLoops = program.getThreads().stream().mapToInt(this::checkAndCountLoops).sum();
+        final int numberOfLoops = program.getThreads().stream().mapToInt(f -> checkAndCountLoops(f, Event::getGlobalId)).sum();
         logger.info("Detected {} loops in the program.", numberOfLoops);
     }
 
-    private int checkAndCountLoops(Thread thread) {
-        final List<Label> labels = thread.getEvents().stream()
-                .filter(Label.class::isInstance).map(Label.class::cast)
-                .collect(Collectors.toList());
+    @Override
+    public void run(Function function) {
+        if (function.hasBody()) {
+            //TODO: Since we have no notion of local id, we construct our own temporarily
+            // Me may want to introduce a LocalId or make sure to retain a proper GlobalId
+            // even for non-thread functions.
+            int id = 0;
+            Map<Event, Integer> localIdMap = new HashMap<>();
+            for (Event e : function.getEvents()) {
+                localIdMap.put(e, id++);
+            }
+            checkAndCountLoops(function, localIdMap::get);
+        }
+    }
 
+    private int checkAndCountLoops(Function function, ToIntFunction<Event> linId) {
         int loopCounter = 0;
-        for (Label label : labels) {
+        for (Label label : function.getEvents(Label.class)) {
             final List<CondJump> backJumps = label.getJumpSet().stream()
-                    .filter(j -> j.getGlobalId() > label.getGlobalId())
-                    .collect(Collectors.toList());
+                    .filter(j -> linId.applyAsInt(j) > linId.applyAsInt(label))
+                    .toList();
             final boolean isLoop = backJumps.size() > 0;
 
             if (!isLoop) {
@@ -76,10 +90,11 @@ public class LoopFormVerification implements ProgramProcessor {
             final List<Label> loopBodyLabels = loopBegin.getSuccessor().getSuccessors().stream()
                     .takeWhile(ev -> ev != uniqueBackJump)
                     .filter(Label.class::isInstance).map(Label.class::cast)
-                    .collect(Collectors.toList());
+                    .toList();
             for (Label l : loopBodyLabels) {
                 final boolean isLoopEntryPoint = l.getJumpSet().stream().anyMatch(j ->
-                        j.getGlobalId() < loopBegin.getGlobalId() || j.getGlobalId() > uniqueBackJump.getGlobalId());
+                        linId.applyAsInt(j) < linId.applyAsInt(loopBegin) ||
+                                linId.applyAsInt(j) > linId.applyAsInt(uniqueBackJump));
                 if (isLoopEntryPoint) {
                     final String error = String.format("Loop body label %s inside loop %s" +
                             " has entry edges from outside the loop", l, loopBegin);
