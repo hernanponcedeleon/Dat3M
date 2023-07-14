@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -23,6 +22,7 @@ import java.io.File;
 public class ExceptionsTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
@@ -63,14 +63,14 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        Register a = new Register("a", 0, types.getIntegerType(32));
-        Register b = new Register("b", 0, types.getIntegerType(64));
-        ExpressionFactory.getInstance().makeADD(a, b);
+        ExpressionFactory.getInstance().makeADD(
+                expressions.makeZero(types.getIntegerType(32)),
+                expressions.makeZero(types.getIntegerType(64)));
     }
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
-        EventFactory.newJump(ExpressionFactory.getInstance().makeFalse(), null);
+        EventFactory.newJump(expressions.makeFalse(), null);
     }
 
     @Test(expected = NullPointerException.class)

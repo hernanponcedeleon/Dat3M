@@ -101,7 +101,7 @@ public class Function implements Expression {
             final String error = String.format("Register %s already exists in function %s", name, this);
             throw new MalformedProgramException(error);
         }
-        Register register = new Register(name, id, type);
+        Register register = new Register(name, this, type);
         registers.put(name, register);
         return register;
     }

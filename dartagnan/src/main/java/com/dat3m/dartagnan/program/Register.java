@@ -11,16 +11,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Register implements Expression {
 
-    public static final int NO_FUNCTION = -1;
-
     private final String name;
     private String cVar;
-    private final int funcId;
+    private final Function function;
     private final Type type;
 
-    public Register(String name, int funcId, Type type) {
+    Register(String name, Function function, Type type) {
         this.name = checkNotNull(name);
-        this.funcId = funcId;
+        this.function = function;
         this.type = checkNotNull(type);
     }
 
@@ -36,8 +34,12 @@ public class Register implements Expression {
         this.cVar = name;
     }
 
-    public int getFunctionId() {
-        return funcId;
+    public Thread getThread() {
+        return function instanceof Thread thread ? thread : null;
+    }
+
+    public Function getFunction() {
+        return function;
     }
 
     @Override
@@ -52,7 +54,7 @@ public class Register implements Expression {
 
     @Override
     public int hashCode() {
-        return name.hashCode() + funcId;
+        return name.hashCode() + function.hashCode();
     }
 
     @Override
@@ -64,7 +66,7 @@ public class Register implements Expression {
         }
 
         Register rObj = (Register) obj;
-        return name.equals(rObj.name) && funcId == rObj.funcId;
+        return name.equals(rObj.name) && function == rObj.function;
     }
 
     @Override
