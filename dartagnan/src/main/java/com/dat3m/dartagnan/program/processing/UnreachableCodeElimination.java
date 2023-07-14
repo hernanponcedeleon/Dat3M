@@ -1,11 +1,15 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
+import com.dat3m.dartagnan.program.event.functions.Return;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +19,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class UnreachableCodeElimination implements ProgramProcessor {
+public class UnreachableCodeElimination implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(UnreachableCodeElimination.class);
 
@@ -34,37 +38,49 @@ public class UnreachableCodeElimination implements ProgramProcessor {
         Preconditions.checkArgument(!program.isUnrolled(), "Dead code elimination should be performed before unrolling.");
 
         logger.info("#Events before DCE: " + program.getEvents().size());
-        program.getThreads().forEach(this::eliminateDeadCode);
+        program.getThreads().forEach(this::run);
         logger.info("#Events after DCE: " + program.getEvents().size());
     }
 
-    private void eliminateDeadCode(Thread thread) {
-        final Event entry = thread.getEntry();
-        final Event exit = thread.getExit();
-
-        if (entry.hasTag(Tag.INIT)) {
+    @Override
+    public void run(Function function) {
+        if (!function.hasBody()) {
             return;
         }
 
-        final Set<Event> reachableEvents = new HashSet<>();
-        computeReachableEvents(entry, reachableEvents);
+        final Event entry = function.getEntry();
+        // When running on threads, we avoid deleting the exit event.
+        final Event exit = function instanceof Thread ? function.getExit() : null;
 
-        thread.getEvents().stream()
+        final Set<Event> reachableEvents = new HashSet<>();
+        collectReachableEvents(entry, reachableEvents);
+
+        function.getEvents().stream()
                 .filter(e -> !reachableEvents.contains(e) && e != exit && !e.hasTag(Tag.NOOPT))
-                .forEach(Event::tryDelete);
+                .forEach(e -> {
+                    if (e.getUsers().stream().noneMatch(reachableEvents::contains)) {
+                        // We force delete in case there are cyclic references among dead events that prevent
+                        // normal deletion. We also only delete if the event is not referenced by a reachable one.
+                        //TODO: Maybe it is best to declare events as reachable, when they are referenced by
+                        // reachable events?
+                        e.forceDelete();
+                    }
+                });
     }
 
     // Modifies the second parameter
-    private void computeReachableEvents(Event start, Set<Event> reachable) {
+    private void collectReachableEvents(Event start, Set<Event> reachable) {
         Event e = start;
         while (e != null && reachable.add(e)) {
+            if (isTerminator(e)) {
+                break;
+            }
             if (e instanceof CondJump jump) {
                 final Label jumpTarget = jump.getLabel();
-
                 if (jump.isGoto()) {
                     e = jumpTarget;
                 } else {
-                    computeReachableEvents(jumpTarget, reachable);
+                    collectReachableEvents(jumpTarget, reachable);
                     e = e.getSuccessor();
                 }
             } else {
@@ -72,4 +88,10 @@ public class UnreachableCodeElimination implements ProgramProcessor {
             }
         }
     }
+
+    private boolean isTerminator(Event e) {
+        return e instanceof Return
+                || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue();
+    }
+
 }
