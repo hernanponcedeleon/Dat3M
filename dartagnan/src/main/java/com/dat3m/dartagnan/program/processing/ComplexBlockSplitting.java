@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /*
     This pass transforms this code:
@@ -31,7 +30,7 @@ import java.util.stream.Collectors;
     NOTE: LLVM and also SMACK already make sure that all blocks are "basic".
     However, our parser "destroys" this structure during parsing.
  */
-public class ComplexBlockSplitting implements ProgramProcessor {
+public class ComplexBlockSplitting implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(ComplexBlockSplitting.class);
 
@@ -41,24 +40,29 @@ public class ComplexBlockSplitting implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        final int numBlockSplittings = program.getThreads().stream().mapToInt(this::run).sum();
+        final int numBlockSplittings = program.getThreads().stream().mapToInt(this::splitBlocks).sum();
 
         logger.info("Split {} complex blocks.", numBlockSplittings);
         EventIdReassignment.newInstance().run(program);
     }
 
-    private int run(Thread thread) {
+    @Override
+    public void run(Function function) {
+        if (function.hasBody()) {
+            splitBlocks(function);
+        }
+    }
+
+    private int splitBlocks(Function function) {
         int numSplittings = 0;
         // These are the jumps where we insert labels to split the containing block into two simpler blocks.
-        final List<CondJump> splittingPoints = thread.getEvents().stream()
-                .filter(CondJump.class::isInstance).map(CondJump.class::cast)
-                .filter(j -> !j.isGoto() && !(j.getSuccessor() instanceof CondJump))
-                .collect(Collectors.toList());
+        final List<CondJump> splittingPoints = function.getEvents(CondJump.class).stream()
+                .filter(j -> !j.isGoto() && !(j.getSuccessor() instanceof CondJump)).toList();
         final Map<String, Integer> labelName2OccurrenceMap = new HashMap<>();
         for (CondJump condJump : splittingPoints) {
             final String targetLabelName = condJump.getLabel().getName();
-            final String newLabelName = String.format("%s_%d", targetLabelName,
-                    labelName2OccurrenceMap.compute(targetLabelName, (k, v) -> v == null ? 2 : v + 1));
+            final String newLabelName = String.format("%s_else_%d", targetLabelName,
+                    labelName2OccurrenceMap.compute(targetLabelName, (k, v) -> v == null ? 1 : v + 1));
             final Label blockLabel = EventFactory.newLabel(newLabelName);
             final CondJump gotoLabel = EventFactory.newGoto(blockLabel);
 
@@ -72,4 +76,5 @@ public class ComplexBlockSplitting implements ProgramProcessor {
 
         return numSplittings;
     }
+
 }
