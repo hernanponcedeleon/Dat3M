@@ -4,7 +4,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
@@ -33,8 +35,18 @@ class VisitorBase implements EventVisitor<List<Event>> {
     protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
+    protected Function funcToBeCompiled;
+
     protected VisitorBase(boolean forceStart) {
         this.forceStart = forceStart;
+    }
+
+    protected Event newTerminator(Expression guard) {
+        if (funcToBeCompiled instanceof Thread) {
+            return newJump(guard, (Label)funcToBeCompiled.getExit());
+        } else {
+            return newAbortIf(guard);
+        }
     }
 
     @Override
@@ -66,7 +78,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
         return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeNEQ(dummy, zero), (Label) e.getThread().getExit()),
+                newTerminator(expressions.makeNEQ(dummy, zero)),
                 newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
         );
     }
@@ -83,7 +95,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
         return eventSequence(
                 rmwLoad,
-                newJump(expressions.makeNEQ(dummy, one), (Label) e.getThread().getExit()),
+                newTerminator(expressions.makeNEQ(dummy, one)),
                 newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
     }

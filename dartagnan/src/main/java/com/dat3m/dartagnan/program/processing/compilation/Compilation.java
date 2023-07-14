@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
+import com.dat3m.dartagnan.program.processing.FunctionProcessor;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 import com.google.common.base.Preconditions;
@@ -23,7 +23,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
 @Options
-public class Compilation implements ProgramProcessor {
+public class Compilation implements ProgramProcessor, FunctionProcessor {
 
 
     private static final Logger logger = LogManager.getLogger(Compilation.class);
@@ -74,7 +74,6 @@ public class Compilation implements ProgramProcessor {
         return new Compilation();
     }
 
-
     @Override
     public void run(Program program) {
         if (program.isCompiled()) {
@@ -82,30 +81,9 @@ public class Compilation implements ProgramProcessor {
             return;
         }
 
-        EventVisitor<List<Event>> visitor;
-        switch (target) {
-            case C11:
-                visitor = new VisitorC11(forceStart); break;
-            case LKMM:
-                visitor = new VisitorLKMM(forceStart); break;
-            case TSO:
-                visitor = new VisitorTso(forceStart); break;
-            case POWER:
-                visitor = new VisitorPower(forceStart, useRC11Scheme, cToPowerScheme); break;
-            case ARM8:
-                visitor = new VisitorArm8(forceStart, useRC11Scheme); break;
-            case IMM:
-                visitor = new VisitorIMM(forceStart); break;
-            case RISCV:
-                visitor = new VisitorRISCV(forceStart, useRC11Scheme); break;
-            case PTX:
-                visitor = new VisitorPTX(forceStart); break;
-            default:
-                throw new UnsupportedOperationException(String.format("Compilation to %s is not supported.", target));
-        }
-
+        final VisitorBase visitor = getCompiler();
         program.getEvents().forEach(e -> e.setMetadata(new CompilationId(e.getGlobalId())));
-        program.getThreads().forEach(thread -> this.compileThread(thread, visitor));
+        program.getThreads().forEach(thread -> this.compileFunction(thread, visitor));
         program.setArch(target);
         program.markAsCompiled();
         EventIdReassignment.newInstance().run(program); // Reassign ids
@@ -113,32 +91,50 @@ public class Compilation implements ProgramProcessor {
         logger.info("Program compiled to {}", target);
     }
 
-    private void compileThread(Thread thread, EventVisitor<List<Event>> visitor) {
+    @Override
+    public void run(Function function) {
+        if (function.hasBody()) {
+            compileFunction(function, getCompiler());
+        }
+    }
 
-        Event pred = thread.getEntry();
-        while (pred.getSuccessor() != null) {
-            final Event toBeCompiled = pred.getSuccessor();
-            final List<Event> compiledEvents = toBeCompiled.accept(visitor);
+    private VisitorBase getCompiler() {
+        return switch (target) {
+            case C11 -> new VisitorC11(forceStart);
+            case LKMM -> new VisitorLKMM(forceStart);
+            case TSO -> new VisitorTso(forceStart);
+            case POWER -> new VisitorPower(forceStart, useRC11Scheme, cToPowerScheme);
+            case ARM8 -> new VisitorArm8(forceStart, useRC11Scheme);
+            case IMM -> new VisitorIMM(forceStart);
+            case RISCV -> new VisitorRISCV(forceStart, useRC11Scheme);
+            case PTX -> new VisitorPTX(forceStart);
+        };
+    }
 
-            if (compiledEvents.size() == 1 && compiledEvents.get(0) == toBeCompiled) {
-                // In the special case where the compilation does nothing to the event,
-                // we continue with the next
-                pred = toBeCompiled;
-                continue;
-            }
+    private void compileFunction(Function func, VisitorBase visitor) {
+        visitor.funcToBeCompiled = func;
+        func.getEvents().forEach(e -> compileEvent(e, visitor));
+    }
 
-            // Delete compiled event in order to replace it.
-            if (!toBeCompiled.tryDelete()) {
-                final String error = String.format("Could not compile event '%d:  %s' because it is not deletable." +
-                        "The event is likely referenced by other events.", toBeCompiled.getGlobalId(), toBeCompiled);
-                throw new IllegalStateException(error);
-            }
-            if (!compiledEvents.isEmpty()) {
-                // Insert result of compilation
-                compiledEvents.forEach(e -> e.copyAllMetadataFrom(toBeCompiled));
-                pred.insertAfter(compiledEvents);
-                pred = compiledEvents.get(compiledEvents.size() - 1);
-            }
+    private void compileEvent(Event toBeCompiled, VisitorBase visitor) {
+        final Event pred = toBeCompiled.getPredecessor();
+        if (pred == null) {
+            return; // We do not compile the entry event.
+        }
+        final List<Event> compiledEvents = toBeCompiled.accept(visitor);
+        if (compiledEvents.size() == 1 && compiledEvents.get(0) == toBeCompiled) {
+            // In the special case where the compilation does nothing, we keep the event as is.
+            return;
+        }
+        if (!toBeCompiled.tryDelete()) {
+            final String error = String.format("Could not compile event '%d:  %s' because it is not deletable." +
+                    "The event is likely referenced by other events.", toBeCompiled.getGlobalId(), toBeCompiled);
+            throw new IllegalStateException(error);
+        }
+        if (!compiledEvents.isEmpty()) {
+            // Insert result of compilation
+            compiledEvents.forEach(e -> e.copyAllMetadataFrom(toBeCompiled));
+            pred.insertAfter(compiledEvents);
         }
     }
 }

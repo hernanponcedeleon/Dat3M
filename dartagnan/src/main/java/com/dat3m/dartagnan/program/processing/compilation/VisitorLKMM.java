@@ -205,7 +205,7 @@ public class VisitorLKMM extends VisitorBase {
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeNot(nonzeroDummy)) :
-                newJump(nonzeroDummy, (Label) e.getThread().getExit());
+                newTerminator(nonzeroDummy);
         return eventSequence(
                 lockRead,
                 checkLockValue,
