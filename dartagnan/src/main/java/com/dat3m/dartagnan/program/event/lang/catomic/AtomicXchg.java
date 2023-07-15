@@ -2,13 +2,15 @@ package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 
-public class AtomicXchg extends AtomicAbstract {
+public class AtomicXchg extends RMWXchgBase {
 
     public AtomicXchg(Register register, Expression address, Expression value, String mo) {
-        super(address, register, value, mo);
+        super(register, address, value, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
     }
 
     private AtomicXchg(AtomicXchg other) {
@@ -17,24 +19,13 @@ public class AtomicXchg extends AtomicAbstract {
 
     @Override
     public String defaultString() {
-        return resultRegister + " = atomic_exchange(*" + address + ", " + value + ", " + mo + ")\t### C11";
+        return String.format("%s := atomic_exchange(*%s, %s, %s)\t###C11", resultRegister, address, storeValue, mo);
     }
-
-    @Override
-    public MemoryAccess getMemoryAccess() {
-        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public AtomicXchg getCopy() {
         return new AtomicXchg(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

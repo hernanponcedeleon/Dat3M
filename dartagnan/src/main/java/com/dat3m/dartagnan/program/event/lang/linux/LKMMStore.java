@@ -27,6 +27,10 @@ public class LKMMStore extends StoreBase {
         super(address, value, mo);
     }
 
+    private LKMMStore(LKMMStore other) {
+        super(other);
+    }
+
     @Override
     public String defaultString() {
         if (mo.equals(Tag.Linux.MO_ONCE)) {
@@ -35,11 +39,14 @@ public class LKMMStore extends StoreBase {
         return super.defaultString();
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public LKMMStore getCopy() {
+        return new LKMMStore(this);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitLKMMStore(this);
     }
+
 }

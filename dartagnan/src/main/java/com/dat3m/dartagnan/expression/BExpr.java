@@ -1,20 +1,19 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public abstract class BExpr implements Expression {
 
-    @Override
-    public BooleanType getType() {
-        return TypeFactory.getInstance().getBooleanType();
+    private final BooleanType type;
+
+    protected BExpr(BooleanType type) {
+        this.type = checkNotNull(type);
     }
 
-    public boolean isTrue() {
-		return this.equals(BConst.TRUE);
-	}
-
-    public boolean isFalse() {
-    	return this.equals(BConst.FALSE);
+    @Override
+    public BooleanType getType() {
+        return type;
     }
 }

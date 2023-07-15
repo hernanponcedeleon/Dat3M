@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
  */
 public class StoreExclusive extends StoreBase implements RegWriter {
 
-    private final Register register;
+    private Register register;
 
     public StoreExclusive(Register register, Expression address, Expression value, String mo) {
         super(address, value, mo);
@@ -32,20 +32,17 @@ public class StoreExclusive extends StoreBase implements RegWriter {
     }
 
     @Override
+    public void setResultRegister(Register reg) { this.register = reg; }
+
+    @Override
     public String defaultString() {
         return register + " <- store(*" + address + ", " + value + (!mo.isEmpty() ? ", " + mo : "") + ")";
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public StoreExclusive getCopy() {
         return new StoreExclusive(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

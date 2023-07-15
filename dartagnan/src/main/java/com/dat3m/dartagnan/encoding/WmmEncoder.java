@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.FenceWithId;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
@@ -616,8 +616,8 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
-                FenceWithId e1 = (FenceWithId) tuple.getFirst();
-                FenceWithId e2 = (FenceWithId) tuple.getSecond();
+                PTXFenceWithId e1 = (PTXFenceWithId) tuple.getFirst();
+                PTXFenceWithId e2 = (PTXFenceWithId) tuple.getSecond();
                 BooleanFormula sameId;
                 // If they are in must, they are guaranteed to have the same id
                 if (k.containsMust(tuple)) {
@@ -625,8 +625,8 @@ public class WmmEncoder implements Encoder {
                 } else {
                     Expression id1 = e1.getFenceID();
                     Expression id2 = e2.getFenceID();
-                    sameId = context.equal(context.encodeIntegerExpressionAt(id1, e1),
-                            context.encodeIntegerExpressionAt(id2, e2));
+                    sameId = context.equal(context.encodeExpressionAt(id1, e1),
+                            context.encodeExpressionAt(id2, e2));
                 }
                 enc.add(bmgr.equivalence(
                         encoder.encode(tuple),

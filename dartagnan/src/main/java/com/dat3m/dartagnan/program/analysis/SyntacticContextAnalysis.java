@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -66,15 +66,15 @@ public class SyntacticContextAnalysis {
     }
 
     public static class CallContext implements Context {
-        private final FunCall funCall;
+        private final FunCallMarker funCallMarker;
 
-        private CallContext(FunCall funCall) { this.funCall = funCall; }
+        private CallContext(FunCallMarker funCallMarker) { this.funCallMarker = funCallMarker; }
 
-        public FunCall getFunctionCall() { return this.funCall; }
+        public FunCallMarker getFunctionCall() { return this.funCallMarker; }
 
         @Override
         public String toString() {
-            return String.format("%s %s", funCall.getFunctionName(), getSourceLocationString(funCall));
+            return String.format("%s %s", funCallMarker.getFunctionName(), getSourceLocationString(funCallMarker));
         }
     }
 
@@ -161,9 +161,9 @@ public class SyntacticContextAnalysis {
             infoMap.put(ev, new Info(ev, copyOfCurContextStack));
             // TODO: The above could be made more efficient by sharing unchanged context
 
-            if (ev instanceof FunCall fc) {
+            if (ev instanceof FunCallMarker fc) {
                 curContextStack.push(new CallContext(fc));
-            } else if (ev instanceof FunRet) {
+            } else if (ev instanceof FunReturnMarker) {
                 assert curContextStack.peek() instanceof CallContext;
                 curContextStack.pop();
             }

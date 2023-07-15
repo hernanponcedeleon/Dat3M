@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +30,7 @@ public class LlvmFunctions {
 			"$and.",
 			"$nand.");
 	
-	public static Object llvmFunction(String name, List<Object> callParams, ExpressionFactory factory) {
+	public static Object llvmFunction(String name, List<Expression> callParams, ExpressionFactory factory) {
 		IOpBin op = null; 
 		if(name.startsWith("$add.")) {
 			op = PLUS;
@@ -59,7 +61,7 @@ public class LlvmFunctions {
 				if (c.getValueAsInt() == 0) {
 					return callParams.get(0);
 				} else if (c.getValueAsInt() == 1) {
-					return factory.makeNot((Expression) callParams.get(0));
+					return factory.makeNot(callParams.get(0));
 				}
 			}
 			op = XOR;
@@ -71,6 +73,6 @@ public class LlvmFunctions {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return factory.makeBinary((IExpr)callParams.get(0), op, (IExpr)callParams.get(1));
+		return factory.makeBinary(callParams.get(0), op, callParams.get(1));
 	}
 }

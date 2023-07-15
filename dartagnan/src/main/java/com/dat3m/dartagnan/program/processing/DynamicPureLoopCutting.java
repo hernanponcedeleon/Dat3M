@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -122,13 +122,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         final List<Event> sideEffects = iter.sideEffects;
 
         final List<Register> trackingRegs = new ArrayList<>();
+        final Type type = TypeFactory.getInstance().getBooleanType();
         Event insertionPoint = iterInfo.getIterationEnd();
-        IntegerType type = TypeFactory.getInstance().getArchType();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
-            final Register trackingReg = thread.newRegister(
-                    String.format("Loop%s_%s_%s", loopNumber, iterNumber, i),
-                    type);
+            final Register trackingReg = thread.newRegister(String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), type);
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -136,9 +134,9 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             insertionPoint = execCheck;
         }
 
-        ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
+        final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
         final Expression atLeastOneSideEffect = trackingRegs.stream()
-                .map(reg -> expressionFactory.makeEQ(reg, expressionFactory.makeZero(reg.getType())))
+                .map(expressionFactory::makeNot)
                 .reduce(expressionFactory.makeFalse(), expressionFactory::makeOr);
         final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
         assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);

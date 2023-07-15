@@ -355,7 +355,7 @@ public class Dartagnan extends BaseOptions {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
-                        e.getThread().getId(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS);
+                        e.getThread(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS);
                 break;
             }
         }

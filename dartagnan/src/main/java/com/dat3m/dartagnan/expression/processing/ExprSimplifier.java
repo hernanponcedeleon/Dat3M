@@ -4,14 +4,13 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 
 import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
 
-//TODO: This is buggy for now, because Addresses are treated as IConst
 public class ExprSimplifier extends ExprTransformer {
 
     @Override
@@ -25,13 +24,13 @@ public class ExprSimplifier extends ExprTransformer {
                 case ULTE:
                 case GTE:
                 case UGTE:
-                    return BConst.TRUE;
+                    return expressions.makeTrue();
                 case NEQ:
                 case LT:
                 case ULT:
                 case GT:
                 case UGT:
-                    return BConst.FALSE;
+                    return expressions.makeFalse();
             }
         }
         if (lhs instanceof IConst lc && rhs instanceof  IConst rc) {
@@ -45,7 +44,7 @@ public class ExprSimplifier extends ExprTransformer {
         if (lhs instanceof IConst lc && rhs instanceof BConst rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
-        if (lhs instanceof BExpr && rhs instanceof IConst rc) {
+        if (lhs.getType() instanceof BooleanType && rhs instanceof IConst rc) {
             // Simplify "cond == 1" to just "cond"
             // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
             if (atom.getOp() == COpBin.EQ && rc.getValue().intValue() == 1) {
@@ -56,55 +55,40 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public BExpr visit(BConst bConst) {
-        return bConst;
+    public Expression visit(BExprBin bBin) {
+        Expression l = bBin.getLHS().visit(this);
+        Expression r = bBin.getRHS().visit(this);
+        Expression left = l instanceof BConst || !(r instanceof BConst) ? l : r;
+        Expression right = left == l ? r : l;
+        if (left instanceof BConst constant) {
+            boolean value = constant.getValue();
+            boolean neutralValue = switch (bBin.getOp()) {
+                case OR -> false;
+                case AND -> true;
+            };
+            if (value == neutralValue) {
+                return right;
+            }
+            // otherwise value is the absorbing value
+            if (right.getRegs().isEmpty()) {
+                return left;
+            }
+        }
+        return expressions.makeBinary(left, bBin.getOp(), right);
     }
 
     @Override
-    public BExpr visit(BExprBin bBin) {
-        // Due to constant propagation we are not guaranteed to get BExprs
-        if(!(bBin.getLHS().visit(this) instanceof BExpr lhs && bBin.getRHS().visit(this) instanceof BExpr rhs)) {
-            return bBin;
+    public Expression visit(BExprUn bUn) {
+        Expression inner = bUn.getInner().visit(this);
+        assert bUn.getOp() == BOpUn.NOT;
+        if (inner instanceof BConst constant) {
+            return expressions.makeValue(!constant.getValue());
         }
-        switch (bBin.getOp()) {
-            case OR:
-                if (lhs.isTrue() || rhs.isTrue()) {
-                    return BConst.TRUE;
-                } else if (lhs.isFalse()) {
-                    return rhs;
-                } else if (rhs.isFalse()) {
-                    return lhs;
-                }
-                break;
-            case AND:
-                if (lhs.isFalse() || rhs.isFalse()) {
-                    return BConst.FALSE;
-                } else if (lhs.isTrue()) {
-                    return rhs;
-                } else if (rhs.isTrue()) {
-                    return lhs;
-                }
-                break;
-        }
-        return expressions.makeBinary(lhs, bBin.getOp(), rhs);
-    }
-
-    @Override
-    public BExpr visit(BExprUn bUn) {
-        // Due to constant propagation we are not guaranteed to get BExprs
-        Expression innerExpr = bUn.getInner().visit(this);
-        if(!(innerExpr instanceof BExpr)) {
-            return bUn;
-        }
-        BExpr inner = (BExpr) innerExpr;
-        if (inner instanceof BConst) {
-            return expressions.makeValue(!inner.isTrue());
-        }
-        if (inner instanceof BExprUn in && bUn.getOp() == BOpUn.NOT) {
-            return (BExpr) in.getInner();
+        if (inner instanceof BExprUn innerUnary && innerUnary.getOp() == BOpUn.NOT) {
+            return innerUnary.getInner();
         }
 
-        if (inner instanceof Atom atom && bUn.getOp() == BOpUn.NOT) {
+        if (inner instanceof Atom atom) {
             // Move negations into the atoms COp
             return expressions.makeBinary(atom.getLHS(), atom.getOp().inverted(), atom.getRHS());
         }
@@ -112,19 +96,9 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public BExpr visit(BNonDet bNonDet) {
-        return bNonDet;
-    }
-
-    @Override
-    public IValue visit(IValue iValue) {
-        return iValue;
-    }
-
-    @Override
-    public IExpr visit(IExprBin iBin) {
-        IExpr lhs = (IExpr)iBin.getLHS().visit(this);
-        IExpr rhs = (IExpr)iBin.getRHS().visit(this);
+    public Expression visit(IExprBin iBin) {
+        Expression lhs = iBin.getLHS().visit(this);
+        Expression rhs = iBin.getRHS().visit(this);
         IOpBin op = iBin.getOp();
         if (lhs.equals(rhs)) {
             switch(op) {
@@ -132,7 +106,7 @@ public class ExprSimplifier extends ExprTransformer {
                 case OR:
                     return lhs;
                 case XOR:
-                    return expressions.makeZero(lhs.getType());
+                    return expressions.makeZero(iBin.getType());
             }
         }
         if (! (lhs instanceof IConst || rhs instanceof IConst)) {
@@ -187,8 +161,8 @@ public class ExprSimplifier extends ExprTransformer {
                 // Either op can be +/-, but this does not affect correctness
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
                 if(lhs instanceof IExprBin lhsBin && lhsBin.getRHS() instanceof IConst && lhsBin.getOp() != R_SHIFT) {
-                    IExpr newLHS = lhsBin.getLHS();
-                    IExpr newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
+                    Expression newLHS = lhsBin.getLHS();
+                    Expression newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);
                 }
 
@@ -197,8 +171,9 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public IExpr visit(IExprUn iUn) {
-        return expressions.makeUnary(iUn.getOp(), iUn.getInner(), iUn.getType());
+    public Expression visit(IExprUn iUn) {
+        // TODO: Add simplifications
+        return super.visit(iUn);
     }
 
     @Override
@@ -215,29 +190,16 @@ public class ExprSimplifier extends ExprTransformer {
 
         // Simplifies "ITE(cond, 1, 0)" to "cond" and "ITE(cond, 0, 1) to "!cond"
         // TODO: It is not clear if this gives performance improvements or not
-        if (t instanceof IConst tConstant && tConstant.isInteger() && tConstant.getValueAsInt() == 1
-                && f instanceof IConst fConstant && fConstant.isInteger() && fConstant.getValueAsInt() == 0) {
+        if (t instanceof IConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
+                && f instanceof IConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
             return cond;
-        } else if (t instanceof IConst tConstant && tConstant.isInteger() && tConstant.getValueAsInt() == 0
-                && f instanceof IConst fConstant && fConstant.isInteger() && fConstant.getValueAsInt() == 1) {
+        } else if (t instanceof IConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
+                && f instanceof IConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
             return expressions.makeNot(cond);
         }
 
         return expressions.makeConditional(cond, t, f);
     }
 
-    @Override
-    public IExpr visit(INonDet iNonDet) {
-        return iNonDet;
-    }
 
-    @Override
-    public Expression visit(Register reg) {
-        return reg;
-    }
-
-    @Override
-    public Expression visit(MemoryObject address) {
-        return address;
-    }
 }

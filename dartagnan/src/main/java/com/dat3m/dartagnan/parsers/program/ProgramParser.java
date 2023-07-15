@@ -2,15 +2,12 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
-
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
 
 public class ProgramParser {
 
@@ -47,14 +44,13 @@ public class ProgramParser {
     }
 
     private boolean needsSmack(File f) {
-        return needsClang(f) || f.getPath().endsWith(".ll");
+        return needsClang(f);
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
         	case "c":
         	case "i":
-        	case "ll":
 				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :

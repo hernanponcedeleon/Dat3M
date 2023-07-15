@@ -1,24 +1,24 @@
 package com.dat3m.dartagnan.program.ScopedThread;
 
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+//TODO: One could create a ScopeHierarchy class and let Thread have a (optional) member of that class.
+// Then I think neither PTXThread nor ScopedThread would be needed anymore.
 public class ScopedThread extends Thread {
 
     // There is a hierarchy of scopes, the order of keys
     // is important, thus we use a LinkedHashMap
     protected final Map<String, Integer> scopeIds = new LinkedHashMap<>();
 
-    public ScopedThread(String name, int id, Event entry) {
-        super(name, id, entry);
-    }
-
-    public ScopedThread(int id, Event entry) {
-        super(id, entry);
+    public ScopedThread(String name, FunctionType funcType, List<String> parameterNames, int id, Event entry) {
+        super(name, funcType, parameterNames, id,  entry);
     }
 
     public ArrayList<String> getScopes() {
@@ -34,6 +34,7 @@ public class ScopedThread extends Thread {
         if (!this.getClass().equals(thread.getClass()) || !this.getScopes().contains(flag)) {
             return false;
         }
+
         ArrayList<String> scopes = this.getScopes();
         int validIndex = scopes.indexOf(flag);
         // scopes(0) is highest in hierarchy

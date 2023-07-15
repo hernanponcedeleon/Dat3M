@@ -76,6 +76,9 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
+                StaticMemoryInitializer.newInstance(),
+                Inlining.fromConfig(config),
+                ThreadCreation.fromConfig(config),
                 UnreachableCodeElimination.fromConfig(config),
                 ComplexBlockSplitting.newInstance(),
                 BranchReordering.fromConfig(config),
@@ -87,6 +90,7 @@ public class ProcessingManager implements ProgramProcessor {
                 SimpleSpinLoopDetection.fromConfig(config),
                 LoopUnrolling.fromConfig(config),
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
+                IntrinsicsInlining.fromConfig(config),
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
                 dce ? DeadAssignmentElimination.fromConfig(config) : null,

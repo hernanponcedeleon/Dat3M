@@ -58,10 +58,6 @@ public class Init extends Store {
     @Override
     public IConst getMemValue() { return getValue(); }
 
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitInit(this);

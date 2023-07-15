@@ -1,87 +1,70 @@
 package com.dat3m.dartagnan.program.event.lang.llvm;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.common.RMWCmpXchgBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 
-import java.util.Set;
+// FIXME: This instruction writes to two registers, which we cannot express right now.
+public class LlvmCmpXchg extends RMWCmpXchgBase {
 
-public class LlvmCmpXchg extends LlvmAbstractRMW {
-
-    private Expression expectedValue;
-    private Register oldValueRegister;
     private Register cmpRegister;
-    private boolean isStrong;
 
     public LlvmCmpXchg(Register oldValueRegister, Register cmpRegister, Expression address,
                        Expression expectedValue, Expression value, String mo, boolean isStrong) {
-        super(address, null, value, mo);
-        this.expectedValue = expectedValue;
-        this.oldValueRegister = oldValueRegister;
+        super(oldValueRegister, address, expectedValue, value, isStrong, mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "LLVM events cannot have empty memory order");
+        Preconditions.checkArgument(cmpRegister.getType() instanceof BooleanType,
+                "Non-boolean result register of LlvmCmpXchg.");
         this.cmpRegister = cmpRegister;
-        this.isStrong = isStrong;
     }
 
     private LlvmCmpXchg(LlvmCmpXchg other) {
         super(other);
-        this.expectedValue = other.expectedValue;
-        this.oldValueRegister = other.oldValueRegister;
         this.cmpRegister = other.cmpRegister;
-        this.isStrong = other.isStrong;
-    }
-
-    public boolean isStrong() {
-        return this.isStrong;
     }
 
     // The llvm instructions actually returns a structure.
     // In most cases the structure is not used as a whole, 
-    // but rather by accessing its members. Thus there is
+    // but rather by accessing its members. Thus, there is
     // no need to support this method.
+    // NOTE: we use the inherited "resultRegister" to store the old value
     @Override
     public Register getResultRegister() {
         throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
     }
 
     public Register getStructRegister(int idx) {
+        return switch (idx) {
+            case 0 -> resultRegister;
+            case 1 -> cmpRegister;
+            default ->
+                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+        };
+    }
+
+    public void setStructRegister(int idx, Register newRegister) {
         switch (idx) {
-            case 0:
-                return oldValueRegister;
-            case 1:
-                return cmpRegister;
-            default:
-                throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+            case 0 -> resultRegister = newRegister;
+            case 1 -> cmpRegister = newRegister;
+            default ->
+                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
         }
-    }
-
-    public Expression getExpectedValue() {
-        return expectedValue;
-    }
-
-    @Override
-    public Set<Register.Read> getRegisterReads() {
-        final Set<Register.Read> regReads = super.getRegisterReads();
-        Register.collectRegisterReads(value, Register.UsageType.DATA, regReads);
-        Register.collectRegisterReads(expectedValue, Register.UsageType.DATA, regReads);
-        return regReads;
     }
 
     @Override
     public String defaultString() {
-        return "(" + oldValueRegister + ", " + cmpRegister + ") = llvm_cmpxchg" + (isStrong ? "_strong" : "_weak") +
-                "(*" + address + ", " + expectedValue + ", " + value + ", " + mo + ")\t### LLVM";
+        final String strongSuffix = isStrong ? "strong" : "weak";
+        return String.format("(%s, %s) := llvm_cmpxchg_%s(*%s, %s, %s, %s)\t### LLVM",
+                resultRegister, cmpRegister, strongSuffix, address, expectedValue, storeValue, mo);
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public LlvmCmpXchg getCopy() {
         return new LlvmCmpXchg(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -1,27 +1,27 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Register extends IExpr {
+public class Register implements Expression {
 
-    public static final int NO_THREAD = -1;
+    public static final int NO_FUNCTION = -1;
 
     private final String name;
     private String cVar;
-    private final int threadId;
+    private final int funcId;
+    private final Type type;
 
-    public Register(String name, int threadId, IntegerType type) {
-        super(type);
+    public Register(String name, int funcId, Type type) {
         this.name = checkNotNull(name);
-        this.threadId = threadId;
+        this.funcId = funcId;
+        this.type = checkNotNull(type);
     }
 
     public String getName() {
@@ -36,8 +36,13 @@ public class Register extends IExpr {
         this.cVar = name;
     }
 
-    public int getThreadId() {
-        return threadId;
+    public int getFunctionId() {
+        return funcId;
+    }
+
+    @Override
+    public Type getType() {
+        return type;
     }
 
     @Override
@@ -47,7 +52,7 @@ public class Register extends IExpr {
 
     @Override
     public int hashCode() {
-        return name.hashCode() + threadId;
+        return name.hashCode() + funcId;
     }
 
     @Override
@@ -59,7 +64,7 @@ public class Register extends IExpr {
         }
 
         Register rObj = (Register) obj;
-        return name.equals(rObj.name) && threadId == rObj.threadId;
+        return name.equals(rObj.name) && funcId == rObj.funcId;
     }
 
     @Override
@@ -70,11 +75,6 @@ public class Register extends IExpr {
     @Override
     public <T> T visit(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    @Override
-    public IExpr getBase() {
-        return this;
     }
 
     // ============================== Static utility =============================

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IExprBin;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -90,6 +89,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
+        //FIXME: Add handling for thread parameters (or get rid of this class)
         for (Local e : locals) {
             processRegs(e);
         }
@@ -154,7 +154,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IExprBin iBin && iBin.getBase() instanceof Register) {
+        } else if (expr instanceof IExprBin iBin && iBin.getLHS() instanceof Register) {
             addAllAddresses(register, maxAddressSet);
             variables.add(register);
         } else if (expr instanceof MemoryObject mem) {
@@ -209,9 +209,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!(exp instanceof IExprBin iBin)) {
             return;
         }
-        IExpr base = iBin.getBase();
+        Expression base = iBin.getLHS();
         if (base instanceof MemoryObject mem) {
-            IExpr rhs = iBin.getRHS();
+            Expression rhs = iBin.getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
@@ -225,7 +225,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            IExpr rhs = ((IExprBin) exp).getRHS();
+            Expression rhs = ((IExprBin) exp).getRHS();
             //FIXME Address extends IConst
             if (rhs instanceof IConst ic) {
                 int o = target.offset + ic.getValueAsInt();
@@ -275,8 +275,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 return;
             }
             if (x instanceof IExprBin iBin && iBin.getOp() == PLUS) {
-                IExpr lhs = iBin.getLHS();
-                IExpr rhs = iBin.getRHS();
+                Expression lhs = iBin.getLHS();
+                Expression rhs = iBin.getRHS();
                 if (lhs instanceof MemoryObject mem && rhs instanceof IConst ic && !(rhs instanceof MemoryObject)) {
                     location = new Location(mem, ic.getValueAsInt());
                     failed = false;

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -14,7 +15,7 @@ import java.util.Set;
 
 public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
-    private final Register register;
+    private Register register;
     private Event event;
     private final boolean trackDep;
 
@@ -40,6 +41,11 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
         return register;
     }
 
+    @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
+    }
+
     public Event getStatusEvent() {
         return event;
     }
@@ -50,37 +56,39 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public String defaultString() {
-        return register + " <- status(" + event.toString() + ")";
+        return register + " <- not_exec(" + event + ")";
     }
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        FormulaManager formulaManager = context.getFormulaManager();
-        BooleanFormulaManager booleanFormulaManager = context.getBooleanFormulaManager();
-        Type type = register.getType();
-        BooleanFormula eventExecuted = context.execution(event);
-        Formula result = context.result(this);
+        final FormulaManager fmgr = context.getFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final Type type = register.getType();
+        final BooleanFormula eventExecuted = context.execution(event);
+        final Formula result = context.result(this);
+
         if (type instanceof IntegerType integerType) {
-            Formula one;
+            final Formula one;
             if (integerType.isMathematical()) {
-                IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+                IntegerFormulaManager integerFormulaManager = fmgr.getIntegerFormulaManager();
                 one = integerFormulaManager.makeNumber(1);
             } else {
-                BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+                BitvectorFormulaManager bitvectorFormulaManager = fmgr.getBitvectorFormulaManager();
                 int bitWidth = integerType.getBitWidth();
                 one = bitvectorFormulaManager.makeBitvector(bitWidth, 1);
             }
-            return booleanFormulaManager.and(super.encodeExec(context),
-                    booleanFormulaManager.implication(eventExecuted,
-                            context.equalZero(result)),
-                    booleanFormulaManager.or(eventExecuted,
-                            context.equal(result, one)));
+            return bmgr.and(super.encodeExec(context),
+                    bmgr.ifThenElse(eventExecuted, context.equalZero(result), context.equal(result, one))
+            );
+        } else if (type instanceof BooleanType) {
+            //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
+            // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
+            // However, this is very counterintuitive and I think we should return 1/true on success and instead
+            // change the compilation of Store-Conditional to invert the value.
+            return bmgr.and(super.encodeExec(context), context.equal(result, bmgr.not(eventExecuted)));
         }
         throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public Event getCopy() {
@@ -96,9 +104,6 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
     public Set<Event> getReferencedEvents() {
         return Set.of(event);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

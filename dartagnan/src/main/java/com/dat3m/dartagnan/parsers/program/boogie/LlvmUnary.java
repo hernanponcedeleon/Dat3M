@@ -33,7 +33,7 @@ public class LlvmUnary {
             UNSIGNED_EXTEND
     );
 
-    public static Object llvmUnary(String name, List<Object> callParams, ExpressionFactory expressions) {
+    public static Object llvmUnary(String name, List<Expression> callParams, ExpressionFactory expressions) {
         try {
             for (String prefix : LLVMUNARY) {
                 if (name.startsWith(prefix)) {
@@ -47,9 +47,9 @@ public class LlvmUnary {
         throw new ParsingException(String.format("Function %s is not implemented.", name));
     }
 
-    private static Object llvmUnary(String prefix, String suffix, List<Object> callParams, ExpressionFactory expressions) {
+    private static Object llvmUnary(String prefix, String suffix, List<Expression> callParams, ExpressionFactory expressions) {
         TypeFactory types = TypeFactory.getInstance();
-        Expression inner = (Expression) callParams.get(0);
+        Expression inner = callParams.get(0);
         if (!(inner.getType() instanceof IntegerType integerType)) {
             throw new ParsingException(String.format("%s is not an integer expression.", inner));
         }

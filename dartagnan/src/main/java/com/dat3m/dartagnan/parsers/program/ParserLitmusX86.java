@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.parsers.program;
 
+import com.dat3m.dartagnan.exception.ParserErrorListener;
 import com.dat3m.dartagnan.parsers.LitmusX86Lexer;
 import com.dat3m.dartagnan.parsers.LitmusX86Parser;
-import com.dat3m.dartagnan.exception.ParserErrorListener;
-import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLitmusX86;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.configuration.Arch;
-
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DiagnosticErrorListener;
+import org.antlr.v4.runtime.ParserRuleContext;
 
 class ParserLitmusX86 implements ParserInterface {
 
@@ -21,12 +20,10 @@ class ParserLitmusX86 implements ParserInterface {
         LitmusX86Parser parser = new LitmusX86Parser(tokenStream);
         parser.addErrorListener(new DiagnosticErrorListener(true));
         parser.addErrorListener(new ParserErrorListener());
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
         ParserRuleContext parserEntryPoint = parser.main();
-        VisitorLitmusX86 visitor = new VisitorLitmusX86(pb);
+        VisitorLitmusX86 visitor = new VisitorLitmusX86();
 
         Program program = (Program) parserEntryPoint.accept(visitor);
-        program.setArch(Arch.TSO);
         return program;
     }
 }

@@ -24,8 +24,8 @@ public class AssertBasic extends AbstractAssert {
     @Override
     public BooleanFormula encode(EncodingContext context) {
         return context.encodeComparison(op,
-                context.encodeFinalIntegerExpression(e1),
-                context.encodeFinalIntegerExpression(e2));
+                context.encodeFinalExpression(e1),
+                context.encodeFinalExpression(e2));
     }
 
     @Override
@@ -35,7 +35,7 @@ public class AssertBasic extends AbstractAssert {
 
     private String valueToString(Expression value){
         if(value instanceof Register register){
-            return register.getThreadId() + ":" + value;
+            return register.getFunctionId() + ":" + value;
         }
         return value.toString();
     }

@@ -66,11 +66,15 @@ public class Tuple implements Comparable<Tuple> {
     }
 
     public boolean isCrossThread() {
-        return !isSameThread();
+        return first.getThread() != null && !isSameFunction();
     }
 
     public boolean isSameThread() {
-        return first.getThread() == second.getThread();
+        return first.getThread() != null && isSameFunction();
+    }
+
+    public boolean isSameFunction() {
+        return first.getFunction() == second.getFunction();
     }
 
     public boolean isForward() {

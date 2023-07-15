@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -43,7 +44,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         logger.info("#Events after DSE: " + program.getEvents().size());
     }
 
-    private void eliminateDeadAssignments(Program program, Thread thread) {
+    private void eliminateDeadAssignments(Program program, Function function) {
         Set<Register> usedRegs = new HashSet<>();
         if(program.getSpecification() != null) {
             // for litmus tests
@@ -52,7 +53,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
             }
             usedRegs.addAll(program.getSpecification().getRegs());
         }
-        // Registers that are used by assertions or other threads cannot be removed
+        // Registers that are used by assertions or other functions/threads cannot be removed
         final List<Event> programEvents = program.getEvents();
         programEvents.stream()
                 .filter(e -> e.hasTag(ASSERTION))
@@ -60,15 +61,15 @@ public class DeadAssignmentElimination implements ProgramProcessor {
                 .map(RegWriter::getResultRegister)
                 .forEach(usedRegs::add);
         programEvents.stream()
-                .filter(e -> !e.getThread().equals(thread))
+                .filter(e -> !e.getFunction().equals(function))
                 .filter(RegReader.class::isInstance).map(RegReader.class::cast)
                 .forEach(e -> e.getRegisterReads().stream().map(Register.Read::register).forEach(usedRegs::add));
 
 
         // Compute events to be removed (removal is delayed)
-        final List<Event> threadEvents = thread.getEvents();
+        final List<Event> funcEvents = function.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
-        for(Event e : Lists.reverse(threadEvents)) {
+        for(Event e : Lists.reverse(funcEvents)) {
             if (!e.hasTag(NOOPT) && !e.hasTag(VISIBLE)
                     && e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister())) {
                 // TODO (TH): Can we also remove loads to unused registers here?
@@ -81,7 +82,7 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         }
 
         // Here is the actual removal
-        threadEvents.stream()
+        funcEvents.stream()
                 .filter(toBeRemoved::contains)
                 .forEach(Event::tryDelete);
     }

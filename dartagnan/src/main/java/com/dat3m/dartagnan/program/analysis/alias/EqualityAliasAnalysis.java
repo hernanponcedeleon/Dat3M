@@ -31,7 +31,7 @@ public class EqualityAliasAnalysis implements AliasAnalysis {
     @Override
     public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
 
-        if (a.getThread() != b.getThread()
+        if (a.getFunction() != b.getFunction()
                 || !a.getAddress().equals(b.getAddress())) {
             return false;
         } else if (a == b) {

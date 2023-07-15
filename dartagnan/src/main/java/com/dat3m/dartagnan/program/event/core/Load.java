@@ -12,7 +12,7 @@ import java.util.List;
 
 public class Load extends AbstractMemoryCoreEvent implements RegWriter {
 
-    protected final Register resultRegister;
+    protected Register resultRegister;
 
     public Load(Register register, Expression address) {
         super(address);
@@ -31,6 +31,11 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
     }
 
     @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
+    @Override
     public String defaultString() {
         final MemoryOrder mo = getMetadata(MemoryOrder.class);
         return String.format("%s = load(*%s%s)", resultRegister, address, mo != null ? ", " + mo.value() : "");
@@ -41,16 +46,10 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
         return List.of(new MemoryAccess(address, accessType, MemoryAccess.Mode.LOAD));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Load getCopy() {
         return new Load(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

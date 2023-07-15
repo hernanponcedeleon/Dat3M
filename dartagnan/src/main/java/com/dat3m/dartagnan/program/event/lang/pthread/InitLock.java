@@ -25,16 +25,10 @@ public class InitLock extends StoreBase {
         return "pthread_mutex_init(&" + name + ", " + value + ")";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public InitLock getCopy() {
         return new InitLock(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

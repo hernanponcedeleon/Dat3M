@@ -3,25 +3,40 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.definition.SameScope;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 
 public class Wmm {
+
+    @Options
+    public static class Config {
+
+        @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
+                description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
+                        " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
+                secure = true)
+        private boolean reduceAcyclicityEncoding = true;
+
+        public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
+    }
 
     private static final Logger logger = LogManager.getLogger(Wmm.class);
 
@@ -31,9 +46,13 @@ public class Wmm {
     private final Map<String, Filter> filters = new HashMap<>();
     private final Set<Relation> relations = new HashSet<>();
 
+    private final Config config = new Config();
+
     public Wmm() {
         BASE_RELATIONS.forEach(this::getRelation);
     }
+
+    public Config getConfig() { return this.config; }
 
     /**
      * Inserts a constraint into this model.
@@ -50,17 +69,14 @@ public class Wmm {
     }
 
     public List<Constraint> getConstraints() {
-        return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition))
-                .collect(Collectors.toList());
+        return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();
     }
 
     /**
      * @return View of all axioms in this model in insertion order.
      */
     public List<Axiom> getAxioms() {
-        return constraints.stream()
-                .filter(Axiom.class::isInstance).map(Axiom.class::cast)
-                .collect(Collectors.toList());
+        return constraints.stream().filter(Axiom.class::isInstance).map(Axiom.class::cast).toList();
     }
 
     /**
@@ -115,7 +131,7 @@ public class Wmm {
      * @return The created relation.
      */
     public Relation newRelation() {
-        Relation relation = new Relation();
+        Relation relation = new Relation(this);
         relations.add(relation);
         return relation;
     }
@@ -128,7 +144,7 @@ public class Wmm {
     public Relation newRelation(String name) {
         checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
                 "Already bound name %s.", name);
-        Relation relation = new Relation();
+        Relation relation = new Relation(this);
         relation.names.add(name);
         relations.add(relation);
         return relation;
@@ -191,6 +207,7 @@ public class Wmm {
     // ====================== Utility Methods ====================
 
     public void configureAll(Configuration config) throws InvalidConfigurationException {
+        config.inject(this.config);
         for (Relation rel : getRelations()) {
             rel.configure(config);
         }
@@ -200,6 +217,8 @@ public class Wmm {
                 axiom.configure(config);
             }
         }
+
+        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
     }
 
     public void simplify() {
@@ -223,9 +242,7 @@ public class Wmm {
                     constraints.stream().anyMatch(c -> ((Axiom) c).getRelation().equals(r))) {
                 continue;
             }
-            List<Relation> parents = relations.stream()
-                    .filter(x -> x.getDependencies().contains(r))
-                    .collect(Collectors.toList());
+            List<Relation> parents = relations.stream().filter(x -> x.getDependencies().contains(r)).toList();
             Relation p = parents.size() == 1 ? parents.get(0) : null;
             if (p != null && cls.isInstance(p.definition)) {
                 Relation[] o = Stream.of(r, p)
@@ -246,102 +263,65 @@ public class Wmm {
 
     private Definition basicDefinition(String name) {
         Relation r = newRelation(name);
-        switch (name) {
-            case PO:
-                return new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
-            case LOC:
-                return new SameAddress(r);
-            case ID:
-                return new Identity(r, Filter.byTag(Tag.VISIBLE));
-            case INT:
-                return new SameThread(r);
-            case EXT:
-                return new DifferentThreads(r);
-            case CO:
-                return new Coherence(r);
-            case RF:
-                return new ReadFrom(r);
-            case RMW:
-                return new ReadModifyWrites(r);
-            case CASDEP:
-                return new CompareAndSwapDependency(r);
-            case CRIT:
-                return new CriticalSections(r);
-            case IDD:
-                return new DirectDataDependency(r);
-            case ADDRDIRECT:
-                return new DirectAddressDependency(r);
-            case CTRLDIRECT:
-                return new DirectControlDependency(r);
-            case EMPTY:
-                return new Empty(r);
-            case RFINV:
-                return new Inverse(r, getRelation(RF));
-            case FR:
-                return composition(r, getRelation(RFINV), getRelation(CO));
-            case MM:
-                return new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.MEMORY));
-            case MV:
-                return new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.VISIBLE));
-            case IDDTRANS:
-                return new TransitiveClosure(r, getRelation(IDD));
-            case DATA:
-                return intersection(r, getRelation(IDDTRANS), getRelation(MM));
-            case ADDR: {
+        return switch (name) {
+            case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
+            case LOC -> new SameAddress(r);
+            case ID -> new Identity(r, Filter.byTag(Tag.VISIBLE));
+            case INT -> new SameThread(r);
+            case EXT -> new DifferentThreads(r);
+            case CO -> new Coherence(r);
+            case RF -> new ReadFrom(r);
+            case RMW -> new ReadModifyWrites(r);
+            case CASDEP -> new CompareAndSwapDependency(r);
+            case CRIT -> new CriticalSections(r);
+            case IDD -> new DirectDataDependency(r);
+            case ADDRDIRECT -> new DirectAddressDependency(r);
+            case CTRLDIRECT -> new DirectControlDependency(r);
+            case EMPTY -> new Empty(r);
+            case RFINV -> {
+                //FIXME: We don't need a name for "rf^-1", this is a normal relation!
+                // This causes models that explicitly mention "rf^-1" to have two versions of the same relation!
+                yield new Inverse(r, getRelation(RF));
+            }
+            case FR -> composition(r, getRelation(RFINV), getRelation(CO));
+            case MM -> new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.MEMORY));
+            case MV -> new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.VISIBLE));
+            case IDDTRANS -> new TransitiveClosure(r, getRelation(IDD));
+            case DATA -> intersection(r, getRelation(IDDTRANS), getRelation(MM));
+            case ADDR -> {
                 Relation addrdirect = getRelation(ADDRDIRECT);
                 Relation comp = addDefinition(composition(newRelation(), getRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
-                return intersection(r, union, getRelation(MM));
+                yield intersection(r, union, getRelation(MM));
             }
-            case CTRL: {
+            case CTRL -> {
                 Relation comp = addDefinition(composition(newRelation(), getRelation(IDDTRANS), getRelation(CTRLDIRECT)));
-                return intersection(r, comp, getRelation(MV));
+                yield intersection(r, comp, getRelation(MV));
             }
-            case POLOC:
-                return intersection(r, getRelation(PO), getRelation(LOC));
-            case RFE:
-                return intersection(r, getRelation(RF), getRelation(EXT));
-            case RFI:
-                return intersection(r, getRelation(RF), getRelation(INT));
-            case COE:
-                return intersection(r, getRelation(CO), getRelation(EXT));
-            case COI:
-                return intersection(r, getRelation(CO), getRelation(INT));
-            case FRE:
-                return intersection(r, getRelation(FR), getRelation(EXT));
-            case FRI:
-                return intersection(r, getRelation(FR), getRelation(INT));
-            case MFENCE:
-                return fence(r, MFENCE);
-            case ISH:
-                return fence(r, ISH);
-            case ISB:
-                return fence(r, ISB);
-            case SYNC:
-                return fence(r, SYNC);
-            case ISYNC:
-                return fence(r, ISYNC);
-            case LWSYNC:
-                return fence(r, LWSYNC);
-            case CTRLISYNC:
-                return intersection(r, getRelation(CTRL), getRelation(ISYNC));
-            case CTRLISB:
-                return intersection(r, getRelation(CTRL), getRelation(ISB));
-            case SR:
-                return new SameScope(r);
-            case SCTA:
-                return new SameScope(r, Tag.PTX.CTA);
-            case SYNCBAR:
-                return new SyncBar(r);
-            case SYNC_BARRIER:
-                return intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
-            case SYNC_FENCE:
-                return new SyncFence(r);
-            case VLOC:
-                return new VirtualLocation(r);
-            default:
-                throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
-        }
+            case POLOC -> intersection(r, getRelation(PO), getRelation(LOC));
+            case RFE ->  intersection(r, getRelation(RF), getRelation(EXT));
+            case RFI -> intersection(r, getRelation(RF), getRelation(INT));
+            case COE -> intersection(r, getRelation(CO), getRelation(EXT));
+            case COI -> intersection(r, getRelation(CO), getRelation(INT));
+            case FRE -> intersection(r, getRelation(FR), getRelation(EXT));
+            case FRI -> intersection(r, getRelation(FR), getRelation(INT));
+            case MFENCE -> fence(r, MFENCE);
+            case ISH -> fence(r, ISH);
+            case ISB -> fence(r, ISB);
+            case SYNC -> fence(r, SYNC);
+            case ISYNC -> fence(r, ISYNC);
+            case LWSYNC -> fence(r, LWSYNC);
+            case CTRLISYNC -> intersection(r, getRelation(CTRL), getRelation(ISYNC));
+            case CTRLISB -> intersection(r, getRelation(CTRL), getRelation(ISB));
+            case SR -> new SameScope(r);
+            case SCTA -> new SameScope(r, Tag.PTX.CTA);
+            case SYNCBAR -> new SyncBar(r);
+            case SYNC_BARRIER -> intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
+            case SYNC_FENCE -> new SyncFence(r);
+            case VLOC -> new VirtualLocation(r);
+            default ->
+                    throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
+        };
     }
 
     private Definition union(Relation r0, Relation r1, Relation r2) {

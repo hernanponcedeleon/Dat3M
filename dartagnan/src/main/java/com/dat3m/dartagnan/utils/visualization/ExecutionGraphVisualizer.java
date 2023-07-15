@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import org.apache.logging.log4j.LogManager;
@@ -23,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 
@@ -89,9 +87,8 @@ public class ExecutionGraphVisualizer {
     }
 
     private boolean ignore(EventData e) {
-        return !e.getEvent().hasMetadata(SourceLocation.class) && !e.isInit();
+        return false; // We ignore no events for now.
     }
-
 
     private ExecutionGraphVisualizer addReadFrom(ExecutionModel model) {
 
@@ -105,7 +102,7 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            appendEdge(w, r, model, "label=rf");
+            appendEdge(w, r, "label=rf");
         }
         graphviz.end();
         return this;
@@ -128,7 +125,7 @@ public class ExecutionGraphVisualizer {
             if (co.indexOf(w) + 1 < co.size()) {
                 EventData w2 = co.get(co.indexOf(w) + 1);
                 if (!ignore(w2) && frFilter.test(r, w2)) {
-                    appendEdge(r, w2, model, "label=fr");
+                    appendEdge(r, w2, "label=fr");
                 }
             }
         }
@@ -149,7 +146,7 @@ public class ExecutionGraphVisualizer {
                 if (ignore(w1) || ignore(w2) || !coFilter.test(w1, w2)) {
                     continue;
                 }
-                appendEdge(w1, w2, model, "label=co");
+                appendEdge(w1, w2, "label=co");
             }
         }
         graphviz.end();
@@ -165,14 +162,15 @@ public class ExecutionGraphVisualizer {
 
     private ExecutionGraphVisualizer addThreadPo(Thread thread, ExecutionModel model) {
         List<EventData> threadEvents = model.getThreadEventsMap().get(thread)
-                .stream().filter(e -> e.hasTag(Tag.VISIBLE)).collect(Collectors.toList());
+                .stream().filter(e -> e.hasTag(Tag.VISIBLE)).toList();
         if (threadEvents.size() <= 1) {
+            // This skips init threads.
             return this;
         }
 
         // --- Subgraph start ---
         graphviz.beginSubgraph("T" + thread.getId());
-        graphviz.setEdgeAttributes("weight=10");
+        graphviz.setEdgeAttributes("weight=100");
         // --- Node list ---
         for (int i = 1; i < threadEvents.size(); i++) {
             EventData e1 = threadEvents.get(i - 1);
@@ -182,7 +180,7 @@ public class ExecutionGraphVisualizer {
                 continue;
             }
 
-            appendEdge(e1, e2, model, (String[]) null);
+            appendEdge(e1, e2, (String[]) null);
         }
 
         // --- Subgraph end ---
@@ -192,17 +190,9 @@ public class ExecutionGraphVisualizer {
     }
 
 
-    private String eventToNode(EventData e, ExecutionModel model) {
+    private String eventToNode(EventData e) {
         if (e.isInit()) {
             return String.format("\"I(%s, %d)\"", addresses.get(e.getAccessedAddress()), e.getValue());
-        } else if (!e.getEvent().hasMetadata(SourceLocation.class)) {
-            // Special write of each thread
-            int threadSize = model.getThreadEventsMap().get(e.getThread()).size();
-            if (e.getLocalId() <= threadSize / 2) {
-                return String.format("\"T%d:start\"", e.getThread().getId());
-            } else {
-                return String.format("\"T%d:end\"", e.getThread().getId());
-            }
         }
         // We have MemEvent + Fence
         String tag = e.getEvent().toString();
@@ -217,7 +207,8 @@ public class ExecutionGraphVisualizer {
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
-        return String.format("\"T%s:E%s\\n%s%s\n%s\"",
+        return String.format("\"%s:T%s/E%s\\n%s%s\n%s\"",
+                e.getThread().getName(),
                 e.getThread().getId(),
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
@@ -225,8 +216,8 @@ public class ExecutionGraphVisualizer {
                 tag);
     }
 
-    private void appendEdge(EventData a, EventData b, ExecutionModel model, String... options) {
-        graphviz.addEdge(eventToNode(a, model), eventToNode(b, model), options);
+    private void appendEdge(EventData a, EventData b, String... options) {
+        graphviz.addEdge(eventToNode(a), eventToNode(b), options);
     }
 
     public static void generateGraphvizFile(ExecutionModel model, int iterationCount,

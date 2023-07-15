@@ -47,6 +47,19 @@ public final class IntegerType implements Type {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        return obj instanceof IntegerType other && other.bitWidth == this.bitWidth;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * bitWidth;
+    }
+
+    @Override
     public String toString() {
         return isMathematical() ? "int" : "bv" + bitWidth;
     }

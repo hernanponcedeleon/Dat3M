@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.event.lang.std;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -24,7 +25,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class Malloc extends AbstractEvent implements RegWriter, RegReader {
 
-    protected final Register register;
+    protected Register register;
     protected Expression sizeExpr;
 
     public Malloc(Register register, Expression sizeExpr) {
@@ -54,6 +55,11 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
     }
 
     @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
+    }
+
+    @Override
     public Set<Register.Read> getRegisterReads() {
         // TODO: Should this technically be an addr-dependency? Maybe an "other" dependency?
         return Register.collectRegisterReads(sizeExpr, Register.UsageType.DATA, new HashSet<>());
@@ -65,20 +71,19 @@ public class Malloc extends AbstractEvent implements RegWriter, RegReader {
     }
 
     @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.sizeExpr = sizeExpr.visit(exprTransformer);
+    }
+
+    @Override
     public BooleanFormula encodeExec(EncodingContext context) {
         throw new UnsupportedOperationException("Cannot encode Malloc events.");
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public Malloc getCopy() {
         return new Malloc(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -16,16 +16,10 @@ public class Skip extends AbstractEvent {
         return "skip";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public Skip getCopy() {
         return new Skip(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

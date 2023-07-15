@@ -11,9 +11,6 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -24,21 +21,13 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Sets.difference;
 
 @Options
 public class Acyclic extends Axiom {
 
-	private static final Logger logger = LogManager.getLogger(Acyclic.class);
-
-    @Option(name = REDUCE_ACYCLICITY_ENCODE_SETS,
-            description = "Omit adding transitively implied relationships to the encode set of an acyclic relation." +
-                    " This option is only relevant if \"" + ENABLE_ACTIVE_SETS + "\" is set.",
-            secure = true)
-    private boolean reduceAcyclicityEncoding = true;
+    private static final Logger logger = LogManager.getLogger(Acyclic.class);
 
     public Acyclic(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
@@ -46,12 +35,6 @@ public class Acyclic extends Axiom {
 
     public Acyclic(Relation rel) {
         super(rel, false, false);
-    }
-
-    @Override
-    public void configure(Configuration config) throws InvalidConfigurationException {
-        config.inject(this);
-        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, reduceAcyclicityEncoding);
     }
 
     @Override
@@ -206,7 +189,7 @@ public class Acyclic extends Axiom {
         }
 
         logger.info("encodeTupleSet size: {}", result.size());
-        if (reduceAcyclicityEncoding) {
+        if (getMemoryModel().getConfig().isReduceAcyclicityEncoding()) {
             Set<Tuple> obsolete = transitivelyDerivableMustTuples(exec, ra.getKnowledge(rel));
             result.removeAll(obsolete);
             logger.info("reduced encodeTupleSet size: {}", result.size());
