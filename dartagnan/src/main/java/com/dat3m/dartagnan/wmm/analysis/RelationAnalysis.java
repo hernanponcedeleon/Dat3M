@@ -36,7 +36,6 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
@@ -112,39 +111,48 @@ public class RelationAnalysis {
     public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
         task.getConfig().inject(a);
-        logger.info("{}: {}", ENABLE_RELATION_ANALYSIS, a.enable);
+
+        final StringBuilder configSummary = new StringBuilder().append("\n");
+        configSummary.append("\t").append(ENABLE_RELATION_ANALYSIS).append(": ").append(a.enable).append("\n");
+        configSummary.append("\t").append(ENABLE_MUST_SETS).append(": ").append(a.enableMustSets).append("\n");
+        configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(a.enableExtended);
+        logger.info(configSummary);
+
         if (a.enableMustSets && !a.enable) {
             logger.warn("{} implies {}", ENABLE_MUST_SETS, ENABLE_RELATION_ANALYSIS);
             a.enableMustSets = false;
         }
-        logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
         if (a.enableExtended && !a.enable) {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
             a.enableExtended = false;
         }
-        logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
+
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
         logger.info("Finished regular analysis in {}ms", t1 - t0);
+
+        final StringBuilder summary = new StringBuilder()
+                .append("\n======== RelationAnalysis summary ======== \n");
+        summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
+        summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
         if (a.enableExtended) {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
             a.runExtended();
             logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
-            logger.info("Count of may-tuples removed: {}", mayCount - a.countMaySet());
-            logger.info("Count of must-tuples added: {}", a.countMustSet() - mustCount);
+            summary.append("\t#may-tuples removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
+            summary.append("\t#must-tuples added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }
         verify(a.enableMustSets || a.knowledgeMap.values().stream().allMatch(k -> k.must.isEmpty()));
-        logger.info("Number of may-tuples: {}", a.countMaySet());
-        logger.info("Number of must-tuples: {}", a.countMustSet());
-        logger.info("Number of mutually-exclusive tuples: {}", a.mutex.size());
         Knowledge rf = a.knowledgeMap.get(task.getMemoryModel().getRelation(RF));
-        logger.info("Number of may-read-from-tuples: {}", rf.may.size());
-        logger.info("Number of must-read-from-tuples: {}", rf.must.size());
         Knowledge co = a.knowledgeMap.get(task.getMemoryModel().getRelation(CO));
-        logger.info("Number of may-coherence-tuples: {}", co.may.size());
-        logger.info("Number of must-coherence-tuples: {}", co.must.size());
+        summary.append("\ttotal #must|may|exclusive tuples: ")
+                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.mutex.size()).append("\n");
+        summary.append("\t#must|may rf tuples: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
+        summary.append("\t#must|may co tuples: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
+        summary.append("===========================================");
+        logger.info(summary);
         return a;
     }
 
@@ -472,8 +480,8 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
             Set<Tuple> must = new HashSet<>();
-            List<Event> l1 = program.getEvents().stream().filter(domain::apply).collect(toList());
-            List<Event> l2 = program.getEvents().stream().filter(range::apply).collect(toList());
+            List<Event> l1 = program.getEvents().stream().filter(domain::apply).toList();
+            List<Event> l2 = program.getEvents().stream().filter(range::apply).toList();
             for (Event e1 : l1) {
                 for (Event e2 : l2) {
                     if (!exec.areMutuallyExclusive(e1, e2)) {
@@ -536,7 +544,7 @@ public class RelationAnalysis {
         public Knowledge visitProgramOrder(Relation rel, Filter type) {
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
-                List<Event> events = t.getEvents().stream().filter(type::apply).collect(toList());
+                List<Event> events = t.getEvents().stream().filter(type::apply).toList();
                 for (int i = 0; i < events.size(); i++) {
                     Event e1 = events.get(i);
                     for (int j = i + 1; j < events.size(); j++) {
@@ -707,7 +715,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
-                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).collect(toList());
+                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
@@ -804,7 +812,7 @@ public class RelationAnalysis {
                             .filter(e -> (e.getThread() == read.getThread() || e.hasTag(INIT)))
                             .map(x -> (MemoryCoreEvent) x)
                             .sorted((o1, o2) -> o1.hasTag(INIT) == o2.hasTag(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.hasTag(INIT) ? -1 : 1)
-                            .collect(Collectors.toList());
+                            .toList();
                     // The set of writes that won't be readable due getting overwritten.
                     Set<MemoryCoreEvent> deletedWrites = new HashSet<>();
                     // A rf-edge (w1, r) is impossible, if there exists a write w2 such that

@@ -49,7 +49,7 @@ public class EndAtomic extends AbstractEvent implements EventUser {
     public void runLocalAnalysis(Program program, Context context) {
         //===== Temporary fix to rematch atomic blocks correctly =====
         BranchEquivalence eq = context.requires(BranchEquivalence.class);
-        List<Event> begins = this.function.getEvents()
+        List<Event> begins = this.getFunction().getEvents()
                 .stream().filter(x -> x instanceof BeginAtomic && eq.isReachableFrom(x, this))
                 .toList();
         this.begin = (BeginAtomic) begins.get(begins.size() - 1);

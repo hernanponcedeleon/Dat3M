@@ -14,8 +14,8 @@ import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.StringAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -145,12 +145,12 @@ public class EventFactory {
         return new Skip();
     }
 
-    public static FunCall newFunctionCall(String funName) {
-        return new FunCall(funName);
+    public static FunCallMarker newFunctionCallMarker(String funName) {
+        return new FunCallMarker(funName);
     }
 
-    public static FunRet newFunctionReturn(String funName) {
-        return new FunRet(funName);
+    public static FunReturnMarker newFunctionReturnMarker(String funName) {
+        return new FunReturnMarker(funName);
     }
 
     public static StringAnnotation newStringAnnotation(String annotation) {

@@ -4,15 +4,12 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  *
@@ -42,6 +39,8 @@ public abstract class Axiom implements Constraint {
     public Relation getRelation() {
         return rel;
     }
+
+    public Wmm getMemoryModel() { return rel.getMemoryModel(); }
 
     /**
      * Users have the option to not enforce consistency checks, but rather 
