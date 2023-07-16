@@ -30,7 +30,7 @@ class VisitorTso extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
 
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoad(dummyReg, address);
 
         return tagList(eventSequence(
@@ -54,7 +54,7 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitLock(Lock e) {
         IntegerType type = types.getArchType();
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
         Load load = newRMWLoad(dummy, e.getAddress());
@@ -108,7 +108,7 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitLlvmRMW(LlvmRMW e) {
         Register resultRegister = e.getResultRegister();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
 
         Expression address = e.getAddress();
         Load load = newRMWLoad(resultRegister, address);
@@ -166,12 +166,12 @@ class VisitorTso extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getThread().newRegister(types.getBooleanType());
+                e.getFunction().newRegister(types.getBooleanType());
         Local castResult = booleanResultRegister == resultRegister ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
-        Register regExpected = e.getThread().newRegister(type);
+        Register regExpected = e.getFunction().newRegister(type);
         Load loadExpected = newLoad(regExpected, expectedAddr);
-        Register regValue = e.getThread().newRegister(type);
+        Register regValue = e.getFunction().newRegister(type);
         Load loadValue = newRMWLoad(regValue, address);
         Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
         Label casFail = newLabel("CAS_fail");
@@ -197,7 +197,7 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitAtomicFetchOp(AtomicFetchOp e) {
         Register resultRegister = e.getResultRegister();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getType());
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
 
         Expression address = e.getAddress();
         Load load = newRMWLoad(resultRegister, address);

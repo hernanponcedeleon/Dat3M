@@ -70,7 +70,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitLock(Lock e) {
         IntegerType type = types.getArchType(); // TODO: Boolean should be sufficient
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         String mo = e.getMo();
@@ -86,7 +86,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitUnlock(Unlock e) {
         IntegerType type = types.getArchType(); // TODO: Boolean should be sufficient
-        Register dummy = e.getThread().newRegister(type);
+        Register dummy = e.getFunction().newRegister(type);
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Expression address = e.getAddress();

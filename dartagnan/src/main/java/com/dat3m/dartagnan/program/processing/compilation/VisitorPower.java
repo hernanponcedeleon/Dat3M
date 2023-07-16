@@ -319,7 +319,7 @@ public class VisitorPower extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getThread().newRegister(types.getBooleanType());
+                e.getFunction().newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getFunction().newRegister(type);
