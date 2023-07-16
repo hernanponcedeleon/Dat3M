@@ -18,10 +18,6 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorLKMM extends VisitorBase {
 
-    protected VisitorLKMM(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();

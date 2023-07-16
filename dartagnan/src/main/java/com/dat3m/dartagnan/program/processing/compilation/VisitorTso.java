@@ -21,10 +21,6 @@ import static com.google.common.base.Verify.verify;
 
 class VisitorTso extends VisitorBase {
 
-    protected VisitorTso(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitTSOXchg(TSOXchg e) {
         Register resultRegister = e.getResultRegister();

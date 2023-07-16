@@ -31,15 +31,12 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
-    protected boolean forceStart;
     protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     protected Function funcToBeCompiled;
 
-    protected VisitorBase(boolean forceStart) {
-        this.forceStart = forceStart;
-    }
+    protected VisitorBase() { }
 
     protected Event newTerminator(Expression guard) {
         if (funcToBeCompiled instanceof Thread) {

@@ -22,10 +22,6 @@ import static com.google.common.base.Verify.verify;
 
 class VisitorIMM extends VisitorBase {
 
-    protected VisitorIMM(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitLoad(Load e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.

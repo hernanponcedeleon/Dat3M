@@ -34,8 +34,7 @@ public class VisitorPower extends VisitorBase {
     // "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
     private final boolean useRC11Scheme;
 
-    protected VisitorPower(boolean forceStart, boolean useRC11Scheme, PowerScheme cToPowerScheme) {
-        super(forceStart);
+    protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
         this.useRC11Scheme = useRC11Scheme;
         this.cToPowerScheme = cToPowerScheme;
     }

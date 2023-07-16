@@ -33,8 +33,7 @@ class VisitorRISCV extends VisitorBase {
     // we use the same scheme as AMRv8
     private final boolean useRC11Scheme;
 
-    protected VisitorRISCV(boolean forceStart, boolean useRC11Scheme) {
-        super(forceStart);
+    protected VisitorRISCV(boolean useRC11Scheme) {
         this.useRC11Scheme = useRC11Scheme;
     }
 
