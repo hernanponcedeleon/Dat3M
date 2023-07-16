@@ -32,6 +32,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final Type pointerType = types.getArchType();
+    private final IntegerType integerType = types.getArchType();
     private int functionCounter;
     // Nonnull, if the visitor is inside a function body.
     private Function function;
@@ -80,11 +82,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitFuncDef(FuncDefContext ctx) {
         final String name = ctx.funcHeader().GlobalIdent().getText();
-        final Type returnType = checkType(ctx.funcHeader().type());
+        final Type returnType = parseType(ctx.funcHeader().type());
         final List<Type> parameterTypes = new ArrayList<>();
         final List<String> parameterNames = new ArrayList<>();
         for (ParamContext parameter : ctx.funcHeader().params().param()) {
-            parameterTypes.add(checkType(parameter.type()));
+            parameterTypes.add(parseType(parameter.type()));
             parameterNames.add(parameter.LocalIdent().getText());
         }
         final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
@@ -101,6 +103,23 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             block = null;
         }
         //TODO validate: all basic blocks have a terminator, there is one entry, at least one exit, etc.
+        for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
+            final Block block = getBlock(basicBlockContext.LabelIdent().getText());
+            function.appendParsed(block.label);
+            for (final Event event : block.events) {
+                function.appendParsed(event);
+            }
+            //TODO function.appendParsed(block.terminator);
+            for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet()) {
+                if (phiNode.getKey().from == block) {
+                    for (Event event : phiNode.getValue()) {
+                        function.appendParsed(event);
+                    }
+                    function.appendParsed(newGoto(phiNode.getKey().to.label));
+                }
+            }
+        }
+        function.validate();
         function = null;
         return null;
     }
@@ -117,16 +136,78 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitLocalDefInst(LocalDefInstContext ctx) {
+        // each visitor may treat the register differently
+        // i.e. a loadInst generates a load event
+        currentRegisterName = ctx.LocalIdent().getText();
         final Expression expression = ctx.valueInstruction().accept(this);
-        final Register register = function.newRegister(ctx.LocalIdent().getText(), expression.getType());
-        final Local local = newLocal(register, expression);
-        block.events.add(local);
+        currentRegisterName = null;
+
+        if (!(expression instanceof Register)) {
+            throw new UnsupportedOperationException(String.format("Parsing of instruction %s.", ctx.getText()));
+        }
         return null;
+    }
+
+    private Register newRegister(Type type) {
+        return function.newRegister(currentRegisterName, type);
+    }
+
+    @Override
+    public Expression visitStoreInst(StoreInstContext ctx) {
+        final var atomic = ctx.atomic != null;
+        final TypeValueContext addressContext = ctx.typeValue(0);
+        final TypeValueContext valueContext = ctx.typeValue(1);
+        checkPointerType(addressContext);
+        final Expression address = checkPointerExpression(addressContext.value());
+        final Type type = parseType(valueContext.firstClassType());
+        final Expression value = checkExpression(type, valueContext.value());
+        final String mo = atomic ? parseMemoryOrder(ctx.atomicOrdering()) : "";
+        final Event store = atomic ? Llvm.newStore(address, value, mo) : newStore(address, value);
+        block.events.add(store);
+        return null;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Instructions producing a value
+
+    @Override
+    public Expression visitAllocaInst(AllocaInstContext ctx) {
+        // see https://llvm.org/docs/LangRef.html#alloca-instruction
+        final Register register = newRegister(pointerType);
+        //final var inalloca = ctx.inAllocaTok != null;
+        //final var swifterror = ctx.swiftError != null;
+        //final Type elementType = parseType(ctx.type());
+        final Expression sizeExpression;
+        if (ctx.typeValue() == null) {
+            sizeExpression = expressions.makeOne(integerType);
+        } else {
+            final Type sizeType = parseType(ctx.typeValue().firstClassType());
+            sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
+        }
+        //final int alignment = parseAlignment(ctx.align());
+        //final int addressSpace = parseAddressSpace(ctx.addrSpace());
+        block.events.add(Std.newMalloc(register, sizeExpression));
+        return register;
+    }
+
+    @Override
+    public Expression visitLoadInst(LoadInstContext ctx) {
+        final var atomic = ctx.atomic != null;
+        final Register register = newRegister(parseType(ctx.type()));
+        //final var isVolatile = ctx.llvmvolatile != null;
+        //final SyncScopeContext syncScope = ctx.syncScope(); // == null || atomic
+        //final AlignContext align = ctx.align(); // nullable
+        final String mo = atomic ? parseMemoryOrder(ctx.atomicOrdering()) : "";
+        checkPointerType(ctx.typeValue());
+        final Expression address = checkPointerExpression(ctx.typeValue().value());
+        final Event load = atomic ? Llvm.newLoad(register, address, mo) : newLoad(register, address);
+        block.events.add(load);
+        return register;
     }
 
     @Override
     public Expression visitPhiInst(PhiInstContext ctx) {
-        final Type type = checkType(ctx.type());
+        final Type type = parseType(ctx.type());
         final Register register = function.newRegister(currentRegisterName, type);
         for (final IncContext inc : ctx.inc()) {
             final Block target = getBlock(inc.LocalIdent().getText());
@@ -152,7 +233,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (ctx.constant() != null) {
             return ctx.constant().accept(this);
         }
-        checkSupport(ctx.inlineAsm() == null, "Assembly values.");
+        checkSupport(ctx.inlineAsm() == null, "Assembly values.", ctx);
         assert expectedType != null : "No expected type.";
         final String id = ctx.LocalIdent().getText();
         return function.getOrNewRegister(id, expectedType);
@@ -160,7 +241,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitAddInst(AddInstContext ctx) {
-        final Type type = checkType(ctx.typeValue().firstClassType());
+        final Type type = parseType(ctx.typeValue().firstClassType());
         final Expression left = checkExpression(type, ctx.typeValue().value());
         final Expression right = checkExpression(type, ctx.value());
         return expressions.makeADD(left, right);
@@ -168,10 +249,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitGetElementPtrInst(GetElementPtrInstContext ctx) {
-        final Type type = checkType(ctx.type());
+        final Type type = parseType(ctx.type());
         final var operands = new ArrayList<Expression>();
         for (final TypeValueContext typeValue : ctx.typeValue()) {
-            final Type operandType = checkType(typeValue.firstClassType());
+            final Type operandType = parseType(typeValue.firstClassType());
             operands.add(checkExpression(operandType, typeValue.value()));
         }
         assert !operands.isEmpty();
@@ -181,11 +262,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitCmpXchgInst(CmpXchgInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#cmpxchg-instruction
-        final Type addressType = checkType(ctx.typeValue(0).firstClassType());
-        check(addressType.equals(types.getArchType()), "Instruction 'cmpxchg' on non-pointer type.");
-        final Type comparatorType = checkType(ctx.typeValue(1).firstClassType());
-        final Type substituteType = checkType(ctx.typeValue(2).firstClassType());
-        check(comparatorType.equals(substituteType), "Type mismatch for comparator and new");
+        final Type addressType = checkPointerType(ctx.typeValue(0));
+        final Type comparatorType = parseType(ctx.typeValue(1).firstClassType());
+        final Type substituteType = parseType(ctx.typeValue(2).firstClassType());
+        check(comparatorType.equals(substituteType), "Type mismatch for comparator and new in %s.", ctx);
         final Expression address = checkExpression(addressType, ctx.typeValue(0).value());
         final Expression comparator = checkExpression(comparatorType, ctx.typeValue(1).value());
         final Expression substitute = checkExpression(substituteType, ctx.typeValue(2).value());
@@ -199,10 +279,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    private Type checkType(ParserRuleContext context) {
-        Object o = context.accept(this);
-        assert o instanceof Type : "Unexpected return value, expected type.";
-        return (Type) o;
+    private Expression checkPointerExpression(ParserRuleContext context) {
+        return checkExpression(types.getArchType(), context);
     }
 
     private Expression checkExpression(Type type, ParserRuleContext context) {
@@ -221,24 +299,59 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
+    @Override
+    public Expression visitOpaquePointerType(OpaquePointerTypeContext ctx) {
+        parsedType = types.getArchType();
+        return null;
+    }
+
     private Type parseIntType(TerminalNode t) {
         assert t.getText().startsWith("i");
         return types.getIntegerType(Integer.parseUnsignedInt(t.getText().substring(1)));
     }
 
-    // ----------------------------------------------------------------------------------------------------------------
-    // Helpers
+    private Type parseType(ParserRuleContext context) {
+        Expression o = context.accept(this);
+        assert o == null : "Unexpected return value, expected type.";
+        checkSupport(parsedType != null, "Unsupported type.", context);
+        Type type = parsedType;
+        parsedType = null;
+        return type;
+    }
 
-    private void check(boolean condition, String message) {
-        if (!condition) {
-            throw new ParsingException(message);
+    private void checkLabelType(FirstClassTypeContext context) {
+        if (context.concreteType() == null || context.concreteType().labelType() == null) {
+            throw new ParsingException(String.format("Expected label type, got %s.", context.getText()));
         }
     }
 
-    private void checkSupport(boolean condition, String message) {
+    // ----------------------------------------------------------------------------------------------------------------
+    // Helpers
+
+    private void check(boolean condition, String message, ParserRuleContext context) {
         if (!condition) {
-            throw new ParsingException("Unsupported: " + message);
+            throw new ParsingException(String.format(message, context.getText()));
         }
+    }
+
+    private void checkSupport(boolean condition, String message, ParserRuleContext context) {
+        if (!condition) {
+            throw new ParsingException(String.format("Unsupported: " + message, context.getText()));
+        }
+    }
+
+    private Type checkPointerType(TypeValueContext context) {
+        final ConcreteTypeContext concreteTypeContext = context.firstClassType().concreteType();
+        // NOTE this also accepts the legacy pointer types, but discards their element type information.
+        if (concreteTypeContext == null || concreteTypeContext.pointerType() == null) {
+            throw new ParsingException(
+                    String.format("Expected pointer type, instead of %s.", context.firstClassType().getText()));
+        }
+        return types.getArchType();
+    }
+
+    private boolean parseBoolean(TerminalNode node) {
+        return Boolean.parseBoolean(node.getText());
     }
 
     private BigInteger parseBigInteger(TerminalNode node) {
