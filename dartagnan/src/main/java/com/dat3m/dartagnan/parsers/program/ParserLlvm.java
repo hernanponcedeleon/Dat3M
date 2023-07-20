@@ -21,9 +21,9 @@ class ParserLlvm implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.compilationUnit();
         VisitorLlvm visitor = new VisitorLlvm();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
+        parserEntryPoint.accept(visitor);
         // LLVM programs can be compiled to different targets,
         // thus we don't set the architectures.
-        return program;
+        return visitor.buildProgram();
     }
 }
