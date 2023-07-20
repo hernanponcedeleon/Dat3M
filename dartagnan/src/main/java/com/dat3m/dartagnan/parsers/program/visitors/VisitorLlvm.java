@@ -41,6 +41,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Type pointerType = types.getArchType();
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
+    private final Map<String, Type> typeMap = new HashMap<>();
     private int functionCounter;
     // Nonnull, if the visitor is inside a function body.
     private Function function;
@@ -75,27 +76,39 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
         }
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.globalDecl() != null || entity.globalDef() != null) {
+            if (entity.globalDecl() != null || entity.globalDef() != null || entity.typeDef() != null) {
                 entity.accept(this);
             }
             if (entity.funcDecl() != null) {
-                entity.funcDecl().funcHeader().accept(this);
+                visitFuncHeader(entity.funcDecl().funcHeader());
             }
             if (entity.funcDef() != null) {
-                entity.funcDef().funcHeader().accept(this);
+                visitFuncHeader(entity.funcDef().funcHeader());
             }
         }
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.metadataDef() != null || entity.globalDecl() != null || entity.globalDef() != null || entity.funcDecl() != null) {
-                continue;
+            if (entity.metadataDef() == null &&
+                    entity.globalDecl() == null &&
+                    entity.globalDef() == null &&
+                    entity.typeDef() == null &&
+                    entity.funcDecl() == null) {
+                entity.accept(this);
             }
-            entity.accept(this);
         }
         return null;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Top Level Entities
+
+    @Override
+    public Expression visitTypeDef(TypeDefContext ctx) {
+        final String name = ctx.LocalIdent().getText();
+        final Type type = parseType(ctx.type());
+        final Type oldType = typeMap.putIfAbsent(name, type);
+        check(oldType == null, "Type redefinition in %s.", ctx);
+        return null;
+    }
 
     @Override
     public Expression visitFuncHeader(FuncHeaderContext ctx) {
@@ -199,8 +212,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression expression;
         if (ctx.immutable().getText().equals("global")) {
             expression = program.getMemory().allocate(1, true);
-            checkSupport(value instanceof IConst, "Non-constant in %s.", ctx);
-            ((MemoryObject) expression).setInitialValue(0, (IConst) value);
+            // In case of zero-initializer, there is no particular value
+            if (value != null) {
+                checkSupport(value instanceof IConst, "Non-constant in %s.", ctx);
+                ((MemoryObject) expression).setInitialValue(0, (IConst) value);
+            }
         } else {
             assert ctx.immutable().getText().equals("constant");
             expression = value;
@@ -511,6 +527,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitSelectInst(SelectInstContext ctx) {
+        assert ctx.typeValue().size() == 3;
+        final Expression guard = visitTypeValue(ctx.typeValue(0));
+        final Expression trueValue = visitTypeValue(ctx.typeValue(1));
+        final Expression falseValue = visitTypeValue(ctx.typeValue(2));
+        final Expression cast = expressions.makeBooleanCast(guard);
+        return assignToRegister(expressions.makeConditional(cast, trueValue, falseValue));
+    }
+
+    @Override
     public Expression visitCmpXchgInst(CmpXchgInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#cmpxchg-instruction
         // TODO LLVM has no distinguished boolean type.
@@ -802,6 +828,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return expressions.makeGetElementPointer(indexingType, base, offsets);
     }
 
+    @Override
+    public Expression visitSelectExpr(SelectExprContext ctx) {
+        assert ctx.typeConst().size() == 3;
+        final Expression guard = visitTypeConst(ctx.typeConst(0));
+        final Expression trueValue = visitTypeConst(ctx.typeConst(1));
+        final Expression falseValue = visitTypeConst(ctx.typeConst(2));
+        final Expression cast = expressions.makeBooleanCast(guard);
+        return expressions.makeConditional(cast, trueValue, falseValue);
+    }
+
     private Expression checkPointerExpression(ParserRuleContext context) {
         return checkExpression(types.getArchType(), context);
     }
@@ -846,12 +882,32 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitArrayType(ArrayTypeContext ctx) {
+        final Type elementType = parseType(ctx.type());
+        if (ctx.IntLit() == null) {
+            parsedType = types.getArrayType(elementType);
+        } else {
+            final int size = Integer.parseUnsignedInt(ctx.IntLit().getText());
+            parsedType = types.getArrayType(elementType, size);
+        }
+        return null;
+    }
+
+    @Override
     public Expression visitType(TypeContext ctx) {
         if (ctx.type() != null && ctx.params() == null || ctx.opaquePointerType() != null) {
             parsedType = types.getArchType();
             return null;
         }
         return super.visitType(ctx);
+    }
+
+    @Override
+    public Expression visitNamedType(NamedTypeContext ctx) {
+        final String name = ctx.LocalIdent().getText();
+        parsedType = typeMap.get(name);
+        check(parsedType != null, "Undefined named type %s.", ctx);
+        return null;
     }
 
     private Type parseIntType(TerminalNode t) {
