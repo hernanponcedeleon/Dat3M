@@ -103,7 +103,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitTypeDef(TypeDefContext ctx) {
-        final String name = ctx.LocalIdent().getText();
+        final String name = localIdent(ctx.LocalIdent());
         final Type type = parseType(ctx.type());
         final Type oldType = typeMap.putIfAbsent(name, type);
         check(oldType == null, "Type redefinition in %s.", ctx);
@@ -112,7 +112,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitFuncHeader(FuncHeaderContext ctx) {
-        final String name = ctx.GlobalIdent().getText();
+        final String name = globalIdent(ctx.GlobalIdent());
         final Type returnType = parseType(ctx.type());
         final List<Type> parameterTypes = new ArrayList<>();
         final List<String> parameterNames = new ArrayList<>();
@@ -123,7 +123,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 return null;
             }
             parameterTypes.add(parseType(parameter.type()));
-            final String parameterName = parameter.LocalIdent() != null ? parameter.LocalIdent().getText() :
+            final String parameterName = parameter.LocalIdent() != null ?
+                    localIdent(parameter.LocalIdent()) :
                     "dummy_" + (unnamedParameters++);
             parameterNames.add(parameterName);
         }
@@ -144,7 +145,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitFuncDef(FuncDefContext ctx) {
         // Assert the function was already declared from visitFuncHeader
-        final String name = ctx.funcHeader().GlobalIdent().getText();
+        final String name = globalIdent(ctx.funcHeader().GlobalIdent());
         function = program.getFunctions().stream()
                 .filter(f -> f.getName().equals(name))
                 .findAny().orElseThrow();
@@ -166,7 +167,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             for (final Event event : block.events) {
                 function.appendParsed(event);
             }
-            //TODO function.appendParsed(block.terminator);
             for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet()) {
                 if (phiNode.getKey().from == block) {
                     for (Event event : phiNode.getValue()) {
@@ -183,9 +183,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
+    private Block getBlock(TerminalNode node) {
+        final String ident = node == null ? null : node.getText();
+        assert ident == null || ident.endsWith(":");
+        return getBlock(ident == null ? null : ident.substring(0, ident.length() - 1));
+    }
+
     @Override
     public Expression visitGlobalDecl(GlobalDeclContext ctx) {
-        final String name = ctx.GlobalIdent().getText();
+        final String name = globalIdent(ctx.GlobalIdent());
         check(constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
         final Expression expression;
@@ -205,7 +211,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitGlobalDef(GlobalDefContext ctx) {
-        final String name = ctx.GlobalIdent().getText();
+        final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
         final Expression value = checkExpression(type, ctx.constant());
@@ -225,8 +231,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    private Block getBlock(TerminalNode label) {
-        return basicBlocks.computeIfAbsent(label == null ? null : label.getText(),
+    private Block getBlock(String label) {
+        return basicBlocks.computeIfAbsent(label,
                 k -> {
                     final Label l = k == null ? null : newLabel(k);
                     if (l != null) {
@@ -298,8 +304,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private Label getJumpLabel(LabelContext context) {
-        final Block target = getBlock(context.LocalIdent());
-        final Event label = getPhiNode(block, target).get(0);
+        final Block target = getBlock(localIdent(context.LocalIdent()));
+        // The entry block without a label
+        final Event label = block.label == null ? target.label : getPhiNode(block, target).get(0);
         verify(label instanceof Label);
         return (Label) label;
     }
@@ -311,11 +318,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return find;
         }
         final var newNode = new ArrayList<Event>();
-        if (to.label == null) {
-            throw new ParsingException("Trying to jump to an unlabeled block.");
-        }
-        final String fromLabelName = from.label == null ? "null" : from.label.getName();
-        newNode.add(newLabel(fromLabelName + "." + to.label.getName()));
+        assert from.label != null : "Trying to jump from an unlabeled block.";
+        assert to.label != null : "Trying to jump to an unlabeled block.";
+        newNode.add(newLabel(from.label.getName() + "." + to.label.getName()));
         phiNodes.put(pair, newNode);
         return newNode;
     }
@@ -327,7 +332,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitLocalDefInst(LocalDefInstContext ctx) {
         // each visitor may treat the register differently
         // i.e. a loadInst generates a load event
-        currentRegisterName = ctx.LocalIdent().getText();
+        currentRegisterName = localIdent(ctx.LocalIdent());
         final Expression expression = ctx.valueInstruction().accept(this);
         currentRegisterName = null;
 
@@ -409,7 +414,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type type = parseType(ctx.type());
         final Register register = function.newRegister(currentRegisterName, type);
         for (final IncContext inc : ctx.inc()) {
-            final Block target = getBlock(inc.LocalIdent());
+            final Block target = getBlock(localIdent(inc.LocalIdent()));
             final Expression expression = checkExpression(type, inc.value());
             getPhiNode(block, target).add(newLocal(register, expression));
         }
@@ -650,7 +655,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (ctx.GlobalIdent() == null) {
             return super.visitConstant(ctx);
         }
-        final String name = ctx.GlobalIdent().getText();
+        final String name = globalIdent(ctx.GlobalIdent());
         //TODO check for null.  Currently, this ignores metadata functions.
         return constantMap.get(name);
     }
@@ -674,7 +679,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
         checkSupport(ctx.inlineAsm() == null, "Assembly values in %s.", ctx);
         assert expectedType != null : "No expected type.";
-        final String id = ctx.LocalIdent().getText();
+        final String id = localIdent(ctx.LocalIdent());
         return function.getOrNewRegister(id, expectedType);
     }
 
@@ -904,7 +909,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNamedType(NamedTypeContext ctx) {
-        final String name = ctx.LocalIdent().getText();
+        final String name = localIdent(ctx.LocalIdent());
         parsedType = typeMap.get(name);
         check(parsedType != null, "Undefined named type %s.", ctx);
         return null;
@@ -974,6 +979,18 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "seq_cst" -> Tag.C11.MO_SC;
             default -> throw new ParsingException(String.format("Unknown ordering '%s'", ctx.getText()));
         };
+    }
+
+    private static String globalIdent(TerminalNode node) {
+        final String ident = node.getText();
+        assert ident.startsWith("@");
+        return ident.substring(1);
+    }
+
+    private static String localIdent(TerminalNode node) {
+        final String ident = node.getText();
+        assert ident.startsWith("%");
+        return ident.substring(1);
     }
 
     private record BlockPair(Block from, Block to) {}
