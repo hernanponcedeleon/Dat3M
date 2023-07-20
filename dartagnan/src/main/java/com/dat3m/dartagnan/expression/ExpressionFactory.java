@@ -200,7 +200,14 @@ public final class ExpressionFactory {
     // Aggregates
 
     public Expression makeConstruct(List<Expression> arguments) {
-        return new Construction(types, arguments);
+        final AggregateType type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
+        return new Construction(type, arguments);
+    }
+
+    public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
+        final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
+                types.getArrayType(elementType);
+        return new Construction(type, items);
     }
 
     public Expression makeExtract(int fieldIndex, Expression object) {

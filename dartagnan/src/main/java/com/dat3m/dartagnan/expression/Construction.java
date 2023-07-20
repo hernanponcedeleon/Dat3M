@@ -2,22 +2,32 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.Type;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class Construction implements Expression {
 
-    private final AggregateType type;
+    private final Type type;
     private final List<Expression> arguments;
 
-    Construction(TypeFactory types, List<Expression> arguments) {
-        checkNotNull(arguments);
-        this.type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
-        this.arguments = List.copyOf(arguments);
+    Construction(Type type, List<Expression> arguments) {
+        this.type = checkNotNull(type);
+        checkArgument(type instanceof AggregateType || type instanceof ArrayType,
+                "Non-constructible type %s.", type);
+        checkArgument(!(type instanceof AggregateType a) ||
+                arguments.stream().map(Expression::getType).toList().equals(a.getDirectFields()),
+                "Arguments do not match the constructor signature.");
+        checkArgument(!(type instanceof ArrayType a) ||
+                !a.hasKnownNumElements() ||
+                arguments.size() <= a.getNumElements(),
+                "Initializing a shorter array from given items");
+        this.arguments = List.copyOf(checkNotNull(arguments));
     }
 
     public List<Expression> getArguments() {
@@ -25,7 +35,7 @@ public final class Construction implements Expression {
     }
 
     @Override
-    public AggregateType getType() {
+    public Type getType() {
         return type;
     }
 

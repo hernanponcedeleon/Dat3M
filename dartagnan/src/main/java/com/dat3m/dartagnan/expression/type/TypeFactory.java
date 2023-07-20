@@ -53,6 +53,15 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new AggregateType(fields));
     }
 
+    public ArrayType getArrayType(Type element) {
+        return typeNormalizer.normalize(new ArrayType(element, -1));
+    }
+
+    public ArrayType getArrayType(Type element, int size) {
+        checkArgument(0 <= size, "Negative element count in array.");
+        return typeNormalizer.normalize(new ArrayType(element, size));
+    }
+
     public IntegerType getArchType() {
         final int archPrecision = GlobalSettings.getArchPrecision();
         return archPrecision < 0 ? getIntegerType() : getIntegerType(archPrecision);
