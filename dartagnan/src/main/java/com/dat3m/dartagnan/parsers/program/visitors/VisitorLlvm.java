@@ -126,7 +126,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final String parameterName = parameter.LocalIdent() != null ?
                     localIdent(parameter.LocalIdent()) :
                     "dummy_" + (unnamedParameters++);
-            parameterNames.add(parameterName);
+            parameterNames.add(adjustRegisterName(parameterName));
         }
         final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
         //TODO there are more attributes in ctx
@@ -282,7 +282,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             arguments.add(checkExpression(argumentType, argument.value()));
         }
         final Register resultRegister = currentRegisterName == null ? null :
-                function.getOrNewRegister(currentRegisterName, returnType);
+                getOrNewRegister(currentRegisterName, returnType);
         final Event call = currentRegisterName == null ?
                 newVoidFunctionCall(target, arguments) :
                 newValueFunctionCall(resultRegister, target, arguments);
@@ -332,7 +332,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitLocalDefInst(LocalDefInstContext ctx) {
         // each visitor may treat the register differently
         // i.e. a loadInst generates a load event
-        currentRegisterName = "r" + localIdent(ctx.LocalIdent());
+        currentRegisterName = localIdent(ctx.LocalIdent());
         final Expression expression = ctx.valueInstruction().accept(this);
         currentRegisterName = null;
 
@@ -342,12 +342,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    private Register newRegister(Type type) {
-        return function.getOrNewRegister(currentRegisterName, type);
+    private Register getOrNewCurrentRegister(Type type) {
+        return getOrNewRegister(currentRegisterName, type);
     }
 
     private Register assignToRegister(Expression expression) {
-        Register register = newRegister(expression.getType());
+        Register register = getOrNewCurrentRegister(expression.getType());
         block.events.add(newLocal(register, expression));
         return register;
     }
@@ -377,7 +377,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#alloca-instruction
-        final Register register = newRegister(pointerType);
+        final Register register = getOrNewCurrentRegister(pointerType);
         //final var inalloca = ctx.inAllocaTok != null;
         //final var swifterror = ctx.swiftError != null;
         //final Type elementType = parseType(ctx.type());
@@ -397,7 +397,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitLoadInst(LoadInstContext ctx) {
         final var atomic = ctx.atomic != null;
-        final Register register = newRegister(parseType(ctx.type()));
+        final Register register = getOrNewCurrentRegister(parseType(ctx.type()));
         //final var isVolatile = ctx.llvmvolatile != null;
         //final SyncScopeContext syncScope = ctx.syncScope(); // == null || atomic
         //final AlignContext align = ctx.align(); // nullable
@@ -570,7 +570,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression address = visitTypeValue(ctx.typeValue(0));
         final Expression operand = visitTypeValue(ctx.typeValue(1));
         final Type valueType = operand.getType();
-        final Register register = newRegister(valueType);
+        final Register register = getOrNewCurrentRegister(valueType);
         final String operator = ctx.atomicOp().getText();
         final Expression substitute = switch (operator) {
             case "xchg" -> operand;
@@ -680,7 +680,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         checkSupport(ctx.inlineAsm() == null, "Assembly values in %s.", ctx);
         assert expectedType != null : "No expected type.";
         final String id = localIdent(ctx.LocalIdent());
-        return function.getOrNewRegister(id, expectedType);
+        return getOrNewRegister(id, expectedType);
     }
 
     @Override
@@ -991,6 +991,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String ident = node.getText();
         assert ident.startsWith("%");
         return ident.substring(1).replace(".loop", ".\\loop");
+    }
+
+    private Register getOrNewRegister(String name, Type type) {
+        return function.getOrNewRegister(adjustRegisterName(name), type);
+    }
+
+    private static String adjustRegisterName(String original) {
+        return "r" + original;
     }
 
     private record BlockPair(Block from, Block to) {}
