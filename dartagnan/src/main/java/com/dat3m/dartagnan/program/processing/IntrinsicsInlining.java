@@ -12,7 +12,9 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.google.common.primitives.UnsignedInteger;
@@ -26,6 +28,7 @@ import java.util.List;
 public class IntrinsicsInlining implements ProgramProcessor {
 
     private int constantId;
+    private int assertionId;
 
     private IntrinsicsInlining() {
     }
@@ -52,6 +55,7 @@ public class IntrinsicsInlining implements ProgramProcessor {
                         "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                         "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
+                case "__assert_fail" -> inlineAssert(call);
                 default -> throw new UnsupportedOperationException(
                         String.format("Undefined function %s", call.getCallTarget().getName()));
             };
@@ -111,5 +115,18 @@ public class IntrinsicsInlining implements ProgramProcessor {
         expression.setMax(max);
         call.getFunction().getProgram().addConstant(expression);
         return List.of(EventFactory.newLocal(register, expression));
+    }
+
+    private List<Event> inlineAssert(DirectFunctionCall call) {
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final Expression condition = expressions.makeFalse();
+        final Register register = call.getFunction().getOrNewRegister("assert_" + assertionId++, condition.getType());
+        final Event endOfThread = call.getFunction().getExit();
+        assert endOfThread instanceof Label;
+        final Event flag = EventFactory.newLocal(register, condition);
+        flag.addTags(Tag.ASSERTION);
+        final Event jump = EventFactory.newGoto((Label) endOfThread);
+        jump.addTags(Tag.EARLYTERMINATION);
+        return List.of(flag, jump);
     }
 }

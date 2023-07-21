@@ -186,7 +186,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Block getBlock(TerminalNode node) {
         final String ident = node == null ? null : node.getText();
         assert ident == null || ident.endsWith(":");
-        return getBlock(ident == null ? null : ident.substring(0, ident.length() - 1));
+        return getBlock(ident == null ? null : ident.substring(0, ident.length() - 1).replace(".loop", ".\\loop"));
     }
 
     @Override
@@ -234,7 +234,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Block getBlock(String label) {
         return basicBlocks.computeIfAbsent(label,
                 k -> {
-                    final Label l = k == null ? null : newLabel(k);
+                    final Label l = k == null ? null : newLabel("l" + k);
                     if (l != null) {
                         l.setFunction(function);
                     }
@@ -332,7 +332,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitLocalDefInst(LocalDefInstContext ctx) {
         // each visitor may treat the register differently
         // i.e. a loadInst generates a load event
-        currentRegisterName = localIdent(ctx.LocalIdent());
+        currentRegisterName = "r" + localIdent(ctx.LocalIdent());
         final Expression expression = ctx.valueInstruction().accept(this);
         currentRegisterName = null;
 
@@ -984,13 +984,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private static String globalIdent(TerminalNode node) {
         final String ident = node.getText();
         assert ident.startsWith("@");
-        return ident.substring(1);
+        return ident.substring(1).replace(".loop", ".\\loop");
     }
 
     private static String localIdent(TerminalNode node) {
         final String ident = node.getText();
         assert ident.startsWith("%");
-        return ident.substring(1);
+        return ident.substring(1).replace(".loop", ".\\loop");
     }
 
     private record BlockPair(Block from, Block to) {}
