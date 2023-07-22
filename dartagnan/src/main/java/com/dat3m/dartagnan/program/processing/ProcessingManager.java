@@ -75,6 +75,7 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
+                GEPToAddition.newInstance(),
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 StaticMemoryInitializer.newInstance(),
                 Inlining.fromConfig(config),
