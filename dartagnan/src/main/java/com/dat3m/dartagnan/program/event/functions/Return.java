@@ -51,6 +51,8 @@ public class Return extends AbstractEvent implements RegReader {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.expression = expression.accept(exprTransformer);
+        if (expression != null) {
+            expression = expression.accept(exprTransformer);
+        }
     }
 }
