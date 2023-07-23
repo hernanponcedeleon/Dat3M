@@ -1,24 +1,28 @@
-package com.dat3m.dartagnan.program.ScopedThread;
+package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.program.event.Tag;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
-//TODO: One could create a ScopeHierarchy class and let Thread have a (optional) member of that class.
-// Then I think neither PTXThread nor ScopedThread would be needed anymore.
-public class ScopedThread extends Thread {
+public class ScopeHierarchy{
 
     // There is a hierarchy of scopes, the order of keys
     // is important, thus we use a LinkedHashMap
     protected final Map<String, Integer> scopeIds = new LinkedHashMap<>();
 
-    public ScopedThread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry) {
-        super(name, funcType, parameterNames, id,  entry);
+    public ScopeHierarchy(Arch arch, int... ids) {
+        switch (arch) {
+            case PTX:
+                this.scopeIds.put(Tag.PTX.SYS, 0);
+                this.scopeIds.put(Tag.PTX.GPU, ids[0]);
+                this.scopeIds.put(Tag.PTX.CTA, ids[1]);
+                break;
+            default:
+                throw new UnsupportedOperationException("Scope hierarchy not implemented for architecture " + arch);
+        }
     }
 
     public ArrayList<String> getScopes() {
@@ -30,7 +34,7 @@ public class ScopedThread extends Thread {
     }
 
     // For each scope S higher than flag, we check both events are in the same scope S
-    public boolean sameAtHigherScope(ScopedThread thread, String flag) {
+    public boolean sameAtHigherScope(ScopeHierarchy thread, String flag) {
         if (!this.getClass().equals(thread.getClass()) || !this.getScopes().contains(flag)) {
             return false;
         }
@@ -47,7 +51,7 @@ public class ScopedThread extends Thread {
         return true;
     }
 
-    private boolean sameAtSingleScope(ScopedThread thread, String scope) {
+    private boolean sameAtSingleScope(ScopeHierarchy thread, String scope) {
         int thisId = this.getScopeId(scope);
         int threadId = thread.getScopeId(scope);
         return (thisId == threadId && thisId != -1);

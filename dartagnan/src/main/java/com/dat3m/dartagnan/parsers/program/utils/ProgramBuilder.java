@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
+import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -286,19 +286,19 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
 
-    public void newScopedThread(String name, int id, int ctaID, int gpuID) {
+    public void newScopedThread(Arch arch, String name, int id, int ...ids) {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
-        ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        PTXThread ptxThread = new PTXThread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, gpuID, ctaID);
+        Thread ptxThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, EventFactory.newThreadStart(null));
+        ptxThread.optScopeHierarchy = Optional.of(new ScopeHierarchy(arch, ids));
         id2FunctionsMap.put(id, ptxThread);
         program.addThread(ptxThread);
     }
 
-    public void newScopedThread(int id, int ctaID, int gpuID) {
-        newScopedThread(String.valueOf(id), id, ctaID, gpuID);
+    public void newScopedThread(Arch arch, int id, int ...ids) {
+        newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
     public void initVirLocEqCon(String leftName, IConst iValue){

@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.wmm.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
-import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -974,24 +973,24 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = program.getThreadEvents().stream()
-                    .filter(e -> e.hasTag(VISIBLE) && e.getThread() instanceof ScopedThread)
+                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().optScopeHierarchy.isPresent())
                     .toList();
 
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    if (exec.areMutuallyExclusive(e1, e2)) {
-                        continue;
-                    }
-                    ScopedThread thread1 = (ScopedThread) e1.getThread();
-                    ScopedThread thread2 = (ScopedThread) e2.getThread();
+                    Thread thread1 = e1.getThread();
+                    Thread thread2 = e2.getThread();
                     if (specificScope != null) { // scope specified
-                        if (thread1.sameAtHigherScope(thread2, specificScope)) {
+                        if (thread1.optScopeHierarchy.get().sameAtHigherScope(thread2.optScopeHierarchy.get(), specificScope)
+                                && !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
                     } else {
                         String scope1 = Tag.PTX.getScopeTag(e1);
                         String scope2 = Tag.PTX.getScopeTag(e2);
-                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)) {
+                        if (scope1.equals(scope2) && !scope1.isEmpty()
+                                && thread1.optScopeHierarchy.get().sameAtHigherScope(thread2.optScopeHierarchy.get(), scope1)
+                                && !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
                     }
