@@ -1,0 +1,123 @@
+package com.dat3m.dartagnan.parsers.program.visitors;
+
+import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.parsers.LitmusPTXParser;
+import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
+import com.dat3m.dartagnan.parsers.LitmusVulkanParser;
+import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
+import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
+import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.antlr.v4.runtime.misc.Interval;
+
+public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
+    private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
+    private int mainThread;
+    private int threadCount = 0;
+
+    public VisitorLitmusVulkan() {
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Entry point
+
+    @Override
+    public Object visitMain(LitmusVulkanParser.MainContext ctx) {
+        visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
+        visitVariableDeclaratorList(ctx.variableDeclaratorList());
+        visitInstructionList(ctx.program().instructionList());
+        if (ctx.assertionList() != null) {
+            int a = ctx.assertionList().getStart().getStartIndex();
+            int b = ctx.assertionList().getStop().getStopIndex();
+            String raw = ctx.assertionList().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssert(AssertionHelper.parseAssertionList(programBuilder, raw));
+        }
+        if (ctx.assertionFilter() != null) {
+            int a = ctx.assertionFilter().getStart().getStartIndex();
+            int b = ctx.assertionFilter().getStop().getStopIndex();
+            String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
+            programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
+        }
+        return programBuilder.build();
+    }
+
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Variable declarator list
+    @Override
+    public Object visitVariableDeclaratorLocation(LitmusVulkanParser.VariableDeclaratorLocationContext ctx) {
+        programBuilder.initVirLocEqCon(ctx.location().getText(),
+                (IConst) ctx.constant().accept(this));
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorRegister(LitmusVulkanParser.VariableDeclaratorRegisterContext ctx) {
+        programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(),
+                (IConst) ctx.constant().accept(this));
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorRegisterLocation(LitmusVulkanParser.VariableDeclaratorRegisterLocationContext ctx) {
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(),
+                TypeFactory.getInstance().getArchType());
+        return null;
+    }
+
+    @Override
+    public Object visitVariableDeclaratorLocationLocation(LitmusVulkanParser.VariableDeclaratorLocationLocationContext ctx) {
+        programBuilder.initVirLocEqLoc(ctx.location(0).getText(), ctx.location(1).getText());
+        return null;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Thread declarator list (on top of instructions)
+    @Override
+    public Object visitThreadDeclaratorList(LitmusVulkanParser.ThreadDeclaratorListContext ctx) {
+        for (LitmusVulkanParser.ThreadScopeContext threadScopeContext : ctx.threadScope()) {
+            int subgroupID = threadScopeContext.subgroupScope().scopeID().id;
+            int workgroupID = threadScopeContext.workgroupScope().scopeID().id;
+            int queuefamilyID = threadScopeContext.queuefamilyScope().scopeID().id;
+            programBuilder.newScopedThread(Arch.VULKAN, threadScopeContext.threadId().id,
+                    queuefamilyID, workgroupID, subgroupID);
+            threadCount++;
+        }
+        return null;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Instruction list (the program itself)
+    @Override
+    public Object visitConstant(LitmusVulkanParser.ConstantContext ctx) {
+        return ExpressionFactory.getInstance().parseValue(ctx.getText(), TypeFactory.getInstance().getArchType());
+    }
+
+    @Override
+    public Object visitRegister(LitmusVulkanParser.RegisterContext ctx) {
+        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), TypeFactory.getInstance().getArchType());
+    }
+
+    @Override
+    public Object visitInstructionRow(LitmusVulkanParser.InstructionRowContext ctx) {
+        for (int i = 0; i < threadCount; i++) {
+            mainThread = i;
+            visitInstruction(ctx.instruction(i));
+        }
+        return null;
+    }
+}

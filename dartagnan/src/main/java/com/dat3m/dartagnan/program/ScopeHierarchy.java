@@ -15,6 +15,12 @@ public class ScopeHierarchy{
 
     public ScopeHierarchy(Arch arch, int... ids) {
         switch (arch) {
+            case VULKAN:
+                this.scopeIds.put(Tag.Vulkan.GLOBAL, 0);
+                this.scopeIds.put(Tag.Vulkan.QUEUE_FAMILY, ids[0]);
+                this.scopeIds.put(Tag.Vulkan.WORK_GROUP, ids[1]);
+                this.scopeIds.put(Tag.Vulkan.SUB_GROUP, ids[2]);
+                break;
             case PTX:
                 this.scopeIds.put(Tag.PTX.SYS, 0);
                 this.scopeIds.put(Tag.PTX.GPU, ids[0]);

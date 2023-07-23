@@ -323,4 +323,15 @@ public final class Tag {
             };
         }
     }
+
+    // =============================================================================================
+    // ========================================= Vulkan ============================================
+    // =============================================================================================
+    public static final class Vulkan {
+        // Scopes
+        public static final String SUB_GROUP = "SUB_GROUP";
+        public static final String WORK_GROUP = "WORK_GROUP";
+        public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
+        public static final String GLOBAL = "GLOBAL";
+    }
 }
