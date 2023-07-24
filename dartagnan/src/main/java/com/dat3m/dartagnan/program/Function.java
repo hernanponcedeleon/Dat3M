@@ -149,4 +149,9 @@ public class Function implements Expression {
     public IConst reduce() {
         throw new UnsupportedOperationException("Cannot reduce functions");
     }
+
+    // TODO: Ugly function, but we need it for now to create copies of functions.
+    public void copyDummyCountFrom(Function func) {
+        this.dummyCount = func.dummyCount;
+    }
 }

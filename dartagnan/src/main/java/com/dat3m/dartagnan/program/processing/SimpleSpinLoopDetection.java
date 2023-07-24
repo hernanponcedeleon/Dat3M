@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
     TODO 2: Intrinsic calls need to get special treatment as they might be side-effect-full
      (for now, all our intrinsics are side-effect-free, so it works fine).
  */
-public class SimpleSpinLoopDetection implements ProgramProcessor {
+public class SimpleSpinLoopDetection implements ProgramProcessor, FunctionProcessor {
 
     private SimpleSpinLoopDetection() { }
 
@@ -53,12 +53,19 @@ public class SimpleSpinLoopDetection implements ProgramProcessor {
         Preconditions.checkArgument(!program.isUnrolled(),
                 getClass().getSimpleName() + " should be performed before unrolling.");
 
-        program.getThreads().forEach(this::detectAndMarkSpinLoops);
+        program.getThreads().forEach(this::run);
     }
-    private int detectAndMarkSpinLoops(Thread thread) {
-        final List<Label> unmarkedLabels = thread.getEvents().stream()
-                .filter(e -> e instanceof Label && !e.hasTag(Tag.SPINLOOP))
-                .map(Label.class::cast).toList();
+
+    @Override
+    public void run(Function function) {
+        if (function.hasBody()) {
+            detectAndMarkSpinLoops(function);
+        }
+    }
+
+    private int detectAndMarkSpinLoops(Function function) {
+        final List<Label> unmarkedLabels = function.getEvents(Label.class).stream()
+                .filter(e -> !e.hasTag(Tag.SPINLOOP)).toList();
 
         int spinloopCounter = 0;
         for (final Label label : unmarkedLabels) {

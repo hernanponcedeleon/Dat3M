@@ -247,6 +247,7 @@ public class ThreadCreation implements ProgramProcessor {
         // ------------------- Create new thread -------------------
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
+        thread.copyDummyCountFrom(function);
 
         // ------------------- Copy registers from target function into new thread -------------------
         final Map<Register, Register> registerReplacement = new HashMap<>();
