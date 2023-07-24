@@ -485,22 +485,22 @@ public class PropertyEncoder implements Encoder {
         }
 
         private List<SpinIteration> findSpinLoopsInThread(Thread thread, LoopAnalysis loopAnalysis) {
-            final List<LoopAnalysis.LoopInfo> loops = loopAnalysis.getLoopsOfThread(thread);
+            final List<LoopAnalysis.LoopInfo> loops = loopAnalysis.getLoopsOfFunction(thread);
             final List<SpinIteration> spinIterations = new ArrayList<>();
 
             for (LoopAnalysis.LoopInfo loop : loops) {
-                for (LoopAnalysis.LoopIterationInfo iter : loop.getIterations()) {
+                for (LoopAnalysis.LoopIterationInfo iter : loop.iterations()) {
                     final List<Event> iterBody = iter.computeBody();
                     final List<CondJump> spinningJumps = iterBody.stream()
                             .filter(e -> e instanceof CondJump && e.hasTag(Tag.SPINLOOP))
                             .map(CondJump.class::cast)
-                            .collect(Collectors.toList());
+                            .toList();
 
                     if (!spinningJumps.isEmpty()) {
                         final List<Load> loads = iterBody.stream()
                                 .filter(Load.class::isInstance)
                                 .map(Load.class::cast)
-                                .collect(Collectors.toList());
+                                .toList();
 
                         final SpinIteration spinIter = new SpinIteration();
                         spinIter.spinningJumps.addAll(spinningJumps);
