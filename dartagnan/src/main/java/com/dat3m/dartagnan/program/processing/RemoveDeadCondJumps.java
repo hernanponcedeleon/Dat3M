@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RemoveDeadCondJumps implements ProgramProcessor {
+public class RemoveDeadCondJumps implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(RemoveDeadCondJumps.class);
 
@@ -43,12 +43,17 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
         logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), program.getEvents().size()));
     }
 
-    private void eliminateDeadCondJumps(Thread thread) {
+    @Override
+    public void run(Function function) {
+        eliminateDeadCondJumps(function);
+    }
+
+    private void eliminateDeadCondJumps(Function function) {
 
         List<Event> toBeRemoved = new ArrayList<>();
         Map<Label, List<Event>> immediateLabelPredecessors = new HashMap<>();
         // We fill the map of predecessors
-        Event current = thread.getEntry();
+        Event current = function.getEntry();
         while (current != null) {
             final Event pred = current.getPredecessor();
             if (current instanceof CondJump jump) {
@@ -58,7 +63,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
                 } else {
                     immediateLabelPredecessors.computeIfAbsent(jump.getLabel(), key -> new ArrayList<>()).add(jump);
                 }
-            } else if (current instanceof Label label && !(pred instanceof CondJump jump && jump.isGoto())) {
+            } else if (current instanceof Label label && pred != null && !(pred instanceof CondJump jump && jump.isGoto())) {
                 immediateLabelPredecessors.computeIfAbsent(label, key -> new ArrayList<>()).add(pred);
             }
             current = current.getSuccessor();
@@ -84,7 +89,7 @@ public class RemoveDeadCondJumps implements ProgramProcessor {
 
         // Here is the actual removal
         boolean isCurDead = false;
-        Event cur = thread.getEntry();
+        Event cur = function.getEntry();
         while (cur != null) {
             final Event succ = cur.getSuccessor();
             if (isCurDead && cur instanceof Label && !immediateLabelPredecessors.getOrDefault(cur, List.of()).isEmpty()) {

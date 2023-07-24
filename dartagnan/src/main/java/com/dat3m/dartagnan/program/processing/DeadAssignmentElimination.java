@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.collect.Lists;
@@ -17,10 +18,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
+import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
-public class DeadAssignmentElimination implements ProgramProcessor {
+public class DeadAssignmentElimination implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(DeadAssignmentElimination.class);
 
@@ -44,14 +46,19 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         logger.info("#Events after DSE: " + program.getEvents().size());
     }
 
+    @Override
+    public void run(Function function) {
+        eliminateDeadAssignments(function.getProgram(), function);
+    }
+
     private void eliminateDeadAssignments(Program program, Function function) {
         Set<Register> usedRegs = new HashSet<>();
         if(program.getSpecification() != null) {
+            usedRegs.addAll(program.getSpecification().getRegs());
             // for litmus tests
             if (program.getFilterSpecification() != null) {
                 usedRegs.addAll(program.getFilterSpecification().getRegs());
             }
-            usedRegs.addAll(program.getSpecification().getRegs());
         }
         // Registers that are used by assertions or other functions/threads cannot be removed
         final List<Event> programEvents = program.getEvents();
@@ -70,8 +77,8 @@ public class DeadAssignmentElimination implements ProgramProcessor {
         final List<Event> funcEvents = function.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
         for(Event e : Lists.reverse(funcEvents)) {
-            if (!e.hasTag(NOOPT) && !e.hasTag(VISIBLE)
-                    && e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister())) {
+            if (!e.hasTag(NOOPT) && !e.hasTag(ASSERTION)
+                    && e instanceof Local regWriter && !usedRegs.contains(regWriter.getResultRegister())) {
                 // TODO (TH): Can we also remove loads to unused registers here?
                 // Invisible RegWriters that write to an unused reg can get removed
                 toBeRemoved.add(e);

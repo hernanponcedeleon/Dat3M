@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
@@ -35,7 +35,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIG
     It is more precise than any sequence of simple CP/DCE passes.
  */
 @Options
-public class SparseConditionalConstantPropagation implements ProgramProcessor {
+public class SparseConditionalConstantPropagation implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(SparseConditionalConstantPropagation.class);
 
@@ -69,7 +69,8 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         program.getThreads().forEach(this::run);
     }
 
-    private void run(Thread thread) {
+    @Override
+    public void run(Function func) {
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
@@ -84,7 +85,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         boolean isTraversingDeadBranch = false;
 
         final ConstantPropagator propagator = new ConstantPropagator();
-        for (Event cur : thread.getEvents()) {
+        for (Event cur : func.getEvents()) {
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
                 propagationMap = isTraversingDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
@@ -100,7 +101,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
 
                 if (cur instanceof Local local) {
                     final Expression expr = local.getExpr();
-                    final Expression valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
+                    final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
                     propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
                 } else if (cur instanceof RegWriter rw) {
                     // We treat all other register writers as non-constant
@@ -130,11 +131,11 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         // ---------- Remove dead code ----------
-        for (Event e : thread.getEvents()) {
+        for (Event e : func.getEvents()) {
             if (reachableEvents.contains(e)) {
                 continue;
             } else if (e instanceof Label && e.hasTag(Tag.NOOPT)) {
-                // FIXME: This check is just to avoid deleting loop-related labels (especially
+                //FIXME: This check is just to avoid deleting loop-related labels (especially
                 // the loop end marker) because those are used to find unrolled loops.
                 // There should be better ways that do not retain such dead code: for example,
                 // we could move the loop end marker into the last non-dead iteration.
@@ -164,8 +165,7 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      * - simplifies constant (sub)expressions to a single constant
      * It does NOT
      * - use associativity to find more constant subexpressions
-     * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating
-     * any dependencies
+     * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating any dependencies
      */
     private static class ConstantPropagator extends ExprTransformer {
 
