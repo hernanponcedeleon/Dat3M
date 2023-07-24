@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -22,7 +21,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.base.Preconditions;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,12 +47,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitEvent(Event e) {
         return Collections.singletonList(e);
-    }
-
-    @Override
-    public List<Event> visitCondJump(CondJump e) {
-        Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
-        return visitEvent(e);
     }
 
     @Override
