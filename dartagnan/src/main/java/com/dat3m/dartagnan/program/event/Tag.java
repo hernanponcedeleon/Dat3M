@@ -333,5 +333,56 @@ public final class Tag {
         public static final String WORK_GROUP = "WORK_GROUP";
         public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
         public static final String GLOBAL = "GLOBAL";
+        // Memory orders
+        public static final String ACQUIRE = "ACQUIRE";
+        public static final String RELEASE = "RELEASE";
+        public static final String ACQ_REL = "ACQ_REL";
+        public static final String VISIBLE = "VISIBLE";
+        public static final String AVAILABLE = "AVAILABLE";
+        // StorageClass
+        public static final String SC0 = "SC0";
+        public static final String SC1 = "SC1";
+        // StorageClass Semantics
+        public static final String SEMSC0 = "SEMSC0";
+        public static final String SEMSC1 = "SEMSC1";
+        public static final String SEMSC01 = "SEMSC01";
+
+        public static Set<String> getMoTags() {
+            return Set.of(ACQUIRE, RELEASE, ACQ_REL, VISIBLE, AVAILABLE);
+        }
+
+        public static Set<String> getStorageClassTags() {
+            return Set.of(SC0, SC1);
+        }
+
+        public static Set<String> getStorageClassSemanticTags() {
+            return Set.of(SEMSC0, SEMSC1, SEMSC01);
+        }
+
+        public static String loadMO(String mo) {
+            switch (mo) {
+                case ACQ_REL:
+                    return ACQUIRE;
+                case ACQUIRE:
+                    return ACQUIRE;
+                case VISIBLE:
+                    return VISIBLE;
+                default:
+                    return "";
+            }
+        }
+
+        public static String storeMO(String mo) {
+            switch (mo) {
+                case ACQ_REL:
+                    return RELEASE;
+                case RELEASE:
+                    return RELEASE;
+                case AVAILABLE:
+                    return AVAILABLE;
+                default:
+                    return "";
+            }
+        }
     }
 }

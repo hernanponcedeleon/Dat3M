@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -103,4 +104,7 @@ public interface EventVisitor<T> {
 	// ------------------ PTX Events ------------------
 	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
 	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
+
+    // ------------------ Vulkan Events ------------------
+    default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
 }

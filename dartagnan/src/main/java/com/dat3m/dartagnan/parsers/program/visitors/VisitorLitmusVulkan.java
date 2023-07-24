@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusPTXParser;
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
@@ -16,8 +15,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -119,5 +117,82 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             visitInstruction(ctx.instruction(i));
         }
         return null;
+    }
+
+    @Override
+    public Object visitStoreConstant(LitmusVulkanParser.StoreConstantContext ctx) {
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        IConst constant = (IConst) ctx.constant().accept(this);
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        String semantic = ctx.storageClassSemantic().content;
+        Store store = EventFactory.newStoreWithMo(object, constant, mo);
+        store.addTags(scope, semantic);
+        return programBuilder.addChild(mainThread, store);
+    }
+
+    @Override
+    public Object visitStoreRegister(LitmusVulkanParser.StoreRegisterContext ctx) {
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        Register register = (Register) ctx.register().accept(this);
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        String semantic = ctx.storageClassSemantic().content;
+        Store store = EventFactory.newStoreWithMo(object, register, mo);
+        store.addTags(scope, semantic);
+        return programBuilder.addChild(mainThread, store);
+    }
+
+    @Override
+    public Object visitLocalConstant(LitmusVulkanParser.LocalConstantContext ctx) {
+        Register register = (Register) ctx.register().accept(this);
+        IConst constant = (IConst) ctx.constant().accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
+    }
+
+    @Override
+    public Object visitLoadLocation(LitmusVulkanParser.LoadLocationContext ctx) {
+        Register register = (Register) ctx.register().accept(this);
+        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        String semantic = ctx.storageClassSemantic().content;
+        Load load = EventFactory.newLoadWithMo(register, location, mo);
+        load.addTags(scope, semantic);
+        return programBuilder.addChild(mainThread, load);
+    }
+
+    @Override
+    public Object visitRmwConstant(LitmusVulkanParser.RmwConstantContext ctx) {
+        Register register = (Register) ctx.register().accept(this);
+        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        IConst constant = (IConst) ctx.constant().accept(this);
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        String semantic = ctx.storageClassSemantic().content;
+        VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
+        rmw.addTags(semantic);
+        return programBuilder.addChild(mainThread, rmw);
+    }
+
+    @Override
+    public Object visitMemoryBarrier(LitmusVulkanParser.MemoryBarrierContext ctx) {
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        String semantic = ctx.storageClassSemantic().content;
+        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        fence.addTags(mo, scope, semantic);
+        return programBuilder.addChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitControlBarrier(LitmusVulkanParser.ControlBarrierContext ctx) {
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        String semantic = ctx.storageClassSemantic().content;
+        Expression fenceId = (Expression) ctx.barID().accept(this);
+        Fence fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        fence.addTags(mo, scope, semantic);
+        return programBuilder.addChild(mainThread, fence);
     }
 }

@@ -82,6 +82,7 @@ instruction
     :
     |   storeInstruction
     |   loadInstruction
+    |   rmwInstruction
     |   fenceInstruction
     ;
 
@@ -109,6 +110,14 @@ localConstant
 
 loadLocation
     :   Load Period mo Period scope Period storageClassSemantic register Comma location
+    ;
+
+rmwInstruction
+    :   rmwConstant
+    ;
+
+rmwConstant
+    :   RMW Period mo Period scope Period storageClassSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -183,6 +192,7 @@ Register
 
 Load            :   'ld';
 Store           :   'st';
+RMW             :   'rmw';
 
 MemoryBarrier   :   'membar';
 ControlBarrier  :   'cbar';
@@ -204,13 +214,6 @@ Sc1       :   'sc1';
 Semsc0          :   'semsc0';
 Semsc1          :   'semsc1';
 Semsc01         :   'semsc01';
-
-Proxy       :   'proxy';
-Generic     :   'generic';
-Constant    :   'constant';
-Image       :   'image';
-Aliases     :   'aliases';
-Alias       :   'alias';
 
 LitmusLanguage
     :   'Vulkan'
