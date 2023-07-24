@@ -15,11 +15,14 @@ public class PthreadsProcedures {
             case "pthread_cond_wait":
             case "pthread_cond_signal":
             case "pthread_cond_broadcast":
-            case "pthread_exit":
             case "pthread_mutex_destroy":
                 // TODO: These are skipped for now
                 VisitorBoogie.logger.warn(
                         "Skipped call to {} because the function is not supported right now.", funcName);
+                return true;
+            case "pthread_exit":
+                final Expression retVal = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
+                visitor.addEvent(EventFactory.newFunctionReturn(retVal));
                 return true;
             case "pthread_mutex_init":
                 mutexInit(visitor, ctx);

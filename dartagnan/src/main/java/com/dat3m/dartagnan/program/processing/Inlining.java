@@ -82,8 +82,12 @@ public class Inlining implements ProgramProcessor {
                             String.format("Cannot call thread %s directly.",
                                     call.getCallTarget()));
                 }
-                call.getPredecessor().insertAfter(EventFactory.newFunctionCall(callTarget.getName()));
-                call.insertAfter(EventFactory.newFunctionReturn(callTarget.getName()));
+                final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.getName());
+                final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.getName());
+                callMarker.copyAllMetadataFrom(call);
+                returnMarker.copyAllMetadataFrom(call);
+                call.getPredecessor().insertAfter(callMarker);
+                call.insertAfter(returnMarker);
                 // Calls with result will write the return value to this register.
                 Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
                 inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);

@@ -17,14 +17,15 @@ import java.util.*;
 
 public abstract class AbstractEvent implements Event {
 
-    protected final MetadataMap metadataMap = new MetadataMap();
-    protected final Set<String> tags;
-    protected Function function; // The thread this event belongs to
+    private final MetadataMap metadataMap = new MetadataMap();
+    private final Set<String> tags;
+    private final Set<EventUser> currentUsers = new HashSet<>();
     // This id is dynamically changing during processing.
-    protected transient int globalId = -1; // (Global) ID within a program
+    private transient int globalId = -1; // (Global) ID within a program
+
+    private transient Function function; // The function this event belongs to
     private transient AbstractEvent successor;
     private transient AbstractEvent predecessor;
-    private final Set<EventUser> currentUsers = new HashSet<>();
 
     protected AbstractEvent() {
         tags = new HashSet<>();
@@ -33,7 +34,6 @@ public abstract class AbstractEvent implements Event {
     protected AbstractEvent(AbstractEvent other) {
         copyAllMetadataFrom(other);
         this.tags = other.tags; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
-        this.function = other.function;
     }
 
     @Override
@@ -68,8 +68,7 @@ public abstract class AbstractEvent implements Event {
     @Override
     public void replaceAllUsages(Event replacement) {
         final Map<Event, Event> replacementMap = Map.of(this, replacement);
-
-        new ArrayList<>(getUsers()).forEach(e -> e.updateReferences(replacementMap));
+        List.copyOf(getUsers()).forEach(e -> e.updateReferences(replacementMap));
     }
 
     // ============================================ Metadata ============================================

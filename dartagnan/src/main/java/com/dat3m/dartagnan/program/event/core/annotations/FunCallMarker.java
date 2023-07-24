@@ -1,15 +1,15 @@
 package com.dat3m.dartagnan.program.event.core.annotations;
 
-public class FunRet extends StringAnnotation {
+public class FunCallMarker extends StringAnnotation {
 
     private final String funName;
 
-    public FunRet(String funName) {
-        super("=== Returning from " + funName + " ===");
+    public FunCallMarker(String funName) {
+        super("=== Calling " + funName + " ===");
         this.funName = funName;
     }
 
-    protected FunRet(FunRet other) {
+    protected FunCallMarker(FunCallMarker other) {
         super(other);
         this.funName = other.funName;
     }
@@ -19,7 +19,7 @@ public class FunRet extends StringAnnotation {
     }
 
     @Override
-    public FunRet getCopy() {
-        return new FunRet(this);
+    public FunCallMarker getCopy() {
+        return new FunCallMarker(this);
     }
 }

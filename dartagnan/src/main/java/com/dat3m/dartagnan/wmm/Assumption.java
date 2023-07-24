@@ -36,7 +36,9 @@ public final class Assumption implements Constraint {
         RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
         Set<Tuple> d = difference(k.getMaySet(), may);
         Set<Tuple> e = difference(must, k.getMustSet());
-        logger.info("Assumption disables {} and enables {} at {}", d.size(), e.size(), rel.getNameOrTerm());
+        if (d.size() + e.size() != 0) {
+            logger.info("Assumption disables {} and enables {} at {}", d.size(), e.size(), rel.getNameOrTerm());
+        }
         return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, e));
     }
 }

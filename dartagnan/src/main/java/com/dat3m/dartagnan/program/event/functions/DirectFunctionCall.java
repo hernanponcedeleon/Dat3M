@@ -32,6 +32,7 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
     }
 
     protected DirectFunctionCall(DirectFunctionCall other) {
+        super(other);
         this.callTarget = other.callTarget;
         this.arguments = new ArrayList<>(other.arguments);
     }

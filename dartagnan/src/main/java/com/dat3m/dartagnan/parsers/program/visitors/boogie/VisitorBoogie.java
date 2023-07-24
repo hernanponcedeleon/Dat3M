@@ -173,6 +173,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         for (Func_declContext funDecContext : ctx.func_decl()) {
             registerBoogieFunction(funDecContext);
         }
+        for (Proc_declContext procDecContext : ctx.proc_decl()) {
+            registerProcedure(procDecContext);
+        }
         for (Const_declContext constDecContext : ctx.const_decl()) {
             registerConstants(constDecContext);
         }
@@ -181,9 +184,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
         for (Var_declContext varDecContext : ctx.var_decl()) {
             visitVar_decl(varDecContext);
-        }
-        for (Proc_declContext procDecContext : ctx.proc_decl()) {
-            registerProcedure(procDecContext);
         }
 
         //FIXME: Some Svcomp loop benchmarks reference declared but unassigned constants!?

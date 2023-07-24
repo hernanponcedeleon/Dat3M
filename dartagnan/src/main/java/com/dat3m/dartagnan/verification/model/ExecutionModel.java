@@ -394,7 +394,7 @@ public class ExecutionModel {
     private void trackDependencies(Event e) {
 
         while (!endIfs.isEmpty() && e.getGlobalId() >= endIfs.peek().getGlobalId()) {
-            // We exited an If and remove the dependencies associated with it
+            // We exited an If-then-else block and remove the dependencies associated with it.
             // We do this inside a loop just in case multiple Ifs are left simultaneously
             endIfs.pop();
             curCtrlDeps.removeAll(ifCtrlDeps.pop());
@@ -455,9 +455,9 @@ public class ExecutionModel {
                 }
                 lastRegWrites.put(status.getResultRegister(), deps);
             } else if (regWriter instanceof RegReader regReader) {
-                // Note: This code might work for more cases than the two we check for here,
+                // Note: This code might work for more cases than we check for here,
                 // but we want to throw an exception if an unexpected event appears.
-                assert regWriter instanceof Local || regWriter instanceof ThreadArgument;
+                assert regWriter instanceof Local;
                 // ---- internal data dependency ----
                 final Set<EventData> dataDeps = new HashSet<>();
                 for (Register.Read regRead : regReader.getRegisterReads()) {
@@ -472,6 +472,10 @@ public class ExecutionModel {
                     dataDeps.addAll(visibleRootDependencies);
                 }
                 lastRegWrites.put(regWriter.getResultRegister(), dataDeps);
+            } else {
+                assert e instanceof ThreadArgument;
+                // We have a RegWriter that doesn't read registers, so there are no dependencies.
+                lastRegWrites.put(regWriter.getResultRegister(), new HashSet<>());
             }
         }
     }

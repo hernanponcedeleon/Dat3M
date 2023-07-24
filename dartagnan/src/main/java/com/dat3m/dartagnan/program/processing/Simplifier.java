@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +64,7 @@ public class Simplifier implements ProgramProcessor {
             changed = simplifyJump(jump);
         } else if (next instanceof Label label) {
             changed = simplifyLabel(label);
-        } else if (next instanceof FunCall fc) {
+        } else if (next instanceof FunCallMarker fc) {
             changed = simplifyFunCall(fc);
         }
         return changed;
@@ -87,13 +87,13 @@ public class Simplifier implements ProgramProcessor {
         return false;
     }
 
-    private boolean simplifyFunCall(FunCall call) {
+    private boolean simplifyFunCall(FunCallMarker call) {
         // If simplifyEvent returns false, the function is either non-empty or we reached the return statement
         while (simplifyEvent(call.getSuccessor())) { }
 
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
-        if(successor instanceof FunRet funRet && funRet.getFunctionName().equals(call.getFunctionName())) {
+        if(successor instanceof FunReturnMarker funRet && funRet.getFunctionName().equals(call.getFunctionName())) {
             call.tryDelete();
             successor.tryDelete();
             return true;

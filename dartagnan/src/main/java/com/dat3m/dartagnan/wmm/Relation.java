@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.wmm;
 
 import com.dat3m.dartagnan.utils.dependable.Dependent;
-import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.Composition;
+import com.dat3m.dartagnan.wmm.definition.Union;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -14,11 +15,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 public final class Relation implements Dependent<Relation> {
 
+    private final Wmm wmm;
     Definition definition = new Definition.Undefined(this);
     private boolean isRecursive;
     final List<String> names = new ArrayList<>();
 
-    Relation() {
+    Relation(Wmm wmm) {
+        this.wmm = wmm;
     }
 
     /**
@@ -45,6 +48,8 @@ public final class Relation implements Dependent<Relation> {
     }
 
     public void configure(Configuration config) throws InvalidConfigurationException { }
+
+    public Wmm getMemoryModel() { return this.wmm; }
 
     public Optional<String> getName() {
         return names.isEmpty() ? Optional.empty() : Optional.of(names.get(0));
