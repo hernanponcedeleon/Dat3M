@@ -46,7 +46,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
             description = "Prints the program before any processing.",
             secure = true)
-    private boolean printBeforeProcessing = true;
+    private boolean printBeforeProcessing = false;
 
     @Option(name = PRINT_PROGRAM_AFTER_SIMPLIFICATION,
             description = "Prints the program after simplification.",
@@ -76,6 +76,7 @@ public class ProcessingManager implements ProgramProcessor {
 
         programProcessors.addAll(Arrays.asList(
                 GEPToAddition.newInstance(),
+                RegisterDecomposition.newInstance(),
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 StaticMemoryInitializer.newInstance(),
                 Inlining.fromConfig(config),

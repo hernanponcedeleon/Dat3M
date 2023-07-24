@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.GEPToAddition;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -218,6 +219,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression expression;
         if (ctx.immutable().getText().equals("global")) {
             expression = program.getMemory().allocate(1, true);
+            ((MemoryObject) expression).setCVar(name);
             // In case of zero-initializer, there is no particular value
             if (value != null) {
                 checkSupport(value instanceof IConst, "Non-constant in %s.", ctx);
@@ -380,7 +382,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Register register = getOrNewCurrentRegister(pointerType);
         //final var inalloca = ctx.inAllocaTok != null;
         //final var swifterror = ctx.swiftError != null;
-        //final Type elementType = parseType(ctx.type());
+        final Type elementType = parseType(ctx.type());
+        final int elementSize = GEPToAddition.getMemorySize(elementType);
         final Expression sizeExpression;
         if (ctx.typeValue() == null) {
             sizeExpression = expressions.makeOne(integerType);
@@ -388,9 +391,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
+        final IntegerType offsetType = (IntegerType) sizeExpression.getType();
+        final Expression factor = expressions.makeValue(BigInteger.valueOf(elementSize), offsetType);
+        final Expression scaledSizeExpression = expressions.makeMUL(factor, sizeExpression);
         //final int alignment = parseAlignment(ctx.align());
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
-        block.events.add(Std.newMalloc(register, sizeExpression));
+        block.events.add(Std.newMalloc(register, scaledSizeExpression));
         return register;
     }
 
@@ -412,7 +418,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitPhiInst(PhiInstContext ctx) {
         final Type type = parseType(ctx.type());
-        final Register register = function.newRegister(currentRegisterName, type);
+        final Register register = getOrNewCurrentRegister(type);
         for (final IncContext inc : ctx.inc()) {
             final Block target = getBlock(localIdent(inc.LocalIdent()));
             final Expression expression = checkExpression(type, inc.value());
@@ -555,8 +561,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String mo = parseMemoryOrder(ctx.atomicOrdering(0));
         block.events.add(newCompareExchange(value, asExpected, address, comparator, substitute, mo, weak));
         final Register register = currentRegisterName == null ? null :
-                function.newRegister(currentRegisterName,
-                    types.getAggregateType(List.of(comparator.getType(), types.getIntegerType(1))));
+                getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), types.getIntegerType(1))));
         if (register != null) {
             final Expression cast = expressions.makeIntegerCast(asExpected, types.getIntegerType(1), false);
             final Expression result = expressions.makeConstruct(List.of(value, cast));

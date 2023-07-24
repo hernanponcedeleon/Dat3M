@@ -216,7 +216,7 @@ public class ProgramEncoder implements Encoder {
     
     public BooleanFormula encodeFinalRegisterValues() {
         final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
-        if (context.getTask().getProgram().getFormat() == Program.SourceLanguage.BOOGIE) {
+        if (context.getTask().getProgram().getFormat() != Program.SourceLanguage.LITMUS) {
             // Boogie does not have assertions over final register values, so we do not need to encode them.
             logger.info("Skipping encoding of final register values: C-Code has no assertions over those values.");
             return bmgr.makeTrue();

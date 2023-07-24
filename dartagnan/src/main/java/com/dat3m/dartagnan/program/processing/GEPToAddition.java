@@ -39,6 +39,21 @@ public class GEPToAddition implements ProgramProcessor {
         }
     }
 
+    // TODO this method does not properly reflect type sizes, i.e. i16 gets size 1
+    public static int getMemorySize(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            return arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
+        }
+        if (type instanceof AggregateType aggregateType) {
+            int size = 0;
+            for (final Type elementType : aggregateType.getDirectFields()) {
+                size += getMemorySize(elementType);
+            }
+            return size;
+        }
+        return 1;
+    }
+
     private static final class GEPToAdditionTransformer extends ExprTransformer {
 
         private final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -79,20 +94,6 @@ public class GEPToAddition implements ProgramProcessor {
                 result = expressions.makeADD(result, expressions.makeValue(BigInteger.valueOf(o), archType));
             }
             return result;
-        }
-
-        private int getMemorySize(Type type) {
-            if (type instanceof ArrayType arrayType) {
-                return arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
-            }
-            if (type instanceof AggregateType aggregateType) {
-                int size = 0;
-                for (final Type elementType : aggregateType.getDirectFields()) {
-                    size += getMemorySize(elementType);
-                }
-                return size;
-            }
-            return 1;
         }
     }
 }
