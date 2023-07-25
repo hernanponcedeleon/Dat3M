@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.LitmusPTXParser;
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusVulkanParser;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
@@ -16,7 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -91,8 +90,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             int subgroupID = threadScopeContext.subgroupScope().scopeID().id;
             int workgroupID = threadScopeContext.workgroupScope().scopeID().id;
             int queuefamilyID = threadScopeContext.queuefamilyScope().scopeID().id;
+            int deviceID = threadScopeContext.deviceScope().scopeID().id;
             programBuilder.newScopedThread(Arch.VULKAN, threadScopeContext.threadId().id,
-                    queuefamilyID, workgroupID, subgroupID);
+                    deviceID, queuefamilyID, workgroupID, subgroupID);
             threadCount++;
         }
         return null;
@@ -128,6 +128,18 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String semantic = ctx.storageClassSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
         store.addTags(scope, semantic);
+        switch (mo) {
+            case Tag.Vulkan.RELEASE -> {
+                store.addTags(Tag.Vulkan.ATOM);
+            }
+            case Tag.Vulkan.AVAILABLE -> {
+                store.addTags(Tag.Vulkan.NON_PRIVATE);
+            }
+            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
+        }
+        if (ctx.atomatic().content) {
+            store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE);
+        }
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -140,6 +152,18 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String semantic = ctx.storageClassSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, semantic);
+        switch (mo) {
+            case Tag.Vulkan.RELEASE -> {
+                store.addTags(Tag.Vulkan.ATOM);
+            }
+            case Tag.Vulkan.AVAILABLE -> {
+                store.addTags(Tag.Vulkan.NON_PRIVATE);
+            }
+            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
+        }
+        if (ctx.atomatic().content) {
+            store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE);
+        }
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -159,6 +183,18 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String semantic = ctx.storageClassSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
         load.addTags(scope, semantic);
+        switch (mo) {
+            case Tag.Vulkan.ACQUIRE -> {
+                load.addTags(Tag.Vulkan.ATOM);
+            }
+            case Tag.Vulkan.VISIBLE -> {
+                load.addTags(Tag.Vulkan.NON_PRIVATE);
+            }
+            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
+        }
+        if (ctx.atomatic().content) {
+            load.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE);
+        }
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -171,7 +207,21 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String semantic = ctx.storageClassSemantic().content;
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
-        rmw.addTags(semantic);
+        rmw.addTags(scope, semantic);
+        switch (mo) {
+            case Tag.Vulkan.ACQ_REL -> {
+                rmw.addTags(Tag.Vulkan.ATOM);
+            }
+            case Tag.Vulkan.NON_PRIVATE -> {
+                rmw.addTags(Tag.Vulkan.NON_PRIVATE);
+            }
+            default -> throw new ParsingException("RMW instruction doesn't support mo: " + mo);
+        }
+        if (ctx.atomatic().content) {
+            rmw.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE);
+        } else {
+            throw new ParsingException("RMW must be atomic in Vulkan");
+        }
         return programBuilder.addChild(mainThread, rmw);
     }
 
@@ -180,8 +230,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String semantic = ctx.storageClassSemantic().content;
-        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        fence.addTags(mo, scope, semantic);
+        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        switch (mo) {
+            case Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE -> {
+                fence.addTags(mo, scope, semantic);
+            }
+            default -> throw new ParsingException("Fence instruction doesn't support mo: " + mo);
+        }
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -191,7 +246,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String semantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        Fence fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        Event fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         fence.addTags(mo, scope, semantic);
         return programBuilder.addChild(mainThread, fence);
     }

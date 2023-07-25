@@ -3,13 +3,13 @@ package com.dat3m.dartagnan.program.event.arch.vulkan;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class VulkanFenceWithId extends Fence implements RegReader {
+public class VulkanFenceWithId extends GenericVisibleEvent implements RegReader {
     private Expression fenceID;
 
     public VulkanFenceWithId(String name, Expression fenceID) {

@@ -14,10 +14,6 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorVulkan extends VisitorBase {
 
-    protected VisitorVulkan(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitVulkanRMW(VulkanRMW e) {
         Register resultRegister = e.getResultRegister();

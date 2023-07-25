@@ -56,7 +56,7 @@ threadDeclaratorList
     ;
 
 threadScope
-    :   threadId At subgroupScope Comma workgroupScope Comma queuefamilyScope
+    :   threadId At subgroupScope Comma workgroupScope Comma queuefamilyScope Comma deviceScope
     ;
 
 subgroupScope
@@ -69,6 +69,10 @@ workgroupScope
 
 queuefamilyScope
     :   Queuefamily scopeID
+    ;
+
+deviceScope
+    :   Device scopeID
     ;
 
 instructionList
@@ -92,11 +96,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store Period mo Period scope location Period storageClassSemantic Comma constant
+    :   Store atomatic Period mo Period scope location Period storageClassSemantic Comma constant
     ;
 
 storeRegister
-    :   Store Period mo Period scope location Period storageClassSemantic Comma register
+    :   Store atomatic Period mo Period scope location Period storageClassSemantic Comma register
     ;
 
 loadInstruction
@@ -105,11 +109,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load Period mo Period scope Period storageClassSemantic register Comma constant
+    :   Load atomatic Period mo Period scope Period storageClassSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load Period mo Period scope Period storageClassSemantic register Comma location
+    :   Load atomatic Period mo Period scope Period storageClassSemantic register Comma location
     ;
 
 rmwInstruction
@@ -117,7 +121,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW Period mo Period scope Period storageClassSemantic Comma location register Comma constant
+    :   RMW atomatic Period mo Period scope Period storageClassSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -150,6 +154,11 @@ assertionValue
     :   location
     |   threadId Colon register
     |   constant
+    ;
+
+atomatic returns [Boolean content]
+    :   Period Atom {$content = true;}
+    |   {$content = false;}
     ;
 
 scope returns [String content]
@@ -200,13 +209,15 @@ ControlBarrier  :   'cbar';
 Subgroup    :   'sg';
 Workgroup   :   'wg';
 Queuefamily :   'qf';
-Device      :   'dv';
+Device      :   'dev';
 
-Acquire     :   'acquire';
-Release     :   'release';
+Atom        :   'atom';
+Acquire     :   'acq';
+Release     :   'rel';
 Acq_rel     :   'acq_rel';
-Visible     :   'visible';
-Available   :   'available';
+
+Visible     :   'vis';
+Available   :   'av';
 
 Sc0       :   'sc0';
 Sc1       :   'sc1';
@@ -216,6 +227,6 @@ Semsc1          :   'semsc1';
 Semsc01         :   'semsc01';
 
 LitmusLanguage
-    :   'Vulkan'
+    :   'VULKAN'
     |   'vulkan'
     ;

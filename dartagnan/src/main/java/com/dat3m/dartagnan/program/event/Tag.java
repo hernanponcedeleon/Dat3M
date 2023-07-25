@@ -334,6 +334,8 @@ public final class Tag {
         public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
         public static final String GLOBAL = "GLOBAL";
         // Memory orders
+        public static final String ATOM = "ATOM";
+        public static final String NON_PRIVATE = "NON_PRIVATE";
         public static final String ACQUIRE = "ACQUIRE";
         public static final String RELEASE = "RELEASE";
         public static final String ACQ_REL = "ACQ_REL";
@@ -361,9 +363,7 @@ public final class Tag {
 
         public static String loadMO(String mo) {
             switch (mo) {
-                case ACQ_REL:
-                    return ACQUIRE;
-                case ACQUIRE:
+                case ACQ_REL, ACQUIRE:
                     return ACQUIRE;
                 case VISIBLE:
                     return VISIBLE;
@@ -374,9 +374,7 @@ public final class Tag {
 
         public static String storeMO(String mo) {
             switch (mo) {
-                case ACQ_REL:
-                    return RELEASE;
-                case RELEASE:
+                case ACQ_REL, RELEASE:
                     return RELEASE;
                 case AVAILABLE:
                     return AVAILABLE;
