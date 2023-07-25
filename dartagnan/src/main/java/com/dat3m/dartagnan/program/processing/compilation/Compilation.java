@@ -83,7 +83,7 @@ public class Compilation implements ProgramProcessor, FunctionProcessor {
             return;
         }
 
-        program.getEvents().forEach(e -> e.setMetadata(new CompilationId(e.getGlobalId())));
+        program.getFunctions().forEach(this::run);
         program.getThreads().forEach(this::run);
         program.setArch(target);
         program.markAsCompiled();
@@ -131,6 +131,7 @@ public class Compilation implements ProgramProcessor, FunctionProcessor {
     }
 
     private void compileEvent(Event toBeCompiled, VisitorBase compiler) {
+        toBeCompiled.setMetadata(new CompilationId(toBeCompiled.getGlobalId()));
         final Event pred = toBeCompiled.getPredecessor();
         if (pred == null) {
             return; // We do not compile the entry event.

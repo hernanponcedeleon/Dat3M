@@ -3,20 +3,18 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-public class Simplifier implements ProgramProcessor, FunctionProcessor {
+public class Simplifier implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(Simplifier.class);
 
@@ -28,15 +26,6 @@ public class Simplifier implements ProgramProcessor, FunctionProcessor {
 
     public static Simplifier fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
-    }
-
-    @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
-
-        logger.info("pre-simplification: " + program.getEvents().size() + " events");
-        program.getThreads().forEach(this::run);
-        logger.info("post-simplification: " + program.getEvents().size() + " events");
     }
 
     @Override

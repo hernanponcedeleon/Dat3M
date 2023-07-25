@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -10,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.SpinStart;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
     TODO 2: Intrinsic calls need to get special treatment as they might be side-effect-full
      (for now, all our intrinsics are side-effect-free, so it works fine).
  */
-public class SimpleSpinLoopDetection implements ProgramProcessor, FunctionProcessor {
+public class SimpleSpinLoopDetection implements FunctionProcessor {
 
     private SimpleSpinLoopDetection() { }
 
@@ -47,14 +45,6 @@ public class SimpleSpinLoopDetection implements ProgramProcessor, FunctionProces
     }
 
     // --------------------------------------------------------------
-
-    @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(!program.isUnrolled(),
-                getClass().getSimpleName() + " should be performed before unrolling.");
-
-        program.getThreads().forEach(this::run);
-    }
 
     @Override
     public void run(Function function) {

@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -30,21 +29,13 @@ import java.util.Map;
     NOTE: LLVM and also SMACK already make sure that all blocks are "basic".
     However, our parser "destroys" this structure during parsing.
  */
-public class ComplexBlockSplitting implements ProgramProcessor, FunctionProcessor {
+public class ComplexBlockSplitting implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(ComplexBlockSplitting.class);
 
     private ComplexBlockSplitting() {}
 
     public static ComplexBlockSplitting newInstance() { return new ComplexBlockSplitting(); }
-
-    @Override
-    public void run(Program program) {
-        final int numBlockSplittings = program.getThreads().stream().mapToInt(this::splitBlocks).sum();
-
-        logger.info("Split {} complex blocks.", numBlockSplittings);
-        EventIdReassignment.newInstance().run(program);
-    }
 
     @Override
     public void run(Function function) {
