@@ -56,7 +56,7 @@ threadDeclaratorList
     ;
 
 threadScope
-    :   threadId At subgroupScope Comma workgroupScope Comma queuefamilyScope Comma deviceScope
+    :   threadId At subgroupScope Comma workgroupScope Comma queuefamilyScope
     ;
 
 subgroupScope
@@ -71,10 +71,6 @@ queuefamilyScope
     :   Queuefamily scopeID
     ;
 
-deviceScope
-    :   Device scopeID
-    ;
-
 instructionList
     :   (instructionRow) +
     ;
@@ -82,6 +78,7 @@ instructionList
 instructionRow
     :   instruction (Bar instruction)* Semi
     ;
+
 instruction
     :
     |   storeInstruction
@@ -96,11 +93,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomatic Period mo Period scope location Period storageClassSemantic Comma constant
+    :   Store atomatic mo Period scope location storageClassSemantic Comma constant
     ;
 
 storeRegister
-    :   Store atomatic Period mo Period scope location Period storageClassSemantic Comma register
+    :   Store atomatic mo Period scope location storageClassSemantic Comma register
     ;
 
 loadInstruction
@@ -109,11 +106,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomatic Period mo Period scope Period storageClassSemantic register Comma constant
+    :   Load atomatic mo Period scope storageClassSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomatic Period mo Period scope Period storageClassSemantic register Comma location
+    :   Load atomatic mo Period scope storageClassSemantic register Comma location
     ;
 
 rmwInstruction
@@ -121,7 +118,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic Period mo Period scope Period storageClassSemantic Comma location register Comma constant
+    :   RMW atomatic mo Period scope storageClassSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -130,11 +127,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier Period mo Period scope Period storageClassSemantic
+    :   MemoryBarrier mo Period scope Period storageClassSemantic
     ;
 
 controlBarrier
-    :   ControlBarrier Period mo Period scope Period storageClassSemantic barID
+    :   ControlBarrier mo Period scope Period storageClassSemantic barID
     ;
 
 barID
@@ -173,11 +170,12 @@ scopeID returns [int id]
     ;
 
 mo returns [String content]
-    :   Acquire {$content = "ACQ";}
-    |   Release {$content = "REL";}
-    |   Acq_rel {$content = "ACQ_REL";}
-    |   Visible {$content = "VIS";}
-    |   Available {$content = "AVA";}
+    :   Period Acquire {$content = "ACQUIRE";}
+    |   Period Release {$content = "RELEASE";}
+    |   Period Acq_rel {$content = "ACQ_REL";}
+    |   Period Visible {$content = "VISIBLE";}
+    |   Period Available {$content = "AVAILABLE";}
+    |   {$content = "";}
     ;
 
 storageClass returns [String content]
@@ -186,9 +184,10 @@ storageClass returns [String content]
     ;
 
 storageClassSemantic returns [String content]
-    :   Semsc0 {$content = "semsc0";}
-    |   Semsc1 {$content = "semsc1";}
-    |   Semsc01 {$content = "semsc01";}
+    :   Period Semsc0 {$content = "semsc0";}
+    |   Period Semsc1 {$content = "semsc1";}
+    |   Period Semsc01 {$content = "semsc01";}
+    |   {$content = "";}
     ;
 
 Locations

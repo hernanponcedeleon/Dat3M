@@ -21,6 +21,8 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
+import java.util.Vector;
+
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
     private int mainThread;
@@ -90,9 +92,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             int subgroupID = threadScopeContext.subgroupScope().scopeID().id;
             int workgroupID = threadScopeContext.workgroupScope().scopeID().id;
             int queuefamilyID = threadScopeContext.queuefamilyScope().scopeID().id;
-            int deviceID = threadScopeContext.deviceScope().scopeID().id;
             programBuilder.newScopedThread(Arch.VULKAN, threadScopeContext.threadId().id,
-                    deviceID, queuefamilyID, workgroupID, subgroupID);
+                    queuefamilyID, workgroupID, subgroupID);
             threadCount++;
         }
         return null;
@@ -135,6 +136,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             case Tag.Vulkan.AVAILABLE -> {
                 store.addTags(Tag.Vulkan.NON_PRIVATE);
             }
+            case "" -> {
+                if (!ctx.atomatic().content) {
+                    throw new ParsingException("Store instruction doesn't have mo");
+                }
+                store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
+            }
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
         if (ctx.atomatic().content) {
@@ -158,6 +165,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             }
             case Tag.Vulkan.AVAILABLE -> {
                 store.addTags(Tag.Vulkan.NON_PRIVATE);
+            }
+            case "" -> {
+                if (!ctx.atomatic().content) {
+                    throw new ParsingException("Store instruction doesn't have mo");
+                }
+                store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
             }
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
@@ -189,6 +202,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             }
             case Tag.Vulkan.VISIBLE -> {
                 load.addTags(Tag.Vulkan.NON_PRIVATE);
+            }
+            case "" -> {
+                if (!ctx.atomatic().content) {
+                    throw new ParsingException("Store instruction doesn't have mo");
+                }
+                load.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
             }
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }

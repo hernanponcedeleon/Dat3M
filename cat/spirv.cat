@@ -82,7 +82,7 @@ let locord = sloc &
                 (sref & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                               [W \ PRIV])) |                                 // WaW (via shader domain)
                 (sref & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po?; avvisinc); [R \ PRIV]; (po? & avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
                 (       ([W];        (hb & avvisinc);  avdv; (hb);                               [W])) |                                        // WaW (via device domain)
-                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc); [R]; (po? & avvisinc); [R \ PRIV])) |          // RaW (via device domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc); [R]; (po? & avvisinc); [R \ PRIV]))            // RaW (via device domain)
              )
 
 
@@ -90,8 +90,8 @@ let locord = sloc &
 let posctosem = [SC0]; po; [SEMSC0] | [SC1]; po; [SEMSC1]
 let posemtosc = [SEMSC0]; po; [SC0] | [SEMSC1]; po; [SC1]
 
-let rs = [REL & ATOM]; ((asmo - (asmo; asmo)); [R & W])*
-let hypors = [W & ATOM]; ((asmo - (asmo; asmo)); [R & W])*
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo)); [R & W])*
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo)); [R & W])*
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = sr & (
     ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic

@@ -332,7 +332,7 @@ public final class Tag {
         public static final String SUB_GROUP = "SUB_GROUP";
         public static final String WORK_GROUP = "WORK_GROUP";
         public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
-        public static final String GLOBAL = "GLOBAL";
+        public static final String DEVICE = "DEVICE";
         // Memory orders
         public static final String ATOM = "ATOM";
         public static final String NON_PRIVATE = "NON_PRIVATE";
