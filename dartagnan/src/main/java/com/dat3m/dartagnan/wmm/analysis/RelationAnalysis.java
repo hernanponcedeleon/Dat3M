@@ -36,7 +36,6 @@ import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
@@ -135,6 +134,8 @@ public class RelationAnalysis {
 
         final StringBuilder summary = new StringBuilder()
                 .append("\n======== RelationAnalysis summary ======== \n");
+        summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
+        summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
         if (a.enableExtended) {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
@@ -479,8 +480,8 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
             Set<Tuple> must = new HashSet<>();
-            List<Event> l1 = program.getEvents().stream().filter(domain::apply).collect(toList());
-            List<Event> l2 = program.getEvents().stream().filter(range::apply).collect(toList());
+            List<Event> l1 = program.getEvents().stream().filter(domain::apply).toList();
+            List<Event> l2 = program.getEvents().stream().filter(range::apply).toList();
             for (Event e1 : l1) {
                 for (Event e2 : l2) {
                     if (!exec.areMutuallyExclusive(e1, e2)) {
@@ -543,7 +544,7 @@ public class RelationAnalysis {
         public Knowledge visitProgramOrder(Relation rel, Filter type) {
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
-                List<Event> events = t.getEvents().stream().filter(type::apply).collect(toList());
+                List<Event> events = t.getEvents().stream().filter(type::apply).toList();
                 for (int i = 0; i < events.size(); i++) {
                     Event e1 = events.get(i);
                     for (int j = i + 1; j < events.size(); j++) {
@@ -714,7 +715,7 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
-                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).collect(toList());
+                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
                 // assume order by globalId
                 // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
@@ -811,7 +812,7 @@ public class RelationAnalysis {
                             .filter(e -> (e.getThread() == read.getThread() || e.hasTag(INIT)))
                             .map(x -> (MemoryCoreEvent) x)
                             .sorted((o1, o2) -> o1.hasTag(INIT) == o2.hasTag(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.hasTag(INIT) ? -1 : 1)
-                            .collect(Collectors.toList());
+                            .toList();
                     // The set of writes that won't be readable due getting overwritten.
                     Set<MemoryCoreEvent> deletedWrites = new HashSet<>();
                     // A rf-edge (w1, r) is impossible, if there exists a write w2 such that
