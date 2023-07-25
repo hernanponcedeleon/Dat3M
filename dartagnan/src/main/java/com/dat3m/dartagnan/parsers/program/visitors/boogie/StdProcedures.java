@@ -23,7 +23,7 @@ public class StdProcedures {
             __assert_fail(visitor);
             return true;
         }
-        if (funcName.equals("assert_.i32")) {
+        if (funcName.equals("assert_")) {
             __assert(visitor, ctx);
             return true;
         }
