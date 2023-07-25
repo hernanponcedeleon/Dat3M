@@ -4,6 +4,7 @@
 int main()
 {
     int x = 0;
+    __VERIFIER_loop_bound(3);
     while (x != 5) {
         if (__VERIFIER_nondet_int() == 0) {
             x += 2;

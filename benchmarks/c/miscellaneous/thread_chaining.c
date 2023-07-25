@@ -5,7 +5,6 @@
     The test shows chaining of thread creations + parameter passing, i.e, the spawned thread
     spawns another thread and passes its argument to that one.
     Expected result: PASS
-    Current result: PASS
 */
 
 atomic_int data;
