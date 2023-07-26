@@ -112,6 +112,10 @@ public class Program {
 
     public List<Function> getFunctions() { return functions; }
 
+    public void clearFunctions() {
+        functions.clear();
+    }
+
     public void addConstant(INonDet constant) {
         constants.add(constant);
     }

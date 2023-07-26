@@ -98,6 +98,7 @@ public class ProcessingManager implements ProgramProcessor {
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 MemoryAllocation.newInstance(),
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
+                ClearFunctions.newInstance(), // All functions have been proposed, we can get rid of them
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
                 CoreCodeVerification.fromConfig(config),
                 LogProgramStatistics.newInstance()
