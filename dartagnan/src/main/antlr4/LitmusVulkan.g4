@@ -93,11 +93,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomatic mo Period scope location storageClassSemantic Comma constant
+    :   Store atomatic mo Period scope location storageClassSemantic avSemantic Comma constant
     ;
 
 storeRegister
-    :   Store atomatic mo Period scope location storageClassSemantic Comma register
+    :   Store atomatic mo Period scope location storageClassSemantic avSemantic Comma register
     ;
 
 loadInstruction
@@ -106,11 +106,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomatic mo Period scope storageClassSemantic register Comma constant
+    :   Load atomatic mo Period scope storageClassSemantic avSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomatic mo Period scope storageClassSemantic register Comma location
+    :   Load atomatic mo Period scope storageClassSemantic avSemantic register Comma location
     ;
 
 rmwInstruction
@@ -118,7 +118,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic mo Period scope storageClassSemantic Comma location register Comma constant
+    :   RMW atomatic mo Period scope storageClassSemantic avSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -127,11 +127,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo Period scope Period storageClassSemantic
+    :   MemoryBarrier mo Period scope Period storageClassSemantic avSemantic
     ;
 
 controlBarrier
-    :   ControlBarrier mo Period scope Period storageClassSemantic barID
+    :   ControlBarrier mo Period scope Period storageClassSemantic avSemantic barID
     ;
 
 barID
@@ -190,6 +190,12 @@ storageClassSemantic returns [String content]
     |   {$content = "";}
     ;
 
+avSemantic returns [String content]
+    :   Period SemVis {$content = "VISIBLE";}
+    |   Period SemAva {$content = "AVAILABLE";}
+    |   {$content = "";}
+    ;
+
 Locations
     :   'locations'
     ;
@@ -208,7 +214,7 @@ ControlBarrier  :   'cbar';
 Subgroup    :   'sg';
 Workgroup   :   'wg';
 Queuefamily :   'qf';
-Device      :   'dev';
+Device      :   'dv';
 
 Atom        :   'atom';
 Acquire     :   'acq';
@@ -217,6 +223,9 @@ Acq_rel     :   'acq_rel';
 
 Visible     :   'vis';
 Available   :   'av';
+
+SemVis      :   'semvis';
+SemAva      :   'semava';
 
 Sc0       :   'sc0';
 Sc1       :   'sc1';

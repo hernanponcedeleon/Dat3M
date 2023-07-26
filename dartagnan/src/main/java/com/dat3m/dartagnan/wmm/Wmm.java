@@ -315,6 +315,10 @@ public class Wmm {
             case CTRLISB -> intersection(r, getRelation(CTRL), getRelation(ISB));
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
+            case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
+            case SWG -> new SameScope(r, Tag.Vulkan.WORK_GROUP);
+            case SQF -> new SameScope(r, Tag.Vulkan.QUEUE_FAMILY);
+            case SDV -> new SameScope(r, Tag.Vulkan.DEVICE);
             case SYNCBAR -> new SyncBar(r);
             case SYNC_BARRIER -> intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
             case SYNC_FENCE -> new SyncFence(r);

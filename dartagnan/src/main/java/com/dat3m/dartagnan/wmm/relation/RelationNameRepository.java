@@ -45,6 +45,10 @@ public class RelationNameRepository {
 	public static final String CASDEP = "casdep";
 	public static final String SR = "sr";
 	public static final String SCTA = "scta"; // same-cta, the same as same_block_r in alloy
+	public static final String SSG = "ssg";
+	public static final String SWG = "swg";
+	public static final String SQF = "sqf";
+	public static final String SDV = "sdv";
 	public static final String SYNC_BARRIER = "sync_barrier";
 	public static final String SYNC_FENCE = "sync_fence";
 	public static final String SYNCBAR = "syncbar";
