@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -62,10 +63,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Program buildProgram() {
         ProgramBuilder.processAfterParsing(program);
         return program;
-    }
-
-    public Function getMainFunction() {
-        return program.getFunctions().stream().filter(f -> f.getName().equals("@main")).findAny().orElseThrow();
     }
 
     @Override
@@ -162,9 +159,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         //TODO validate: all basic blocks have a terminator, there is one entry, at least one exit, etc.
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             final Block block = getBlock(basicBlockContext.LabelIdent());
-            if (block.label != null) {
-                function.appendParsed(block.label);
-            }
+            function.appendParsed(block.label);
             for (final Event event : block.events) {
                 function.appendParsed(event);
             }
@@ -187,7 +182,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Block getBlock(TerminalNode node) {
         final String ident = node == null ? null : node.getText();
         assert ident == null || ident.endsWith(":");
-        return getBlock(ident == null ? null : ident.substring(0, ident.length() - 1).replace(".loop", ".\\loop"));
+        // In serialized form, only the entry block should be able to omit its label.
+        // The label is named using a counter for temporaries, which resets for each function.
+        // see https://llvm.org/docs/LangRef.html#functions
+        // This code assumes that all function parameters are also using this counter.
+        final String labelName = ident == null ?
+                String.valueOf(function.getParameterRegisters().size()) :
+                //FIXME this replacing avoids conflicts with LoopAnalysis
+                ident.substring(0, ident.length() - 1).replace(".loop", ".\\loop");
+        return getBlock(labelName);
     }
 
     @Override
@@ -197,7 +200,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type type = parseType(ctx.type());
         final Expression expression;
         if (ctx.immutable().getText().equals("global")) {
-            expression = program.getMemory().allocate(1, true);
+            final int size = GEPToAddition.getMemorySize(type);
+            expression = program.getMemory().allocate(size, true);
             //TODO non-det initializer
         } else {
             assert ctx.immutable().getText().equals("constant");
@@ -218,7 +222,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression value = checkExpression(type, ctx.constant());
         final Expression expression;
         if (ctx.immutable().getText().equals("global")) {
-            expression = program.getMemory().allocate(1, true);
+            final int size = GEPToAddition.getMemorySize(type);
+            expression = program.getMemory().allocate(size, true);
             ((MemoryObject) expression).setCVar(name);
             // In case of zero-initializer, there is no particular value
             if (value != null) {
@@ -236,10 +241,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Block getBlock(String label) {
         return basicBlocks.computeIfAbsent(label,
                 k -> {
-                    final Label l = k == null ? null : newLabel("l" + k);
-                    if (l != null) {
-                        l.setFunction(function);
-                    }
+                    final Label l = newLabel("l" + k);
+                    l.setFunction(function);
                     return new Block(l);
                 });
     }
@@ -307,8 +310,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private Label getJumpLabel(LabelContext context) {
         final Block target = getBlock(localIdent(context.LocalIdent()));
-        // The entry block without a label
-        final Event label = block.label == null ? target.label : getPhiNode(block, target).get(0);
+        final Event label = getPhiNode(block, target).get(0);
         verify(label instanceof Label);
         return (Label) label;
     }
@@ -320,8 +322,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return find;
         }
         final var newNode = new ArrayList<Event>();
-        assert from.label != null : "Trying to jump from an unlabeled block.";
-        assert to.label != null : "Trying to jump to an unlabeled block.";
         newNode.add(newLabel(from.label.getName() + "." + to.label.getName()));
         phiNodes.put(pair, newNode);
         return newNode;
@@ -422,7 +422,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (final IncContext inc : ctx.inc()) {
             final Block target = getBlock(localIdent(inc.LocalIdent()));
             final Expression expression = checkExpression(type, inc.value());
-            getPhiNode(block, target).add(newLocal(register, expression));
+            getPhiNode(target, block).add(newLocal(register, expression));
         }
         return register;
     }
@@ -577,33 +577,23 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type valueType = operand.getType();
         final Register register = getOrNewCurrentRegister(valueType);
         final String operator = ctx.atomicOp().getText();
-        final Expression substitute = switch (operator) {
-            case "xchg" -> operand;
-            case "add" -> expressions.makeADD(register, operand);
-            case "sub" -> expressions.makeSUB(register, operand);
-            case "and" -> expressions.makeAND(register, operand);
-            case "or" -> expressions.makeOR(register, operand);
-            case "xor" -> expressions.makeXOR(register, operand);
-            case "min", "umin", "max", "umax" -> expressions.makeConditional(
-                    expressions.makeLT(register, operand, operator.startsWith("m")),
-                    operator.endsWith("x") ? operand : register,
-                    operator.endsWith("x") ? register : operand);
-            case "uinc_wrap" -> expressions.makeConditional(
-                    expressions.makeLT(register, operand, false),
-                    expressions.makeADD(register, expressions.makeOne((IntegerType) valueType)),
-                    expressions.makeZero((IntegerType) valueType));
-            case "udec_wrap" -> expressions.makeConditional(
-                    expressions.makeAnd(
-                            expressions.makeLT(expressions.makeZero((IntegerType) valueType), register, false),
-                            expressions.makeLT(register, operand, false)),
-                    expressions.makeSUB(register, expressions.makeOne((IntegerType) valueType)),
-                    register);
-            //TODO nand, fadd, fsub, fmax, fmin
-            default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
-        };
-        final Load load = newRMWLoad(register, address);
-        block.events.add(load);
-        block.events.add(newRMWStore(load, address, substitute));
+        final String mo = parseMemoryOrder(ctx.atomicOrdering());
+        final Event event;
+        if (operator.equals("xchg")) {
+            event = Llvm.newExchange(register, address, operand, mo);
+        } else {
+            final IOpBin op = switch (operator) {
+                case "add" -> IOpBin.PLUS;
+                case "sub" -> IOpBin.MINUS;
+                case "and" -> IOpBin.AND;
+                case "or" -> IOpBin.OR;
+                case "xor" -> IOpBin.XOR;
+                //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
+                default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
+            };
+            event = Llvm.newRMW(register, address, operand, op, mo);
+        }
+        block.events.add(event);
         return register;
     }
 

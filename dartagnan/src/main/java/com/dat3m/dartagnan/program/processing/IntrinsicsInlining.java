@@ -56,6 +56,7 @@ public class IntrinsicsInlining implements ProgramProcessor {
                         "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
                 case "__assert_fail" -> inlineAssert(call);
+                case "malloc" -> inlineMalloc(call);
                 default -> throw new UnsupportedOperationException(
                         String.format("Undefined function %s", call.getCallTarget().getName()));
             };
@@ -128,5 +129,15 @@ public class IntrinsicsInlining implements ProgramProcessor {
         final Event jump = EventFactory.newGoto((Label) endOfThread);
         jump.addTags(Tag.EARLYTERMINATION);
         return List.of(flag, jump);
+    }
+
+    private List<Event> inlineMalloc(DirectFunctionCall callEvent) {
+        if (callEvent.getArguments().size() != 1) {
+            throw new UnsupportedOperationException(String.format("Unsupported signature for %s.", callEvent));
+        }
+        if (!(callEvent instanceof DirectValueFunctionCall call)) {
+            return List.of();
+        }
+        return List.of(EventFactory.Std.newMalloc(call.getResultRegister(), call.getArguments().get(0)));
     }
 }
