@@ -93,11 +93,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomatic mo Period scope location storageClassSemantic avSemantic Comma constant
+    :   Store atomatic mo Period scope storageClassSemantic avvisSemantic location Comma constant
     ;
 
 storeRegister
-    :   Store atomatic mo Period scope location storageClassSemantic avSemantic Comma register
+    :   Store atomatic mo Period scope storageClassSemantic avvisSemantic location Comma register
     ;
 
 loadInstruction
@@ -106,11 +106,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomatic mo Period scope storageClassSemantic avSemantic register Comma constant
+    :   Load atomatic mo Period scope storageClassSemantic avvisSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomatic mo Period scope storageClassSemantic avSemantic register Comma location
+    :   Load atomatic mo Period scope storageClassSemantic avvisSemantic register Comma location
     ;
 
 rmwInstruction
@@ -118,7 +118,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic mo Period scope storageClassSemantic avSemantic Comma location register Comma constant
+    :   RMW atomatic mo Period scope storageClassSemantic avvisSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -127,11 +127,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo Period scope Period storageClassSemantic avSemantic
+    :   MemoryBarrier mo Period scope Period storageClassSemantic avvisSemantic
     ;
 
 controlBarrier
-    :   ControlBarrier mo Period scope Period storageClassSemantic avSemantic barID
+    :   ControlBarrier mo Period scope Period storageClassSemantic avvisSemantic barID
     ;
 
 barID
@@ -190,7 +190,7 @@ storageClassSemantic returns [String content]
     |   {$content = "";}
     ;
 
-avSemantic returns [String content]
+avvisSemantic returns [String content]
     :   Period SemVis {$content = "VISIBLE";}
     |   Period SemAva {$content = "AVAILABLE";}
     |   {$content = "";}
@@ -236,5 +236,6 @@ Semsc01         :   'semsc01';
 
 LitmusLanguage
     :   'VULKAN'
+    |   'Vulkan'
     |   'vulkan'
     ;

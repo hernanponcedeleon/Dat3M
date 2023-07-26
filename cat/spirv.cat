@@ -35,7 +35,7 @@ SPIRV
 let mutordatom = [ATOM]; ((loc & vloc & sr) \ id); [ATOM] // mutually ordered atomics (same loc, inscope)
 let avvisinc = (((SC0 | SC1) * (AVDEVICE | VISDEVICE)) | ((AVDEVICE | VISDEVICE) * (SC0 | SC1)) |
                (SC0 * ((SEMAV | SEMVIS) & SEMSC0)) | (((SEMAV | SEMVIS) & SEMSC0) * SC0) |
-               (SC1 * ((SEMAV | SEMVIS) & SEMSC0)) | (((SEMAV | SEMVIS) & SEMSC0) * SC1)) \ id |
+               (SC1 * ((SEMAV | SEMVIS) & SEMSC1)) | (((SEMAV | SEMVIS) & SEMSC1) * SC1)) \ id |
                ([AV | VIS]; (vloc & loc)) | ((vloc & loc); [AV | VIS])
 let posctosem = [SC0]; po; [SEMSC0] | [SC1]; po; [SEMSC1]
 let posemtosc = [SEMSC0]; po; [SC0] | [SEMSC1]; po; [SC1]

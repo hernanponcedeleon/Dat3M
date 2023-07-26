@@ -126,9 +126,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         IConst constant = (IConst) ctx.constant().accept(this);
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String semantic = ctx.storageClassSemantic().content;
+        String classSemantic = ctx.storageClassSemantic().content;
+        String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        store.addTags(scope, semantic);
+        store.addTags(scope, classSemantic, avvisSemantic);
         switch (mo) {
             case Tag.Vulkan.RELEASE -> {
                 store.addTags(Tag.Vulkan.ATOM);
@@ -156,9 +157,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String semantic = ctx.storageClassSemantic().content;
+        String classSemantic = ctx.storageClassSemantic().content;
+        String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
-        store.addTags(scope, semantic);
+        store.addTags(scope, classSemantic, avvisSemantic);
         switch (mo) {
             case Tag.Vulkan.RELEASE -> {
                 store.addTags(Tag.Vulkan.ATOM);
@@ -193,9 +195,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String semantic = ctx.storageClassSemantic().content;
+        String classSemantic = ctx.storageClassSemantic().content;
+        String avvisSemantic = ctx.avvisSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
-        load.addTags(scope, semantic);
+        load.addTags(scope, classSemantic, avvisSemantic);
         switch (mo) {
             case Tag.Vulkan.ACQUIRE -> {
                 load.addTags(Tag.Vulkan.ATOM);
@@ -224,9 +227,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         IConst constant = (IConst) ctx.constant().accept(this);
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String semantic = ctx.storageClassSemantic().content;
+        String classSemantic = ctx.storageClassSemantic().content;
+        String avvisSemantic = ctx.avvisSemantic().content;
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
-        rmw.addTags(scope, semantic);
+        rmw.addTags(scope, classSemantic, avvisSemantic);
         switch (mo) {
             case Tag.Vulkan.ACQ_REL -> {
                 rmw.addTags(Tag.Vulkan.ATOM);
@@ -248,11 +252,11 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitMemoryBarrier(LitmusVulkanParser.MemoryBarrierContext ctx) {
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String semantic = ctx.storageClassSemantic().content;
+        String classSemantic = ctx.storageClassSemantic().content;
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         switch (mo) {
             case Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE -> {
-                fence.addTags(mo, scope, semantic);
+                fence.addTags(mo, scope, classSemantic);
             }
             default -> throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
