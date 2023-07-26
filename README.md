@@ -45,7 +45,7 @@ At least the following compiler flag needs to be set, further can be added (only
 ```
 export CFLAGS="-I$DAT3M_HOME/include"
 export SMACK_FLAGS="-q -t --no-memory-splitting"
-export ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -simplifycfg -gvn"
+export ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"
 ```
 
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
