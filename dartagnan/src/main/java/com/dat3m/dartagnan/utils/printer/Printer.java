@@ -12,6 +12,12 @@ import java.util.stream.Collectors;
 
 public class Printer {
 
+    public enum Mode {
+        THREADS,
+        FUNCTIONS,
+        ALL
+    }
+
     private StringBuilder result;
     private StringBuilder padding;
 
@@ -21,7 +27,7 @@ public class Printer {
 
     private final String paddingBase = "      ";
 
-    public String print(Program program){
+    public String print(Program program, Mode mode) {
         result = new StringBuilder();
         padding = new StringBuilder(paddingBase);
 
@@ -34,17 +40,29 @@ public class Printer {
         }
         result.append(name).append("\n");
 
-        for(Thread thread : program.getThreads()) {
-            if(shouldPrintThread(thread)){
-                appendFunction(thread);
+        if (mode == Mode.THREADS || mode == Mode.ALL) {
+            for (Thread thread : program.getThreads()) {
+                if (shouldPrintThread(thread)) {
+                    appendFunction(thread);
+                }
+            }
+
+            if (!showInitThreads && !program.getThreads().isEmpty()) {
+                result.append("\nSkipping init threads...");
+                result.append("\n...");
+                result.append("\n...");
+                result.append("\n...");
+                result.append("\n");
             }
         }
 
-        for (Function function : program.getFunctions()) {
-            if (function instanceof Thread) {
-                continue;
+        if (mode == Mode.FUNCTIONS || mode == Mode.ALL) {
+            for (Function function : program.getFunctions()) {
+                if (function instanceof Thread) {
+                    continue;
+                }
+                appendFunction(function);
             }
-            appendFunction(function);
         }
 
         idType = origType;

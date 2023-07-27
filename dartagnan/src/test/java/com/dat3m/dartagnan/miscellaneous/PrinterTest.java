@@ -21,60 +21,60 @@ public class PrinterTest {
     @Test()
     public void PrintBpl1() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "boogie/concurrency/fib_bench-1-O0.bpl"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         Compilation.newInstance().run(p);
         LoopUnrolling.newInstance().run(p);
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
     }
 
     @Test()
     public void PrintBpl2() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "locks/linuxrwlock.bpl"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         Compilation.newInstance().run(p);
         LoopUnrolling.newInstance().run(p);
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
     }
 
     @Test()
     public void PrintX86() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+mfence-rmw+rmw-mfence.litmus"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintPPC() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+lwsync+data-wsi-rfi-ctrlisync.litmus"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintAARCH64() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/MP+popl+poap.litmus"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintLinux() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.TEST_RESOURCE_PATH + "litmus/C-rcu-link-after.litmus"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintLinux2() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/LKMM/dart/C-atomic-fetch-simple-01.litmus"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         assertNotNull(p.getSpecification().toString());
     }
 
     @Test()
     public void PrintLinux3() throws Exception {
         Program p = new ProgramParser().parse(new File(ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/LKMM/manual/atomic/C-atomic-01.litmus"));
-        assertNotNull(new Printer().print(p));
+        assertNotNull(new Printer().print(p, Printer.Mode.ALL));
         assertNotNull(p.getSpecification().toString());
     }
 

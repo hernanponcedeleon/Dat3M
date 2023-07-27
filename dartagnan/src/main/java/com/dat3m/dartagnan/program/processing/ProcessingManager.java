@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -66,7 +67,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = true;
+    private boolean printAfterProcessing = false;
 
 
 // ======================================================================
@@ -75,7 +76,7 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
-                printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 StaticMemoryInitializer.newInstance(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
@@ -86,16 +87,16 @@ public class ProcessingManager implements ProgramProcessor {
                                 Simplifier.fromConfig(config)
                         ), Target.FUNCTIONS, true
                 ),
-                printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
+                printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
-                printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
+                printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         SimpleSpinLoopDetection.fromConfig(config),
                         Target.FUNCTIONS, false
                 ),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
-                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
+                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
@@ -110,7 +111,7 @@ public class ProcessingManager implements ProgramProcessor {
                 MemoryAllocation.newInstance(),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
-                printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
+                printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false
