@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -17,10 +17,12 @@ import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.File;
+import java.math.BigInteger;
 
 public class ExceptionsTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
@@ -51,8 +53,8 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        Register a = new Register("a", 0, types.getIntegerType(32));
-        Register b = new Register("b", 0, types.getIntegerType(64));
+        Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
+        Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
         ExpressionFactory.getInstance().makeADD(a, b);
     }
 

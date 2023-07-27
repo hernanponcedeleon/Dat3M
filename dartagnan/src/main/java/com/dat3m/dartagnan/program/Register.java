@@ -5,22 +5,21 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Register implements Expression {
 
-    public static final int NO_FUNCTION = -1;
-
     private final String name;
     private String cVar;
-    private final int funcId;
+    private final Function function;
     private final Type type;
 
-    public Register(String name, int funcId, Type type) {
+    public Register(String name, Function func, Type type) {
         this.name = checkNotNull(name);
-        this.funcId = funcId;
+        this.function = func;
         this.type = checkNotNull(type);
     }
 
@@ -36,8 +35,8 @@ public class Register implements Expression {
         this.cVar = name;
     }
 
-    public int getFunctionId() {
-        return funcId;
+    public Function getFunction() {
+        return function;
     }
 
     @Override
@@ -52,7 +51,7 @@ public class Register implements Expression {
 
     @Override
     public int hashCode() {
-        return name.hashCode() + funcId;
+        return name.hashCode() + Objects.hashCode(function);
     }
 
     @Override
@@ -64,7 +63,7 @@ public class Register implements Expression {
         }
 
         Register rObj = (Register) obj;
-        return name.equals(rObj.name) && funcId == rObj.funcId;
+        return name.equals(rObj.name) && function == rObj.function;
     }
 
     @Override
