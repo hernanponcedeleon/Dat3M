@@ -77,26 +77,38 @@ public class ProcessingManager implements ProgramProcessor {
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
                 StaticMemoryInitializer.newInstance(),
-                Inlining.fromConfig(config),
-                ThreadCreation.fromConfig(config),
-                UnreachableCodeElimination.fromConfig(config),
-                ComplexBlockSplitting.newInstance(),
-                BranchReordering.fromConfig(config),
-                LoopFormVerification.fromConfig(config),
-                Simplifier.fromConfig(config),
+                ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                Inlining.fromConfig(config),
+                                UnreachableCodeElimination.fromConfig(config),
+                                ComplexBlockSplitting.newInstance(),
+                                BranchReordering.fromConfig(config),
+                                Simplifier.fromConfig(config)
+                        ), Target.FUNCTIONS, true
+                ),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
-                Compilation.fromConfig(config),
+                LoopFormVerification.fromConfig(config),
+                Compilation.fromConfig(config), // We keep compilation global for now
                 printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
-                SimpleSpinLoopDetection.fromConfig(config),
-                LoopUnrolling.fromConfig(config),
+                ProgramProcessor.fromFunctionProcessor(
+                        SimpleSpinLoopDetection.fromConfig(config),
+                        Target.FUNCTIONS, false
+                ),
+                LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
-                IntrinsicsInlining.fromConfig(config),
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
-                constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
-                dce ? DeadAssignmentElimination.fromConfig(config) : null,
-                RemoveDeadCondJumps.fromConfig(config),
+                ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
+                                dce ? DeadAssignmentElimination.fromConfig(config) : null,
+                                RemoveDeadCondJumps.fromConfig(config)
+                        ), Target.FUNCTIONS, true
+                ),
+                ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                IntrinsicsInlining.fromConfig(config),
                 MemoryAllocation.newInstance(),
+                // --- Statistics + verification ---
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
                 CoreCodeVerification.fromConfig(config),
