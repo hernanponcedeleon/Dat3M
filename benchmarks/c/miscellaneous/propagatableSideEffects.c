@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
+#include "dat3m.h"
 
 // This test makes sure that we do not accidentally cut off side-effect-full loops
 // whose side-effects were propagated by constant propagation

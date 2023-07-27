@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include "dat3m.h"
 
 /*
     The test shows thread creation inside loops
@@ -23,7 +24,7 @@ int main()
     int bound = __VERIFIER_nondet_int();
     __VERIFIER_assume(0 <= bound && bound < N);
 
-    __VERIFIER_loop_bound(N);
+    __VERIFIER_loop_bound(N + 1);
     for (int i = 0; i < bound; i++) {
         pthread_create(&t[i], NULL, worker, NULL);
     }

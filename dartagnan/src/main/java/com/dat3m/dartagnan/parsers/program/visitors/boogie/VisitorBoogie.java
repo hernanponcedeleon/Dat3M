@@ -136,12 +136,9 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected String getFunctionNameFromCallContext(Call_cmdContext callCtx) {
-        final String funcName = callCtx.call_params().Define() == null ?
+        return callCtx.call_params().Define() == null ?
                 callCtx.call_params().Ident(0).getText() :
                 callCtx.call_params().Ident(1).getText();
-        final String paramTypeSeparator = ".";
-        final int separatorIndex = funcName.indexOf(paramTypeSeparator);
-        return separatorIndex < 0 ? funcName : funcName.substring(0, separatorIndex);
     }
 
     // ============================================================
