@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 /*
     Rather than a typical transformer, this pass checks that all loops in the program are in a normalized form
@@ -41,7 +42,8 @@ public class LoopFormVerification implements ProgramProcessor, FunctionProcessor
 
     @Override
     public void run(Program program) {
-        final int numberOfLoops = program.getThreads().stream().mapToInt(f -> checkAndCountLoops(f, Event::getGlobalId)).sum();
+        final int numberOfLoops = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
+                .mapToInt(f -> checkAndCountLoops(f, Event::getGlobalId)).sum();
         logger.info("Detected {} loops in the program.", numberOfLoops);
     }
 

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,7 +87,8 @@ public class LoopAnalysis {
         final java.util.function.Function<Function, ImmutableList<LoopInfo>> loopFindingAlgo =
                 program.isUnrolled() ? this::findUnrolledLoopsInFunction : this::findLoopsInFunction;
 
-        program.getThreads().forEach(t -> this.func2LoopsMap.put(t, loopFindingAlgo.apply(t)));
+        Iterables.concat(program.getThreads(), program.getFunctions())
+                .forEach(t -> this.func2LoopsMap.put(t, loopFindingAlgo.apply(t)));
     }
 
     private void run(Function function) {

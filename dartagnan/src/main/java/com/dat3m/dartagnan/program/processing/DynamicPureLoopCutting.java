@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -70,8 +71,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
 
         AnalysisStats stats = new AnalysisStats(0, 0);
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
-        for (Thread thread : program.getThreads()) {
-            final List<IterationData> iterationData = computeIterationDataList(thread, loopAnalysis);
+        for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
+            final List<IterationData> iterationData = computeIterationDataList(func, loopAnalysis);
             iterationData.forEach(this::reduceToDominatingSideEffects);
             iterationData.forEach(this::insertSideEffectChecks);
             stats = stats.add(collectStats(iterationData));
