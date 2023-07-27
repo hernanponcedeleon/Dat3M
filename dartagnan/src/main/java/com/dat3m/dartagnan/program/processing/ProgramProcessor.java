@@ -29,7 +29,7 @@ public interface ProgramProcessor {
             };
             targets.forEach(processor::run);
             if (reassignIds) {
-                EventIdReassignment.newInstance().run(program);
+                IdReassignment.newInstance().run(program);
             }
         };
     }

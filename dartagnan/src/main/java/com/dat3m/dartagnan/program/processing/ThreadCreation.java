@@ -185,7 +185,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
         }
 
-        EventIdReassignment.newInstance().run(program);
+        IdReassignment.newInstance().run(program);
         logger.info("Number of threads (including main): " + program.getThreads().size());
     }
 

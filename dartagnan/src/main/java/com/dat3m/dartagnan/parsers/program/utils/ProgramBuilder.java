@@ -25,7 +25,7 @@ import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
-import com.dat3m.dartagnan.program.processing.EventIdReassignment;
+import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
@@ -73,7 +73,7 @@ public class ProgramBuilder {
         }
         id2FunctionsMap.values().forEach(this::validateFunction);
 
-        EventIdReassignment.newInstance().run(program);
+        IdReassignment.newInstance().run(program);
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
             if (func.hasBody()) {
                 func.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));

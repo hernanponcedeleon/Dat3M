@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
-import com.dat3m.dartagnan.program.processing.EventIdReassignment;
+import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 import com.google.common.base.Preconditions;
@@ -86,7 +86,7 @@ public class Compilation implements ProgramProcessor {
         program.getFunctions().forEach(this::run);
         program.setArch(target);
         program.markAsCompiled();
-        EventIdReassignment.newInstance().run(program); // Reassign ids
+        IdReassignment.newInstance().run(program); // Reassign ids
 
         logger.info("Program compiled to {}", target);
     }

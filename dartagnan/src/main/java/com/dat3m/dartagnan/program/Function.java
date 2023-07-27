@@ -66,6 +66,7 @@ public class Function implements Expression {
     }
 
     public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
 
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
