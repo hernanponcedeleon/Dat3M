@@ -3,12 +3,10 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Atom;
 import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -19,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class RemoveDeadCondJumps implements ProgramProcessor, FunctionProcessor {
+public class RemoveDeadCondJumps implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(RemoveDeadCondJumps.class);
 
@@ -32,15 +30,6 @@ public class RemoveDeadCondJumps implements ProgramProcessor, FunctionProcessor 
 
     public static RemoveDeadCondJumps fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
-    }
-
-    @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled(), "The program needs to be unrolled before performing " + getClass().getSimpleName());
-
-        logger.info(String.format("#Events before %s: %s", getClass().getSimpleName(), program.getEvents().size()));
-        program.getThreads().forEach(this::eliminateDeadCondJumps);
-        logger.info(String.format("#Events after %s: %s", getClass().getSimpleName(), program.getEvents().size()));
     }
 
     @Override

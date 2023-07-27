@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -35,7 +34,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIG
     It is more precise than any sequence of simple CP/DCE passes.
  */
 @Options
-public class SparseConditionalConstantPropagation implements ProgramProcessor, FunctionProcessor {
+public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(SparseConditionalConstantPropagation.class);
 
@@ -62,12 +61,6 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor, F
     }
 
     // ====================================================================================
-
-    @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs.");
-        program.getThreads().forEach(this::run);
-    }
 
     @Override
     public void run(Function func) {

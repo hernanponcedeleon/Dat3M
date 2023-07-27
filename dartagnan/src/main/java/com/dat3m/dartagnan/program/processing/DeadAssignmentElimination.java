@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
@@ -22,7 +21,7 @@ import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
-public class DeadAssignmentElimination implements ProgramProcessor, FunctionProcessor {
+public class DeadAssignmentElimination implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(DeadAssignmentElimination.class);
 
@@ -34,16 +33,6 @@ public class DeadAssignmentElimination implements ProgramProcessor, FunctionProc
 
     public static DeadAssignmentElimination fromConfig(Configuration config) throws InvalidConfigurationException {
         return newInstance();
-    }
-
-    @Override
-    public void run(Program program) {
-        logger.info("#Events before DSE: " + program.getEvents().size());
-
-        for (Thread t : program.getThreads()) {
-            eliminateDeadAssignments(program, t);
-        }
-        logger.info("#Events after DSE: " + program.getEvents().size());
     }
 
     @Override
