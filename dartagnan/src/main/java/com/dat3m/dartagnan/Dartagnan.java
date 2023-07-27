@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;;
+import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
@@ -56,6 +56,8 @@ import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.g
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
+
+;
 
 @Options
 public class Dartagnan extends BaseOptions {
@@ -249,7 +251,7 @@ public class Dartagnan extends BaseOptions {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
-                    for(Event e : p.getEvents(Local.class)) {
+                    for(Event e : p.getThreadEvents(Local.class)) {
                         if(e.hasTag(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
@@ -265,7 +267,7 @@ public class Dartagnan extends BaseOptions {
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
-                    for(CondJump e : p.getEvents(CondJump.class)) {
+                    for(CondJump e : p.getThreadEvents(CondJump.class)) {
                         if(e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                             && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             final String callStack = makeContextString(
@@ -350,7 +352,7 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
-        for (Event e : p.getEvents()) {
+        for (Event e : p.getThreadEvents()) {
             if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(

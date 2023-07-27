@@ -38,12 +38,14 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void processMallocs(Program program) {
-        for (Malloc malloc : program.getEvents(Malloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
-            final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
-            local.addTags(Tag.Std.MALLOC);
-            local.copyAllMetadataFrom(malloc);
-            malloc.replaceBy(local);
+        for (Thread thread : program.getThreads()) {
+            for (Malloc malloc : thread.getEvents(Malloc.class)) {
+                final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
+                final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
+                local.addTags(Tag.Std.MALLOC);
+                local.copyAllMetadataFrom(malloc);
+                malloc.replaceBy(local);
+            }
         }
     }
 

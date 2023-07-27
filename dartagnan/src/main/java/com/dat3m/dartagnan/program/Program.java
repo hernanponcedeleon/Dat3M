@@ -123,12 +123,12 @@ public class Program {
     /**
      * Iterates all events in this program.
      *
-     * @return {@code cId}-ordered complete sequence of all events in this program.
+     * @return {@code globalId}-ordered complete sequence of all events in this program.
      */
-    public List<Event> getEvents() {
+    public List<Event> getThreadEvents() {
         List<Event> events = new ArrayList<>();
-        for (Thread t : threads) {
-            events.addAll(t.getEvents());
+        for (Function func : threads) {
+            events.addAll(func.getEvents());
         }
         return events;
     }
@@ -138,10 +138,10 @@ public class Program {
      *
      * @param cls Class of events to be selected.
      * @param <T> Desired subclass of {@link Event}.
-     * @return {@code cId}-ordered complete sequence of all events of class {@code cls} in this program.
+     * @return {@code globalId}-ordered complete sequence of all events of class {@code cls} in this program.
      */
-    public <T extends Event> List<T> getEvents(Class<T> cls) {
-        return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
+    public <T extends Event> List<T> getThreadEvents(Class<T> cls) {
+        return getThreadEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
 
     // Unrolling

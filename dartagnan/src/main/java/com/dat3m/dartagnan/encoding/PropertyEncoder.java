@@ -91,7 +91,7 @@ public class PropertyEncoder implements Encoder {
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return program.getEvents()
+        return program.getThreadEvents()
                 .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
@@ -163,7 +163,7 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
         final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
-        final List<Init> initEvents = program.getEvents(Init.class);
+        final List<Init> initEvents = program.getThreadEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
@@ -175,7 +175,7 @@ public class PropertyEncoder implements Encoder {
         // ---- Construct encoding ----
         List<BooleanFormula> enc = new ArrayList<>();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
-        for (Store w1 : program.getEvents(Store.class)) {
+        for (Store w1 : program.getThreadEvents(Store.class)) {
             if (dominatedWrites.contains(w1)) {
                 enc.add(bmgr.not(lastCoVar(w1)));
                 continue;
@@ -212,12 +212,12 @@ public class PropertyEncoder implements Encoder {
             // but the final value of a location should always match that of some coLast event.
             // lastCo(w) => (lastVal(w.address) = w.val)
             //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
-            for (Init init : program.getEvents(Init.class)) {
+            for (Init init : program.getThreadEvents(Init.class)) {
                 BooleanFormula lastValueEnc = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
                 Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
                 BooleanFormula readFromInit = context.equal(context.value(init), v2);
-                for (Store w : program.getEvents(Store.class)) {
+                for (Store w : program.getThreadEvents(Store.class)) {
                     if (!alias.mayAlias(w, init)) {
                         continue;
                     }

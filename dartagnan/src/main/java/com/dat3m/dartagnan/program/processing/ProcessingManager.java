@@ -111,8 +111,11 @@ public class ProcessingManager implements ProgramProcessor {
                 // --- Statistics + verification ---
                 EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
-                CoreCodeVerification.fromConfig(config),
-                LogProgramStatistics.newInstance()
+                ProgramProcessor.fromFunctionProcessor(
+                        CoreCodeVerification.fromConfig(config),
+                        Target.THREADS, false
+                ),
+                LogThreadStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);
     }

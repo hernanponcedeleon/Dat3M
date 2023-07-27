@@ -431,6 +431,6 @@ public class AnalysisTest {
     }
 
     private Event findMatchingEventAfterProcessing(Program p, Event orig) {
-        return p.getEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
+        return p.getThreadEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
     }
 }

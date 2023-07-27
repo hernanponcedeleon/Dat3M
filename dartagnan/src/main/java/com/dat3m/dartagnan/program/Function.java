@@ -59,11 +59,14 @@ public class Function implements Expression {
 
     public String getName() { return this.name; }
     public void setName(String name) { this.name = name; }
+
     public FunctionType getFunctionType() { return this.functionType; }
     public List<Register> getParameterRegisters() {
         return Collections.unmodifiableList(parameterRegs);
     }
+
     public int getId() { return id; }
+
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
 

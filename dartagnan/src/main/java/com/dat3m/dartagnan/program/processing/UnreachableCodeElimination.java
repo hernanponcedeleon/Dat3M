@@ -9,8 +9,6 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -18,8 +16,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class UnreachableCodeElimination implements FunctionProcessor {
-
-    private static final Logger logger = LogManager.getLogger(UnreachableCodeElimination.class);
 
     private UnreachableCodeElimination() { }
 

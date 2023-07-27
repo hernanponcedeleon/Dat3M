@@ -2,17 +2,13 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -36,9 +32,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDE
  */
 
 @Options
-public class BranchReordering implements ProgramProcessor, FunctionProcessor {
-
-    private static final Logger logger = LogManager.getLogger(BranchReordering.class);
+public class BranchReordering implements FunctionProcessor {
 
     // =========================== Configurables ===========================
 
@@ -61,17 +55,6 @@ public class BranchReordering implements ProgramProcessor, FunctionProcessor {
 
     public static BranchReordering newInstance() {
         return new BranchReordering();
-    }
-
-    @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
-
-        program.getThreads().forEach(this::run);
-        // We need to reassign Ids, because they do not match with the ordering of the code now.
-        EventIdReassignment.newInstance().run(program);
-        logger.info("Branches reordered");
-        logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
     }
 
     @Override

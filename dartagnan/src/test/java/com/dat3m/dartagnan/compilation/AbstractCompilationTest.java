@@ -119,7 +119,7 @@ public abstract class AbstractCompilationTest {
 
     @Test
     public void testIncremental() throws Exception {
-    	if(task1Provider.get().getProgram().getEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
+    	if(task1Provider.get().getProgram().getThreadEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
             if(!s1.hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),

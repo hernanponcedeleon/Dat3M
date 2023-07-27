@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.processing.BranchReordering;
-import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -38,16 +36,6 @@ public class ExceptionsTest {
         t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
         t.newRegister("r1", types.getIntegerType());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void reorderAfterUnrollException() throws Exception {
-        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        pb.newThread(0);
-        Program p = pb.build();
-        LoopUnrolling.newInstance().run(p);
-        // Reordering cannot be called after unrolling
-        BranchReordering.newInstance().run(p);
     }
 
     @Test(expected = IllegalArgumentException.class)

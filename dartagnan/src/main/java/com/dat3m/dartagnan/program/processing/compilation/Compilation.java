@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
 import com.dat3m.dartagnan.program.processing.EventIdReassignment;
-import com.dat3m.dartagnan.program.processing.FunctionProcessor;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
 import com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme;
 import com.google.common.base.Preconditions;
@@ -23,7 +22,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 
 @Options
-public class Compilation implements ProgramProcessor, FunctionProcessor {
+public class Compilation implements ProgramProcessor {
 
 
     private static final Logger logger = LogManager.getLogger(Compilation.class);
@@ -83,8 +82,8 @@ public class Compilation implements ProgramProcessor, FunctionProcessor {
             return;
         }
 
-        program.getFunctions().forEach(this::run);
         program.getThreads().forEach(this::run);
+        program.getFunctions().forEach(this::run);
         program.setArch(target);
         program.markAsCompiled();
         EventIdReassignment.newInstance().run(program); // Reassign ids
@@ -92,8 +91,7 @@ public class Compilation implements ProgramProcessor, FunctionProcessor {
         logger.info("Program compiled to {}", target);
     }
 
-    @Override
-    public void run(Function function) {
+    private void run(Function function) {
         if (function.hasBody()) {
             compiler.funcToBeCompiled = function;
             function.getEvents().forEach(e -> compileEvent(e, compiler));

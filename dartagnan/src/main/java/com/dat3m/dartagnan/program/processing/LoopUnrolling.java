@@ -22,7 +22,7 @@ import java.util.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 
 @Options
-public class LoopUnrolling implements ProgramProcessor, FunctionProcessor {
+public class LoopUnrolling implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(LoopUnrolling.class);
 
@@ -78,8 +78,8 @@ public class LoopUnrolling implements ProgramProcessor, FunctionProcessor {
         logger.info("Program unrolled {} times", defaultBound);
     }
 
-    @Override
-    public void run(Function function) {
+
+    private void run(Function function) {
         function.getEvents().forEach(e -> e.setMetadata(new UnrollingId(e.getGlobalId()))); // Track ids before unrolling
         unrollLoopsInFunction(function, bound);
     }

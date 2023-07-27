@@ -84,8 +84,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     // ================================ Processing ================================
 
     private void run(Program program) {
-        List<MemoryCoreEvent> memEvents = program.getEvents(MemoryCoreEvent.class);
-        List<Local> locals = program.getEvents(Local.class);
+        List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
+        List<Local> locals = program.getThreadEvents(Local.class);
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }

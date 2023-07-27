@@ -23,7 +23,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
-public class IntrinsicsInlining implements ProgramProcessor, FunctionProcessor {
+public class IntrinsicsInlining implements ProgramProcessor {
 
     // TODO: This id should be part of Program
     private int constantId;
@@ -41,8 +41,7 @@ public class IntrinsicsInlining implements ProgramProcessor, FunctionProcessor {
         program.getThreads().forEach(this::run);
     }
 
-    @Override
-    public void run(Function function) {
+    private void run(Function function) {
         for (DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
             assert !call.getCallTarget().hasBody();
 

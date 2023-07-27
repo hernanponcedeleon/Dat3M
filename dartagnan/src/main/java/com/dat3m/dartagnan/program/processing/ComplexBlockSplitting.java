@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,8 +28,6 @@ import java.util.Map;
     However, our parser "destroys" this structure during parsing.
  */
 public class ComplexBlockSplitting implements FunctionProcessor {
-
-    private static final Logger logger = LogManager.getLogger(ComplexBlockSplitting.class);
 
     private ComplexBlockSplitting() {}
 

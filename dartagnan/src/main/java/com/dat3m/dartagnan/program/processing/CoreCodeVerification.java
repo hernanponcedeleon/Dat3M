@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.Set;
 
 /*
-    This pass checks that the program contains only core-level events.
+    This pass checks that the function contains only core-level events.
     NOTE: Subclasses of core events are not automatically considered core events themselves and may raise an error.
  */
-public class CoreCodeVerification implements ProgramProcessor {
+public class CoreCodeVerification implements FunctionProcessor {
 
     public static CoreCodeVerification fromConfig(Configuration config) {
         return new CoreCodeVerification();
@@ -44,9 +44,8 @@ public class CoreCodeVerification implements ProgramProcessor {
     ));
 
     @Override
-    public void run(Program program) {
-
-        final List<Event> nonCoreEvents = program.getEvents().stream().
+    public void run(Function function) {
+        final List<Event> nonCoreEvents = function.getEvents().stream().
                 filter(e -> !(e instanceof CodeAnnotation) && !CORE_CLASSES.contains(e.getClass())).toList();
         if (!nonCoreEvents.isEmpty()) {
             System.out.println("ERROR: Found non-core events.");
@@ -56,5 +55,4 @@ public class CoreCodeVerification implements ProgramProcessor {
             throw new MalformedProgramException("ERROR: Found non-core events.");
         }
     }
-
 }
