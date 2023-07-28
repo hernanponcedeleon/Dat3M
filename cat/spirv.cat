@@ -1,49 +1,41 @@
 SPIRV
 
-(* Tags from spirv.als *)
-// NONPRIV, PRIV : non-private (participates in inter-thread ordering) vs private
-// SCOPESG, SCOPEWG, SCOPEQF, SCOPEDEV: subgroup/workgroup/queuefamily/device scopes
-
-(* Terms from spirv.als no need for implementation *)
-// stor : set to relation, (s,s) for all s in E, lift a set to a relation (the [_] operator in Herd)
-// imm-r = r - r;r      ????? or r - (r;r+)
-// twoplus-r = r;r      ????? or (r;r+)
+(* Terms from spirv.als *)
+// stor = [] "set to relation, (s,s) for all s in E, lift a set to a relation (the [_] operator in Herd)"
 // rai-r = r | r^-1
 // sthd = int
 // immpo = po - po;po
 // rc[r] = r?
-
-// ssg, swg, sqf = sr@ subgroup, workgroup, queuefamily
-// ssw = sdv, specifies that the first thread system-synchronizes-with the second thread.
-//       use same-device as replacement for system-synchronizes-with
-
+// ssg, swg, sqf = same scope id @ subgroup, workgroup, queuefamily
 // inscope = sr
-
-// pgmsloc = loc
-// pgmsref == direct-alias
 // sloc = loc
 // sref = vloc
-// scbarinst = sync_barrier: relates pairs of control barriers, same control barrier dynamic instance
+// scbarinst = syncbar "relates pairs of control barriers, same control barrier dynamic instance"
+// imm-r = r - (r;r+)
+// twoplus-r = r;r+
 
 //???????????
-// chains = [_] or _*_ ?
-// asmo = strong operation(with scope) ?????
+// chains = [_] or _*_
+// ssw = sdv, specifies that the first thread system-synchronizes-with the second thread.
+//       use same-device as replacement for system-synchronizes-with?
 
 (*******************)
 (*  Auxiliaries *)
 (*******************)
 let mutordatom = [ATOM]; ((loc & vloc & sr) \ id); [ATOM] // mutually ordered atomics (same loc, inscope)
-let avvisinc = (((SC0 | SC1) * (AVDEVICE | VISDEVICE)) | ((AVDEVICE | VISDEVICE) * (SC0 | SC1)) |
-               (SC0 * ((SEMAV | SEMVIS) & SEMSC0)) | (((SEMAV | SEMVIS) & SEMSC0) * SC0) |
-               (SC1 * ((SEMAV | SEMVIS) & SEMSC1)) | (((SEMAV | SEMVIS) & SEMSC1) * SC1)) \ id |
-               ([AV | VIS]; (vloc & loc)) | ((vloc & loc); [AV | VIS])
+
+let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE)) | (SC0 * ((SEMAV | SEMVIS) & SEMSC0)) | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
+let avvisSet = [AV | VIS]; (vloc & loc)
+let avvisinc = (avvisSem | avvisSem^-1) \ id |
+               (avvisSet | avvisSet^-1)
+
 let posctosem = [SC0]; po; [SEMSC0] | [SC1]; po; [SEMSC1]
 let posemtosc = [SEMSC0]; po; [SC0] | [SEMSC1]; po; [SC1]
 
 (*******************)
 let asmo = [ATOM & W]; mutordatom; [ATOM & W] // should be rai[asmo] = ((A&W) -> (A&W)) & mutordatom
-let rs = [REL & ATOM]; ((asmo \ (asmo; asmo)); [R & W])*
-let hypors = [W & ATOM]; ((asmo \ (asmo; asmo)); [R & W])*
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])*
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])*
 (*******************)
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
@@ -52,7 +44,7 @@ let sw = sr & (
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
-    [REL & F]; po?; [CBAR]; (sync_barrier & sr \ id); [CBAR]; po?; [ACQ & F]                               // fence->cbar->cbar->fence,
+    [REL & F]; po?; [CBAR]; (syncbar & sr \ id); [CBAR]; po?; [ACQ & F]                               // fence->cbar->cbar->fence,
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
 )
 
@@ -119,5 +111,5 @@ empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 let race-pair = W * W | W * R | R * W
 empty loc & (race-pair \ mutordatom \ id \ (locord | locord^-1)) as dr
 
-let read-write = (R \ W) | (W \ R) // TODO: check (X.R-X.W)
-empty (((locord | locord^-1) | mutordatom \ [read-write]) \ (loc \ id \ [read-write])) as locord-complete
+let read-write = (R \ W) * (R \ W) // exclude RMWs
+empty (((locord | locord^-1) | mutordatom \ read-write) \ (loc \ id \ read-write)) as locord-complete
