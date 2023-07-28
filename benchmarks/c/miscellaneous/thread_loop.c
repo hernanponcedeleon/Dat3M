@@ -1,6 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
-#include "dat3m.h"
+#include <dat3m.h>
 
 /*
     The test shows thread creation inside loops

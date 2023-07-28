@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <assert.h>
-#include "dat3m.h"
+#include <dat3m.h>
 
 int main()
 {

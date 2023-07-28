@@ -120,12 +120,8 @@ public class Program {
         return Collections.unmodifiableCollection(constants);
     }
 
-    /**
-     * Iterates all events in this program.
-     *
-     * @return {@code globalId}-ordered complete sequence of all events in this program.
-     */
     public List<Event> getThreadEvents() {
+        Preconditions.checkState(!threads.isEmpty(), "The program has no threads yet.");
         List<Event> events = new ArrayList<>();
         for (Function func : threads) {
             events.addAll(func.getEvents());
@@ -133,13 +129,6 @@ public class Program {
         return events;
     }
 
-    /**
-     * Iterates a subset of events in this program.
-     *
-     * @param cls Class of events to be selected.
-     * @param <T> Desired subclass of {@link Event}.
-     * @return {@code globalId}-ordered complete sequence of all events of class {@code cls} in this program.
-     */
     public <T extends Event> List<T> getThreadEvents(Class<T> cls) {
         return getThreadEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }

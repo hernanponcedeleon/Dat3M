@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -16,6 +17,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /*
     This pass collects all Malloc events in the program and for each of them it:
@@ -38,14 +40,12 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void processMallocs(Program program) {
-        for (Thread thread : program.getThreads()) {
-            for (Malloc malloc : thread.getEvents(Malloc.class)) {
-                final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
-                final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
-                local.addTags(Tag.Std.MALLOC);
-                local.copyAllMetadataFrom(malloc);
-                malloc.replaceBy(local);
-            }
+        for (Malloc malloc : program.getThreadEvents(Malloc.class)) {
+            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
+            final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
+            local.addTags(Tag.Std.MALLOC);
+            local.copyAllMetadataFrom(malloc);
+            malloc.replaceBy(local);
         }
     }
 
@@ -80,12 +80,12 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void createInitEvents(Program program) {
-        final List<Thread> threads = program.getThreads();
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
         final TypeFactory types = TypeFactory.getInstance();
         final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
-        int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
+        int nextThreadId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
+                .mapToInt(Function::getId).max().getAsInt() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
             // The last case "heuristically checks" if Smack generated initialization or not:
             // if any field is statically initialized, then likely everything is initialized.
