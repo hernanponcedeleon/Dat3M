@@ -1,44 +1,50 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class LogProgramStatistics implements ProgramProcessor {
+import java.util.List;
 
-    private static final Logger logger = LogManager.getLogger(LogProgramStatistics.class);
+public class LogThreadStatistics implements ProgramProcessor {
 
-    private LogProgramStatistics() { }
+    private static final Logger logger = LogManager.getLogger(LogThreadStatistics.class);
 
-    public static LogProgramStatistics newInstance() { return new LogProgramStatistics(); }
+    private LogThreadStatistics() { }
+
+    public static LogThreadStatistics newInstance() { return new LogThreadStatistics(); }
 
     @Override
     public void run(Program program) {
         if (!logger.isInfoEnabled()) {
             return;
         }
+        final List<Thread> threads = program.getThreads();
 
         int totalEventCount = 0;
         int storeCount = 0;
         int loadCount = 0;
         int initCount = 0;
         int fenceCount = 0;
-        for (Event e : program.getEvents()) {
-            totalEventCount++;
-            if (e instanceof Init) {
-                initCount++;
-            } else if (e instanceof Store) {
-                storeCount++;
-            } else if (e instanceof Load) {
-                loadCount++;
-            } else if (e instanceof Fence) {
-                fenceCount++;
+        for (Thread thread : threads) {
+            for (Event e : thread.getEvents()) {
+                totalEventCount++;
+                if (e instanceof Init) {
+                    initCount++;
+                } else if (e instanceof Store) {
+                    storeCount++;
+                } else if (e instanceof Load) {
+                    loadCount++;
+                } else if (e instanceof Fence) {
+                    fenceCount++;
+                }
             }
         }
 
-        int numNonInitThreads = (int)program.getThreads().stream().filter(t -> !(t.getEntry() instanceof Init)).count();
+        int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry() instanceof Init)).count();
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
                 .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::size).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()

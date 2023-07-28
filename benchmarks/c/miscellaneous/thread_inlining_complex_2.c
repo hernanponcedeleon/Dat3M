@@ -4,9 +4,6 @@
 /*
     The test checks if inlining of thread-creating/joining functions + reassigning pthread_t variables works properly.
     Expected result: PASS
-    Current result:
-     - development: PASS
-     - rework: Parsing error (matching between pthread_join and pthread_create fails)
 */
 
 atomic_int data;

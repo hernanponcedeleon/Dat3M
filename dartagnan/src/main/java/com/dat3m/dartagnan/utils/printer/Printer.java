@@ -12,21 +12,24 @@ import java.util.stream.Collectors;
 
 public class Printer {
 
+    public enum Mode {
+        THREADS,
+        FUNCTIONS,
+        ALL
+    }
+
     private StringBuilder result;
     private StringBuilder padding;
 
     private boolean showAuxiliaryEvents = true;
     private boolean showInitThreads = false;
-    private IDType idType = IDType.AUTO;
+    private Mode mode = Mode.ALL;
 
     private final String paddingBase = "      ";
 
-    public String print(Program program){
+    public String print(Program program) {
         result = new StringBuilder();
         padding = new StringBuilder(paddingBase);
-
-        IDType origType = idType;
-        idType = resolveIDType(program);
 
         String name = program.getName();
         if(name == null){
@@ -34,35 +37,46 @@ public class Printer {
         }
         result.append(name).append("\n");
 
-        for(Thread thread : program.getThreads()) {
-            if(shouldPrintThread(thread)){
-                appendFunction(thread);
+        if (mode == Mode.THREADS || mode == Mode.ALL) {
+            for (Thread thread : program.getThreads()) {
+                if (shouldPrintThread(thread)) {
+                    appendFunction(thread);
+                }
+            }
+
+            if (!showInitThreads && !program.getThreads().isEmpty()) {
+                result.append("\nSkipping init threads...");
+                result.append("\n...");
+                result.append("\n...");
+                result.append("\n...");
+                result.append("\n");
             }
         }
 
-        for (Function function : program.getFunctions()) {
-            if (function instanceof Thread) {
-                continue;
+        if (mode == Mode.FUNCTIONS || mode == Mode.ALL) {
+            for (Function function : program.getFunctions()) {
+                if (function instanceof Thread) {
+                    continue;
+                }
+                appendFunction(function);
             }
-            appendFunction(function);
         }
 
-        idType = origType;
         return result.toString();
     }
 
-    public Printer setIdType(IDType type){
-        this.idType = type;
-        return this;
-    }
-
-    public Printer setShowAuxiliaryEvents(boolean flag){
+    public Printer setShowAuxiliaryEvents(boolean flag) {
         this.showAuxiliaryEvents = flag;
         return this;
     }
 
-    public Printer setShowInitThreads(boolean flag){
+    public Printer setShowInitThreads(boolean flag) {
         this.showInitThreads = flag;
+        return this;
+    }
+
+    public Printer setMode(Mode mode) {
+        this.mode = mode;
         return this;
     }
 
@@ -97,7 +111,7 @@ public class Printer {
             idSb.append(event.getGlobalId()).append(":");
             result.append(idSb);
             if(!(event instanceof Label)) {
-            	result.append("   ");
+                result.append("   ");
             }
             result.append(padding, idSb.length(), padding.length());
             result.append(event).append("\n");
@@ -106,18 +120,5 @@ public class Printer {
 
     private boolean isAuxiliary(Event event){
         return event instanceof Skip;
-    }
-
-    private IDType resolveIDType(Program program){
-        if(idType == IDType.AUTO){
-            if(program.isCompiled()) {
-                return IDType.COMPILED;
-            }
-            if(program.isUnrolled()){
-                return IDType.UNROLLED;
-            }
-            return IDType.ORIG;
-        }
-        return idType;
     }
 }

@@ -47,17 +47,18 @@ public class MiscellaneousTest extends AbstractCTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
                 {"idd_dynamic", ARM8, FAIL, 1},
-                {"propagatableSideEffects", ARM8, FAIL, 3},
+                {"propagatableSideEffects", ARM8, FAIL, 1},
                 {"SB-RMW", TSO, PASS, 1},
                 {"SB-RMW", IMM, PASS, 1},
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
+                {"nondet_loop", IMM, FAIL, 1},
                 {"thread_chaining", IMM, PASS, 1},
                 {"thread_inlining", IMM, PASS, 1},
                 {"thread_inlining_complex", IMM, PASS, 1},
                 {"thread_inlining_complex_2", IMM, PASS, 1},
                 {"thread_local", IMM, PASS, 1},
-                {"nondet_loop", IMM, FAIL, 3}
+                {"thread_loop", IMM, FAIL, 1}
         });
     }
 

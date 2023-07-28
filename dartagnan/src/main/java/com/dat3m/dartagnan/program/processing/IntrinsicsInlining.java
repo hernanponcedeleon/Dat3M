@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
@@ -25,6 +25,7 @@ import java.util.List;
 
 public class IntrinsicsInlining implements ProgramProcessor {
 
+    // TODO: This id should be part of Program
     private int constantId;
 
     private IntrinsicsInlining() {
@@ -37,13 +38,11 @@ public class IntrinsicsInlining implements ProgramProcessor {
     @Override
     public void run(Program program) {
         constantId = 0;
-        for (Thread thread : program.getThreads()) {
-            run(thread);
-        }
+        program.getThreads().forEach(this::run);
     }
 
-    private void run(Thread thread) {
-        for (DirectFunctionCall call : thread.getEvents(DirectFunctionCall.class)) {
+    private void run(Function function) {
+        for (DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
             assert !call.getCallTarget().hasBody();
 
             List<Event> replacement = switch (call.getCallTarget().getName()) {
@@ -112,4 +111,5 @@ public class IntrinsicsInlining implements ProgramProcessor {
         call.getFunction().getProgram().addConstant(expression);
         return List.of(EventFactory.newLocal(register, expression));
     }
+
 }

@@ -18,10 +18,6 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorLKMM extends VisitorBase {
 
-    protected VisitorLKMM(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
         Register resultRegister = e.getResultRegister();
@@ -205,7 +201,7 @@ public class VisitorLKMM extends VisitorBase {
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeNot(nonzeroDummy)) :
-                newJump(nonzeroDummy, (Label) e.getThread().getExit());
+                newTerminator(nonzeroDummy);
         return eventSequence(
                 lockRead,
                 checkLockValue,

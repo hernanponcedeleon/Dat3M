@@ -29,9 +29,9 @@ import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
-import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +45,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
@@ -67,24 +66,21 @@ public class ThreadCreation implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(ThreadCreation.class);
 
-    @Option(name = TARGET,
-            description = "The target architecture to which the program shall be compiled to.",
-            secure = true,
-            toUppercase = true)
-    private Arch compilationTarget = Arch.C11;
-
     @Option(name = THREAD_CREATE_ALWAYS_SUCCEEDS,
             description = "Calling pthread_create is guaranteed to succeed.",
             secure = true,
             toUppercase = true)
     private boolean forceStart = false;
 
-    private ThreadCreation() {}
+    private final Compilation compiler;
+
+    private ThreadCreation(Configuration config) throws InvalidConfigurationException {
+        config.inject(this);
+        compiler = Compilation.fromConfig(config);
+    }
 
     public static ThreadCreation fromConfig(Configuration config) throws InvalidConfigurationException {
-        ThreadCreation creation = new ThreadCreation();
-        config.inject(creation);
-        return creation;
+        return new ThreadCreation(config);
     }
 
     @Override
@@ -132,7 +128,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
-                        final List<Event> replacement = List.of(
+                        final List<Event> replacement = eventSequence(
                                 createEvent,
                                 newReleaseStore(comAddress, expressions.makeTrue()),
                                 // TODO: Allow to return failure value (!= 0)
@@ -154,6 +150,7 @@ public class ThreadCreation implements ProgramProcessor {
                     case "pthread_join", "__pthread_join" -> {
                         assert arguments.size() == 2;
                         final Expression tidExpr = arguments.get(0);
+                        // TODO: support return values for threads
                         // final Expression returnAddr = arguments.get(1);
 
                         final Register resultRegister = getResultRegister(call);
@@ -165,7 +162,7 @@ public class ThreadCreation implements ProgramProcessor {
                         }
                         final int tid = tidExpr.reduce().getValueAsInt();
                         final Register joinDummyReg = thread.getOrNewRegister("__joinT" + tid, types.getBooleanType());
-                        final List<Event> replacement = List.of(
+                        final List<Event> replacement = eventSequence(
                                 newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
                                 newJump(joinDummyReg, (Label)thread.getExit()),
                                 // Note: In our modelling, pthread_join always succeeds if it returns
@@ -188,8 +185,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
         }
 
-        EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
+        IdReassignment.newInstance().run(program);
         logger.info("Number of threads (including main): " + program.getThreads().size());
     }
 
@@ -249,6 +245,7 @@ public class ThreadCreation implements ProgramProcessor {
         // ------------------- Create new thread -------------------
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
+        thread.copyDummyCountFrom(function);
 
         // ------------------- Copy registers from target function into new thread -------------------
         final Map<Register, Register> registerReplacement = new HashMap<>();
@@ -359,16 +356,18 @@ public class ThreadCreation implements ProgramProcessor {
         return ((DirectValueFunctionCall) call).getResultRegister();
     }
 
-    private Event newReleaseStore(Expression address, Expression storeValue) {
-        return compilationTarget == Arch.LKMM ?
-            EventFactory.Linux.newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
-            EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
+    private List<Event> newReleaseStore(Expression address, Expression storeValue) {
+        final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
+                EventFactory.Linux.newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
+                EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
+        return compiler.getCompilationResult(releaseStore);
     }
 
-    private Event newAcquireLoad(Register resultRegister, Expression address) {
-        return compilationTarget == Arch.LKMM ?
+    private List<Event> newAcquireLoad(Register resultRegister, Expression address) {
+        final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
                 EventFactory.Linux.newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
                 EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
+        return compiler.getCompilationResult(acquireLoad);
     }
 
 

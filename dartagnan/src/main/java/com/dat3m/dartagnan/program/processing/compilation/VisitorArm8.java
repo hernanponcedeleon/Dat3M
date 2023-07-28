@@ -30,8 +30,7 @@ class VisitorArm8 extends VisitorBase {
     // "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
     private final boolean useRC11Scheme;
 
-    protected VisitorArm8(boolean forceStart, boolean useRC11Scheme) {
-        super(forceStart);
+    protected VisitorArm8(boolean useRC11Scheme) {
         this.useRC11Scheme = useRC11Scheme;
     }
 
@@ -196,7 +195,7 @@ class VisitorArm8 extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getThread().newRegister(types.getBooleanType());
+                e.getFunction().newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getFunction().newRegister(type);

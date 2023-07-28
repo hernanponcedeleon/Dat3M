@@ -60,11 +60,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private FieldSensitiveAndersen(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
-        List<MemoryCoreEvent> memEvents = program.getEvents(MemoryCoreEvent.class);
+        List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
-        program.getEvents().forEach(this::processRegs);
+        program.getThreadEvents().forEach(this::processRegs);
         while(!variables.isEmpty()) {
             algorithm(variables.poll());
         }

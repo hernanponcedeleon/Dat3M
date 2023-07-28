@@ -9,14 +9,7 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula;
+import org.sosy_lab.java_smt.api.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -86,7 +79,7 @@ public class WitnessGraph extends ElemWithAttributes {
 		List<BooleanFormula> enc = new ArrayList<>();
 		List<Event> previous = new ArrayList<>();
 		for (Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
-			List<Event> events = program.getEvents(MemoryEvent.class).stream()
+			List<Event> events = program.getThreadEvents(MemoryEvent.class).stream()
 					.filter(e -> e.hasMetadata(SourceLocation.class))
 					.filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline())
 					.collect(Collectors.toList());
@@ -101,7 +94,7 @@ public class WitnessGraph extends ElemWithAttributes {
 			// FIXME: The reliance on "globalId" for matching is very fragile (see comment in WitnessBuilder)
 			if (edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				Optional<Load> load = program.getEvents(Load.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
+				Optional<Load> load = program.getThreadEvents(Load.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
 				if (load.isPresent()) {
 					String loadedValue = edge.getAttributed(LOADEDVALUE.toString());
 					enc.add(equalsParsedValue(context.result(load.get()), loadedValue, fmgr));
@@ -109,7 +102,7 @@ public class WitnessGraph extends ElemWithAttributes {
 			}
 			if (edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
 				int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-				Optional<Store> store = program.getEvents(Store.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
+				Optional<Store> store = program.getThreadEvents(Store.class).stream().filter(e -> e.getGlobalId() == id).findFirst();
 				if (store.isPresent()) {
 					String storedValue = edge.getAttributed(STOREDVALUE.toString());
 					enc.add(equalsParsedValue(context.value(store.get()), storedValue, fmgr));
