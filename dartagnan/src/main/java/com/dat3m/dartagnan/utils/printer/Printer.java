@@ -23,16 +23,13 @@ public class Printer {
 
     private boolean showAuxiliaryEvents = true;
     private boolean showInitThreads = false;
-    private IDType idType = IDType.AUTO;
+    private Mode mode = Mode.ALL;
 
     private final String paddingBase = "      ";
 
-    public String print(Program program, Mode mode) {
+    public String print(Program program) {
         result = new StringBuilder();
         padding = new StringBuilder(paddingBase);
-
-        IDType origType = idType;
-        idType = resolveIDType(program);
 
         String name = program.getName();
         if(name == null){
@@ -65,22 +62,21 @@ public class Printer {
             }
         }
 
-        idType = origType;
         return result.toString();
     }
 
-    public Printer setIdType(IDType type){
-        this.idType = type;
-        return this;
-    }
-
-    public Printer setShowAuxiliaryEvents(boolean flag){
+    public Printer setShowAuxiliaryEvents(boolean flag) {
         this.showAuxiliaryEvents = flag;
         return this;
     }
 
-    public Printer setShowInitThreads(boolean flag){
+    public Printer setShowInitThreads(boolean flag) {
         this.showInitThreads = flag;
+        return this;
+    }
+
+    public Printer setMode(Mode mode) {
+        this.mode = mode;
         return this;
     }
 
@@ -115,7 +111,7 @@ public class Printer {
             idSb.append(event.getGlobalId()).append(":");
             result.append(idSb);
             if(!(event instanceof Label)) {
-            	result.append("   ");
+                result.append("   ");
             }
             result.append(padding, idSb.length(), padding.length());
             result.append(event).append("\n");
@@ -124,18 +120,5 @@ public class Printer {
 
     private boolean isAuxiliary(Event event){
         return event instanceof Skip;
-    }
-
-    private IDType resolveIDType(Program program){
-        if(idType == IDType.AUTO){
-            if(program.isCompiled()) {
-                return IDType.COMPILED;
-            }
-            if(program.isUnrolled()){
-                return IDType.UNROLLED;
-            }
-            return IDType.ORIG;
-        }
-        return idType;
     }
 }

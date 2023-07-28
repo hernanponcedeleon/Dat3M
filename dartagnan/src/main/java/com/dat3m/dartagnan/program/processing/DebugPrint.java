@@ -19,7 +19,7 @@ public class DebugPrint implements ProgramProcessor {
     @Override
     public void run(Program program) {
         System.out.println("======== " + printHeader +  " ========");
-        System.out.println(new Printer().print(program, printerMode));
+        System.out.println(new Printer().setMode(printerMode).print(program));
         System.out.println("======================================");
     }
 }
