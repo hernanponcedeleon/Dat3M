@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
@@ -243,8 +244,10 @@ public class ThreadCreation implements ProgramProcessor {
         final TypeFactory types = TypeFactory.getInstance();
 
         // ------------------- Create new thread -------------------
+        final ThreadStart start = EventFactory.newThreadStart(creator);
+        start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyDummyCountFrom(function);
 
         // ------------------- Copy registers from target function into new thread -------------------
