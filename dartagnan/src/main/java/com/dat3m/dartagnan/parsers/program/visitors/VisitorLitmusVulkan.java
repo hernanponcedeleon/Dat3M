@@ -130,6 +130,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
+        if (!avvisSemantic.isEmpty()) {
+             if (!avvisSemantic.equals(Tag.Vulkan.SEM_AVAILABLE)) {
+                    throw new ParsingException("Store instruction doesn't support avvisSemantic: " + avvisSemantic);
+             } else if (!mo.equals(Tag.Vulkan.RELEASE)) {
+                    throw new ParsingException("Availability semantics in RELEASE only.");
+             }
+        }
         switch (mo) {
             case Tag.Vulkan.RELEASE -> {
                 store.addTags(Tag.Vulkan.ATOM);
@@ -161,6 +168,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
+        if (!avvisSemantic.isEmpty()) {
+            if (!avvisSemantic.equals(Tag.Vulkan.SEM_AVAILABLE)) {
+                throw new ParsingException("Store instruction doesn't support avvisSemantic: " + avvisSemantic);
+            } else if (!mo.equals(Tag.Vulkan.RELEASE)) {
+                throw new ParsingException("Availability semantics in RELEASE only.");
+            }
+        }
         switch (mo) {
             case Tag.Vulkan.RELEASE -> {
                 store.addTags(Tag.Vulkan.ATOM);
@@ -199,6 +213,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
         load.addTags(scope, classSemantic, avvisSemantic);
+        if (!avvisSemantic.isEmpty()) {
+            if (!avvisSemantic.equals(Tag.Vulkan.SEM_VISIBLE)) {
+                throw new ParsingException("Load instruction doesn't support avvisSemantic: " + avvisSemantic);
+            } else if (!mo.equals(Tag.Vulkan.ACQUIRE)) {
+                throw new ParsingException("Visibility semantics in ACQUIRE only.");
+            }
+        }
         switch (mo) {
             case Tag.Vulkan.ACQUIRE -> {
                 load.addTags(Tag.Vulkan.ATOM);

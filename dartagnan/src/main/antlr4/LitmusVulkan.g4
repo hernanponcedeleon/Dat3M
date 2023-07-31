@@ -93,11 +93,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomatic mo Period scope storageClassSemantic avvisSemantic location Comma constant
+    :   Store atomatic mo scope storageClassSemantic avvisSemantic location Comma constant
     ;
 
 storeRegister
-    :   Store atomatic mo Period scope storageClassSemantic avvisSemantic location Comma register
+    :   Store atomatic mo scope storageClassSemantic avvisSemantic location Comma register
     ;
 
 loadInstruction
@@ -106,11 +106,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomatic mo Period scope storageClassSemantic avvisSemantic register Comma constant
+    :   Load atomatic mo scope storageClassSemantic avvisSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomatic mo Period scope storageClassSemantic avvisSemantic register Comma location
+    :   Load atomatic mo scope storageClassSemantic avvisSemantic register Comma location
     ;
 
 rmwInstruction
@@ -118,7 +118,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic mo Period scope storageClassSemantic avvisSemantic Comma location register Comma constant
+    :   RMW atomatic mo scope storageClassSemantic avvisSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -127,11 +127,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo Period scope Period storageClassSemantic avvisSemantic
+    :   MemoryBarrier mo scope storageClassSemantic avvisSemantic
     ;
 
 controlBarrier
-    :   ControlBarrier mo Period scope Period storageClassSemantic avvisSemantic barID
+    :   ControlBarrier mo scope storageClassSemantic avvisSemantic barID
     ;
 
 barID
@@ -159,10 +159,10 @@ atomatic returns [Boolean content]
     ;
 
 scope returns [String content]
-    :   Subgroup {$content = "SG";}
-    |   Workgroup {$content = "WG";}
-    |   Queuefamily {$content = "QF";}
-    |   Device {$content = "DV";}
+    :   Period Subgroup {$content = "SG";}
+    |   Period Workgroup {$content = "WG";}
+    |   Period Queuefamily {$content = "QF";}
+    |   Period Device {$content = "DV";}
     ;
 
 scopeID returns [int id]
@@ -170,29 +170,29 @@ scopeID returns [int id]
     ;
 
 mo returns [String content]
-    :   Period Acquire {$content = "ACQUIRE";}
-    |   Period Release {$content = "RELEASE";}
+    :   Period Acquire {$content = "ACQ";}
+    |   Period Release {$content = "REL";}
     |   Period Acq_rel {$content = "ACQ_REL";}
-    |   Period Visible {$content = "VISIBLE";}
-    |   Period Available {$content = "AVAILABLE";}
+    |   Period Visible {$content = "VIS";}
+    |   Period Available {$content = "AVA";}
     |   {$content = "";}
     ;
 
 storageClass returns [String content]
-    :   Sc0 {$content = "sc0";}
-    |   Sc1 {$content = "sc1";}
+    :   Sc0 {$content = "SC0";}
+    |   Sc1 {$content = "SC1";}
     ;
 
 storageClassSemantic returns [String content]
-    :   Period Semsc0 {$content = "semsc0";}
-    |   Period Semsc1 {$content = "semsc1";}
-    |   Period Semsc01 {$content = "semsc01";}
+    :   Period Semsc0 {$content = "SEMSC0";}
+    |   Period Semsc1 {$content = "SEMSC1";}
+    |   Period Semsc01 {$content = "SEMSC01";}
     |   {$content = "";}
     ;
 
 avvisSemantic returns [String content]
-    :   Period SemVis {$content = "VISIBLE";}
-    |   Period SemAva {$content = "AVAILABLE";}
+    :   Period SemVis {$content = "SEMVIS";}
+    |   Period SemAva {$content = "SEMAVA";}
     |   {$content = "";}
     ;
 

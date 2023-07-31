@@ -329,25 +329,28 @@ public final class Tag {
     // =============================================================================================
     public static final class Vulkan {
         // Scopes
-        public static final String SUB_GROUP = "SUB_GROUP";
-        public static final String WORK_GROUP = "WORK_GROUP";
-        public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
-        public static final String DEVICE = "DEVICE";
+        public static final String SUB_GROUP = "SG";
+        public static final String WORK_GROUP = "WG";
+        public static final String QUEUE_FAMILY = "QF";
+        public static final String DEVICE = "DV";
+        public static final String PRIVATE = "PRIV";
+        public static final String NON_PRIVATE = "NONPRIV";
         // Memory orders
         public static final String ATOM = "ATOM";
-        public static final String NON_PRIVATE = "NON_PRIVATE";
-        public static final String ACQUIRE = "ACQUIRE";
-        public static final String RELEASE = "RELEASE";
+        public static final String ACQUIRE = "ACQ";
+        public static final String RELEASE = "REL";
         public static final String ACQ_REL = "ACQ_REL";
-        public static final String VISIBLE = "VISIBLE";
-        public static final String AVAILABLE = "AVAILABLE";
+        public static final String VISIBLE = "VIS";
+        public static final String AVAILABLE = "AVA";
+        public static final String SEM_VISIBLE = "SEMVIS";
+        public static final String SEM_AVAILABLE = "SEMAVA";
         // StorageClass
         public static final String SC0 = "SC0";
         public static final String SC1 = "SC1";
         // StorageClass Semantics
-        public static final String SEMSC0 = "SEMSC0";
-        public static final String SEMSC1 = "SEMSC1";
-        public static final String SEMSC01 = "SEMSC01";
+        public static final String SEM_SC0 = "SEMSC0";
+        public static final String SEM_SC1 = "SEMSC1";
+        public static final String SEM_SC01 = "SEMSC01";
 
         public static Set<String> getMoTags() {
             return Set.of(ACQUIRE, RELEASE, ACQ_REL, VISIBLE, AVAILABLE);
@@ -358,7 +361,7 @@ public final class Tag {
         }
 
         public static Set<String> getStorageClassSemanticTags() {
-            return Set.of(SEMSC0, SEMSC1, SEMSC01);
+            return Set.of(SEM_SC0, SEM_SC1, SEM_SC01);
         }
 
         public static String loadMO(String mo) {
