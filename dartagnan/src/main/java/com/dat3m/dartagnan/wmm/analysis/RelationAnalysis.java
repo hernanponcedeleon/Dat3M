@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
 import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
@@ -13,6 +14,7 @@ import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -787,7 +789,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitReadFrom(Relation rel) {
             logger.trace("Computing knowledge about read-from");
+            final BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
             Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
             List<Load> loadEvents = program.getThreadEvents(Load.class);
             for (Store e1 : program.getThreadEvents(Store.class)) {
                 for (Load e2 : loadEvents) {
@@ -796,6 +800,40 @@ public class RelationAnalysis {
                     }
                 }
             }
+
+            // Here we add must-rf edges between loads/stores that synchronize threads.
+            for (Thread thread : program.getThreads()) {
+                final ThreadStart start = (ThreadStart) thread.getEntry();
+                if (!start.isSpawned()) {
+                    continue;
+                }
+
+                // Must-rf edge for thread spawning
+                Event cur = start;
+                while (!(cur instanceof Load startLoad)) { cur = cur.getSuccessor(); }
+                cur = start.getCreator();
+                while (!(cur instanceof Store startStore)) { cur = cur.getSuccessor(); }
+
+                assert startStore.getAddress().equals(startLoad.getAddress());
+
+                must.add(new Tuple(startStore, startLoad));
+                if (eq.isImplied(startLoad, startStore)) {
+                    may.removeIf(t -> t.getSecond() == startLoad && t.getFirst() != startStore);
+                }
+
+                // Must-rf edge for thread joining
+                cur = thread.getExit();
+                while (!(cur instanceof Store endStore)) { cur = cur.getPredecessor(); }
+                cur = start.getCreator();
+                while (cur != null && !(cur instanceof Load endLoad && endLoad.getAddress().equals(endStore.getAddress()))) {
+                    cur = cur.getSuccessor();
+                }
+
+                if (cur instanceof Load endLoad) {
+                    must.add(new Tuple(endStore, endLoad));
+                }
+            }
+
             if (wmmAnalysis.isLocallyConsistent()) {
                 // Remove future reads
                 may.removeIf(Tuple::isBackward);
@@ -873,7 +911,7 @@ public class RelationAnalysis {
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
             logger.debug("Initial may set size for read-from: {}", may.size());
-            return new Knowledge(may, enableMustSets ? new HashSet<>() : EMPTY_SET);
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
 
         @Override
