@@ -189,8 +189,8 @@ public class SyntacticContextAnalysis {
 
     private Map<Event, LoopMarkerTypes> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
         final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = new HashMap<>();
-        for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfThread(thread)) {
-            final List<LoopAnalysis.LoopIterationInfo> iterations = loop.getIterations();
+        for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfFunction(thread)) {
+            final List<LoopAnalysis.LoopIterationInfo> iterations = loop.iterations();
 
             loopMarkerTypesMap.put(iterations.get(0).getIterationStart(), LoopMarkerTypes.START);
             iterations.subList(1, iterations.size())

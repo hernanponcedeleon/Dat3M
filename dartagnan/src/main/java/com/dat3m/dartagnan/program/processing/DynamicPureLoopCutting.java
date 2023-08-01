@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -18,6 +19,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -27,7 +29,6 @@ import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -37,7 +38,7 @@ import java.util.stream.IntStream;
 
     NOTE: This pass is required to detect liveness violations.
  */
-public class DynamicPureLoopCutting implements ProgramProcessor {
+public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(DynamicPureLoopCutting.class);
 
@@ -55,14 +56,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         private boolean isAlwaysSideEffectFull = false;
     }
 
-    private static class AnalysisStats {
-        private final int numPotentialSpinLoops;
-        private final int numStaticSpinLoops;
-
-        private AnalysisStats(int numPotentialSpinLoops, int numStaticSpinLoops) {
-            this.numPotentialSpinLoops = numPotentialSpinLoops;
-            this.numStaticSpinLoops = numStaticSpinLoops;
-        }
+    private record AnalysisStats(int numPotentialSpinLoops, int numStaticSpinLoops) {
 
         private AnalysisStats add(AnalysisStats stats) {
             return new AnalysisStats(this.numPotentialSpinLoops + stats.numPotentialSpinLoops,
@@ -77,8 +71,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
 
         AnalysisStats stats = new AnalysisStats(0, 0);
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
-        for (Thread thread : program.getThreads()) {
-            final List<IterationData> iterationData = computeIterationDataList(thread, loopAnalysis);
+        for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
+            final List<IterationData> iterationData = computeIterationDataList(func, loopAnalysis);
             iterationData.forEach(this::reduceToDominatingSideEffects);
             iterationData.forEach(this::insertSideEffectChecks);
             stats = stats.add(collectStats(iterationData));
@@ -87,6 +81,14 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         // NOTE: We log "potential spin loops" as only those that are not also "static".
         logger.info("Found {} static spin loops and {} potential spin loops.",
                 stats.numStaticSpinLoops, (stats.numPotentialSpinLoops - stats.numStaticSpinLoops));
+    }
+
+    @Override
+    public void run(Function function) {
+        final LoopAnalysis loopAnalysis = LoopAnalysis.onFunction(function);
+        final List<IterationData> iterationData = computeIterationDataList(function, loopAnalysis);
+        iterationData.forEach(this::reduceToDominatingSideEffects);
+        iterationData.forEach(this::insertSideEffectChecks);
     }
 
     private AnalysisStats collectStats(List<IterationData> iterDataList) {
@@ -116,8 +118,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
             return;
         }
         final LoopAnalysis.LoopIterationInfo iterInfo = iter.iterationInfo;
-        final Thread thread = iterInfo.getContainingLoop().getThread();
-        final int loopNumber = iterInfo.getContainingLoop().getLoopNumber();
+        final Function func = iterInfo.getContainingLoop().function();
+        final int loopNumber = iterInfo.getContainingLoop().loopNumber();
         final int iterNumber = iterInfo.getIterationNumber();
         final List<Event> sideEffects = iter.sideEffects;
 
@@ -126,7 +128,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         Event insertionPoint = iterInfo.getIterationEnd();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
-            final Register trackingReg = thread.newRegister(String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), type);
+            final Register trackingReg = func.newRegister(String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), type);
             trackingRegs.add(trackingReg);
 
             final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
@@ -135,21 +137,27 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
 
         final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-        final Expression atLeastOneSideEffect = trackingRegs.stream()
-                .map(expressionFactory::makeNot)
-                .reduce(expressionFactory.makeFalse(), expressionFactory::makeOr);
-        final CondJump assumeSideEffect = EventFactory.newJumpUnless(atLeastOneSideEffect, (Label) thread.getExit());
+        final Expression noSideEffect = trackingRegs.stream()
+                .map(Expression.class::cast)
+                .reduce(expressionFactory.makeTrue(), expressionFactory::makeAnd);
+        final Event assumeSideEffect = newSpinTerminator(noSideEffect, func);
         assumeSideEffect.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
         final Event spinloopStart = iterInfo.getIterationStart();
         assumeSideEffect.copyAllMetadataFrom(spinloopStart);
         insertionPoint.insertAfter(assumeSideEffect);
     }
 
+    private Event newSpinTerminator(Expression guard, Function func) {
+        return func instanceof Thread thread ?
+                EventFactory.newJump(guard, (Label) thread.getExit())
+                : EventFactory.newAbortIf(guard);
+    }
+
     // ============================= Actual logic =============================
 
-    private List<IterationData> computeIterationDataList(Thread thread, LoopAnalysis loopAnalysis) {
-        final List<IterationData> dataList = loopAnalysis.getLoopsOfThread(thread).stream()
-                    .flatMap(loop -> loop.getIterations().stream())
+    private List<IterationData> computeIterationDataList(Function function, LoopAnalysis loopAnalysis) {
+        final List<IterationData> dataList = loopAnalysis.getLoopsOfFunction(function).stream()
+                    .flatMap(loop -> loop.iterations().stream())
                     .map(this::computeIterationData)
                     .collect(Collectors.toList());
         return dataList;
@@ -307,7 +315,8 @@ public class DynamicPureLoopCutting implements ProgramProcessor {
         }
     }
 
-    private Map<Event, Event> computeDominatorTree(List<Event> events, Function<Event, ? extends Collection<Event>> predsFunc) {
+    private Map<Event, Event> computeDominatorTree(List<Event> events,
+                                                   java.util.function.Function<Event, ? extends Collection<Event>> predsFunc) {
         Preconditions.checkNotNull(events);
         Preconditions.checkNotNull(predsFunc);
         if (events.isEmpty()) {

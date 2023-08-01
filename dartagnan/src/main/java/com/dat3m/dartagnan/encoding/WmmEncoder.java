@@ -349,7 +349,7 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitFences(Relation rel, Filter fenceSet) {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-            List<Event> fences = program.getEvents().stream().filter(fenceSet::apply).collect(toList());
+            List<Event> fences = program.getThreadEvents().stream().filter(fenceSet::apply).collect(toList());
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
                 Event e1 = tuple.getFirst();
@@ -434,7 +434,7 @@ public class WmmEncoder implements Encoder {
             final Function<Event, Collection<Tuple>> mayOut = k.getMayOut();
 
             // ----------  Encode matching for LL/SC-type RMWs ----------
-            for (RMWStoreExclusive store : program.getEvents(RMWStoreExclusive.class)) {
+            for (RMWStoreExclusive store : program.getThreadEvents(RMWStoreExclusive.class)) {
                 BooleanFormula storeExec = bmgr.makeFalse();
                 for (Tuple t : mayIn.apply(store)) {
                     MemoryCoreEvent load = (MemoryCoreEvent) t.getFirst();
@@ -548,7 +548,7 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitCoherence(Relation co) {
             boolean idl = !context.useSATEncoding;
-            List<MemoryCoreEvent> allWrites = program.getEvents(MemoryCoreEvent.class).stream()
+            List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasTag(WRITE))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .toList();
@@ -638,7 +638,7 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitSyncFence(Relation syncFence) {
             boolean idl = !context.useSATEncoding;
-            List<Fence> allFenceSC = program.getEvents(Fence.class).stream()
+            List<Fence> allFenceSC = program.getThreadEvents(Fence.class).stream()
                     .filter(e -> e.hasTag(Tag.PTX.SC))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .toList();

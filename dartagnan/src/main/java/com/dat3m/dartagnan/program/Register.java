@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -54,7 +55,7 @@ public class Register implements Expression {
 
     @Override
     public int hashCode() {
-        return name.hashCode() + function.hashCode();
+        return name.hashCode() + Objects.hashCode(function);
     }
 
     @Override

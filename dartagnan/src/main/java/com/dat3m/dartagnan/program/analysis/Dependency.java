@@ -114,7 +114,7 @@ public final class Dependency {
                         writers = finalWriters.get(register);
                         checkArgument(writers != null,
                                 "Helper thread %s should be listed after their creator thread %s.",
-                                thread.getId(),
+                                thread,
                                 register.getFunction());
                         if (writers.may.size() != 1) {
                             logger.warn("Writers {} for inter-thread register {} read by event {} of thread {}",

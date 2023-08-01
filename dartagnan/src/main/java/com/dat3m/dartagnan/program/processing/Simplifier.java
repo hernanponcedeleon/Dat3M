@@ -3,23 +3,16 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
-import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-public class Simplifier implements ProgramProcessor {
-
-    private static final Logger logger = LogManager.getLogger(Simplifier.class);
+public class Simplifier implements FunctionProcessor {
 
     private Simplifier() { }
 
@@ -32,14 +25,10 @@ public class Simplifier implements ProgramProcessor {
     }
 
     @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
-
-        logger.info("pre-simplification: " + program.getEvents().size() + " events");
-        for (Thread thread : program.getThreads()) {
-            simplify(thread);
+    public void run(Function function) {
+        if (function.hasBody()) {
+            simplify(function);
         }
-        logger.info("post-simplification: " + program.getEvents().size() + " events");
     }
 
     private void simplify(Function func) {
@@ -65,7 +54,7 @@ public class Simplifier implements ProgramProcessor {
         } else if (next instanceof Label label) {
             changed = simplifyLabel(label);
         } else if (next instanceof FunCallMarker fc) {
-            changed = simplifyFunCall(fc);
+            changed = simplifyFunCallMarkers(fc);
         }
         return changed;
     }
@@ -87,7 +76,7 @@ public class Simplifier implements ProgramProcessor {
         return false;
     }
 
-    private boolean simplifyFunCall(FunCallMarker call) {
+    private boolean simplifyFunCallMarkers(FunCallMarker call) {
         // If simplifyEvent returns false, the function is either non-empty or we reached the return statement
         while (simplifyEvent(call.getSuccessor())) { }
 
@@ -100,4 +89,5 @@ public class Simplifier implements ProgramProcessor {
         }
         return false;
     }
+
 }

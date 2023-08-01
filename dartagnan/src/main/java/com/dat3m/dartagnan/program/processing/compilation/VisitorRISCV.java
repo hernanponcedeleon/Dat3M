@@ -33,8 +33,7 @@ class VisitorRISCV extends VisitorBase {
     // we use the same scheme as AMRv8
     private final boolean useRC11Scheme;
 
-    protected VisitorRISCV(boolean forceStart, boolean useRC11Scheme) {
-        super(forceStart);
+    protected VisitorRISCV(boolean useRC11Scheme) {
         this.useRC11Scheme = useRC11Scheme;
     }
 
@@ -222,7 +221,7 @@ class VisitorRISCV extends VisitorBase {
         String mo = e.getMo();
         Expression expectedAddr = e.getAddressOfExpected();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getThread().newRegister(types.getBooleanType());
+                e.getFunction().newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getFunction().newRegister(type);

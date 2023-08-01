@@ -62,11 +62,15 @@ public class Function implements Expression {
 
     public String getName() { return this.name; }
     public void setName(String name) { this.name = name; }
+
     public FunctionType getFunctionType() { return this.functionType; }
     public List<Register> getParameterRegisters() {
         return Collections.unmodifiableList(parameterRegs);
     }
+
     public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
     public Program getProgram() { return this.program; }
     public void setProgram(Program program) { this.program = program; }
 
@@ -184,5 +188,10 @@ public class Function implements Expression {
     @Override
     public IConst reduce() {
         throw new UnsupportedOperationException("Cannot reduce functions");
+    }
+
+    // TODO: Ugly function, but we need it for now to create copies of functions.
+    public void copyDummyCountFrom(Function func) {
+        this.dummyCount = func.dummyCount;
     }
 }

@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -32,7 +31,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Options
-public class Inlining implements ProgramProcessor {
+public class Inlining implements FunctionProcessor {
 
     @Option(name = RECURSION_BOUND,
             description = "Inlines each function call up to this many times.",
@@ -48,10 +47,8 @@ public class Inlining implements ProgramProcessor {
     }
 
     @Override
-    public void run(Program program) {
-        for (Function function : program.getFunctions()) {
-            inlineAllCalls(function);
-        }
+    public void run(Function function) {
+        inlineAllCalls(function);
     }
 
     private void inlineAllCalls(Function function) {

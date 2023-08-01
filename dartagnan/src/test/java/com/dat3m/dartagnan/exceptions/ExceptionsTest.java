@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
@@ -11,13 +12,12 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.processing.BranchReordering;
-import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.File;
+import java.math.BigInteger;
 
 public class ExceptionsTest {
 
@@ -41,16 +41,6 @@ public class ExceptionsTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void reorderAfterUnrollException() throws Exception {
-        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        pb.newThread(0);
-        Program p = pb.build();
-        LoopUnrolling.newInstance().run(p);
-        // Reordering cannot be called after unrolling
-        BranchReordering.newInstance().run(p);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
     public void analyzeBeforeUnrollException() throws Exception {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         pb.newThread(0);
@@ -63,9 +53,9 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        ExpressionFactory.getInstance().makeADD(
-                expressions.makeZero(types.getIntegerType(32)),
-                expressions.makeZero(types.getIntegerType(64)));
+        Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
+        Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
+        ExpressionFactory.getInstance().makeADD(a, b);
     }
 
     @Test(expected = NullPointerException.class)

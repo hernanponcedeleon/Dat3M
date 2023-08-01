@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -77,32 +78,47 @@ public class ProcessingManager implements ProgramProcessor {
         programProcessors.addAll(Arrays.asList(
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
-                printBeforeProcessing ? DebugPrint.withHeader("Before processing") : null,
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 StaticMemoryInitializer.newInstance(),
-                Inlining.fromConfig(config),
-                ThreadCreation.fromConfig(config),
-                UnreachableCodeElimination.fromConfig(config),
-                ComplexBlockSplitting.newInstance(),
-                BranchReordering.fromConfig(config),
+                ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                Inlining.fromConfig(config),
+                                UnreachableCodeElimination.fromConfig(config),
+                                ComplexBlockSplitting.newInstance(),
+                                BranchReordering.fromConfig(config),
+                                Simplifier.fromConfig(config)
+                        ), Target.FUNCTIONS, true
+                ),
+                printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),
-                Simplifier.fromConfig(config),
-                printAfterSimplification ? DebugPrint.withHeader("After simplification") : null,
-                Compilation.fromConfig(config),
-                printAfterCompilation ? DebugPrint.withHeader("After compilation") : null,
-                SimpleSpinLoopDetection.fromConfig(config),
-                LoopUnrolling.fromConfig(config),
-                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling") : null,
-                IntrinsicsInlining.fromConfig(config),
+                Compilation.fromConfig(config), // We keep compilation global for now
+                printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
+                ProgramProcessor.fromFunctionProcessor(
+                        SimpleSpinLoopDetection.fromConfig(config),
+                        Target.FUNCTIONS, false
+                ),
+                LoopUnrolling.fromConfig(config), // We keep unrolling global for now
+                printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
-                constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
-                dce ? DeadAssignmentElimination.fromConfig(config) : null,
-                RemoveDeadCondJumps.fromConfig(config),
+                ProgramProcessor.fromFunctionProcessor(
+                        FunctionProcessor.chain(
+                                constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
+                                dce ? DeadAssignmentElimination.fromConfig(config) : null,
+                                RemoveDeadCondJumps.fromConfig(config)
+                        ), Target.FUNCTIONS, true
+                ),
+                ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
+                IntrinsicsInlining.fromConfig(config),
                 MemoryAllocation.newInstance(),
-                EventIdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
-                printAfterProcessing ? DebugPrint.withHeader("After processing") : null,
-                CoreCodeVerification.fromConfig(config),
-                LogProgramStatistics.newInstance()
+                // --- Statistics + verification ---
+                IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
+                printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
+                ProgramProcessor.fromFunctionProcessor(
+                        CoreCodeVerification.fromConfig(config),
+                        Target.THREADS, false
+                ),
+                LogThreadStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);
     }
