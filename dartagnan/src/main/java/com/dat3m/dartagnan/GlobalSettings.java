@@ -9,6 +9,7 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ARCH_PRECISION;
+import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_TYPE;
 
 @Options
 public class GlobalSettings {
@@ -24,7 +25,14 @@ public class GlobalSettings {
             secure = true)
     private int arch_precision = -1;
 
+    @Option(name = MIXED_TYPE,
+            description = "If false, all non-boolean, non-aggregate data types are unified into one common integer type determined by " + ARCH_PRECISION + ".",
+            secure = true)
+    private boolean mixedType = false;
+
     public static int getArchPrecision() { return instance.arch_precision; }
+
+    public static boolean isMixedType() { return instance.mixedType; }
 
     public static void configure(Configuration config) throws InvalidConfigurationException {
        config.inject(instance);

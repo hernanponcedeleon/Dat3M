@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -40,7 +41,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getArchType();
+    private final Type pointerType = GlobalSettings.getArchPrecision() == -1 ?
+            // Intentionally ignore the given precision for pointers
+            types.getIntegerType() : types.getIntegerType(64);
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, Type> typeMap = new HashMap<>();
@@ -359,7 +362,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final var atomic = ctx.atomic != null;
         final Expression value = visitTypeValue(ctx.typeValue(0));
         final Expression address = visitTypeValue(ctx.typeValue(1));
-        check(address.getType().equals(types.getArchType()), "Non-pointer type in %s.", ctx);
+        check(address.getType().equals(pointerType), "Non-pointer type in %s.", ctx);
         final String mo = atomic ? parseMemoryOrder(ctx.atomicOrdering()) : "";
         final Event store = atomic ? Llvm.newStore(address, value, mo) : newStore(address, value);
         block.events.add(store);
@@ -445,7 +448,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             default -> throw new ParsingException(String.format("Unknown predicate in %s.", ctx.getText()));
         };
         // LLVM does not support a distinct boolean type.
-        return assignToRegister(expressions.makeIntegerCast(compared, types.getIntegerType(1), false));
+        return assignToRegister(expressions.makeIntegerCast(compared, getIntegerType(1), false));
     }
 
     @Override
@@ -561,9 +564,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String mo = parseMemoryOrder(ctx.atomicOrdering(0));
         block.events.add(newCompareExchange(value, asExpected, address, comparator, substitute, mo, weak));
         final Register register = currentRegisterName == null ? null :
-                getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), types.getIntegerType(1))));
+                getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
         if (register != null) {
-            final Expression cast = expressions.makeIntegerCast(asExpected, types.getIntegerType(1), false);
+            final Expression cast = expressions.makeIntegerCast(asExpected, getIntegerType(1), false);
             final Expression result = expressions.makeConstruct(List.of(value, cast));
             block.events.add(newLocal(register, result));
         }
@@ -657,7 +660,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero(types.getArchType());
+        return expressions.makeZero((IntegerType) pointerType);
     }
 
     @Override
@@ -839,7 +842,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private Expression checkPointerExpression(ParserRuleContext context) {
-        return checkExpression(types.getArchType(), context);
+        return checkExpression(pointerType, context);
     }
 
     private Expression checkExpression(Type type, ParserRuleContext context) {
@@ -867,7 +870,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPointerType(PointerTypeContext ctx) {
-        parsedType = types.getArchType();
+        parsedType = pointerType;
         return null;
     }
 
@@ -895,8 +898,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitType(TypeContext ctx) {
+        // translate opaque pointer types
         if (ctx.type() != null && ctx.params() == null || ctx.opaquePointerType() != null) {
-            parsedType = types.getArchType();
+            parsedType = pointerType;
             return null;
         }
         return super.visitType(ctx);
@@ -912,7 +916,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private Type parseIntType(TerminalNode t) {
         assert t.getText().startsWith("i");
-        return types.getIntegerType(Integer.parseUnsignedInt(t.getText().substring(1)));
+        return getIntegerType(Integer.parseUnsignedInt(t.getText().substring(1)));
     }
 
     private Type parseType(ParserRuleContext context) {
@@ -925,10 +929,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return type;
     }
 
-    private void checkLabelType(FirstClassTypeContext context) {
-        if (context.concreteType() == null || context.concreteType().labelType() == null) {
-            throw new ParsingException(String.format("Expected label type, got %s.", context.getText()));
-        }
+    private IntegerType getIntegerType(int precision) {
+        return GlobalSettings.isMixedType() ? types.getIntegerType(precision) : types.getArchType();
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -953,7 +955,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             throw new ParsingException(
                     String.format("Expected pointer type, instead of %s.", context.firstClassType().getText()));
         }
-        return types.getArchType();
+        return pointerType;
     }
 
     private boolean parseBoolean(TerminalNode node) {
