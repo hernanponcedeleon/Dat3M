@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
@@ -30,7 +32,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_BRANCHES;
        The branches of the CFG can be reduced to a single node.
        In the following we work on this reduced CFG.
    (2) Compute the Must-Successors of each branch
-        - This CANNOT be done during step (1), if If-Statements are involves
+        - This CANNOT be done during step (1), if If-Statements are involved
    (3) Compute the Must-Predecessors of each branch
         - Towards this, we compute backward edges during (1)
         - Essentially, we run the Must-Successor computation on the dual graph
@@ -42,6 +44,13 @@ import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_BRANCHES;
    (6) Merge all initial classes
    (7) Compute the class of all unreachable events.
    BONUS: Compute which branches are mutually exclusive
+
+   TODO: Currently we compute "reachable branches" which is a notion that badly interacts with merging of branches.
+         Instead, we should more directly work on exclusive branches/branch classes as those are well-bahaved under merging.
+         Furthermore, with proper cf-semantics for thread spawning, we cannot analyze the control-flow of
+         threads in isolation anymore.
+         Without fixing this, we fail to detect mutual exclusion across threads for now.
+         (e.g., two threads are mutually exclusive, if their corresponding ThreadCreate events are mutually exclusive).
 */
 
 @Options
@@ -96,16 +105,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return getEquivalenceClass(start).getImpliedClasses().contains(getEquivalenceClass(implied));
     }
 
-    public boolean isReachableFrom(Event start, Event target) {
-        return start.getFunction() == target.getFunction()
-                && start.getGlobalId() <= target.getGlobalId()
-                && getEquivalenceClass(start).getReachableClasses().contains(getEquivalenceClass(target));
-    }
-
-    public Set<Event> getExclusiveEvents(Event e) {
-        return new ExclusiveSet(e);
-    }
-
     public Set<Class> getExclusiveClasses(Event e) {
         return (this.<BranchClass>getTypedEqClass(e)).getExclusiveClasses();
     }
@@ -135,10 +134,10 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         this.program = program;
         config.inject(this);
 
-		logger.info("{}: {}", ALWAYS_SPLIT_ON_JUMPS, alwaysSplitOnJump);
-		logger.info("{}: {}", MERGE_BRANCHES, mergeBranches);
+        logger.info("{}: {}", ALWAYS_SPLIT_ON_JUMPS, alwaysSplitOnJump);
+        logger.info("{}: {}", MERGE_BRANCHES, mergeBranches);
 
-		run();
+        run();
     }
 
     public static BranchEquivalence fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
@@ -163,7 +162,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             createBranchClasses(branchMap);
         }
         // Step (6)
-        mergeInitialClasses();
+        //mergeInitialClasses();
+        mergeBranchClasses();
         // Step (7)
         computeUnreachableClass();
         //Bonus
@@ -381,6 +381,73 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
     }
 
+    private void mergeBranchClasses() {
+        if (mergeBranches) {
+            final List<Thread> threads = program.getThreads();
+
+            for (Thread thread : threads) {
+                final ThreadStart start = (ThreadStart) thread.getEntry();
+                final BranchClass threadInitBranch = getTypedEqClass(start);
+                final ThreadCreate creator = start.getCreator();
+                if (initialClass == null && creator == null) {
+                    initialClass = threadInitBranch;
+                    continue;
+                }
+
+                final BranchClass creatorBranch = creator == null ? initialClass : getTypedEqClass(creator);
+                final boolean merged;
+                if (creator != null && start.mayFailSpuriously()) {
+                    // cf(initThreadBranch) => cf(creatorBranch)
+                    threadInitBranch.impliedClasses.addAll(creatorBranch.impliedClasses);
+                    creatorBranch.reachableClasses.addAll(threadInitBranch.reachableClasses);
+                    merged = false;
+                } else {
+                    // cf(initThreadBranch) <=> cf(creatorBranch)
+                    mergeClasses(creatorBranch, threadInitBranch);
+                    merged = true;
+
+                    creatorBranch.reachableClasses.addAll(threadInitBranch.reachableClasses);
+                    creatorBranch.impliedClasses.addAll(threadInitBranch.impliedClasses);
+                    creatorBranch.reachableClasses.remove(threadInitBranch);
+                    creatorBranch.impliedClasses.remove(threadInitBranch);
+
+                    threadInitBranch.impliedClasses.remove(threadInitBranch);
+                    threadInitBranch.reachableClasses.remove(threadInitBranch);
+                }
+
+                // Update all other classes
+                for (BranchClass c : this.<BranchClass>getAllTypedEqClasses()) {
+                    if (c == threadInitBranch || c == creatorBranch) {
+                        continue;
+                    }
+
+                    if (c.impliedClasses.contains(threadInitBranch)) {
+                        c.impliedClasses.addAll(creatorBranch.impliedClasses);
+                        if (merged) {
+                            c.impliedClasses.remove(threadInitBranch);
+                        }
+                    }
+
+                    if (c.impliedClasses.contains(creatorBranch) && merged) {
+                        c.impliedClasses.addAll(threadInitBranch.impliedClasses);
+                    }
+
+                    if (c.reachableClasses.contains(threadInitBranch)) {
+                        c.reachableClasses.addAll(creatorBranch.reachableClasses);
+                        if (merged) {
+                            c.reachableClasses.remove(threadInitBranch);
+                        }
+                    }
+
+                    if (c.reachableClasses.contains(creatorBranch) && merged) {
+                        c.reachableClasses.addAll(threadInitBranch.reachableClasses);
+                    }
+                }
+            }
+        }
+    }
+
+    // TODO: We keep this for now until we know that the new code works. We will delete this then.
     private void mergeInitialClasses() {
         if (mergeBranches) {
             initialClass = getTypedEqClass(program.getThreads().get(0).getEntry());
@@ -412,12 +479,10 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         }
     }
 
-
     //========================== Internal data structures =========================
 
     public interface Class extends EquivalenceClass<Event> {
         Set<Class> getImpliedClasses();
-        Set<Class> getReachableClasses();
         Set<Class> getExclusiveClasses();
 
         @Override
@@ -430,11 +495,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         final Set<BranchClass> exclusiveClasses;
 
         final Set<Class> impliedClassesView;
-        final Set<Class> reachableClassesView;
         final Set<Class> exclusiveClassesView;
 
         public Set<Class> getImpliedClasses() { return impliedClassesView; }
-        public Set<Class> getReachableClasses() { return reachableClassesView; }
         public Set<Class> getExclusiveClasses() { return exclusiveClassesView; }
 
         @Override
@@ -448,7 +511,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             exclusiveClasses = Sets.newIdentityHashSet();
 
             impliedClassesView = Collections.unmodifiableSet(impliedClasses);
-            reachableClassesView = Collections.unmodifiableSet(reachableClasses);
             exclusiveClassesView = Collections.unmodifiableSet(exclusiveClasses);
 
             impliedClasses.add(this);
@@ -487,68 +549,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         @Override
         public String toString() {
             return getRoot().toString();
-        }
-    }
-
-    private class ExclusiveSet extends AbstractSet<Event> {
-
-        final Set<Class> classes;
-        final int size;
-
-        public ExclusiveSet(Event e) {
-            classes = getEquivalenceClass(e).getExclusiveClasses();
-            int size = 0;
-            for (Class c : classes) {
-                size += c.size();
-            }
-            this.size = size;
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            if (!(o instanceof Event)) {
-                return false;
-            }
-            return classes.contains(classMap.get(o));
-        }
-
-        @Override
-        public Iterator<Event> iterator() {
-            return new Iter();
-        }
-
-        @Override
-        public int size() {
-            return size;
-        }
-
-
-        private class Iter implements Iterator<Event> {
-
-            private final Iterator<Class> outer;
-            private Iterator<Event> inner;
-
-            public Iter() {
-                outer = classes.iterator();
-                hasNext();
-            }
-
-            @Override
-            public boolean hasNext() {
-                if (inner != null && inner.hasNext()) {
-                    return true;
-                }
-                if (outer.hasNext()) {
-                    inner = outer.next().iterator();
-                    return true;
-                }
-                return false;
-             }
-
-            @Override
-            public Event next() {
-                return inner.next();
-            }
         }
     }
 }
