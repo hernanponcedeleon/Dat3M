@@ -44,7 +44,7 @@ public class ThreadStart extends AbstractEvent implements EventUser {
         if ( isSpawned()) {
             return String.format("ThreadStart by %s::%s", creator.getThread(), creator);
         } else {
-            return "ThreadStart (unconditional)";
+            return "ThreadStart";
         }
     }
 
