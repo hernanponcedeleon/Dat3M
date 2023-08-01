@@ -174,7 +174,7 @@ mo returns [String content]
     |   Period Release {$content = "REL";}
     |   Period Acq_rel {$content = "ACQ_REL";}
     |   Period Visible {$content = "VIS";}
-    |   Period Available {$content = "AVA";}
+    |   Period Available {$content = "AV";}
     |   {$content = "";}
     ;
 
@@ -192,7 +192,7 @@ storageClassSemantic returns [String content]
 
 avvisSemantic returns [String content]
     :   Period SemVis {$content = "SEMVIS";}
-    |   Period SemAva {$content = "SEMAVA";}
+    |   Period SemAv {$content = "SEMAV";}
     |   {$content = "";}
     ;
 
@@ -225,7 +225,7 @@ Visible     :   'vis';
 Available   :   'av';
 
 SemVis      :   'semvis';
-SemAva      :   'semava';
+SemAv       :   'semav';
 
 Sc0       :   'sc0';
 Sc1       :   'sc1';

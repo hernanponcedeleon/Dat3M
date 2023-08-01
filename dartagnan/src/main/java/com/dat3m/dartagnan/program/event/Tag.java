@@ -333,6 +333,7 @@ public final class Tag {
         public static final String WORK_GROUP = "WG";
         public static final String QUEUE_FAMILY = "QF";
         public static final String DEVICE = "DV";
+        public static final String GLOBAL = "GL";
         public static final String PRIVATE = "PRIV";
         public static final String NON_PRIVATE = "NONPRIV";
         // Memory orders
@@ -341,7 +342,7 @@ public final class Tag {
         public static final String RELEASE = "REL";
         public static final String ACQ_REL = "ACQ_REL";
         public static final String VISIBLE = "VIS";
-        public static final String AVAILABLE = "AVA";
+        public static final String AVAILABLE = "AV";
         public static final String SEM_VISIBLE = "SEMVIS";
         public static final String SEM_AVAILABLE = "SEMAVA";
         // StorageClass
