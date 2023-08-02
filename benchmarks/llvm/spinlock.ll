@@ -100,11 +100,11 @@ define internal void @spinlock_release(%struct.spinlock_s* noundef %0) #0 !dbg !
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 !dbg !90 {
   %1 = alloca i32, align 4
-  %2 = alloca [6 x i64], align 16
+  %2 = alloca [3 x i64], align 16
   %3 = alloca i32, align 4
   %4 = alloca i32, align 4
   store i32 0, i32* %1, align 4
-  call void @llvm.dbg.declare(metadata [6 x i64]* %2, metadata !93, metadata !DIExpression()), !dbg !100
+  call void @llvm.dbg.declare(metadata [3 x i64]* %2, metadata !93, metadata !DIExpression()), !dbg !100
   call void @spinlock_init(%struct.spinlock_s* noundef @lock), !dbg !101
   call void @llvm.dbg.declare(metadata i32* %3, metadata !102, metadata !DIExpression()), !dbg !104
   store i32 0, i32* %3, align 4, !dbg !104
@@ -112,13 +112,13 @@ define dso_local i32 @main() #0 !dbg !90 {
 
 5:                                                ; preds = %16, %0
   %6 = load i32, i32* %3, align 4, !dbg !106
-  %7 = icmp slt i32 %6, 6, !dbg !108
+  %7 = icmp slt i32 %6, 3, !dbg !108
   br i1 %7, label %8, label %19, !dbg !109
 
 8:                                                ; preds = %5
   %9 = load i32, i32* %3, align 4, !dbg !110
   %10 = sext i32 %9 to i64, !dbg !111
-  %11 = getelementptr inbounds [6 x i64], [6 x i64]* %2, i64 0, i64 %10, !dbg !111
+  %11 = getelementptr inbounds [3 x i64], [3 x i64]* %2, i64 0, i64 %10, !dbg !111
   %12 = load i32, i32* %3, align 4, !dbg !112
   %13 = sext i32 %12 to i64, !dbg !113
   %14 = inttoptr i64 %13 to i8*, !dbg !113
@@ -138,13 +138,13 @@ define dso_local i32 @main() #0 !dbg !90 {
 
 20:                                               ; preds = %29, %19
   %21 = load i32, i32* %4, align 4, !dbg !123
-  %22 = icmp slt i32 %21, 6, !dbg !125
+  %22 = icmp slt i32 %21, 3, !dbg !125
   br i1 %22, label %23, label %32, !dbg !126
 
 23:                                               ; preds = %20
   %24 = load i32, i32* %4, align 4, !dbg !127
   %25 = sext i32 %24 to i64, !dbg !128
-  %26 = getelementptr inbounds [6 x i64], [6 x i64]* %2, i64 0, i64 %25, !dbg !128
+  %26 = getelementptr inbounds [3 x i64], [3 x i64]* %2, i64 0, i64 %25, !dbg !128
   %27 = load i64, i64* %26, align 8, !dbg !128
   %28 = call i32 @pthread_join(i64 noundef %27, i8** noundef null), !dbg !129
   br label %29, !dbg !129
@@ -157,7 +157,7 @@ define dso_local i32 @main() #0 !dbg !90 {
 
 32:                                               ; preds = %20
   %33 = load i32, i32* @sum, align 4, !dbg !134
-  %34 = icmp eq i32 %33, 6, !dbg !134
+  %34 = icmp eq i32 %33, 3, !dbg !134
   br i1 %34, label %35, label %36, !dbg !137
 
 35:                                               ; preds = %32
@@ -350,12 +350,12 @@ attributes #6 = { nounwind }
 !91 = !DISubroutineType(types: !92)
 !92 = !{!24}
 !93 = !DILocalVariable(name: "t", scope: !90, file: !23, line: 28, type: !94)
-!94 = !DICompositeType(tag: DW_TAG_array_type, baseType: !95, size: 384, elements: !98)
+!94 = !DICompositeType(tag: DW_TAG_array_type, baseType: !95, size: 192, elements: !98)
 !95 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !96, line: 27, baseType: !97)
 !96 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/pthreadtypes.h", directory: "", checksumkind: CSK_MD5, checksum: "2d764266ce95ab26d4a4767c2ec78176")
 !97 = !DIBasicType(name: "unsigned long", size: 64, encoding: DW_ATE_unsigned)
 !98 = !{!99}
-!99 = !DISubrange(count: 6)
+!99 = !DISubrange(count: 3)
 !100 = !DILocation(line: 28, column: 15, scope: !90)
 !101 = !DILocation(line: 30, column: 5, scope: !90)
 !102 = !DILocalVariable(name: "i", scope: !103, file: !23, line: 32, type: !24)

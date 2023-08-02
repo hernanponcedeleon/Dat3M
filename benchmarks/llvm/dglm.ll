@@ -112,7 +112,7 @@ define dso_local void @enqueue(i32 noundef %0) #0 !dbg !46 {
   %53 = bitcast %struct.Node** %9 to i64*, !dbg !87
   %54 = load i64, i64* %52, align 8, !dbg !87
   %55 = load i64, i64* %53, align 8, !dbg !87
-  %56 = cmpxchg i64* %51, i64 %54, i64 %55 monotonic monotonic, align 8, !dbg !87
+  %56 = cmpxchg i64* %51, i64 %54, i64 %55 acq_rel monotonic, align 8, !dbg !87
   %57 = extractvalue { i64, i1 } %56, 0, !dbg !87
   %58 = extractvalue { i64, i1 } %56, 1, !dbg !87
   br i1 %58, label %60, label %59, !dbg !87
@@ -135,7 +135,7 @@ define dso_local void @enqueue(i32 noundef %0) #0 !dbg !46 {
   %67 = bitcast %struct.Node** %11 to i64*, !dbg !91
   %68 = load i64, i64* %66, align 8, !dbg !91
   %69 = load i64, i64* %67, align 8, !dbg !91
-  %70 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %68, i64 %69 monotonic monotonic, align 8, !dbg !91
+  %70 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %68, i64 %69 acq_rel monotonic, align 8, !dbg !91
   %71 = extractvalue { i64, i1 } %70, 0, !dbg !91
   %72 = extractvalue { i64, i1 } %70, 1, !dbg !91
   br i1 %72, label %74, label %73, !dbg !91
@@ -161,7 +161,7 @@ define dso_local void @enqueue(i32 noundef %0) #0 !dbg !46 {
   %82 = bitcast %struct.Node** %13 to i64*, !dbg !95
   %83 = load i64, i64* %81, align 8, !dbg !95
   %84 = load i64, i64* %82, align 8, !dbg !95
-  %85 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %83, i64 %84 monotonic monotonic, align 8, !dbg !95
+  %85 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %83, i64 %84 acq_rel monotonic, align 8, !dbg !95
   %86 = extractvalue { i64, i1 } %85, 0, !dbg !95
   %87 = extractvalue { i64, i1 } %85, 1, !dbg !95
   br i1 %87, label %89, label %88, !dbg !95
@@ -258,7 +258,7 @@ define dso_local i32 @dequeue() #0 !dbg !101 {
   %45 = bitcast %struct.Node** %8 to i64*, !dbg !140
   %46 = load i64, i64* %44, align 8, !dbg !140
   %47 = load i64, i64* %45, align 8, !dbg !140
-  %48 = cmpxchg i64* bitcast (%struct.Node** @Head to i64*), i64 %46, i64 %47 monotonic monotonic, align 8, !dbg !140
+  %48 = cmpxchg i64* bitcast (%struct.Node** @Head to i64*), i64 %46, i64 %47 acq_rel monotonic, align 8, !dbg !140
   %49 = extractvalue { i64, i1 } %48, 0, !dbg !140
   %50 = extractvalue { i64, i1 } %48, 1, !dbg !140
   br i1 %50, label %52, label %51, !dbg !140
@@ -297,7 +297,7 @@ define dso_local i32 @dequeue() #0 !dbg !101 {
   %71 = bitcast %struct.Node** %11 to i64*, !dbg !154
   %72 = load i64, i64* %70, align 8, !dbg !154
   %73 = load i64, i64* %71, align 8, !dbg !154
-  %74 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %72, i64 %73 monotonic monotonic, align 8, !dbg !154
+  %74 = cmpxchg i64* bitcast (%struct.Node** @Tail to i64*), i64 %72, i64 %73 acq_rel monotonic, align 8, !dbg !154
   %75 = extractvalue { i64, i1 } %74, 0, !dbg !154
   %76 = extractvalue { i64, i1 } %74, 1, !dbg !154
   br i1 %76, label %78, label %77, !dbg !154

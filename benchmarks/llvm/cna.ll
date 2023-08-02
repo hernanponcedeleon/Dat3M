@@ -11,7 +11,7 @@ target triple = "x86_64-pc-linux-gnu"
 @sum = dso_local global i32 0, align 4, !dbg !37
 @tindex = dso_local thread_local global i64 0, align 8, !dbg !40
 @lock = dso_local global %struct.cna_lock_t zeroinitializer, align 8, !dbg !42
-@node = dso_local global [4 x %struct.cna_node] zeroinitializer, align 16, !dbg !49
+@node = dso_local global [3 x %struct.cna_node] zeroinitializer, align 16, !dbg !49
 @.str = private unnamed_addr constant [12 x i8] c"r == tindex\00", align 1
 @.str.1 = private unnamed_addr constant [45 x i8] c"/home/ponce/git/Dat3M/benchmarks/locks/cna.c\00", align 1
 @__PRETTY_FUNCTION__.thread_n = private unnamed_addr constant [23 x i8] c"void *thread_n(void *)\00", align 1
@@ -250,7 +250,7 @@ define dso_local i8* @thread_n(i8* noundef %0) #0 !dbg !182 {
   %5 = ptrtoint i8* %4 to i64, !dbg !188
   store i64 %5, i64* @tindex, align 8, !dbg !189
   %6 = load i64, i64* @tindex, align 8, !dbg !190
-  %7 = getelementptr inbounds [4 x %struct.cna_node], [4 x %struct.cna_node]* @node, i64 0, i64 %6, !dbg !191
+  %7 = getelementptr inbounds [3 x %struct.cna_node], [3 x %struct.cna_node]* @node, i64 0, i64 %6, !dbg !191
   call void @cna_lock(%struct.cna_lock_t* noundef @lock, %struct.cna_node* noundef %7), !dbg !192
   %8 = load i64, i64* @tindex, align 8, !dbg !193
   %9 = trunc i64 %8 to i32, !dbg !193
@@ -276,7 +276,7 @@ define dso_local i8* @thread_n(i8* noundef %0) #0 !dbg !182 {
   %19 = add nsw i32 %18, 1, !dbg !202
   store i32 %19, i32* @sum, align 4, !dbg !202
   %20 = load i64, i64* @tindex, align 8, !dbg !203
-  %21 = getelementptr inbounds [4 x %struct.cna_node], [4 x %struct.cna_node]* @node, i64 0, i64 %20, !dbg !204
+  %21 = getelementptr inbounds [3 x %struct.cna_node], [3 x %struct.cna_node]* @node, i64 0, i64 %20, !dbg !204
   call void @cna_unlock(%struct.cna_lock_t* noundef @lock, %struct.cna_node* noundef %21), !dbg !205
   ret i8* null, !dbg !206
 }
@@ -668,24 +668,24 @@ define internal void @cna_unlock(%struct.cna_lock_t* noundef %0, %struct.cna_nod
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 !dbg !364 {
   %1 = alloca i32, align 4
-  %2 = alloca [4 x i64], align 16
+  %2 = alloca [3 x i64], align 16
   %3 = alloca i32, align 4
   %4 = alloca i32, align 4
   store i32 0, i32* %1, align 4
-  call void @llvm.dbg.declare(metadata [4 x i64]* %2, metadata !365, metadata !DIExpression()), !dbg !369
+  call void @llvm.dbg.declare(metadata [3 x i64]* %2, metadata !365, metadata !DIExpression()), !dbg !369
   call void @llvm.dbg.declare(metadata i32* %3, metadata !370, metadata !DIExpression()), !dbg !372
   store i32 0, i32* %3, align 4, !dbg !372
   br label %5, !dbg !373
 
 5:                                                ; preds = %16, %0
   %6 = load i32, i32* %3, align 4, !dbg !374
-  %7 = icmp slt i32 %6, 4, !dbg !376
+  %7 = icmp slt i32 %6, 3, !dbg !376
   br i1 %7, label %8, label %19, !dbg !377
 
 8:                                                ; preds = %5
   %9 = load i32, i32* %3, align 4, !dbg !378
   %10 = sext i32 %9 to i64, !dbg !379
-  %11 = getelementptr inbounds [4 x i64], [4 x i64]* %2, i64 0, i64 %10, !dbg !379
+  %11 = getelementptr inbounds [3 x i64], [3 x i64]* %2, i64 0, i64 %10, !dbg !379
   %12 = load i32, i32* %3, align 4, !dbg !380
   %13 = sext i32 %12 to i64, !dbg !381
   %14 = inttoptr i64 %13 to i8*, !dbg !381
@@ -705,13 +705,13 @@ define dso_local i32 @main() #0 !dbg !364 {
 
 20:                                               ; preds = %29, %19
   %21 = load i32, i32* %4, align 4, !dbg !391
-  %22 = icmp slt i32 %21, 4, !dbg !393
+  %22 = icmp slt i32 %21, 3, !dbg !393
   br i1 %22, label %23, label %32, !dbg !394
 
 23:                                               ; preds = %20
   %24 = load i32, i32* %4, align 4, !dbg !395
   %25 = sext i32 %24 to i64, !dbg !396
-  %26 = getelementptr inbounds [4 x i64], [4 x i64]* %2, i64 0, i64 %25, !dbg !396
+  %26 = getelementptr inbounds [3 x i64], [3 x i64]* %2, i64 0, i64 %25, !dbg !396
   %27 = load i64, i64* %26, align 8, !dbg !396
   %28 = call i32 @pthread_join(i64 noundef %27, i8** noundef null), !dbg !397
   br label %29, !dbg !397
@@ -724,7 +724,7 @@ define dso_local i32 @main() #0 !dbg !364 {
 
 32:                                               ; preds = %20
   %33 = load i32, i32* @sum, align 4, !dbg !402
-  %34 = icmp eq i32 %33, 4, !dbg !402
+  %34 = icmp eq i32 %33, 3, !dbg !402
   br i1 %34, label %35, label %36, !dbg !405
 
 35:                                               ; preds = %32
@@ -812,9 +812,9 @@ attributes #6 = { nounwind }
 !48 = !DIDerivedType(tag: DW_TAG_atomic_type, baseType: !16)
 !49 = !DIGlobalVariableExpression(var: !50, expr: !DIExpression())
 !50 = distinct !DIGlobalVariable(name: "node", scope: !2, file: !39, line: 12, type: !51, isLocal: false, isDefinition: true)
-!51 = !DICompositeType(tag: DW_TAG_array_type, baseType: !17, size: 1024, elements: !52)
+!51 = !DICompositeType(tag: DW_TAG_array_type, baseType: !17, size: 768, elements: !52)
 !52 = !{!53}
-!53 = !DISubrange(count: 4)
+!53 = !DISubrange(count: 3)
 !54 = !{i32 7, !"Dwarf Version", i32 5}
 !55 = !{i32 2, !"Debug Info Version", i32 3}
 !56 = !{i32 1, !"wchar_size", i32 4}
@@ -1127,7 +1127,7 @@ attributes #6 = { nounwind }
 !363 = !DILocation(line: 170, column: 1, scope: !254)
 !364 = distinct !DISubprogram(name: "main", scope: !39, file: !39, line: 28, type: !63, scopeLine: 29, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !65)
 !365 = !DILocalVariable(name: "t", scope: !364, file: !39, line: 30, type: !366)
-!366 = !DICompositeType(tag: DW_TAG_array_type, baseType: !367, size: 256, elements: !52)
+!366 = !DICompositeType(tag: DW_TAG_array_type, baseType: !367, size: 192, elements: !52)
 !367 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !368, line: 27, baseType: !25)
 !368 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/pthreadtypes.h", directory: "", checksumkind: CSK_MD5, checksum: "2d764266ce95ab26d4a4767c2ec78176")
 !369 = !DILocation(line: 30, column: 15, scope: !364)
