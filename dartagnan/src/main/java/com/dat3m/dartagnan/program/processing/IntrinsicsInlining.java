@@ -25,6 +25,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 public class IntrinsicsInlining implements ProgramProcessor {
 
     // TODO: This id should be part of Program
@@ -56,6 +58,11 @@ public class IntrinsicsInlining implements ProgramProcessor {
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
                 case "__assert_fail" -> inlineAssert(call);
                 case "malloc" -> inlineMalloc(call);
+                //TODO model memory reclamation with events
+                case "free" -> List.of();
+                case "pthread_mutex_init" -> inlinePthreadMutexInit(call);
+                case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
+                case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
                 default -> throw new UnsupportedOperationException(
                         String.format("Undefined function %s", call.getCallTarget().getName()));
             };
@@ -140,4 +147,25 @@ public class IntrinsicsInlining implements ProgramProcessor {
         return List.of(EventFactory.Std.newMalloc(call.getResultRegister(), call.getArguments().get(0)));
     }
 
+    private List<Event> inlinePthreadMutexInit(DirectFunctionCall call) {
+        checkArgument(call.getArguments().size() == 2);
+        final Expression lockAddress = call.getArguments().get(0);
+        final Expression lockValue = call.getArguments().get(1);
+        final String lockName = lockAddress.toString();
+        return List.of(EventFactory.Pthread.newInitLock(lockName, lockAddress, lockValue));
+    }
+
+    private List<Event> inlinePthreadMutexLock(DirectFunctionCall call) {
+        checkArgument(call.getArguments().size() == 1);
+        final Expression lockAddress = call.getArguments().get(0);
+        final String lockName = lockAddress.toString();
+        return List.of(EventFactory.Pthread.newLock(lockName, lockAddress));
+    }
+
+    private List<Event> inlinePthreadMutexUnlock(DirectFunctionCall call) {
+        checkArgument(call.getArguments().size() == 1);
+        final Expression lockAddress = call.getArguments().get(0);
+        final String lockName = lockAddress.toString();
+        return List.of(EventFactory.Pthread.newUnlock(lockName, lockAddress));
+    }
 }
