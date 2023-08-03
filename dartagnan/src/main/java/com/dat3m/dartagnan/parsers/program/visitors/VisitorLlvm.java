@@ -46,6 +46,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             types.getIntegerType() : types.getIntegerType(64);
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
+    private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
     private final Map<String, Type> typeMap = new HashMap<>();
     private int functionCounter;
     // Nonnull, if the visitor is inside a function body.
@@ -105,9 +106,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitTypeDef(TypeDefContext ctx) {
         final String name = localIdent(ctx.LocalIdent());
-        final Type type = parseType(ctx.type());
-        final Type oldType = typeMap.putIfAbsent(name, type);
-        check(oldType == null, "Type redefinition in %s.", ctx);
+        typeDefinitionMap.put(name, ctx);
         return null;
     }
 
@@ -514,6 +513,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return assignToRegister(expressions.makeXOR(left, right));
     }
 
+    @Override
+    public Expression visitSRemInst(SRemInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeREM(left, right, true));
+    }
+
+    @Override
+    public Expression visitURemInst(URemInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeREM(left, right, false));
+    }
+
     // Aggregate instructions
 
     @Override
@@ -661,6 +674,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
         return expressions.makeZero((IntegerType) pointerType);
+    }
+
+    @Override
+    public Expression visitBoolConst(BoolConstContext ctx) {
+        BigInteger value = Boolean.parseBoolean(ctx.getText()) ? BigInteger.ONE : BigInteger.ZERO;
+        return expressions.makeValue(value, getIntegerType(1));
     }
 
     @Override
@@ -909,6 +928,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitNamedType(NamedTypeContext ctx) {
         final String name = localIdent(ctx.LocalIdent());
+        // define types on demand, as they might be used before their definition.
+        final TypeDefContext definition = typeDefinitionMap.remove(name);
+        if (definition != null) {
+            final Type type = parseType(definition.type());
+            final Type oldType = typeMap.putIfAbsent(name, type);
+            check(oldType == null, "Type redefinition in %s.", definition);
+        }
         parsedType = typeMap.get(name);
         check(parsedType != null, "Undefined named type %s.", ctx);
         return null;
