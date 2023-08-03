@@ -30,7 +30,7 @@ int main()
     pthread_t t[NTHREADS];
  
     for (int i = 0; i < NTHREADS; i++)
-        pthread_create(&t[i], 0, thread_n, (void *)i);
+        pthread_create(&t[i], 0, thread_n, (void *)(size_t)i);
 
     for (int i = 0; i < NTHREADS; i++)
         pthread_join(t[i], 0);
