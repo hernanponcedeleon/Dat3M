@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import java.util.*;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 import static com.google.common.base.Preconditions.checkState;
 
 public class ProgramBuilder {
@@ -67,7 +68,11 @@ public class ProgramBuilder {
             final Label endOfThread = getEndOfThreadLabel(thread.getId());
             // The terminator should not get inserted somewhere beforehand.
             Verify.verify(endOfThread.getFunction() == null);
-            thread.appendParsed(endOfThread);
+            // Every event in litmus tests is non-optimisable
+            if (program.getFormat() == LITMUS) {
+                endOfThread.addTags(NOOPT);
+            }
+            thread.append(endOfThread);
         }
         processAfterParsing(program);
         return program;
@@ -75,6 +80,7 @@ public class ProgramBuilder {
 
     public static void processAfterParsing(Program program) {
         program.getFunctions().forEach(Function::validate);
+        program.getThreads().forEach(Function::validate);
         IdReassignment.newInstance().run(program);
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
             if (func.hasBody()) {
@@ -153,7 +159,11 @@ public class ProgramBuilder {
     }
 
     public Event addChild(int fid, Event child) {
-        getFunctionOrError(fid).appendParsed(child);
+        // Every event in litmus tests is non-optimisable
+        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
+            child.addTags(NOOPT);
+        }
+        getFunctionOrError(fid).append(child);
         return child;
     }
 

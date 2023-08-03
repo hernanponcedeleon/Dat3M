@@ -161,16 +161,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         //TODO validate: all basic blocks have a terminator, there is one entry, at least one exit, etc.
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             final Block block = getBlock(basicBlockContext.LabelIdent());
-            function.appendParsed(block.label);
+            function.append(block.label);
             for (final Event event : block.events) {
-                function.appendParsed(event);
+                function.append(event);
             }
             for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet()) {
                 if (phiNode.getKey().from == block) {
                     for (Event event : phiNode.getValue()) {
-                        function.appendParsed(event);
+                        function.append(event);
                     }
-                    function.appendParsed(newGoto(phiNode.getKey().to.label));
+                    function.append(newGoto(phiNode.getKey().to.label));
                 }
             }
         }

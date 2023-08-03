@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -118,14 +117,6 @@ public class Function implements Expression {
         Preconditions.checkState(found.getType().equals(type),
                 "Register type mismatch: Got %s, expected %s.", found.getType(), type);
         return found;
-    }
-
-    public void appendParsed(Event event) {
-        // Every event in litmus tests is non-optimisable
-        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
-            event.addTags(Tag.NOOPT);
-        }
-        append(event);
     }
 
     public void append(Event event){

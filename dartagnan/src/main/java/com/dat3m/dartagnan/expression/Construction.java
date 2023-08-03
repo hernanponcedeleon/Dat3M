@@ -46,6 +46,6 @@ public final class Construction implements Expression {
 
     @Override
     public String toString() {
-        return String.format("{ %s }", arguments.stream().map(Expression::toString).collect(Collectors.joining(", ")));
+        return arguments.stream().map(Expression::toString).collect(Collectors.joining(", ", "{ ", " }"));
     }
 }

@@ -35,9 +35,8 @@ public class RegisterDecomposition implements ProgramProcessor {
         final var transformer = new ExtractSubstitutor();
         for (Function function : program.getFunctions()) {
             //TODO assume that no constructor occurs anywhere other than as the root operation of a local
-            for (Event event : function.getEvents()) {
-                if (event instanceof RegWriter writer &&
-                        !(event instanceof LlvmCmpXchg) &&
+            for (RegWriter writer : function.getEvents(RegWriter.class)) {
+                if (!(writer instanceof LlvmCmpXchg) &&
                         writer.getResultRegister().getType() instanceof AggregateType) {
                     if (!(writer instanceof Local local) ||
                             !(local.getExpr() instanceof Construction construction)) {
@@ -56,17 +55,14 @@ public class RegisterDecomposition implements ProgramProcessor {
                     local.replaceBy(componentAssignments);
                 }
             }
-            for (Event event : function.getEvents()) {
-                if (event instanceof RegReader reader) {
-                    reader.transformExpressions(transformer);
-                }
+            for (RegReader reader : function.getEvents(RegReader.class)) {
+                reader.transformExpressions(transformer);
             }
         }
     }
 
     private record RegisterIndex(Register origin, int index) {}
 
-    // Visitor methods should return null if there was no structural
     private static final class ExtractSubstitutor extends ExprTransformer {
 
         private final Map<RegisterIndex, Register> map = new HashMap<>();

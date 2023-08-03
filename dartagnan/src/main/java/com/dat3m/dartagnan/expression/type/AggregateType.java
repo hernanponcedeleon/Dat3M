@@ -27,6 +27,6 @@ public final class AggregateType implements Type {
 
     @Override
     public String toString() {
-        return String.format("{ %s }", fields.stream().map(Type::toString).collect(Collectors.joining(", ")));
+        return fields.stream().map(Type::toString).collect(Collectors.joining(", ", "{ ", " }"));
     }
 }

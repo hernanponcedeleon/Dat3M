@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 
 import java.math.BigInteger;
@@ -31,10 +30,8 @@ public class GEPToAddition implements ProgramProcessor {
     public void run(Program program) {
         final var transformer = new GEPToAdditionTransformer();
         for (Function function : program.getFunctions()) {
-            for (Event event : function.getEvents()) {
-                if (event instanceof RegReader reader) {
-                    reader.transformExpressions(transformer);
-                }
+            for (RegReader reader : function.getEvents(RegReader.class)) {
+                reader.transformExpressions(transformer);
             }
         }
     }
