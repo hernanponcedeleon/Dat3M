@@ -1,6 +1,5 @@
 #include "dglm.h"
 #include <pthread.h>
-#include <assert.h>
 
 #ifndef NTHREADS
 #define NTHREADS 3
