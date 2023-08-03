@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.analysis;
 
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -12,48 +13,25 @@ import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.ALWAYS_SPLIT_ON_JUMPS;
-import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_BRANCHES;
-
 /* Procedure:
-   (1) Find all simple branches using
-        - Branching events (Jumps, ifs)
-        - Merging events (events with at least 1 non-trivial listener or successors of If-nodes)
-       The branches of the CFG can be reduced to a single node.
-       In the following we work on this reduced CFG.
-   (2) Compute the Must-Successors of each branch
-        - This CANNOT be done during step (1), if If-Statements are involved
-   (3) Compute the Must-Predecessors of each branch
-        - Towards this, we compute backward edges during (1)
-        - Essentially, we run the Must-Successor computation on the dual graph
-   (4) Build a branch graph with edges b1 -> b2 IFF
-        - b2 is must-pred or must-succ of b1
-   (5) Find all SCCs which will form our equivalence classes
-        - Here we use the fact that any cycle must contain a forward edge and a backward edge
-         which will give use the implications (b1 => b2 and b2 => b1)
-   (6) Merge all initial classes
-   (7) Compute the class of all unreachable events.
-   BONUS: Compute which branches are mutually exclusive
-
-   TODO: Currently we compute "reachable branches" which is a notion that badly interacts with merging of branches.
-         Instead, we should more directly work on exclusive branches/branch classes as those are well-bahaved under merging.
-         Furthermore, with proper cf-semantics for thread spawning, we cannot analyze the control-flow of
-         threads in isolation anymore.
-         Without fixing this, we fail to detect mutual exclusion across threads for now.
-         (e.g., two threads are mutually exclusive, if their corresponding ThreadCreate events are mutually exclusive).
+    (1) Decompose the program into simple branches (~ basic blocks).
+    (2) Compute which branches are mutually exclusive to each other (NOTE: could also be done later).
+    (3) Compute the control-flow implication relation between branches, i.e, which branches imply which other branches.
+        This forms an implication graph over the program's branches.
+    (4) Compute the SCCs over the implication graph. Each SCC forms a class of control-flow-equivalent branches.
+        Merging the SCCs of the implication graph gives the implication graph over branch classes, which is
+        represented by instances of the BranchEquivalence class.
+    TODO: (5) Transitively close the merged implication graph,
+              and saturate the mutual exclusion relation using the rule
+                   A => B, B ~ C, C <= D   ---->   A ~ D  (where ~ denotes mutual exclusion)
 */
 
-@Options
 public class BranchEquivalence extends AbstractEquivalence<Event> {
     /*
        NOTE: If the initial class or the unreachable class is empty, they will be treated (almost) non-existent:
@@ -62,40 +40,15 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         - The classes are still available through getInitialClass/getUnreachableClass
           but the returned class will be:
              - empty and have NULL as representative
-             - the reachable-/impliedClasses will only contain themselves, the exclusiveClasses will be empty
+             - the impliedClasses will only contain themselves, the exclusiveClasses will be empty
     */
-
-    private static final Logger logger = LogManager.getLogger(BranchEquivalence.class);
 
     // ============================= State ==============================
 
-    private final Program program;
     private BranchClass initialClass;
     private BranchClass unreachableClass;
 
-    // =========================== Configurables ===========================
-
-    @Option(name = ALWAYS_SPLIT_ON_JUMPS,
-            description = "Splits control flow branches even on unconditional jumps.",
-            secure = true)
-    private boolean alwaysSplitOnJump = false;
-
-    @Option(name = MERGE_BRANCHES,
-            description = "Merges branches with equivalent control-flow behaviour.",
-            secure = true)
-    private boolean mergeBranches = true;
-
     // ============================ Public methods ==============================
-
-    public Program getProgram() {
-        return program;
-    }
-
-    public boolean isGuaranteedEvent(Event e) {
-        return initialClass.contains(e);
-    }
-
-    public boolean isUnreachableEvent(Event e) { return unreachableClass.contains(e); }
 
     public boolean areMutuallyExclusive(Event e1, Event e2) {
         return getEquivalenceClass(e1).getExclusiveClasses().contains(getEquivalenceClass(e2));
@@ -103,10 +56,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     public boolean isImplied(Event start, Event implied) {
         return getEquivalenceClass(start).getImpliedClasses().contains(getEquivalenceClass(implied));
-    }
-
-    public Set<Class> getExclusiveClasses(Event e) {
-        return (this.<BranchClass>getTypedEqClass(e)).getExclusiveClasses();
     }
 
     public Class getInitialClass() { return initialClass; }
@@ -129,48 +78,23 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         return (Set<Class>)super.getNonTrivialClasses();
     }
 
-    private BranchEquivalence(Program program, Configuration config) throws InvalidConfigurationException {
+    private BranchEquivalence(Program program) {
         Preconditions.checkArgument(program.isUnrolled(), "The program must be unrolled first.");
-        this.program = program;
-        config.inject(this);
-
-        logger.info("{}: {}", ALWAYS_SPLIT_ON_JUMPS, alwaysSplitOnJump);
-        logger.info("{}: {}", MERGE_BRANCHES, mergeBranches);
-
-        run();
+        run(program);
     }
 
     public static BranchEquivalence fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
-        return new BranchEquivalence(program, config);
+        return new BranchEquivalence(program);
     }
 
-    private void run() {
-
-        // Step (1)
+    private void run(Program program) {
         final BranchDecomposition decomposition = computeBranchDecomposition(program);
         computeExclusiveBranches(decomposition);
-        // Step (2)-(3)
         computeBranchImplications(decomposition);
-        // Step (4)-(7)
         createBranchClasses(decomposition);
     }
 
-    public void removeUnreachableClass() {
-        if (removeClass(unreachableClass)) {
-            unreachableClass.internalSet.clear();
-            unreachableClass.representative = null;
-            this.<BranchClass>getAllTypedEqClasses().forEach(x -> x.exclusiveClasses.remove(unreachableClass));
-        }
-    }
-
-    public void removeUnreachableEvent(Event e) {
-        unreachableClass.removeInternal(e);
-        if (unreachableClass.isEmpty()) {
-            removeUnreachableClass();
-        }
-    }
-
-    //========================== Branching Property =========================
+    // ========================== Branching ==========================
 
     private record BranchDecomposition(
             Program program,
@@ -206,7 +130,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
         Event succ = root;
         while (true) {
             if (succ instanceof CondJump jump) {
-                if (!alwaysSplitOnJump && jump.isGoto()) {
+                if (jump.isGoto()) {
                     // There is only one branch we can proceed on, so we don't need to split the current branch
                     succ = jump.getLabel();
                 } else {
@@ -243,7 +167,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     private void computeExclusiveBranches(BranchDecomposition decomposition) {
         final Map<Thread, List<Branch>> threadBranches = new HashMap<>();
-        for (Thread thread : program.getThreads()) {
+        for (Thread thread : decomposition.program.getThreads()) {
             threadBranches.put(thread, new ArrayList<>());
         }
         for (Branch branch : decomposition.branches) {
@@ -282,7 +206,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     }
 
     private void computeBranchImplications(BranchDecomposition decomposition) {
-        // Step (2)-(3)
         for (Branch b : decomposition.branches) {
             computeMustPredSet(b);
             computeMustSuccSet(b);
@@ -305,13 +228,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             }
         }
 
-        // Create a chain: t1 <=> t2 <=> t3 <=> ... <=> tn
+        // Create an equivalence chain: t1 <=> t2 <=> t3 <=> ... <=> tn
         for (int i = 0; i < unconditionalThreadInitialBranches.size() - 1; i++) {
             final Branch b1 = unconditionalThreadInitialBranches.get(i);
             final Branch b2 = unconditionalThreadInitialBranches.get(i + 1);
             b1.mustSucc.add(b2);
             b2.mustPred.add(b1);
-
         }
     }
 
@@ -357,7 +279,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     //========================== Equivalence class computations =========================
 
-
     private void createBranchClasses(BranchDecomposition decomposition) {
         // -------------------------- Create branch classes --------------------------
         final DependencyGraph<Branch> depGraph = DependencyGraph.from(decomposition.branches, Branch::getImpliedBranches);
@@ -378,15 +299,17 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                 branch.exclusiveBranches.stream().map(branch2ClassMap::get).forEach(branchClass.exclusiveClasses::add);
             }
             branchClass.representative = branchClass.stream()
-                    .min(Comparator.comparingInt(Event::getGlobalId)).get();
+                    .min(Comparator.comparingInt(Event::getGlobalId))
+                    .orElseThrow();
         }
 
         // -------------------------- Find initial class --------------------------
-        initialClass = program.getThreads().stream()
-                        .map(e -> (ThreadStart)e.getEntry())
-                        .filter( e -> !e.isSpawned())
-                        .map(this::<BranchClass>getTypedEqClass)
-                        .findFirst().get();
+        initialClass = decomposition.program.getThreads().stream()
+                .map(e -> (ThreadStart)e.getEntry())
+                .filter(e -> !e.isSpawned())
+                .map(this::<BranchClass>getTypedEqClass)
+                .findFirst()
+                .orElseThrow(() -> new MalformedProgramException("No unconditional threads in the program."));
 
         // ------------- Create special class for unreachable events -------------
         unreachableClass = new BranchClass();
@@ -395,7 +318,11 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             removeClass(unreachableClass);
         } else {
             unreachableClass.representative = unreachableClass.stream()
-                    .min(Comparator.comparingInt(Event::getGlobalId)).get();
+                    .min(Comparator.comparingInt(Event::getGlobalId))
+                    .get();
+
+            unreachableClass.impliedClasses.addAll(this.getAllTypedEqClasses());
+            this.<BranchClass>getAllTypedEqClasses().forEach(c -> c.exclusiveClasses.add(unreachableClass));
         }
 
     }
@@ -412,7 +339,6 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
     protected class BranchClass extends EqClass implements Class {
         final Set<BranchClass> impliedClasses;
-        final Set<BranchClass> reachableClasses;
         final Set<BranchClass> exclusiveClasses;
 
         final Set<Class> impliedClassesView;
@@ -428,14 +354,12 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
         protected BranchClass() {
             impliedClasses = Sets.newIdentityHashSet();
-            reachableClasses = Sets.newIdentityHashSet();
             exclusiveClasses = Sets.newIdentityHashSet();
 
             impliedClassesView = Collections.unmodifiableSet(impliedClasses);
             exclusiveClassesView = Collections.unmodifiableSet(exclusiveClasses);
 
             impliedClasses.add(this);
-            reachableClasses.add(this);
         }
     }
 
@@ -459,14 +383,9 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
             events.add(root);
         }
 
+        public Event getRoot() { return events.get(0); }
 
-        public Collection<Branch> getImpliedBranches() {
-            return Sets.union(mustSucc, mustPred);
-        }
-
-        public Event getRoot() {
-            return events.get(0);
-        }
+        public Collection<Branch> getImpliedBranches() { return Sets.union(mustSucc, mustPred);}
 
         @Override
         public String toString() {
