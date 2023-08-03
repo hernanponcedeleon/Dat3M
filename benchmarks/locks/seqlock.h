@@ -1,4 +1,5 @@
 #include <stdatomic.h>
+#include <assert.h>
 
 struct seqlock_s {
     // Sequence for reader consistency check

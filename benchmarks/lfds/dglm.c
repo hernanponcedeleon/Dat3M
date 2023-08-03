@@ -1,6 +1,5 @@
 #include "dglm.h"
 #include <pthread.h>
-#include <assert.h>
 
 #ifndef NTHREADS
 #define NTHREADS 3
@@ -26,7 +25,7 @@ int main()
     init();
 
     for (int i = 0; i < NTHREADS; i++)
-        pthread_create(&t[i], 0, worker, (void *)i);
+        pthread_create(&t[i], 0, worker, (void *)(size_t)i);
 
     for (int i = 0; i < NTHREADS; i++)
         pthread_join(t[i], 0);
