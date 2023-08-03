@@ -44,7 +44,7 @@ public class LogThreadStatistics implements ProgramProcessor {
             }
         }
 
-        int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry() instanceof Init)).count();
+        int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
                 .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::size).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()

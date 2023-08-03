@@ -37,8 +37,8 @@ class VisitorBase implements EventVisitor<List<Event>> {
     protected VisitorBase() { }
 
     protected Event newTerminator(Expression guard) {
-        if (funcToBeCompiled instanceof Thread) {
-            return newJump(guard, (Label)funcToBeCompiled.getExit());
+        if (funcToBeCompiled instanceof Thread thread) {
+            return newJump(guard, (Label)thread.getExit());
         } else {
             return newAbortIf(guard);
         }

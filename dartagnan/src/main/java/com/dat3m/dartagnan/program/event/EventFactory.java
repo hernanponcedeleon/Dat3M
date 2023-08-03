@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectVoidFunctionCall;
@@ -260,6 +261,10 @@ public class EventFactory {
 
     public static ThreadArgument newThreadArgument(Register resultReg, ThreadCreate creator, int argIndex) {
         return new ThreadArgument(resultReg, creator, argIndex);
+    }
+
+    public static ThreadStart newThreadStart(ThreadCreate creator) {
+        return new ThreadStart(creator);
     }
 
     // =============================================================================================

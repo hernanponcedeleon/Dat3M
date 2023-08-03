@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -14,8 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
-import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
 public class DeadAssignmentElimination implements FunctionProcessor {
@@ -50,9 +51,9 @@ public class DeadAssignmentElimination implements FunctionProcessor {
         final List<Event> funcEvents = function.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
         for(Event e : Lists.reverse(funcEvents)) {
-            if (!e.hasTag(NOOPT) && !e.hasTag(ASSERTION)
-                    && e instanceof Local regWriter && !usedRegs.contains(regWriter.getResultRegister())) {
-                // Invisible RegWriters that write to an unused reg can get removed
+            if (e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister()) &&
+                    !e.hasTag(NOOPT) && isSideEffectFree(regWriter)) {
+                // Unused RegWriters that have no side effects are removable.
                 toBeRemoved.add(e);
             } else if (e instanceof RegReader regReader) {
                 // An event that was not removed adds its dependencies to the used registers
@@ -64,5 +65,10 @@ public class DeadAssignmentElimination implements FunctionProcessor {
         funcEvents.stream()
                 .filter(toBeRemoved::contains)
                 .forEach(Event::tryDelete);
+    }
+
+    private boolean isSideEffectFree(Event event) {
+        return !event.hasTag(ASSERTION) &&
+                !event.hasTag(VISIBLE) && (event instanceof Local || event instanceof Malloc);
     }
 }
