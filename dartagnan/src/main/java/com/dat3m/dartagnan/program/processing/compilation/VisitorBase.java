@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
@@ -37,7 +38,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     protected Event newTerminator(Expression guard) {
         if (funcToBeCompiled instanceof Thread thread) {
-            return newJump(guard, thread.getExit());
+            return newJump(guard, (Label)thread.getExit());
         } else {
             return newAbortIf(guard);
         }

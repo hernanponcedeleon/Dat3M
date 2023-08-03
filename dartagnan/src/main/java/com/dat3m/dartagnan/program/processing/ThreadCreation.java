@@ -166,7 +166,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final Register joinDummyReg = thread.getOrNewRegister("__joinT" + tid, types.getBooleanType());
                         final List<Event> replacement = eventSequence(
                                 newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
-                                newJump(joinDummyReg, thread.getExit()),
+                                newJump(joinDummyReg, (Label)thread.getExit()),
                                 // Note: In our modelling, pthread_join always succeeds if it returns
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
