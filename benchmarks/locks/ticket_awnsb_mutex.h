@@ -157,7 +157,7 @@ void ticket_awnsb_mutex_init(ticket_awnsb_mutex_t * self, int maxArrayWaiters)
     self->maxArrayWaiters = maxArrayWaiters;
     self->waitersArray = (awnsb_node_t **)malloc(self->maxArrayWaiters*sizeof(awnsb_node_t *));
     __VERIFIER_loop_bound(DEFAULT_MAX_WAITERS+1);
-    for (int i = 0; i < self->maxArrayWaiters; i++) self->waitersArray[i] = ATOMIC_VAR_INIT(NULL);
+    for (int i = 0; i < self->maxArrayWaiters; i++) atomic_init(&self->waitersArray[i], NULL);
 }
 
 
@@ -178,7 +178,7 @@ void ticket_awnsb_mutex_destroy(ticket_awnsb_mutex_t * self)
  */
 void ticket_awnsb_mutex_lock(ticket_awnsb_mutex_t * self)
 {
-    const long long ticket = atomic_fetch_add_explicit(&self->ingress, 1, memory_order_relaxed);
+    const int ticket = atomic_fetch_add_explicit(&self->ingress, 1, memory_order_relaxed);
 #ifdef FAIL
     if (atomic_load_explicit(&self->egress, memory_order_relaxed) == ticket) return;
 #else
@@ -221,7 +221,7 @@ void ticket_awnsb_mutex_lock(ticket_awnsb_mutex_t * self)
  */
 void ticket_awnsb_mutex_unlock(ticket_awnsb_mutex_t * self)
 {
-    long long ticket = atomic_load_explicit(&self->egress, memory_order_relaxed);
+    int ticket = atomic_load_explicit(&self->egress, memory_order_relaxed);
     // Clear up our entry in the array before releasing the lock.
     atomic_store_explicit(&self->waitersArray[(int)(ticket % self->maxArrayWaiters)], NULL, memory_order_relaxed);
     // We could do this load as relaxed per se but then the store on egress of -(ticket+1) could be re-ordered to be before, and we don't want that
@@ -242,8 +242,8 @@ void ticket_awnsb_mutex_unlock(ticket_awnsb_mutex_t * self)
  */
 int ticket_awnsb_mutex_trylock(ticket_awnsb_mutex_t * self)
 {
-    long long localE = atomic_load(&self->egress);
-    long long localI = atomic_load_explicit(&self->ingress, memory_order_relaxed);
+    int localE = atomic_load(&self->egress);
+    int localI = atomic_load_explicit(&self->ingress, memory_order_relaxed);
     if (localE != localI) return EBUSY;
     if (!atomic_compare_exchange_strong(&self->ingress, &localI, self->ingress+1)) return EBUSY;
     // Lock has been acquired
