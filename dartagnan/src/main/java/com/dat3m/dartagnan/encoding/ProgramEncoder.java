@@ -112,7 +112,7 @@ public class ProgramEncoder implements Encoder {
 
     private BooleanFormula encodeThreadCF(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final ThreadStart startEvent = (ThreadStart) thread.getEntry();
+        final ThreadStart startEvent = thread.getEntry();
         final List<BooleanFormula> enc = new ArrayList<>();
 
         final BooleanFormula cfStart = context.controlFlow(startEvent);

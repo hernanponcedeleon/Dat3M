@@ -803,7 +803,7 @@ public class RelationAnalysis {
 
             // Here we add must-rf edges between loads/stores that synchronize threads.
             for (Thread thread : program.getThreads()) {
-                final ThreadStart start = (ThreadStart) thread.getEntry();
+                final ThreadStart start = thread.getEntry();
                 if (!start.isSpawned()) {
                     continue;
                 }
@@ -825,12 +825,16 @@ public class RelationAnalysis {
                 cur = thread.getExit();
                 while (!(cur instanceof Store endStore)) { cur = cur.getPredecessor(); }
                 cur = start.getCreator();
-                while (cur != null && !(cur instanceof Load endLoad && endLoad.getAddress().equals(endStore.getAddress()))) {
+                while (cur != null && !(cur instanceof Load joinLoad && joinLoad.getAddress().equals(endStore.getAddress()))) {
                     cur = cur.getSuccessor();
                 }
 
-                if (cur instanceof Load endLoad) {
-                    must.add(new Tuple(endStore, endLoad));
+                if (cur instanceof Load joinLoad) {
+                    must.add(new Tuple(endStore, joinLoad));
+                    if (eq.isImplied(joinLoad, endStore)) {
+                        // NOTE: The above condition is likely never satisfied in practice
+                        may.removeIf(t -> t.getSecond() == joinLoad && t.getFirst() != endStore);
+                    }
                 }
             }
 

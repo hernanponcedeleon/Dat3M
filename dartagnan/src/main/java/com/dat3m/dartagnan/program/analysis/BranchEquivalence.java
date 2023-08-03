@@ -213,7 +213,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
         final List<Branch> unconditionalThreadInitialBranches = new ArrayList<>();
         for (Thread thread : decomposition.program.getThreads()) {
-            final ThreadStart start = (ThreadStart) thread.getEntry();
+            final ThreadStart start = thread.getEntry();
             final Branch threadInitialBranch = decomposition.event2BranchMap.get(start);
 
             if (start.isSpawned()) {
@@ -305,7 +305,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
 
         // -------------------------- Find initial class --------------------------
         initialClass = decomposition.program.getThreads().stream()
-                .map(e -> (ThreadStart)e.getEntry())
+                .map(Thread::getEntry)
                 .filter(e -> !e.isSpawned())
                 .map(this::<BranchClass>getTypedEqClass)
                 .findFirst()

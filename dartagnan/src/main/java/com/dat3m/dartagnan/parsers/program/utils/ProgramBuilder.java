@@ -104,13 +104,12 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Threads and Functions
 
+    // This method creates a "default" thread that has no parameters, no return value, and runs unconditionally.
+    // It is only useful for creating threads of Litmus code.
     public Thread newThread(String name, int tid) {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
-        // TODO: We use a default thread type with no parameters and no return type for now
-        //  because the function type is still ignored for threads. In the future, we will assign
-        //  proper types.
         final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
@@ -291,6 +290,7 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
+        // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
         PTXThread ptxThread = new PTXThread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, gpuID, ctaID);
         id2FunctionsMap.put(id, ptxThread);
