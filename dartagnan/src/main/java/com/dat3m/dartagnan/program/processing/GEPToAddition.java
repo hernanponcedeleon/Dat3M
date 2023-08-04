@@ -59,14 +59,15 @@ public class GEPToAddition implements ProgramProcessor {
         @Override
         public Expression visit(GEPExpression getElementPointer) {
             Type type = getElementPointer.getIndexingType();
-            Expression result = getElementPointer.getBaseExpression();
+            Expression result = getElementPointer.getBaseExpression().accept(this);
             final List<Expression> offsets = getElementPointer.getOffsetExpressions();
             assert offsets.size() > 0;
             result = expressions.makeADD(result,
                     expressions.makeMUL(
                             expressions.makeValue(BigInteger.valueOf(getMemorySize(type)), archType),
-                            expressions.makeIntegerCast(offsets.get(0), archType, true)));
-            for (final Expression offset : offsets.subList(1, offsets.size())) {
+                            expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true)));
+            for (final Expression oldOffset : offsets.subList(1, offsets.size())) {
+                final Expression offset = oldOffset.accept(this);
                 if (type instanceof ArrayType arrayType) {
                     type = arrayType.getElementType();
                     result = expressions.makeADD(result,
