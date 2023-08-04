@@ -61,8 +61,14 @@ public class LLVMTest extends AbstractCTest {
             Arch.POWER,
             Arch.RISCV};
 
+    private int[] bound = new int[1];
+
     public LLVMTest(String name, Arch target) {
         super(name, target, getExpectedResult(name));
+        bound[0] = switch (name) {
+            case LFDS_CHASELEV, LFDS_DGLM, LFDS_HASHTABLE, LFDS_MICHAELSCOTT, LFDS_SAFESTACK, LFDS_TREIBER, LFDS_WSQ -> 2;
+            default -> 1;
+        };
     }
 
     @Override
@@ -76,11 +82,7 @@ public class LLVMTest extends AbstractCTest {
     }
 
     protected Provider<Integer> getBoundProvider() {
-        int bound = name == null ? 1 : switch (name) {
-            case LFDS_CHASELEV, LFDS_DGLM, LFDS_HASHTABLE, LFDS_MICHAELSCOTT, LFDS_SAFESTACK, LFDS_TREIBER, LFDS_WSQ -> 2;
-            default -> 1;
-        };
-        return Provider.fromSupplier(() -> bound);
+        return Provider.fromSupplier(() -> bound[0]);
     }
 
     //@Test
