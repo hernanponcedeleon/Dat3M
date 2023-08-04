@@ -98,12 +98,14 @@ public class MemoryAllocation implements ProgramProcessor {
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);
                 // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
-                final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId, init);
+                final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId,
+                        EventFactory.newThreadStart(null));
+                thread.append(init);
                 nextThreadId++;
 
                 program.addThread(thread);
                 thread.setProgram(program);
-                thread.getEntry().insertAfter(EventFactory.newLabel("END_OF_T" + thread.getId()));
+                thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
             }
         }
     }

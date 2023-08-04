@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
@@ -28,6 +29,8 @@ import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
+import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_SIGNED;
+import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_UNSIGNED;
 
 /*
     Sparse conditional constant propagation performs both CP and DCE simultaneously.
@@ -101,11 +104,16 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                     propagationMap.remove(rw.getResultRegister());
                 }
 
+                if (cur instanceof AbortIf abort && abort.getCondition() instanceof BConst bConst && bConst.getValue()) {
+                    isTraversingDeadBranch = true;
+                    propagationMap.clear();
+                    continue;
+                }
+
                 if (cur instanceof CondJump jump) {
                     final Label target = jump.getLabel();
                     if (jump.isGoto()) {
-                        // The successor event is going to be dead (unless it is a label with other
-                        // inflow).
+                        // The successor event is going to be dead (unless it is a label with other inflow).
                         isTraversingDeadBranch = true;
                         propagationMap.clear();
                     }
@@ -215,7 +223,12 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         @Override
         public Expression visit(IExprUn iUn) {
             Expression inner = transform(iUn.getInner());
-            Expression result = expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
+            Expression result;
+            if ((iUn.getOp() == CAST_SIGNED || iUn.getOp() == CAST_UNSIGNED) && iUn.getType() == inner.getType()) {
+                result = inner;
+            } else {
+                result = expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
+            }
             if (inner instanceof IValue) {
                 return result.reduce();
             }

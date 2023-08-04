@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
@@ -124,13 +125,15 @@ public class ThreadCreation implements ProgramProcessor {
                         final Register resultRegister = getResultRegister(call);
                         assert resultRegister.getType() instanceof IntegerType;
 
-                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
+                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
+                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
                         final List<Event> replacement = eventSequence(
                                 createEvent,
                                 newReleaseStore(comAddress, expressions.makeTrue()),
+                                newStore(pidResultAddress, tidExpr),
                                 // TODO: Allow to return failure value (!= 0)
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
@@ -141,7 +144,6 @@ public class ThreadCreation implements ProgramProcessor {
                         createEvent.setSpawnedThread(spawnedThread);
                         workingQueue.add(spawnedThread);
 
-                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
                         tid2ComAddrMap.put(tidExpr, comAddress);
                         propagateThreadIds(tidExpr, pidResultAddress, createEvent);
 
@@ -243,8 +245,10 @@ public class ThreadCreation implements ProgramProcessor {
         final TypeFactory types = TypeFactory.getInstance();
 
         // ------------------- Create new thread -------------------
+        final ThreadStart start = EventFactory.newThreadStart(creator);
+        start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
-                Lists.transform(function.getParameterRegisters(), Register::getName), tid, EventFactory.newSkip());
+                Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
         thread.copyDummyCountFrom(function);
 
         // ------------------- Copy registers from target function into new thread -------------------
@@ -304,7 +308,7 @@ public class ThreadCreation implements ProgramProcessor {
             }
         }
 
-        // ------------------- Add Start, End, and Argument events if this thread was spawned -------------------
+        // ------------------- Add Sync, End, and Argument events if this thread was spawned -------------------
         if (creator != null) {
             // Arguments
             final List<Register> params = thread.getParameterRegisters();
@@ -312,14 +316,11 @@ public class ThreadCreation implements ProgramProcessor {
                 thread.getEntry().insertAfter(newThreadArgument(params.get(i), creator, i));
             }
 
-            // Start
+            // Sync
             final Register startSignal = thread.newRegister("__startT" + tid, types.getBooleanType());
-            final Register creatorExecStatus = thread.newRegister(types.getBooleanType());
             thread.getEntry().insertAfter(eventSequence(
                     newAcquireLoad(startSignal, comAddr),
-                    forceStart ? newExecutionStatus(creatorExecStatus, creator) : null,
-                    forceStart ? newAssume(expressions.makeOr(startSignal, creatorExecStatus)) : null,
-                    newJumpUnless(startSignal, threadEnd)
+                    newAssume(startSignal)
             ));
 
             // End
