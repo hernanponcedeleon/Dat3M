@@ -56,7 +56,7 @@ public class IntrinsicsInlining implements ProgramProcessor {
                         "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                         "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
-                case "__assert_fail" -> inlineAssert(call);
+                case "__assert_fail", "reach_error", "__assert_rtn" -> inlineAssert(call);
                 case "malloc" -> inlineMalloc(call);
                 //TODO model memory reclamation with events
                 case "free" -> List.of();
