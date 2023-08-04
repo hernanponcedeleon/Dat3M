@@ -60,6 +60,7 @@ public class IntrinsicsInlining implements ProgramProcessor {
                 case "malloc" -> inlineMalloc(call);
                 //TODO model memory reclamation with events
                 case "free" -> List.of();
+                case "llvm.smax.i32", "llvm.umax.i32", "llvm.smin.i32", "llvm.umin.i32" -> inlineLLVMMinMax(call);
                 default -> throw new UnsupportedOperationException(
                         String.format("Undefined function %s", call.getCallTarget().getName()));
             };
@@ -144,4 +145,17 @@ public class IntrinsicsInlining implements ProgramProcessor {
         return List.of(EventFactory.Std.newMalloc(call.getResultRegister(), call.getArguments().get(0)));
     }
 
+    private List<Event> inlineLLVMMinMax(DirectFunctionCall call) {
+        checkArgument(call instanceof DirectValueFunctionCall, "Unused call to intrinsic min/max function.");
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final List<Expression> arguments = call.getArguments();
+        final Expression left = arguments.get(0);
+        final Expression right = arguments.get(1);
+        final String name = call.getCallTarget().getName();
+        final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
+        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
+        final Expression isLess = expressions.makeLT(left, right, signed);
+        final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
+        return List.of(EventFactory.newLocal(((DirectValueFunctionCall) call).getResultRegister(), result));
+    }
 }
