@@ -42,7 +42,6 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
@@ -242,7 +241,7 @@ public class Dartagnan extends BaseOptions {
 
         StringBuilder summary = new StringBuilder();
 
-        if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
+        if (p.getFormat() != SourceLanguage.LITMUS) {
             if (hasViolations) {
 
                 final SyntacticContextAnalysis synContext = newInstance(p);
@@ -283,7 +282,7 @@ public class Dartagnan extends BaseOptions {
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
                         .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
-                        .collect(Collectors.toList());
+                        .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     summary.append("======= CAT specification violation found =======\n");
                     // Computed by the model checker since it needs access to the WmmEncoder
@@ -326,7 +325,7 @@ public class Dartagnan extends BaseOptions {
                     final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                             .filter(Axiom::isFlagged)
                             .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
-                            .collect(Collectors.toList());
+                            .toList();
                     for (Axiom violatedAx : violatedCATSpecs) {
                         summary.append("Flag ")
                                 .append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))
