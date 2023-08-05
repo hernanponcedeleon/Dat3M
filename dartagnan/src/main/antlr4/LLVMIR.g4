@@ -304,10 +304,7 @@ typeValue: firstClassType value;
 value:
 	constant
 	// %42 %foo
-	| LocalIdent
-	// TODO: Move InlineAsm from Value to Callee and Invokee? Inline assembler expressions may only
-	// be used as the callee operand of a call or an invoke instruction.
-	| inlineAsm;
+	| LocalIdent;
 inlineAsm:
 	'asm' sideEffect = 'sideeffect'? alignStackTok = 'alignstack'? intelDialect = 'inteldialect'?
 		unwind = 'unwind'? StringLit ',' StringLit;
@@ -705,7 +702,7 @@ selectInst:
 freezeInst: 'freeze' typeValue;
 callInst:
 	tail = ('musttail' | 'notail' | 'tail')? 'call' fastMathFlag* callingConv? returnAttribute*
-		addrSpace? type value '(' args ')' funcAttribute* (
+		addrSpace? type (inlineAsm | value) '(' args ')' funcAttribute* (
 		'[' operandBundle (',' operandBundle)* ']'
 	)? (',' metadataAttachment)*;
 vaargInst:

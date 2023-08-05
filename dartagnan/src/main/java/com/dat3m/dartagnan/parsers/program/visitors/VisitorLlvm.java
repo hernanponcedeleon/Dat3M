@@ -7,12 +7,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.expression.type.VoidType;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -20,7 +15,8 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.GEPToAddition;
@@ -28,7 +24,10 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
@@ -271,6 +270,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitCallInst(CallInstContext ctx) {
         final Type returnType = parseType(ctx.type());
+        if (ctx.inlineAsm() != null) {
+            // FIXME: We ignore all inline assembly.
+            return null;
+        }
         final Expression callTarget = checkPointerExpression(ctx.value());
         if (callTarget == null) {
             //FIXME ignores metadata functions, but also undeclared functions
@@ -694,7 +697,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (ctx.constant() != null) {
             return visitConstant(ctx.constant());
         }
-        checkSupport(ctx.inlineAsm() == null, "Assembly values in %s.", ctx);
         assert expectedType != null : "No expected type.";
         final String id = localIdent(ctx.LocalIdent());
         return getOrNewRegister(id, expectedType);
