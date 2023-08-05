@@ -54,26 +54,23 @@ public class LLVMTest extends AbstractCTest {
             //LOCK_SEQ,
             //LOCK_TICKET,
             LOCK_AWNSB,
-            LOCK_TTAS};
+            LOCK_TTAS
+    };
+
     private static final Arch[] allArchs = {
             Arch.TSO,
             Arch.ARM8,
             Arch.POWER,
-            Arch.RISCV};
+            Arch.RISCV
+    };
 
-    private int[] bound = new int[1];
-
-    public LLVMTest(String name, Arch target) {
-        super(name, target, getExpectedResult(name));
-        bound[0] = switch (name) {
-            case LFDS_CHASELEV, LFDS_DGLM, LFDS_HASHTABLE, LFDS_MICHAELSCOTT, LFDS_SAFESTACK, LFDS_TREIBER, LFDS_WSQ -> 2;
-            default -> 1;
-        };
+    public LLVMTest(String name, Arch target, Result expected) {
+        super(name, target, expected);
     }
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> "../benchmarks/llvm/" + name + ".ll");
+        return () -> "../benchmarks/llvm/" + name + ".ll";
     }
 
     @Override
@@ -82,21 +79,11 @@ public class LLVMTest extends AbstractCTest {
     }
 
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> bound[0]);
-    }
-
-    //@Test
-    @CSVLogger.FileName("csv/assume")
-    public void testAssume() throws Exception {
-        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
-    }
-
-    @Test
-    @CSVLogger.FileName("csv/refinement")
-    public void testRefinement() throws Exception {
-        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
-        assertEquals(expected, s.getResult());
+        return () -> switch (name) {
+            case LFDS_CHASELEV, LFDS_DGLM, LFDS_HASHTABLE, LFDS_MICHAELSCOTT, LFDS_SAFESTACK, LFDS_TREIBER, LFDS_WSQ ->
+                    2;
+            default -> 1;
+        };
     }
 
     private static Result getExpectedResult(String name) {
@@ -113,10 +100,24 @@ public class LLVMTest extends AbstractCTest {
         final var result = new ArrayList<Object[]>();
         for (final String name : allNames) {
             for (final Arch arch : allArchs) {
-                result.add(new Object[]{name, arch});
+                result.add(new Object[] {name, arch, getExpectedResult(name)});
             }
         }
         return result;
+    }
+
+    //@Test
+    @CSVLogger.FileName("csv/assume")
+    public void testAssume() throws Exception {
+        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
+
+    @Test
+    @CSVLogger.FileName("csv/refinement")
+    public void testRefinement() throws Exception {
+        RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
     }
 
 }
