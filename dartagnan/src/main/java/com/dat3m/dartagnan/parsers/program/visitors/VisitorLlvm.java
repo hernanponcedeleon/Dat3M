@@ -268,6 +268,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     @Override
+    public Expression visitSwitchTerm(SwitchTermContext ctx) {
+        final Expression switchValue = visitTypeValue(ctx.typeValue());
+        final Label defaultTarget = getJumpLabel(ctx.label());
+        for (LlvmcaseContext caseCtx : ctx.llvmcase()) {
+            final Label jumpTarget = getJumpLabel(caseCtx.label());
+            final Expression caseCheck = expressions.makeEQ(switchValue, visitTypeConst(caseCtx.typeConst()));
+            block.events.add(newJump(caseCheck, jumpTarget));
+        }
+        block.events.add(newGoto(defaultTarget));
+
+        return null;
+    }
+
+    @Override
     public Expression visitCallInst(CallInstContext ctx) {
         final Type returnType = parseType(ctx.type());
         if (ctx.inlineAsm() != null) {
