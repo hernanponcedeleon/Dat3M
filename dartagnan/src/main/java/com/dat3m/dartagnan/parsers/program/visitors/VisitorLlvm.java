@@ -327,6 +327,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
+    @Override
+    public Expression visitUnreachableTerm(UnreachableTermContext ctx) {
+        block.events.add(newAbortIf(expressions.makeTrue()));
+        return null;
+    }
+
     private Label getJumpLabel(LabelContext context) {
         final Block target = getBlock(localIdent(context.LocalIdent()));
         final Event label = getPhiNode(block, target).get(0);
@@ -542,6 +548,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         return assignToRegister(expressions.makeREM(left, right, false));
+    }
+
+    @Override
+    public Expression visitUDivInst(UDivInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeDIV(left, right, false));
+    }
+
+    @Override
+    public Expression visitSDivInst(SDivInstContext ctx) {
+        final Expression left = visitTypeValue(ctx.typeValue());
+        final Expression right = checkExpression(left.getType(), ctx.value());
+        return assignToRegister(expressions.makeDIV(left, right, true));
     }
 
     // Aggregate instructions
