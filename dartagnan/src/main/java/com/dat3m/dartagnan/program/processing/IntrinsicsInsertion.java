@@ -49,11 +49,15 @@ public class IntrinsicsInsertion implements ProgramProcessor {
                 case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
                 case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
                 case "exit" -> inlineExit(call);
-                case "printf" -> EventFactory.newSkip();
-                default -> null;
+                case "printf" -> null;
+                default -> call;
             };
-            if (replacement != null) {
+
+            if (replacement == null) {
+                call.tryDelete();
+            } else if (call != replacement) {
                 call.replaceBy(replacement);
+                replacement.copyAllMetadataFrom(call);
             }
         }
     }
