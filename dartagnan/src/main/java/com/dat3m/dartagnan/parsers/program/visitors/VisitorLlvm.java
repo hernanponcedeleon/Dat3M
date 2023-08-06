@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -196,6 +193,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitGlobalDecl(GlobalDeclContext ctx) {
+        // TODO: Is this ever called?
         final String name = globalIdent(ctx.GlobalIdent());
         check(constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
@@ -205,6 +203,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             expression = program.getMemory().allocate(size, true);
             //TODO non-det initializer
         } else {
+            // FIXME: Constants also occupy memory... in LLVM a named constant is a read-only global variable.
+            //  Address-less constants are never named and always directly inlined into the IR!
             assert ctx.immutable().getText().equals("constant");
             checkSupport(type instanceof IntegerType, "Non-integer in %s.", ctx);
             final var constant = new INonDet(program.getConstants().size(), (IntegerType) type, false);
@@ -220,23 +220,44 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
+        final int size = GEPToAddition.getMemorySize(type);
+        final MemoryObject globalObject = program.getMemory().allocate(size, true);
         final Expression value = checkExpression(type, ctx.constant());
-        final Expression expression;
-        if (ctx.immutable().getText().equals("global")) {
-            final int size = GEPToAddition.getMemorySize(type);
-            expression = program.getMemory().allocate(size, true);
-            ((MemoryObject) expression).setCVar(name);
-            // In case of zero-initializer, there is no particular value
-            if (value != null) {
-                checkSupport(value instanceof IConst, "Non-constant in %s.", ctx);
-                ((MemoryObject) expression).setInitialValue(0, (IConst) value);
-            }
-        } else {
-            assert ctx.immutable().getText().equals("constant");
-            expression = value;
+        globalObject.setCVar(name);
+        if (ctx.threadLocal() != null) {
+            globalObject.setIsThreadLocal(true);
         }
-        constantMap.put(name, expression);
+
+        setInitialMemoryFromConstant(globalObject, 0, value);
+        // TODO: mark the global as constant, if possible.
+        constantMap.put(name, globalObject);
         return null;
+    }
+
+    private void setInitialMemoryFromConstant(MemoryObject memObj, int offset, Expression constant) {
+        if (constant.getType() instanceof ArrayType arrayType) {
+            assert constant instanceof Construction;
+            final Construction constArray = (Construction) constant;
+            final List<Expression> arrayElements = constArray.getArguments();
+            final int stepSize = GEPToAddition.getMemorySize(arrayType.getElementType());
+            for (int i = 0; i < arrayElements.size(); i++) {
+                setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
+            }
+        } else if (constant.getType() instanceof AggregateType) {
+            assert constant instanceof Construction;
+            final Construction constStruct = (Construction) constant;
+            final List<Expression> structElements = constStruct.getArguments();
+            int currentOffset = offset;
+            for (Expression structElement : structElements) {
+                setInitialMemoryFromConstant(memObj, currentOffset, structElement);
+                currentOffset += GEPToAddition.getMemorySize(structElement.getType());
+            }
+        } else if (constant.getType() instanceof IntegerType) {
+            assert constant instanceof IConst;
+            memObj.setInitialValue(offset, (IConst) constant);
+        } else {
+            throw new UnsupportedOperationException("Unrecognized constant value: " + constant);
+        }
     }
 
     private Block getBlock(String label) {
@@ -744,18 +765,52 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitArrayConst(ArrayConstContext ctx) {
-        //TODO this is read-only memory
+        assert expectedType instanceof ArrayType;
+        final Type elementType = ((ArrayType)expectedType).getElementType();
         if (ctx.StringLit() != null) {
             //TODO handle strings
-            return program.getMemory().allocate(1, true);
+            return makeZeroOfType(expectedType); // We make a 0 for now.
         }
-        final MemoryObject array = program.getMemory().allocate(ctx.typeConst().size(), true);
-        for (int i = 0; i < ctx.typeConst().size(); i++) {
-            final Expression element = visitTypeConst(ctx.typeConst(i));
-            checkSupport(element instanceof IConst, "Non-constant in %s.", ctx);
-            array.setInitialValue(i, (IConst) element);
+        final List<Expression> arrayValues = new ArrayList<>();
+        for (TypeConstContext typeConst : ctx.typeConst()) {
+            arrayValues.add(visitTypeConst(typeConst));
         }
-        return array;
+        return expressions.makeArray(elementType, arrayValues, true);
+    }
+
+    @Override
+    public Expression visitStructConst(StructConstContext ctx) {
+        List<Expression> structMembers = new ArrayList<>();
+        for (TypeConstContext typeCtx : ctx.typeConst()) {
+            structMembers.add(visitTypeConst(typeCtx));
+        }
+        return expressions.makeConstruct(structMembers);
+    }
+
+    @Override
+    public Expression visitZeroInitializerConst(ZeroInitializerConstContext ctx) {
+        return makeZeroOfType(expectedType);
+    }
+
+    private Expression makeZeroOfType(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            Expression zero = makeZeroOfType(arrayType.getElementType());
+            List<Expression> zeroes = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                zeroes.add(zero);
+            }
+            return expressions.makeArray(arrayType.getElementType(), zeroes, true);
+        } else if (type instanceof AggregateType structType) {
+            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
+            for (Type fieldType : structType.getDirectFields()) {
+                zeroes.add(makeZeroOfType(fieldType));
+            }
+            return expressions.makeConstruct(zeroes);
+        } else if (type instanceof IntegerType intType) {
+            return expressions.makeZero(intType);
+        } else {
+            throw new UnsupportedOperationException("Cannot create zero of type " + type);
+        }
     }
 
     // Operations
