@@ -82,8 +82,8 @@ public class ProcessingManager implements ProgramProcessor {
                 StaticMemoryInitializer.newInstance(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                IntrinsicsInsertion.newInstance(),
                                 Inlining.fromConfig(config),
+                                IntrinsicsInsertion.newInstance(),
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),
