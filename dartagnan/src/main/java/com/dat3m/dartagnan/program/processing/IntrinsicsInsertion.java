@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -47,12 +48,17 @@ public class IntrinsicsInsertion implements ProgramProcessor {
                 case "pthread_mutex_init" -> inlinePthreadMutexInit(call);
                 case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
                 case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
+                case "exit" -> inlineExit(call);
                 default -> null;
             };
             if (replacement != null) {
                 call.replaceBy(replacement);
             }
         }
+    }
+
+    private Event inlineExit(DirectFunctionCall ignored) {
+        return EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
     }
 
     private Event inlineLoopBegin(DirectFunctionCall ignored) {
