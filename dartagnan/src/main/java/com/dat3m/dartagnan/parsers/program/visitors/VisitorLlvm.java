@@ -127,6 +127,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
         //TODO there are more attributes in ctx
         final var declaredFunction = new Function(name, functionType, parameterNames, functionCounter++, null);
+        if (ctx.params().ellipsis != null) {
+            declaredFunction.setIsVarArgs(true);
+        }
         program.addFunction(declaredFunction);
         constantMap.put(name, declaredFunction);
         return null;

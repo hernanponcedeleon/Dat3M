@@ -100,7 +100,7 @@ public class Printer {
 
     public String functionSignatureToString(Function func) {
         final String prefix = func.getFunctionType().getReturnType() + " " + func.getName() + "(";
-        final String suffix = ")";
+        final String suffix = func.isVarArgs() ? ", ...)": ")";
         return func.getParameterRegisters().stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
     }

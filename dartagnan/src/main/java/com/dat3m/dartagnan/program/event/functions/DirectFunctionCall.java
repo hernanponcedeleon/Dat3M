@@ -23,7 +23,10 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
 
     protected DirectFunctionCall(Function func, List<Expression> arguments) {
         final List<Type> paramTypes = func.getFunctionType().getParameterTypes();
-                Preconditions.checkArgument(arguments.size() == paramTypes.size());
+        Preconditions.checkArgument(
+                (!func.isVarArgs() && arguments.size() == paramTypes.size())
+                        || (func.isVarArgs() && arguments.size() >= paramTypes.size())
+                );
         for (int i = 0; i < paramTypes.size(); i++) {
             Preconditions.checkArgument(arguments.get(i).getType().equals(paramTypes.get(i)));
         }

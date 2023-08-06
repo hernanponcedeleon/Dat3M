@@ -25,6 +25,7 @@ public class Function implements Expression {
 
     protected FunctionType functionType;
     protected List<Register> parameterRegs;
+    protected boolean isVarArgs = false;
 
     protected Program program;
     protected Map<String, Register> registers = new HashMap<>();
@@ -75,6 +76,9 @@ public class Function implements Expression {
 
     public boolean hasBody() { return entry != null; }
     public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
+
+    public void setIsVarArgs(boolean value) { this.isVarArgs = value; }
+    public boolean isVarArgs() { return isVarArgs; }
 
     public Event getEntry() { return entry; }
     public Event getExit() { return exit; }
@@ -166,7 +170,7 @@ public class Function implements Expression {
     @Override
     public String toString() {
         final String prefix = getFunctionType().getReturnType() + " " + getName() + "(";
-        final String suffix = ")";
+        final String suffix = isVarArgs ? ", ...)" : ")";
         return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
     }
