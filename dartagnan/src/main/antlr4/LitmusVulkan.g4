@@ -153,9 +153,9 @@ assertionValue
     |   constant
     ;
 
-atomatic returns [Boolean content]
-    :   Period Atom {$content = true;}
-    |   {$content = false;}
+atomatic returns [Boolean isAtomic]
+    :   Period Atom {$isAtomic = true;}
+    |   {$isAtomic = false;}
     ;
 
 scope returns [String content]
@@ -175,7 +175,8 @@ mo returns [String content]
     |   Period Acq_rel {$content = "ACQ_REL";}
     |   Period Visible {$content = "VIS";}
     |   Period Available {$content = "AV";}
-    |   {$content = "";}
+    |   Period Private {$content = "PRIV";}
+    |   Period Nonprivate {$content = "NONPRIV";}
     ;
 
 storageClass returns [String content]
@@ -223,6 +224,9 @@ Acq_rel     :   'acq_rel';
 
 Visible     :   'vis';
 Available   :   'av';
+
+Private     :   'priv';
+Nonprivate  :   'nonpriv';
 
 SemVis      :   'semvis';
 SemAv       :   'semav';

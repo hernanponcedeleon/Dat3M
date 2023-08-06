@@ -16,8 +16,7 @@ SPIRV
 
 //???????????
 // chains = new relation
-// ssw = sdv, specifies that the first thread system-synchronizes-with the second thread.
-//       use same-device as replacement for system-synchronizes-with?
+// ssw = new relation for system-synchronizes-with?
 
 (*******************)
 (*  Auxiliaries *)

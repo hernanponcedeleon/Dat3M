@@ -14,14 +14,19 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanFenceWithId;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.Vector;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
@@ -124,37 +129,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitStoreConstant(LitmusVulkanParser.StoreConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
+        Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        store.addTags(scope, classSemantic, avvisSemantic);
-        if (!avvisSemantic.isEmpty()) {
-             if (!avvisSemantic.equals(Tag.Vulkan.SEM_AVAILABLE)) {
-                    throw new ParsingException("Store instruction doesn't support avvisSemantic: " + avvisSemantic);
-             } else if (!mo.equals(Tag.Vulkan.RELEASE)) {
-                    throw new ParsingException("Availability semantics in RELEASE only.");
-             }
-        }
-        switch (mo) {
-            case Tag.Vulkan.RELEASE -> {
-                store.addTags(Tag.Vulkan.ATOM);
-            }
-            case Tag.Vulkan.AVAILABLE -> {
-                store.addTags(Tag.Vulkan.NON_PRIVATE);
-            }
-            case "" -> {
-                if (!ctx.atomatic().content) {
-                    throw new ParsingException("Store instruction doesn't have mo");
-                }
-                store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
-            }
-            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
-        }
-        if (ctx.atomatic().content) {
-            store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE);
-        }
+        tagChecker(store, atomatic, mo, avvisSemantic);
+        store.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -162,37 +144,15 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitStoreRegister(LitmusVulkanParser.StoreRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Register register = (Register) ctx.register().accept(this);
+        Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
-        if (!avvisSemantic.isEmpty()) {
-            if (!avvisSemantic.equals(Tag.Vulkan.SEM_AVAILABLE)) {
-                throw new ParsingException("Store instruction doesn't support avvisSemantic: " + avvisSemantic);
-            } else if (!mo.equals(Tag.Vulkan.RELEASE)) {
-                throw new ParsingException("Availability semantics in RELEASE only.");
-            }
-        }
-        switch (mo) {
-            case Tag.Vulkan.RELEASE -> {
-                store.addTags(Tag.Vulkan.ATOM);
-            }
-            case Tag.Vulkan.AVAILABLE -> {
-                store.addTags(Tag.Vulkan.NON_PRIVATE);
-            }
-            case "" -> {
-                if (!ctx.atomatic().content) {
-                    throw new ParsingException("Store instruction doesn't have mo");
-                }
-                store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
-            }
-            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
-        }
-        if (ctx.atomatic().content) {
-            store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE);
-        }
+        tagChecker(store, atomatic, mo, avvisSemantic);
+        store.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -207,37 +167,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitLoadLocation(LitmusVulkanParser.LoadLocationContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
-        load.addTags(scope, classSemantic, avvisSemantic);
-        if (!avvisSemantic.isEmpty()) {
-            if (!avvisSemantic.equals(Tag.Vulkan.SEM_VISIBLE)) {
-                throw new ParsingException("Load instruction doesn't support avvisSemantic: " + avvisSemantic);
-            } else if (!mo.equals(Tag.Vulkan.ACQUIRE)) {
-                throw new ParsingException("Visibility semantics in ACQUIRE only.");
-            }
-        }
-        switch (mo) {
-            case Tag.Vulkan.ACQUIRE -> {
-                load.addTags(Tag.Vulkan.ATOM);
-            }
-            case Tag.Vulkan.VISIBLE -> {
-                load.addTags(Tag.Vulkan.NON_PRIVATE);
-            }
-            case "" -> {
-                if (!ctx.atomatic().content) {
-                    throw new ParsingException("Store instruction doesn't have mo");
-                }
-                load.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
-            }
-            default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
-        }
-        if (ctx.atomatic().content) {
-            load.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE);
-        }
+        tagChecker(load, atomatic, mo, avvisSemantic);
+        load.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -246,26 +183,15 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
+        Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
         rmw.addTags(scope, classSemantic, avvisSemantic);
-        switch (mo) {
-            case Tag.Vulkan.ACQ_REL -> {
-                rmw.addTags(Tag.Vulkan.ATOM);
-            }
-            case Tag.Vulkan.NON_PRIVATE -> {
-                rmw.addTags(Tag.Vulkan.NON_PRIVATE);
-            }
-            default -> throw new ParsingException("RMW instruction doesn't support mo: " + mo);
-        }
-        if (ctx.atomatic().content) {
-            rmw.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE);
-        } else {
-            throw new ParsingException("RMW must be atomic in Vulkan");
-        }
+        tagChecker(rmw, atomatic, mo, avvisSemantic);
+        rmw.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, rmw);
     }
 
@@ -275,12 +201,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String classSemantic = ctx.storageClassSemantic().content;
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        switch (mo) {
-            case Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE -> {
-                fence.addTags(mo, scope, classSemantic);
-            }
-            default -> throw new ParsingException("Fence instruction doesn't support mo: " + mo);
-        }
+        tagChecker(fence, false, mo, "");
+        fence.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -288,10 +210,63 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitControlBarrier(LitmusVulkanParser.ControlBarrierContext ctx) {
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String semantic = ctx.storageClassSemantic().content;
+        String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
         Event fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
-        fence.addTags(mo, scope, semantic);
+        tagChecker(fence, false, mo, "");
+        fence.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, fence);
+    }
+
+    private void tagChecker(Event e, Boolean atomatic, String mo, String avvisSemantic) {
+        // Check if the event is tagged with the right mo
+        if (e instanceof Store) {
+            if (!mo.equals(Tag.Vulkan.PRIVATE) && !mo.equals(Tag.Vulkan.NON_PRIVATE) &&
+                    !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
+                throw new ParsingException("Stores must private or non_private or release or available");
+            }
+        } else if (e instanceof Load) {
+            if (!mo.equals(Tag.Vulkan.PRIVATE) && !mo.equals(Tag.Vulkan.NON_PRIVATE) &&
+                    !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
+                throw new ParsingException("Loads must private or non_private or acquire or visible");
+            }
+        } else if (e.hasTag(Tag.FENCE) && !(e instanceof VulkanFenceWithId)) {
+            if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
+                throw new ParsingException("Fences must release or acquire or acq_rel");
+            }
+        } else if (e instanceof VulkanFenceWithId) {
+            if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL) &&
+                    !mo.equals(Tag.Vulkan.NON_PRIVATE)) { // use non_private when no mo is specified
+                throw new ParsingException("VulkanFenceWithId must release or acquire or acq_rel or non_private");
+            }
+        } else if (e instanceof VulkanRMW) {
+            if (!mo.equals(Tag.Vulkan.NON_PRIVATE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
+                throw new ParsingException("RMW must non_private or acq_rel");
+            }
+        } else {
+            throw new ParsingException("Event type not supported: " + e.getClass().getSimpleName());
+        }
+
+        // Check if mo is consistent with atomatic
+        if (mo.equals(Tag.Vulkan.ACQUIRE) && !atomatic) {
+            throw new ParsingException("Acquire mo must be atomatic");
+        }
+        if (mo.equals(Tag.Vulkan.RELEASE) && !atomatic) {
+            throw new ParsingException("Release mo must be atomatic");
+        }
+
+        // Check if avvisSemantic is consistent with mo
+        if (avvisSemantic.equals(Tag.Vulkan.SEM_AVAILABLE) && !mo.equals(Tag.Vulkan.RELEASE)) {
+            throw new ParsingException("Available avvisSemantic must be release mo");
+        }
+        if (avvisSemantic.equals(Tag.Vulkan.SEM_VISIBLE) && !mo.equals(Tag.Vulkan.ACQUIRE)) {
+            throw new ParsingException("Visible avvisSemantic must be acquire mo");
+        }
+
+        // Add tags
+        e.addTags(mo, avvisSemantic);
+        if (atomatic) {
+            e.addTags(Tag.Vulkan.ATOM);
+        }
     }
 }

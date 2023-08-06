@@ -333,7 +333,6 @@ public final class Tag {
         public static final String WORK_GROUP = "WG";
         public static final String QUEUE_FAMILY = "QF";
         public static final String DEVICE = "DV";
-        public static final String GLOBAL = "GL";
         public static final String PRIVATE = "PRIV";
         public static final String NON_PRIVATE = "NONPRIV";
         // Memory orders
