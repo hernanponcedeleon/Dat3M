@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
@@ -14,7 +13,7 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class IntrinsicsInsertion implements ProgramProcessor {
+public class IntrinsicsInsertion implements FunctionProcessor {
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
@@ -26,16 +25,7 @@ public class IntrinsicsInsertion implements ProgramProcessor {
     }
 
     @Override
-    public void run(Program program) {
-        for (final Function thread : program.getThreads()) {
-            run(thread);
-        }
-        for (final Function function : program.getFunctions()) {
-            run(function);
-        }
-    }
-
-    private void run(Function function) {
+    public void run(Function function) {
         currentAtomicBegin = null;
         for (final DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
             Event replacement = switch (call.getCallTarget().getName()) {

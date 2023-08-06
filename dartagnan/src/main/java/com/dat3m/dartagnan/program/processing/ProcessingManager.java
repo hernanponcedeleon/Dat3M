@@ -79,10 +79,10 @@ public class ProcessingManager implements ProgramProcessor {
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
-                IntrinsicsInsertion.newInstance(),
                 StaticMemoryInitializer.newInstance(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
+                                IntrinsicsInsertion.newInstance(),
                                 Inlining.fromConfig(config),
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),
