@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.google.common.base.Preconditions;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -17,7 +18,7 @@ public class Thread extends Function {
     }
 
     public Optional<ScopeHierarchy> optScopeHierarchy = Optional.empty();
-    public Optional<Set<Thread>> optSyncSet = Optional.empty();
+    public Optional<HashSet<Thread>> optSyncSet = Optional.empty();
 
     @Override
     public ThreadStart getEntry() {

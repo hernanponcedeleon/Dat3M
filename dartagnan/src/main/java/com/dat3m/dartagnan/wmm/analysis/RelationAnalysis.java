@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -1048,12 +1049,24 @@ public class RelationAnalysis {
 
         @Override
         public Knowledge visitSyncWith(Relation rel) {
-            //TODO: Change to use the new syncWith of threads
             Set<Tuple> must = new HashSet<>();
-            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
-            for (MemoryCoreEvent e1 : events) {
-                for (MemoryCoreEvent e2 : events) {
-                    if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+            List<Event> events = new ArrayList<>();
+            events.addAll(program.getThreadEvents(Load.class));
+            events.addAll(program.getThreadEvents(Store.class));
+            events.addAll(program.getThreadEventsWithAllTags(VISIBLE, FENCE));
+            events.addAll(program.getThreadEvents(RMWXchgBase.class));
+            events.removeIf(e -> e instanceof Init);
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    Thread thread1 = e1.getThread();
+                    Thread thread2 = e2.getThread();
+                    if (thread1 == thread2 || thread1.optSyncSet.isEmpty() || thread2.optSyncSet.isEmpty()) {
+                        continue;
+                    }
+                    if (thread1.optSyncSet.get().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                    if (thread2.optSyncSet.get().contains(thread1) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }

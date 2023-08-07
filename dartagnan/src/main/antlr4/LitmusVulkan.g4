@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.op.*;
 }
 
 main
-    :    LitmusLanguage ~(LBrace)* variableDeclaratorList sswDeclaratorList program variableList? assertionFilter? assertionList? EOF
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList sswDeclaratorList? program variableList? assertionFilter? assertionList? EOF
     ;
 
 variableDeclaratorList

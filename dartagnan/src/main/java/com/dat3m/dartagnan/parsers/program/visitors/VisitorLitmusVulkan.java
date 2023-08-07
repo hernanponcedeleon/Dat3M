@@ -21,12 +21,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 import org.antlr.v4.runtime.misc.Interval;
-
-import java.util.Vector;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
@@ -94,10 +89,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     // SSW declarator list
     @Override
     public Object visitSswDeclaratorList(LitmusVulkanParser.SswDeclaratorListContext ctx) {
-        for (LitmusVulkanParser.SswDeclaratorContext sswDeclaratorContext : ctx.sswDeclarator()) {
-            int threadId0 = sswDeclaratorContext.threadId(0).id;
-            int threadId1 = sswDeclaratorContext.threadId(1).id;
-            programBuilder.addSwwPairThreads(threadId0, threadId1);
+        if (ctx != null) {
+            for (LitmusVulkanParser.SswDeclaratorContext sswDeclaratorContext : ctx.sswDeclarator()) {
+                int threadId0 = sswDeclaratorContext.threadId(0).id;
+                int threadId1 = sswDeclaratorContext.threadId(1).id;
+                programBuilder.addSwwPairThreads(threadId0, threadId1);
+            }
         }
         return null;
     }

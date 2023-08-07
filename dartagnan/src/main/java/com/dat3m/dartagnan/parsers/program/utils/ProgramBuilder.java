@@ -344,6 +344,13 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Vulkan
     public void addSwwPairThreads(int threadId0, int threadId1) {
-        // TODO: Add threadIds as sync set to both threads
+        Thread thread0 = (Thread) getFunctionOrError(threadId0);
+        Thread thread1 = (Thread) getFunctionOrError(threadId1);
+        thread0.optSyncSet.ifPresentOrElse(
+                syncSet -> syncSet.add(thread1),
+                () -> thread0.optSyncSet = Optional.of(new HashSet<>(Collections.singletonList(thread1))));
+        thread1.optSyncSet.ifPresentOrElse(
+                syncSet -> syncSet.add(thread0),
+                () -> thread1.optSyncSet = Optional.of(new HashSet<>(Collections.singletonList(thread0))));
     }
 }
