@@ -1045,6 +1045,21 @@ public class RelationAnalysis {
             }
             return new Knowledge(must, new HashSet<>(must));
         }
+
+        @Override
+        public Knowledge visitSyncWith(Relation rel) {
+            //TODO: Change to use the new syncWith of threads
+            Set<Tuple> must = new HashSet<>();
+            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
+                    if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
     }
 
     public final class Propagator implements Definition.Visitor<Delta> {

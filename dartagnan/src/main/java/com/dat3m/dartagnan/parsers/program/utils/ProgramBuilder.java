@@ -340,4 +340,10 @@ public class ProgramBuilder {
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Vulkan
+    public void addSwwPairThreads(int threadId0, int threadId1) {
+        // TODO: Add threadIds as sync set to both threads
+    }
 }

@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class Thread extends Function {
 
@@ -16,6 +17,7 @@ public class Thread extends Function {
     }
 
     public Optional<ScopeHierarchy> optScopeHierarchy = Optional.empty();
+    public Optional<Set<Thread>> optSyncSet = Optional.empty();
 
     @Override
     public ThreadStart getEntry() {

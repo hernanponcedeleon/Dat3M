@@ -43,6 +43,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitMain(LitmusVulkanParser.MainContext ctx) {
         visitThreadDeclaratorList(ctx.program().threadDeclaratorList());
         visitVariableDeclaratorList(ctx.variableDeclaratorList());
+        visitSswDeclaratorList(ctx.sswDeclaratorList());
         visitInstructionList(ctx.program().instructionList());
         if (ctx.assertionList() != null) {
             int a = ctx.assertionList().getStart().getStartIndex();
@@ -86,6 +87,18 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocationLocation(LitmusVulkanParser.VariableDeclaratorLocationLocationContext ctx) {
         programBuilder.initVirLocEqLoc(ctx.location(0).getText(), ctx.location(1).getText());
+        return null;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // SSW declarator list
+    @Override
+    public Object visitSswDeclaratorList(LitmusVulkanParser.SswDeclaratorListContext ctx) {
+        for (LitmusVulkanParser.SswDeclaratorContext sswDeclaratorContext : ctx.sswDeclarator()) {
+            int threadId0 = sswDeclaratorContext.threadId(0).id;
+            int threadId1 = sswDeclaratorContext.threadId(1).id;
+            programBuilder.addSwwPairThreads(threadId0, threadId1);
+        }
         return null;
     }
 

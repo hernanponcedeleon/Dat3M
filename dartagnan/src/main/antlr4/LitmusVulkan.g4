@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.op.*;
 }
 
 main
-    :    LitmusLanguage ~(LBrace)* variableDeclaratorList program variableList? assertionFilter? assertionList? EOF
+    :    LitmusLanguage ~(LBrace)* variableDeclaratorList sswDeclaratorList program variableList? assertionFilter? assertionList? EOF
     ;
 
 variableDeclaratorList
@@ -37,6 +37,14 @@ variableDeclaratorLocationLocation
     :   location Equals Amp? location  At storageClass
     ;
 
+
+sswDeclaratorList
+    :   LBrace sswDeclarator? (Semi sswDeclarator)* Semi? RBrace Semi?
+    ;
+
+sswDeclarator
+    :   Ssw threadId threadId
+    ;
 
 variableList
     :   Locations LBracket variable (Semi variable)* Semi? RBracket
@@ -205,6 +213,8 @@ Register
     :   'r' DigitSequence
     ;
 
+Ssw             :   'ssw';
+
 Load            :   'ld';
 Store           :   'st';
 RMW             :   'rmw';
@@ -212,27 +222,27 @@ RMW             :   'rmw';
 MemoryBarrier   :   'membar';
 ControlBarrier  :   'cbar';
 
-Subgroup    :   'sg';
-Workgroup   :   'wg';
-Queuefamily :   'qf';
-Device      :   'dv';
+Subgroup        :   'sg';
+Workgroup       :   'wg';
+Queuefamily     :   'qf';
+Device          :   'dv';
 
-Atom        :   'atom';
-Acquire     :   'acq';
-Release     :   'rel';
-Acq_rel     :   'acq_rel';
+Atom            :   'atom';
+Acquire         :   'acq';
+Release         :   'rel';
+Acq_rel         :   'acq_rel';
 
-Visible     :   'vis';
-Available   :   'av';
+Visible         :   'vis';
+Available       :   'av';
 
-Private     :   'priv';
-Nonprivate  :   'nonpriv';
+Private         :   'priv';
+Nonprivate      :   'nonpriv';
 
-SemVis      :   'semvis';
-SemAv       :   'semav';
+SemVis          :   'semvis';
+SemAv           :   'semav';
 
-Sc0       :   'sc0';
-Sc1       :   'sc1';
+Sc0             :   'sc0';
+Sc1             :   'sc1';
 
 Semsc0          :   'semsc0';
 Semsc1          :   'semsc1';

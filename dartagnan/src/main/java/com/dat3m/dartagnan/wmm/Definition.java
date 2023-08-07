@@ -95,6 +95,7 @@ public abstract class Definition implements Constraint {
         default T visitSyncBarrier(Relation sync_bar){ return visitDefinition(sync_bar, List.of()); }
         default T visitSyncFence(Relation sync_fen){ return visitDefinition(sync_fen, List.of()); }
         default T visitVirtualLocation(Relation vloc) { return visitDefinition(vloc, List.of()); }
+        default T visitSyncWith(Relation sync_with){ return visitDefinition(sync_with, List.of()); }
     }
 
     public static final class Undefined extends Definition {
