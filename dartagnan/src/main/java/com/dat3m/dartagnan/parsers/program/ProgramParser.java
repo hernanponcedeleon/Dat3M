@@ -73,8 +73,6 @@ public class ProgramParser {
                 optimisedFile.delete();
                 bplFile.delete();
 	            return p;
-            case "ll":
-                return new ParserLlvm().parse(CharStreams.fromString(raw));
             case "bpl":
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
             case "litmus":
@@ -87,8 +85,6 @@ public class ProgramParser {
         String name = file.getName();
         String format = name.substring(name.lastIndexOf(".") + 1);
         switch (format) {
-            case "ll":
-                return new ParserLlvm();
             case "bpl":
                 return new ParserBoogie();
             case "litmus":
