@@ -171,6 +171,8 @@ scope returns [String content]
     |   Period Workgroup {$content = "WG";}
     |   Period Queuefamily {$content = "QF";}
     |   Period Device {$content = "DV";}
+    |   Period Private {$content = "PRIV";}
+    |   Period Nonprivate {$content = "NONPRIV";}
     ;
 
 scopeID returns [int id]
@@ -183,8 +185,7 @@ mo returns [String content]
     |   Period Acq_rel {$content = "ACQ_REL";}
     |   Period Visible {$content = "VIS";}
     |   Period Available {$content = "AV";}
-    |   Period Private {$content = "PRIV";}
-    |   Period Nonprivate {$content = "NONPRIV";}
+    |   {$content = "";}
     ;
 
 storageClass returns [String content]

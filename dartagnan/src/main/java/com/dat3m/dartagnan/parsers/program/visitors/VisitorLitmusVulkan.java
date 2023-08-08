@@ -145,7 +145,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        tagChecker(store, atomatic, mo, avvisSemantic);
+        tagChecker(store, atomatic, mo, scope, avvisSemantic);
         store.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
@@ -161,7 +161,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
-        tagChecker(store, atomatic, mo, avvisSemantic);
+        tagChecker(store, atomatic, mo, scope, avvisSemantic);
         store.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
@@ -183,7 +183,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
-        tagChecker(load, atomatic, mo, avvisSemantic);
+        tagChecker(load, atomatic, mo, scope, avvisSemantic);
         load.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, load);
     }
@@ -200,7 +200,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
         rmw.addTags(scope, classSemantic, avvisSemantic);
-        tagChecker(rmw, atomatic, mo, avvisSemantic);
+        tagChecker(rmw, atomatic, mo, scope, avvisSemantic);
         rmw.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, rmw);
     }
@@ -211,7 +211,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String classSemantic = ctx.storageClassSemantic().content;
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        tagChecker(fence, false, mo, "");
+        tagChecker(fence, false, mo, scope, "");
         fence.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, fence);
     }
@@ -223,38 +223,39 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
         Event fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
-        tagChecker(fence, false, mo, "");
+        tagChecker(fence, false, mo, scope, "");
         fence.addTags(scope, classSemantic);
         return programBuilder.addChild(mainThread, fence);
     }
 
-    private void tagChecker(Event e, Boolean atomatic, String mo, String avvisSemantic) {
+    private void tagChecker(Event e, Boolean atomatic, String mo, String scope, String avvisSemantic) {
         // Check if the event is tagged with the right mo
         if (e instanceof Store) {
-            if (!mo.equals(Tag.Vulkan.PRIVATE) && !mo.equals(Tag.Vulkan.NON_PRIVATE) &&
-                    !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
-                throw new ParsingException("Stores must private or non_private or release or available");
+            if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
+                throw new ParsingException("Stores must release or available");
             }
         } else if (e instanceof Load) {
-            if (!mo.equals(Tag.Vulkan.PRIVATE) && !mo.equals(Tag.Vulkan.NON_PRIVATE) &&
-                    !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
-                throw new ParsingException("Loads must private or non_private or acquire or visible");
+            if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
+                throw new ParsingException("Loads must acquire or visible");
             }
         } else if (e.hasTag(Tag.FENCE) && !(e instanceof VulkanFenceWithId)) {
-            if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
-                throw new ParsingException("Fences must release or acquire or acq_rel");
-            }
-        } else if (e instanceof VulkanFenceWithId) {
-            if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL) &&
-                    !mo.equals(Tag.Vulkan.NON_PRIVATE)) { // use non_private when no mo is specified
-                throw new ParsingException("VulkanFenceWithId must release or acquire or acq_rel or non_private");
+            if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)
+                    && !mo.equals(Tag.Vulkan.AVAILABLE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
+                throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
             }
         } else if (e instanceof VulkanRMW) {
-            if (!mo.equals(Tag.Vulkan.NON_PRIVATE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
+            if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQ_REL)) {
                 throw new ParsingException("RMW must non_private or acq_rel");
             }
         } else {
             throw new ParsingException("Event type not supported: " + e.getClass().getSimpleName());
+        }
+
+        // Check if the event is tagged with the right scope
+        if (scope.equals(Tag.Vulkan.PRIVATE)) {
+            if (!(e instanceof Store) && !(e instanceof Load)) {
+                throw new ParsingException("Private scope is only for stores and loads");
+            }
         }
 
         // Check if mo is consistent with atomatic
