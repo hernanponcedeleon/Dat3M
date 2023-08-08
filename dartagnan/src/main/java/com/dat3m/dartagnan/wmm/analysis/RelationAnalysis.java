@@ -820,22 +820,6 @@ public class RelationAnalysis {
                 if (eq.isImplied(startLoad, startStore)) {
                     may.removeIf(t -> t.getSecond() == startLoad && t.getFirst() != startStore);
                 }
-
-                // Must-rf edge for thread joining
-                cur = thread.getExit();
-                while (!(cur instanceof Store endStore)) { cur = cur.getPredecessor(); }
-                cur = start.getCreator();
-                while (cur != null && !(cur instanceof Load joinLoad && joinLoad.getAddress().equals(endStore.getAddress()))) {
-                    cur = cur.getSuccessor();
-                }
-
-                if (cur instanceof Load joinLoad) {
-                    must.add(new Tuple(endStore, joinLoad));
-                    if (eq.isImplied(joinLoad, endStore)) {
-                        // NOTE: The above condition is likely never satisfied in practice
-                        may.removeIf(t -> t.getSecond() == joinLoad && t.getFirst() != endStore);
-                    }
-                }
             }
 
             if (wmmAnalysis.isLocallyConsistent()) {
