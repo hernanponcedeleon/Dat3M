@@ -20,14 +20,15 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
-import com.dat3m.dartagnan.program.processing.EventIdReassignment;
+import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Verify;
+import com.google.common.collect.Iterables;
 
 import java.util.*;
 
@@ -72,8 +73,12 @@ public class ProgramBuilder {
         }
         id2FunctionsMap.values().forEach(this::validateFunction);
 
-        EventIdReassignment.newInstance().run(program);
-        program.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
+        IdReassignment.newInstance().run(program);
+        for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
+            if (func.hasBody()) {
+                func.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
+            }
+        }
         return program;
     }
 
@@ -99,14 +104,13 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // Threads and Functions
 
+    // This method creates a "default" thread that has no parameters, no return value, and runs unconditionally.
+    // It is only useful for creating threads of Litmus code.
     public Thread newThread(String name, int tid) {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
-        // TODO: We use a default thread type with no parameters and no return type for now
-        //  because the function type is still ignored for threads. In the future, we will assign
-        //  proper types.
-        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newSkip());
+        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
         return thread;
@@ -286,7 +290,8 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
-        Skip threadEntry = EventFactory.newSkip();
+        // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
+        ThreadStart threadEntry = EventFactory.newThreadStart(null);
         PTXThread ptxThread = new PTXThread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, gpuID, ctaID);
         id2FunctionsMap.put(id, ptxThread);
         program.addThread(ptxThread);

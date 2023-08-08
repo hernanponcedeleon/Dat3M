@@ -449,7 +449,7 @@ public class RefinementSolver extends ModelChecker {
         final ThreadSymmetry symm = analysisContext.requires(ThreadSymmetry.class);
         final BranchEquivalence cf = analysisContext.requires(BranchEquivalence.class);
 
-        final Set<Event> programEvents = program.getEvents(MemoryEvent.class).stream()
+        final Set<Event> programEvents = program.getThreadEvents(MemoryEvent.class).stream()
                 // TODO: Can we have events with source information but without parse id?
                 .filter(e -> e.hasMetadata(SourceLocation.class) && e.hasMetadata(OriginalId.class))
                 .collect(Collectors.toSet());

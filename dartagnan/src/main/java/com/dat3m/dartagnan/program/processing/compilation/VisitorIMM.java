@@ -22,10 +22,6 @@ import static com.google.common.base.Verify.verify;
 
 class VisitorIMM extends VisitorBase {
 
-    protected VisitorIMM(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitLoad(Load e) {
         // FIXME: It is weird to compile a core-level load by transforming its tagging.
@@ -60,7 +56,7 @@ class VisitorIMM extends VisitorBase {
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
-                e.getThread().newRegister(types.getBooleanType());
+                e.getFunction().newRegister(types.getBooleanType());
         Local castResult = type instanceof BooleanType ? null :
                 newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
         Register regExpected = e.getFunction().newRegister(type);

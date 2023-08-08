@@ -1,19 +1,18 @@
 package com.dat3m.dartagnan.program.analysis;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.processing.LoopUnrolling.*;
 
@@ -26,18 +25,8 @@ import static com.dat3m.dartagnan.program.processing.LoopUnrolling.*;
  */
 public class LoopAnalysis {
 
-    public static class LoopInfo {
-        private Thread thread;
-        private String loopName;
-        private int loopNumber; // Loop index within thread
-        private boolean isUnrolled;
-        private final List<LoopIterationInfo> loopIterationInfos = new ArrayList<>();
-
-        public Thread getThread() { return thread; }
-        public String getName() { return loopName; }
-        public int getLoopNumber() { return loopNumber; }
-        public boolean isUnrolled() { return isUnrolled; }
-        public List<LoopIterationInfo> getIterations() { return loopIterationInfos; }
+    public record LoopInfo(Function function, String loopName, int loopNumber,
+                           boolean isUnrolled, List<LoopIterationInfo> iterations) {
     }
 
     public static class LoopIterationInfo {
@@ -51,7 +40,7 @@ public class LoopAnalysis {
         public Event getIterationEnd() { return iterEnd; }
         public int getIterationNumber() { return iterNumber; }
         public boolean isLast() {
-            return this == containingLoop.getIterations().get(containingLoop.getIterations().size() - 1);
+            return this == containingLoop.iterations().get(containingLoop.iterations().size() - 1);
         }
 
         public List<Event> computeBody() {
@@ -73,9 +62,9 @@ public class LoopAnalysis {
 
     // ---------------------------------------------------------
 
-    private final Map<Thread, ImmutableList<LoopInfo>> thread2LoopsMap = new HashMap<>();
-    public ImmutableList<LoopInfo> getLoopsOfThread(Thread thread) {
-        return thread2LoopsMap.get(thread);
+    private final Map<Function, ImmutableList<LoopInfo>> func2LoopsMap = new HashMap<>();
+    public ImmutableList<LoopInfo> getLoopsOfFunction(Function func) {
+        return func2LoopsMap.get(func);
     }
 
     private LoopAnalysis() {}
@@ -86,21 +75,36 @@ public class LoopAnalysis {
         return loopAnalysis;
     }
 
+    public static LoopAnalysis onFunction(Function function) {
+        final LoopAnalysis loopAnalysis = new LoopAnalysis();
+        loopAnalysis.run(function);
+        return loopAnalysis;
+    }
+
     // ---------------------------------------------------------
 
     private void run(Program program) {
-        final Function<Thread, ImmutableList<LoopInfo>> loopFindingAlgo =
-                program.isUnrolled() ? this::findUnrolledLoopsInThread : this::findLoopsInThread;
+        final java.util.function.Function<Function, ImmutableList<LoopInfo>> loopFindingAlgo =
+                program.isUnrolled() ? this::findUnrolledLoopsInFunction : this::findLoopsInFunction;
 
-        program.getThreads().forEach(t -> this.thread2LoopsMap.put(t, loopFindingAlgo.apply(t)));
+        Iterables.concat(program.getThreads(), program.getFunctions())
+                .forEach(t -> this.func2LoopsMap.put(t, loopFindingAlgo.apply(t)));
     }
 
-    private ImmutableList<LoopInfo> findUnrolledLoopsInThread(Thread thread) {
+    private void run(Function function) {
+        final Program program = function.getProgram();
+        final java.util.function.Function<Function, ImmutableList<LoopInfo>> loopFindingAlgo =
+                program.isUnrolled() ? this::findUnrolledLoopsInFunction : this::findLoopsInFunction;
+
+        this.func2LoopsMap.put(function, loopFindingAlgo.apply(function));
+    }
+
+    private ImmutableList<LoopInfo> findUnrolledLoopsInFunction(Function function) {
         final Map<String, LoopInfo> loopName2InfoMap = new HashMap<>();
         final List<LoopInfo> loops = new ArrayList<>();
 
         int loopCounter = 0;
-        for (Event e : thread.getEvents()) {
+        for (Event e : function.getEvents()) {
             final LoopLabelInfo labelInfo = tryParseLoopLabel(e);
             if (labelInfo == null) {
                 continue;
@@ -109,11 +113,7 @@ public class LoopAnalysis {
             final String loopName = labelInfo.loopName;
             if (labelInfo.iterationIndex == 1) {
                 // We start a new loop
-                final LoopInfo loopInfo = new LoopInfo();
-                loopInfo.loopNumber = loopCounter++;
-                loopInfo.loopName = loopName;
-                loopInfo.thread = thread;
-                loopInfo.isUnrolled = true;
+                final LoopInfo loopInfo = new LoopInfo(function, loopName, loopCounter++, true, new ArrayList<>());
                 // NOTE: Inner loops may get copied while unrolling the outer loop.
                 // In that case, the inner loops all may have identical label names
                 // So this put-operation may overwrite an old entry, which is okay!
@@ -123,7 +123,7 @@ public class LoopAnalysis {
 
             final LoopInfo loopInfo = loopName2InfoMap.get(loopName);
             if (labelInfo.isBound) {
-                final LoopIterationInfo lastIter = loopInfo.loopIterationInfos.get(loopInfo.loopIterationInfos.size() - 1);
+                final LoopIterationInfo lastIter = loopInfo.iterations.get(loopInfo.iterations.size() - 1);
                 // We assume the bound marker to be directly before the loop bounding event.
                 // NOTE: We consider neither the bound marker nor the bounding event to be part of this iteration.
                 lastIter.iterEnd = e.getPredecessor();
@@ -132,11 +132,11 @@ public class LoopAnalysis {
                 newIter.iterNumber = labelInfo.iterationIndex;
                 newIter.iterBegin = e;
                 newIter.containingLoop = loopInfo;
-                loopInfo.loopIterationInfos.add(newIter);
-                Verify.verify(newIter.iterNumber == loopInfo.loopIterationInfos.size());
+                loopInfo.iterations.add(newIter);
+                Verify.verify(newIter.iterNumber == loopInfo.iterations.size());
 
-                if (loopInfo.loopIterationInfos.size() > 1) {
-                    final LoopIterationInfo prevIter = loopInfo.loopIterationInfos.get(loopInfo.loopIterationInfos.size() - 2);
+                if (loopInfo.iterations.size() > 1) {
+                    final LoopIterationInfo prevIter = loopInfo.iterations.get(loopInfo.iterations.size() - 2);
                     prevIter.iterEnd = e.getPredecessor(); // The previous iteration ends directly before the new starts
                 }
             }
@@ -173,29 +173,24 @@ public class LoopAnalysis {
         return info;
     }
 
-    private ImmutableList<LoopInfo> findLoopsInThread(Thread thread) {
-        final List<CondJump> backJumps = thread.getEvents().stream()
-                .filter(CondJump.class::isInstance).map(CondJump.class::cast)
+    private ImmutableList<LoopInfo> findLoopsInFunction(Function function) {
+        final List<CondJump> backJumps = function.getEvents(CondJump.class).stream()
                 .filter(j -> j.getLabel().getGlobalId() < j.getGlobalId())
-                .collect(Collectors.toList());
+                .toList();
 
         final List<LoopInfo> loops = new ArrayList<>();
         int loopCounter = 0;
         for (CondJump backJump : backJumps) {
             final Label target = backJump.getLabel();
             final String loopName = target.getName();
-            final LoopInfo loopInfo = new LoopInfo();
-            loopInfo.loopNumber = loopCounter++;
-            loopInfo.isUnrolled = false;
-            loopInfo.thread = thread;
-            loopInfo.loopName = loopName;
+            final LoopInfo loopInfo = new LoopInfo(function, loopName, loopCounter++, false, new ArrayList<>());
 
             final LoopIterationInfo iterInfo = new LoopIterationInfo();
             iterInfo.containingLoop = loopInfo;
             iterInfo.iterBegin = target;
             iterInfo.iterEnd = backJump;
             iterInfo.iterNumber = 1;
-            loopInfo.loopIterationInfos.add(iterInfo);
+            loopInfo.iterations.add(iterInfo);
 
             loops.add(loopInfo);
         }

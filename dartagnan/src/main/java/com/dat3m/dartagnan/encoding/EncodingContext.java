@@ -343,11 +343,11 @@ public final class EncodingContext {
                 }
             }
         } else {
-            for (Event e : verificationTask.getProgram().getEvents()) {
+            for (Event e : verificationTask.getProgram().getThreadEvents()) {
                 controlFlowVariables.put(e, booleanFormulaManager.makeVariable("cf " + e.getGlobalId()));
             }
         }
-        for (Event e : verificationTask.getProgram().getEvents()) {
+        for (Event e : verificationTask.getProgram().getThreadEvents()) {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }

@@ -152,17 +152,20 @@ public abstract class AbstractEvent implements Event {
     /*
         Detaches this event from the control-flow graph.
         This does not properly delete the event, and it may be reinserted elsewhere.
-        TODO: We need to special-case handle detaching the entry/exit event of a function.
+        TODO: We need to special-case handle detaching the entry event of a function.
      */
     @Override
     public void detach() {
-        Preconditions.checkState(function == null || (this != function.getEntry() && this != function.getExit()),
-                "Cannot detach the entry or exit event %s of function %s", this, getFunction());
+        Preconditions.checkState(function == null || this != function.getEntry(),
+                "Cannot detach the entry event %s of function %s", this, getFunction());
         if (this.predecessor != null) {
             this.predecessor.successor = successor;
         }
         if (this.successor != null) {
             this.successor.predecessor = predecessor;
+        }
+        if (function != null && this == function.getExit()) {
+            function.updateExit(this.predecessor);
         }
         this.function = null;
         this.predecessor = null;

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.ScopedThread;
 
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -17,7 +17,7 @@ public class ScopedThread extends Thread {
     // is important, thus we use a LinkedHashMap
     protected final Map<String, Integer> scopeIds = new LinkedHashMap<>();
 
-    public ScopedThread(String name, FunctionType funcType, List<String> parameterNames, int id, Event entry) {
+    public ScopedThread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry) {
         super(name, funcType, parameterNames, id,  entry);
     }
 

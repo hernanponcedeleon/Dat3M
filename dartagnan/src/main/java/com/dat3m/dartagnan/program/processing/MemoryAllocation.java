@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -16,6 +17,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /*
     This pass collects all Malloc events in the program and for each of them it:
@@ -38,7 +40,7 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void processMallocs(Program program) {
-        for (Malloc malloc : program.getEvents(Malloc.class)) {
+        for (Malloc malloc : program.getThreadEvents(Malloc.class)) {
             final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
             final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
@@ -78,12 +80,12 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void createInitEvents(Program program) {
-        final List<Thread> threads = program.getThreads();
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
         final TypeFactory types = TypeFactory.getInstance();
         final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
-        int nextThreadId = threads.get(threads.size() - 1).getId() + 1;
+        int nextThreadId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
+                .mapToInt(Function::getId).max().getAsInt() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
             // The last case "heuristically checks" if Smack generated initialization or not:
             // if any field is statically initialized, then likely everything is initialized.
@@ -96,12 +98,14 @@ public class MemoryAllocation implements ProgramProcessor {
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);
                 // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
-                final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId, init);
+                final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId,
+                        EventFactory.newThreadStart(null));
+                thread.append(init);
                 nextThreadId++;
 
                 program.addThread(thread);
                 thread.setProgram(program);
-                thread.getEntry().insertAfter(EventFactory.newLabel("END_OF_T" + thread.getId()));
+                thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
             }
         }
     }

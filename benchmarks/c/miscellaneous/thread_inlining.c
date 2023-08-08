@@ -4,9 +4,6 @@
 /*
     The test checks if inlining of thread-creating functions works properly.
     Expected result: PASS
-    Current result:
-     - development: FAIL
-     - rework: Parsing error (matching between pthread_join and pthread_create fails)
 */
 
 atomic_int data;

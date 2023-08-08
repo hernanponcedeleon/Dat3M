@@ -15,10 +15,6 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorPTX extends VisitorBase {
 
-    protected VisitorPTX(boolean forceStart) {
-        super(forceStart);
-    }
-
     @Override
     public List<Event> visitPtxAtomOp(PTXAtomOp e) {
         Register resultRegister = e.getResultRegister();

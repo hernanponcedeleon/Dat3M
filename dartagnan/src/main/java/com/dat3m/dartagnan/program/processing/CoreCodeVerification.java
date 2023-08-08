@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
@@ -19,10 +20,10 @@ import java.util.List;
 import java.util.Set;
 
 /*
-    This pass checks that the program contains only core-level events.
+    This pass checks that the function contains only core-level events.
     NOTE: Subclasses of core events are not automatically considered core events themselves and may raise an error.
  */
-public class CoreCodeVerification implements ProgramProcessor {
+public class CoreCodeVerification implements FunctionProcessor {
 
     public static CoreCodeVerification fromConfig(Configuration config) {
         return new CoreCodeVerification();
@@ -36,7 +37,7 @@ public class CoreCodeVerification implements ProgramProcessor {
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, Fence.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
-            ThreadCreate.class, ThreadArgument.class,
+            ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
             PTXFenceWithId.class, // For PTX
             BeginAtomic.class, EndAtomic.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
@@ -44,9 +45,8 @@ public class CoreCodeVerification implements ProgramProcessor {
     ));
 
     @Override
-    public void run(Program program) {
-
-        final List<Event> nonCoreEvents = program.getEvents().stream().
+    public void run(Function function) {
+        final List<Event> nonCoreEvents = function.getEvents().stream().
                 filter(e -> !(e instanceof CodeAnnotation) && !CORE_CLASSES.contains(e.getClass())).toList();
         if (!nonCoreEvents.isEmpty()) {
             System.out.println("ERROR: Found non-core events.");
@@ -56,5 +56,4 @@ public class CoreCodeVerification implements ProgramProcessor {
             throw new MalformedProgramException("ERROR: Found non-core events.");
         }
     }
-
 }

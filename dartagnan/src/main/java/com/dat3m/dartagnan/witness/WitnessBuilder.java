@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Result;
@@ -171,7 +170,7 @@ public class WitnessBuilder {
 		// TODO: we recently added many cline to many events and this might affect the witness generation.
 		Predicate<Event> executedCEvents = e -> Boolean.TRUE.equals(model.evaluate(context.execution(e)))
 				&& e.hasMetadata(SourceLocation.class);
-		List<Event> execEvents = context.getTask().getProgram().getEvents().stream().filter(executedCEvents).toList();
+		List<Event> execEvents = context.getTask().getProgram().getThreadEvents().stream().filter(executedCEvents).toList();
 		Map<Integer, List<Event>> map = new HashMap<>();
         for(Event e : execEvents) {
 			// TODO improve this: these events correspond to return statements
@@ -193,7 +192,7 @@ public class WitnessBuilder {
 		List<Event> result = new ArrayList<>();
 		Set<Event> processedEvents = new HashSet<>(); // Maintained for constant lookup time
 		// All the atomic blocks in the code that have to stay together in any execution
-		List<List<Event>> atomicBlocks = program.getEvents().stream()
+		List<List<Event>> atomicBlocks = program.getThreadEvents().stream()
 				.filter(e -> e.hasTag(Tag.SVCOMP.SVCOMPATOMIC))
 				.map(e -> ((EndAtomic)e).getBlock().stream().
 						filter(order::contains).
