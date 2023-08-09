@@ -339,6 +339,7 @@ public final class Tag {
         public static final String ATOM = "ATOM";
         public static final String ACQUIRE = "ACQ";
         public static final String RELEASE = "REL";
+        public static final String RELAXED = "RLX";
         public static final String ACQ_REL = "ACQ_REL";
         public static final String VISIBLE = "VIS";
         public static final String AVAILABLE = "AV";

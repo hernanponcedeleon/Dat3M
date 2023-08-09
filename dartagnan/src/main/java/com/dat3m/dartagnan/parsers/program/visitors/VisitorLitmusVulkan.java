@@ -231,12 +231,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private void tagChecker(Event e, Boolean atomatic, String mo, String scope, String avvisSemantic) {
         // Check if the event is tagged with the right mo
         if (e instanceof Store) {
-            if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
-                throw new ParsingException("Stores must release or available");
+            if (!mo.equals(Tag.Vulkan.RELAXED) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
+                throw new ParsingException("Stores must be relaxed, release or available");
             }
         } else if (e instanceof Load) {
-            if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
-                throw new ParsingException("Loads must acquire or visible");
+            if (!mo.equals(Tag.Vulkan.RELAXED) && !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
+                throw new ParsingException("Loads must be relaxed, acquire or visible");
             }
         } else if (e.hasTag(Tag.FENCE) && !(e instanceof VulkanFenceWithId)) {
             if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)
@@ -244,8 +244,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
                 throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
             }
         } else if (e instanceof VulkanRMW) {
-            if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQ_REL)) {
-                throw new ParsingException("RMW must non_private or acq_rel");
+            if (!mo.equals(Tag.Vulkan.RELAXED) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
+                throw new ParsingException("RMW must be relaxed or acq_rel");
             }
         } else {
             throw new ParsingException("Event type not supported: " + e.getClass().getSimpleName());

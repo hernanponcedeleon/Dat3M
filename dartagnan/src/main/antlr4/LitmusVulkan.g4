@@ -185,7 +185,7 @@ mo returns [String content]
     |   Period Acq_rel {$content = "ACQ_REL";}
     |   Period Visible {$content = "VIS";}
     |   Period Available {$content = "AV";}
-    |   {$content = "";}
+    |   Period Relaxed {$content = "RLX";}
     ;
 
 storageClass returns [String content]
@@ -232,6 +232,7 @@ Atom            :   'atom';
 Acquire         :   'acq';
 Release         :   'rel';
 Acq_rel         :   'acq_rel';
+Relaxed         :   'rlx';
 
 Visible         :   'vis';
 Available       :   'av';
