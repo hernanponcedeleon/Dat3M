@@ -32,7 +32,7 @@ public class C11LFDSTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "lfds/" + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "lfds/" + name + ".ll");
     }
 
     @Override
