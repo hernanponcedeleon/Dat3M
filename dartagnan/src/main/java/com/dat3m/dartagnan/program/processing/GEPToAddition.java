@@ -6,16 +6,14 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.GEPExpression;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.google.common.math.IntMath;
 
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.List;
 
 public class GEPToAddition implements ProgramProcessor {
@@ -36,19 +34,23 @@ public class GEPToAddition implements ProgramProcessor {
         }
     }
 
-    // TODO this method does not properly reflect type sizes, i.e. i16 gets size 1
     public static int getMemorySize(Type type) {
+        final int sizeInBytes;
         if (type instanceof ArrayType arrayType) {
-            return arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
-        }
-        if (type instanceof AggregateType aggregateType) {
-            int size = 0;
-            for (final Type elementType : aggregateType.getDirectFields()) {
-                size += getMemorySize(elementType);
+            sizeInBytes = arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
+        } else if (type instanceof AggregateType aggregateType) {
+            sizeInBytes = aggregateType.getDirectFields().stream().mapToInt(GEPToAddition::getMemorySize).sum();
+        } else if (type instanceof IntegerType integerType) {
+            if (integerType.isMathematical()) {
+                // FIXME: We cannot give proper sizes for mathematical integers.
+                sizeInBytes = 8;
+            } else {
+                sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
             }
-            return size;
+        } else {
+            throw new UnsupportedOperationException("Cannot compute the size of " + type);
         }
-        return 1;
+        return sizeInBytes;
     }
 
     private static final class GEPToAdditionTransformer extends ExprTransformer {
