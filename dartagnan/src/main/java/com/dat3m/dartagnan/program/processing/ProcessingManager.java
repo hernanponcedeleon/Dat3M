@@ -111,6 +111,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 IntrinsicsInlining.fromConfig(config),
+                RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.newInstance(),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
