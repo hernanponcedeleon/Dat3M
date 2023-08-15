@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
@@ -14,17 +15,19 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.metadata.Metadata;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.GEPToAddition;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
@@ -44,6 +47,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
     private final Map<String, Type> typeMap = new HashMap<>();
+    private final Map<String, MdNode> metadataSymbolTable = new LinkedHashMap<>();
     private int functionCounter;
     // Nonnull, if the visitor is inside a function body.
     private Function function;
@@ -152,9 +156,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             block = getBlock(basicBlockContext.LabelIdent());
             for (final InstructionContext instructionContext : basicBlockContext.instruction()) {
-                instructionContext.accept(this);
+                parseBlockInstructionWithMetadata(instructionContext, instructionContext.metadataAttachment());
             }
-            basicBlockContext.terminator().accept(this);
+            parseBlockInstructionWithMetadata(basicBlockContext.terminator(), basicBlockContext.terminator().metadataAttachment());
             block = null;
         }
         //TODO validate: all basic blocks have a terminator, there is one entry, at least one exit, etc.
@@ -178,6 +182,16 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         basicBlocks.clear();
         phiNodes.clear();
         return null;
+    }
+
+    private void parseBlockInstructionWithMetadata(ParserRuleContext instructionCtx,
+                                                   List<MetadataAttachmentContext> metadataContexts) {
+        final List<Metadata> currentMetadata = parseMetadataAttachment(metadataContexts);
+        final int prevBlockSize = block.events.size();
+        instructionCtx.accept(this);
+        block.events.subList(prevBlockSize, block.events.size()).forEach(
+                e -> currentMetadata.forEach(e::setMetadata)
+        );
     }
 
     private Block getBlock(TerminalNode node) {
@@ -270,6 +284,35 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     l.setFunction(function);
                     return new Block(l);
                 });
+    }
+
+    private List<Metadata> parseMetadataAttachment(List<MetadataAttachmentContext> metadataAttachmentContexts) {
+        if (metadataAttachmentContexts.size() == 0) {
+            return List.of();
+        }
+
+        final List<Metadata> metadata = new ArrayList<>();
+        //FIXME: This code only looks for DILocation metadata,
+        // and it only extracts the information needed to construct SourceLocation metadata
+        for (MetadataAttachmentContext metadataCtx:  metadataAttachmentContexts) {
+            MdNode mdNode = (MdNode) metadataCtx.accept(this);
+            assert mdNode instanceof MdReference;
+            mdNode = metadataSymbolTable.get(((MdReference) mdNode).mdName());
+
+            if (mdNode instanceof SpecialMdTupleNode diLocationNode && diLocationNode.nodeType() == SpecialMdTupleNode.Type.DILocation) {
+                SpecialMdTupleNode scope = diLocationNode;
+                while (scope.getField("scope").isPresent()) {
+                    scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
+                }
+                assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
+                final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
+                final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
+                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
+                metadata.add(new SourceLocation((directory + filename).intern(), lineNumber));
+            }
+        }
+
+        return metadata;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1054,6 +1097,141 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
+    // Metadata
+
+    @Override
+    public Expression visitMetadataDef(MetadataDefContext ctx) {
+        final String metadataId = ctx.MetadataId().getText();
+        final MdNode metadata;
+        if (ctx.mdTuple() != null) {
+            metadata = (MdNode) visitMdTuple(ctx.mdTuple());
+        } else if (ctx.specializedMDNode() != null) {
+            metadata = (MdNode) visitSpecializedMDNode(ctx.specializedMDNode());
+        } else {
+            metadata = MD_NOT_PARSED;
+        }
+        metadataSymbolTable.put(metadataId, metadata);
+        return null;
+    }
+
+    @Override
+    public Expression visitMetadata(MetadataContext ctx) {
+        if (ctx.typeValue() != null) {
+            return new MdGenericValue<>(visitTypeValue(ctx.typeValue()));
+        } else if (ctx.MetadataId() != null) {
+            return new MdReference(parseID(ctx.MetadataId()));
+        } else if (ctx.diArgList() != null) {
+            // TODO: Handle diArgList (if needed)
+            return MD_NOT_PARSED;
+        }
+        return super.visitMetadata(ctx);
+    }
+
+    @Override
+    public Expression visitMdNode(MdNodeContext ctx) {
+        if (ctx.MetadataId() != null) {
+            return new MdReference(parseID(ctx.MetadataId()));
+        }
+        return super.visitMdNode(ctx);
+    }
+
+    @Override
+    public Expression visitMdTuple(MdTupleContext ctx) {
+        final MdTuple mdTuple = new MdTuple(new ArrayList<>(ctx.mdField().size()));
+        for (MdFieldContext field : ctx.mdField()) {
+            mdTuple.mdFields().add((MdNode) visitMdField(field));
+        }
+        return mdTuple;
+    }
+
+    @Override
+    public Expression visitMdField(MdFieldContext ctx) {
+        return ctx.metadata() == null ? MD_NULL : visitMetadata(ctx.metadata());
+    }
+
+    @Override
+    public Expression visitMdString(MdStringContext ctx) {
+        return new MdGenericValue<>(parseQuotedString(ctx.StringLit()));
+    }
+
+
+    @Override
+    public Expression visitSpecializedMDNode(SpecializedMDNodeContext ctx) {
+        final Expression mdNode = super.visitSpecializedMDNode(ctx);
+        return mdNode == null ? MD_NOT_PARSED : mdNode;
+    }
+
+    @Override
+    public Expression visitDiLocation(DiLocationContext ctx) {
+        return parseSpecialMdNode(SpecialMdTupleNode.Type.DILocation, ctx.diLocationField());
+    }
+
+    @Override
+    public Expression visitDiLexicalBlock(DiLexicalBlockContext ctx) {
+        return parseSpecialMdNode(SpecialMdTupleNode.Type.DILexicalBlock, ctx.diLexicalBlockField());
+    }
+
+    @Override
+    public Expression visitDiSubprogram(DiSubprogramContext ctx) {
+        return parseSpecialMdNode(SpecialMdTupleNode.Type.DISubprogram, ctx.diSubprogramField());
+    }
+
+    @Override
+    public Expression visitDiFile(DiFileContext ctx) {
+        return parseSpecialMdNode(SpecialMdTupleNode.Type.DIFile, ctx.diFileField());
+    }
+
+    // Generic helper method to parse special metadata nodes with named fields.
+    private Expression parseSpecialMdNode(SpecialMdTupleNode.Type type, List<? extends ParserRuleContext> namedFieldContexts) {
+        final List<NamedMdNode> namedFields = new ArrayList<>(namedFieldContexts.size());
+        for (ParserRuleContext field : namedFieldContexts) {
+            final Object parseResult = field.accept(this);
+            if (parseResult instanceof NamedMdNode namedField) {
+                // We skip unsupported field entries
+                namedFields.add(namedField);
+            }
+        }
+        return new SpecialMdTupleNode(type, namedFields);
+    }
+
+    // ================ Special node fields ================
+
+    @Override
+    public Expression visitNameField(NameFieldContext ctx) {
+        return new NamedMdNode("name", new MdGenericValue<>(parseQuotedString(ctx.StringLit())));
+    }
+
+    @Override
+    public Expression visitLineField(LineFieldContext ctx) {
+        return new NamedMdNode("line", new MdGenericValue<>(parseBigInteger(ctx.IntLit())));
+    }
+
+    @Override
+    public Expression visitColumnField(ColumnFieldContext ctx) {
+        return new NamedMdNode("column", new MdGenericValue<>(parseBigInteger(ctx.IntLit())));
+    }
+
+    @Override
+    public Expression visitScopeField(ScopeFieldContext ctx) {
+        return new NamedMdNode("scope", (MdNode)visitMdField(ctx.mdField()));
+    }
+
+    @Override
+    public Expression visitFileField(FileFieldContext ctx) {
+        return new NamedMdNode("file", (MdNode)visitMdField(ctx.mdField()));
+    }
+
+    @Override
+    public Expression visitDirectoryField(DirectoryFieldContext ctx) {
+        return new NamedMdNode("directory", new MdGenericValue<>(parseQuotedString(ctx.StringLit())));
+    }
+
+    @Override
+    public Expression visitFilenameField(FilenameFieldContext ctx) {
+        return new NamedMdNode("filename", new MdGenericValue<>(parseQuotedString(ctx.StringLit())));
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
     // Helpers
 
     private void check(boolean condition, String message, ParserRuleContext context) {
@@ -1084,6 +1262,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private BigInteger parseBigInteger(TerminalNode node) {
         return new BigInteger(node.getText());
+    }
+
+    private String parseQuotedString(TerminalNode node) {
+        final String value = node.getText();
+        return value.substring(1, value.length() - 1); // Remove surrounding quotes
+    }
+
+    private String parseID(TerminalNode node) {
+        return node.getText();
     }
 
     private static String parseMemoryOrder(AtomicOrderingContext ctx) {
@@ -1127,4 +1314,81 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             label = l;
         }
     }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Metadata nodes that reflect LLVM's notion of metadata
+
+    private interface MdNode extends Expression {
+
+        Type TYPE = new Type() { };
+
+        @Override
+        default Type getType() { return TYPE; }
+        @Override
+        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException();}
+        @Override
+        default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
+        @Override
+        default IConst reduce() { throw new UnsupportedOperationException(); }
+    }
+
+    private static final MdNode MD_NULL = new MdNode() {
+        @Override
+        public String toString() { return "NULL"; }
+    };
+
+    private static final MdNode MD_NOT_PARSED = new MdNode() {
+        @Override
+        public String toString() { return "NOT PARSED"; }
+    };
+
+    private record MdReference(String mdName) implements MdNode {
+        @Override
+        public String toString() { return mdName; }
+    }
+
+    private record MdGenericValue<T>(T value) implements MdNode {
+        MdGenericValue {
+            // This node should only hold values external to the MdNode hierarchy.
+            Preconditions.checkArgument(!(value instanceof MdNode));
+        }
+        @Override
+        public String toString() { return value.toString(); }
+    }
+
+    private record MdTuple(List<MdNode> mdFields) implements MdNode {
+        public String toString() { return mdFields.stream().map(Object::toString)
+                .collect(Collectors.joining(", ", "!{", "}")); }
+    }
+
+    private record NamedMdNode(String name, MdNode node) implements MdNode {
+        @Override
+        public String toString() { return String.format("%s: %s", name, node); }
+    }
+
+    private record SpecialMdTupleNode(Type nodeType, List<NamedMdNode> namedMDFields) implements MdNode {
+
+        public enum Type {
+            DILocation,
+            DIFile,
+            DISubprogram,
+            DILexicalBlock
+        }
+
+        @Override
+        public String toString() {
+            return String.format("!%s(%s)", nodeType,
+                    namedMDFields.stream().map(Object::toString).collect(Collectors.joining(", ")));
+        }
+
+        public <T extends MdNode> Optional<T> getField(String fieldName) {
+            for (NamedMdNode field : namedMDFields) {
+                if (field.name().equals(fieldName)) {
+                    return Optional.of((T)field.node());
+                }
+            }
+            return Optional.empty();
+        }
+    }
+
 }
