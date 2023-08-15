@@ -26,6 +26,14 @@ public class RemoveUnusedMemory implements ProgramProcessor {
         final Memory memory = program.getMemory();
         final MemoryObjectCollector collector = new MemoryObjectCollector();
         program.getThreadEvents(RegReader.class).forEach(r -> r.transformExpressions(collector));
+        // Also add MemoryObjects referenced by initial values (this does happen in Litmus code)
+        for (MemoryObject obj : memory.getObjects()) {
+            for (int field : obj.getStaticallyInitializedFields()) {
+                if (obj.getInitialValue(field) instanceof MemoryObject memObj) {
+                    collector.memoryObjects.add(memObj);
+                }
+            }
+        }
         Sets.difference(memory.getObjects(), collector.memoryObjects).forEach(memory::deleteMemoryObject);
     }
 
