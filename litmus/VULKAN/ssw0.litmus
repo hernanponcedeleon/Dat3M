@@ -9,7 +9,7 @@ ssw 0 1;
 ssw 1 2;
 }
  P0@sg 0,wg 0, qf 0               | P1@sg 0,wg 1, qf 0               | P2@sg 0,wg 1, qf 0               ;
- st.rlx.priv x, 1                 | membar.av.dv                     | ld.rlx.dv r0, x                  ;
+ st.priv x, 1                     | membar.av.dv                     | ld.dv r0, x                      ;
                                   | membar.vis.dv                    |                                  ;
-exists
+~exists
 (P1:r0 == 1)

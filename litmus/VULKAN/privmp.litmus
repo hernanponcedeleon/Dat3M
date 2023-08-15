@@ -1,0 +1,12 @@
+Vulkan message passing
+{
+P1:r0=0;
+P1:r1=0;
+x=0 @ sc0;
+y=0 @ sc0;
+}
+ P0@sg 0, wg 0, qf 0                   | P1@sg 1,wg 0, qf 0                     ;
+ st.priv x, 1                          | ld.atom.acq.wg.semsc0.semvis r0, y     ;
+ st.atom.rel.wg.semsc0.semav y, 1      | ld.priv r1, x                          ;
+~exists
+(P1:r0 == 1)
