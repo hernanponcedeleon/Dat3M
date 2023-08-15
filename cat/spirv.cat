@@ -52,17 +52,17 @@ let ithbsemsc0 = ( ssw |
                    ([SEMSC0]; sw; [SEMSC0]) |
                    ([SC0 | SEMSC0]; po; [REL & SEMSC0]) |
                    ([ACQ & SEMSC0]; po; [SC0 | SEMSC0])
-                 )*
+                 )+
 let ithbsemsc1 = ( ssw |
                    ([SEMSC1]; sw; [SEMSC1]) |
                    ([SC1 | SEMSC1]; po; [REL & SEMSC1]) |
                    ([ACQ & SEMSC1]; po; [SC1 | SEMSC1])
-                 )*
+                 )+
 let ithbsemsc01 = ( ssw |
                    ([SEMSC01]; sw; [SEMSC01]) |
                    ([SC0 | SC1 | SEMSC01]; po; [REL & SEMSC01]) |
                    ([ACQ & SEMSC01]; po; [SC0 | SC1 | SEMSC01])
-                 )*
+                 )+
 
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
@@ -82,7 +82,7 @@ let visdv = [VIS & DV]
 let locord = loc &
              (  (hb & int & vloc) |
                 ([R \ PRIV]; hb; [R | W \ PRIV]) | // RaR, WaR (non-private)
-                ([R]; ssw^-1; [R | W]) | // RaR, WaR (any)
+                ([R]; ssw+; [R | W]) | // RaR, WaR (any)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                         [W \ PRIV])) |                                 // WaW (via subgroup instance domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po?; avvisinc); [R \ PRIV]; (po? & avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                         [W \ PRIV])) |                                 // WaW (via subgroup instance domain)
