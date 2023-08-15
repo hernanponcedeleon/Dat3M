@@ -114,12 +114,16 @@ returnAttribute: returnAttr | dereferenceable;
 funcBody: '{' basicBlock+ useListOrder* '}';
 basicBlock: LabelIdent? instruction* terminator;
 instruction: // Instructions producing values.
+	(
 	localDefInst
 	| valueInstruction
 	// Instructions not producing values.
 	| storeInst
-	| fenceInst;
+	| fenceInst
+	)
+	(',' metadataAttachment)*;
 terminator:
+    (
 	// Terminators producing values.
 	localDefTerm
 	| valueTerminator
@@ -132,48 +136,37 @@ terminator:
 	| resumeTerm
 	| catchRetTerm
 	| cleanupRetTerm
-	| unreachableTerm;
+	| unreachableTerm
+	) (',' metadataAttachment)*;
 localDefTerm: LocalIdent '=' valueTerminator;
 valueTerminator: invokeTerm | callBrTerm | catchSwitchTerm;
 retTerm:
-	'ret' 'void' (',' metadataAttachment)*
+	'ret' 'void'
 	// Value return.
-	| 'ret' concreteType value (',' metadataAttachment)*;
-brTerm: 'br' label (',' metadataAttachment)*;
+	| 'ret' concreteType value;
+brTerm: 'br' label;
 condBrTerm:
-	'br' IntType value ',' label ',' label (
-		',' metadataAttachment
-	)*;
+	'br' IntType value ',' label ',' label;
 switchTerm:
-	'switch' typeValue ',' label '[' llvmcase* ']' (
-		',' metadataAttachment
-	)*;
+	'switch' typeValue ',' label '[' llvmcase* ']';
 indirectBrTerm:
-	'indirectbr' typeValue ',' '[' (label (',' label)?)? ']' (
-		',' metadataAttachment
-	)*;
-resumeTerm: 'resume' typeValue (',' metadataAttachment)*;
+	'indirectbr' typeValue ',' '[' (label (',' label)?)? ']';
+resumeTerm: 'resume' typeValue;
 catchRetTerm:
-	'catchret' 'from' value 'to' label (',' metadataAttachment)*;
+	'catchret' 'from' value 'to' label;
 cleanupRetTerm:
-	'cleanupret' 'from' value 'unwind' unwindTarget (
-		',' metadataAttachment
-	)*;
-unreachableTerm: 'unreachable' (',' metadataAttachment)*;
+	'cleanupret' 'from' value 'unwind' unwindTarget;
+unreachableTerm: 'unreachable';
 invokeTerm:
 	'invoke' callingConv? returnAttribute* addrSpace? type value '(' args ')' funcAttribute* (
 		'[' (operandBundle ',')+ ']'
-	)? 'to' label 'unwind' label (',' metadataAttachment)*;
+	)? 'to' label 'unwind' label;
 callBrTerm:
 	'callbr' callingConv? returnAttribute* addrSpace? type value '(' args ')' funcAttribute* (
 		'[' (operandBundle ',')+ ']'
-	)? 'to' label '[' (label (',' label)*)? ']' (
-		',' metadataAttachment
-	)*;
+	)? 'to' label '[' (label (',' label)*)? ']';
 catchSwitchTerm:
-	'catchswitch' 'within' exceptionPad '[' handlers ']' 'unwind' unwindTarget (
-		',' metadataAttachment
-	)*;
+	'catchswitch' 'within' exceptionPad '[' handlers ']' 'unwind' unwindTarget;
 label: 'label' LocalIdent;
 llvmcase: typeConst ',' label;
 unwindTarget: 'to' 'caller' | label;
@@ -545,180 +538,126 @@ valueInstruction:
 	| cleanupPadInst;
 storeInst:
 	// Store.
-	'store' llvmvolatile = 'volatile'? typeValue ',' typeValue (
-		',' align
-	)? (',' metadataAttachment)*
+	'store' llvmvolatile = 'volatile'? typeValue ',' typeValue (',' align)?
 	// atomic='atomic' store.
 	| 'store' atomic = 'atomic' llvmvolatile = 'volatile'? typeValue ',' typeValue syncScope?
-		atomicOrdering (',' align)? (',' metadataAttachment)*;
+		atomicOrdering (',' align)?;
 
 syncScope: 'syncscope' '(' StringLit ')';
 
 fenceInst:
-	'fence' syncScope? atomicOrdering (',' metadataAttachment)*;
+	'fence' syncScope? atomicOrdering;
 fNegInst:
-	'fneg' fastMathFlag* typeValue (',' metadataAttachment)*;
+	'fneg' fastMathFlag* typeValue;
 addInst:
-	'add' overflowFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'add' overflowFlag* typeValue ',' value;
 fAddInst:
-	'fadd' fastMathFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'fadd' fastMathFlag* typeValue ',' value;
 subInst:
-	'sub' overflowFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'sub' overflowFlag* typeValue ',' value;
 fSubInst:
-	'fsub' fastMathFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'fsub' fastMathFlag* typeValue ',' value;
 mulInst:
-	'mul' overflowFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'mul' overflowFlag* typeValue ',' value;
 fMulInst:
-	'fmul' fastMathFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'fmul' fastMathFlag* typeValue ',' value;
 uDivInst:
-	'udiv' exact = 'exact'? typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'udiv' exact = 'exact'? typeValue ',' value;
 sDivInst:
-	'sdiv' exact = 'exact'? typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'sdiv' exact = 'exact'? typeValue ',' value;
 fDivInst:
-	'fdiv' fastMathFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
-uRemInst: 'urem' typeValue ',' value ( ',' metadataAttachment)*;
-sRemInst: 'srem' typeValue ',' value ( ',' metadataAttachment)*;
+	'fdiv' fastMathFlag* typeValue ',' value;
+uRemInst: 'urem' typeValue ',' value;
+sRemInst: 'srem' typeValue ',' value;
 fRemInst:
-	'frem' fastMathFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'frem' fastMathFlag* typeValue ',' value;
 shlInst:
-	'shl' overflowFlag* typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'shl' overflowFlag* typeValue ',' value;
 lShrInst:
-	'lshr' exact = 'exact'? typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'lshr' exact = 'exact'? typeValue ',' value;
 aShrInst:
-	'ashr' exact = 'exact'? typeValue ',' value (
-		',' metadataAttachment
-	)*;
-andInst: 'and' typeValue ',' value ( ',' metadataAttachment)*;
-orInst: 'or' typeValue ',' value ( ',' metadataAttachment)*;
-xorInst: 'xor' typeValue ',' value ( ',' metadataAttachment)*;
+	'ashr' exact = 'exact'? typeValue ',' value;
+andInst: 'and' typeValue ',' value;
+orInst: 'or' typeValue ',' value;
+xorInst: 'xor' typeValue ',' value;
 extractElementInst:
-	'extractelement' typeValue ',' typeValue (
-		',' metadataAttachment
-	)*;
+	'extractelement' typeValue ',' typeValue;
 insertElementInst:
-	'insertelement' typeValue ',' typeValue ',' typeValue (
-		',' metadataAttachment
-	)*;
+	'insertelement' typeValue ',' typeValue ',' typeValue;
 shuffleVectorInst:
-	'shufflevector' typeValue ',' typeValue ',' typeValue (
-		',' metadataAttachment
-	)*;
+	'shufflevector' typeValue ',' typeValue ',' typeValue;
 extractValueInst:
-	'extractvalue' typeValue (',' IntLit)+ (
-		',' metadataAttachment
-	)*;
+	'extractvalue' typeValue (',' IntLit)+;
 insertValueInst:
-	'insertvalue' typeValue ',' typeValue (',' IntLit)+ (
-		',' metadataAttachment
-	)*;
+	'insertvalue' typeValue ',' typeValue (',' IntLit)+;
 allocaInst:
 	'alloca' inAllocaTok = 'inalloca'? swiftError = 'swifterror'? type (
 		',' typeValue
-	)? (',' align)? (',' addrSpace)? (',' metadataAttachment)*;
+	)? (',' align)? (',' addrSpace)?;
 loadInst:
 	// Load.
-	'load' llvmvolatile = 'volatile'? type ',' typeValue (',' align)? (
-		',' metadataAttachment
-	)*
+	'load' llvmvolatile = 'volatile'? type ',' typeValue (',' align)?
 	// atomic='atomic' load.
-	| 'load' atomic = 'atomic' llvmvolatile = 'volatile'? type ',' typeValue syncScope? atomicOrdering (
-		',' align
-	)? (',' metadataAttachment)*;
+	| 'load' atomic = 'atomic' llvmvolatile = 'volatile'? type ',' typeValue syncScope? atomicOrdering (',' align)?;
 cmpXchgInst:
 	'cmpxchg' weak = 'weak'? llvmvolatile = 'volatile'? typeValue ',' typeValue ',' typeValue syncScope?
-		atomicOrdering atomicOrdering (',' align)? (
-		',' metadataAttachment
-	)*;
+		atomicOrdering atomicOrdering (',' align)?;
 atomicRMWInst:
 	'atomicrmw' llvmvolatile = 'volatile'? atomicOp typeValue ',' typeValue syncScope? atomicOrdering (
 		',' align
-	)? (',' metadataAttachment)*;
+	)?;
 getElementPtrInst:
-	'getelementptr' inBounds? type ',' typeValue (',' typeValue)* (
-		',' metadataAttachment
-	)*;
+	'getelementptr' inBounds? type ',' typeValue (',' typeValue)*;
 truncInst:
-	'trunc' typeValue 'to' type (',' metadataAttachment)*;
-zExtInst: 'zext' typeValue 'to' type ( ',' metadataAttachment)*;
-sExtInst: 'sext' typeValue 'to' type ( ',' metadataAttachment)*;
+	'trunc' typeValue 'to' type;
+zExtInst: 'zext' typeValue 'to' type;
+sExtInst: 'sext' typeValue 'to' type;
 fpTruncInst:
-	'fptrunc' typeValue 'to' type (',' metadataAttachment)*;
+	'fptrunc' typeValue 'to' type;
 fpExtInst:
-	'fpext' typeValue 'to' type (',' metadataAttachment)*;
+	'fpext' typeValue 'to' type;
 fpToUiInst:
-	'fptoui' typeValue 'to' type (',' metadataAttachment)*;
+	'fptoui' typeValue 'to' type;
 fpToSiInst:
-	'fptosi' typeValue 'to' type (',' metadataAttachment)*;
+	'fptosi' typeValue 'to' type;
 uiToFpInst:
-	'uitofp' typeValue 'to' type (',' metadataAttachment)*;
+	'uitofp' typeValue 'to' type;
 siToFpInst:
-	'sitofp' typeValue 'to' type (',' metadataAttachment)*;
+	'sitofp' typeValue 'to' type;
 ptrToIntInst:
-	'ptrtoint' typeValue 'to' type (',' metadataAttachment)*;
+	'ptrtoint' typeValue 'to' type;
 intToPtrInst:
-	'inttoptr' typeValue 'to' type (',' metadataAttachment)*;
+	'inttoptr' typeValue 'to' type;
 bitCastInst:
-	'bitcast' typeValue 'to' type (',' metadataAttachment)*;
+	'bitcast' typeValue 'to' type;
 addrSpaceCastInst:
-	'addrspacecast' typeValue 'to' type (',' metadataAttachment)*;
+	'addrspacecast' typeValue 'to' type;
 iCmpInst:
-	'icmp' iPred typeValue ',' value (',' metadataAttachment)*;
+	'icmp' iPred typeValue ',' value;
 fCmpInst:
-	'fcmp' fastMathFlag* fPred typeValue ',' value (
-		',' metadataAttachment
-	)*;
+	'fcmp' fastMathFlag* fPred typeValue ',' value;
 phiInst:
-	'phi' fastMathFlag* type (inc (',' inc)*) (
-		',' metadataAttachment
-	)*;
+	'phi' fastMathFlag* type (inc (',' inc)*);
 selectInst:
-	'select' fastMathFlag* typeValue ',' typeValue ',' typeValue (
-		',' metadataAttachment
-	)*;
+	'select' fastMathFlag* typeValue ',' typeValue ',' typeValue;
 freezeInst: 'freeze' typeValue;
 callInst:
 	tail = ('musttail' | 'notail' | 'tail')? 'call' fastMathFlag* callingConv? returnAttribute*
 		addrSpace? type (inlineAsm | value) '(' args ')' funcAttribute* (
 		'[' operandBundle (',' operandBundle)* ']'
-	)? (',' metadataAttachment)*;
+	)?;
 vaargInst:
-	'va_arg' typeValue ',' type (',' metadataAttachment)*;
+	'va_arg' typeValue ',' type;
 landingPadInst:
-	'landingpad' type cleanUp = 'cleanup'? clause* (
-		',' metadataAttachment
-	)*;
+	'landingpad' type cleanUp = 'cleanup'? clause*;
 catchPadInst:
 	'catchpad' 'within' LocalIdent '[' (
 		exceptionArg (',' exceptionArg)*
-	)? ']' (',' metadataAttachment)*;
+	)? ']';
 cleanupPadInst:
 	'cleanuppad' 'within' exceptionPad '[' (
 		exceptionArg (',' exceptionArg)*
-	)? ']' (',' metadataAttachment)*;
+	)? ']';
 
 inc: '[' value ',' LocalIdent ']';
 
