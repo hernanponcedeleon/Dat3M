@@ -159,6 +159,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // The grammar requires at least one block, thus an entry and an exit.
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             block = getBlock(basicBlockContext.LabelIdent());
+            final List<Metadata> blockHeaderMetadata;
+            if (basicBlockContext.instruction().size() > 0) {
+                blockHeaderMetadata = parseMetadataAttachment(basicBlockContext.instruction(0).metadataAttachment());
+            } else {
+                blockHeaderMetadata = parseMetadataAttachment(basicBlockContext.terminator().metadataAttachment());
+            }
+            blockHeaderMetadata.forEach(block.label::setMetadata);
             for (final InstructionContext instructionContext : basicBlockContext.instruction()) {
                 parseBlockInstructionWithMetadata(instructionContext, instructionContext.metadataAttachment());
             }
@@ -175,12 +182,18 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             for (final Event event : block.events) {
                 function.append(event);
             }
+
+            final Event terminator = block.events.get(block.events.size() - 1);
             for (final Map.Entry<BlockPair, List<Event>> phiNode : phiNodes.entrySet()) {
-                if (phiNode.getKey().from == block) {
+                final BlockPair blockPair = phiNode.getKey();
+                if (blockPair.from == block) {
                     for (Event event : phiNode.getValue()) {
+                        event.copyAllMetadataFrom(terminator);
                         function.append(event);
                     }
-                    function.append(newGoto(phiNode.getKey().to.label));
+                    final Event gotoTargetBlock = newGoto(blockPair.to.label);
+                    gotoTargetBlock.copyAllMetadataFrom(terminator);
+                    function.append(gotoTargetBlock);
                 }
             }
         }

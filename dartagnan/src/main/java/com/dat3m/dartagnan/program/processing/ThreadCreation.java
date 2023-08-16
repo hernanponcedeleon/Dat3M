@@ -308,15 +308,15 @@ public class ThreadCreation implements ProgramProcessor {
             if (e instanceof AbortIf abort) {
                 final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
                 jumpToEnd.addTags(abort.getTags());
+                jumpToEnd.copyAllMetadataFrom(abort);
                 abort.replaceBy(jumpToEnd);
             } else if (e instanceof Return ret) {
-                ret.insertAfter(EventFactory.newGoto(threadReturnLabel));
-                if (returnRegister != null) {
-                    ret.insertAfter(EventFactory.newLocal(returnRegister, ret.getValue().get()));
-                }
-                if (!ret.tryDelete()) {
-                    throw new MalformedProgramException("Unable to delete " + ret);
-                }
+                final List<Event> replacement = eventSequence(
+                        returnRegister != null ? EventFactory.newLocal(returnRegister, ret.getValue().get()) : null,
+                        EventFactory.newGoto(threadReturnLabel)
+                );
+                replacement.forEach(ev -> ev.copyAllMetadataFrom(ret));
+                ret.replaceBy(replacement);
             }
         }
 
