@@ -159,6 +159,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 parseBlockInstructionWithMetadata(instructionContext, instructionContext.metadataAttachment());
             }
             parseBlockInstructionWithMetadata(basicBlockContext.terminator(), basicBlockContext.terminator().metadataAttachment());
+            // We copy the source information of the first block event to the block label.
+            // This might give slightly wrong source information for labels.
+            block.label.copyMetadataFrom(block.events.get(0), SourceLocation.class);
             block = null;
         }
         //TODO validate: all basic blocks have a terminator, there is one entry, at least one exit, etc.
