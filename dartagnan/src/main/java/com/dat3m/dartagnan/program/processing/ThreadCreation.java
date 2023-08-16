@@ -179,7 +179,10 @@ public class ThreadCreation implements ProgramProcessor {
 
         for (DirectFunctionCall call : thread.getEvents(DirectFunctionCall.class)) {
             final String targetName = call.getCallTarget().getName();
-            if (!(targetName.equals("pthread_join") || targetName.equals("__pthread_join"))) {
+            if (!(targetName.equals("pthread_join")
+                    // The following two calls can be generated on macOS
+                    || targetName.equals("__pthread_join")
+                    || targetName.equals("\"\\01_pthread_join\""))) {
                 continue;
             }
 
