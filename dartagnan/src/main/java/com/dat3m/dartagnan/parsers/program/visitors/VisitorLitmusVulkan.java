@@ -85,6 +85,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return null;
     }
 
+    @Override
+    public Object visitVariableDeclaratorProxy(LitmusVulkanParser.VariableDeclaratorProxyContext ctx) {
+        programBuilder.initVirLocEqLocAliasGen(ctx.location(0).getText(),
+                ctx.location(1).getText());
+        return null;
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // SSW declarator list
     @Override
@@ -142,11 +149,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
+        String storageClass = ctx.storageClass().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
         tagChecker(store, atomatic, mo, scope, avvisSemantic);
-        store.addTags(scope, classSemantic);
+        store.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -157,12 +165,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
+        String storageClass = ctx.storageClass().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
         tagChecker(store, atomatic, mo, scope, avvisSemantic);
-        store.addTags(scope, classSemantic);
+        store.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -180,11 +189,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
+        String storageClass = ctx.storageClass().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
         tagChecker(load, atomatic, mo, scope, avvisSemantic);
-        load.addTags(scope, classSemantic);
+        load.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -196,12 +206,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Boolean atomatic = ctx.atomatic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
+        String storageClass = ctx.storageClass().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
         rmw.addTags(scope, classSemantic, avvisSemantic);
         tagChecker(rmw, atomatic, mo, scope, avvisSemantic);
-        rmw.addTags(scope, classSemantic);
+        rmw.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, rmw);
     }
 

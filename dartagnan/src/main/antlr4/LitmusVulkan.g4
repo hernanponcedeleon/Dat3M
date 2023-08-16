@@ -19,10 +19,11 @@ variableDeclarator
     |   variableDeclaratorRegister
     |   variableDeclaratorRegisterLocation
     |   variableDeclaratorLocationLocation
+    |   variableDeclaratorProxy
     ;
 
 variableDeclaratorLocation
-    :   location Equals constant At storageClass
+    :   location Equals constant
     ;
 
 variableDeclaratorRegister
@@ -34,9 +35,12 @@ variableDeclaratorRegisterLocation
     ;
 
 variableDeclaratorLocationLocation
-    :   location Equals Amp? location  At storageClass
+    :   location Equals Amp? location
     ;
 
+variableDeclaratorProxy
+    :   location Aliases location
+    ;
 
 sswDeclaratorList
     :   LBrace sswDeclarator? (Semi sswDeclarator)* Semi? RBrace Semi?
@@ -101,11 +105,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomatic mo scope storageClassSemantic avvisSemantic location Comma constant
+    :   Store atomatic mo scope storageClass storageClassSemantic avvisSemantic location Comma constant
     ;
 
 storeRegister
-    :   Store atomatic mo scope storageClassSemantic avvisSemantic location Comma register
+    :   Store atomatic mo scope storageClass storageClassSemantic avvisSemantic location Comma register
     ;
 
 loadInstruction
@@ -114,11 +118,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomatic mo scope storageClassSemantic avvisSemantic register Comma constant
+    :   Load atomatic mo scope storageClass storageClassSemantic avvisSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomatic mo scope storageClassSemantic avvisSemantic register Comma location
+    :   Load atomatic mo scope storageClass storageClassSemantic avvisSemantic register Comma location
     ;
 
 rmwInstruction
@@ -126,7 +130,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic mo scope storageClassSemantic avvisSemantic Comma location register Comma constant
+    :   RMW atomatic mo scope storageClass storageClassSemantic avvisSemantic Comma location register Comma constant
     ;
 
 fenceInstruction
@@ -189,8 +193,8 @@ mo returns [String content]
     ;
 
 storageClass returns [String content]
-    :   Sc0 {$content = "SC0";}
-    |   Sc1 {$content = "SC1";}
+    :   Period Sc0 {$content = "SC0";}
+    |   Period Sc1 {$content = "SC1";}
     ;
 
 storageClassSemantic returns [String content]
@@ -214,6 +218,7 @@ Register
     :   'r' DigitSequence
     ;
 
+Aliases     :   'aliases';
 Ssw             :   'ssw';
 
 Load            :   'ld';
