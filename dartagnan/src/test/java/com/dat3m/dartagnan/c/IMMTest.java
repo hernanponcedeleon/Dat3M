@@ -32,7 +32,7 @@ public class IMMTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "imm/" + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "imm/" + name + ".ll");
     }
 
     @Override
