@@ -28,7 +28,7 @@ public class LivenessTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".ll");
     }
 
     @Override
