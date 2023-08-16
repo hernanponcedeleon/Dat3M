@@ -16,14 +16,14 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_1(i8* noundef %0) #0 !dbg !42 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !46, metadata !DIExpression()), !dbg !47
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @x, i32 noundef 1) #5, !dbg !48
-  call void @__LKMM_STORE(i32* noundef nonnull @r0, i32 noundef %2, i32 noundef 1) #5, !dbg !48
-  %3 = call i32 @__LKMM_LOAD(i32* noundef nonnull @r0, i32 noundef 1) #5, !dbg !49
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1) #5, !dbg !48
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @r0 to i8*), i32 noundef %2, i32 noundef 1) #5, !dbg !48
+  %3 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @r0 to i8*), i32 noundef 1) #5, !dbg !49
   %.not = icmp eq i32 %3, 0, !dbg !49
   br i1 %.not, label %5, label %4, !dbg !51
 
 4:                                                ; preds = %1
-  call void @__LKMM_STORE(i32* noundef nonnull @y, i32 noundef 1, i32 noundef 1) #5, !dbg !52
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !52
   br label %5, !dbg !52
 
 5:                                                ; preds = %4, %1
@@ -33,17 +33,17 @@ define dso_local i8* @thread_1(i8* noundef %0) #0 !dbg !42 {
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
 declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
-declare void @__LKMM_STORE(i32* noundef, i32 noundef, i32 noundef) #2
+declare void @__LKMM_STORE(i8* noundef, i32 noundef, i32 noundef) #2
 
-declare i32 @__LKMM_LOAD(i32* noundef, i32 noundef) #2
+declare i32 @__LKMM_LOAD(i8* noundef, i32 noundef) #2
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_2(i8* noundef %0) #0 !dbg !54 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !55, metadata !DIExpression()), !dbg !56
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @y, i32 noundef 1) #5, !dbg !57
-  call void @__LKMM_STORE(i32* noundef nonnull @r1, i32 noundef %2, i32 noundef 1) #5, !dbg !57
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1) #5, !dbg !57
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @r1 to i8*), i32 noundef %2, i32 noundef 1) #5, !dbg !57
   call void @__LKMM_FENCE(i32 noundef 4) #5, !dbg !58
-  call void @__LKMM_STORE(i32* noundef nonnull @x, i32 noundef 1, i32 noundef 1) #5, !dbg !59
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !59
   ret i8* null, !dbg !60
 }
 
@@ -63,12 +63,12 @@ define dso_local i32 @main() #0 !dbg !61 {
   %7 = load i64, i64* %2, align 8, !dbg !74
   call void @llvm.dbg.value(metadata i64 %7, metadata !70, metadata !DIExpression()), !dbg !68
   %8 = call i32 @pthread_join(i64 noundef %7, i8** noundef null) #5, !dbg !75
-  %9 = call i32 @__LKMM_LOAD(i32* noundef nonnull @r0, i32 noundef 1) #5, !dbg !76
+  %9 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @r0 to i8*), i32 noundef 1) #5, !dbg !76
   %10 = icmp eq i32 %9, 1, !dbg !76
   br i1 %10, label %11, label %15, !dbg !76
 
 11:                                               ; preds = %0
-  %12 = call i32 @__LKMM_LOAD(i32* noundef nonnull @r1, i32 noundef 1) #5, !dbg !76
+  %12 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @r1 to i8*), i32 noundef 1) #5, !dbg !76
   %13 = icmp eq i32 %12, 1, !dbg !76
   br i1 %13, label %14, label %15, !dbg !79
 
@@ -109,7 +109,7 @@ attributes #6 = { noreturn nounwind }
 !3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/LB+fencembonceonce+ctrlonceonce.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "e04735b1ad6e052c08fd1ecbe5dcff13")
 !4 = !{!5}
 !5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
-!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f05598c4633ab3767f78c4bb572c0073")
+!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f219e5a4f2482585588927d06bb5e5c6")
 !7 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
 !8 = !{!9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22}
 !9 = !DIEnumerator(name: "memory_order_relaxed", value: 0)

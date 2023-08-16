@@ -15,15 +15,15 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_1(i8* noundef %0) #0 !dbg !48 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !52, metadata !DIExpression()), !dbg !53
-  call void @__LKMM_STORE(i32* noundef nonnull @x, i32 noundef 1, i32 noundef 1) #5, !dbg !54
-  call void @__LKMM_STORE(i32* noundef getelementptr inbounds (%struct.atomic_t, %struct.atomic_t* @y, i64 0, i32 0), i32 noundef 1, i32 noundef 3) #5, !dbg !55
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !54
+  call void @__LKMM_STORE(i8* noundef bitcast (%struct.atomic_t* @y to i8*), i32 noundef 1, i32 noundef 3) #5, !dbg !55
   ret i8* null, !dbg !56
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
 declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
-declare void @__LKMM_STORE(i32* noundef, i32 noundef, i32 noundef) #2
+declare void @__LKMM_STORE(i8* noundef, i32 noundef, i32 noundef) #2
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_2(i8* noundef %0) #0 !dbg !57 {
@@ -37,14 +37,14 @@ declare i32 @__LKMM_ATOMIC_FETCH_OP(i32* noundef, i32 noundef, i32 noundef, i32 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_3(i8* noundef %0) #0 !dbg !62 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !63, metadata !DIExpression()), !dbg !64
-  %2 = call i32 @__LKMM_LOAD(i32* noundef getelementptr inbounds (%struct.atomic_t, %struct.atomic_t* @y, i64 0, i32 0), i32 noundef 1) #5, !dbg !65
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (%struct.atomic_t* @y to i8*), i32 noundef 1) #5, !dbg !65
   %3 = and i32 %2, 1, !dbg !67
   %.not = icmp eq i32 %3, 0, !dbg !67
   br i1 %.not, label %8, label %4, !dbg !68
 
 4:                                                ; preds = %1
   call void @__LKMM_FENCE(i32 noundef 6) #5, !dbg !69
-  %5 = call i32 @__LKMM_LOAD(i32* noundef nonnull @x, i32 noundef 1) #5, !dbg !71
+  %5 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1) #5, !dbg !71
   %6 = icmp eq i32 %5, 1, !dbg !71
   br i1 %6, label %8, label %7, !dbg !74
 
@@ -56,7 +56,7 @@ define dso_local i8* @thread_3(i8* noundef %0) #0 !dbg !62 {
   ret i8* null, !dbg !75
 }
 
-declare i32 @__LKMM_LOAD(i32* noundef, i32 noundef) #2
+declare i32 @__LKMM_LOAD(i8* noundef, i32 noundef) #2
 
 declare void @__LKMM_FENCE(i32 noundef) #2
 
@@ -70,20 +70,20 @@ define dso_local i32 @main() #0 !dbg !76 {
   %3 = alloca i64, align 8
   call void @llvm.dbg.value(metadata i64* %1, metadata !79, metadata !DIExpression(DW_OP_deref)), !dbg !83
   %4 = call i32 @pthread_create(i64* noundef nonnull %1, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_1, i8* noundef null) #5, !dbg !84
-  call void @llvm.dbg.value(metadata i64* %2, metadata !86, metadata !DIExpression(DW_OP_deref)), !dbg !83
-  %5 = call i32 @pthread_create(i64* noundef nonnull %2, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_2, i8* noundef null) #5, !dbg !87
-  call void @llvm.dbg.value(metadata i64* %3, metadata !89, metadata !DIExpression(DW_OP_deref)), !dbg !83
-  %6 = call i32 @pthread_create(i64* noundef nonnull %3, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_3, i8* noundef null) #5, !dbg !90
-  %7 = load i64, i64* %1, align 8, !dbg !92
+  call void @llvm.dbg.value(metadata i64* %2, metadata !85, metadata !DIExpression(DW_OP_deref)), !dbg !83
+  %5 = call i32 @pthread_create(i64* noundef nonnull %2, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_2, i8* noundef null) #5, !dbg !86
+  call void @llvm.dbg.value(metadata i64* %3, metadata !87, metadata !DIExpression(DW_OP_deref)), !dbg !83
+  %6 = call i32 @pthread_create(i64* noundef nonnull %3, %union.pthread_attr_t* noundef null, i8* (i8*)* noundef nonnull @thread_3, i8* noundef null) #5, !dbg !88
+  %7 = load i64, i64* %1, align 8, !dbg !89
   call void @llvm.dbg.value(metadata i64 %7, metadata !79, metadata !DIExpression()), !dbg !83
-  %8 = call i32 @pthread_join(i64 noundef %7, i8** noundef null) #5, !dbg !94
-  %9 = load i64, i64* %2, align 8, !dbg !95
-  call void @llvm.dbg.value(metadata i64 %9, metadata !86, metadata !DIExpression()), !dbg !83
-  %10 = call i32 @pthread_join(i64 noundef %9, i8** noundef null) #5, !dbg !97
-  %11 = load i64, i64* %3, align 8, !dbg !98
-  call void @llvm.dbg.value(metadata i64 %11, metadata !89, metadata !DIExpression()), !dbg !83
-  %12 = call i32 @pthread_join(i64 noundef %11, i8** noundef null) #5, !dbg !100
-  ret i32 0, !dbg !101
+  %8 = call i32 @pthread_join(i64 noundef %7, i8** noundef null) #5, !dbg !90
+  %9 = load i64, i64* %2, align 8, !dbg !91
+  call void @llvm.dbg.value(metadata i64 %9, metadata !85, metadata !DIExpression()), !dbg !83
+  %10 = call i32 @pthread_join(i64 noundef %9, i8** noundef null) #5, !dbg !92
+  %11 = load i64, i64* %3, align 8, !dbg !93
+  call void @llvm.dbg.value(metadata i64 %11, metadata !87, metadata !DIExpression()), !dbg !83
+  %12 = call i32 @pthread_join(i64 noundef %11, i8** noundef null) #5, !dbg !94
+  ret i32 0, !dbg !95
 }
 
 ; Function Attrs: nounwind
@@ -109,10 +109,10 @@ attributes #6 = { noreturn nounwind }
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
 !1 = distinct !DIGlobalVariable(name: "x", scope: !2, file: !34, line: 6, type: !39, isLocal: false, isDefinition: true)
 !2 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: "Ubuntu clang version 14.0.6", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !29, globals: !31, splitDebugInlining: false, nameTableKind: None)
-!3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/qspinlock.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "497c154e875c0bdf85775d189d7a94f1")
+!3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/qspinlock.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "c600e4091a20e0f808017d68911496eb")
 !4 = !{!5, !23}
 !5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
-!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f05598c4633ab3767f78c4bb572c0073")
+!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f219e5a4f2482585588927d06bb5e5c6")
 !7 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
 !8 = !{!9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22}
 !9 = !DIEnumerator(name: "memory_order_relaxed", value: 0)
@@ -140,7 +140,7 @@ attributes #6 = { noreturn nounwind }
 !31 = !{!0, !32}
 !32 = !DIGlobalVariableExpression(var: !33, expr: !DIExpression())
 !33 = distinct !DIGlobalVariable(name: "y", scope: !2, file: !34, line: 7, type: !35, isLocal: false, isDefinition: true)
-!34 = !DIFile(filename: "benchmarks/lkmm/qspinlock.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "497c154e875c0bdf85775d189d7a94f1")
+!34 = !DIFile(filename: "benchmarks/lkmm/qspinlock.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "c600e4091a20e0f808017d68911496eb")
 !35 = !DIDerivedType(tag: DW_TAG_typedef, name: "atomic_t", file: !6, line: 95, baseType: !36)
 !36 = distinct !DICompositeType(tag: DW_TAG_structure_type, file: !6, line: 93, size: 32, elements: !37)
 !37 = !{!38}
@@ -190,21 +190,15 @@ attributes #6 = { noreturn nounwind }
 !81 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/pthreadtypes.h", directory: "", checksumkind: CSK_MD5, checksum: "2d764266ce95ab26d4a4767c2ec78176")
 !82 = !DIBasicType(name: "unsigned long", size: 64, encoding: DW_ATE_unsigned)
 !83 = !DILocation(line: 0, scope: !76)
-!84 = !DILocation(line: 35, column: 6, scope: !85)
-!85 = distinct !DILexicalBlock(scope: !76, file: !34, line: 35, column: 6)
-!86 = !DILocalVariable(name: "t2", scope: !76, file: !34, line: 33, type: !80)
-!87 = !DILocation(line: 36, column: 6, scope: !88)
-!88 = distinct !DILexicalBlock(scope: !76, file: !34, line: 36, column: 6)
-!89 = !DILocalVariable(name: "t3", scope: !76, file: !34, line: 33, type: !80)
-!90 = !DILocation(line: 37, column: 6, scope: !91)
-!91 = distinct !DILexicalBlock(scope: !76, file: !34, line: 37, column: 6)
-!92 = !DILocation(line: 39, column: 19, scope: !93)
-!93 = distinct !DILexicalBlock(scope: !76, file: !34, line: 39, column: 6)
-!94 = !DILocation(line: 39, column: 6, scope: !93)
-!95 = !DILocation(line: 40, column: 19, scope: !96)
-!96 = distinct !DILexicalBlock(scope: !76, file: !34, line: 40, column: 6)
-!97 = !DILocation(line: 40, column: 6, scope: !96)
-!98 = !DILocation(line: 41, column: 19, scope: !99)
-!99 = distinct !DILexicalBlock(scope: !76, file: !34, line: 41, column: 6)
-!100 = !DILocation(line: 41, column: 6, scope: !99)
-!101 = !DILocation(line: 43, column: 2, scope: !76)
+!84 = !DILocation(line: 35, column: 2, scope: !76)
+!85 = !DILocalVariable(name: "t2", scope: !76, file: !34, line: 33, type: !80)
+!86 = !DILocation(line: 36, column: 2, scope: !76)
+!87 = !DILocalVariable(name: "t3", scope: !76, file: !34, line: 33, type: !80)
+!88 = !DILocation(line: 37, column: 2, scope: !76)
+!89 = !DILocation(line: 39, column: 15, scope: !76)
+!90 = !DILocation(line: 39, column: 2, scope: !76)
+!91 = !DILocation(line: 40, column: 15, scope: !76)
+!92 = !DILocation(line: 40, column: 2, scope: !76)
+!93 = !DILocation(line: 41, column: 15, scope: !76)
+!94 = !DILocation(line: 41, column: 2, scope: !76)
+!95 = !DILocation(line: 43, column: 2, scope: !76)

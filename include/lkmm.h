@@ -24,8 +24,8 @@ typedef enum operation {
   op_or,
 } operation;
 
-extern int __LKMM_LOAD(int*, memory_order);
-extern void __LKMM_STORE(int*, int, memory_order);
+extern int __LKMM_LOAD(void*, memory_order);
+extern void __LKMM_STORE(void*, int, memory_order);
 extern void __LKMM_FENCE(int);
 extern int __LKMM_XCHG(int*, int, memory_order);
 extern int __LKMM_CMPXCHG(int*, int, int, memory_order, memory_order);
@@ -271,13 +271,13 @@ typedef atomic64_t  atomic_long_t;
  **                               SPINLOCKS
  ******************************************************************************/
 
-extern int __LKMM_SPIN_LOCK(int*);
-extern int __LKMM_SPIN_UNLOCK(int*);
-
 /* Spinlocks */
 typedef struct spinlock {
     int unused;
 } spinlock_t;
+
+extern int __LKMM_SPIN_LOCK(spinlock_t*);
+extern int __LKMM_SPIN_UNLOCK(spinlock_t*);
 
 #define spin_lock(l)      __LKMM_SPIN_LOCK(l)
 #define spin_unlock(l)    __LKMM_SPIN_UNLOCK(l)

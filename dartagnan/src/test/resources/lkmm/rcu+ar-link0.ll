@@ -27,8 +27,8 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local i8* @P0(i8* noundef %0) #0 !dbg !62 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !66, metadata !DIExpression()), !dbg !67
   call void @__LKMM_FENCE(i32 noundef 7) #5, !dbg !68
-  call void @__LKMM_STORE(i32* noundef nonnull @x, i32 noundef 1, i32 noundef 1) #5, !dbg !69
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @y, i32 noundef 1) #5, !dbg !70
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !69
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1) #5, !dbg !70
   store i32 %2, i32* @r_y, align 4, !dbg !71
   call void @__LKMM_FENCE(i32 noundef 8) #5, !dbg !72
   ret i8* null, !dbg !73
@@ -39,19 +39,19 @@ declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
 declare void @__LKMM_FENCE(i32 noundef) #2
 
-declare void @__LKMM_STORE(i32* noundef, i32 noundef, i32 noundef) #2
+declare void @__LKMM_STORE(i8* noundef, i32 noundef, i32 noundef) #2
 
-declare i32 @__LKMM_LOAD(i32* noundef, i32 noundef) #2
+declare i32 @__LKMM_LOAD(i8* noundef, i32 noundef) #2
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @P1(i8* noundef %0) #0 !dbg !74 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !75, metadata !DIExpression()), !dbg !76
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @x, i32 noundef 1) #5, !dbg !77
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1) #5, !dbg !77
   %3 = icmp eq i32 %2, 1, !dbg !79
   br i1 %3, label %4, label %5, !dbg !80
 
 4:                                                ; preds = %1
-  call void @__LKMM_STORE(i32* noundef nonnull @s, i32 noundef 1, i32 noundef 1) #5, !dbg !81
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @s to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !81
   br label %5, !dbg !81
 
 5:                                                ; preds = %4, %1
@@ -61,41 +61,41 @@ define dso_local i8* @P1(i8* noundef %0) #0 !dbg !74 {
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @P2(i8* noundef %0) #0 !dbg !83 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !84, metadata !DIExpression()), !dbg !85
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @s, i32 noundef 1) #5, !dbg !86
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @s to i8*), i32 noundef 1) #5, !dbg !86
   store i32 %2, i32* @r_s, align 4, !dbg !87
-  call void @__LKMM_STORE(i32* noundef nonnull @w, i32 noundef 1, i32 noundef 3) #5, !dbg !88
-  %3 = call i32 @__LKMM_LOAD(i32* noundef nonnull @z, i32 noundef 1) #5, !dbg !89
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @w to i8*), i32 noundef 1, i32 noundef 3) #5, !dbg !88
+  %3 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @z to i8*), i32 noundef 1) #5, !dbg !89
   call void @llvm.dbg.value(metadata i32 %3, metadata !90, metadata !DIExpression()), !dbg !85
   %4 = add nsw i32 %3, 1, !dbg !91
-  call void @__LKMM_STORE(i32* noundef nonnull @a, i32 noundef %4, i32 noundef 1) #5, !dbg !91
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @a to i8*), i32 noundef %4, i32 noundef 1) #5, !dbg !91
   ret i8* null, !dbg !92
 }
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @P3(i8* noundef %0) #0 !dbg !93 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !94, metadata !DIExpression()), !dbg !95
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @a, i32 noundef 1) #5, !dbg !96
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @a to i8*), i32 noundef 1) #5, !dbg !96
   store i32 %2, i32* @r_a, align 4, !dbg !97
-  call void @__LKMM_STORE(i32* noundef nonnull @b, i32 noundef %2, i32 noundef 1) #5, !dbg !98
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @b to i8*), i32 noundef %2, i32 noundef 1) #5, !dbg !98
   ret i8* null, !dbg !99
 }
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @P4(i8* noundef %0) #0 !dbg !100 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !101, metadata !DIExpression()), !dbg !102
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @b, i32 noundef 1) #5, !dbg !103
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @b to i8*), i32 noundef 1) #5, !dbg !103
   store i32 %2, i32* @r_b, align 4, !dbg !104
-  call void @__LKMM_STORE(i32* noundef nonnull @c, i32 noundef 1, i32 noundef 3) #5, !dbg !105
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @c to i8*), i32 noundef 1, i32 noundef 3) #5, !dbg !105
   ret i8* null, !dbg !106
 }
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @P5(i8* noundef %0) #0 !dbg !107 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !108, metadata !DIExpression()), !dbg !109
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @c, i32 noundef 1) #5, !dbg !110
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @c to i8*), i32 noundef 1) #5, !dbg !110
   store i32 %2, i32* @r_c, align 4, !dbg !111
   call void @__LKMM_FENCE(i32 noundef 9) #5, !dbg !112
-  call void @__LKMM_STORE(i32* noundef nonnull @y, i32 noundef 1, i32 noundef 1) #5, !dbg !113
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !113
   ret i8* null, !dbg !114
 }
 
@@ -190,7 +190,7 @@ attributes #6 = { noreturn nounwind }
 !3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/rcu+ar-link0.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "6b13efe8b5bb64ba02860a374c43853f")
 !4 = !{!5}
 !5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
-!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f05598c4633ab3767f78c4bb572c0073")
+!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f219e5a4f2482585588927d06bb5e5c6")
 !7 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
 !8 = !{!9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22}
 !9 = !DIEnumerator(name: "memory_order_relaxed", value: 0)

@@ -17,8 +17,8 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local i8* @P0(i8* noundef %0) #0 !dbg !42 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !46, metadata !DIExpression()), !dbg !47
   call void @__LKMM_FENCE(i32 noundef 7) #5, !dbg !48
-  call void @__LKMM_STORE(i32* noundef nonnull @x, i32 noundef 1, i32 noundef 1) #5, !dbg !49
-  call void @__LKMM_STORE(i32* noundef nonnull @y, i32 noundef 1, i32 noundef 1) #5, !dbg !50
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !49
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !50
   call void @__LKMM_FENCE(i32 noundef 8) #5, !dbg !51
   ret i8* null, !dbg !52
 }
@@ -28,20 +28,20 @@ declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
 declare void @__LKMM_FENCE(i32 noundef) #2
 
-declare void @__LKMM_STORE(i32* noundef, i32 noundef, i32 noundef) #2
+declare void @__LKMM_STORE(i8* noundef, i32 noundef, i32 noundef) #2
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @P1(i8* noundef %0) #0 !dbg !53 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !54, metadata !DIExpression()), !dbg !55
-  %2 = call i32 @__LKMM_LOAD(i32* noundef nonnull @x, i32 noundef 1) #5, !dbg !56
+  %2 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1) #5, !dbg !56
   store i32 %2, i32* @r_x, align 4, !dbg !57
   call void @__LKMM_FENCE(i32 noundef 9) #5, !dbg !58
-  %3 = call i32 @__LKMM_LOAD(i32* noundef nonnull @y, i32 noundef 1) #5, !dbg !59
+  %3 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1) #5, !dbg !59
   store i32 %3, i32* @r_y, align 4, !dbg !60
   ret i8* null, !dbg !61
 }
 
-declare i32 @__LKMM_LOAD(i32* noundef, i32 noundef) #2
+declare i32 @__LKMM_LOAD(i8* noundef, i32 noundef) #2
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i32 @main() #0 !dbg !62 {
@@ -101,7 +101,7 @@ attributes #6 = { noreturn nounwind }
 !3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/rcu.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "dad53a6fc905d03af1a936e703cc6339")
 !4 = !{!5}
 !5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
-!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f05598c4633ab3767f78c4bb572c0073")
+!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f219e5a4f2482585588927d06bb5e5c6")
 !7 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
 !8 = !{!9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22}
 !9 = !DIEnumerator(name: "memory_order_relaxed", value: 0)

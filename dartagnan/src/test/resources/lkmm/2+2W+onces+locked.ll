@@ -17,33 +17,33 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_1(i8* noundef %0) #0 !dbg !46 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !50, metadata !DIExpression()), !dbg !51
-  %2 = call i32 @__LKMM_SPIN_LOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_x, i64 0, i32 0)) #5, !dbg !52
-  call void @__LKMM_STORE(i32* noundef nonnull @x, i32 noundef 2, i32 noundef 1) #5, !dbg !53
-  %3 = call i32 @__LKMM_SPIN_UNLOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_x, i64 0, i32 0)) #5, !dbg !54
-  %4 = call i32 @__LKMM_SPIN_LOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_y, i64 0, i32 0)) #5, !dbg !55
-  call void @__LKMM_STORE(i32* noundef nonnull @y, i32 noundef 1, i32 noundef 1) #5, !dbg !56
-  %5 = call i32 @__LKMM_SPIN_UNLOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_y, i64 0, i32 0)) #5, !dbg !57
+  %2 = call i32 @__LKMM_SPIN_LOCK(%struct.spinlock* noundef nonnull @lock_x) #5, !dbg !52
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 2, i32 noundef 1) #5, !dbg !53
+  %3 = call i32 @__LKMM_SPIN_UNLOCK(%struct.spinlock* noundef nonnull @lock_x) #5, !dbg !54
+  %4 = call i32 @__LKMM_SPIN_LOCK(%struct.spinlock* noundef nonnull @lock_y) #5, !dbg !55
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !56
+  %5 = call i32 @__LKMM_SPIN_UNLOCK(%struct.spinlock* noundef nonnull @lock_y) #5, !dbg !57
   ret i8* null, !dbg !58
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
 declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
-declare i32 @__LKMM_SPIN_LOCK(i32* noundef) #2
+declare i32 @__LKMM_SPIN_LOCK(%struct.spinlock* noundef) #2
 
-declare void @__LKMM_STORE(i32* noundef, i32 noundef, i32 noundef) #2
+declare void @__LKMM_STORE(i8* noundef, i32 noundef, i32 noundef) #2
 
-declare i32 @__LKMM_SPIN_UNLOCK(i32* noundef) #2
+declare i32 @__LKMM_SPIN_UNLOCK(%struct.spinlock* noundef) #2
 
 ; Function Attrs: noinline nounwind uwtable
 define dso_local i8* @thread_2(i8* noundef %0) #0 !dbg !59 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !60, metadata !DIExpression()), !dbg !61
-  %2 = call i32 @__LKMM_SPIN_LOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_y, i64 0, i32 0)) #5, !dbg !62
-  call void @__LKMM_STORE(i32* noundef nonnull @y, i32 noundef 2, i32 noundef 1) #5, !dbg !63
-  %3 = call i32 @__LKMM_SPIN_UNLOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_y, i64 0, i32 0)) #5, !dbg !64
-  %4 = call i32 @__LKMM_SPIN_LOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_x, i64 0, i32 0)) #5, !dbg !65
-  call void @__LKMM_STORE(i32* noundef nonnull @x, i32 noundef 1, i32 noundef 1) #5, !dbg !66
-  %5 = call i32 @__LKMM_SPIN_UNLOCK(i32* noundef getelementptr inbounds (%struct.spinlock, %struct.spinlock* @lock_x, i64 0, i32 0)) #5, !dbg !67
+  %2 = call i32 @__LKMM_SPIN_LOCK(%struct.spinlock* noundef nonnull @lock_y) #5, !dbg !62
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @y to i8*), i32 noundef 2, i32 noundef 1) #5, !dbg !63
+  %3 = call i32 @__LKMM_SPIN_UNLOCK(%struct.spinlock* noundef nonnull @lock_y) #5, !dbg !64
+  %4 = call i32 @__LKMM_SPIN_LOCK(%struct.spinlock* noundef nonnull @lock_x) #5, !dbg !65
+  call void @__LKMM_STORE(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1, i32 noundef 1) #5, !dbg !66
+  %5 = call i32 @__LKMM_SPIN_UNLOCK(%struct.spinlock* noundef nonnull @lock_x) #5, !dbg !67
   ret i8* null, !dbg !68
 }
 
@@ -61,12 +61,12 @@ define dso_local i32 @main() #0 !dbg !69 {
   %7 = load i64, i64* %2, align 8, !dbg !82
   call void @llvm.dbg.value(metadata i64 %7, metadata !78, metadata !DIExpression()), !dbg !76
   %8 = call i32 @pthread_join(i64 noundef %7, i8** noundef null) #5, !dbg !83
-  %9 = call i32 @__LKMM_LOAD(i32* noundef nonnull @x, i32 noundef 1) #5, !dbg !84
+  %9 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @x to i8*), i32 noundef 1) #5, !dbg !84
   %10 = icmp eq i32 %9, 2, !dbg !84
   br i1 %10, label %11, label %15, !dbg !84
 
 11:                                               ; preds = %0
-  %12 = call i32 @__LKMM_LOAD(i32* noundef nonnull @y, i32 noundef 1) #5, !dbg !84
+  %12 = call i32 @__LKMM_LOAD(i8* noundef bitcast (i32* @y to i8*), i32 noundef 1) #5, !dbg !84
   %13 = icmp eq i32 %12, 2, !dbg !84
   br i1 %13, label %14, label %15, !dbg !87
 
@@ -83,7 +83,7 @@ declare i32 @pthread_create(i64* noundef, %union.pthread_attr_t* noundef, i8* (i
 
 declare i32 @pthread_join(i64 noundef, i8** noundef) #2
 
-declare i32 @__LKMM_LOAD(i32* noundef, i32 noundef) #2
+declare i32 @__LKMM_LOAD(i8* noundef, i32 noundef) #2
 
 ; Function Attrs: noreturn nounwind
 declare void @__assert_fail(i8* noundef, i8* noundef, i32 noundef, i8* noundef) #4
@@ -109,7 +109,7 @@ attributes #6 = { noreturn nounwind }
 !3 = !DIFile(filename: "/home/ponce/git/Dat3M/benchmarks/lkmm/2+2W+onces+locked.c", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "06899129241a51c8f91baae86bd7c164")
 !4 = !{!5}
 !5 = !DICompositeType(tag: DW_TAG_enumeration_type, name: "memory_order", file: !6, line: 3, baseType: !7, size: 32, elements: !8)
-!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f05598c4633ab3767f78c4bb572c0073")
+!6 = !DIFile(filename: "include/lkmm.h", directory: "/home/ponce/git/Dat3M", checksumkind: CSK_MD5, checksum: "f219e5a4f2482585588927d06bb5e5c6")
 !7 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
 !8 = !{!9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22}
 !9 = !DIEnumerator(name: "memory_order_relaxed", value: 0)
@@ -137,10 +137,10 @@ attributes #6 = { noreturn nounwind }
 !31 = distinct !DIGlobalVariable(name: "y", scope: !2, file: !28, line: 6, type: !29, isLocal: false, isDefinition: true)
 !32 = !DIGlobalVariableExpression(var: !33, expr: !DIExpression())
 !33 = distinct !DIGlobalVariable(name: "lock_y", scope: !2, file: !28, line: 7, type: !34, isLocal: false, isDefinition: true)
-!34 = !DIDerivedType(tag: DW_TAG_typedef, name: "spinlock_t", file: !6, line: 280, baseType: !35)
-!35 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "spinlock", file: !6, line: 278, size: 32, elements: !36)
+!34 = !DIDerivedType(tag: DW_TAG_typedef, name: "spinlock_t", file: !6, line: 277, baseType: !35)
+!35 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "spinlock", file: !6, line: 275, size: 32, elements: !36)
 !36 = !{!37}
-!37 = !DIDerivedType(tag: DW_TAG_member, name: "unused", scope: !35, file: !6, line: 279, baseType: !29, size: 32)
+!37 = !DIDerivedType(tag: DW_TAG_member, name: "unused", scope: !35, file: !6, line: 276, baseType: !29, size: 32)
 !38 = !{i32 7, !"Dwarf Version", i32 5}
 !39 = !{i32 2, !"Debug Info Version", i32 3}
 !40 = !{i32 1, !"wchar_size", i32 4}
