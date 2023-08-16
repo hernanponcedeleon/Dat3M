@@ -24,6 +24,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -35,6 +37,8 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 
 public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
+
+    private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
 
     // Global context
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
@@ -998,6 +1002,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression falseValue = visitTypeConst(ctx.typeConst(2));
         final Expression cast = expressions.makeBooleanCast(guard);
         return expressions.makeConditional(cast, trueValue, falseValue);
+    }
+
+    @Override
+    public Expression visitUndefConst(UndefConstContext ctx) {
+        logger.warn("Encountered undef constant of type {}. " +
+                "Constant was replaced by zero.", expectedType);
+        return makeZeroOfType(expectedType);
     }
 
     private Expression checkPointerExpression(ParserRuleContext context) {
