@@ -32,7 +32,7 @@ public class RC11Test extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "rc11/" + name + ".bpl");
+        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "rc11/" + name + ".ll");
     }
 
     @Override
