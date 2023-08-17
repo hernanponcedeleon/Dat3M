@@ -76,6 +76,7 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
+                Intrinsics.MARK_INTRINSICS,
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,

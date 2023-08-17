@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -26,6 +27,8 @@ public class Function implements Expression {
     protected FunctionType functionType;
     protected List<Register> parameterRegs;
     protected boolean isVarArgs = false;
+
+    protected Intrinsics.Info intrinsicInfo;
 
     protected Program program;
     protected Map<String, Register> registers = new HashMap<>();
@@ -76,6 +79,10 @@ public class Function implements Expression {
 
     public boolean hasBody() { return entry != null; }
     public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
+
+    public boolean isIntrinsic() { return !hasBody() && intrinsicInfo != null; }
+    public Intrinsics.Info getIntrinsicInfo() { return intrinsicInfo; }
+    public void setIntrinsicInfo(Intrinsics.Info info) { this.intrinsicInfo = info; }
 
     public void setIsVarArgs(boolean value) { this.isVarArgs = value; }
     public boolean isVarArgs() { return isVarArgs; }

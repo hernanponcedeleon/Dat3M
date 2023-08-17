@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
+import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -85,6 +86,13 @@ public class Inlining implements FunctionProcessor {
                 returnMarker.copyAllMetadataFrom(call);
                 call.getPredecessor().insertAfter(callMarker);
                 call.insertAfter(returnMarker);
+                //  --- SVCOMP-specific code ---
+                if (callTarget.getName().startsWith("__VERIFIER_atomic")) {
+                    final BeginAtomic beginAtomic = EventFactory.Svcomp.newBeginAtomic();
+                    call.getPredecessor().insertAfter(beginAtomic);
+                    call.insertAfter(EventFactory.Svcomp.newEndAtomic(beginAtomic));
+                }
+                // -----------------------------
                 // Calls with result will write the return value to this register.
                 Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
                 inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);
