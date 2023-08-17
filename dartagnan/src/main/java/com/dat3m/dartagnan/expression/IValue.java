@@ -42,6 +42,6 @@ public final class IValue extends IConst {
 
     @Override
     public String toString() {
-        return value.toString() + getType().toString();
+        return String.format("%s(%s)", getType(), value);
     }
 }

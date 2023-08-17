@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 
+import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_SIGNED;
+import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_UNSIGNED;
 import static com.google.common.base.Verify.verify;
 
 public class IExprUn extends IExpr {
@@ -36,6 +38,9 @@ public class IExprUn extends IExpr {
 
     @Override
     public String toString() {
+        if (op == CAST_SIGNED || op == CAST_UNSIGNED) {
+            return String.format("(%s %s to %s)", b, op, getType());
+        }
         return "(" + op + b + ")";
     }
 
@@ -51,7 +56,7 @@ public class IExprUn extends IExpr {
         IntegerType targetType = getType();
         switch (op) {
             case CAST_SIGNED, CAST_UNSIGNED -> {
-                boolean signed = op.equals(IOpUn.CAST_SIGNED);
+                boolean signed = op.equals(CAST_SIGNED);
                 boolean truncate = !targetType.isMathematical() &&
                         (innerType.isMathematical() || targetType.getBitWidth() < innerType.getBitWidth());
                 if (truncate) {

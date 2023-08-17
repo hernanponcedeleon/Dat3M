@@ -50,7 +50,7 @@ public class Register implements Expression {
 
     @Override
     public String toString() {
-        return name;
+        return type + " " + name;
     }
 
     @Override
