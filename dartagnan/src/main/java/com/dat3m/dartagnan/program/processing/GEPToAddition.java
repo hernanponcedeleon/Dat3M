@@ -39,7 +39,19 @@ public class GEPToAddition implements ProgramProcessor {
         if (type instanceof ArrayType arrayType) {
             sizeInBytes = arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
         } else if (type instanceof AggregateType aggregateType) {
-            sizeInBytes = aggregateType.getDirectFields().stream().mapToInt(GEPToAddition::getMemorySize).sum();
+            int aggregateSize = 0;
+            for (Type fieldType : aggregateType.getDirectFields()) {
+                int size = getMemorySize(fieldType);
+                //FIXME: We assume for now that a small type's (<= 8 byte) alignment coincides with its size.
+                // For all larger types, we assume 8 byte alignment
+                int alignment = Math.min(size, 8);
+                if (size != 0) {
+                    int padding = (-aggregateSize) % alignment;
+                    padding = padding < 0 ? padding + alignment : padding;
+                    aggregateSize += size + padding;
+                }
+            }
+            sizeInBytes = aggregateSize;
         } else if (type instanceof IntegerType integerType) {
             if (integerType.isMathematical()) {
                 // FIXME: We cannot give proper sizes for mathematical integers.
