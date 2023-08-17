@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -24,6 +25,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class IntrinsicsInsertion implements FunctionProcessor {
 
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
@@ -52,8 +54,9 @@ public class IntrinsicsInsertion implements FunctionProcessor {
                     case "pthread_mutex_init" -> inlinePthreadMutexInit(call);
                     case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
                     case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
-                    case "exit" -> inlineExit(call);
-                    case "printf" -> List.of();
+                    case "pthread_mutex_destroy" -> inlinePthreadMutexDestroy(call);
+                    case "exit", "abort" -> inlineExit(call);
+                    case "printf", "puts" -> List.of();
                     default -> List.of(call);
                 };
             }
@@ -110,6 +113,12 @@ public class IntrinsicsInsertion implements FunctionProcessor {
         final Expression lockValue = call.getArguments().get(1);
         final String lockName = lockAddress.toString();
         return List.of(EventFactory.Pthread.newInitLock(lockName, lockAddress, lockValue));
+    }
+
+    private List<Event> inlinePthreadMutexDestroy(DirectFunctionCall call) {
+        checkArgument(call.getArguments().size() == 1);
+        final Register reg = ((DirectValueFunctionCall) call).getResultRegister();
+        return List.of(EventFactory.newLocal(reg, expressions.makeZero((IntegerType) reg.getType())));
     }
 
     private List<Event> inlinePthreadMutexLock(DirectFunctionCall call) {

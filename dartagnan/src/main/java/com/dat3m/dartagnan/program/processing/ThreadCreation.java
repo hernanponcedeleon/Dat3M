@@ -301,7 +301,7 @@ public class ThreadCreation implements ProgramProcessor {
         thread.append(threadReturnLabel);
         thread.append(threadEnd);
 
-        // ------------------- Replace AbortIf and Return -------------------
+        // ------------------- Replace AbortIf, Return, and pthread_exit -------------------
         final Register returnRegister = function.hasReturnValue() ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
@@ -310,13 +310,16 @@ public class ThreadCreation implements ProgramProcessor {
                 jumpToEnd.addTags(abort.getTags());
                 jumpToEnd.copyAllMetadataFrom(abort);
                 abort.replaceBy(jumpToEnd);
-            } else if (e instanceof Return ret) {
+            } else if (e instanceof Return
+                    || e instanceof DirectFunctionCall call && call.getCallTarget().getName().equals("pthread_exit")) {
+                final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
+                        : ((DirectFunctionCall)e).getArguments().get(0);
                 final List<Event> replacement = eventSequence(
-                        returnRegister != null ? EventFactory.newLocal(returnRegister, ret.getValue().get()) : null,
+                        returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
                 );
-                replacement.forEach(ev -> ev.copyAllMetadataFrom(ret));
-                ret.replaceBy(replacement);
+                replacement.forEach(ev -> ev.copyAllMetadataFrom(e));
+                e.replaceBy(replacement);
             }
         }
 

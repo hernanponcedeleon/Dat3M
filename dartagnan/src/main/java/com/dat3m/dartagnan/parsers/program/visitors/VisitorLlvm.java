@@ -1085,8 +1085,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (ctx.type() != null && ctx.params() == null || ctx.opaquePointerType() != null) {
             parsedType = pointerType;
             return null;
+        } else if (ctx.getText().equals("void")) {
+            parsedType = types.getVoidType();
+            return null;
+        } else if (ctx.type() != null && ctx.params() != null) {
+            //FIXME: this should parse a function type "retType (params)", but
+            // for now we just return "retType"
+            ctx.type().accept(this);
+            return null;
+        } else {
+            return super.visitType(ctx);
         }
-        return super.visitType(ctx);
     }
 
     @Override
@@ -1112,8 +1121,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Type parseType(ParserRuleContext context) {
         Expression o = context.accept(this);
         assert o == null : "Unexpected return value, expected type.";
-        checkSupport(parsedType != null || context.getText().equals("void"),
-                "Unsupported type in %s.", context);
+        checkSupport(parsedType != null, "Unsupported type in %s.", context);
         Type type = parsedType != null ? parsedType : types.getVoidType();
         parsedType = null;
         return type;
