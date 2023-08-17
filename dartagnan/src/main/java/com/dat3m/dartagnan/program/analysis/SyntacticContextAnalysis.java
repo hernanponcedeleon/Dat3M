@@ -34,44 +34,21 @@ public class SyntacticContextAnalysis {
      */
     public interface Context { }
 
-    public static class ThreadContext implements Context {
-        private final Thread thread;
-
-        private ThreadContext(Thread thread) { this.thread = thread; }
-
-        public Thread getThread() { return this.thread; }
-
+    public record ThreadContext(Thread thread) implements Context {
         @Override
         public String toString() {
             return String.format("T%d:%s", thread.getId(), thread.getName());
         }
     }
 
-    public static class LoopContext implements Context {
-        private final Event loopMarker;
-        private final int iterationNumber;
-
-        private LoopContext(Event loopMarker, int loopIteration) {
-            this.loopMarker = loopMarker;
-            this.iterationNumber = loopIteration;
-        }
-
-        public Event getLoopMarker() { return this.loopMarker; }
-        public int getIterationNumber() { return this.iterationNumber; }
-
+    public record LoopContext(Event loopMarker, int iterationNumber) implements Context {
         @Override
         public String toString() {
             return String.format("Iter#%d %s", iterationNumber, getSourceLocationString(loopMarker));
         }
     }
 
-    public static class CallContext implements Context {
-        private final FunCallMarker funCallMarker;
-
-        private CallContext(FunCallMarker funCallMarker) { this.funCallMarker = funCallMarker; }
-
-        public FunCallMarker getFunctionCall() { return this.funCallMarker; }
-
+    public record CallContext(FunCallMarker funCallMarker) implements Context {
         @Override
         public String toString() {
             return String.format("%s %s", funCallMarker.getFunctionName(), getSourceLocationString(funCallMarker));
@@ -163,25 +140,29 @@ public class SyntacticContextAnalysis {
 
             if (ev instanceof FunCallMarker fc) {
                 curContextStack.push(new CallContext(fc));
-            } else if (ev instanceof FunReturnMarker) {
-                assert curContextStack.peek() instanceof CallContext;
-                curContextStack.pop();
+            } else if (ev instanceof FunReturnMarker retMarker) {
+                CallContext topCallCtx;
+                do {
+                    // FIXME: DCE can sometimes delete the end marker of functions if those never return
+                    //  (e.g., "reach_error() { abort(0); }").
+                    //  Here we try to also pop those calls that have missing markers.
+                    assert curContextStack.peek() instanceof CallContext;
+                    topCallCtx = (CallContext) curContextStack.pop();
+                } while (!topCallCtx.funCallMarker.getFunctionName().equals(retMarker.getFunctionName()));
             }
 
             if (loopMarkerTypesMap.containsKey(ev)) {
                 switch (loopMarkerTypesMap.get(ev)) {
-                    case START:
-                        curContextStack.push(new LoopContext(ev,1));
-                        break;
-                    case INC:
+                    case START -> curContextStack.push(new LoopContext(ev, 1));
+                    case INC -> {
                         assert curContextStack.peek() instanceof LoopContext;
-                        int iterNum = ((LoopContext)curContextStack.pop()).iterationNumber;
+                        int iterNum = ((LoopContext) curContextStack.pop()).iterationNumber;
                         curContextStack.push(new LoopContext(ev, iterNum + 1));
-                        break;
-                    case END:
+                    }
+                    case END -> {
                         assert curContextStack.peek() instanceof LoopContext;
                         curContextStack.pop();
-                        break;
+                    }
                 }
             }
         }
