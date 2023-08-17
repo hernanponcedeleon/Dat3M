@@ -48,6 +48,7 @@ public class IntrinsicsInsertion implements FunctionProcessor {
                     case "__VERIFIER_spin_end" -> inlineSpinEnd(call);
                     case "__VERIFIER_atomic_begin" -> inlineAtomicBegin(call);
                     case "__VERIFIER_atomic_end" -> inlineAtomicEnd(call);
+                    case "__VERIFIER_assume" -> inlineAssume(call);
                     case "pthread_mutex_init" -> inlinePthreadMutexInit(call);
                     case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
                     case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
@@ -88,6 +89,11 @@ public class IntrinsicsInsertion implements FunctionProcessor {
 
     private List<Event> inlineSpinEnd(DirectFunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newSpinEnd());
+    }
+
+    private List<Event> inlineAssume(DirectFunctionCall call) {
+        final Expression assumption = call.getArguments().get(0);
+        return List.of(EventFactory.newAssume(assumption));
     }
 
     private List<Event> inlineAtomicBegin(DirectFunctionCall ignored) {
