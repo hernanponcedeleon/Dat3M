@@ -71,7 +71,7 @@ public abstract class AbstractSvCompTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "unreach-call.prp"));
+            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf(".")) + ".yml", "unreach-call.prp"));
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, () -> Configuration.defaultConfiguration());
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);

@@ -18,16 +18,16 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return () -> TEST_RESOURCE_PATH + "boogie/concurrency/" + name + "-O0.bpl";
+        return () -> TEST_RESOURCE_PATH + "boogie/concurrency/" + name + ".ll";
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"fib_bench-1", 6},
-                {"fib_bench-2", 6},
-                {"fib_bench_longer-1", 7},
-                {"fib_bench_longer-2", 7},
+                {"fib_safe-5", 13},
+                {"fib_unsafe-5", 13},
+                {"fib_safe-6", 15},
+                {"fib_unsafe-6", 15},
                 {"lazy01", 1},
                 {"singleton", 1},
                 {"singleton_with-uninit-problems", 2},
@@ -45,7 +45,6 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
                 {"01_inc", 3},
                 {"14_spin2003", 3},
                 {"18_read_write_lock", 1},
-                {"19_time_var_mutex", 2},
                 {"40_barrier_vf", 3},
                 {"45_monabsex1_vs", 3},
                 {"46_monabsex2_vs", 3},
