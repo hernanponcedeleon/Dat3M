@@ -15,7 +15,7 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
     protected Register resultRegister;
 
     public Load(Register register, Expression address) {
-        super(address);
+        super(address, register.getType());
         this.resultRegister = register;
         addTags(Tag.READ);
     }

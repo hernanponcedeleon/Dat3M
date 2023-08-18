@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.linux;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
@@ -10,7 +11,7 @@ public class LKMMLock extends SingleAccessMemoryEvent {
     public LKMMLock(Expression lock) {
         // This event will be compiled to LKMMLockRead + LKMMLockWrite
         // and each of those will be assigned a proper memory ordering
-        super(lock, "");
+        super(lock, TypeFactory.getInstance().getArchType(), "");
     }
 
     protected LKMMLock(LKMMLock other) {

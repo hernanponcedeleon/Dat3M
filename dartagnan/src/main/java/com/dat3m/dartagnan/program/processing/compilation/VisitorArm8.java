@@ -57,7 +57,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -74,7 +74,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeZero(types.getArchType()), ARMv8.MO_REL)
+                newStoreWithMo(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()), ARMv8.MO_REL)
         );
     }
 
@@ -453,7 +453,7 @@ class VisitorArm8 extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadExclusive(dummy, address);
         Store store = newRMWStoreExclusive(address, storeValue, true);
@@ -573,7 +573,7 @@ class VisitorArm8 extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusiveWithMo(dummy, address, ARMv8.extractLoadMoFromLKMo(mo));
@@ -599,7 +599,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType) e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -615,7 +615,7 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
-        Expression zero = expressions.makeZero(types.getArchType());
+        Expression zero = expressions.makeZero((IntegerType)e.getAccessType());
         return eventSequence(
                 newStoreWithMo(e.getAddress(), zero, ARMv8.MO_REL)
         );
