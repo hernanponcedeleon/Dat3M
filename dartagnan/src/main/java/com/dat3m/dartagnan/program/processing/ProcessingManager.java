@@ -76,7 +76,7 @@ public class ProcessingManager implements ProgramProcessor {
         config.inject(this);
 
         programProcessors.addAll(Arrays.asList(
-                Intrinsics.MARK_INTRINSICS,
+                Intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
@@ -84,7 +84,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 Inlining.fromConfig(config),
-                                IntrinsicsInsertion.newInstance(),
+                                EarlyIntrinsicsInlining.newInstance(),
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),
@@ -111,7 +111,7 @@ public class ProcessingManager implements ProgramProcessor {
                 ),
                 ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
-                IntrinsicsInlining.fromConfig(config),
+                LateIntrinsicsInlining.fromConfig(config),
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.newInstance(),
                 // --- Statistics + verification ---

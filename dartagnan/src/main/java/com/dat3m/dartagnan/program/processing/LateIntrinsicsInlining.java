@@ -25,19 +25,24 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-public class IntrinsicsInlining implements ProgramProcessor {
+/*
+    This pass runs late in the processing chain, in particular after regular inlining, unrolling, SCCP, and thread creation.
+    Thus, the following conditions should be met:
+    - The intrinsics are live (reachable) and have constant input if possible.
+    - All code duplications ran: The replacement of the intrinsic will not get copied again.
+      This allows this pass to set up global state per replaced intrinsic without getting invalidated later.
+ */
+public class LateIntrinsicsInlining implements ProgramProcessor {
 
     // TODO: This id should be part of Program
     private int constantId;
     private int assertionId;
 
-    private IntrinsicsInlining() {
+    private LateIntrinsicsInlining() {
     }
 
-    public static IntrinsicsInlining fromConfig(Configuration ignored) throws InvalidConfigurationException {
-        return new IntrinsicsInlining();
+    public static LateIntrinsicsInlining fromConfig(Configuration ignored) throws InvalidConfigurationException {
+        return new LateIntrinsicsInlining();
     }
 
     @Override
@@ -50,17 +55,13 @@ public class IntrinsicsInlining implements ProgramProcessor {
         for (DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
             assert !call.getCallTarget().hasBody();
 
-            List<Event> replacement = switch (call.getCallTarget().getName()) {
+            final List<Event> replacement = switch (call.getCallTarget().getName()) {
                 case "__VERIFIER_nondet_bool",
                         "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                         "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                         "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
-                case "__assert_fail", "reach_error", "__assert_rtn" -> inlineAssert(call);
-                case "malloc" -> inlineMalloc(call);
-                //TODO model memory reclamation with events
-                case "free" -> List.of();
-                case "llvm.smax.i32", "llvm.umax.i32", "llvm.smin.i32", "llvm.umin.i32" -> inlineLLVMMinMax(call);
+                case "__assert_fail", "__assert_rtn" -> inlineAssert(call);
                 default -> throw new UnsupportedOperationException(
                         String.format("Undefined function %s", call.getCallTarget().getName()));
             };
@@ -133,29 +134,5 @@ public class IntrinsicsInlining implements ProgramProcessor {
         final Event jump = EventFactory.newGoto((Label) endOfThread);
         jump.addTags(Tag.EARLYTERMINATION);
         return List.of(flag, jump);
-    }
-
-    private List<Event> inlineMalloc(DirectFunctionCall callEvent) {
-        if (callEvent.getArguments().size() != 1) {
-            throw new UnsupportedOperationException(String.format("Unsupported signature for %s.", callEvent));
-        }
-        if (!(callEvent instanceof DirectValueFunctionCall call)) {
-            return List.of();
-        }
-        return List.of(EventFactory.Std.newMalloc(call.getResultRegister(), call.getArguments().get(0)));
-    }
-
-    private List<Event> inlineLLVMMinMax(DirectFunctionCall call) {
-        checkArgument(call instanceof DirectValueFunctionCall, "Unused call to intrinsic min/max function.");
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final List<Expression> arguments = call.getArguments();
-        final Expression left = arguments.get(0);
-        final Expression right = arguments.get(1);
-        final String name = call.getCallTarget().getName();
-        final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
-        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
-        final Expression isLess = expressions.makeLT(left, right, signed);
-        final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
-        return List.of(EventFactory.newLocal(((DirectValueFunctionCall) call).getResultRegister(), result));
     }
 }

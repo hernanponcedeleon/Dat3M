@@ -4,11 +4,12 @@ import com.dat3m.dartagnan.program.Function;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.function.BiPredicate;
 
 public class Intrinsics {
 
     public record Info(
-            String name,
+            String groupName, // Can end with a "*", in which case the variants are treated as prefixes
             List<String> variants,
             boolean writesMemory,
             boolean readsMemory,
@@ -16,6 +17,11 @@ public class Intrinsics {
     ) {
         public Info(String name, boolean writesMemory, boolean readsMemory, boolean alwaysReturns) {
             this(name, List.of(name), writesMemory, readsMemory, alwaysReturns);
+        }
+
+        private boolean matches(String funcName) {
+            BiPredicate<String, String> matchingFunction = groupName.endsWith("*") ? String::startsWith : String::equals;
+            return variants.stream().anyMatch(v -> matchingFunction.test(funcName, v));
         }
     }
 
@@ -37,12 +43,12 @@ public class Intrinsics {
             new Info("__VERIFIER_atomic_end", false, false, true),
             // --------------------------- __VERIFIER ---------------------------
             new Info("__VERIFIER_loop_begin", false, false, true),
-                        new Info("__VERIFIER_loop_bound", false, false, true),
+            new Info("__VERIFIER_loop_bound", false, false, true),
             new Info("__VERIFIER_spin_start", false, false, true),
             new Info("__VERIFIER_spin_end", false, false, true),
             new Info("__VERIFIER_assume",false, false, true),
             new Info("__VERIFIER_assert",false, false, false),
-            new Info("__VERIFIER_nondet_",
+            new Info("__VERIFIER_nondet",
                     List.of("__VERIFIER_nondet_bool",
                     "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                     "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -51,8 +57,8 @@ public class Intrinsics {
                     false, false, true
             ),
             // --------------------------- LLVM ---------------------------
-            new Info("llvm.minmax",
-                    List.of("llvm.smax.i32", "llvm.umax.i32", "llvm.smin.i32", "llvm.umin.i32"),
+            new Info("llvm.*",
+                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz"),
                     false, false, true),
             // --------------------------- LKMM ---------------------------
             new Info("__LKMM_LOAD", false, true, true),
@@ -68,7 +74,7 @@ public class Intrinsics {
             // --------------------------- Misc ---------------------------
             new Info("malloc", false, false, true),
             new Info("free", true, false, true),
-            new Info("__assert_fail", List.of("__assert_fail", "reach_error", "__assert_rtn"),
+            new Info("assert", List.of("__assert_fail", "__assert_rtn"),
                     false, false, false),
             new Info("exit", false, false, false),
             new Info("abort", false, false, false),
@@ -77,16 +83,18 @@ public class Intrinsics {
     ));
 
 
-    public static ProgramProcessor MARK_INTRINSICS = program -> {
-        for (Function func : program.getFunctions()) {
-            if (!func.hasBody()) {
-                final String funcName = func.getName();
-                final Info intrinsicsInfo = INTRINSICS.stream()
-                        .filter(info -> info.variants.contains(funcName))
-                        .findFirst()
-                        .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName ));
-                func.setIntrinsicInfo(intrinsicsInfo);
+    public static ProgramProcessor markIntrinsicsPass() {
+        return program -> {
+            for (Function func : program.getFunctions()) {
+                if (!func.hasBody()) {
+                    final String funcName = func.getName();
+                    final Info intrinsicsInfo = INTRINSICS.stream()
+                            .filter(info -> info.matches(funcName))
+                            .findFirst()
+                            .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName ));
+                    func.setIntrinsicInfo(intrinsicsInfo);
+                }
             }
-        }
-    };
+        };
+    }
 }

@@ -23,16 +23,22 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class IntrinsicsInsertion implements FunctionProcessor {
+/*
+    This pass runs early in the processing chain and resolves intrinsics whose semantics
+    can be captured by a sequence of other events.
+
+    TODO: We could insert the definitions here directly into the function declarations of the intrinsics.
+ */
+public class EarlyIntrinsicsInlining implements FunctionProcessor {
 
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    private IntrinsicsInsertion() {}
+    private EarlyIntrinsicsInlining() {}
 
-    public static IntrinsicsInsertion newInstance() {
-        return new IntrinsicsInsertion();
+    public static EarlyIntrinsicsInlining newInstance() {
+        return new EarlyIntrinsicsInlining();
     }
 
     @Override
@@ -40,25 +46,12 @@ public class IntrinsicsInsertion implements FunctionProcessor {
         currentAtomicBegin = null;
         for (final DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
             final List<Event> replacement;
-            if (isLKMMIntrinsic(call)) {
+            if (isLLVMIntrinsic(call)) {
+                replacement = handleLLVMIntrinsic(call);
+            } else if (isLKMMIntrinsic(call)) {
                 replacement = handleLKMMIntrinsic(call);
             } else {
-                replacement = switch (call.getCallTarget().getName()) {
-                    case "__VERIFIER_loop_begin" -> inlineLoopBegin(call);
-                    case "__VERIFIER_loop_bound" -> inlineLoopBound(call);
-                    case "__VERIFIER_spin_start" -> inlineSpinStart(call);
-                    case "__VERIFIER_spin_end" -> inlineSpinEnd(call);
-                    case "__VERIFIER_atomic_begin" -> inlineAtomicBegin(call);
-                    case "__VERIFIER_atomic_end" -> inlineAtomicEnd(call);
-                    case "__VERIFIER_assume" -> inlineAssume(call);
-                    case "pthread_mutex_init" -> inlinePthreadMutexInit(call);
-                    case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
-                    case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
-                    case "pthread_mutex_destroy" -> inlinePthreadMutexDestroy(call);
-                    case "exit", "abort" -> inlineExit(call);
-                    case "printf", "puts" -> List.of();
-                    default -> List.of(call);
-                };
+                replacement = handleDefaultIntrinsics(call);
             }
 
             if (replacement.isEmpty()) {
@@ -68,6 +61,29 @@ public class IntrinsicsInsertion implements FunctionProcessor {
                 replacement.forEach(e -> e.copyAllMetadataFrom(call));
             }
         }
+    }
+
+    private List<Event> handleDefaultIntrinsics(DirectFunctionCall call) {
+        final List<Event> replacement;
+        replacement = switch (call.getCallTarget().getName()) {
+            case "__VERIFIER_loop_begin" -> inlineLoopBegin(call);
+            case "__VERIFIER_loop_bound" -> inlineLoopBound(call);
+            case "__VERIFIER_spin_start" -> inlineSpinStart(call);
+            case "__VERIFIER_spin_end" -> inlineSpinEnd(call);
+            case "__VERIFIER_atomic_begin" -> inlineAtomicBegin(call);
+            case "__VERIFIER_atomic_end" -> inlineAtomicEnd(call);
+            case "__VERIFIER_assume" -> inlineAssume(call);
+            case "pthread_mutex_init" -> inlinePthreadMutexInit(call);
+            case "pthread_mutex_lock" -> inlinePthreadMutexLock(call);
+            case "pthread_mutex_unlock" -> inlinePthreadMutexUnlock(call);
+            case "pthread_mutex_destroy" -> inlinePthreadMutexDestroy(call);
+            case "exit", "abort" -> inlineExit(call);
+            case "malloc" -> inlineMalloc(call);
+            case "free" -> List.of(); // TODO add support for free
+            case "printf", "puts" -> List.of();
+            default -> List.of(call);
+        };
+        return replacement;
     }
 
     private List<Event> inlineExit(DirectFunctionCall ignored) {
@@ -133,6 +149,59 @@ public class IntrinsicsInsertion implements FunctionProcessor {
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
         return List.of(EventFactory.Pthread.newUnlock(lockName, lockAddress));
+    }
+
+    private List<Event> inlineMalloc(DirectFunctionCall call) {
+        if (call.getArguments().size() != 1) {
+            throw new UnsupportedOperationException(String.format("Unsupported signature for %s.", call));
+        }
+        final DirectValueFunctionCall valueCall = (DirectValueFunctionCall) call;
+        return List.of(EventFactory.Std.newMalloc(valueCall.getResultRegister(), valueCall.getArguments().get(0)));
+    }
+
+    // --------------------------------------------------------------------------------------------------------
+    // LLVM intrinsics
+
+    private boolean isLLVMIntrinsic(DirectFunctionCall call) {
+        return call.getCallTarget().getName().startsWith("llvm.");
+    }
+
+    private List<Event> handleLLVMIntrinsic(DirectFunctionCall call) {
+        assert call instanceof DirectValueFunctionCall;
+        final DirectValueFunctionCall valueCall = (DirectValueFunctionCall) call;
+        final String name = call.getCallTarget().getName();
+
+        if (name.startsWith("llvm.ctlz")) {
+            return inlineLLVMCtlz(valueCall);
+        } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
+            || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")) {
+            return inlineLLVMMinMax(valueCall);
+        } else {
+            final String error = String.format(
+                    "Call %s to LLVM intrinsic %s cannot be handled.", call, call.getCallTarget());
+            throw new UnsupportedOperationException(error);
+        }
+
+
+    }
+
+    private List<Event> inlineLLVMCtlz(DirectValueFunctionCall call) {
+        // TODO: Handle the second parameter as well
+        final Expression input = call.getArguments().get(0);
+        final Expression result = expressions.makeCTLZ(input, (IntegerType) call.getResultRegister().getType());
+        return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+    }
+
+    private List<Event> inlineLLVMMinMax(DirectValueFunctionCall call) {
+        final List<Expression> arguments = call.getArguments();
+        final Expression left = arguments.get(0);
+        final Expression right = arguments.get(1);
+        final String name = call.getCallTarget().getName();
+        final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
+        final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
+        final Expression isLess = expressions.makeLT(left, right, signed);
+        final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
+        return List.of(EventFactory.newLocal(call.getResultRegister(), result));
     }
 
     // --------------------------------------------------------------------------------------------------------
