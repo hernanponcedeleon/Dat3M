@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanFenceWithId;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -229,13 +228,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitControlBarrier(LitmusVulkanParser.ControlBarrierContext ctx) {
-        String mo = ctx.mo().content;
         String scope = ctx.scope().content;
-        String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
         Event fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
-        tagChecker(fence, false, mo, scope, "");
-        fence.addTags(scope, classSemantic);
+        fence.addTags(scope);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -270,10 +266,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         }
 
         // Check if mo is consistent with atomatic
-        if (mo.equals(Tag.Vulkan.ACQUIRE) && !atomatic) {
+        if (!(e.hasTag(Tag.FENCE)) && mo.equals(Tag.Vulkan.ACQUIRE) && !atomatic) {
             throw new ParsingException("Acquire mo must be atomatic");
         }
-        if (mo.equals(Tag.Vulkan.RELEASE) && !atomatic) {
+        if (!(e.hasTag(Tag.FENCE)) && mo.equals(Tag.Vulkan.RELEASE) && !atomatic) {
             throw new ParsingException("Release mo must be atomatic");
         }
 

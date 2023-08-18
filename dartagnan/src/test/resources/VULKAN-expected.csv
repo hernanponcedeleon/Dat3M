@@ -1,6 +1,15 @@
 litmus/VULKAN/asmo.litmus,1
 litmus/VULKAN/atomicsc.litmus,1
 litmus/VULKAN/atomwrongsc.litmus,1
+litmus/VULKAN/cbarinst.litmus,1
+litmus/VULKAN/corr.litmus,1
+litmus/VULKAN/corw.litmus,1
+litmus/VULKAN/cowr.litmus,1
+litmus/VULKAN/coww.litmus,1
+litmus/VULKAN/fencefence.litmus,1
+litmus/VULKAN/fencefence2.litmus,1
+litmus/VULKAN/fencefence3.litmus,1
+litmus/VULKAN/fencefencebroken.litmus,0
 litmus/VULKAN/ssw0.litmus,1
 litmus/VULKAN/ssw3.litmus,1
 litmus/VULKAN/privmp.litmus,1

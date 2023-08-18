@@ -66,6 +66,9 @@ let ithbsemsc01 = ( ssw |
 
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
+//let chains = (M | F | CBAR) * (M | F | CBAR)
+//let chains = [M | F | CBAR]
+
 let avsg = [AV & SG]
 let avwg = ((avsg; (hb & ssg & avvisinc))?); [AV & WG]
 let avqf = ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AV & QF]

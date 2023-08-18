@@ -143,7 +143,7 @@ memoryBarrier
     ;
 
 controlBarrier
-    :   ControlBarrier mo scope storageClassSemantic avvisSemantic barID
+    :   ControlBarrier scope barID
     ;
 
 barID

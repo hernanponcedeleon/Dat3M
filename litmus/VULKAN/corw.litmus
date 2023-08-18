@@ -1,0 +1,9 @@
+Vulkan corw
+{
+x=0;
+}
+ P0@sg 0, wg 0, qf 0                 | P1@sg 0,wg 1, qf 0                  | P2@sg 0,wg 2, qf 0                  ;
+ ld.atom.dv.sc0 r0, x                | st.atom.dv.sc0 x, 2                 | ld.atom.dv.sc0 r1, x                ;
+ st.atom.dv.sc0 x, 1                 |                                     | ld.atom.dv.sc0 r2, x                ;
+~exists
+(P0:r0 == 2 /\ P2:r1 == 1 /\ P2:r2 == 2)
