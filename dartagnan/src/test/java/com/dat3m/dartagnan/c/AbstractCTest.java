@@ -52,7 +52,11 @@ public abstract class AbstractCTest {
     }
 
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> Property.getDefault());
+        return Provider.fromSupplier(Property::getDefault);
+    }
+
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Configuration::defaultConfiguration;
     }
 
     // =============================================================
@@ -69,7 +73,8 @@ public abstract class AbstractCTest {
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, () -> Configuration.defaultConfiguration());
+    protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configurationProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
 
@@ -81,6 +86,7 @@ public abstract class AbstractCTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
+            .around(configurationProvider)
             .around(filePathProvider)
             .around(boundProvider)
             .around(programProvider)

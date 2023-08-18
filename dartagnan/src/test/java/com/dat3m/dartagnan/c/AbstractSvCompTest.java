@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -59,6 +61,18 @@ public abstract class AbstractSvCompTest {
         return Property::getDefault;
     }
 
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(() -> {
+            Configuration config = Configuration.builder()
+                            .setOption(OptionNames.ARCH_PRECISION, "64")
+                            .setOption(OptionNames.MIXED_TYPE, "true")
+                            .build();
+            // FIXME: Setting the global settings here is super fishy, but we have no other choice for now...
+            GlobalSettings.configure(config);
+            return config;
+        });
+    }
+
     @ClassRule
     public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
 
@@ -72,7 +86,8 @@ public abstract class AbstractSvCompTest {
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
             readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf(".")) + ".yml", "unreach-call.prp"));
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, () -> Configuration.defaultConfiguration());
+    protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configurationProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
@@ -85,6 +100,7 @@ public abstract class AbstractSvCompTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
+            .around(configurationProvider)
             .around(filePathProvider)
             .around(boundProvider)
             .around(programProvider)
