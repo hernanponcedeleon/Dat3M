@@ -52,14 +52,15 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        IntegerType type = (IntegerType) e.getAccessType();
+        Register dummy = e.getFunction().newRegister(type);
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress()),
                 newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),
-                Power.newRMWStoreConditional(e.getAddress(), expressions.makeOne(types.getArchType()), true),
+                Power.newRMWStoreConditional(e.getAddress(), expressions.makeOne(type), true),
                 // Fake dependency to guarantee acquire semantics
                 newFakeCtrlDep(dummy, label),
                 label,
@@ -70,7 +71,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType())));
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())));
     }
 
     // =============================================================================================
@@ -737,7 +738,7 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         // Power does not have mo tags, thus we use the empty string
         Load load = newRMWLoadExclusive(dummy, address);
@@ -877,7 +878,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address);
@@ -909,7 +910,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -930,7 +931,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
         );
     }
 

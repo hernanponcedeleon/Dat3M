@@ -20,7 +20,7 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
     private Expression cmp;
 
     public LKMMAddUnless(Register register, Expression address, Expression operand, Expression cmp) {
-        super(address, Tag.Linux.MO_MB);
+        super(address, register.getType(), Tag.Linux.MO_MB);
         this.resultRegister = register;
         this.operand = operand;
         this.cmp = cmp;
@@ -79,8 +79,8 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitLKMMAddUnless(this);
-	}
+        return visitor.visitLKMMAddUnless(this);
+    }
 
     @Override
     public MemoryAccess getMemoryAccess() {

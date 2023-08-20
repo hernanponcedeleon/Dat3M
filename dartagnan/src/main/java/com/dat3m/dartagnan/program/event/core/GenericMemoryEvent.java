@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public class GenericMemoryEvent extends AbstractMemoryCoreEvent implements Memor
     private final String displayName;
 
     public GenericMemoryEvent(Expression address, String displayName) {
-        super(address);
+        super(address, TypeFactory.getInstance().getArchType()); // TODO: Maybe a void type would be fine here
         this.displayName = displayName;
     }
 

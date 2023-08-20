@@ -13,7 +13,7 @@ public abstract class LoadBase extends SingleAccessMemoryEvent implements RegWri
     protected Register resultRegister;
 
     public LoadBase(Register register, Expression address, String mo) {
-        super(address, mo);
+        super(address, register.getType(), mo);
         this.resultRegister = register;
         addTags(Tag.READ);
     }

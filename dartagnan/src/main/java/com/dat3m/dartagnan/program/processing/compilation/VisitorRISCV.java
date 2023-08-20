@@ -61,7 +61,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType)e.getAccessType();
         Register dummy = e.getFunction().newRegister(type);
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
@@ -80,7 +80,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
         );
     }
 
@@ -497,7 +497,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType)e.getAccessType();
 
         Register dummy = e.getFunction().newRegister(type);
         Register statusReg = e.getFunction().newRegister(types.getBooleanType());
@@ -646,7 +646,7 @@ class VisitorRISCV extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load load = newRMWLoadExclusive(dummy, address); // TODO: No mo on the load?
@@ -672,7 +672,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType)e.getAccessType();
         Expression one = expressions.makeOne(type);
         Expression zero = expressions.makeZero(type);
         Register dummy = e.getFunction().newRegister(type);
@@ -691,7 +691,7 @@ class VisitorRISCV extends VisitorBase {
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType()))
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
         );
     }
 }

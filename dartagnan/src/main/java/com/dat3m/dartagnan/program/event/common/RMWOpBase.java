@@ -20,7 +20,7 @@ public abstract class RMWOpBase extends SingleAccessMemoryEvent {
     protected Expression operand;
 
     protected RMWOpBase(Expression address, IOpBin operator, Expression operand, String mo) {
-        super(address, mo);
+        super(address, operand.getType(), mo);
         this.operator = operator;
         this.operand = operand;
         addTags(READ, WRITE, RMW);

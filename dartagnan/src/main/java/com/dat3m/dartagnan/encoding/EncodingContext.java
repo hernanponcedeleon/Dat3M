@@ -198,6 +198,10 @@ public final class EncodingContext {
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
+        //FIXME: We should avoid the automatic conversion, or standardize what conversion we expect.
+        // For example, when encoding rf(w, r), we always want to convert the store value type to the read value type
+        // for otherwise, we might get an under-constrained value for val(r) (e.g., its upper bits might be unconstrained,
+        // if we truncate it to smaller size of the store value).
         if (left instanceof IntegerFormula l) {
             IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
             return integerFormulaManager.equal(l, toInteger(right));
@@ -236,15 +240,17 @@ public final class EncodingContext {
             BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
             return bitvectorFormulaManager.toIntegerFormula(f, false);
         }
-        throw new UnsupportedOperationException(String.format("Unkown type for toInteger(%s).", formula));
+        throw new UnsupportedOperationException(String.format("Unknown type for toInteger(%s).", formula));
     }
 
     private BitvectorFormula toBitvector(Formula formula, int length) {
         BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
         if (formula instanceof BitvectorFormula f) {
             int formulaLength = bitvectorFormulaManager.getLength(f);
-            // Signedness may be wrong here:
-            return formulaLength >= length ? f : bitvectorFormulaManager.extend(f, length - formulaLength, false);
+            // FIXME: Signedness may be wrong here.
+            return formulaLength >= length ?
+                    bitvectorFormulaManager.extract(f, length - 1, 0)
+                    : bitvectorFormulaManager.extend(f, length - formulaLength, false);
         }
         if (formula instanceof BooleanFormula f) {
             BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
