@@ -11,7 +11,7 @@ public class LKMMLock extends SingleAccessMemoryEvent {
     public LKMMLock(Expression lock) {
         // This event will be compiled to LKMMLockRead + LKMMLockWrite
         // and each of those will be assigned a proper memory ordering
-        super(lock, TypeFactory.getInstance().getArchType(), "");
+        super(lock, TypeFactory.getInstance().getIntegerType(32), "");
     }
 
     protected LKMMLock(LKMMLock other) {
