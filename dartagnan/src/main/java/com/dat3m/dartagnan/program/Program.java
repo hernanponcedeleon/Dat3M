@@ -2,7 +2,9 @@ package com.dat3m.dartagnan.program;
 
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Program {
@@ -106,11 +109,40 @@ public class Program {
         func.setProgram(this);
     }
 
+    // Ensures that a function with name and type exists in this program.
+    public Function declareFunction(String name, FunctionType type, List<String> parameterNames) {
+        for (Function function : functions) {
+            if (!function.getName().equals(name)) {
+                continue;
+            }
+            if (function.getType().equals(type)) {
+                return function;
+            }
+            throw new MalformedProgramException(String.format("Unexpected type for intrinsic function \"%s\"", name));
+        }
+        //TODO this may not be unique
+        int id = functions.size();
+        Function function = new Function(name, type, parameterNames, id, null);
+        functions.add(function);
+        function.setProgram(this);
+        return function;
+    }
+
     public List<Thread> getThreads() {
         return threads;
     }
 
     public List<Function> getFunctions() { return functions; }
+
+    // Looks up a declared function by name.
+    public Optional<Function> getFunctionByName(String name) {
+        for (Function function : functions) {
+            if (function.getName().equals(name)) {
+                return Optional.of(function);
+            }
+        }
+        return Optional.empty();
+    }
 
     public void addConstant(INonDet constant) {
         constants.add(constant);

@@ -18,9 +18,7 @@ public class StaticMemoryInitializer implements ProgramProcessor {
     @Override
     public void run(Program program) {
         if (program.getFormat() == Program.SourceLanguage.BOOGIE) {
-            program.getFunctions().stream()
-                    .filter(f -> f.getName().equals("__SMACK_static_init"))
-                    .findFirst().ifPresent(this::initMemory);
+            program.getFunctionByName("__SMACK_static_init").ifPresent(this::initMemory);
         }
     }
 

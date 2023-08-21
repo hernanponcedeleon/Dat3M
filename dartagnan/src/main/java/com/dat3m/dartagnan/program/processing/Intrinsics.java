@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -84,17 +86,25 @@ public class Intrinsics {
 
 
     public static ProgramProcessor markIntrinsicsPass() {
-        return program -> {
-            for (Function func : program.getFunctions()) {
-                if (!func.hasBody()) {
-                    final String funcName = func.getName();
-                    final Info intrinsicsInfo = INTRINSICS.stream()
-                            .filter(info -> info.matches(funcName))
-                            .findFirst()
-                            .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName ));
-                    func.setIntrinsicInfo(intrinsicsInfo);
-                }
+        return Intrinsics::markIntrinsics;
+    }
+
+    private static void markIntrinsics(Program program) {
+        for (Function func : program.getFunctions()) {
+            if (!func.hasBody()) {
+                final String funcName = func.getName();
+                final Info intrinsicsInfo = INTRINSICS.stream()
+                        .filter(info -> info.matches(funcName))
+                        .findFirst()
+                        .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName ));
+                func.setIntrinsicInfo(intrinsicsInfo);
             }
-        };
+        }
+        TypeFactory types = TypeFactory.getInstance();
+        // used by VisitorLKMM
+        program.declareFunction(
+                "__VERIFIER_nondet_bool",
+                types.getFunctionType(types.getBooleanType(), List.of()),
+                List.of());
     }
 }

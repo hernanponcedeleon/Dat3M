@@ -153,9 +153,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitFuncDef(FuncDefContext ctx) {
         // Assert the function was already declared from visitFuncHeader
         final String name = globalIdent(ctx.funcHeader().GlobalIdent());
-        function = program.getFunctions().stream()
-                .filter(f -> f.getName().equals(name))
-                .findAny().orElseThrow();
+        function = program.getFunctionByName(name).orElseThrow();
         // The grammar requires at least one block, thus an entry and an exit.
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             block = getBlock(basicBlockContext.LabelIdent());
