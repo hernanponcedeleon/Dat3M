@@ -21,22 +21,21 @@ SPIRV
 (*******************)
 (*  Auxiliaries *)
 (*******************)
-let mutordatom = [ATOM]; ((loc & vloc & sr) \ id); [ATOM] // mutually ordered atomics (same loc, inscope)
+let mutordatom = (loc & vloc & sr & (ATOM * ATOM)) \ id // mutually ordered atomics (same loc, inscope)
 
-let sctosem = SC0 * SEMSC0 | SC1 * SEMSC1
-let semtosc = SEMSC0 * SC0 | SEMSC1 * SC1
-
-let avvisSem = ((SC0 | SC1) * ((AV | VIS) & DV)) | (sctosem; [SEMAV | SEMVIS])
+let avvisSem = ((SC0 | SC1) * ((AV | VIS) & DV))
+                | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
+                | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
 let avvisSet = [AV | VIS]; (vloc & loc)
 let avvisinc = (avvisSem | avvisSem^-1) \ id |
                (avvisSet | avvisSet^-1)
 
-let posctosem = sctosem & po
-let posemtosc = semtosc & po
+let posctosem = (SC0 * SEMSC0 | SC1 * SEMSC1) & po
+let posemtosc = (SEMSC0 * SC0 | SEMSC1 * SC1) & po
 
-let asmo = [ATOM & W]; mutordatom; [ATOM & W]
-let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])*
-let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])*
+let asmo = co & (ATOM * ATOM)
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = sr & (
@@ -66,19 +65,19 @@ let ithbsemsc01 = ( ssw |
 
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
-//let chains = (M | F | CBAR) * (M | F | CBAR)
 //let chains = [M | F | CBAR]
+let chains = (M | F | CBAR) * (M | F | CBAR) // TODO: unsound for litmus tests with NOCHAINS assertions
 
 let avsg = [AV & SG]
-let avwg = ((avsg; (hb & ssg & avvisinc))?); [AV & WG]
-let avqf = ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AV & QF]
-let avsh = ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?); [AV & SHADER]
+let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AV & WG]
+let avqf = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AV & QF]
+let avsh = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?); [AV & SHADER]
 let avdv = [AV & DV]
 
 let vissg = [VIS & SG]
-let viswg = [VIS & WG]; (((hb & ssg & avvisinc); vissg)?)
-let visqf = [VIS & QF]; (((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
-let vissh = [VIS & SHADER]; (((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
+let viswg = [VIS & WG]; (chains & ((hb & ssg & avvisinc); vissg)?)
+let visqf = [VIS & QF]; (chains & ((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
+let vissh = [VIS & SHADER]; (chains & ((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
 let visdv = [VIS & DV]
 
 // loc order, relates memory accesses to the same location
@@ -86,21 +85,21 @@ let locord = loc &
              (  (hb & int & vloc) |
                 ([R \ PRIV]; hb; [R | W \ PRIV]) | // RaR, WaR (non-private)
                 ([R]; ssw+; [R | W]) | // RaR, WaR (any)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                         [W \ PRIV])) |                                 // WaW (via subgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po?; avvisinc); [R \ PRIV]; (po? & avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                         [W \ PRIV])) |                                 // WaW (via subgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po?; avvisinc); [R \ PRIV]; (po? & avvisinc); [R \ PRIV])) |   // RaW (via workgroup instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                         [W \ PRIV])) |                                 // WaW (via queue family instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po?; avvisinc); [R \ PRIV]; (po? & avvisinc); [R \ PRIV])) |   // RaW (via queue family instance domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                               [W \ PRIV])) |                                 // WaW (via shader domain)
-                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po?; avvisinc); [R \ PRIV]; (po? & avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
-                (       ([W];        (hb & avvisinc);  avdv; (hb);                               [W])) |                                        // WaW (via device domain)
-                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc); [R]; (po? & avvisinc); [R \ PRIV]))            // RaW (via device domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                         [W \ PRIV])) |   // WaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po?; avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                         [W \ PRIV])) |   // WaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po?; avvisinc); [R \ PRIV])) |   // RaW (via workgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                         [W \ PRIV])) |   // WaW (via queue family instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po?; avvisinc); [R \ PRIV])) |   // RaW (via queue family instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                               [W \ PRIV])) |   // WaW (via shader domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po?; avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);                               [W]))        |   // WaW (via device domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc); [R]))            // RaW (via device domain)
              )
 
 let w-locord = [W]; locord
 
-let visto = (w-locord \ (w-locord; w-locord)); [R] // visible to = location ordered W->R with no intervening write (W->W->R)
+let visto = (w-locord \ (w-locord; w-locord+)); [R] // visible to = location ordered W->R with no intervening write (W->W->R)
 (*******************)
 
 
@@ -108,7 +107,7 @@ let visto = (w-locord \ (w-locord; w-locord)); [R] // visible to = location orde
 (* restrictions *)
 (****************)
 // rai[asmo] = ((A&W) -> (A&W)) & mutordatom
-empty ([A&W]; mutordatom; [A&W]) \ (asmo | asmo^-1) as coherence
+empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 
 (***********************)
 (* Memory Model Axioms *)
@@ -122,6 +121,5 @@ let read-write = (R \ W) * (R \ W) // exclude RMWs
 empty (((locord | locord^-1) | mutordatom \ read-write) \ (loc \ id \ read-write)) as locord-complete
 
 (* data_races *)
-let race-pair = W * W | W * R | R * W
-let dr = loc & (race-pair \ mutordatom \ id \ (locord | locord^-1))
+let dr = loc & (W * W | W * R | R * W \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy
