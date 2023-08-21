@@ -16,7 +16,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_RISCV       = "RISCV";
     private static final String TYPE_LITMUS_X86         = "X86";
     private static final String TYPE_LITMUS_PTX         = "PTX";
-    private static final String TYPE_LITMUS_VULKAN       = "VULKAN";
+    private static final String TYPE_LITMUS_VULKAN      = "VULKAN";
     private static final String TYPE_LITMUS_LISA        = "LISA";
     private static final String TYPE_LITMUS_C           = "C";
 

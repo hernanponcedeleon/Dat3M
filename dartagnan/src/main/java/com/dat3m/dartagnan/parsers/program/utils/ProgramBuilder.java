@@ -286,15 +286,16 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
 
-    public void newScopedThread(Arch arch, String name, int id, int ...ids) {
+    public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
-        Thread ptxThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, EventFactory.newThreadStart(null));
-        ptxThread.optScopeHierarchy = Optional.of(new ScopeHierarchy(arch, ids));
-        id2FunctionsMap.put(id, ptxThread);
-        program.addThread(ptxThread);
+        ThreadStart threadEntry = EventFactory.newThreadStart(null);
+        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, EventFactory.newThreadStart(null));
+        scopedThread.optScopeHierarchy = Optional.of(new ScopeHierarchy(arch, scopeIds));
+        id2FunctionsMap.put(id, scopedThread);
+        program.addThread(scopedThread);
     }
 
     public void newScopedThread(Arch arch, int id, int ...ids) {
