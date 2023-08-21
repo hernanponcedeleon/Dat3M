@@ -72,7 +72,7 @@ Usage
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
-java -jar ui/target/ui-3.1.1.jar
+java -jar ui/target/ui.jar
 ```
 <p align="center"> 
 <img src="ui/src/main/resources/ui.jpg">
@@ -88,7 +88,7 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan-3.1.1.jar <CAT file> [--target=<arch>] <program file> [options]
+java -jar dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
 For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
 - c11
