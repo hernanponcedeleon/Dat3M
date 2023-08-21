@@ -44,13 +44,14 @@ public class ProgramParser {
     }
 
     private boolean needsSmack(File f) {
-        return needsClang(f);
+        return needsClang(f) || f.getPath().endsWith(".ll");
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
         	case "c":
         	case "i":
+        	case "ll":
 				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :

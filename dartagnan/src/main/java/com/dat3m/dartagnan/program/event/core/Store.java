@@ -16,7 +16,7 @@ public class Store extends AbstractMemoryCoreEvent {
     protected Expression value;
 
     public Store(Expression address, Expression value) {
-        super(address);
+        super(address, value.getType());
         this.value = value;
         addTags(Tag.WRITE);
     }

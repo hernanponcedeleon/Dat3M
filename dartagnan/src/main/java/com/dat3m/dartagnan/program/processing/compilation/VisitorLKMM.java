@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -105,7 +105,7 @@ public class VisitorLKMM extends VisitorBase {
     public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
         Expression address = e.getAddress();
 
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.MO_ONCE);
         load.addTags(Tag.Linux.NORETURN);
@@ -199,7 +199,7 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression nonzeroDummy = expressions.makeBooleanCast(dummy);
 
         Load lockRead = newLockRead(dummy, e.getLock());
@@ -248,7 +248,7 @@ public class VisitorLKMM extends VisitorBase {
     }
 
     private static RMWStore newLockWrite(Load lockRead, Expression lockAddr) {
-        Expression one = ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType());
+        Expression one = ExpressionFactory.getInstance().makeOne((IntegerType) lockRead.getAccessType());
         RMWStore lockWrite = newRMWStoreWithMo(lockRead, lockAddr, one, Tag.Linux.MO_ONCE);
         lockWrite.addTags(Tag.Linux.LOCK_WRITE);
         return lockWrite;

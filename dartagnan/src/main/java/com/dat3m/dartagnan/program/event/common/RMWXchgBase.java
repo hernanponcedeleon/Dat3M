@@ -17,7 +17,7 @@ public abstract class RMWXchgBase extends SingleAccessMemoryEvent implements Reg
     protected Expression storeValue;
 
     protected RMWXchgBase(Register register, Expression address, Expression value, String mo) {
-        super(address, mo);
+        super(address, register.getType(), mo);
         this.resultRegister = register;
         this.storeValue = value;
         addTags(READ, WRITE, RMW);

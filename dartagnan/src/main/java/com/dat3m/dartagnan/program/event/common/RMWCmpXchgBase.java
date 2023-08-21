@@ -21,7 +21,7 @@ public abstract class RMWCmpXchgBase extends SingleAccessMemoryEvent implements 
 
     protected RMWCmpXchgBase(Register register, Expression address, Expression expectedValue, Expression storeValue,
                              boolean isStrong, String mo) {
-        super(address, mo);
+        super(address, register.getType(), mo);
         this.resultRegister = register;
         this.expectedValue = expectedValue;
         this.storeValue = storeValue;

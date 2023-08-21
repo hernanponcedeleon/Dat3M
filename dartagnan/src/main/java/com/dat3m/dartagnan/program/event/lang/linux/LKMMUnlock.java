@@ -23,7 +23,7 @@ public class LKMMUnlock extends StoreBase {
     });
 
     public LKMMUnlock(Expression lock) {
-        super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()), MO_RELEASE);
+        super(lock, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getIntegerType(32)), MO_RELEASE);
         addTags(Tag.Linux.UNLOCK);
     }
 

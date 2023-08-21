@@ -49,7 +49,7 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = types.getArchType();
+        IntegerType type = (IntegerType)e.getAccessType();
         Register dummy = e.getFunction().newRegister(type);
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
@@ -64,7 +64,7 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStore(e.getAddress(), expressions.makeZero(types.getArchType())),
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())),
                 X86.newMemoryFence()
         );
     }

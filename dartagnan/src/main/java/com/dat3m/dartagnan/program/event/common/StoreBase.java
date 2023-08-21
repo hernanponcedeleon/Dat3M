@@ -14,7 +14,7 @@ public abstract class StoreBase extends SingleAccessMemoryEvent {
     protected Expression value;
 
     public StoreBase(Expression address, Expression value, String mo) {
-        super(address, mo);
+        super(address, value.getType(), mo);
         this.value = value;
         addTags(Tag.WRITE);
     }
