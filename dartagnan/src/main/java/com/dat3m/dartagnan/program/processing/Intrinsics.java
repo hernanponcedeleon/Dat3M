@@ -90,6 +90,13 @@ public class Intrinsics {
     }
 
     private static void markIntrinsics(Program program) {
+        TypeFactory types = TypeFactory.getInstance();
+        // used by VisitorLKMM
+        program.declareFunction(
+                "__VERIFIER_nondet_bool",
+                types.getFunctionType(types.getBooleanType(), List.of()),
+                List.of());
+
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
                 final String funcName = func.getName();
@@ -100,11 +107,5 @@ public class Intrinsics {
                 func.setIntrinsicInfo(intrinsicsInfo);
             }
         }
-        TypeFactory types = TypeFactory.getInstance();
-        // used by VisitorLKMM
-        program.declareFunction(
-                "__VERIFIER_nondet_bool",
-                types.getFunctionType(types.getBooleanType(), List.of()),
-                List.of());
     }
 }

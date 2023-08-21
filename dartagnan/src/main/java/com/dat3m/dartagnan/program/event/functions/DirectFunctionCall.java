@@ -31,7 +31,7 @@ public abstract class DirectFunctionCall extends AbstractEvent implements RegRea
             Preconditions.checkArgument(arguments.get(i).getType().equals(paramTypes.get(i)));
         }
         this.callTarget = func;
-        this.arguments = arguments;
+        this.arguments = new ArrayList<>(arguments);
     }
 
     protected DirectFunctionCall(DirectFunctionCall other) {
