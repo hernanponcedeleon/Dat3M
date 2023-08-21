@@ -34,7 +34,13 @@ public class Compilation {
 
 	public static File applyLlvmPasses(File file) throws Exception {
 		final String outputFileName = getOutputName(file, "-opt.ll");
-		ArrayList<String> cmd = new ArrayList<>(asList("atomic-replace", file.getAbsolutePath(), outputFileName));
+        ArrayList<String> cmd = new ArrayList<>();
+    	cmd.add("opt");
+		Collections.addAll(cmd, System.getenv().getOrDefault("ATOMIC_REPLACE_OPTS", "").split(" "));
+    	cmd.add(file.getAbsolutePath());
+    	cmd.add("-S");
+    	cmd.add("-o");
+    	cmd.add(outputFileName);
 		runCmd(cmd);
 		return new File(outputFileName);
 	}

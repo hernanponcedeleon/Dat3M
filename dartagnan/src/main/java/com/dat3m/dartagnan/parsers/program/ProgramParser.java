@@ -25,7 +25,7 @@ public class ProgramParser {
                 file = compileWithClang(file, "");
             }
             file = applyLlvmPasses(file);
-            file = compileWithSmack(file, "");
+            // file = compileWithSmack(file, "");
             return new ProgramParser().parse(file);
         }
 
