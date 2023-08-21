@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -229,9 +229,11 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitControlBarrier(LitmusVulkanParser.ControlBarrierContext ctx) {
         String scope = ctx.scope().content;
+        String mo = ctx.mo().content;
+        String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        Event fence = EventFactory.Vulkan.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
-        fence.addTags(scope);
+        Event fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        fence.addTags(scope, mo, classSemantic);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -245,7 +247,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
                 throw new ParsingException("Loads must be relaxed, acquire or visible");
             }
-        } else if (e.hasTag(Tag.FENCE) && !(e instanceof VulkanFenceWithId)) {
+        } else if (e.hasTag(Tag.FENCE) && !(e instanceof FenceWithId)) {
             if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)
                     && !mo.equals(Tag.Vulkan.AVAILABLE) && !mo.equals(Tag.Vulkan.VISIBLE)) {
                 throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");

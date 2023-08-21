@@ -130,7 +130,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic mo scope storageClass storageClassSemantic avvisSemantic Comma location register Comma constant
+    :   RMW atomatic mo scope storageClass storageClassSemantic avvisSemantic register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -143,7 +143,7 @@ memoryBarrier
     ;
 
 controlBarrier
-    :   ControlBarrier scope barID
+    :   ControlBarrier mo scope storageClassSemantic avvisSemantic barID
     ;
 
 barID
@@ -207,6 +207,7 @@ storageClassSemantic returns [String content]
 avvisSemantic returns [String content]
     :   Period SemVis {$content = "SEMVIS";}
     |   Period SemAv {$content = "SEMAV";}
+    |   Period SemAvvis {$content = "SEMAVVIS";}
     |   {$content = "";}
     ;
 
@@ -247,6 +248,7 @@ Nonprivate      :   'nonpriv';
 
 SemVis          :   'semvis';
 SemAv           :   'semav';
+SemAvvis       :   'semavvis';
 
 Sc0             :   'sc0';
 Sc1             :   'sc1';

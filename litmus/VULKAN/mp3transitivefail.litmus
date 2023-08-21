@@ -1,0 +1,18 @@
+Vulkan mptransitivefail
+"Missing AVWG in invocation 0, so AVDEV in invocation 1 isn't sufficient"
+"TODO: CHAINS"
+{
+P1:r0=0;
+P2:r1=0;
+P3:r2=0;
+P3:r3=0;
+w=0;
+x=0;
+y=0;
+z=0;
+}
+ P0@sg 0, wg 0, qf 0                  | P1@sg 1,wg 0, qf 0                    | P2@sg 0,wg 1, qf 0                       | P3@sg 1,wg 1, qf 0                       ;
+ st.nonpriv.sc0 x, 1                  | ld.atom.acq.wg.sc1.semsc01 r0, y      | ld.atom.acq.dv.sc1.semsc01.semvis r1, z  | ld.atom.acq.wg.sc1.semsc01.semvis r2, w  ;
+ st.atom.rel.wg.sc1.semsc01 y, 1      | st.atom.rel.dv.sc1.semsc01.semav z, 1 | st.atom.rel.wg.sc1.semsc01 w, 1          | ld.nonpriv.sc0 r3, x                     ;
+exists
+(P1:r0 == 1 /\ P2:r1 == 1 /\ P3:r2 == 1)

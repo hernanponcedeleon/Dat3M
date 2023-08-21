@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.FenceWithId;
 import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -1004,9 +1004,9 @@ public class RelationAnalysis {
         public Knowledge visitSyncBarrier(Relation sync_bar) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            List<PTXFenceWithId> fenceEvents = program.getThreadEvents(PTXFenceWithId.class);
-            for (PTXFenceWithId e1 : fenceEvents) {
-                for (PTXFenceWithId e2 : fenceEvents) {
+            List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
+            for (FenceWithId e1 : fenceEvents) {
+                for (FenceWithId e2 : fenceEvents) {
                     if(exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }

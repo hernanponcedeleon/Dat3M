@@ -10,10 +10,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanFenceWithId;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
@@ -697,8 +696,8 @@ public class EventFactory {
             return red;
         }
 
-        public static PTXFenceWithId newFenceWithId(String name, Expression fenceId) {
-            return new PTXFenceWithId(name, fenceId);
+        public static FenceWithId newFenceWithId(String name, Expression fenceId) {
+            return new FenceWithId(name, fenceId);
         }
     }
 
@@ -713,10 +712,6 @@ public class EventFactory {
             VulkanRMW atom = new VulkanRMW(register, address, value, mo);
             atom.addTags(scope);
             return atom;
-        }
-
-        public static VulkanFenceWithId newFenceWithId(String name, Expression fenceId) {
-            return new VulkanFenceWithId(name, fenceId);
         }
     }
 

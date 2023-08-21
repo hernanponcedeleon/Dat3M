@@ -1,15 +1,14 @@
-VULKAN asmo
-"Passes, SSW between W+AV -> VIS+R"
+VULKAN ssw0
 {
-P1:r0=0;
+P2:r0=0;
 x=0;
 }
 {
 ssw 0 1;
 ssw 1 2;
 }
- P0@sg 0,wg 0, qf 0               | P1@sg 0,wg 1, qf 0               | P2@sg 0,wg 1, qf 0               ;
- st.priv.sc0 x, 1                 | membar.av.dv                     | ld.dv.sc0 r0, x                  ;
+ P0@sg 0,wg 0, qf 0               | P1@sg 1,wg 0, qf 0               | P2@sg 2,wg 0, qf 0               ;
+ st.priv.sc0 x, 1                 | membar.av.dv                     | ld.priv.sc0 r0, x                ;
                                   | membar.vis.dv                    |                                  ;
-~exists
-(P1:r0 == 1)
+exists
+(P2:r0 == 1)

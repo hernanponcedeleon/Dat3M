@@ -1,7 +1,11 @@
-Vulkan fencefence2
+Vulkan fencefence3
 {
+P1:r0=0;
+P2:r1=0;
+P2:r2=0;
 x=0;
 y=0;
+z=0;
 }
  P0@sg 0, wg 0, qf 0                 | P1@sg 1,wg 0, qf 0                  | P2@sg 1,wg 0, qf 0                  ;
  st.av.dv.sc0 x, 1                   | ld.atom.wg.sc0 r0, y                | ld.atom.wg.sc0 r1, z                ;

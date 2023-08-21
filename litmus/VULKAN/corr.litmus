@@ -1,5 +1,12 @@
-Vulkan cbarinst
+Vulkan corr
+"CoRR litmus test. Coherence order for x is 1,2, and is "enforced" by the"
+"second invocation observing it. The first invocation can't see the stores"
+"out of order."
 {
+P0: r0=0;
+P0: r1=0;
+P1: r2=0;
+P1: r3=0;
 x=0;
 }
  P0@sg 0, wg 0, qf 0                 | P1@sg 0,wg 1, qf 0                  | P2@sg 0,wg 2, qf 0                  | P3@sg 0,wg 3, qf 0                  ;

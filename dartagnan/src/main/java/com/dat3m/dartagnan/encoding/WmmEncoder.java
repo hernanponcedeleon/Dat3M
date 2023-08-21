@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
@@ -613,8 +613,8 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
-                PTXFenceWithId e1 = (PTXFenceWithId) tuple.getFirst();
-                PTXFenceWithId e2 = (PTXFenceWithId) tuple.getSecond();
+                FenceWithId e1 = (FenceWithId) tuple.getFirst();
+                FenceWithId e2 = (FenceWithId) tuple.getSecond();
                 BooleanFormula sameId;
                 // If they are in must, they are guaranteed to have the same id
                 if (k.containsMust(tuple)) {

@@ -1,5 +1,7 @@
 Vulkan fencefence2
 {
+P1: r0 = 0;
+P0: r1 = 0;
 x=0;
 y=0;
 }
