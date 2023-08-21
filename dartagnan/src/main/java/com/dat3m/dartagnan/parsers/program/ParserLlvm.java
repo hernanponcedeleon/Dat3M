@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.LLVMIRLexer;
 import com.dat3m.dartagnan.parsers.LLVMIRParser;
 import com.dat3m.dartagnan.parsers.program.visitors.VisitorLlvm;
 import com.dat3m.dartagnan.program.Program;
-import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -17,7 +16,6 @@ class ParserLlvm implements ParserInterface {
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         LLVMIRParser parser = new LLVMIRParser(tokenStream);
-        parser.setErrorHandler(new BailErrorStrategy());
         ParserRuleContext parserEntryPoint = parser.compilationUnit();
         VisitorLlvm visitor = new VisitorLlvm();
 
@@ -27,3 +25,4 @@ class ParserLlvm implements ParserInterface {
         return visitor.buildProgram();
     }
 }
+
