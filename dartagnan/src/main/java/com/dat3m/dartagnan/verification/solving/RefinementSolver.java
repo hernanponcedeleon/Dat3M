@@ -490,7 +490,7 @@ public class RefinementSolver extends ModelChecker {
         final double branchCoveragePercentage = coveredBranches.size() * 1d / branches.size();
 
         final StringBuilder report = new StringBuilder()
-                .append("Property-based coverage (executed by at least one property-violating execution, including inconsistent executions): \n")
+                .append("Events executed by at least one property-violating behavior, including inconsistent executions: \n")
                 .append("\t-- Events: ")
                 .append(String.format("%s (%s / %s)", df.format(eventCoveragePercentage),
                         programEvents.size() - messageSet.size(), programEvents.size()))
