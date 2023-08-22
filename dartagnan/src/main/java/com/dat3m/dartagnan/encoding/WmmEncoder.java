@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
@@ -649,8 +649,8 @@ public class WmmEncoder implements Encoder {
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
                         continue;
                     }
-                    if (x.getThread().getOptScopeHierarchy().isEmpty() || z.getThread().getOptScopeHierarchy().isEmpty() ||
-                            !x.getThread().getOptScopeHierarchy().get().sameAtHigherScope((z.getThread().getOptScopeHierarchy().get()),scope1)) {
+                    if (!x.getThread().hasScope() || !z.getThread().hasScope() ||
+                            !x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()),scope1)) {
                         continue;
                     }
                     Tuple xz = new Tuple(x, z);

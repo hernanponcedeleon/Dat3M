@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -113,7 +113,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             int subgroupID = threadScopeContext.subgroupScope().scopeID().id;
             int workgroupID = threadScopeContext.workgroupScope().scopeID().id;
             int queuefamilyID = threadScopeContext.queuefamilyScope().scopeID().id;
-            // NB: the order of scopeIDs are important
+            // NB: the order of scopeIDs is important
             programBuilder.newScopedThread(Arch.VULKAN, threadScopeContext.threadId().id,
                     queuefamilyID, workgroupID, subgroupID);
             threadCount++;

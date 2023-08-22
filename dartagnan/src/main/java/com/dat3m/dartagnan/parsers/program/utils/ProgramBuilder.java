@@ -347,9 +347,9 @@ public class ProgramBuilder {
     public void addSwwPairThreads(int threadId0, int threadId1) {
         Thread thread0 = (Thread) getFunctionOrError(threadId0);
         Thread thread1 = (Thread) getFunctionOrError(threadId1);
-        if (thread0.getOptSyncSet().isPresent() && thread1.getOptSyncSet().isPresent()) {
-            thread0.getOptSyncSet().get().add(thread1);
-            thread1.getOptSyncSet().get().add(thread0);
+        if (thread0.hasScope() && thread1.hasScope()) {
+            thread0.getSyncSet().add(thread1);
+            thread1.getSyncSet().add(thread0);
         }
     }
 }

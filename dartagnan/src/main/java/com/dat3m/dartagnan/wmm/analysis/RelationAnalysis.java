@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -974,18 +974,18 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = program.getThreadEvents().stream()
-                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().getOptScopeHierarchy().isPresent())
+                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
                     .toList();
 
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (thread1.getOptScopeHierarchy().isEmpty() || thread2.getOptScopeHierarchy().isEmpty()) {
+                    if (!thread1.hasScope() || !thread2.hasScope()) {
                         continue;
                     }
                     if (specificScope != null) { // scope specified
-                        if (thread1.getOptScopeHierarchy().get().sameAtHigherScope(thread2.getOptScopeHierarchy().get(), specificScope)
+                        if (thread1.getScopeHierarchy().sameAtHigherScope(thread2.getScopeHierarchy(), specificScope)
                                 && !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
@@ -993,7 +993,7 @@ public class RelationAnalysis {
                         String scope1 = Tag.getScopeTag(e1, program.getArch());
                         String scope2 = Tag.getScopeTag(e2, program.getArch());
                         if (scope1.equals(scope2) && !scope1.isEmpty()
-                                && thread1.getOptScopeHierarchy().get().sameAtHigherScope(thread2.getOptScopeHierarchy().get(), scope1)
+                                && thread1.getScopeHierarchy().sameAtHigherScope(thread2.getScopeHierarchy(), scope1)
                                 && !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
@@ -1063,13 +1063,13 @@ public class RelationAnalysis {
                 for (Event e2 : events) {
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (thread1 == thread2 || thread1.getOptSyncSet().isEmpty() || thread2.getOptSyncSet().isEmpty()) {
+                    if (thread1 == thread2 || thread1.getSyncSet().isEmpty() || thread2.getSyncSet().isEmpty()) {
                         continue;
                     }
-                    if (thread1.getOptSyncSet().get().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (thread1.getSyncSet().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
-                    if (thread2.getOptSyncSet().get().contains(thread1) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (thread2.getSyncSet().contains(thread1) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }

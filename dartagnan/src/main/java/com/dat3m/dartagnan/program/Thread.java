@@ -13,6 +13,8 @@ public class Thread extends Function {
     // Optional fields
     // Scope hierarchy of the thread
     private final Optional<ScopeHierarchy> optScopeHierarchy;
+
+    private final boolean hasScope;
     // Threads that are system-synchronized-with this thread
     private final Optional<Set<Thread>> optSyncSet;
 
@@ -22,6 +24,7 @@ public class Thread extends Function {
         Preconditions.checkNotNull(entry, "Thread entry event must be not null");
         this.optScopeHierarchy = Optional.empty();
         this.optSyncSet = Optional.empty();
+        this.hasScope = false;
     }
 
     public Thread(String name, FunctionType funcType, List<String> parameterNames, int id, ThreadStart entry,
@@ -29,16 +32,24 @@ public class Thread extends Function {
         super(name, funcType, parameterNames, id, entry);
         Preconditions.checkArgument(id >= 0, "Invalid thread ID");
         Preconditions.checkNotNull(entry, "Thread entry event must be not null");
+        Preconditions.checkNotNull(scopeHierarchy, "Thread scopeHierarchy must be not null");
+        Preconditions.checkNotNull(syncSet, "Thread syncSet must be not null");
         this.optScopeHierarchy = Optional.of(scopeHierarchy);
         this.optSyncSet = Optional.of(syncSet);
+        this.hasScope = true;
     }
 
-    public Optional<ScopeHierarchy> getOptScopeHierarchy() {
-        return optScopeHierarchy;
+    public boolean hasScope() {
+        return hasScope;
     }
 
-    public Optional<Set<Thread>> getOptSyncSet() {
-        return optSyncSet;
+    // Invoke optional fields getters only if they are present
+    public ScopeHierarchy getScopeHierarchy() {
+        return optScopeHierarchy.get();
+    }
+
+    public Set<Thread> getSyncSet() {
+        return optSyncSet.get();
     }
 
     @Override
