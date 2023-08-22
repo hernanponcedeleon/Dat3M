@@ -293,7 +293,7 @@ public class ProgramBuilder {
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
         Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
-                new ScopeHierarchy(arch, scopeIds));
+                new ScopeHierarchy(arch, scopeIds), new HashSet<>());
         id2FunctionsMap.put(id, scopedThread);
         program.addThread(scopedThread);
     }
@@ -347,11 +347,9 @@ public class ProgramBuilder {
     public void addSwwPairThreads(int threadId0, int threadId1) {
         Thread thread0 = (Thread) getFunctionOrError(threadId0);
         Thread thread1 = (Thread) getFunctionOrError(threadId1);
-        thread0.getOptSyncSet().ifPresentOrElse(
-                syncSet -> syncSet.add(thread1),
-                () -> thread0.setOptSyncSet(new HashSet<>(Collections.singleton(thread1))));
-        thread1.getOptSyncSet().ifPresentOrElse(
-                syncSet -> syncSet.add(thread0),
-                () -> thread1.setOptSyncSet(new HashSet<>(Collections.singleton(thread0))));
+        if (thread0.getOptSyncSet().isPresent() && thread1.getOptSyncSet().isPresent()) {
+            thread0.getOptSyncSet().get().add(thread1);
+            thread1.getOptSyncSet().get().add(thread0);
+        }
     }
 }
