@@ -113,7 +113,7 @@ public class ApplicationTest {
     private String[] createAndFillOptions(String property, String method, String solver) {
         String[] dartagnanOptions = new String[6];
 
-        dartagnanOptions[0] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas.bpl";
+        dartagnanOptions[0] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas.ll";
         dartagnanOptions[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
         dartagnanOptions[2] = String.format("--%s=%s", BOUND, 2);
         dartagnanOptions[3] = String.format("--%s=%s", PROPERTY, property);
