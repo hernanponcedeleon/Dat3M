@@ -43,8 +43,8 @@ let sw = sr & (
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
-    ([REL & F]; po?; [CBAR]; (syncbar & sr \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
+    ([REL & F]; po?; [CBAR]; (syncbar & sr \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
 )
 
 let ithbsemsc0 = ( ssw |
@@ -121,5 +121,5 @@ let read-write = (R \ W) * (R \ W) // exclude RMWs
 empty (((locord | locord^-1) | mutordatom \ read-write) \ (loc \ id \ read-write)) as locord-complete
 
 (* data_races *)
-let dr = loc & (W * W | W * R | R * W \ mutordatom \ id \ (locord | locord^-1))
+let dr = loc & ((W * W | W * R | R * W) \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy
