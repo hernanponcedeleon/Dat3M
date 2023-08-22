@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -180,12 +181,7 @@ public class Intrinsics {
     ));
 
     private void markIntrinsics(Program program) {
-        TypeFactory types = TypeFactory.getInstance();
-        // used by VisitorLKMM
-        program.declareFunction(
-                "__VERIFIER_nondet_bool",
-                types.getFunctionType(types.getBooleanType(), List.of()),
-                List.of());
+        declareNondetBool(program);
 
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
@@ -196,6 +192,16 @@ public class Intrinsics {
                         .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName));
                 func.setIntrinsicInfo(intrinsicsInfo);
             }
+        }
+    }
+
+    private void declareNondetBool(Program program) {
+        final TypeFactory types = TypeFactory.getInstance();
+        // used by VisitorLKMM
+        if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
+            final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
+            //TODO this id will not be unique
+            program.addFunction(new Function("__VERIFIER_nondet_bool", type, List.of(), 0, null));
         }
     }
 

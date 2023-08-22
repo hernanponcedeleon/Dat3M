@@ -27,14 +27,15 @@ public class VisitorLKMM extends VisitorBase {
         Expression cmp = e.getCmp();
         Expression address = e.getAddress();
         Expression unexpected = expressions.makeNEQ(dummy, cmp);
-        Register havocRegister = e.getFunction().newRegister(types.getBooleanType());
+        Function nondetBoolFunction = getNondetBoolFunction(e);
+        Register havocRegister = e.getFunction().newRegister(nondetBoolFunction.getFunctionType().getReturnType());
 
         Label success = newLabel("RMW_success");
         Label end = newLabel("RMW_end");
         Load rmwLoad;
         return eventSequence(
-                newValueFunctionCall(havocRegister,getNondetBoolFunction(e),List.of()),
-                newJump(havocRegister, success),
+                newValueFunctionCall(havocRegister,nondetBoolFunction,List.of()),
+                newJump(expressions.makeBooleanCast(havocRegister), success),
                 newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeEQ(dummy, cmp)),
                 newGoto(end),
@@ -55,15 +56,16 @@ public class VisitorLKMM extends VisitorBase {
         Expression cmp = e.getExpectedValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Register havocRegister = e.getFunction().newRegister(types.getBooleanType());
+        Function nondetBoolFunction = getNondetBoolFunction(e);
+        Register havocRegister = e.getFunction().newRegister(nondetBoolFunction.getFunctionType().getReturnType());
 
         Label success = newLabel("CAS_success");
         Label end = newLabel("CAS_end");
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load casLoad;
         return eventSequence(
-                newValueFunctionCall(havocRegister,getNondetBoolFunction(e),List.of()),
-                newJump(havocRegister, success),
+                newValueFunctionCall(havocRegister,nondetBoolFunction,List.of()),
+                newJump(expressions.makeBooleanCast(havocRegister), success),
                 // Cas failure branch
                 newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeNEQ(dummy, cmp)),
