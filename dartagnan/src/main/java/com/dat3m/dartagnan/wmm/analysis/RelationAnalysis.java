@@ -974,23 +974,26 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = program.getThreadEvents().stream()
-                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().optScopeHierarchy.isPresent())
+                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().getOptScopeHierarchy().isPresent())
                     .toList();
 
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
+                    if (thread1.getOptScopeHierarchy().isEmpty() || thread2.getOptScopeHierarchy().isEmpty()) {
+                        continue;
+                    }
                     if (specificScope != null) { // scope specified
-                        if (thread1.optScopeHierarchy.get().sameAtHigherScope(thread2.optScopeHierarchy.get(), specificScope)
+                        if (thread1.getOptScopeHierarchy().get().sameAtHigherScope(thread2.getOptScopeHierarchy().get(), specificScope)
                                 && !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
-                    } else {
-                        String scope1 = Tag.PTX.getScopeTag(e1);
-                        String scope2 = Tag.PTX.getScopeTag(e2);
+                    } else { // scope not specified
+                        String scope1 = Tag.getScopeTag(e1, program.getArch());
+                        String scope2 = Tag.getScopeTag(e2, program.getArch());
                         if (scope1.equals(scope2) && !scope1.isEmpty()
-                                && thread1.optScopeHierarchy.get().sameAtHigherScope(thread2.optScopeHierarchy.get(), scope1)
+                                && thread1.getOptScopeHierarchy().get().sameAtHigherScope(thread2.getOptScopeHierarchy().get(), scope1)
                                 && !exec.areMutuallyExclusive(e1, e2)) {
                             must.add(new Tuple(e1, e2));
                         }
@@ -1060,18 +1063,18 @@ public class RelationAnalysis {
                 for (Event e2 : events) {
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (thread1 == thread2 || thread1.optSyncSet.isEmpty() || thread2.optSyncSet.isEmpty()) {
+                    if (thread1 == thread2 || thread1.getOptSyncSet().isEmpty() || thread2.getOptSyncSet().isEmpty()) {
                         continue;
                     }
-                    if (thread1.optSyncSet.get().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (thread1.getOptSyncSet().get().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
-                    if (thread2.optSyncSet.get().contains(thread1) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (thread2.getOptSyncSet().get().contains(thread1) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, must);
         }
     }
 

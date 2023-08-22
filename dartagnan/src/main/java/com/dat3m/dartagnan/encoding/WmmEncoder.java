@@ -644,12 +644,13 @@ public class WmmEncoder implements Encoder {
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
                 Event x = allFenceSC.get(i);
                 for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
-                    String scope1 = Tag.PTX.getScopeTag(x);
-                    String scope2 = Tag.PTX.getScopeTag(z);
+                    String scope1 = Tag.getScopeTag(x, program.getArch());
+                    String scope2 = Tag.getScopeTag(z, program.getArch());
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
                         continue;
                     }
-                    if (!(x.getThread().optScopeHierarchy.get()).sameAtHigherScope((z.getThread().optScopeHierarchy.get()),scope1)) {
+                    if (x.getThread().getOptScopeHierarchy().isEmpty() || z.getThread().getOptScopeHierarchy().isEmpty() ||
+                            !x.getThread().getOptScopeHierarchy().get().sameAtHigherScope((z.getThread().getOptScopeHierarchy().get()),scope1)) {
                         continue;
                     }
                     Tuple xz = new Tuple(x, z);

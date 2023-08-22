@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,6 +17,10 @@ public class FenceWithId extends GenericVisibleEvent implements RegReader {
     public FenceWithId(String name, Expression fenceID) {
         super(name, Tag.FENCE);
         this.fenceID = fenceID;
+    }
+
+    private FenceWithId(FenceWithId other) {
+        super(other);
     }
 
     public Expression getFenceID() {
@@ -30,5 +35,20 @@ public class FenceWithId extends GenericVisibleEvent implements RegReader {
     @Override
     public Set<Register.Read> getRegisterReads() {
         return Register.collectRegisterReads(fenceID, Register.UsageType.OTHER, new HashSet<>());
+    }
+
+    @Override
+    public String defaultString() {
+        return String.format("%s := fence_id[%s]", name, fenceID);
+    }
+
+    @Override
+    public FenceWithId getCopy() {
+        return new FenceWithId(this);
+    }
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitFenceWithId(this);
     }
 }

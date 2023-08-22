@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.visitors;
 
+import com.dat3m.dartagnan.program.event.arch.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -101,6 +102,8 @@ public interface EventVisitor<T> {
 	// ------------------ Std events ------------------
 	default T visitMalloc(Malloc e) { return visitEvent(e); }
 
+    // ------------------ Scoped Events ------------------
+    default T visitFenceWithId(FenceWithId e) { return visitEvent(e); }
 	// ------------------ PTX Events ------------------
 	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
 	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }

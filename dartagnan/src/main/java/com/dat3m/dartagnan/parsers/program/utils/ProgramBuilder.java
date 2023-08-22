@@ -292,8 +292,8 @@ public class ProgramBuilder {
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, EventFactory.newThreadStart(null));
-        scopedThread.optScopeHierarchy = Optional.of(new ScopeHierarchy(arch, scopeIds));
+        Thread scopedThread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
+                new ScopeHierarchy(arch, scopeIds));
         id2FunctionsMap.put(id, scopedThread);
         program.addThread(scopedThread);
     }
@@ -347,11 +347,11 @@ public class ProgramBuilder {
     public void addSwwPairThreads(int threadId0, int threadId1) {
         Thread thread0 = (Thread) getFunctionOrError(threadId0);
         Thread thread1 = (Thread) getFunctionOrError(threadId1);
-        thread0.optSyncSet.ifPresentOrElse(
+        thread0.getOptSyncSet().ifPresentOrElse(
                 syncSet -> syncSet.add(thread1),
-                () -> thread0.optSyncSet = Optional.of(new HashSet<>(Collections.singletonList(thread1))));
-        thread1.optSyncSet.ifPresentOrElse(
+                () -> thread0.setOptSyncSet(new HashSet<>(Collections.singleton(thread1))));
+        thread1.getOptSyncSet().ifPresentOrElse(
                 syncSet -> syncSet.add(thread0),
-                () -> thread1.optSyncSet = Optional.of(new HashSet<>(Collections.singletonList(thread0))));
+                () -> thread1.setOptSyncSet(new HashSet<>(Collections.singleton(thread0))));
     }
 }

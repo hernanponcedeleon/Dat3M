@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.Set;
@@ -296,10 +297,6 @@ public final class Tag {
         public static Set<String> getProxyTags() {
             return Set.of(GEN, TEX, SUR, CON);
         }
-
-        public static String getScopeTag(Event e) {
-            return getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
-        }
     
         public static String getProxyTag(Event e) {
             return getProxyTags().stream().filter(e::hasTag).findFirst().orElse("");
@@ -365,6 +362,10 @@ public final class Tag {
             return Set.of(SEM_SC0, SEM_SC1, SEM_SC01);
         }
 
+        public static Set<String> getScopeTags() {
+            return Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
+        }
+
         public static String loadMO(String mo) {
             switch (mo) {
                 case ACQ_REL, ACQUIRE:
@@ -386,5 +387,17 @@ public final class Tag {
                     return "";
             }
         }
+    }
+
+    public static String getScopeTag(Event e, Arch arch) {
+        switch (arch) {
+            case PTX:
+                return PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            case VULKAN:
+                return Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            default:
+                throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
+        }
+
     }
 }

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -24,8 +25,8 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
-        load.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
-        store.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
+        load.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
+        store.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
         return eventSequence(
                 load,
                 store,
@@ -40,8 +41,8 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
-        load.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
-        store.addTags(Tag.PTX.getScopeTag(e), Tag.PTX.getProxyTag(e));
+        load.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
+        store.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
         return eventSequence(
                 load,
                 store

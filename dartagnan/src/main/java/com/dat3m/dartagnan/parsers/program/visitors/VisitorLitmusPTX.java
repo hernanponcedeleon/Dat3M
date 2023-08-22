@@ -107,6 +107,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         for (LitmusPTXParser.ThreadScopeContext threadScopeContext : ctx.threadScope()) {
             int ctaID = threadScopeContext.scopeID().ctaID().id;
             int gpuID = threadScopeContext.scopeID().gpuID().id;
+            // NB: the order of scopeIDs are important
             programBuilder.newScopedThread(Arch.PTX, threadScopeContext.threadId().id, gpuID, ctaID);
             threadCount++;
         }
