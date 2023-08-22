@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.c;
 
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -8,6 +9,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.readExpected;
 
 @RunWith(Parameterized.class)
 public class SvCompConcurrencyTest extends AbstractSvCompTest {
@@ -19,6 +21,13 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
     @Override
     protected Provider<String> getProgramPathProvider() {
         return () -> TEST_RESOURCE_PATH + "boogie/concurrency/" + name + ".ll";
+    }
+
+    @Override
+    protected Provider<Result> getExpectedResultProvider() {
+        return Provider.fromSupplier(() -> readExpected(
+                filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf(".")) + ".yml",
+                "unreach-call.prp"));
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")

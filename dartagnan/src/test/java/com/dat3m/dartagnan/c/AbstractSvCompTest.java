@@ -73,6 +73,12 @@ public abstract class AbstractSvCompTest {
         });
     }
 
+    protected Provider<Result> getExpectedResultProvider() {
+        return Provider.fromSupplier(() -> readExpected(
+                filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml",
+                "unreach-call.prp"));
+    }
+
     @ClassRule
     public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
 
@@ -84,8 +90,7 @@ public abstract class AbstractSvCompTest {
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf(".")) + ".yml", "unreach-call.prp"));
+    protected final Provider<Result> expectedResultProvider = getExpectedResultProvider();
     protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configurationProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
