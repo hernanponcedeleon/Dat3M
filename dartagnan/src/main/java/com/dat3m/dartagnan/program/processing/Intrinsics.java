@@ -2,12 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BNonDet;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -20,8 +15,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.UnsignedInteger;
@@ -100,10 +95,10 @@ public class Intrinsics {
             this(name, List.of(name), writesMemory, readsMemory, alwaysReturns, isEarly, replacer);
         }
 
-        public void replace(DirectFunctionCall call) {
+        public void replace(FunctionCall call) {
             if (replacer == null) {
                 throw new MalformedProgramException(
-                        String.format("Intrinsic \"%s\" without replacer", call.getCallTarget().getName()));
+                        String.format("Intrinsic \"%s\" without replacer", call.getCalledFunction().getName()));
             }
             final List<Event> replacement = replacer.replace(call);
             if (replacement.isEmpty()) {
@@ -122,7 +117,7 @@ public class Intrinsics {
 
     @FunctionalInterface
     private interface Replacer {
-        List<Event> replace(DirectFunctionCall call);
+        List<Event> replace(FunctionCall call);
     }
 
     private final List<Info> INTRINSICS = ImmutableList.copyOf(List.of(
@@ -209,23 +204,26 @@ public class Intrinsics {
     // Simple early intrinsics
 
     private void inlineEarly(Function function) {
-        for (final DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
-            final Intrinsics.Info info = call.getCallTarget().getIntrinsicInfo();
+        for (final FunctionCall call : function.getEvents(FunctionCall.class)) {
+            if (!call.isDirectCall()) {
+                continue;
+            }
+            final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
             if (info != null && info.isEarly()) {
                 info.replace(call);
             }
         }
     }
 
-    private List<Event> inlineExit(DirectFunctionCall ignored) {
+    private List<Event> inlineExit(FunctionCall ignored) {
         return List.of(EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue()));
     }
 
-    private List<Event> inlineLoopBegin(DirectFunctionCall ignored) {
+    private List<Event> inlineLoopBegin(FunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newLoopBegin());
     }
 
-    private List<Event> inlineLoopBound(DirectFunctionCall call) {
+    private List<Event> inlineLoopBound(FunctionCall call) {
         final Expression boundExpression = call.getArguments().get(0);
         if (!(boundExpression instanceof IValue value)) {
             throw new MalformedProgramException("Non-constant bound for loop.");
@@ -233,28 +231,28 @@ public class Intrinsics {
         return List.of(EventFactory.Svcomp.newLoopBound(value.getValueAsInt()));
     }
 
-    private List<Event> inlineSpinStart(DirectFunctionCall ignored) {
+    private List<Event> inlineSpinStart(FunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newSpinStart());
     }
 
-    private List<Event> inlineSpinEnd(DirectFunctionCall ignored) {
+    private List<Event> inlineSpinEnd(FunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newSpinEnd());
     }
 
-    private List<Event> inlineAssume(DirectFunctionCall call) {
+    private List<Event> inlineAssume(FunctionCall call) {
         final Expression assumption = call.getArguments().get(0);
         return List.of(EventFactory.newAssume(assumption));
     }
 
-    private List<Event> inlineAtomicBegin(DirectFunctionCall ignored) {
+    private List<Event> inlineAtomicBegin(FunctionCall ignored) {
         return List.of(currentAtomicBegin = EventFactory.Svcomp.newBeginAtomic());
     }
 
-    private List<Event> inlineAtomicEnd(DirectFunctionCall ignored) {
+    private List<Event> inlineAtomicEnd(FunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newEndAtomic(checkNotNull(currentAtomicBegin)));
     }
 
-    private List<Event> inlinePthreadMutexInit(DirectFunctionCall call) {
+    private List<Event> inlinePthreadMutexInit(FunctionCall call) {
         checkArgument(call.getArguments().size() == 2);
         final Expression lockAddress = call.getArguments().get(0);
         final Expression lockValue = call.getArguments().get(1);
@@ -262,41 +260,41 @@ public class Intrinsics {
         return List.of(EventFactory.Pthread.newInitLock(lockName, lockAddress, lockValue));
     }
 
-    private List<Event> inlinePthreadMutexDestroy(DirectFunctionCall call) {
+    private List<Event> inlinePthreadMutexDestroy(FunctionCall call) {
         checkArgument(call.getArguments().size() == 1);
-        final Register reg = ((DirectValueFunctionCall) call).getResultRegister();
+        final Register reg = ((ValueFunctionCall) call).getResultRegister();
         return List.of(EventFactory.newLocal(reg, expressions.makeZero((IntegerType) reg.getType())));
     }
 
-    private List<Event> inlinePthreadMutexLock(DirectFunctionCall call) {
+    private List<Event> inlinePthreadMutexLock(FunctionCall call) {
         checkArgument(call.getArguments().size() == 1);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
         return List.of(EventFactory.Pthread.newLock(lockName, lockAddress));
     }
 
-    private List<Event> inlinePthreadMutexUnlock(DirectFunctionCall call) {
+    private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
         checkArgument(call.getArguments().size() == 1);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
         return List.of(EventFactory.Pthread.newUnlock(lockName, lockAddress));
     }
 
-    private List<Event> inlineMalloc(DirectFunctionCall call) {
+    private List<Event> inlineMalloc(FunctionCall call) {
         if (call.getArguments().size() != 1) {
             throw new UnsupportedOperationException(String.format("Unsupported signature for %s.", call));
         }
-        final DirectValueFunctionCall valueCall = (DirectValueFunctionCall) call;
+        final ValueFunctionCall valueCall = (ValueFunctionCall) call;
         return List.of(EventFactory.Std.newMalloc(valueCall.getResultRegister(), valueCall.getArguments().get(0)));
     }
 
     // --------------------------------------------------------------------------------------------------------
     // LLVM intrinsics
 
-    private List<Event> handleLLVMIntrinsic(DirectFunctionCall call) {
-        assert call instanceof DirectValueFunctionCall;
-        final DirectValueFunctionCall valueCall = (DirectValueFunctionCall) call;
-        final String name = call.getCallTarget().getName();
+    private List<Event> handleLLVMIntrinsic(FunctionCall call) {
+        assert call instanceof ValueFunctionCall && call.isDirectCall();
+        final ValueFunctionCall valueCall = (ValueFunctionCall) call;
+        final String name = call.getCalledFunction().getName();
 
         if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
@@ -305,23 +303,23 @@ public class Intrinsics {
             return inlineLLVMMinMax(valueCall);
         } else {
             final String error = String.format(
-                    "Call %s to LLVM intrinsic %s cannot be handled.", call, call.getCallTarget());
+                    "Call %s to LLVM intrinsic %s cannot be handled.", call, call.getCalledFunction());
             throw new UnsupportedOperationException(error);
         }
     }
 
-    private List<Event> inlineLLVMCtlz(DirectValueFunctionCall call) {
+    private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
         // TODO: Handle the second parameter as well
         final Expression input = call.getArguments().get(0);
         final Expression result = expressions.makeCTLZ(input, (IntegerType) call.getResultRegister().getType());
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
     }
 
-    private List<Event> inlineLLVMMinMax(DirectValueFunctionCall call) {
+    private List<Event> inlineLLVMMinMax(ValueFunctionCall call) {
         final List<Expression> arguments = call.getArguments();
         final Expression left = arguments.get(0);
         final Expression right = arguments.get(1);
-        final String name = call.getCallTarget().getName();
+        final String name = call.getCalledFunction().getName();
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
         final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
         final Expression isLess = expressions.makeLT(left, right, signed);
@@ -332,8 +330,8 @@ public class Intrinsics {
     // --------------------------------------------------------------------------------------------------------
     // LKMM intrinsics
 
-    private List<Event> handleLKMMIntrinsic(DirectFunctionCall call) {
-        final Register reg = (call instanceof DirectValueFunctionCall valueCall) ? valueCall.getResultRegister() : null;
+    private List<Event> handleLKMMIntrinsic(FunctionCall call) {
+        final Register reg = (call instanceof ValueFunctionCall valueCall) ? valueCall.getResultRegister() : null;
         final List<Expression> args = call.getArguments();
 
         final Expression p0 = args.get(0);
@@ -344,7 +342,7 @@ public class Intrinsics {
         final String mo;
         final IOpBin op;
         final List<Event> result = new ArrayList<>();
-        switch (call.getCallTarget().getName()) {
+        switch (call.getCalledFunction().getName()) {
             case "__LKMM_LOAD" -> {
                 checkArgument(p1 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p1).getValueAsInt());
@@ -413,10 +411,11 @@ public class Intrinsics {
     }
 
     private void inlineLate(Function function) {
-        for (DirectFunctionCall call : function.getEvents(DirectFunctionCall.class)) {
-            assert !call.getCallTarget().hasBody();
+        for (FunctionCall call : function.getEvents(FunctionCall.class)) {
+            assert call.isDirectCall() && !call.getCalledFunction().hasBody();
+            final Function calledFunction = call.getCalledFunction();
 
-            final List<Event> replacement = switch (call.getCallTarget().getName()) {
+            final List<Event> replacement = switch (calledFunction.getName()) {
                 case "__VERIFIER_nondet_bool",
                         "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                         "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -424,7 +423,7 @@ public class Intrinsics {
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
                 case "__assert_fail", "__assert_rtn" -> inlineAssert(call);
                 default -> throw new UnsupportedOperationException(
-                        String.format("Undefined function %s", call.getCallTarget().getName()));
+                        String.format("Undefined function %s", calledFunction.getName()));
             };
 
             replacement.forEach(e -> e.copyAllMetadataFrom(call));
@@ -432,12 +431,12 @@ public class Intrinsics {
         }
     }
 
-    private List<Event> inlineNonDet(DirectFunctionCall call) {
+    private List<Event> inlineNonDet(FunctionCall call) {
         TypeFactory types = TypeFactory.getInstance();
         ExpressionFactory expressions = ExpressionFactory.getInstance();
-        assert call instanceof DirectValueFunctionCall;
-        Register register = ((DirectValueFunctionCall) call).getResultRegister();
-        String name = call.getCallTarget().getName();
+        assert call.isDirectCall() && call instanceof ValueFunctionCall;
+        Register register = ((ValueFunctionCall) call).getResultRegister();
+        String name = call.getCalledFunction().getName();
         final String separator = "nondet_";
         int index = name.indexOf(separator);
         assert index > -1;
@@ -484,7 +483,7 @@ public class Intrinsics {
         return List.of(EventFactory.newLocal(register, expression));
     }
 
-    private List<Event> inlineAssert(DirectFunctionCall call) {
+    private List<Event> inlineAssert(FunctionCall call) {
         ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Expression condition = expressions.makeFalse();
         final Register register = call.getFunction().getOrNewRegister("assert_" + assertionId++, condition.getType());

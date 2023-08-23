@@ -8,17 +8,17 @@ import com.google.common.base.Preconditions;
 
 import java.util.List;
 
-public class DirectValueFunctionCall extends DirectFunctionCall implements RegWriter {
+public class ValueFunctionCall extends FunctionCall implements RegWriter {
 
     protected Register resultRegister;
 
-    public DirectValueFunctionCall(Register resultRegister, Function func, List<Expression> arguments) {
+    public ValueFunctionCall(Register resultRegister, Function func, List<Expression> arguments) {
         super(func, arguments);
         Preconditions.checkArgument(resultRegister.getType().equals(func.getFunctionType().getReturnType()));
         this.resultRegister = resultRegister;
     }
 
-    protected DirectValueFunctionCall(DirectValueFunctionCall other) {
+    protected ValueFunctionCall(ValueFunctionCall other) {
         super(other);
         this.resultRegister = other.getResultRegister();
     }
@@ -35,11 +35,15 @@ public class DirectValueFunctionCall extends DirectFunctionCall implements RegWr
 
     @Override
     protected String defaultString() {
-        return String.format("%s <- call %s(%s)", resultRegister, callTarget.getName(), super.argumentsToString());
+        if (isDirectCall()) {
+            return String.format("%s <- call %s(%s)", resultRegister, ((Function)callTarget).getName(), super.argumentsToString());
+        } else {
+            return String.format("%s <- call %s(%s)", resultRegister, callTarget, super.argumentsToString());
+        }
     }
 
     @Override
-    public DirectValueFunctionCall getCopy() {
-        return new DirectValueFunctionCall(this);
+    public ValueFunctionCall getCopy() {
+        return new ValueFunctionCall(this);
     }
 }

@@ -7,25 +7,29 @@ import com.google.common.base.Preconditions;
 
 import java.util.List;
 
-public class DirectVoidFunctionCall extends DirectFunctionCall {
+public class VoidFunctionCall extends FunctionCall {
 
-    public DirectVoidFunctionCall(Function func, List<Expression> arguments) {
+    public VoidFunctionCall(Function func, List<Expression> arguments) {
         super(func, arguments);
         Preconditions.checkArgument(func.getFunctionType().getReturnType()
                 .equals(TypeFactory.getInstance().getVoidType()));
     }
 
-    protected DirectVoidFunctionCall(DirectVoidFunctionCall other) {
+    protected VoidFunctionCall(VoidFunctionCall other) {
         super(other);
     }
 
     @Override
     protected String defaultString() {
-        return String.format("call %s(%s)", callTarget.getName(), super.argumentsToString());
+        if (isDirectCall()) {
+            return String.format("call %s(%s)", ((Function)callTarget).getName(), super.argumentsToString());
+        } else {
+            return String.format("call %s(%s)", callTarget, super.argumentsToString());
+        }
     }
 
     @Override
-    public DirectVoidFunctionCall getCopy() {
-        return new DirectVoidFunctionCall(this);
+    public VoidFunctionCall getCopy() {
+        return new VoidFunctionCall(this);
     }
 }

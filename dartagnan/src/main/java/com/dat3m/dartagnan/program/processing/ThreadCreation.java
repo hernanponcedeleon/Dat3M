@@ -25,9 +25,9 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -112,9 +112,12 @@ public class ThreadCreation implements ProgramProcessor {
             // We collect the communication addresses we use for each thread id.
             // These are used later to lower pthread_join.
             final Map<IValue, Expression> tid2ComAddrMap = new LinkedHashMap<>();
-            for (DirectFunctionCall call : thread.getEvents(DirectFunctionCall.class)) {
+            for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
+                if (!call.isDirectCall()) {
+                    continue;
+                }
                 final List<Expression> arguments = call.getArguments();
-                switch (call.getCallTarget().getName()) {
+                switch (call.getCalledFunction().getName()) {
                     case "pthread_create" -> {
                         assert arguments.size() == 4;
                         final Expression pidResultAddress = arguments.get(0);
@@ -177,8 +180,11 @@ public class ThreadCreation implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         int joinCounter = 0;
 
-        for (DirectFunctionCall call : thread.getEvents(DirectFunctionCall.class)) {
-            final String targetName = call.getCallTarget().getName();
+        for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
+            if (!call.isDirectCall()) {
+                continue;
+            }
+            final String targetName = call.getCalledFunction().getName();
             if (!(targetName.equals("pthread_join")
                     // The following two calls can be generated on macOS
                     || targetName.equals("__pthread_join")
@@ -234,7 +240,7 @@ public class ThreadCreation implements ProgramProcessor {
 
             // ----- Generate actual replacement for the pthread_join call -----
             final List<Event> replacement = new ArrayList<>();
-            replacement.add(EventFactory.newFunctionCallMarker(call.getCallTarget().getName()));
+            replacement.add(EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()));
             replacement.addAll(switchJumpTable);
             tid2joinCases.values().forEach(replacement::addAll);
             replacement.addAll(Arrays.asList(
@@ -242,7 +248,7 @@ public class ThreadCreation implements ProgramProcessor {
                     newJump(joinDummyReg, (Label)thread.getExit()),
                     // Note: In our modelling, pthread_join always succeeds if it returns
                     newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType())),
-                    EventFactory.newFunctionReturnMarker(call.getCallTarget().getName())
+                    EventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
             ));
 
             replacement.forEach(e -> e.copyAllMetadataFrom(call));
@@ -310,10 +316,10 @@ public class ThreadCreation implements ProgramProcessor {
                 jumpToEnd.addTags(abort.getTags());
                 jumpToEnd.copyAllMetadataFrom(abort);
                 abort.replaceBy(jumpToEnd);
-            } else if (e instanceof Return
-                    || e instanceof DirectFunctionCall call && call.getCallTarget().getName().equals("pthread_exit")) {
+            } else if (e instanceof Return || (e instanceof FunctionCall call
+                    && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
-                        : ((DirectFunctionCall)e).getArguments().get(0);
+                        : ((FunctionCall)e).getArguments().get(0);
                 final List<Event> replacement = eventSequence(
                         returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
@@ -367,9 +373,9 @@ public class ThreadCreation implements ProgramProcessor {
         return thread;
     }
 
-    private Register getResultRegister(DirectFunctionCall call) {
-        assert call instanceof DirectValueFunctionCall;
-        return ((DirectValueFunctionCall) call).getResultRegister();
+    private Register getResultRegister(FunctionCall call) {
+        assert call instanceof ValueFunctionCall;
+        return ((ValueFunctionCall) call).getResultRegister();
     }
 
     private List<Event> newReleaseStore(Expression address, Expression storeValue) {

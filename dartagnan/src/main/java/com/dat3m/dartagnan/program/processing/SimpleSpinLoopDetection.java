@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.SpinStart;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
@@ -97,9 +97,10 @@ public class SimpleSpinLoopDetection implements FunctionProcessor {
 
         Event cur = loopBegin;
         while ((cur = cur.getSuccessor()) != loopEnd) {
-            if (cur.hasTag(Tag.WRITE) ||
-                    (cur instanceof DirectFunctionCall call && call.getCallTarget().getIntrinsicInfo().writesMemory())) {
-                return false;// Writes always cause side effects
+            if (cur.hasTag(Tag.WRITE) || (cur instanceof FunctionCall call
+                    && (!call.isDirectCall() || call.getCalledFunction().getIntrinsicInfo().writesMemory()))) {
+                // We assume side effects for all writes, writing intrinsics, or unresolved function calls.
+                return false;
             }
 
             if (cur instanceof RegReader regReader) {

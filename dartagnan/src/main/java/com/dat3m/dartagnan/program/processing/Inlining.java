@@ -15,9 +15,9 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.DirectFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import org.sosy_lab.common.configuration.Configuration;
@@ -52,15 +52,19 @@ public class Inlining implements FunctionProcessor {
         inlineAllCalls(function);
     }
 
+    private boolean canInline(FunctionCall call) {
+        return call.isDirectCall() && call.getCalledFunction().hasBody();
+    }
+
     private void inlineAllCalls(Function function) {
         int scopeCounter = 0;
-        Map<Event, List<DirectFunctionCall>> exitToCallMap = new HashMap<>();
+        Map<Event, List<FunctionCall>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
         Event event = function.getEntry();
         while (event != null) {
             exitToCallMap.remove(event);
             // Work with successor because when calls get removed, the loop variable would be invalidated.
-            if (!(event.getSuccessor() instanceof DirectFunctionCall call) || !call.getCallTarget().hasBody()) {
+            if (!(event.getSuccessor() instanceof FunctionCall call) || !canInline(call)) {
                 event = event.getSuccessor();
                 continue;
             }
@@ -74,11 +78,10 @@ public class Inlining implements FunctionProcessor {
                 boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 call.replaceBy(boundEvent);
             } else {
-                Function callTarget = call.getCallTarget();
+                Function callTarget = call.getCalledFunction();
                 if (callTarget instanceof Thread) {
                     throw new MalformedProgramException(
-                            String.format("Cannot call thread %s directly.",
-                                    call.getCallTarget()));
+                            String.format("Cannot call thread %s directly.", callTarget));
                 }
                 final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.getName());
                 final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.getName());
@@ -94,7 +97,7 @@ public class Inlining implements FunctionProcessor {
                 }
                 // -----------------------------
                 // Calls with result will write the return value to this register.
-                Register result = call instanceof DirectValueFunctionCall c ? c.getResultRegister() : null;
+                Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
                 inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);
                 event = call.getSuccessor();
                 call.forceDelete();

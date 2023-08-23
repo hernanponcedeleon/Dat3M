@@ -23,9 +23,9 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.DirectVoidFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
@@ -124,12 +124,12 @@ public class EventFactory {
         return new Init(base, offset, address);
     }
 
-    public static DirectValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
-        return new DirectValueFunctionCall(resultRegister, function, arguments);
+    public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
+        return new ValueFunctionCall(resultRegister, function, arguments);
     }
 
-    public static DirectVoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
-        return new DirectVoidFunctionCall(function, arguments);
+    public static VoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
+        return new VoidFunctionCall(function, arguments);
     }
 
     public static Return newFunctionReturn(Expression returnExpression) {
