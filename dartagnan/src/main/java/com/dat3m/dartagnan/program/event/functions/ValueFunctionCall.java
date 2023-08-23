@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.event.functions;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
@@ -12,9 +13,9 @@ public class ValueFunctionCall extends FunctionCall implements RegWriter {
 
     protected Register resultRegister;
 
-    public ValueFunctionCall(Register resultRegister, Function func, List<Expression> arguments) {
-        super(func, arguments);
-        Preconditions.checkArgument(resultRegister.getType().equals(func.getFunctionType().getReturnType()));
+    public ValueFunctionCall(Register resultRegister, FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
+        super(funcType, funcPtr, arguments);
+        Preconditions.checkArgument(resultRegister.getType().equals(funcType.getReturnType()));
         this.resultRegister = resultRegister;
     }
 

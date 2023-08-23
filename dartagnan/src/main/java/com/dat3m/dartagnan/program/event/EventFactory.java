@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -125,11 +126,19 @@ public class EventFactory {
     }
 
     public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
-        return new ValueFunctionCall(resultRegister, function, arguments);
+        return new ValueFunctionCall(resultRegister, function.getFunctionType(), function, arguments);
+    }
+
+    public static ValueFunctionCall newValueFunctionCall(Register resultRegister, FunctionType funcType,
+                                                         Expression funcPtr, List<Expression> arguments) {
+        return new ValueFunctionCall(resultRegister, funcType, funcPtr, arguments);
     }
 
     public static VoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
-        return new VoidFunctionCall(function, arguments);
+        return new VoidFunctionCall(function.getFunctionType(), function, arguments);
+    }
+    public static VoidFunctionCall newVoidFunctionCall(FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
+        return new VoidFunctionCall(funcType, funcPtr, arguments);
     }
 
     public static Return newFunctionReturn(Expression returnExpression) {

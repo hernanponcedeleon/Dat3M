@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.GEPToAddition;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.logging.log4j.LogManager;
@@ -367,7 +368,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCallInst(CallInstContext ctx) {
-        final Type returnType = parseType(ctx.type());
         if (ctx.inlineAsm() != null) {
             // FIXME: We ignore all inline assembly.
             return null;
@@ -377,8 +377,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //FIXME ignores metadata functions, but also undeclared functions
             return null;
         }
-        checkSupport(callTarget instanceof Function, "Indirect call in %s.", ctx);
-        final var target = (Function) callTarget;
+        //checkSupport(callTarget instanceof Function, "Indirect call in %s.", ctx);
+        final Type type = parseType(ctx.type());
+        // Calls can either list the full function type or just the return type.
+        final Type returnType = type instanceof FunctionType funcType ? funcType.getReturnType() : type;
+
         final var arguments = new ArrayList<Expression>();
         for (final ArgContext argument : ctx.args().arg()) {
             if (argument.value() == null) {
@@ -389,11 +392,20 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type argumentType = parseType(argument.concreteType());
             arguments.add(checkExpression(argumentType, argument.value()));
         }
+
+        final FunctionType funcType;
+        if (type instanceof FunctionType) {
+            funcType = (FunctionType) type;
+        } else {
+            // Build FunctionType from return type and argument types
+            funcType = types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
+        }
+
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
         final Event call = currentRegisterName == null ?
-                newVoidFunctionCall(target, arguments) :
-                newValueFunctionCall(resultRegister, target, arguments);
+                newVoidFunctionCall(funcType, callTarget, arguments) :
+                newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
         block.events.add(call);
         return resultRegister;
     }
@@ -1089,6 +1101,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //FIXME: this should parse a function type "retType (params)", but
             // for now we just return "retType"
             ctx.type().accept(this);
+            final Type returnType = parsedType;
+            final boolean isVarArgs = ctx.params().ellipsis != null;
+            final List<Type> paramTypes = new ArrayList<>();
+            for (ParamContext paramContext : ctx.params().param()) {
+                paramContext.type().accept(this);
+                paramTypes.add(parsedType);
+            }
+            parsedType = types.getFunctionType(returnType, paramTypes, isVarArgs);
             return null;
         } else {
             return super.visitType(ctx);
