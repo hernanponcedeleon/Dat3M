@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public abstract class FunctionCall extends AbstractEvent implements RegReader {
 
-    protected Type funcType;
+    protected FunctionType funcType;
     protected Expression callTarget; // TODO: Generalize to function pointer expressions
     protected List<Expression> arguments;
 
@@ -50,6 +50,7 @@ public abstract class FunctionCall extends AbstractEvent implements RegReader {
 
     public boolean isDirectCall() { return callTarget instanceof Function; }
     public Function getCalledFunction() { return (Function) callTarget; }
+    public FunctionType getCallType() { return funcType; }
     public Expression getCallTarget() { return callTarget; }
     public List<Expression> getArguments() { return arguments; }
 
