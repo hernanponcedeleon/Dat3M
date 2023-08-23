@@ -1,6 +1,5 @@
 Vulkan mptransitivefail2
 "Missing VISWG in invocation 3, so VISDEV in invocation 2 isn't sufficient"
-"TODO: CHAINS"
 {
 P1:r0=0;
 P2:r1=0;

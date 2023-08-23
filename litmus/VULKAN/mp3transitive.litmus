@@ -2,7 +2,6 @@ Vulkan mptransitive3
 "Invocation 0 makes the write x=1 available to invocation 1."
 "Invocation 1 then does a bulk av operation with device scope."
 "This is enough to make x=1 visible to invocation 2."
-"TODO: CHAINS"
 {
 P1:r0=0;
 P2:r1=0;

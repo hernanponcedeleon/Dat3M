@@ -1,6 +1,5 @@
 Vulkan mptransitivefail
 "Missing AVWG in invocation 0, so AVDEV in invocation 1 isn't sufficient"
-"TODO: CHAINS"
 {
 P1:r0=0;
 P2:r1=0;

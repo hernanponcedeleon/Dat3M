@@ -1,7 +1,7 @@
 VULKAN ssw7
 "Pass: write-after-read hazard of private memory accesses with SSW.SSW in between"
 {
-P1:r0=0;
+P0:r0=0;
 P1:r1=0;
 x=0;
 y=0;

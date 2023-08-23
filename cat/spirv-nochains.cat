@@ -1,0 +1,124 @@
+SPIRV
+
+(* Terms from spirv.als *)
+// stor = [] "set to relation, (s,s) for all s in E, lift a set to a relation (the [_] operator in Herd)"
+// rai-r = r | r^-1
+// sthd = int
+// immpo = po - po;po
+// rc[r] = r?
+// ssg, swg, sqf = same scope id @ subgroup, workgroup, queuefamily
+// inscope = sr
+// sloc = loc
+// sref = vloc
+// scbarinst = syncbar "relates pairs of control barriers, same control barrier dynamic instance"
+// imm-r = r - (r;r+)
+// twoplus-r = r;r+
+
+//???????????
+// chains = new relation
+// ssw = new relation for system-synchronizes-with?
+
+(*******************)
+(*  Auxiliaries *)
+(*******************)
+let mutordatom = (loc & vloc & sr & (ATOM * ATOM)) \ id // mutually ordered atomics (same loc, inscope)
+
+let avvisSem = ((SC0 | SC1) * ((AV | VIS) & DV))
+                | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
+                | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
+let avvisSet = [AV | VIS]; (vloc & loc)
+let avvisinc = (avvisSem | avvisSem^-1) \ id |
+               (avvisSet | avvisSet^-1)
+
+let posctosem = (SC0 * SEMSC0 | SC1 * SEMSC1) & po
+let posemtosc = (SEMSC0 * SC0 | SEMSC1 * SC1) & po
+
+let asmo = co & (ATOM * ATOM)
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
+
+// synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
+let sw = sr & (
+    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
+    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
+    // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
+    ([REL & F]; po?; [CBAR]; (syncbar & sr \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
+)
+
+let ithbsemsc0 = ( ssw |
+                   ([SEMSC0]; sw; [SEMSC0]) |
+                   ([SC0 | SEMSC0]; po; [REL & SEMSC0]) |
+                   ([ACQ & SEMSC0]; po; [SC0 | SEMSC0])
+                 )+
+let ithbsemsc1 = ( ssw |
+                   ([SEMSC1]; sw; [SEMSC1]) |
+                   ([SC1 | SEMSC1]; po; [REL & SEMSC1]) |
+                   ([ACQ & SEMSC1]; po; [SC1 | SEMSC1])
+                 )+
+let ithbsemsc01 = ( ssw |
+                   ([SEMSC01]; sw; [SEMSC01]) |
+                   ([SC0 | SC1 | SEMSC01]; po; [REL & SEMSC01]) |
+                   ([ACQ & SEMSC01]; po; [SC0 | SC1 | SEMSC01])
+                 )+
+
+let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
+
+let chains = [M | F | CBAR]
+
+let avsg = [AV & SG]
+let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AV & WG]
+let avqf = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AV & QF]
+let avsh = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?); [AV & SHADER]
+let avdv = [AV & DV]
+
+let vissg = [VIS & SG]
+let viswg = [VIS & WG]; (chains & ((hb & ssg & avvisinc); vissg)?)
+let visqf = [VIS & QF]; (chains & ((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
+let vissh = [VIS & SHADER]; (chains & ((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
+let visdv = [VIS & DV]
+
+// loc order, relates memory accesses to the same location
+let locord = loc &
+             (  (hb & int & vloc) |
+                ([R \ PRIV]; hb; [R | W \ PRIV]) | // RaR, WaR (non-private)
+                ([R]; ssw+; [R | W]) | // RaR, WaR (any)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via workgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                          [W \ PRIV])) |   // WaW (via queue family instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R \ PRIV])) |   // RaW (via queue family instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                                [W \ PRIV])) |   // WaW (via shader domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po? & avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);                                [W]))        |   // WaW (via device domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc);  [R]))            // RaW (via device domain)
+             )
+
+let w-locord = [W]; locord
+
+let visto = (w-locord \ (w-locord; w-locord+)); [R] // visible to = location ordered W->R with no intervening write (W->W->R)
+(*******************)
+
+
+(****************)
+(* restrictions *)
+(****************)
+// rai[asmo] = ((A&W) -> (A&W)) & mutordatom
+empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
+
+(***********************)
+(* Memory Model Axioms *)
+(***********************)
+// consistency: locord, rf, fr, asmo must not form cycles
+acyclic (locord | rf | fr | asmo) as consistency-cycle
+// consistency: non-atomic cannot read-from a value that is shadowed by another write
+empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
+
+let read-write = (R \ W) * (R \ W) // exclude RMWs
+empty (((locord | locord^-1) | mutordatom \ read-write) \ (loc \ id \ read-write)) as locord-complete
+
+(* data_races *)
+let dr = loc & ((W * W | W * R | R * W) \ mutordatom \ id \ (locord | locord^-1))
+flag ~empty dr as racy
