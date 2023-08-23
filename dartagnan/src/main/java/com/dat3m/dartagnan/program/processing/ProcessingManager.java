@@ -79,8 +79,9 @@ public class ProcessingManager implements ProgramProcessor {
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
-                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 StaticMemoryInitializer.newInstance(),
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
+                NaiveDevirtualisation.newInstance(),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 Inlining.fromConfig(config),
