@@ -61,12 +61,16 @@ public interface ExpressionInspector extends ExpressionVisitor<Expression>{
         return getElementPointer;
     }
 
+    default Expression visit(Location location) {
+        location.getMemoryObject().accept(this);
+        return location;
+    }
+
     default Expression visit(BConst bConst) { return bConst;  }
     default Expression visit(BNonDet bNonDet) { return bNonDet; }
     default Expression visit(IValue iValue) { return iValue; }
     default Expression visit(INonDet iNonDet) { return iNonDet; }
     default Expression visit(Register reg) { return reg; }
     default Expression visit(MemoryObject address) { return address; }
-    default Expression visit(Location location) { return location; }
     default Expression visit(Function function) { return function; }
 }

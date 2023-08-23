@@ -69,7 +69,7 @@ public class LKMMAddUnless extends SingleAccessMemoryEvent implements RegWriter 
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         super.transformExpressions(exprTransformer);
         this.operand = operand.accept(exprTransformer);
-        this.cmp = operand.accept(exprTransformer);
+        this.cmp = cmp.accept(exprTransformer);
     }
 
     @Override

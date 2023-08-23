@@ -31,6 +31,7 @@ public class RemoveUnusedMemory implements ProgramProcessor {
                 }
             }
         }
+        // FIXME: We should also traverse the program spec for references to memory objects
         Sets.difference(memory.getObjects(), collector.memoryObjects).forEach(memory::deleteMemoryObject);
     }
 
