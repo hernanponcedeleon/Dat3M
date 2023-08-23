@@ -71,6 +71,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             applyTransformerToEvent(e, functionCollector);
             for (Function func : functionCollector.collectedFunctions) {
                 if (!func2AddressMap.containsKey(func)) {
+                    logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
                     func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress++), ptrType));
                 }
             }
@@ -118,6 +119,8 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                     final String error = String.format("Cannot resolve dynamic call \"%s\", no matching functions found.", call);
                     throw new MalformedProgramException(error);
                 }
+
+                logger.trace("Devirtualizing call \"{}\" with possible targets: {}", call, possibleTargets);
 
                 final List<Label> caseLabels = new ArrayList<>(possibleTargets.size());
                 final List<CondJump> caseJumps = new ArrayList<>(possibleTargets.size());
