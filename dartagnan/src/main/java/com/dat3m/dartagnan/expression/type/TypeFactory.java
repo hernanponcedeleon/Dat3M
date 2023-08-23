@@ -41,10 +41,14 @@ public final class TypeFactory {
     }
 
     public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes) {
+        return getFunctionType(returnType, parameterTypes, false);
+    }
+
+    public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes, boolean isVarArg) {
         checkNotNull(returnType);
         checkNotNull(parameterTypes);
         checkArgument(parameterTypes.stream().noneMatch(t -> t == voidType), "Void parameters are not allowed");
-        return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes.toArray(new Type[0])));
+        return typeNormalizer.normalize(new FunctionType(returnType, parameterTypes.toArray(new Type[0]), isVarArg));
     }
 
     public AggregateType getAggregateType(List<Type> fields) {

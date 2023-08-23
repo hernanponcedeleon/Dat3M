@@ -84,9 +84,6 @@ public class Function implements Expression {
     public Intrinsics.Info getIntrinsicInfo() { return intrinsicInfo; }
     public void setIntrinsicInfo(Intrinsics.Info info) { this.intrinsicInfo = info; }
 
-    public void setIsVarArgs(boolean value) { this.isVarArgs = value; }
-    public boolean isVarArgs() { return isVarArgs; }
-
     public Event getEntry() { return entry; }
     public Event getExit() { return exit; }
 

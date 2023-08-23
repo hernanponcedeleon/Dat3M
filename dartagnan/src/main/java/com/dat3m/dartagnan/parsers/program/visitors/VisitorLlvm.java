@@ -132,12 +132,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     "dummy_" + (unnamedParameters++);
             parameterNames.add(adjustRegisterName(parameterName));
         }
-        final FunctionType functionType = types.getFunctionType(returnType, parameterTypes);
+        final boolean isVarArgs = ctx.params().ellipsis != null;
+        final FunctionType functionType = types.getFunctionType(returnType, parameterTypes, isVarArgs);
         //TODO there are more attributes in ctx
         final var declaredFunction = new Function(name, functionType, parameterNames, functionCounter++, null);
-        if (ctx.params().ellipsis != null) {
-            declaredFunction.setIsVarArgs(true);
-        }
+
         program.addFunction(declaredFunction);
         constantMap.put(name, declaredFunction);
         return null;
