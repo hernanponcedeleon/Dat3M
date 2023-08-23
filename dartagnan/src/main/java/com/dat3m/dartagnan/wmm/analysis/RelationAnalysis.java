@@ -1063,7 +1063,7 @@ public class RelationAnalysis {
                 for (Event e2 : events) {
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (thread1 == thread2 || thread1.getSyncSet().isEmpty() || thread2.getSyncSet().isEmpty()) {
+                    if (thread1 == thread2 || thread1.hasSyncSet() || thread2.hasSyncSet()) {
                         continue;
                     }
                     if (thread1.getSyncSet().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
