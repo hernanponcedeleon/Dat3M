@@ -151,7 +151,7 @@ public class Intrinsics {
                     false, false, true, false, this::inlineNonDet),
             // --------------------------- LLVM ---------------------------
             new Info("llvm.*",
-                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz"),
+                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz", "llvm.assume"),
                     false, false, true, true, this::handleLLVMIntrinsic),
             // --------------------------- LKMM ---------------------------
             new Info("__LKMM_LOAD", false, true, true, true, this::handleLKMMIntrinsic),
@@ -301,7 +301,9 @@ public class Intrinsics {
         final ValueFunctionCall valueCall = (ValueFunctionCall) call;
         final String name = call.getCalledFunction().getName();
 
-        if (name.startsWith("llvm.ctlz")) {
+        if (name.startsWith("llvm.assume")) {
+            return List.of(EventFactory.newAssume(call.getArguments().get(0)));
+        } else if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
                 || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")) {
