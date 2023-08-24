@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
@@ -134,7 +133,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         }
         if(ctx.initArray() != null){
             if(size == null || ctx.initArray().arrayElement().size() == size){
-                List<IConst> values = new ArrayList<>();
+                List<Expression> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
                         values.add(expressions.parseValue(elCtx.constant().getText(), archType));

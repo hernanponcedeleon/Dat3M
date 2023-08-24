@@ -2,7 +2,10 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Construction;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.*;
@@ -82,17 +85,26 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 entity.accept(this);
             }
         }
+
+        // Declare all globals (functions and variables).
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            if (entity.globalDecl() != null || entity.globalDef() != null || entity.typeDef() != null) {
-                entity.accept(this);
-            }
             if (entity.funcDecl() != null) {
                 visitFuncHeader(entity.funcDecl().funcHeader());
             }
             if (entity.funcDef() != null) {
                 visitFuncHeader(entity.funcDef().funcHeader());
             }
+            // FIXME: Declare global variables
         }
+        for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
+            //FIXME: We need to parse the declaration of globals (similar to func headers) first
+            // because the initializer may refer to other globals.
+            if (entity.globalDecl() != null || entity.globalDef() != null || entity.typeDef() != null) {
+                entity.accept(this);
+            }
+        }
+
+        // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() == null &&
                     entity.globalDecl() == null &&
@@ -228,25 +240,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitGlobalDecl(GlobalDeclContext ctx) {
-        // TODO: Is this ever called?
-        final String name = globalIdent(ctx.GlobalIdent());
-        check(constantMap.containsKey(name), "Redefined constant in %s.", ctx);
-        final Type type = parseType(ctx.type());
-        final Expression expression;
-        if (ctx.immutable().getText().equals("global")) {
-            final int size = types.getMemorySizeInBytes(type);
-            expression = program.getMemory().allocate(size, true);
-            //TODO non-det initializer
-        } else {
-            // FIXME: Constants also occupy memory... in LLVM a named constant is a read-only global variable.
-            //  Address-less constants are never named and always directly inlined into the IR!
-            assert ctx.immutable().getText().equals("constant");
-            checkSupport(type instanceof IntegerType, "Non-integer in %s.", ctx);
-            final var constant = new INonDet(program.getConstants().size(), (IntegerType) type, false);
-            program.addConstant(constant);
-            expression = constant;
-        }
-        constantMap.put(name, expression);
+        checkSupport(false, "Declared but undefined constants are not supported", ctx);
+        // FIXME: See <visitGlobalDef> on how to handle this
         return null;
     }
 
@@ -257,12 +252,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type type = parseType(ctx.type());
         final int size = types.getMemorySizeInBytes(type);
         final MemoryObject globalObject = program.getMemory().allocate(size, true);
-        final Expression value = checkExpression(type, ctx.constant());
         globalObject.setCVar(name);
         if (ctx.threadLocal() != null) {
             globalObject.setIsThreadLocal(true);
         }
 
+        //TODO: Merge GlobalDef/GlobalDecl in the LLVM grammar into one single rule with an optional "constant".
+        // If no constant is provided, we can generate a nondeterministic value
+        final Expression value = checkExpression(type, ctx.constant());
         setInitialMemoryFromConstant(globalObject, 0, value);
         // TODO: mark the global as constant, if possible.
         constantMap.put(name, globalObject);
@@ -288,8 +285,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 currentOffset += types.getMemorySizeInBytes(structElement.getType());
             }
         } else if (constant.getType() instanceof IntegerType) {
-            assert constant instanceof IConst;
-            memObj.setInitialValue(offset, (IConst) constant);
+            memObj.setInitialValue(offset, constant);
         } else {
             throw new UnsupportedOperationException("Unrecognized constant value: " + constant);
         }
