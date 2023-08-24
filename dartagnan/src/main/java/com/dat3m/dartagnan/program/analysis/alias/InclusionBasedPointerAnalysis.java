@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -911,12 +912,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return right == 0 ? left : compose(left, List.of(right));
     }
 
-    // Adds an optional register to a set of dynamic offsets.
-    // If the register is present, it may contain any value.
-    private static List<Integer> compose(List<Integer> left, Register right) {
-        return right == null ? left : TOP;
-    }
-
     // Applies another offset to an existing labeled edge.
     private static DerivedVariable compose(DerivedVariable other, Modifier modifier) {
         return isTrivial(modifier) ? other : new DerivedVariable(other.base, compose(other.modifier, modifier));
@@ -934,60 +929,22 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return isTrivial(modifier) ? other : new StoreEdge(other.value, compose(other.addressModifier, modifier));
     }
 
-    // Multiplies all dynamic offsets with another factor.
-    private static List<Integer> mul(List<Integer> a, int factor) {
-        return factor == 0 ? List.of() : a.stream().map(i -> i * factor).toList();
-    }
-
-    // Describes (constant address or register or zero) + offset + alignment * (variable)
-    private record Result(MemoryObject address, Register register, BigInteger offset, List<Integer> alignment) {
-        private boolean isConstant() {
-            return address == null && register == null && alignment.isEmpty();
-        }
-        @Override
-        public String toString() {
-            return String.format("%s+%s+%sx", address != null ? address : register, offset, alignment);
-        }
-    }
-
     // Interprets an expression.
     // The result refers to an existing variable,
     // if the expression has a static base, or if the expression has a dynamic base with exactly one writer.
     // Otherwise, it refers to a new variable with proper incoming edges.
     private DerivedVariable getResultVariable(Expression expression, RegReader reader) {
-        final var collector = new Collector();
-        final Result result = expression.accept(collector);
-        final DerivedVariable main;
-        if (result != null && (result.address != null || result.register != null)) {
-            final DerivedVariable base = result.address != null ? derive(objectVariables.get(result.address)) :
-                    getPhiNodeVariable(result.register, reader);
-            sort(result.alignment);
-            main = compose(base, modifier(result.offset.intValue(), result.alignment));
-        } else {
-            main = null;
-        }
-        if (main != null &&
-                collector.address.stream().allMatch(a -> a == result.address) &&
-                collector.register.stream().allMatch(r -> r == result.register)) {
-            return main;
-        }
-        if (main == null && collector.address.isEmpty() && collector.register.isEmpty()) {
+        final var collector = new Collector(reader);
+        final List<IncludeEdge> result = expression.accept(collector);
+        if (result.isEmpty()) {
             return null;
         }
+        if (result.size() == 1) {
+            return new DerivedVariable(result.get(0).source, result.get(0).modifier);
+        }
         final Variable variable = newVariable("res" + reader.getGlobalId() + "(" + expression + ")");
-        if (main != null) {
-            addInclude(variable, includeEdge(main));
-        }
-        for (final MemoryObject object : collector.address) {
-            if (result == null || object != result.address) {
-                addInclude(variable, new IncludeEdge(objectVariables.get(object), RELAXED_MODIFIER));
-            }
-        }
-        for (final Register register : collector.register) {
-            if (result == null || register != result.register) {
-                final DerivedVariable registerVariable = getPhiNodeVariable(register, reader);
-                addInclude(variable, new IncludeEdge(registerVariable.base, RELAXED_MODIFIER));
-            }
+        for (IncludeEdge edge : result) {
+            addInclude(variable, edge);
         }
         return derive(variable);
     }
@@ -1012,114 +969,118 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return registerVariables.compute(writers, (k, v) -> derive(result));
     }
 
-    private static final class Collector implements ExpressionVisitor<Result> {
+    private final class Collector implements ExpressionVisitor<List<IncludeEdge>> {
 
-        final Set<MemoryObject> address = new LinkedHashSet<>();
-        final Set<Register> register = new LinkedHashSet<>();
+        private final RegReader reader;
 
-        @Override
-        public Result visitExpression(Expression expr) {
-            register.addAll(expr.getRegs());
-            return null;
+        private Collector(RegReader reader) {
+            this.reader = reader;
         }
 
         @Override
-        public Result visitIntBinaryExpression(IntBinaryExpr x) {
-            final Result left = x.getLeft().accept(this);
-            final Result right = x.getRight().accept(this);
-            final IntBinaryOp kind = x.getKind();
-            if (left != null && left.isConstant() && right != null && right.isConstant()) {
-                // TODO: Make sure that the type of normalization does not break this code.
-                //  Maybe always do signed normalization?
-                final BigInteger result = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
-                return new Result(null, null, result, List.of());
-            }
-            return switch (kind) {
-                case MUL -> {
-                    if (left == null && right == null ||
-                            left != null && left.address != null ||
-                            right != null && right.address != null) {
-                        yield null;
-                    }
-                    if (left == null || right == null) {
-                        final Result factor = left == null ? right : left;
-                        if (factor.register != null) {
-                            yield null;
-                        }
-                        final List<Integer> alignment = compose(factor.alignment, factor.offset.intValue());
-                        yield new Result(null, null, BigInteger.ZERO, alignment);
-                    }
-                    final List<Integer> leftAlignment = mul(compose(left.alignment, left.register), right.offset.intValue());
-                    final List<Integer> rightAlignment = mul(compose(right.alignment, right.register), left.offset.intValue());
-                    yield new Result(null, null, left.offset.multiply(right.offset), compose(leftAlignment, rightAlignment));
+        public List<IncludeEdge> visitExpression(Expression expr) {
+            final List<IncludeEdge> edges = new ArrayList<>();
+            expr.accept(new ExpressionInspector() {
+                @Override
+                public Expression visitRegister(Register register) {
+                    edges.add(new IncludeEdge(getPhiNodeVariable(register, reader).base, RELAXED_MODIFIER));
+                    return register;
                 }
-                case ADD, SUB -> {
-                    if (left == null || right == null || left.address != null && right.address != null) {
-                        yield null;
-                    }
-                    final MemoryObject base = left.address != null ? left.address : right.address;
-                    final BigInteger offset = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
-                    if (base != null) {
-                        final List<Integer> leftAlignment = compose(left.alignment, left.register);
-                        final List<Integer> rightAlignment = compose(right.alignment, right.register);
-                        yield new Result(base, null, offset, compose(leftAlignment, rightAlignment));
-                    }
-                    if (left.register != null && right.register != null) {
-                        yield null;
-                    }
-                    final Register register = left.register != null ? left.register : right.register;
-                    final List<Integer> alignment = compose(left.alignment, right.alignment);
-                    yield new Result(null, register, offset, alignment);
+                @Override
+                public Expression visitMemoryObject(MemoryObject object) {
+                    edges.add(new IncludeEdge(objectVariables.get(object), RELAXED_MODIFIER));
+                    return object;
                 }
-                default -> null;
-            };
+            });
+            return edges;
+        }
+
+        record ExprFlip(Expression x, int factor) {}
+
+        @Override
+        public List<IncludeEdge> visitIntBinaryExpression(IntBinaryExpr x) {
+            BigInteger offset = BigInteger.ZERO;
+            final List<ExprFlip> operands = new ArrayList<>();
+            final Stack<ExprFlip> stack = new Stack<>();
+            if (!matchLinearExpression(new ExprFlip(x, 1), stack)) {
+                return visitExpression(x);
+            }
+            while (!stack.isEmpty()) {
+                final ExprFlip operand = stack.pop();
+                if (matchLinearExpression(operand, stack)) {
+                    continue;
+                }
+                if (operand.x instanceof IntLiteral literal) {
+                    offset = offset.add(literal.getValue().multiply(BigInteger.valueOf(operand.factor)));
+                } else {
+                    operands.add(operand);
+                }
+            }
+            final List<IncludeEdge> result = new ArrayList<>();
+            final int o = offset.intValue();
+            for (int i = 0; i < operands.size(); i++) {
+                final ExprFlip operand = operands.get(i);
+                if (operand.factor != 1) {
+                    result.addAll(visitExpression(operand.x));
+                    continue;
+                }
+                List<Integer> alignment = List.of();
+                for (int j = 0; j < operands.size(); j++) {
+                    alignment = j == i ? alignment : compose(alignment, operands.get(j).factor);
+                }
+                for (IncludeEdge subResult : operand.x.accept(this)) {
+                    addInto(result, compose(subResult, modifier(o, alignment)), false);
+                }
+            }
+            return result;
+        }
+
+        private boolean matchLinearExpression(ExprFlip operand, Stack<ExprFlip> stack) {
+            final Expression left = operand.x instanceof IntBinaryExpr x ? x.getLeft() : null;
+            final Expression right = operand.x instanceof IntBinaryExpr x ? x.getRight() : null;
+            final boolean add = operand.x.getKind().equals(IntBinaryOp.ADD);
+            final boolean sub = operand.x.getKind().equals(IntBinaryOp.SUB);
+            final boolean mul = operand.x.getKind().equals(IntBinaryOp.MUL);
+            if (add || sub) {
+                stack.push(new ExprFlip(right, operand.factor * (add ? 1 : -1)));
+                stack.push(new ExprFlip(left, operand.factor));
+                return true;
+            } else if (mul) {
+                final IntLiteral leftLiteral = left instanceof IntLiteral l ? l : null;
+                final IntLiteral rightLiteral = right instanceof IntLiteral l ? l : null;
+                if (leftLiteral != null || rightLiteral != null) {
+                    final int factor = (leftLiteral != null ? leftLiteral : rightLiteral).getValueAsInt();
+                    stack.push(new ExprFlip(leftLiteral != null ? right : left, operand.factor * factor));
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override
-        public Result visitIntUnaryExpression(IntUnaryExpr x) {
-            if (x.getKind() != IntUnaryOp.MINUS) {
-                return null;
-            }
-            final Result result = x.getOperand().accept(this);
-            if (result.address != null || result.register != null) {
-                return null;
-            }
-            final var alignment = new ArrayList<Integer>();
-            for (final Integer a : result.alignment) {
-                alignment.add(-Math.abs(a));
-            }
-            return new Result(null, null, result.offset.negate(), alignment);
-        }
-
-        @Override
-        public Result visitIntSizeCastExpression(IntSizeCast expr) {
+        public List<IncludeEdge> visitIntSizeCastExpression(IntSizeCast expr) {
             // We assume type casts do not affect the value of pointers.
-            final Result result = expr.getOperand().accept(this);
-            return expr.isExtension() && !expr.preservesSign() ? result : null;
+            return expr.isExtension() && !expr.preservesSign() ? expr.getOperand().accept(this) : visitExpression(expr);
         }
 
         @Override
-        public Result visitITEExpression(ITEExpr x) {
-            x.getTrueCase().accept(this);
-            x.getFalseCase().accept(this);
-            return null;
+        public List<IncludeEdge> visitITEExpression(ITEExpr x) {
+            final List<IncludeEdge> result = new ArrayList<>(x.getTrueCase().accept(this));
+            for (IncludeEdge edge : x.getFalseCase().accept(this)) {
+                addInto(result, edge, false);
+            }
+            return result;
         }
 
         @Override
-        public Result visitMemoryObject(MemoryObject a) {
-            address.add(a);
-            return new Result(a, null, BigInteger.ZERO, List.of());
+        public List<IncludeEdge> visitMemoryObject(MemoryObject a) {
+            return List.of(new IncludeEdge(objectVariables.get(a), TRIVIAL_MODIFIER));
         }
 
         @Override
-        public Result visitRegister(Register r) {
-            register.add(r);
-            return new Result(null, r, BigInteger.ZERO, List.of());
-        }
-
-        @Override
-        public Result visitIntLiteral(IntLiteral v) {
-            return new Result(null, null, v.getValue(), List.of());
+        public List<IncludeEdge> visitRegister(Register r) {
+            DerivedVariable phiVariable = getPhiNodeVariable(r, reader);
+            return List.of(new IncludeEdge(phiVariable.base, phiVariable.modifier));
         }
     }
 
