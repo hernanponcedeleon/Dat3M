@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -19,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.newLocal;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RegisterDecomposition implements ProgramProcessor {
@@ -32,6 +32,7 @@ public class RegisterDecomposition implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        final EventFactory eventFactory = program.getEventFactory();
         final var transformer = new ExtractSubstitutor();
         for (Function function : program.getFunctions()) {
             //TODO assume that no constructor occurs anywhere other than as the root operation of a local
@@ -49,7 +50,7 @@ public class RegisterDecomposition implements ProgramProcessor {
                         final Register register = function.newRegister(argument.getType());
                         final var index = new RegisterIndex(local.getResultRegister(), i);
                         transformer.map.put(index, register);
-                        componentAssignments.add(newLocal(register, argument));
+                        componentAssignments.add(eventFactory.newLocal(register, argument));
                         //TODO recur if no leaf type
                     }
                     local.replaceBy(componentAssignments);

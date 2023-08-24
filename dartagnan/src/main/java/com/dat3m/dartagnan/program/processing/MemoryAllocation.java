@@ -40,9 +40,10 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void processAllocations(Program program) {
+        final EventFactory eventFactory = program.getEventFactory();
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
             final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc), false);
-            final Local local = EventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
+            final Local local = eventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);
             alloc.replaceBy(local);
@@ -82,6 +83,7 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void createInitEvents(Program program) {
+        final EventFactory eventFactory = program.getEventFactory();
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
         final TypeFactory types = TypeFactory.getInstance();
         final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
@@ -95,16 +97,16 @@ public class MemoryAllocation implements ProgramProcessor {
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
-                final Event init = EventFactory.newInit(memObj, i);
+                final Event init = eventFactory.newInit(memObj, i);
                 // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
                 final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId,
-                        EventFactory.newThreadStart(null));
+                        eventFactory.newThreadStart(null));
                 thread.append(init);
                 nextThreadId++;
 
                 program.addThread(thread);
                 thread.setProgram(program);
-                thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
+                thread.append(eventFactory.newLabel("END_OF_T" + thread.getId()));
             }
         }
     }

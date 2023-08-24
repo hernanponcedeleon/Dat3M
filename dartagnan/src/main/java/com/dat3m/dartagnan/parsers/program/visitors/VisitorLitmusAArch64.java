@@ -38,6 +38,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final IntegerType archType = types.getArchType();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    private final EventFactory eventFactory = programBuilder.getEventFactory();
     private int mainThread;
     private int threadCount = 0;
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
@@ -126,7 +127,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitMov(LitmusAArch64Parser.MovContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.rD, archType);
         Expression expr = ctx.expr32() != null ? (Expression)ctx.expr32().accept(this) : (Expression)ctx.expr64().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, expr));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(register, expr));
     }
 
     @Override
@@ -142,7 +143,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         Register rD = programBuilder.getOrNewRegister(mainThread, ctx.rD, archType);
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.rV);
         Expression expr = ctx.expr32() != null ? (Expression)ctx.expr32().accept(this) : (Expression)ctx.expr64().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rD, expressions.makeBinary(r1, ctx.arithmeticInstruction().op, expr)));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rD, expressions.makeBinary(r1, ctx.arithmeticInstruction().op, expr)));
     }
 
     @Override
@@ -152,7 +153,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        return programBuilder.addChild(mainThread, EventFactory.newLoadWithMo(register, address, ctx.loadInstruction().mo));
+        return programBuilder.addChild(mainThread, eventFactory.newLoadWithMo(register, address, ctx.loadInstruction().mo));
     }
 
     @Override
@@ -162,7 +163,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        Load load = EventFactory.newRMWLoadExclusiveWithMo(register, address, ctx.loadExclusiveInstruction().mo);
+        Load load = eventFactory.newRMWLoadExclusiveWithMo(register, address, ctx.loadExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -173,7 +174,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        return programBuilder.addChild(mainThread, EventFactory.newStoreWithMo(address, register, ctx.storeInstruction().mo));
+        return programBuilder.addChild(mainThread, eventFactory.newStoreWithMo(address, register, ctx.storeInstruction().mo));
     }
 
     @Override
@@ -184,7 +185,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if(ctx.offset() != null){
             address = visitOffset(ctx.offset(), address);
         }
-        StoreExclusive event = EventFactory.Common.newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
+        StoreExclusive event = eventFactory.withCommon().newExclusiveStore(statusReg, address, register, ctx.storeExclusiveInstruction().mo);
         return programBuilder.addChild(mainThread, event);
     }
 
@@ -192,14 +193,14 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Object visitBranch(LitmusAArch64Parser.BranchContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         if(ctx.branchCondition() == null){
-            return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
+            return programBuilder.addChild(mainThread, eventFactory.newGoto(label));
         }
         CmpInstruction cmp = lastCmpInstructionPerThread.put(mainThread, null);
         if(cmp == null){
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
         Expression expr = expressions.makeBinary(cmp.left, ctx.branchCondition().op, cmp.right);
-        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+        return programBuilder.addChild(mainThread, eventFactory.newJump(expr, label));
     }
 
     @Override
@@ -211,7 +212,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         IValue zero = expressions.makeZero(integerType);
         Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+        return programBuilder.addChild(mainThread, eventFactory.newJump(expr, label));
     }
 
     @Override
@@ -221,7 +222,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
 
     @Override
     public Object visitFence(LitmusAArch64Parser.FenceContext ctx) {
-        return programBuilder.addChild(mainThread, EventFactory.newFenceOpt(ctx.Fence().getText(), ctx.opt));
+        return programBuilder.addChild(mainThread, eventFactory.newFenceOpt(ctx.Fence().getText(), ctx.opt));
     }
 
     @Override
@@ -265,7 +266,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         Expression expr = ctx.immediate() == null
                 ? programBuilder.getOrErrorRegister(mainThread, ctx.expressionConversion().register32().id)
                 : expressions.parseValue(ctx.immediate().constant().getText(), archType);
-        programBuilder.addChild(mainThread, EventFactory.newLocal(result, expressions.makeADD(register, expr)));
+        programBuilder.addChild(mainThread, eventFactory.newLocal(result, expressions.makeADD(register, expr)));
         return result;
     }
 }

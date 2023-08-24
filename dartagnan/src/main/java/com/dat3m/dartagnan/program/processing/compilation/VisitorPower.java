@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.Tag.C11;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -22,7 +23,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.processing.compilation.VisitorPower.PowerScheme.LEADING_SYNC;
 import static com.google.common.base.Verify.verify;
 
-public class VisitorPower extends VisitorBase {
+public class VisitorPower extends VisitorBase<EventFactory.Power> {
 
     // The compilation schemes below follows the paper
     // "Clarifying and Compiling C/C++ Concurrency: from C++11 to POWER"
@@ -35,7 +36,8 @@ public class VisitorPower extends VisitorBase {
     // "Outlawing Ghosts: Avoiding Out-of-Thin-Air Results"
     private final boolean useRC11Scheme;
 
-    protected VisitorPower(boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+    protected VisitorPower(EventFactory events, boolean useRC11Scheme, PowerScheme cToPowerScheme) {
+        super(events.withPower());
         this.useRC11Scheme = useRC11Scheme;
         this.cToPowerScheme = cToPowerScheme;
     }
@@ -47,32 +49,35 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), e.getMemValue()));
+                eventFactory.newLwSyncBarrier(),
+                eventFactory.newStore(e.getAddress(), e.getMemValue())
+        );
     }
 
     @Override
     public List<Event> visitLock(Lock e) {
         IntegerType type = (IntegerType) e.getAccessType();
         Register dummy = e.getFunction().newRegister(type);
-        Label label = newLabel("FakeDep");
+        Label label = eventFactory.newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
         return eventSequence(
-                newRMWLoadExclusive(dummy, e.getAddress()),
-                newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),
-                Power.newRMWStoreConditional(e.getAddress(), expressions.makeOne(type), true),
+                eventFactory.newRMWLoadExclusive(dummy, e.getAddress()),
+                eventFactory.newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),
+                eventFactory.newRMWStoreConditional(e.getAddress(), expressions.makeOne(type), true),
                 // Fake dependency to guarantee acquire semantics
-                newFakeCtrlDep(dummy, label),
+                eventFactory.newFakeCtrlDep(dummy, label),
                 label,
-                Power.newISyncBarrier());
+                eventFactory.newISyncBarrier()
+        );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())));
+                eventFactory.newLwSyncBarrier(),
+                eventFactory.newStore(e.getAddress(), expressions.makeZero((IntegerType) e.getAccessType()))
+        );
     }
 
     // =============================================================================================
@@ -84,7 +89,7 @@ public class VisitorPower extends VisitorBase {
         Register resultRegister = e.getResultRegister();
 
         Event optionalBarrierBefore = null;
-        Load load = newLoad(resultRegister, e.getAddress());
+        Load load = eventFactory.newLoad(resultRegister, e.getAddress());
         Label optionalLabel = null;
         CondJump optionalFakeCtrlDep = null;
         Event optionalBarrierAfter = null;
@@ -92,23 +97,23 @@ public class VisitorPower extends VisitorBase {
         switch (e.getMo()) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalLabel = newLabel("FakeDep");
-                    optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalLabel = eventFactory.newLabel("FakeDep");
+                    optionalFakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, optionalLabel);
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalLabel = newLabel("FakeDep");
-                optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalLabel = eventFactory.newLabel("FakeDep");
+                optionalFakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, optionalLabel);
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELAXED:
                 if (useRC11Scheme) {
-                    optionalLabel = newLabel("FakeDep");
-                    optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+                    optionalLabel = eventFactory.newLabel("FakeDep");
+                    optionalFakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, optionalLabel);
                 }
                 break;
         }
@@ -118,33 +123,35 @@ public class VisitorPower extends VisitorBase {
                 load,
                 optionalFakeCtrlDep,
                 optionalLabel,
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
         Event optionalBarrierBefore = null;
-        Store store = newStore(e.getAddress(), e.getMemValue());
+        Store store = eventFactory.newStore(e.getAddress(), e.getMemValue());
         Event optionalBarrierAfter = null;
 
         switch (e.getMo()) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
         }
 
         return eventSequence(
                 optionalBarrierBefore,
                 store,
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
@@ -154,10 +161,10 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = Power.newRMWStoreConditional(address, e.getValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Load load = eventFactory.newRMWLoadExclusive(resultRegister, address);
+        Store store = eventFactory.newRMWStoreConditional(address, e.getValue(), true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, label);
 
         Event optionalBarrierBefore = null;
         Event optionalBarrierAfter = null;
@@ -165,22 +172,22 @@ public class VisitorPower extends VisitorBase {
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
             case C11.MO_ACQUIRE_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
         }
 
@@ -190,7 +197,8 @@ public class VisitorPower extends VisitorBase {
                 fakeCtrlDep,
                 label,
                 store,
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
@@ -199,14 +207,15 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
+        Expression modifiedValue = expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand());
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = eventFactory.newLocal(dummyReg, modifiedValue);
 
         // Power does not have mo tags, thus we use null
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = Power.newRMWStoreConditional(address, dummyReg, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Load load = eventFactory.newRMWLoadExclusive(resultRegister, address);
+        Store store = eventFactory.newRMWStoreConditional(address, dummyReg, true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, label);
 
         Event optionalBarrierBefore = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync
@@ -219,22 +228,22 @@ public class VisitorPower extends VisitorBase {
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
             case C11.MO_ACQUIRE_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
         }
 
@@ -245,7 +254,8 @@ public class VisitorPower extends VisitorBase {
                 label,
                 localOp,
                 store,
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
@@ -257,12 +267,13 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Local casCmpResult = newLocal(resultRegister, expressions.makeEQ(oldValueRegister, e.getExpectedValue()));
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJumpUnless(resultRegister, casEnd);
+        Expression isExpectedValue = expressions.makeEQ(oldValueRegister, e.getExpectedValue());
+        Local casCmpResult = eventFactory.newLocal(resultRegister, isExpectedValue);
+        Label casEnd = eventFactory.newLabel("CAS_end");
+        CondJump branchOnCasCmpResult = eventFactory.newJumpUnless(resultRegister, casEnd);
 
-        Load load = newRMWLoadExclusive(oldValueRegister, address);
-        Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
+        Load load = eventFactory.newRMWLoadExclusive(oldValueRegister, address);
+        Store store = eventFactory.newRMWStoreConditional(address, e.getStoreValue(), true);
 
         Event optionalBarrierBefore = null;
         Event optionalBarrierAfter = null;
@@ -270,22 +281,22 @@ public class VisitorPower extends VisitorBase {
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
             case C11.MO_ACQUIRE_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
         }
 
@@ -296,15 +307,17 @@ public class VisitorPower extends VisitorBase {
                 branchOnCasCmpResult,
                 store,
                 casEnd,
-                optionalBarrierAfter);
+                optionalBarrierAfter
+        );
     }
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-        Event fence = e.getMo().equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+        Event fence = e.getMo().equals(Tag.C11.MO_SC) ? eventFactory.newSyncBarrier() : eventFactory.newLwSyncBarrier();
 
         return eventSequence(
-                fence);
+                fence
+        );
     }
 
     // =============================================================================================
@@ -321,48 +334,47 @@ public class VisitorPower extends VisitorBase {
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
                 e.getFunction().newRegister(types.getBooleanType());
-        Local castResult = type instanceof BooleanType ? null :
-                newLocal(resultRegister, expressions.makeCast(booleanResultRegister, type));
+        Local castResult = type instanceof BooleanType ? null : newAssignment(resultRegister, booleanResultRegister);
         Register regExpected = e.getFunction().newRegister(type);
         Register regValue = e.getFunction().newRegister(type);
-        Load loadExpected = newLoad(regExpected, expectedAddr);
-        Store storeExpected = newStore(expectedAddr, regValue);
-        Label casFail = newLabel("CAS_fail");
-        Label casEnd = newLabel("CAS_end");
-        Local casCmpResult = newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
-        CondJump branchOnCasCmpResult = newJumpUnless(booleanResultRegister, casFail);
-        CondJump gotoCasEnd = newGoto(casEnd);
+        Load loadExpected = eventFactory.newLoad(regExpected, expectedAddr);
+        Store storeExpected = eventFactory.newStore(expectedAddr, regValue);
+        Label casFail = eventFactory.newLabel("CAS_fail");
+        Label casEnd = eventFactory.newLabel("CAS_end");
+        Local casCmpResult = eventFactory.newLocal(booleanResultRegister, expressions.makeEQ(regValue, regExpected));
+        CondJump branchOnCasCmpResult = eventFactory.newJumpUnless(booleanResultRegister, casFail);
+        CondJump gotoCasEnd = eventFactory.newGoto(casEnd);
         // Power does not have mo tags, thus we use the empty string
-        Load loadValue = newRMWLoadExclusive(regValue, address);
-        Store storeValue = Power.newRMWStoreConditional(address, value, e.isStrong());
+        Load loadValue = eventFactory.newRMWLoadExclusive(regValue, address);
+        Store storeValue = eventFactory.newRMWStoreConditional(address, value, e.isStrong());
         ExecutionStatus optionalExecStatus = null;
         Local optionalUpdateCasCmpResult = null;
         if (e.isWeak()) {
             Register statusReg = e.getFunction().newRegister(types.getBooleanType());
-            optionalExecStatus = newExecutionStatus(statusReg, storeValue);
-            optionalUpdateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
+            optionalExecStatus = eventFactory.newExecutionStatus(statusReg, storeValue);
+            optionalUpdateCasCmpResult = eventFactory.newLocal(booleanResultRegister, expressions.makeNot(statusReg));
         }
         Event optionalBarrierBefore = null;
         Event optionalBarrierAfter = null;
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
             case C11.MO_ACQUIRE_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
         }
         return eventSequence(
@@ -390,12 +402,13 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = eventFactory.newLocal(dummyReg,
+                expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
 
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = Power.newRMWStoreConditional(address, dummyReg, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Load load = eventFactory.newRMWLoadExclusive(resultRegister, address);
+        Store store = eventFactory.newRMWStoreConditional(address, dummyReg, true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, label);
 
         Event optionalBarrierBefore = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
@@ -406,22 +419,22 @@ public class VisitorPower extends VisitorBase {
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
             case C11.MO_ACQUIRE_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
         }
 
@@ -443,7 +456,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Event optionalBarrierBefore = null;
-        Load load = newLoad(resultRegister, address);
+        Load load = eventFactory.newLoad(resultRegister, address);
         Label optionalLabel = null;
         CondJump optionalFakeCtrlDep = null;
         Event optionalBarrierAfter = null;
@@ -451,23 +464,23 @@ public class VisitorPower extends VisitorBase {
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalLabel = newLabel("FakeDep");
-                    optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalLabel = eventFactory.newLabel("FakeDep");
+                    optionalFakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, optionalLabel);
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalLabel = newLabel("FakeDep");
-                optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalLabel = eventFactory.newLabel("FakeDep");
+                optionalFakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, optionalLabel);
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELAXED:
                 if (useRC11Scheme) {
-                    optionalLabel = newLabel("FakeDep");
-                    optionalFakeCtrlDep = newFakeCtrlDep(resultRegister, optionalLabel);
+                    optionalLabel = eventFactory.newLabel("FakeDep");
+                    optionalFakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, optionalLabel);
                 }
                 break;
         }
@@ -488,20 +501,20 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Event optionalBarrierBefore = null;
-        Store store = newStore(address, value);
+        Store store = eventFactory.newStore(address, value);
         Event optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
         }
 
@@ -515,7 +528,7 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         String mo = e.getMo();
-        Event fence = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+        Event fence = mo.equals(Tag.C11.MO_SC) ? eventFactory.newSyncBarrier() : eventFactory.newLwSyncBarrier();
 
         return eventSequence(
                 fence
@@ -528,10 +541,10 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load load = newRMWLoadExclusive(resultRegister, address);
-        Store store = Power.newRMWStoreConditional(address, e.getValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
+        Load load = eventFactory.newRMWLoadExclusive(resultRegister, address);
+        Store store = eventFactory.newRMWStoreConditional(address, e.getValue(), true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, label);
 
         Event optionalBarrierBefore = null;
         Event optionalBarrierAfter = null;
@@ -539,22 +552,22 @@ public class VisitorPower extends VisitorBase {
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
-                    optionalBarrierBefore = Power.newSyncBarrier();
-                    optionalBarrierAfter = Power.newISyncBarrier();
+                    optionalBarrierBefore = eventFactory.newSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newISyncBarrier();
                 } else {
-                    optionalBarrierBefore = Power.newLwSyncBarrier();
-                    optionalBarrierAfter = Power.newSyncBarrier();
+                    optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                    optionalBarrierAfter = eventFactory.newSyncBarrier();
                 }
                 break;
             case C11.MO_ACQUIRE:
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
             case C11.MO_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
                 break;
             case C11.MO_ACQUIRE_RELEASE:
-                optionalBarrierBefore = Power.newLwSyncBarrier();
-                optionalBarrierAfter = Power.newISyncBarrier();
+                optionalBarrierBefore = eventFactory.newLwSyncBarrier();
+                optionalBarrierAfter = eventFactory.newISyncBarrier();
                 break;
         }
 
@@ -581,8 +594,8 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         // Power does not have mo tags, thus we use the empty string
-        Load load = newLoad(resultRegister, address);
-        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newLwSyncBarrier() : null;
+        Load load = eventFactory.newLoad(resultRegister, address);
+        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newLwSyncBarrier() : null;
 
         return eventSequence(
                 load,
@@ -598,8 +611,8 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Store store = newStore(address, value);
-        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        Store store = eventFactory.newStore(address, value);
+        Event optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
 
         return eventSequence(
                 optionalMemoryBarrier,
@@ -611,34 +624,22 @@ public class VisitorPower extends VisitorBase {
     //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Event optionalMemoryBarrier;
-        switch (e.getName()) {
-            case Tag.Linux.MO_MB:
-            case Tag.Linux.MO_RMB:
-            case Tag.Linux.MO_WMB:
-            case Tag.Linux.BEFORE_ATOMIC:
-            case Tag.Linux.AFTER_ATOMIC:
-                optionalMemoryBarrier = Power.newSyncBarrier();
-                break;
+        Event optionalMemoryBarrier = switch (e.getName()) {
+            case Tag.Linux.MO_MB, Tag.Linux.MO_RMB, Tag.Linux.MO_WMB, Tag.Linux.BEFORE_ATOMIC, Tag.Linux.AFTER_ATOMIC
+                    -> eventFactory.newSyncBarrier();
             // #define smp_mb__after_spinlock()	smp_mb()
             // 		https://elixir.bootlin.com/linux/v6.1/source/arch/powerpc/include/asm/spinlock.h#L14
-            case Tag.Linux.AFTER_SPINLOCK:
-                optionalMemoryBarrier = Power.newSyncBarrier();
-                break;
+            case Tag.Linux.AFTER_SPINLOCK -> eventFactory.newSyncBarrier();
             // #define smp_mb__after_unlock_lock()	smp_mb()  /* Full ordering for lock. */
             // 		https://elixir.bootlin.com/linux/v6.1/source/include/linux/rcupdate.h#L1008
             // It seem to be only used for RCU related stuff in the kernel so it makes sense
             // it is defined in that header file
-            case Tag.Linux.AFTER_UNLOCK_LOCK:
-                optionalMemoryBarrier = Power.newSyncBarrier();
-                break;
+            case Tag.Linux.AFTER_UNLOCK_LOCK -> eventFactory.newSyncBarrier();
             // https://elixir.bootlin.com/linux/v6.1/source/include/linux/compiler.h#L86
-            case Tag.Linux.BARRIER:
-                optionalMemoryBarrier = null;
-                break;
-            default:
-                throw new UnsupportedOperationException("Compilation of fence " + e.getName() + " is not supported");
-        }
+            case Tag.Linux.BARRIER -> null;
+            default -> throw new UnsupportedOperationException(
+                    "Compilation of fence " + e.getName() + " is not supported");
+        };
 
         return eventSequence(
                 optionalMemoryBarrier
@@ -680,18 +681,18 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
-        Label casEnd = newLabel("CAS_end");
-        CondJump branchOnCasCmpResult = newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
+        Label casEnd = eventFactory.newLabel("CAS_end");
+        CondJump branchOnCasCmpResult = eventFactory.newJump(expressions.makeNEQ(dummy, e.getExpectedValue()), casEnd);
 
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Load load = eventFactory.newRMWLoadExclusive(dummy, address);
+        Store store = eventFactory.newRMWStoreConditional(address, e.getStoreValue(), true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
@@ -702,7 +703,7 @@ public class VisitorPower extends VisitorBase {
                 label,
                 optionalMemoryBarrierAfter,
                 casEnd,
-                newLocal(resultRegister, dummy)
+                eventFactory.newLocal(resultRegister, dummy)
         );
     }
 
@@ -713,21 +714,21 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, e.getValue(), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Load load = eventFactory.newRMWLoadExclusive(dummy, address);
+        Store store = eventFactory.newRMWStoreConditional(address, e.getValue(), true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
                 store,
-                newLocal(resultRegister, dummy),
+                eventFactory.newLocal(resultRegister, dummy),
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter
@@ -742,15 +743,15 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
         // Power does not have mo tags, thus we use the empty string
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, storeValue, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Load load = eventFactory.newRMWLoadExclusive(dummy, address);
+        Store store = eventFactory.newRMWStoreConditional(address, storeValue, true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
 
         return eventSequence(
@@ -762,8 +763,6 @@ public class VisitorPower extends VisitorBase {
                 optionalMemoryBarrierAfter
         );
     }
-
-    ;
 
     @Override
     public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
@@ -772,30 +771,28 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, dummy, true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Load load = eventFactory.newRMWLoadExclusive(dummy, address);
+        Store store = eventFactory.newRMWStoreConditional(address, dummy, true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
+                eventFactory.newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand())),
                 store,
-                newLocal(resultRegister, dummy),
+                eventFactory.newLocal(resultRegister, dummy),
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter
         );
     }
-
-    ;
 
     @Override
     public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
@@ -804,21 +801,22 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadExclusive(dummy, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Expression modifiedValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
+        Load load = eventFactory.newRMWLoadExclusive(dummy, address);
+        Store store = eventFactory.newRMWStoreConditional(address, modifiedValue, true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
                 store,
-                newLocal(resultRegister, dummy),
+                eventFactory.newLocal(resultRegister, dummy),
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter
@@ -839,36 +837,34 @@ public class VisitorPower extends VisitorBase {
 
         Register regValue = e.getFunction().newRegister(type);
         // Power does not have mo tags, thus we use the empty string
-        Load load = newRMWLoadExclusive(regValue, address);
-        Store store = Power.newRMWStoreConditional(address, expressions.makeADD(regValue, e.getOperand()), true);
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(regValue, label);
+        Load load = eventFactory.newRMWLoadExclusive(regValue, address);
+        Store store = eventFactory.newRMWStoreConditional(address, expressions.makeADD(regValue, e.getOperand()), true);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(regValue, label);
 
         Register dummy = e.getFunction().newRegister(types.getBooleanType());
         Expression unless = e.getCmp();
-        Label cauEnd = newLabel("CAddU_end");
-        CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
+        Label cauEnd = eventFactory.newLabel("CAddU_end");
+        CondJump branchOnCauCmpResult = eventFactory.newJumpUnless(dummy, cauEnd);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
                 load,
-                newLocal(dummy, expressions.makeNEQ(regValue, unless)),
+                eventFactory.newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                 store,
                 fakeCtrlDep,
                 label,
                 optionalMemoryBarrierAfter,
                 cauEnd,
-                newLocal(resultRegister, expressions.makeCast(dummy, resultRegister.getType()))
+                newAssignment(resultRegister, dummy)
         );
     }
-
-    ;
 
     // The implementation is arch_${atomic}_op_return(i, v) == 0;
     // 		https://elixir.bootlin.com/linux/v5.18/source/scripts/atomic/fallbacks/sub_and_test
@@ -882,17 +878,17 @@ public class VisitorPower extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Expression testResult = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
-        Load load = newRMWLoadExclusive(dummy, address);
-        Local localOp = newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
-        Store store = Power.newRMWStoreConditional(address, dummy, true);
-        Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
-        Label label = newLabel("FakeDep");
-        Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
+        Load load = eventFactory.newRMWLoadExclusive(dummy, address);
+        Local localOp = eventFactory.newLocal(dummy, expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
+        Store store = eventFactory.newRMWStoreConditional(address, dummy, true);
+        Local testOp = newAssignment(resultRegister, testResult);
+        Label label = eventFactory.newLabel("FakeDep");
+        Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
 
-        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
-                : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
+        Event optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_RELEASE) ? eventFactory.newLwSyncBarrier() : null;
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newSyncBarrier() :
+                mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newISyncBarrier() : null;
 
 
         return eventSequence(
@@ -907,38 +903,36 @@ public class VisitorPower extends VisitorBase {
         );
     }
 
-    ;
-
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
         IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
-        Label label = newLabel("FakeDep");
+        Label label = eventFactory.newLabel("FakeDep");
         // Spinlock events are guaranteed to succeed, i.e. we can use assumes
         return eventSequence(
-                newRMWLoadExclusive(dummy, e.getLock()),
-                newAssume(expressions.makeEQ(dummy, zero)),
-                Power.newRMWStoreConditional(e.getLock(), one, true),
+                eventFactory.newRMWLoadExclusive(dummy, e.getLock()),
+                eventFactory.newAssume(expressions.makeEQ(dummy, zero)),
+                eventFactory.newRMWStoreConditional(e.getLock(), one, true),
                 // Fake dependency to guarantee acquire semantics
-                newFakeCtrlDep(dummy, label),
+                eventFactory.newFakeCtrlDep(dummy, label),
                 label,
-                Power.newISyncBarrier()
+                eventFactory.newISyncBarrier()
         );
     }
 
     @Override
     public List<Event> visitLKMMUnlock(LKMMUnlock e) {
         return eventSequence(
-                Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
+                eventFactory.newLwSyncBarrier(),
+                eventFactory.newStore(e.getAddress(), expressions.makeZero((IntegerType) e.getAccessType()))
         );
     }
 
     public enum PowerScheme {
 
-        LEADING_SYNC, TRAILING_SYNC;
+        LEADING_SYNC, TRAILING_SYNC
 
     }
 }

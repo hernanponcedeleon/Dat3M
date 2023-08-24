@@ -41,6 +41,7 @@ public class ComplexBlockSplitting implements FunctionProcessor {
     }
 
     private int splitBlocks(Function function) {
+        final EventFactory eventFactory = function.getProgram().getEventFactory();
         int numSplittings = 0;
         // These are the jumps where we insert labels to split the containing block into two simpler blocks.
         final List<CondJump> splittingPoints = function.getEvents(CondJump.class).stream()
@@ -50,8 +51,8 @@ public class ComplexBlockSplitting implements FunctionProcessor {
             final String targetLabelName = condJump.getLabel().getName();
             final String newLabelName = String.format("%s_else_%d", targetLabelName,
                     labelName2OccurrenceMap.compute(targetLabelName, (k, v) -> v == null ? 1 : v + 1));
-            final Label blockLabel = EventFactory.newLabel(newLabelName);
-            final CondJump gotoLabel = EventFactory.newGoto(blockLabel);
+            final Label blockLabel = eventFactory.newLabel(newLabelName);
+            final CondJump gotoLabel = eventFactory.newGoto(blockLabel);
 
             blockLabel.copyAllMetadataFrom(condJump);
             gotoLabel.copyAllMetadataFrom(condJump);

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
@@ -14,7 +15,11 @@ import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
-public class VisitorVulkan extends VisitorBase {
+public class VisitorVulkan extends VisitorBase<EventFactory.Vulkan> {
+
+    VisitorVulkan(EventFactory events) {
+        super(events.withVulkan());
+    }
 
     @Override
     public List<Event> visitVulkanRMW(VulkanRMW e) {
@@ -22,14 +27,14 @@ public class VisitorVulkan extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
+        Load load = eventFactory.newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,
-                newLocal(resultRegister, dummy)
+                eventFactory.newLocal(resultRegister, dummy)
         );
     }
 
@@ -39,15 +44,15 @@ public class VisitorVulkan extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.Vulkan.storeMO(mo));
+        Expression modifiedValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
+        Load load = eventFactory.newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, modifiedValue, Tag.Vulkan.storeMO(mo));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,
-                newLocal(resultRegister, dummy)
+                eventFactory.newLocal(resultRegister, dummy)
         );
     }
 

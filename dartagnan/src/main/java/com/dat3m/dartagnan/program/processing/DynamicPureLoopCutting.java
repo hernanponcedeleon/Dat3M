@@ -123,12 +123,13 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         final List<Register> trackingRegs = new ArrayList<>();
         final Type type = TypeFactory.getInstance().getBooleanType();
         Event insertionPoint = iterInfo.getIterationEnd();
+        final EventFactory eventFactory = insertionPoint.getFunction().getProgram().getEventFactory();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = func.newRegister(String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), type);
             trackingRegs.add(trackingReg);
 
-            final Event execCheck = EventFactory.newExecutionStatus(trackingReg, sideEffect);
+            final Event execCheck = eventFactory.newExecutionStatus(trackingReg, sideEffect);
             insertionPoint.insertAfter(execCheck);
             insertionPoint = execCheck;
         }
@@ -145,9 +146,10 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
     }
 
     private Event newSpinTerminator(Expression guard, Function func) {
+        EventFactory eventFactory = func.getProgram().getEventFactory();
         return func instanceof Thread thread ?
-                EventFactory.newJump(guard, (Label) thread.getExit())
-                : EventFactory.newAbortIf(guard);
+                eventFactory.newJump(guard, (Label) thread.getExit()) :
+                eventFactory.newAbortIf(guard);
     }
 
     // ============================= Actual logic =============================

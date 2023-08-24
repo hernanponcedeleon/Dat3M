@@ -40,6 +40,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.POWER);
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    private final EventFactory eventFactory = programBuilder.getEventFactory();
     private final IntegerType archType = types.getArchType();
     private final Map<Integer, CmpInstruction> lastCmpInstructionPerThread = new HashMap<>();
     private int mainThread;
@@ -131,14 +132,14 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitLi(LitmusPPCParser.LiContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(register, constant));
     }
 
     @Override
     public Object visitLwz(LitmusPPCParser.LwzContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLoad(r1, ra));
+        return programBuilder.addChild(mainThread, eventFactory.newLoad(r1, ra));
     }
 
     @Override
@@ -151,7 +152,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitStw(LitmusPPCParser.StwContext ctx) {
         Register r1 = programBuilder.getOrErrorRegister(mainThread, ctx.register(0).getText());
         Register ra = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newStore(ra, r1));
+        return programBuilder.addChild(mainThread, eventFactory.newStore(ra, r1));
     }
 
     @Override
@@ -164,7 +165,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitMr(LitmusPPCParser.MrContext ctx) {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, r2));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(r1, r2));
     }
 
     @Override
@@ -172,7 +173,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeADD(r2, constant)));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(r1, expressions.makeADD(r2, constant)));
     }
 
     @Override
@@ -180,7 +181,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
         Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
         Register r2 = programBuilder.getOrErrorRegister(mainThread, ctx.register(1).getText());
         Register r3 = programBuilder.getOrErrorRegister(mainThread, ctx.register(2).getText());
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(r1, expressions.makeXOR(r2, r3)));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(r1, expressions.makeXOR(r2, r3)));
     }
 
     @Override
@@ -199,7 +200,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
             throw new ParsingException("Invalid syntax near " + ctx.getText());
         }
         Expression expr = expressions.makeBinary(cmp.left, ctx.cond().op, cmp.right);
-        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+        return programBuilder.addChild(mainThread, eventFactory.newJump(expr, label));
     }
 
     @Override
@@ -211,7 +212,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitFence(LitmusPPCParser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
         if(fences.contains(name)){
-            return programBuilder.addChild(mainThread, EventFactory.newFence(name));
+            return programBuilder.addChild(mainThread, eventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);
     }

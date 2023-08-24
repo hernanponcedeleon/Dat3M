@@ -8,12 +8,14 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
@@ -25,23 +27,30 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 
-class VisitorBase implements EventVisitor<List<Event>> {
+class VisitorBase<F extends EventFactory> implements EventVisitor<List<Event>> {
 
     protected final TypeFactory types = TypeFactory.getInstance();
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    protected final F eventFactory;
 
     protected Function funcToBeCompiled;
 
-    protected VisitorBase() { }
+    protected VisitorBase(F eventFactory) {
+        this.eventFactory = eventFactory;
+    }
 
     protected Event newTerminator(Expression guard) {
         if (funcToBeCompiled instanceof Thread thread) {
-            return newJump(guard, (Label)thread.getExit());
+            return eventFactory.newJump(guard, (Label) thread.getExit());
         } else {
-            return newAbortIf(guard);
+            return eventFactory.newAbortIf(guard);
         }
+    }
+
+    protected Local newAssignment(Register register, Expression value) {
+        return eventFactory.newLocal(register, expressions.makeCast(value, register.getType()));
     }
 
     @Override
@@ -51,8 +60,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitInitLock(InitLock e) {
-        return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
+        return eventSequence(eventFactory.newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
         );
     }
 
@@ -64,11 +72,11 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Expression one = expressions.makeOne(type);
         String mo = e.getMo();
 
-        Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
+        Load rmwLoad = eventFactory.newRMWLoadWithMo(dummy, e.getAddress(), mo);
         return eventSequence(
                 rmwLoad,
                 newTerminator(expressions.makeNEQ(dummy, zero)),
-                newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
+                eventFactory.newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
         );
     }
 
@@ -81,11 +89,11 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
+        Load rmwLoad = eventFactory.newRMWLoadWithMo(dummy, address, mo);
         return eventSequence(
                 rmwLoad,
                 newTerminator(expressions.makeNEQ(dummy, one)),
-                newRMWStoreWithMo(rmwLoad, address, zero, mo)
+                eventFactory.newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
     }
 
@@ -140,12 +148,10 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Expression address = e.getAddress();
         String mo = e.getMo();
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummyReg, address, mo);
-        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
+        Load load = eventFactory.newRMWLoadWithMo(dummyReg, address, mo);
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, e.getValue(), mo);
         return eventSequence(
-                load,
-                store,
-                newLocal(resultRegister, dummyReg)
+                load, store, eventFactory.newLocal(resultRegister, dummyReg)
         );
     }
 

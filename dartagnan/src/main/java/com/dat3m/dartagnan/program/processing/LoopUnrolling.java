@@ -88,10 +88,11 @@ public class LoopUnrolling implements ProgramProcessor {
         if (!func.hasBody()) {
             return;
         }
+        final EventFactory eventFactory = func.getProgram().getEventFactory();
         final Map<CondJump, Integer> loopBoundsMap = computeLoopBoundsMap(func, defaultBound);
         func.getEvents(CondJump.class).stream()
                 .filter(loopBoundsMap::containsKey)
-                .forEach(j -> unrollLoop(j, loopBoundsMap.get(j)));
+                .forEach(j -> unrollLoop(j, loopBoundsMap.get(j), eventFactory));
     }
 
     private Map<CondJump, Integer> computeLoopBoundsMap(Function func, int defaultBound) {
@@ -122,7 +123,7 @@ public class LoopUnrolling implements ProgramProcessor {
         return loopBoundsMap;
     }
 
-    private void unrollLoop(CondJump loopBackJump, int bound) {
+    private void unrollLoop(CondJump loopBackJump, int bound, EventFactory eventFactory) {
         final Label loopBegin = loopBackJump.getLabel();
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
         Preconditions.checkArgument(loopBegin.getGlobalId() < loopBackJump.getGlobalId(),
@@ -137,11 +138,14 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBegin.addTags(Tag.NOOPT);
 
                 // This is the last iteration, so we replace the back jump by a bound event.
-                final Event boundEvent = newBoundEvent(loopBackJump.getFunction());
+                final Event boundEvent = newBoundEvent(loopBackJump.getFunction(), eventFactory);
                 loopBackJump.replaceBy(boundEvent);
 
                 // Mark end of loop, so we can find it later again
-                final Label endOfLoopMarker = EventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
+                final Label endOfLoopMarker = eventFactory.newLabel(String.format("%s%s%s",
+                        loopName,
+                        LOOP_INFO_SEPARATOR,
+                        LOOP_INFO_BOUND_SUFFIX));
                 endOfLoopMarker.addTags(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
@@ -187,10 +191,9 @@ public class LoopUnrolling implements ProgramProcessor {
         return copies;
     }
 
-    private Event newBoundEvent(Function func) {
-        final Event boundEvent = func instanceof Thread thread ?
-                EventFactory.newGoto((Label) thread.getExit()) :
-                EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
+    private Event newBoundEvent(Function func, EventFactory eventFactory) {
+        final Event boundEvent = func instanceof Thread thread ? eventFactory.newGoto((Label) thread.getExit()) :
+                eventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
         boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
         return boundEvent;
     }

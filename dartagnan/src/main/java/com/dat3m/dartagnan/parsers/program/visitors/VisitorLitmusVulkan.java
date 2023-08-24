@@ -34,6 +34,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final IntegerType archType = types.getArchType();
+    private final EventFactory.Vulkan eventFactory = programBuilder.getEventFactory().withVulkan();
     private int mainThread;
     private int threadCount = 0;
 
@@ -183,9 +184,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Boolean atomic = ctx.atomic().isAtomic;
         Store store;
         if (ctx.mo() != null) {
-            store = EventFactory.newStoreWithMo(object, value, ctx.mo().content);
+            store = eventFactory.newStoreWithMo(object, value, ctx.mo().content);
         } else {
-            store = EventFactory.newStore(object, value);
+            store = eventFactory.newStore(object, value);
         }
         if (ctx.avvis() != null) {
             store.addTags(ctx.avvis().content);
@@ -210,7 +211,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitLocalValue(LitmusVulkanParser.LocalValueContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         Expression value = (Expression) ctx.value().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, value));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(register, value));
     }
 
     @Override
@@ -219,7 +220,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeADD(lhs, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -228,7 +229,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeSUB(lhs, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -237,7 +238,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeMUL(lhs, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -246,7 +247,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeDIV(lhs, rhs, true);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -256,9 +257,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Boolean atomic = ctx.atomic().isAtomic;
         Load load;
         if (ctx.mo() != null) {
-            load = EventFactory.newLoadWithMo(register, location, ctx.mo().content);
+            load = eventFactory.newLoadWithMo(register, location, ctx.mo().content);
         } else {
-            load = EventFactory.newLoad(register, location);
+            load = eventFactory.newLoad(register, location);
         }
         if (ctx.avvis() != null) {
             load.addTags(ctx.avvis().content);
@@ -290,7 +291,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String storageClass = ctx.storageClass().content;
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
-        VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, value, mo, scope);
+        VulkanRMW rmw = eventFactory.newRMW(location, register, value, mo, scope);
         if (!avvis.isEmpty()) {
             rmw.addTags(avvis);
         }
@@ -310,7 +311,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         IOpBin op = ctx.operation().op;
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
-        VulkanRMWOp rmw = EventFactory.Vulkan.newRMWOp(location, register, value, op, mo, scope);
+        VulkanRMWOp rmw = eventFactory.newRMWOp(location, register, value, op, mo, scope);
         if (!avvis.isEmpty()) {
             rmw.addTags(avvis);
         }
@@ -329,7 +330,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
                 && !avvis.equals(Tag.Vulkan.AVAILABLE) && !avvis.equals(Tag.Vulkan.VISIBLE)) {
             throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
         }
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = eventFactory.newFence(ctx.getText().toLowerCase());
         if (!mo.isEmpty()) {
             fence.addTags(mo);
         }
@@ -352,7 +353,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
         Expression fenceId = (Expression) ctx.value().accept(this);
         String fenceIdString = ctx.getText().replace(fenceId.toString(), "");
-        Event fence = EventFactory.newFenceWithId(fenceIdString.toLowerCase(), fenceId);
+        Event fence = eventFactory.newFenceWithId(fenceIdString.toLowerCase(), fenceId);
         fence.addTags(Tag.Vulkan.CBAR);
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             fence.removeTags(Tag.FENCE);
@@ -374,9 +375,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitDeviceOperation(LitmusVulkanParser.DeviceOperationContext ctx) {
         Event e;
         if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.AVDEVICE)) {
-            e = EventFactory.PTX.newAvDevice();
+            e = eventFactory.newAvDevice();
         } else if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.VISDEVICE)) {
-            e = EventFactory.PTX.newVisDevice();
+            e = eventFactory.newVisDevice();
         } else {
             throw new ParsingException("Unknown device operation");
         }
@@ -394,13 +395,13 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression expr = expressions.makeBinary(lhs, ctx.cond().op, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+        return programBuilder.addChild(mainThread, eventFactory.newJump(expr, label));
     }
 
     @Override
     public Object visitJump(LitmusVulkanParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
+        return programBuilder.addChild(mainThread, eventFactory.newGoto(label));
     }
 
     private void tagControl(Event e, Boolean atomic, String mo, String avvis, String scope, String storageClass,

@@ -132,6 +132,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private void devirtualise(Function function, Map<Function, IValue> func2AddressMap) {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final EventFactory eventFactory = function.getProgram().getEventFactory();
 
         int devirtCounter = 0;
         for (FunctionCall call : function.getEvents(FunctionCall.class)) {
@@ -159,26 +160,27 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             // Construct call table
             for (Function possibleTarget : possibleTargets) {
                 final IValue targetAddress = func2AddressMap.get(possibleTarget);
-                final Label caseLabel = EventFactory.newLabel(String.format("__Ldevirt_%s#%s", targetAddress.getValue(), devirtCounter));
-                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
+                final String labelName = String.format("__Ldevirt_%s#%s", targetAddress.getValue(), devirtCounter);
+                final Label caseLabel = eventFactory.newLabel(labelName);
+                final CondJump caseJump = eventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
                 caseLabels.add(caseLabel);
                 caseJumps.add(caseJump);
             }
 
-            final Event noMatch = EventFactory.newAssert(expressions.makeFalse(), "Invalid function pointer");
-            final Label endLabel = EventFactory.newLabel(String.format("__Ldevirt_end#%s", devirtCounter));
+            final Event noMatch = eventFactory.newAssert(expressions.makeFalse(), "Invalid function pointer");
+            final Label endLabel = eventFactory.newLabel(String.format("__Ldevirt_end#%s", devirtCounter));
 
             final List<Event> callReplacement = new ArrayList<>();
-            callReplacement.add(EventFactory.newStringAnnotation("=== Devirtualized call ==="));
+            callReplacement.add(eventFactory.newStringAnnotation("=== Devirtualized call ==="));
             callReplacement.addAll(caseJumps);
             callReplacement.add(noMatch);
             for (int i = 0; i < caseLabels.size(); i++) {
                 callReplacement.add(caseLabels.get(i));
                 callReplacement.add(devirtualiseCall(call, possibleTargets.get(i)));
-                callReplacement.add(EventFactory.newGoto(endLabel));
+                callReplacement.add(eventFactory.newGoto(endLabel));
             }
             callReplacement.add(endLabel);
-            callReplacement.add(EventFactory.newStringAnnotation("=== End of devirtualized call ==="));
+            callReplacement.add(eventFactory.newStringAnnotation("=== End of devirtualized call ==="));
 
             call.replaceBy(callReplacement);
             callReplacement.forEach(e -> e.copyAllMetadataFrom(call));

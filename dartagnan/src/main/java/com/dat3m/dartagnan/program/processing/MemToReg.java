@@ -72,6 +72,7 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private void promoteAll(Function function, Matcher matcher) {
+        final EventFactory eventFactory = function.getProgram().getEventFactory();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         // Replace every unmarked address.
         final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
@@ -97,13 +98,13 @@ public class MemToReg implements FunctionProcessor {
             if (event instanceof Load load) {
                 final Register reg = load.getResultRegister();
                 assert load.getUsers().isEmpty();
-                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(registers.get(access.offset), reg.getType())));
+                load.replaceBy(eventFactory.newLocal(reg, expressions.makeCast(registers.get(access.offset), reg.getType())));
                 loadCount++;
             }
             if (event instanceof Store store) {
                 final Register reg = registers.get(access.offset);
                 assert store.getUsers().isEmpty();
-                store.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(store.getMemValue(), reg.getType())));
+                store.replaceBy(eventFactory.newLocal(reg, expressions.makeCast(store.getMemValue(), reg.getType())));
                 storeCount++;
             }
         }

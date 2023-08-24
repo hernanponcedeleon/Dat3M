@@ -32,6 +32,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final TypeFactory types = programBuilder.getTypeFactory();
     private final IntegerType archType = types.getArchType();
+    private final EventFactory.PTX eventFactory = programBuilder.getEventFactory().withPTX();
     private int mainThread;
     private int threadCount = 0;
 
@@ -145,7 +146,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Expression constant = (Expression) ctx.value().accept(this);
         String mo = ctx.mo().content;
-        Store store = EventFactory.newStoreWithMo(object, constant, mo);
+        Store store = eventFactory.newStoreWithMo(object, constant, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
@@ -163,7 +164,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitLocalValue(LitmusPTXParser.LocalValueContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         Expression value = (Expression) ctx.value().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, value));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(register, value));
     }
 
     @Override
@@ -172,7 +173,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeADD(lhs, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -181,7 +182,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeSUB(lhs, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -190,7 +191,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeMUL(lhs, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -199,7 +200,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression exp = expressions.makeDIV(lhs, rhs, true);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+        return programBuilder.addChild(mainThread, eventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -207,7 +208,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         String mo = ctx.mo().content;
-        Load load = EventFactory.newLoadWithMo(register, location, mo);
+        Load load = eventFactory.newLoadWithMo(register, location, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
@@ -232,7 +233,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        PTXAtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, value, op, mo, scope);
+        PTXAtomOp atom = eventFactory.newAtomOp(object, register_destination, value, op, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -248,12 +249,12 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        PTXAtomCAS atom = EventFactory.PTX.newAtomCAS(object, register_destination, expected, value, mo, scope);
+        PTXAtomCAS atom = eventFactory.newAtomCAS(object, register_destination, expected, value, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
 
-    @Override 
+    @Override
     public Object visitAtomExchange(LitmusPTXParser.AtomExchangeContext ctx) {
         Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
@@ -263,7 +264,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
-        PTXAtomExch atom = EventFactory.PTX.newAtomExch(object, register_destination, value, mo, scope);
+        PTXAtomExch atom = eventFactory.newAtomExch(object, register_destination, value, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
@@ -278,7 +279,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
-        PTXRedOp red = EventFactory.PTX.newRedOp(object, value, op, mo, scope);
+        PTXRedOp red = eventFactory.newRedOp(object, value, op, mo, scope);
         red.addTags(ctx.red().redProxy);
         return programBuilder.addChild(mainThread, red);
     }
@@ -290,21 +291,21 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC))) {
             throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = eventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(mo, scope, Tag.PTX.GEN);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceProxy(LitmusPTXParser.FenceProxyContext ctx) {
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = eventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(ctx.proxyType().content);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = eventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(Tag.PTX.ALIAS);
         return programBuilder.addChild(mainThread, fence);
     }
@@ -312,7 +313,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
         Expression fenceId = (Expression) ctx.value().accept(this);
-        Event fence = EventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        Event fence = eventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         if(ctx.barrierMode().Arrive() != null) {
             fence.addTags(Tag.PTX.ARRIVE);
         }
@@ -330,13 +331,13 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
         Expression expr = expressions.makeBinary(lhs, ctx.cond().op, rhs);
-        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
+        return programBuilder.addChild(mainThread, eventFactory.newJump(expr, label));
     }
 
     @Override
     public Object visitJump(LitmusPTXParser.JumpContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-        return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
+        return programBuilder.addChild(mainThread, eventFactory.newGoto(label));
     }
 
 }

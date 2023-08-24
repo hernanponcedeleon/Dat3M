@@ -47,11 +47,13 @@ public class ProgramBuilder {
     private final Map<String, MemoryObject> locations = new HashMap<>();
 
     private final Program program;
+    private final EventFactory events;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
         this.program = new Program(new Memory(), format);
+        this.events = program.getEventFactory();
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -101,6 +103,10 @@ public class ProgramBuilder {
         return expressions;
     }
 
+    public EventFactory getEventFactory() {
+        return events;
+    }
+
     public void setAssert(AbstractAssert ass) {
         program.setSpecification(ass);
     }
@@ -118,7 +124,7 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
-        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, EventFactory.newThreadStart(null));
+        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, events.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
         return thread;
@@ -212,16 +218,16 @@ public class ProgramBuilder {
     public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
         MemoryObject object = getOrNewMemoryObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg, object));
+        addChild(regThread, events.newLocal(reg, object));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
+        addChild(regThread, events.newLocal(reg,getInitialValue(locName)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
+        addChild(regThread, events.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
     }
 
     private Expression getInitialValue(String name) {
@@ -256,7 +262,7 @@ public class ProgramBuilder {
     public Label getOrCreateLabel(int funcId, String name){
         return fid2LabelsMap
                 .computeIfAbsent(funcId, k -> new HashMap<>())
-                .computeIfAbsent(name, EventFactory::newLabel);
+                .computeIfAbsent(name, events::newLabel);
     }
 
     public Label getEndOfThreadLabel(int tid) {
@@ -271,7 +277,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
-        ThreadStart threadEntry = EventFactory.newThreadStart(null);
+        ThreadStart threadEntry = events.newThreadStart(null);
         Thread scopedThread = switch (arch) {
             case PTX -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
                     ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());

@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
@@ -13,9 +14,13 @@ import com.dat3m.dartagnan.program.event.core.RMWStore;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 
-public class VisitorPTX extends VisitorBase {
+public class VisitorPTX extends VisitorBase<EventFactory.PTX> {
+
+    VisitorPTX(EventFactory events) {
+        super(events.withPTX());
+    }
 
     @Override
     public List<Event> visitPtxAtomOp(PTXAtomOp e) {
@@ -23,15 +28,15 @@ public class VisitorPTX extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
+        Expression modifiedValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
+        Load load = eventFactory.newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, modifiedValue, Tag.PTX.storeMO(mo));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,
-                newLocal(resultRegister, dummy)
+                eventFactory.newLocal(resultRegister, dummy)
         );
     }
 
@@ -48,15 +53,16 @@ public class VisitorPTX extends VisitorBase {
         Expression address = e.getAddress();
         Expression expected = e.getExpectedValue();
         Expression newValue = e.getStoreValue();
-        Expression storeValue = expressions.makeConditional(expressions.makeEQ(resultRegister, expected),
-                newValue, resultRegister);
-        Load load = newRMWLoadWithMo(resultRegister, address, Tag.PTX.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address, storeValue, Tag.PTX.storeMO(mo));
+        Expression isExpectedValue = expressions.makeEQ(resultRegister, expected);
+        Expression storeValue = expressions.makeConditional(isExpectedValue, newValue, resultRegister);
+        Load load = eventFactory.newRMWLoadWithMo(resultRegister, address, Tag.PTX.loadMO(mo));
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, storeValue, Tag.PTX.storeMO(mo));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
                 load,
-                store);
+                store
+        );
     }
 
     // PTX Exch semantics
@@ -66,14 +72,14 @@ public class VisitorPTX extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.PTX.storeMO(mo));
+        Load load = eventFactory.newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, e.getValue(), Tag.PTX.storeMO(mo));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,
-                newLocal(resultRegister, dummy)
+                eventFactory.newLocal(resultRegister, dummy)
         );
     }
 
@@ -81,9 +87,9 @@ public class VisitorPTX extends VisitorBase {
     public List<Event> visitPtxRedOp(PTXRedOp e) {
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(e.getAccessType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
-        RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
+        Expression modifiedValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
+        Load load = eventFactory.newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
+        RMWStore store = eventFactory.newRMWStoreWithMo(load, address, modifiedValue, Tag.PTX.storeMO(e.getMo()));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(

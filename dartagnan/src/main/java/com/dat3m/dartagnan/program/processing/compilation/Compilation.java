@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.metadata.CompilationId;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProgramProcessor;
@@ -38,7 +39,6 @@ public class Compilation implements ProgramProcessor {
     public Arch getTarget() { return target; }
     public void setTarget(Arch target) {
         this.target = target;
-        compiler = getCompiler();
     }
 
     @Option(name = USE_RC11_TO_ARCH_SCHEME,
@@ -55,16 +55,11 @@ public class Compilation implements ProgramProcessor {
 
     // =====================================================================
 
-    private VisitorBase compiler;
-
-    private Compilation() {
-        compiler = getCompiler();
-    }
+    private Compilation() {}
 
     private Compilation(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         Preconditions.checkNotNull(target);
-        compiler = getCompiler();
     }
 
     public static Compilation fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -93,6 +88,7 @@ public class Compilation implements ProgramProcessor {
 
     private void run(Function function) {
         if (function.hasBody()) {
+            VisitorBase<?> compiler = getCompiler(function.getProgram().getEventFactory());
             compiler.funcToBeCompiled = function;
             function.getEvents().forEach(e -> compileEvent(e, compiler));
         }
@@ -109,27 +105,28 @@ public class Compilation implements ProgramProcessor {
 
      */
     public List<Event> getCompilationResult(Event toBeCompiled) {
+        VisitorBase<?> compiler = getCompiler(toBeCompiled.getFunction().getProgram().getEventFactory());
         compiler.funcToBeCompiled = toBeCompiled.getFunction();
         return toBeCompiled.accept(compiler);
     }
 
     // -----------------------------------------------------------------------------
 
-    private VisitorBase getCompiler() {
+    private VisitorBase<?> getCompiler(EventFactory events) {
         return switch (target) {
-            case C11 -> new VisitorC11();
-            case LKMM -> new VisitorLKMM();
-            case TSO -> new VisitorTso();
-            case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);
-            case ARM8 -> new VisitorArm8(useRC11Scheme);
-            case IMM -> new VisitorIMM();
-            case RISCV -> new VisitorRISCV(useRC11Scheme);
-            case PTX -> new VisitorPTX();
-            case VULKAN -> new VisitorVulkan();
+            case C11 -> new VisitorC11(events);
+            case LKMM -> new VisitorLKMM(events);
+            case TSO -> new VisitorTso(events);
+            case POWER -> new VisitorPower(events, useRC11Scheme, cToPowerScheme);
+            case ARM8 -> new VisitorArm8(events, useRC11Scheme);
+            case IMM -> new VisitorIMM(events);
+            case RISCV -> new VisitorRISCV(events, useRC11Scheme);
+            case PTX -> new VisitorPTX(events);
+            case VULKAN -> new VisitorVulkan(events);
         };
     }
 
-    private void compileEvent(Event toBeCompiled, VisitorBase compiler) {
+    private void compileEvent(Event toBeCompiled, VisitorBase<?> compiler) {
         toBeCompiled.setMetadata(new CompilationId(toBeCompiled.getGlobalId()));
         final Event pred = toBeCompiled.getPredecessor();
         if (pred == null) {

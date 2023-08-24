@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
+import com.dat3m.dartagnan.program.memory.Memory;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -61,12 +62,16 @@ public class ExceptionsTest {
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() {
-        EventFactory.newJump(expressions.makeFalse(), null);
+        final var program = new Program(new Memory(), SourceLanguage.LITMUS);
+        final EventFactory events = program.getEventFactory();
+        events.newJump(expressions.makeFalse(), null);
     }
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullExpr() {
-        EventFactory.newJump(null, EventFactory.newLabel("DUMMY"));
+        final var program = new Program(new Memory(), SourceLanguage.LITMUS);
+        final EventFactory events = program.getEventFactory();
+        events.newJump(null, events.newLabel("DUMMY"));
     }
 
     @Test(expected = MalformedProgramException.class)

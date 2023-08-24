@@ -74,7 +74,7 @@ public class ProcessingManager implements ProgramProcessor {
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        final Intrinsics intrinsics = Intrinsics.fromConfig(config);
+        final Intrinsics.Factory intrinsics = Intrinsics.fromConfig(config);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,

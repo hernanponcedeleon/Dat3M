@@ -39,7 +39,7 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 
 /*
  * This pass handles (reachable) pthread-related function calls.
@@ -83,6 +83,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
 
         final TypeFactory types = TypeFactory.getInstance();
+        final EventFactory eventFactory = program.getEventFactory();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final IntegerType archType = types.getArchType();
 
@@ -122,17 +123,18 @@ public class ThreadCreation implements ProgramProcessor {
                         final Register resultRegister = getResultRegister(call);
                         assert resultRegister.getType() instanceof IntegerType;
 
-                        final ThreadCreate createEvent = newThreadCreate(List.of(argument));
+                        final ThreadCreate createEvent = eventFactory.newThreadCreate(List.of(argument));
                         final IValue tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
                         final List<Event> replacement = eventSequence(
                                 createEvent,
-                                newReleaseStore(comAddress, expressions.makeTrue()),
-                                newStore(pidResultAddress, tidExpr),
+                                newReleaseStore(comAddress, expressions.makeTrue(), eventFactory),
+                                eventFactory.newStore(pidResultAddress, tidExpr),
                                 // TODO: Allow to return failure value (!= 0)
-                                newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
+                                eventFactory.newLocal(resultRegister,
+                                        expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
                         replacement.forEach(e -> e.copyAllMetadataFrom(call));
                         call.replaceBy(replacement);
@@ -150,7 +152,7 @@ public class ThreadCreation implements ProgramProcessor {
                         assert arguments.isEmpty();
                         final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());
-                        final Local tidAssignment = newLocal(resultRegister, tidExpr);
+                        final Local tidAssignment = eventFactory.newLocal(resultRegister, tidExpr);
                         tidAssignment.copyAllMetadataFrom(call);
                         call.replaceBy(tidAssignment);
                     }
@@ -172,6 +174,7 @@ public class ThreadCreation implements ProgramProcessor {
     private void handlePthreadJoins(Thread thread, Map<IValue, Expression> tid2ComAddrMap) {
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final EventFactory eventFactory = thread.getProgram().getEventFactory();
         int joinCounter = 0;
 
         for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
@@ -193,7 +196,7 @@ public class ThreadCreation implements ProgramProcessor {
 
             // This register will hold the value "false" IFF the join succeeds.
             final Register joinDummyReg = thread.getOrNewRegister("__joinFail#" + joinCounter, types.getBooleanType());
-            final Label joinEnd = EventFactory.newLabel("__joinEnd#" + joinCounter);
+            final Label joinEnd = eventFactory.newLabel("__joinEnd#" + joinCounter);
 
             // ----- Construct a switch case for each possible tid -----
             final Map<Expression, List<Event>> tid2joinCases = new LinkedHashMap<>();
@@ -206,11 +209,11 @@ public class ThreadCreation implements ProgramProcessor {
                     continue;
                 }
 
-                final Label joinCase = EventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
+                final Label joinCase = eventFactory.newLabel("__joinWithT" + tid + "#" + joinCounter);
                 final List<Event> caseBody = eventSequence(
                         joinCase,
-                        newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith),
-                        EventFactory.newGoto(joinEnd)
+                        newAcquireLoad(joinDummyReg, comAddrOfThreadToJoinWith, eventFactory),
+                        eventFactory.newGoto(joinEnd)
                 );
                 tid2joinCases.put(tidCandidate, caseBody);
             }
@@ -218,27 +221,27 @@ public class ThreadCreation implements ProgramProcessor {
             // ----- Construct the actual switch (a simple jump table) -----
             final List<Event> switchJumpTable = new ArrayList<>();
             for (Expression tid : tid2joinCases.keySet()) {
-                switchJumpTable.add(EventFactory.newJump(
+                switchJumpTable.add(eventFactory.newJump(
                         expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
                 );
             }
             // Add default case for when no tid matches. We make the join just fail here as if it
             // was waiting for a never-terminating thread.
             // FIXME: This does not align with the correct pthread_join semantics.
-            switchJumpTable.add(EventFactory.newLocal(joinDummyReg, expressions.makeTrue()));
-            switchJumpTable.add(EventFactory.newGoto(joinEnd));
+            switchJumpTable.add(eventFactory.newLocal(joinDummyReg, expressions.makeTrue()));
+            switchJumpTable.add(eventFactory.newGoto(joinEnd));
 
             // ----- Generate actual replacement for the pthread_join call -----
             final List<Event> replacement = new ArrayList<>();
-            replacement.add(EventFactory.newFunctionCallMarker(call.getCalledFunction().getName()));
+            replacement.add(eventFactory.newFunctionCallMarker(call.getCalledFunction().getName()));
             replacement.addAll(switchJumpTable);
             tid2joinCases.values().forEach(replacement::addAll);
             replacement.addAll(Arrays.asList(
                     joinEnd,
-                    newJump(joinDummyReg, (Label)thread.getExit()),
+                    eventFactory.newJump(joinDummyReg, (Label) thread.getExit()),
                     // Note: In our modelling, pthread_join always succeeds if it returns
-                    newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType())),
-                    EventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
+                    eventFactory.newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType())),
+                    eventFactory.newFunctionReturnMarker(call.getCalledFunction().getName())
             ));
 
             replacement.forEach(e -> e.copyAllMetadataFrom(call));
@@ -251,9 +254,10 @@ public class ThreadCreation implements ProgramProcessor {
     private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final TypeFactory types = TypeFactory.getInstance();
+        final EventFactory eventFactory = function.getProgram().getEventFactory();
 
         // ------------------- Create new thread -------------------
-        final ThreadStart start = EventFactory.newThreadStart(creator);
+        final ThreadStart start = eventFactory.newThreadStart(creator);
         start.setMayFailSpuriously(!forceStart);
         final Thread thread = new Thread(function.getName(), function.getFunctionType(),
                 Lists.transform(function.getParameterRegisters(), Register::getName), tid, start);
@@ -292,8 +296,8 @@ public class ThreadCreation implements ProgramProcessor {
         thread.getEntry().insertAfter(body);
 
         // ------------------- Add end & return label -------------------
-        final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + tid);
-        final Label threadEnd = EventFactory.newLabel("END_OF_T" + tid);
+        final Label threadReturnLabel = eventFactory.newLabel("RETURN_OF_T" + tid);
+        final Label threadEnd = eventFactory.newLabel("END_OF_T" + tid);
         thread.append(threadReturnLabel);
         thread.append(threadEnd);
 
@@ -302,7 +306,7 @@ public class ThreadCreation implements ProgramProcessor {
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
             if (e instanceof AbortIf abort) {
-                final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
+                final Event jumpToEnd = eventFactory.newJump(abort.getCondition(), threadEnd);
                 jumpToEnd.addTags(abort.getTags());
                 jumpToEnd.copyAllMetadataFrom(abort);
                 abort.replaceBy(jumpToEnd);
@@ -311,8 +315,8 @@ public class ThreadCreation implements ProgramProcessor {
                 final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
                         : ((FunctionCall)e).getArguments().get(0);
                 final List<Event> replacement = eventSequence(
-                        returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
-                        EventFactory.newGoto(threadReturnLabel)
+                        returnRegister != null ? eventFactory.newLocal(returnRegister, retVal) : null,
+                        eventFactory.newGoto(threadReturnLabel)
                 );
                 replacement.forEach(ev -> ev.copyAllMetadataFrom(e));
                 e.replaceBy(replacement);
@@ -324,18 +328,17 @@ public class ThreadCreation implements ProgramProcessor {
             // Arguments
             final List<Register> params = thread.getParameterRegisters();
             for (int i = 0; i < params.size(); i++) {
-                thread.getEntry().insertAfter(newThreadArgument(params.get(i), creator, i));
+                thread.getEntry().insertAfter(eventFactory.newThreadArgument(params.get(i), creator, i));
             }
 
             // Sync
             final Register startSignal = thread.newRegister("__startT" + tid, types.getBooleanType());
-            thread.getEntry().insertAfter(eventSequence(
-                    newAcquireLoad(startSignal, comAddr),
-                    newAssume(startSignal)
+            thread.getEntry().insertAfter(eventSequence(newAcquireLoad(startSignal, comAddr, eventFactory),
+                    eventFactory.newAssume(startSignal)
             ));
 
             // End
-            threadReturnLabel.insertAfter(newReleaseStore(comAddr, expressions.makeFalse()));
+            threadReturnLabel.insertAfter(newReleaseStore(comAddr, expressions.makeFalse(), eventFactory));
         }
 
         // ------------------- Create thread-local variables -------------------
@@ -368,17 +371,17 @@ public class ThreadCreation implements ProgramProcessor {
         return ((ValueFunctionCall) call).getResultRegister();
     }
 
-    private List<Event> newReleaseStore(Expression address, Expression storeValue) {
+    private List<Event> newReleaseStore(Expression address, Expression storeValue, EventFactory events) {
         final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
-                EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
+                events.withLinux().newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
+                events.withAtomic().newStore(address, storeValue, Tag.C11.MO_RELEASE);
         return compiler.getCompilationResult(releaseStore);
     }
 
-    private List<Event> newAcquireLoad(Register resultRegister, Expression address) {
+    private List<Event> newAcquireLoad(Register resultRegister, Expression address, EventFactory events) {
         final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
-                EventFactory.Linux.newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
-                EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
+                events.withLinux().newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
+                events.withAtomic().newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
         return compiler.getCompilationResult(acquireLoad);
     }
 

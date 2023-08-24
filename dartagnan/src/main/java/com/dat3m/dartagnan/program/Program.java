@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
@@ -25,6 +26,7 @@ public class Program {
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
+    private final EventFactory eventFactory;
 
     public Program(Memory memory, SourceLanguage format) {
         this("", memory, format);
@@ -36,6 +38,7 @@ public class Program {
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
+        this.eventFactory = EventFactory.newInstance();
     }
 
     public SourceLanguage getFormat() {
@@ -89,6 +92,10 @@ public class Program {
     public void setFilterSpecification(AbstractAssert spec) {
         Preconditions.checkArgument(spec == null || AbstractAssert.ASSERT_TYPE_FORALL.equals(spec.getType()));
         this.filterSpec = spec;
+    }
+
+    public EventFactory getEventFactory() {
+        return eventFactory;
     }
 
     public void addThread(Thread t) {

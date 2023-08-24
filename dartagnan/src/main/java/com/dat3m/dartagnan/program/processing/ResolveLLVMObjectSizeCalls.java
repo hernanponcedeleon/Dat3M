@@ -44,6 +44,7 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
     }
 
     private void resolveObjectSizeCall(ValueFunctionCall call) {
+        final EventFactory eventFactory = call.getFunction().getProgram().getEventFactory();
         //final Expression ptr = call.getArguments().get(0);
         final IValue zeroIfUnknown = (IValue)call.getArguments().get(1); // else -1 if unknown
         //final IValue nullIsUnknown = (IValue)call.getArguments().get(2);
@@ -52,7 +53,7 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
         // TODO: We treat all pointers as unknown for now.
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final BigInteger value = zeroIfUnknown.isOne() ? BigInteger.ZERO : BigInteger.ONE.negate();
-        final Event constAssignment = EventFactory.newLocal(
+        final Event constAssignment = eventFactory.newLocal(
                 call.getResultRegister(), exprs.makeValue(value, (IntegerType) call.getResultRegister().getType())
         );
         constAssignment.copyAllMetadataFrom(call);

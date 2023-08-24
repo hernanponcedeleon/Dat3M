@@ -31,8 +31,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 
@@ -46,6 +44,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Type pointerType = types.getPointerType();
     private final IntegerType integerType = types.getArchType();
+    private final EventFactory.Llvm eventFactory = program.getEventFactory().withLlvm();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
     private final Map<String, Type> typeMap = new HashMap<>();
@@ -200,7 +199,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                         event.copyAllMetadataFrom(terminator);
                         function.append(event);
                     }
-                    final Event gotoTargetBlock = newGoto(blockPair.to.label);
+                    final Event gotoTargetBlock = eventFactory.newGoto(blockPair.to.label);
                     gotoTargetBlock.copyAllMetadataFrom(terminator);
                     function.append(gotoTargetBlock);
                 }
@@ -294,7 +293,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Block getBlock(String label) {
         return basicBlocks.computeIfAbsent(label,
                 k -> {
-                    final Label l = newLabel("l" + k);
+                    final Label l = eventFactory.newLabel("l" + k);
                     l.setFunction(function);
                     return new Block(l);
                 });
@@ -334,7 +333,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitBrTerm(BrTermContext ctx) {
-        block.events.add(newGoto(getJumpLabel(ctx.label())));
+        block.events.add(eventFactory.newGoto(getJumpLabel(ctx.label())));
         return null;
     }
 
@@ -343,8 +342,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type type = parseIntType(ctx.IntType());
         final Expression guard = checkExpression(type, ctx.value());
         final Expression cast = expressions.makeBooleanCast(guard);
-        block.events.add(newJump(cast, getJumpLabel(ctx.label(0))));
-        block.events.add(newGoto(getJumpLabel(ctx.label(1))));
+        block.events.add(eventFactory.newJump(cast, getJumpLabel(ctx.label(0))));
+        block.events.add(eventFactory.newGoto(getJumpLabel(ctx.label(1))));
         return null;
     }
 
@@ -355,9 +354,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (LlvmcaseContext caseCtx : ctx.llvmcase()) {
             final Label jumpTarget = getJumpLabel(caseCtx.label());
             final Expression caseCheck = expressions.makeEQ(switchValue, visitTypeConst(caseCtx.typeConst()));
-            block.events.add(newJump(caseCheck, jumpTarget));
+            block.events.add(eventFactory.newJump(caseCheck, jumpTarget));
         }
-        block.events.add(newGoto(defaultTarget));
+        block.events.add(eventFactory.newGoto(defaultTarget));
 
         return null;
     }
@@ -388,7 +387,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
-                block.events.add(newLocal(resultRegister, makeNonDetOfType(returnType)));
+                block.events.add(eventFactory.newLocal(resultRegister, makeNonDetOfType(returnType)));
             }
             return resultRegister;
         }
@@ -404,8 +403,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
 
         final Event call = currentRegisterName == null ?
-                newVoidFunctionCall(funcType, callTarget, arguments) :
-                newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
+                eventFactory.newVoidFunctionCall(funcType, callTarget, arguments) :
+                eventFactory.newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
         block.events.add(call);
         return resultRegister;
     }
@@ -419,13 +418,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         } else {
             value = null;
         }
-        block.events.add(newFunctionReturn(value));
+        block.events.add(eventFactory.newFunctionReturn(value));
         return null;
     }
 
     @Override
     public Expression visitUnreachableTerm(UnreachableTermContext ctx) {
-        block.events.add(newAbortIf(expressions.makeTrue()));
+        block.events.add(eventFactory.newAbortIf(expressions.makeTrue()));
         return null;
     }
 
@@ -443,7 +442,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return find;
         }
         final var newNode = new ArrayList<Event>();
-        newNode.add(newLabel(from.label.getName() + "." + to.label.getName()));
+        newNode.add(eventFactory.newLabel(from.label.getName() + "." + to.label.getName()));
         phiNodes.put(pair, newNode);
         return newNode;
     }
@@ -471,7 +470,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private Register assignToRegister(Expression expression) {
         Register register = getOrNewCurrentRegister(expression.getType());
-        block.events.add(newLocal(register, expression));
+        block.events.add(eventFactory.newLocal(register, expression));
         return register;
     }
 
@@ -482,7 +481,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression address = visitTypeValue(ctx.typeValue(1));
         check(address.getType().equals(pointerType), "Non-pointer type in %s.", ctx);
         final String mo = atomic ? parseMemoryOrder(ctx.atomicOrdering()) : "";
-        final Event store = atomic ? Llvm.newStore(address, value, mo) : newStore(address, value);
+        final Event store = atomic ? eventFactory.newStore(address, value, mo) : eventFactory.newStore(address, value);
         block.events.add(store);
         return null;
     }
@@ -490,7 +489,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitFenceInst(FenceInstContext ctx) {
         final String mo = parseMemoryOrder(ctx.atomicOrdering());
-        block.events.add(Llvm.newFence(mo));
+        block.events.add(eventFactory.newLlvmFence(mo));
         return null;
     }
 
@@ -513,7 +512,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
         //final int alignment = parseAlignment(ctx.align());
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
-        block.events.add(EventFactory.newAlloc(register, elementType, sizeExpression, false));
+        block.events.add(eventFactory.newAlloc(register, elementType, sizeExpression, false));
         return register;
     }
 
@@ -527,7 +526,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String mo = atomic ? parseMemoryOrder(ctx.atomicOrdering()) : "";
         checkPointerType(ctx.typeValue());
         final Expression address = checkPointerExpression(ctx.typeValue().value());
-        final Event load = atomic ? Llvm.newLoad(register, address, mo) : newLoad(register, address);
+        final Event load = atomic ? eventFactory.newLoad(register, address, mo) : eventFactory.newLoad(register, address);
         block.events.add(load);
         return register;
     }
@@ -539,7 +538,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (final IncContext inc : ctx.inc()) {
             final Block target = getBlock(localIdent(inc.LocalIdent()));
             final Expression expression = checkExpression(type, inc.value());
-            getPhiNode(target, block).add(newLocal(register, expression));
+            getPhiNode(target, block).add(eventFactory.newLocal(register, expression));
         }
         return register;
     }
@@ -724,13 +723,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Register asExpected = function.newRegister(types.getBooleanType());
         final boolean weak = ctx.weak != null;
         final String mo = parseMemoryOrder(ctx.atomicOrdering(0));
-        block.events.add(newCompareExchange(value, asExpected, address, comparator, substitute, mo, weak));
+        block.events.add(eventFactory.newCompareExchange(value, asExpected, address, comparator, substitute, mo, weak));
         final Register register = currentRegisterName == null ? null :
                 getOrNewCurrentRegister(types.getAggregateType(List.of(comparator.getType(), getIntegerType(1))));
         if (register != null) {
             final Expression cast = expressions.makeIntegerCast(asExpected, getIntegerType(1), false);
             final Expression result = expressions.makeConstruct(List.of(value, cast));
-            block.events.add(newLocal(register, result));
+            block.events.add(eventFactory.newLocal(register, result));
         }
         return register;
     }
@@ -745,7 +744,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String mo = parseMemoryOrder(ctx.atomicOrdering());
         final Event event;
         if (operator.equals("xchg")) {
-            event = Llvm.newExchange(register, address, operand, mo);
+            event = eventFactory.newExchange(register, address, operand, mo);
         } else {
             final IOpBin op = switch (operator) {
                 case "add" -> IOpBin.ADD;
@@ -756,7 +755,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
                 default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
-            event = Llvm.newRMW(register, address, operand, op, mo);
+            event = eventFactory.newRMW(register, address, operand, op, mo);
         }
         block.events.add(event);
         return register;

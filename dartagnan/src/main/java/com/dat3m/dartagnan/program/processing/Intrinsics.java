@@ -41,21 +41,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * except some thread-library primitives, which are instead defined in {@link ThreadCreation}.
  * TODO due to name mangling schemes, some library calls we treat as intrinsics may have
  */
-@Options
 public class Intrinsics {
 
     private static final Logger logger = LogManager.getLogger(Intrinsics.class);
 
-    @Option(name = REMOVE_ASSERTION_OF_TYPE,
-            description = "Remove assertions of type [user, overflow, invalidderef].",
-            toUppercase=true,
-            secure = true)
-    private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
+    private final Factory factory;
+
+    private final EventFactory eventFactory;
 
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF }
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
@@ -63,42 +60,49 @@ public class Intrinsics {
     // TODO: This id should be part of Program
     private int constantId;
 
-    private Intrinsics() {
+    private Intrinsics(Factory f, EventFactory e) {
+        factory = f;
+        eventFactory = e;
     }
 
-    public static Intrinsics newInstance() {
-        return new Intrinsics();
-    }
-    
-    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
-        Intrinsics instance = newInstance();
+    public static Factory fromConfig(Configuration config) throws InvalidConfigurationException {
+        final var instance = new Factory();
         config.inject(instance);
         return instance;
     }
 
-    public ProgramProcessor markIntrinsicsPass() {
-        return this::markIntrinsics;
-    }
+    @Options
+    public static final class Factory {
 
-    /*
-        This pass runs early in the processing chain and resolves intrinsics whose semantics
-        can be captured by a context-insensitive sequence of other events.
+        @Option(name = REMOVE_ASSERTION_OF_TYPE,
+                description = "Remove assertions of type [user, overflow, invalidderef].", toUppercase = true,
+                secure = true)
+        private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
 
-        TODO: We could insert the definitions here directly into the function declarations of the intrinsics.
-     */
-    public FunctionProcessor earlyInliningPass() {
-        return this::inlineEarly;
-    }
+        public ProgramProcessor markIntrinsicsPass() {
+            return program -> markIntrinsics(this, program);
+        }
 
-    /*
-        This pass runs late in the processing chain, in particular after regular inlining, unrolling, SCCP, and thread creation.
-        Thus, the following conditions should be met:
-        - The intrinsics are live (reachable) and have constant input if possible.
-        - All code duplications ran: The replacement of the intrinsic will not get copied again.
-          This allows this pass to set up global state per replaced intrinsic without getting invalidated later.
-     */
-    public ProgramProcessor lateInliningPass() {
-        return this::inlineLate;
+        /*
+            This pass runs early in the processing chain and resolves intrinsics whose semantics
+            can be captured by a context-insensitive sequence of other events.
+
+            TODO: We could insert the definitions here directly into the function declarations of the intrinsics.
+         */
+        public FunctionProcessor earlyInliningPass() {
+            return function -> inlineEarly(this, function);
+        }
+
+        /*
+            This pass runs late in the processing chain, in particular after regular inlining, unrolling, SCCP, and thread creation.
+            Thus, the following conditions should be met:
+            - The intrinsics are live (reachable) and have constant input if possible.
+            - All code duplications ran: The replacement of the intrinsic will not get copied again.
+              This allows this pass to set up global state per replaced intrinsic without getting invalidated later.
+         */
+        public ProgramProcessor lateInliningPass() {
+            return function -> inlineLate(this, function);
+        }
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -219,10 +223,10 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- UBSAN ---------------------------
-        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
+        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow",
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
                 false, false, false, true, Intrinsics::inlineIntegerOverflow),
-        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
+        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"),
                 false, false, false, true, Intrinsics::inlineInvalidDereference),
         ;
 
@@ -283,7 +287,7 @@ public class Intrinsics {
         List<Event> replace(Intrinsics self, FunctionCall call);
     }
 
-    private void markIntrinsics(Program program) {
+    private static void markIntrinsics(Factory factory, Program program) {
         declareNondetBool(program);
 
         final var missingSymbols = new TreeSet<String>();
@@ -302,7 +306,7 @@ public class Intrinsics {
         }
     }
 
-    private void declareNondetBool(Program program) {
+    private static void declareNondetBool(Program program) {
         // used by VisitorLKMM
         if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
             final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
@@ -330,10 +334,10 @@ public class Intrinsics {
             // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
             // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
             // We may want to change this behaviour though.
-            replacement.get(0).getPredecessor().insertAfter(EventFactory.newStringAnnotation(
+            replacement.get(0).getPredecessor().insertAfter(eventFactory.newStringAnnotation(
                     String.format("=== Calling intrinsic %s ===", call.getCalledFunction().getName())
             ));
-            replacement.get(replacement.size() - 1).insertAfter(EventFactory.newStringAnnotation(
+            replacement.get(replacement.size() - 1).insertAfter(eventFactory.newStringAnnotation(
                     String.format("=== Returning from intrinsic %s ===", call.getCalledFunction().getName())
             ));
         }
@@ -342,14 +346,15 @@ public class Intrinsics {
     // --------------------------------------------------------------------------------------------------------
     // Simple early intrinsics
 
-    private void inlineEarly(Function function) {
+    private static void inlineEarly(Factory factory, Function function) {
+        var instance = new Intrinsics(factory, function.getProgram().getEventFactory());
         for (final FunctionCall call : function.getEvents(FunctionCall.class)) {
             if (!call.isDirectCall()) {
                 continue;
             }
             final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
             if (info != null && info.isEarly()) {
-                replace(call, info.replacer);
+                instance.replace(call, info.replacer);
             }
         }
     }
@@ -359,44 +364,44 @@ public class Intrinsics {
             final Register reg = valueCall.getResultRegister();
             final Expression zero = expressions.makeGeneralZero(reg.getType());
             logger.debug("Replaced (unsupported) call to \"{}\" by zero.", call.getCalledFunction().getName());
-            return List.of(EventFactory.newLocal(reg, zero));
+            return List.of(eventFactory.newLocal(reg, zero));
         } else {
             return List.of();
         }
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue()));
+        return List.of(eventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue()));
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {
-        return List.of(EventFactory.Svcomp.newLoopBegin());
+        return List.of(eventFactory.getSvcomp().newLoopBegin());
     }
 
     private List<Event> inlineLoopBound(FunctionCall call) {
         final Expression boundExpression = call.getArguments().get(0);
-        return List.of(EventFactory.Svcomp.newLoopBound(boundExpression));
+        return List.of(eventFactory.getSvcomp().newLoopBound(boundExpression));
     }
 
     private List<Event> inlineSpinStart(FunctionCall ignored) {
-        return List.of(EventFactory.Svcomp.newSpinStart());
+        return List.of(eventFactory.getSvcomp().newSpinStart());
     }
 
     private List<Event> inlineSpinEnd(FunctionCall ignored) {
-        return List.of(EventFactory.Svcomp.newSpinEnd());
+        return List.of(eventFactory.getSvcomp().newSpinEnd());
     }
 
     private List<Event> inlineAssume(FunctionCall call) {
         final Expression assumption = call.getArguments().get(0);
-        return List.of(EventFactory.newAssume(assumption));
+        return List.of(eventFactory.newAssume(assumption));
     }
 
     private List<Event> inlineAtomicBegin(FunctionCall ignored) {
-        return List.of(currentAtomicBegin = EventFactory.Svcomp.newBeginAtomic());
+        return List.of(currentAtomicBegin = eventFactory.getSvcomp().newBeginAtomic());
     }
 
     private List<Event> inlineAtomicEnd(FunctionCall ignored) {
-        return List.of(EventFactory.Svcomp.newEndAtomic(checkNotNull(currentAtomicBegin)));
+        return List.of(eventFactory.getSvcomp().newEndAtomic(checkNotNull(currentAtomicBegin)));
     }
 
     private List<Event> inlinePthreadEqual(FunctionCall call) {
@@ -405,7 +410,7 @@ public class Intrinsics {
         final Expression rightId = call.getArguments().get(1);
         final Expression equation = expressions.makeEQ(leftId, rightId);
         return List.of(
-                EventFactory.newLocal(resultRegister, expressions.makeCast(equation, resultRegister.getType()))
+                eventFactory.newLocal(resultRegister, expressions.makeCast(equation, resultRegister.getType()))
         );
     }
 
@@ -434,7 +439,7 @@ public class Intrinsics {
         if (initial || suffix.equals("destroy")) {
             final Expression flag = expressions.makeValue(initial);
             return List.of(
-                    EventFactory.newStore(attrAddress, flag),
+                    eventFactory.newStore(attrAddress, flag),
                     assignSuccess(errorRegister)
             );
         }
@@ -456,7 +461,7 @@ public class Intrinsics {
         //final Expression attributes = call.getArguments().get(1);
         final Expression initializedState = expressions.makeTrue();
         return List.of(
-                EventFactory.newStore(condAddress, initializedState),
+                eventFactory.newStore(condAddress, initializedState),
                 assignSuccess(errorRegister)
         );
     }
@@ -467,7 +472,7 @@ public class Intrinsics {
         final Expression condAddress = call.getArguments().get(0);
         final Expression finalizedState = expressions.makeFalse();
         return List.of(
-                EventFactory.newStore(condAddress, finalizedState),
+                eventFactory.newStore(condAddress, finalizedState),
                 assignSuccess(errorRegister)
         );
     }
@@ -494,10 +499,10 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(1);
         return List.of(
                 // Allow other threads to access the condition variable.
-                EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
+                eventFactory.withPthread().newUnlock(lockAddress.toString(), lockAddress),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
+                eventFactory.withPthread().newLock(lockAddress.toString(), lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -513,12 +518,12 @@ public class Intrinsics {
         call.getFunction().getProgram().addConstant(errorValue);
         return List.of(
                 // Allow other threads to access the condition variable.
-                EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
+                eventFactory.withPthread().newUnlock(lockAddress.toString(), lockAddress),
                 // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
-                EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
+                eventFactory.withPthread().newLock(lockAddress.toString(), lockAddress),
                 //TODO proper error code: ETIMEDOUT
-                EventFactory.newLocal(errorRegister, errorValue)
+                eventFactory.newLocal(errorRegister, errorValue)
         );
     }
 
@@ -530,7 +535,7 @@ public class Intrinsics {
         final Expression attrAddress = call.getArguments().get(0);
         checkUnknownIntrinsic(init || destroy, call);
         return List.of(
-                EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                eventFactory.newStore(attrAddress, expressions.makeValue(init)),
                 assignSuccess(errorRegister)
         );
     }
@@ -548,9 +553,9 @@ public class Intrinsics {
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
-                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
-                EventFactory.newStore(keyAddress, storageAddressRegister),
-                EventFactory.newStore(expressions.makeADD(storageAddressRegister, destructorOffset), destructor),
+                eventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
+                eventFactory.newStore(keyAddress, storageAddressRegister),
+                eventFactory.newStore(expressions.makeADD(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -573,7 +578,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeADD(key, offset))
+                eventFactory.newLoad(result, expressions.makeADD(key, offset))
         );
     }
 
@@ -585,7 +590,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newStore(expressions.makeADD(key, offset), value),
+                eventFactory.newStore(expressions.makeADD(key, offset), value),
                 assignSuccess(errorRegister)
         );
     }
@@ -604,7 +609,7 @@ public class Intrinsics {
         final Expression attributes = call.getArguments().get(1);
         final String lockName = lockAddress.toString();
         return List.of(
-                EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes),
+                eventFactory.withPthread().newInitLock(lockName, lockAddress, attributes),
                 assignSuccess(errorRegister)
         );
     }
@@ -623,8 +628,7 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
-        return List.of(
-                EventFactory.Pthread.newLock(lockName, lockAddress),
+        return List.of(eventFactory.withPthread().newLock(lockName, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -640,9 +644,13 @@ public class Intrinsics {
         final Expression locked = expressions.makeOne(types.getArchType());
         final Expression unlocked = expressions.makeZero(types.getArchType());
         final Expression fail = expressions.makeNot(successRegister);
-        return List.of(
-                EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE),
-                EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
+        return List.of(eventFactory.withLlvm().newCompareExchange(oldValueRegister,
+                        successRegister,
+                        lockAddress,
+                        unlocked,
+                        locked,
+                        Tag.C11.MO_ACQUIRE),
+                eventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
         );
     }
 
@@ -651,8 +659,7 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
-        return List.of(
-                EventFactory.Pthread.newUnlock(lockName, lockAddress),
+        return List.of(eventFactory.withPthread().newUnlock(lockName, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -669,7 +676,7 @@ public class Intrinsics {
         final Expression attrAddress = call.getArguments().get(0);
         if (init || destroy) {
             return List.of(
-                    EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                    eventFactory.newStore(attrAddress, expressions.makeValue(init)),
                     assignSuccess(errorRegister)
             );
         }
@@ -691,7 +698,7 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         return List.of(
-                EventFactory.newStore(lockAddress, getRwlockUnlockedValue()),
+                eventFactory.newStore(lockAddress, getRwlockUnlockedValue()),
                 assignSuccess(errorRegister)
         );
     }
@@ -717,7 +724,7 @@ public class Intrinsics {
                 // Write-lock only if unlocked.
                 newRwlockTryWrlock(call, successRegister, lockAddress),
                 // Deadlock if a violation occurred in another thread.
-                EventFactory.newAbortIf(expressions.makeNot(successRegister)),
+                eventFactory.newAbortIf(expressions.makeNot(successRegister)),
                 assignSuccess(errorRegister)
         );
     }
@@ -734,13 +741,13 @@ public class Intrinsics {
                 // Write-lock only if unlocked.
                 newRwlockTryWrlock(call, successRegister, lockAddress),
                 // Indicate success by returning zero.
-                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
-                EventFactory.newLocal(errorRegister, error)
+                eventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
+                eventFactory.newLocal(errorRegister, error)
         );
     }
 
     private Event newRwlockTryWrlock(FunctionCall call, Register successRegister, Expression lockAddress) {
-        return EventFactory.Llvm.newCompareExchange(
+        return eventFactory.withLlvm().newCompareExchange(
                 call.getFunction().newRegister(getRwlockDatatype()),
                 successRegister,
                 lockAddress,
@@ -760,13 +767,13 @@ public class Intrinsics {
         call.getFunction().getProgram().addConstant(expected);
         return List.of(
                 // Expect any other value than write-locked.
-                EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
+                eventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
                 newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expected),
                 // Fail only if write-locked.
-                EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
+                eventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Deadlock if a violation occurred in another thread.
-                EventFactory.newAbortIf(expressions.makeNot(successRegister)),
+                eventFactory.newAbortIf(expressions.makeNot(successRegister)),
                 assignSuccess(errorRegister)
         );
     }
@@ -784,19 +791,20 @@ public class Intrinsics {
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         return List.of(
                 // Expect any other value than write-locked.
-                EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
+                eventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
                 newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expected),
                 // Fail only if write-locked.
-                EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
+                eventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Indicate success with zero.
-                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
-                EventFactory.newLocal(errorRegister, error)
+                eventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
+                eventFactory.newLocal(errorRegister, error)
         );
     }
 
-    private Event newRwlockTryRdlock(FunctionCall call, Register oldValueRegister, Register successRegister, Expression lockAddress, Expression expected) {
-        return EventFactory.Llvm.newCompareExchange(
+    private Event newRwlockTryRdlock(FunctionCall call, Register oldValueRegister, Register successRegister,
+            Expression lockAddress, Expression expected) {
+        return eventFactory.withLlvm().newCompareExchange(
                 oldValueRegister,
                 successRegister,
                 lockAddress,
@@ -824,8 +832,9 @@ public class Intrinsics {
         //TODO does not recognize whether the calling thread is allowed to unlock
         return List.of(
                 // decreases the lock value by 1, if not the last reader, or else 2.
-                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, decrement, IOpBin.SUB, Tag.C11.MO_RELEASE),
-                EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)),
+                eventFactory.withLlvm()
+                        .newRMW(oldValueRegister, lockAddress, decrement, IOpBin.SUB, Tag.C11.MO_RELEASE),
+                eventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)),
                 assignSuccess(errorRegister)
         );
     }
@@ -852,7 +861,7 @@ public class Intrinsics {
         final Expression attrAddress = call.getArguments().get(0);
         if (init || destroy) {
             return List.of(
-                    EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                    eventFactory.newStore(attrAddress, expressions.makeValue(init)),
                     assignSuccess(errorRegister)
             );
         }
@@ -868,7 +877,7 @@ public class Intrinsics {
         final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression totalSize = call.getArguments().get(0);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                eventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
         );
     }
 
@@ -878,17 +887,17 @@ public class Intrinsics {
         final Expression elementSize = call.getArguments().get(1);
         final Expression totalSize = expressions.makeMUL(elementCount, elementSize);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                eventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
         );
     }
 
     private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
-        if(notToInline.contains(skip)) {
+        if (factory.notToInline.contains(skip)) {
             return List.of();
         }
         final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, errorMsg);
-        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        final Event assertion = eventFactory.newAssert(condition, errorMsg);
+        final Event abort = eventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
     }
@@ -941,12 +950,12 @@ public class Intrinsics {
         assert call instanceof ValueFunctionCall;
         final Register retReg = ((ValueFunctionCall) call).getResultRegister();
         final Expression value = call.getArguments().get(0);
-        return List.of(EventFactory.newLocal(retReg, value));
+        return List.of(eventFactory.newLocal(retReg, value));
     }
 
     private List<Event> inlineLLVMAssume(FunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-assume-intrinsic
-        return List.of(EventFactory.newAssume(call.getArguments().get(0)));
+        return List.of(eventFactory.newAssume(call.getArguments().get(0)));
     }
 
     private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
@@ -962,7 +971,7 @@ public class Intrinsics {
         checkArgument(input.getType().equals(type),
                 "Return type %s of \"llvm.ctlz\" must match argument type %s.", type, input.getType());
         final Expression resultExpression = expressions.makeCTLZ(input, (IntegerType) type);
-        final Event assignment = EventFactory.newLocal(resultReg, resultExpression);
+        final Event assignment = eventFactory.newLocal(resultReg, resultExpression);
         return List.of(assignment);
     }
 
@@ -975,7 +984,7 @@ public class Intrinsics {
         final Expression increment = expressions.makeADD(resultReg, expressions.makeOne(type));
 
         final List<Event> replacement = new ArrayList<>();
-        replacement.add(EventFactory.newLocal(resultReg, expressions.makeZero(type)));
+        replacement.add(eventFactory.newLocal(resultReg, expressions.makeZero(type)));
         //TODO: There might be more efficient ways to count bits set, though it is not clear
         // if they are also more friendly for the SMT backend.
         for (int i = type.getBitWidth() - 1; i >= 0; i--) {
@@ -985,7 +994,7 @@ public class Intrinsics {
             final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
 
             replacement.add(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(testBit, increment, resultReg))
+                    eventFactory.newLocal(resultReg, expressions.makeConditional(testBit, increment, resultReg))
             );
         }
 
@@ -1002,7 +1011,7 @@ public class Intrinsics {
         final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
         final Expression isLess = expressions.makeLT(left, right, signed);
         final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
-        return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+        return List.of(eventFactory.newLocal(call.getResultRegister(), result));
     }
 
     private List<Event> inlineLLVMSaturatedSub(ValueFunctionCall call) {
@@ -1038,14 +1047,14 @@ public class Intrinsics {
             );
 
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeSUB(x, y), resultReg))
+                    eventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
+                    eventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeSUB(x, y), resultReg))
             );
         } else {
             final Expression noUnderflow = expressions.makeGT(x, y, false);
             final Expression zero = expressions.makeZero(type);
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(noUnderflow, expressions.makeSUB(x, y), zero))
+                    eventFactory.newLocal(resultReg, expressions.makeConditional(noUnderflow, expressions.makeSUB(x, y), zero))
             );
         }
     }
@@ -1081,8 +1090,8 @@ public class Intrinsics {
         );
 
         return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
-                EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeADD(x, y), resultReg))
+                eventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
+                eventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeADD(x, y), resultReg))
         );
     }
 
@@ -1105,9 +1114,9 @@ public class Intrinsics {
         final Expression y = arguments.get(1);
         assert x.getType() == y.getType();
 
-        // The flag expression defined below has the form A & B. 
-        // A is only relevant for integer encoding, B is only relevant for BV encoding.  
-        // Here we do not yet know yet which encoding will be used and thus use both A & B.   
+        // The flag expression defined below has the form A & B.
+        // A is only relevant for integer encoding, B is only relevant for BV encoding.
+        // Here we do not yet know yet which encoding will be used and thus use both A & B.
         // This probably has no noticeable impact on performance.
 
         // Check for integer encoding
@@ -1117,8 +1126,8 @@ public class Intrinsics {
 
         // Check for BV encoding. From LLVM's language manual:
         // "An operation overflows if, for any values of its operands A and B and for any N larger than
-        // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where 
-        // ext is sext for signed overflow and zext for unsigned overflow, and op is the 
+        // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where
+        // ext is sext for signed overflow and zext for unsigned overflow, and op is the
         // underlying arithmetic operation.""
         final int width = iType.getBitWidth();
         final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
@@ -1132,7 +1141,7 @@ public class Intrinsics {
         );
 
         return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(result, flag)))
+                eventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(result, flag)))
         );
     }
 
@@ -1149,6 +1158,7 @@ public class Intrinsics {
     // LKMM intrinsics
 
     private List<Event> handleLKMMIntrinsic(FunctionCall call) {
+        final EventFactory.Linux linux = eventFactory.withLinux();
         final Register reg = (call instanceof ValueFunctionCall valueCall) ? valueCall.getResultRegister() : null;
         final List<Expression> args = call.getArguments();
 
@@ -1164,54 +1174,54 @@ public class Intrinsics {
             case "__LKMM_LOAD" -> {
                 checkArgument(p1 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p1).getValueAsInt());
-                result.add(EventFactory.Linux.newLKMMLoad(reg, p0, mo));
+                result.add(linux.newLKMMLoad(reg, p0, mo));
             }
             case "__LKMM_STORE" -> {
                 checkArgument(p2 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
-                result.add(EventFactory.Linux.newLKMMStore(p0, p1, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
+                result.add(linux.newLKMMStore(p0, p1, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
                 if (mo.equals(Tag.Linux.MO_MB)) {
-                    result.add(EventFactory.Linux.newMemoryBarrier());
+                    result.add(linux.newMemoryBarrier());
                 }
             }
             case "__LKMM_XCHG" -> {
                 checkArgument(p2 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWExchange(p0, reg, p1, mo));
+                result.add(linux.newRMWExchange(p0, reg, p1, mo));
             }
             case "__LKMM_CMPXCHG" -> {
                 checkArgument(p3 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p3).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWCompareExchange(p0, reg, p1, p2, mo));
+                result.add(linux.newRMWCompareExchange(p0, reg, p1, p2, mo));
             }
             case "__LKMM_ATOMIC_FETCH_OP" -> {
                 checkArgument(p2 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
                 checkArgument(p3 instanceof IConst, "No support for variable operator.");
                 op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWFetchOp(p0, reg, p1, op, mo));
+                result.add(linux.newRMWFetchOp(p0, reg, p1, op, mo));
             }
             case "__LKMM_ATOMIC_OP_RETURN" -> {
                 checkArgument(p2 instanceof IConst, "No support for variable memory order.");
                 mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
                 checkArgument(p3 instanceof IConst, "No support for variable operator.");
                 op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWOpReturn(p0, reg, p1, op, mo));
+                result.add(linux.newRMWOpReturn(p0, reg, p1, op, mo));
             }
             case "__LKMM_ATOMIC_OP" -> {
                 checkArgument(p2 instanceof IConst, "No support for variable operator.");
                 op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
-                result.add(EventFactory.Linux.newRMWOp(p0, p1, op));
+                result.add(linux.newRMWOp(p0, p1, op));
             }
             case "__LKMM_FENCE" -> {
                 String fence = Tag.Linux.intToMo(((IConst) p0).getValueAsInt());
-                result.add(EventFactory.Linux.newLKMMFence(fence));
+                result.add(linux.newLKMMFence(fence));
             }
             case "__LKMM_SPIN_LOCK" -> {
-                result.add(EventFactory.Linux.newLock(p0));
+                result.add(linux.newLock(p0));
             }
             case "__LKMM_SPIN_UNLOCK" -> {
-                result.add(EventFactory.Linux.newUnlock(p0));
+                result.add(linux.newUnlock(p0));
             }
             default -> {
                 assert false;
@@ -1223,9 +1233,9 @@ public class Intrinsics {
     // --------------------------------------------------------------------------------------------------------
     // Simple late intrinsics
 
-    private void inlineLate(Program program) {
-        constantId = 0;
-        program.getThreads().forEach(this::inlineLate);
+    private static void inlineLate(Factory factory, Program program) {
+        var instance = new Intrinsics(factory, program.getEventFactory());
+        program.getThreads().forEach(instance::inlineLate);
     }
 
     private void inlineLate(Function function) {
@@ -1257,7 +1267,7 @@ public class Intrinsics {
             BooleanType booleanType = types.getBooleanType();
             var nondeterministicExpression = new BNonDet(booleanType);
             Expression cast = expressions.makeCast(nondeterministicExpression, register.getType());
-            return List.of(EventFactory.newLocal(register, cast));
+            return List.of(eventFactory.newLocal(register, cast));
         }
 
         // Nondeterministic integers
@@ -1290,7 +1300,7 @@ public class Intrinsics {
         expression.setMin(min);
         expression.setMax(max);
         call.getFunction().getProgram().addConstant(expression);
-        return List.of(EventFactory.newLocal(register, expression));
+        return List.of(eventFactory.newLocal(register, expression));
     }
 
     //FIXME: The following support for memcpy, memcmp, and memset is unsound
@@ -1319,13 +1329,13 @@ public class Intrinsics {
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 
             replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, srcAddr),
-                    EventFactory.newStore(destAddr, reg)
+                    eventFactory.newLoad(reg, srcAddr),
+                    eventFactory.newStore(destAddr, reg)
             ));
         }
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memcpy returns the destination address, llvm.memcpy has no return value
-            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
+            replacement.add(eventFactory.newLocal(valueCall.getResultRegister(), dest));
         }
 
         return replacement;
@@ -1345,7 +1355,7 @@ public class Intrinsics {
         final int count = numValue.getValueAsInt();
 
         final List<Event> replacement = new ArrayList<>(4 * count + 1);
-        final Label endCmp = EventFactory.newLabel("__memcmp_end");
+        final Label endCmp = eventFactory.newLabel("__memcmp_end");
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression src1Addr = expressions.makeADD(src1, offset);
@@ -1356,10 +1366,10 @@ public class Intrinsics {
             final Register regSrc2 = caller.getOrNewRegister("__memcmp_src2_" + i, returnReg.getType());
 
             replacement.addAll(List.of(
-                    EventFactory.newLoad(regSrc1, src1Addr),
-                    EventFactory.newLoad(regSrc2, src2Addr),
-                    EventFactory.newLocal(returnReg, expressions.makeSUB(src1, src2)),
-                    EventFactory.newJump(expressions.makeNEQ(src1, src2), endCmp)
+                    eventFactory.newLoad(regSrc1, src1Addr),
+                    eventFactory.newLoad(regSrc2, src2Addr),
+                    eventFactory.newLocal(returnReg, expressions.makeSUB(src1, src2)),
+                    eventFactory.newJump(expressions.makeNEQ(src1, src2), endCmp)
             ));
         }
         replacement.add(endCmp);
@@ -1402,18 +1412,18 @@ public class Intrinsics {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeADD(dest, offset);
 
-            replacement.add(EventFactory.newStore(destAddr, zero));
+            replacement.add(eventFactory.newStore(destAddr, zero));
         }
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memset returns the destination address, llvm.memset has no return value
-            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
+            replacement.add(eventFactory.newLocal(valueCall.getResultRegister(), dest));
         }
 
         return replacement;
     }
 
     private Event assignSuccess(Register errorRegister) {
-        return EventFactory.newLocal(errorRegister, expressions.makeGeneralZero(errorRegister.getType()));
+        return eventFactory.newLocal(errorRegister, expressions.makeGeneralZero(errorRegister.getType()));
     }
 
     private Register getResultRegisterAndCheckArguments(int expectedArgumentCount, FunctionCall call) {
