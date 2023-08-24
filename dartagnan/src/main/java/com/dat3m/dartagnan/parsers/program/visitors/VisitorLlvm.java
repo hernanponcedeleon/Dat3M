@@ -19,7 +19,6 @@ import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.processing.GEPToAddition;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -234,7 +233,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type type = parseType(ctx.type());
         final Expression expression;
         if (ctx.immutable().getText().equals("global")) {
-            final int size = GEPToAddition.getMemorySize(type);
+            final int size = types.getMemorySize(type);
             expression = program.getMemory().allocate(size, true);
             //TODO non-det initializer
         } else {
@@ -255,7 +254,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
-        final int size = GEPToAddition.getMemorySize(type);
+        final int size = types.getMemorySize(type);
         final MemoryObject globalObject = program.getMemory().allocate(size, true);
         final Expression value = checkExpression(type, ctx.constant());
         globalObject.setCVar(name);
@@ -274,7 +273,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             assert constant instanceof Construction;
             final Construction constArray = (Construction) constant;
             final List<Expression> arrayElements = constArray.getArguments();
-            final int stepSize = GEPToAddition.getMemorySize(arrayType.getElementType());
+            final int stepSize = types.getMemorySize(arrayType.getElementType());
             for (int i = 0; i < arrayElements.size(); i++) {
                 setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
             }
@@ -285,7 +284,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             int currentOffset = offset;
             for (Expression structElement : structElements) {
                 setInitialMemoryFromConstant(memObj, currentOffset, structElement);
-                currentOffset += GEPToAddition.getMemorySize(structElement.getType());
+                currentOffset += types.getMemorySize(structElement.getType());
             }
         } else if (constant.getType() instanceof IntegerType) {
             assert constant instanceof IConst;
@@ -504,7 +503,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         //final var inalloca = ctx.inAllocaTok != null;
         //final var swifterror = ctx.swiftError != null;
         final Type elementType = parseType(ctx.type());
-        final int elementSize = GEPToAddition.getMemorySize(elementType);
+        final int elementSize = types.getMemorySize(elementType);
         final Expression sizeExpression;
         if (ctx.typeValue() == null) {
             sizeExpression = expressions.makeOne(integerType);

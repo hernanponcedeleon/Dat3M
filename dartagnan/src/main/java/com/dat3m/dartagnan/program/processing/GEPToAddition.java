@@ -10,10 +10,8 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.google.common.math.IntMath;
 
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.util.List;
 
 public class GEPToAddition implements ProgramProcessor {
@@ -34,41 +32,11 @@ public class GEPToAddition implements ProgramProcessor {
         }
     }
 
-    public static int getMemorySize(Type type) {
-        final int sizeInBytes;
-        if (type instanceof ArrayType arrayType) {
-            sizeInBytes = arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
-        } else if (type instanceof AggregateType aggregateType) {
-            int aggregateSize = 0;
-            for (Type fieldType : aggregateType.getDirectFields()) {
-                int size = getMemorySize(fieldType);
-                //FIXME: We assume for now that a small type's (<= 8 byte) alignment coincides with its size.
-                // For all larger types, we assume 8 byte alignment
-                int alignment = Math.min(size, 8);
-                if (size != 0) {
-                    int padding = (-aggregateSize) % alignment;
-                    padding = padding < 0 ? padding + alignment : padding;
-                    aggregateSize += size + padding;
-                }
-            }
-            sizeInBytes = aggregateSize;
-        } else if (type instanceof IntegerType integerType) {
-            if (integerType.isMathematical()) {
-                // FIXME: We cannot give proper sizes for mathematical integers.
-                sizeInBytes = 8;
-            } else {
-                sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
-            }
-        } else {
-            throw new UnsupportedOperationException("Cannot compute the size of " + type);
-        }
-        return sizeInBytes;
-    }
-
     private static final class GEPToAdditionTransformer extends ExprTransformer {
 
+        private final TypeFactory types = TypeFactory.getInstance();
         private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        private final IntegerType archType = TypeFactory.getInstance().getArchType();
+        private final IntegerType archType = types.getArchType();
 
         @Override
         public Expression visit(GEPExpression getElementPointer) {
@@ -78,7 +46,7 @@ public class GEPToAddition implements ProgramProcessor {
             assert offsets.size() > 0;
             result = expressions.makeADD(result,
                     expressions.makeMUL(
-                            expressions.makeValue(BigInteger.valueOf(getMemorySize(type)), archType),
+                            expressions.makeValue(BigInteger.valueOf(types.getMemorySize(type)), archType),
                             expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true)));
             for (final Expression oldOffset : offsets.subList(1, offsets.size())) {
                 final Expression offset = oldOffset.accept(this);
@@ -86,7 +54,7 @@ public class GEPToAddition implements ProgramProcessor {
                     type = arrayType.getElementType();
                     result = expressions.makeADD(result,
                             expressions.makeMUL(
-                                    expressions.makeValue(BigInteger.valueOf(getMemorySize(arrayType.getElementType())), archType),
+                                    expressions.makeValue(BigInteger.valueOf(types.getMemorySize(arrayType.getElementType())), archType),
                                     expressions.makeIntegerCast(offset, archType, true)));
                     continue;
                 }
@@ -101,7 +69,7 @@ public class GEPToAddition implements ProgramProcessor {
                 type = aggregateType.getDirectFields().get(value);
                 int o = 0;
                 for (final Type elementType : aggregateType.getDirectFields().subList(0, value)) {
-                    o += getMemorySize(elementType);
+                    o += types.getMemorySize(elementType);
                 }
                 result = expressions.makeADD(result, expressions.makeValue(BigInteger.valueOf(o), archType));
             }

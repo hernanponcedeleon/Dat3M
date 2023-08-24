@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 
@@ -10,8 +9,6 @@ import java.math.BigInteger;
  * Immutable constant integer values.
  */
 public final class IValue extends IConst {
-
-    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final BigInteger value;
 
@@ -24,6 +21,9 @@ public final class IValue extends IConst {
     public BigInteger getValue() {
         return value;
     }
+
+    public boolean isOne() { return value.equals(BigInteger.ONE); }
+    public boolean isZero() { return value.equals(BigInteger.ZERO); }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
