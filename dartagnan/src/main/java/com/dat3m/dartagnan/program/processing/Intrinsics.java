@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -45,7 +44,6 @@ public class Intrinsics {
 
     // TODO: This id should be part of Program
     private int constantId;
-    private int assertionId;
 
     private Intrinsics() {
     }
@@ -153,6 +151,7 @@ public class Intrinsics {
             new Info("llvm.*",
                     List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz", "llvm.assume"),
                     false, false, true, true, this::handleLLVMIntrinsic),
+            new Info("llvm.memcpy.*", List.of("llvm.memcpy"), true, true, true, false, null),
             // --------------------------- LKMM ---------------------------
             new Info("__LKMM_LOAD", false, true, true, true, this::handleLKMMIntrinsic),
             new Info("__LKMM_STORE", true, false, true, true, this::handleLKMMIntrinsic),
@@ -168,7 +167,7 @@ public class Intrinsics {
             new Info("malloc", false, false, true, true, this::inlineMalloc),
             new Info("free", true, false, true, true, e -> List.of()),//TODO support free
             new Info("assert", List.of("__assert_fail", "__assert_rtn"),
-                    false, false, false, false, this::inlineAssert),
+                    false, false, false, true, this::inlineAssert),
             new Info("exit", false, false, false, true, this::inlineExit),
             new Info("abort", false, false, false, true, this::inlineExit),
             new Info("printf", false, false, true, true, e -> List.of()),
@@ -428,7 +427,6 @@ public class Intrinsics {
                         "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                         "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                         "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
-                case "__assert_fail", "__assert_rtn" -> inlineAssert(call);
                 default -> throw new UnsupportedOperationException(
                         String.format("Undefined function %s", calledFunction.getName()));
             };
@@ -493,13 +491,9 @@ public class Intrinsics {
     private List<Event> inlineAssert(FunctionCall call) {
         ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Expression condition = expressions.makeFalse();
-        final Register register = call.getFunction().getOrNewRegister("assert_" + assertionId++, condition.getType());
-        final Event endOfThread = call.getFunction().getExit();
-        assert endOfThread instanceof Label;
-        final Event flag = EventFactory.newLocal(register, condition);
-        flag.addTags(Tag.ASSERTION);
-        final Event jump = EventFactory.newGoto((Label) endOfThread);
-        jump.addTags(Tag.EARLYTERMINATION);
-        return List.of(flag, jump);
+        final Event assertion = EventFactory.newAssert(condition, "user assertion");
+        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        abort.addTags(Tag.EARLYTERMINATION);
+        return List.of(assertion, abort);
     }
 }

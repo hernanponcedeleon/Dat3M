@@ -213,6 +213,10 @@ public class EventFactory {
         return new Assume(expr);
     }
 
+    public static Assert newAssert(Expression expr, String errorMessage) {
+        return new Assert(expr, errorMessage);
+    }
+
     // ------------------------------------------ RMW events ------------------------------------------
 
     public static Load newRMWLoad(Register reg, Expression address) {

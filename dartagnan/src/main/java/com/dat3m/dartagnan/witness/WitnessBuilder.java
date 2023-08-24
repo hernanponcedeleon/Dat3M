@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -155,7 +156,8 @@ public class WitnessBuilder {
 				graph.addEdge(edge);
 
 				nextNode++;
-				if (e.hasTag(Tag.ASSERTION)) {
+				if (e instanceof Assert) {
+					// FIXME: Execution of an assertion is not a problem, if the assertion holds!
 					break;
 				}
 			}

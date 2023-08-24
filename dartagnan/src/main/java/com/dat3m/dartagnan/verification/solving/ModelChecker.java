@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
@@ -34,7 +34,6 @@ import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.lang.Boolean.FALSE;
@@ -123,13 +122,12 @@ public abstract class ModelChecker {
     private static void computeSpecificationFromProgramAssertions(Program program) {
         // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
         // For litmus tests, this function should not be called.
-        List<Event> assertions = program.getThreads().stream()
-                .flatMap(t -> t.getEvents().stream().filter(e -> e.hasTag(ASSERTION))).toList();
+        final List<Assert> assertions = program.getThreadEvents(Assert.class);
         AbstractAssert spec = new AssertTrue();
         if(!assertions.isEmpty()) {
-            spec = new AssertInline((Local)assertions.get(0));
+            spec = new AssertInline(assertions.get(0));
             for(int i = 1; i < assertions.size(); i++) {
-                spec = new AssertCompositeAnd(spec, new AssertInline((Local)assertions.get(i)));
+                spec = new AssertCompositeAnd(spec, new AssertInline(assertions.get(i)));
             }
         }
         spec.setType(AbstractAssert.ASSERT_TYPE_FORALL);
