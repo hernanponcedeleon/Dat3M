@@ -10,4 +10,4 @@ y=0;
  ld.nonpriv.sc0 r0, x                    | ld.atom.acq.wg.sc0.semsc0.semvis r1, y   ;
  st.atom.rel.wg.sc0.semsc0.semav y, 1    | st.nonpriv.sc0 x, 1                     ;
 exists
-(P0:r0 == 1 /\ P1:r1 == 1)
+(P1:r1 == 1)

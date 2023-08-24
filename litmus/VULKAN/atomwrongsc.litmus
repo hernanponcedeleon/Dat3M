@@ -13,4 +13,4 @@ z aliases x;
  ld.atom.acq.wg.sc1.semsc0 r0, x     | ld.atom.acq.wg.sc0.semsc0 r1, y     ;
  st.atom.rel.wg.sc0.semsc0 y, 1      | st.av.dv.sc0 z, 1                   ;
 exists
-(P0:r0 == 1)
+(P0:r0 == 0 /\ P1:r1 == 1)
