@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -233,7 +234,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type type = parseType(ctx.type());
         final Expression expression;
         if (ctx.immutable().getText().equals("global")) {
-            final int size = types.getMemorySize(type);
+            final int size = types.getMemorySizeInBytes(type);
             expression = program.getMemory().allocate(size, true);
             //TODO non-det initializer
         } else {
@@ -254,7 +255,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
-        final int size = types.getMemorySize(type);
+        final int size = types.getMemorySizeInBytes(type);
         final MemoryObject globalObject = program.getMemory().allocate(size, true);
         final Expression value = checkExpression(type, ctx.constant());
         globalObject.setCVar(name);
@@ -273,7 +274,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             assert constant instanceof Construction;
             final Construction constArray = (Construction) constant;
             final List<Expression> arrayElements = constArray.getArguments();
-            final int stepSize = types.getMemorySize(arrayType.getElementType());
+            final int stepSize = types.getMemorySizeInBytes(arrayType.getElementType());
             for (int i = 0; i < arrayElements.size(); i++) {
                 setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
             }
@@ -284,7 +285,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             int currentOffset = offset;
             for (Expression structElement : structElements) {
                 setInitialMemoryFromConstant(memObj, currentOffset, structElement);
-                currentOffset += types.getMemorySize(structElement.getType());
+                currentOffset += types.getMemorySizeInBytes(structElement.getType());
             }
         } else if (constant.getType() instanceof IntegerType) {
             assert constant instanceof IConst;
@@ -503,7 +504,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         //final var inalloca = ctx.inAllocaTok != null;
         //final var swifterror = ctx.swiftError != null;
         final Type elementType = parseType(ctx.type());
-        final int elementSize = types.getMemorySize(elementType);
         final Expression sizeExpression;
         if (ctx.typeValue() == null) {
             sizeExpression = expressions.makeOne(integerType);
@@ -511,12 +511,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             final Type sizeType = parseType(ctx.typeValue().firstClassType());
             sizeExpression = checkExpression(sizeType, ctx.typeValue().value());
         }
-        final IntegerType offsetType = (IntegerType) sizeExpression.getType();
-        final Expression factor = expressions.makeValue(BigInteger.valueOf(elementSize), offsetType);
-        final Expression scaledSizeExpression = expressions.makeMUL(factor, sizeExpression);
         //final int alignment = parseAlignment(ctx.align());
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
-        block.events.add(Std.newMalloc(register, scaledSizeExpression));
+        block.events.add(EventFactory.newAlloc(register, elementType, sizeExpression, false));
         return register;
     }
 

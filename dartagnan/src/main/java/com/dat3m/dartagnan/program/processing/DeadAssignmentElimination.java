@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -69,6 +69,6 @@ public class DeadAssignmentElimination implements FunctionProcessor {
 
     private boolean isSideEffectFree(Event event) {
         return !event.hasTag(ASSERTION) &&
-                !event.hasTag(VISIBLE) && (event instanceof Local || event instanceof Malloc);
+                !event.hasTag(VISIBLE) && (event instanceof Local || event instanceof Alloc);
     }
 }

@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -79,8 +81,9 @@ public class StdProcedures {
         final Expression sizeExpr = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         final String ptrName = ctx.call_params().Ident(0).getText();
         final Register reg = visitor.getRegister(ptrName);
+        final Type byteType = TypeFactory.getInstance().getByteType();
 
-        visitor.addEvent(EventFactory.Std.newMalloc(reg, sizeExpr));
+        visitor.addEvent(EventFactory.newAlloc(reg, byteType, sizeExpr, true));
     }
 
     private static void __assert(VisitorBoogie visitor, Call_cmdContext ctx) {

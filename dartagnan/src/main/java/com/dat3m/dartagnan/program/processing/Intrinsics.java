@@ -285,7 +285,12 @@ public class Intrinsics {
             throw new UnsupportedOperationException(String.format("Unsupported signature for %s.", call));
         }
         final ValueFunctionCall valueCall = (ValueFunctionCall) call;
-        return List.of(EventFactory.Std.newMalloc(valueCall.getResultRegister(), valueCall.getArguments().get(0)));
+        return List.of(EventFactory.newAlloc(
+                valueCall.getResultRegister(),
+                TypeFactory.getInstance().getByteType(),
+                valueCall.getArguments().get(0),
+                true
+        ));
     }
 
     // --------------------------------------------------------------------------------------------------------

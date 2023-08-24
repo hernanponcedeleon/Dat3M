@@ -73,14 +73,18 @@ public final class TypeFactory {
         return archPrecision < 0 ? getIntegerType() : getIntegerType(archPrecision);
     }
 
-    public int getMemorySize(Type type) {
+    public IntegerType getByteType() {
+        return getIntegerType(8);
+    }
+
+    public int getMemorySizeInBytes(Type type) {
         final int sizeInBytes;
         if (type instanceof ArrayType arrayType) {
-            sizeInBytes = arrayType.getNumElements() * getMemorySize(arrayType.getElementType());
+            sizeInBytes = arrayType.getNumElements() * getMemorySizeInBytes(arrayType.getElementType());
         } else if (type instanceof AggregateType aggregateType) {
             int aggregateSize = 0;
             for (Type fieldType : aggregateType.getDirectFields()) {
-                int size = getMemorySize(fieldType);
+                int size = getMemorySizeInBytes(fieldType);
                 //FIXME: We assume for now that a small type's (<= 8 byte) alignment coincides with its size.
                 // For all larger types, we assume 8 byte alignment
                 int alignment = Math.min(size, 8);
