@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.utils.collections.SetUtil;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -287,19 +288,18 @@ public class RelationAnalysis {
 
     public static final class Knowledge {
 
+        private final Set<Tuple> mayExplicit;
+        private final Set<Tuple> mustExplicit;
         private final Set<Tuple> may;
         private final Set<Tuple> must;
-        private final Set<Tuple> mayImplicit;
-        private final Set<Tuple> mustImplicit;
         private final Function<Event, Collection<Event>> mayIn;
         private final Function<Event, Collection<Event>> mustIn;
         private final Function<Event, Collection<Event>> mayOut;
         private final Function<Event, Collection<Event>> mustOut;
 
         private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
-            may = checkNotNull(maySet);
-            must = checkNotNull(mustSet);
-            mayImplicit = mustImplicit = Set.of();
+            may = mayExplicit = checkNotNull(maySet);
+            must = mustExplicit = checkNotNull(mustSet);
             mayIn = mustIn = y -> Set.of();
             mayOut = mustOut = x -> Set.of();
         }
@@ -307,10 +307,10 @@ public class RelationAnalysis {
         private Knowledge(Set<Tuple> mayImplicit, Set<Tuple> mustImplicit,
                           Function<Event, Collection<Event>> mayIn, Function<Event, Collection<Event>> mayOut,
                           Function<Event, Collection<Event>> mustIn, Function<Event, Collection<Event>> mustOut) {
-            this.may = new HashSet<>();
-            this.must = new HashSet<>();
-            this.mayImplicit = mayImplicit;
-            this.mustImplicit = mustImplicit;
+            this.mayExplicit = new HashSet<>();
+            this.mustExplicit = new HashSet<>();
+            this.may = SetUtil.groundedSet(this.mayExplicit, mayImplicit);
+            this.must = SetUtil.groundedSet(this.mustExplicit, mustImplicit);
             this.mayIn = mayIn;
             this.mayOut = mayOut;
             this.mustIn = mustIn;
@@ -318,35 +318,35 @@ public class RelationAnalysis {
         }
 
         public Set<Tuple> getMaySet() {
-            return Sets.union(may, mayImplicit);
+            return may;
         }
 
         public boolean containsMay(Tuple t) {
-            return may.contains(t) || mayImplicit.contains(t);
+            return may.contains(t);
         }
 
         public Function<Event, Collection<Tuple>> getMayIn() {
-            return getIn(may, mayIn);
+            return getIn(mayExplicit, mayIn);
         }
 
         public Function<Event, Collection<Tuple>> getMayOut() {
-            return getOut(may, mayOut);
+            return getOut(mayExplicit, mayOut);
         }
 
         public Set<Tuple> getMustSet() {
-            return Sets.union(must, mustImplicit);
+            return must;
         }
 
         public boolean containsMust(Tuple t) {
-            return must.contains(t) || mustImplicit.contains(t);
+            return must.contains(t);
         }
 
         public Function<Event, Collection<Tuple>> getMustIn() {
-            return getIn(must, mustIn);
+            return getIn(mustExplicit, mustIn);
         }
 
         public Function<Event, Collection<Tuple>> getMustOut() {
-            return getOut(must, mustOut);
+            return getOut(mustExplicit, mustOut);
         }
 
         private static Function<Event, Collection<Tuple>> getIn(Set<Tuple> set, Function<Event, Collection<Event>> inFunction) {
@@ -367,11 +367,10 @@ public class RelationAnalysis {
 
         @Override
         public String toString() {
-            if (may == must && mayImplicit == mustImplicit) {
-                return "(" + may.size() + (mayImplicit.isEmpty() ? "" : "+" + mayImplicit.size()) + "must)";
+            if (may == must) {
+                return "(may=must: " + must.size() + ")";
             }
-            return "(" + may.size() + (mayImplicit.isEmpty() ? "" : "+" + mayImplicit.size()) + "may, " +
-                    must.size() + (mustImplicit.isEmpty() ? "" : "+" + mustImplicit.size()) + "must)";
+            return "(may: " + may.size() + ", must:" + must.size() + ")";
         }
 
         private Delta joinSet(List<Delta> l) {
@@ -400,10 +399,13 @@ public class RelationAnalysis {
             Set<Tuple> enableSet = new HashSet<>();
             for (ExtendedDelta d : l) {
                 for (Tuple t : Set.copyOf(d.disabled)) {
-                    checkState(!mayImplicit.contains(t),
-                            "Contradiction with implicit knowledge about tuple %s", t);
-                    if (may.remove(t)) {
-                        disableSet.add(t);
+                    try {
+                        if (may.remove(t)) {
+                            disableSet.add(t);
+                        }
+                    } catch (UnsupportedOperationException e) {
+                        final String message = String.format("Contradiction with implicit knowledge about tuple %s", t);
+                        throw new IllegalStateException(message, e);
                     }
                 }
                 for (Tuple t : Set.copyOf(d.enabled)) {
