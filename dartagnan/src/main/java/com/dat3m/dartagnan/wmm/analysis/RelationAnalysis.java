@@ -838,7 +838,7 @@ public class RelationAnalysis {
                         continue;
                     }
                     for (Event x : events.subList(0, i)) {
-                        if (notExclusive(x, f)) {
+                        if (exclusive(x, f)) {
                             continue;
                         }
                         boolean implies = enableMustSets && implies(f, x);
@@ -1229,7 +1229,7 @@ public class RelationAnalysis {
             List<PTXFenceWithId> fenceEvents = program.getThreadEvents(PTXFenceWithId.class);
             for (PTXFenceWithId e1 : fenceEvents) {
                 for (PTXFenceWithId e2 : fenceEvents) {
-                    if(exec.areMutuallyExclusive(e1, e2)) {
+                    if(exclusive(e1, e2)) {
                         continue;
                     }
                     may.add(new Tuple(e1, e2));
