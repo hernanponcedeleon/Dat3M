@@ -19,7 +19,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
-import com.dat3m.dartagnan.utils.collections.SetUtil;
+import com.dat3m.dartagnan.utils.collections.SetUtil.GroundedSet;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -30,6 +30,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.collect.Comparators;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +65,7 @@ public class RelationAnalysis {
 
     private static final Logger logger = LogManager.getLogger(RelationAnalysis.class);
 
-    private static final Set<Tuple> EMPTY_SET = new HashSet<>();
+    private static final HashSet<Tuple> EMPTY_SET = new HashSet<>();
     private static final Delta EMPTY = new Delta(EMPTY_SET, EMPTY_SET);
 
     private final VerificationTask task;
@@ -288,32 +289,30 @@ public class RelationAnalysis {
 
     public static final class Knowledge {
 
-        private final Set<Tuple> mayExplicit;
-        private final Set<Tuple> mustExplicit;
-        private final Set<Tuple> may;
-        private final Set<Tuple> must;
+        private final GroundedSet<Tuple> may;
+        private final GroundedSet<Tuple> must;
         private final Function<Event, Collection<Event>> mayIn;
         private final Function<Event, Collection<Event>> mustIn;
         private final Function<Event, Collection<Event>> mayOut;
         private final Function<Event, Collection<Event>> mustOut;
 
+        // Creates explicit knowledge
         private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
-            may = mayExplicit = checkNotNull(maySet);
-            must = mustExplicit = checkNotNull(mustSet);
+            may = new GroundedSet<>(EMPTY_SET, checkNotNull(maySet));
+            must = new GroundedSet<>(EMPTY_SET, checkNotNull(mustSet));
             mayIn = mustIn = y -> Set.of();
             mayOut = mustOut = x -> Set.of();
         }
 
-        private Knowledge(Set<Tuple> mayImplicit, Set<Tuple> mustImplicit,
+        // Creates implicit knowledge
+        private Knowledge(Set<Tuple> may, Set<Tuple> must,
                           Function<Event, Collection<Event>> mayIn, Function<Event, Collection<Event>> mayOut,
                           Function<Event, Collection<Event>> mustIn, Function<Event, Collection<Event>> mustOut) {
-            this.mayExplicit = new HashSet<>();
-            this.mustExplicit = new HashSet<>();
-            this.may = SetUtil.groundedSet(this.mayExplicit, mayImplicit);
-            this.must = SetUtil.groundedSet(this.mustExplicit, mustImplicit);
+            this.may = new GroundedSet<>(checkNotNull(may));
+            this.must = new GroundedSet<>(checkNotNull(must));
             this.mayIn = mayIn;
-            this.mayOut = mayOut;
             this.mustIn = mustIn;
+            this.mayOut = mayOut;
             this.mustOut = mustOut;
         }
 
@@ -326,11 +325,11 @@ public class RelationAnalysis {
         }
 
         public Function<Event, Collection<Tuple>> getMayIn() {
-            return getIn(mayExplicit, mayIn);
+            return getInOut(may, mayIn, true);
         }
 
         public Function<Event, Collection<Tuple>> getMayOut() {
-            return getOut(mayExplicit, mayOut);
+            return getInOut(may, mayOut, false);
         }
 
         public Set<Tuple> getMustSet() {
@@ -342,27 +341,30 @@ public class RelationAnalysis {
         }
 
         public Function<Event, Collection<Tuple>> getMustIn() {
-            return getIn(mustExplicit, mustIn);
+            return getInOut(must, mustIn, true);
         }
 
         public Function<Event, Collection<Tuple>> getMustOut() {
-            return getOut(mustExplicit, mustOut);
+            return getInOut(must, mustOut, false);
         }
 
-        private static Function<Event, Collection<Tuple>> getIn(Set<Tuple> set, Function<Event, Collection<Event>> inFunction) {
-            final var map = new HashMap<Event, Collection<Tuple>>();
-            for (final Tuple t : set) {
-                map.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(t);
+        private static Function<Event, Collection<Tuple>> getInOut(
+                GroundedSet<Tuple> set,
+                Function<Event, Collection<Event>> function,
+                boolean in) {
+            final var added = new HashMap<Event, Collection<Tuple>>();
+            for (final Tuple t : set.getAddedSet()) {
+                added.computeIfAbsent(in ? t.getSecond() : t.getFirst(), k -> new ArrayList<>()).add(t);
             }
-            return e -> new InOutSet(map.getOrDefault(e, List.of()), inFunction.apply(e), e, true);
-        }
-
-        private static Function<Event, Collection<Tuple>> getOut(Set<Tuple> set, Function<Event, Collection<Event>> outFunction) {
-            final var map = new HashMap<Event, Collection<Tuple>>();
-            for (final Tuple t : set) {
-                map.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(t);
+            final var removed = new HashMap<Event, Collection<Event>>();
+            for (final Object o : set.getRemovedSet()) {
+                assert o instanceof Tuple;
+                final Tuple t = (Tuple) o;
+                final Event key = in ? t.getSecond() : t.getFirst();
+                final Event value = in ? t.getFirst() : t.getSecond();
+                removed.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
             }
-            return e -> new InOutSet(map.getOrDefault(e, List.of()), outFunction.apply(e), e, false);
+            return e -> new InOutSet(added, removed, function, e, in);
         }
 
         @Override
@@ -380,12 +382,12 @@ public class RelationAnalysis {
             Set<Tuple> mustSet = must.isEmpty() || l.get(0).must == must ? must : new HashSet<>();
             for (Delta d : l) {
                 for (Tuple t : d.may) {
-                    if (!mayImplicit.contains(t) && may.add(t)) {
+                    if (may.add(t)) {
                         maySet.add(t);
                     }
                 }
                 for (Tuple t : d.must) {
-                    if (!mustImplicit.contains(t) && must.add(t)) {
+                    if (must.add(t)) {
                         mustSet.add(t);
                     }
                 }
@@ -409,7 +411,7 @@ public class RelationAnalysis {
                     }
                 }
                 for (Tuple t : Set.copyOf(d.enabled)) {
-                    if (!mustImplicit.contains(t) && must.add(t)) {
+                    if (must.add(t)) {
                         enableSet.add(t);
                     }
                 }
@@ -1804,41 +1806,35 @@ public class RelationAnalysis {
     }
 
     private static final class InOutSet extends AbstractCollection<Tuple> {
-        private final Collection<Tuple> explicits;
+
+        private final Collection<Tuple> added;
+        private final Collection<Event> removed;
         private final Collection<Event> set;
         private final Event event;
         private final boolean in;
+        //assume set.containsAll(removed)
 
-        private InOutSet(Collection<Tuple> explicits, Collection<Event> set, Event event, boolean in) {
-            this.explicits = explicits;
-            this.set = set;
+        private InOutSet(Map<?, Collection<Tuple>> addedMap, Map<?, Collection<Event>> removedMap, Function<? super Event,
+                Collection<Event>> implicit, Event event, boolean in) {
+            this.added = addedMap.getOrDefault(event, List.of());
+            this.removed = removedMap.getOrDefault(event, List.of());
+            this.set = implicit.apply(event);
             this.event = event;
             this.in = in;
         }
 
         @Override
         public Iterator<Tuple> iterator() {
-            Iterator<Tuple> explicitIterator = explicits.iterator();
-            Iterator<Event> innerIterator = set.iterator();
-            return new Iterator<>() {
-                @Override
-                public boolean hasNext() {
-                    return explicitIterator.hasNext() || innerIterator.hasNext();
-                }
-                @Override
-                public Tuple next() {
-                    if (explicitIterator.hasNext()) {
-                        return explicitIterator.next();
-                    }
-                    Event other = innerIterator.next();
-                    return in ? new Tuple(other, event) : new Tuple(event, other);
-                }
-            };
+            final Iterator<Tuple> addedTuples = added.iterator();
+            final Iterator<Event> groundEvents = Iterators.filter(set.iterator(), e -> !removed.contains(e));
+            final Function<Event, Tuple> transformation = in ? e -> new Tuple(e, event) : e -> new Tuple(event, e);
+            final Iterator<Tuple> groundTuples = Iterators.transform(groundEvents, transformation::apply);
+            return Iterators.concat(addedTuples, groundTuples);
         }
 
         @Override
         public int size() {
-            return explicits.size() + set.size();
+            return added.size() + set.size() - removed.size();
         }
     }
 

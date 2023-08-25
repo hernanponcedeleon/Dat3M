@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.utils.collections;
 
+import com.google.common.collect.Sets;
+
 import java.util.*;
 
 public class SetUtil {
@@ -12,15 +14,6 @@ public class SetUtil {
 
     public static <T> Set<T> identityHashSet(int capacity) {
         return Collections.newSetFromMap(new IdentityHashMap<>(capacity));
-    }
-
-    /**
-     * @param explicit Modifiable set for additional elements.
-     * @param implicit Immutable ground content of the resulting set.
-     * @return Partially-modifiable set
-     */
-    public static <T> Set<T> groundedSet(Set<T> explicit, Set<? extends T> implicit) {
-        return new GroundedSet<>(explicit, implicit);
     }
 
     /*
@@ -95,29 +88,51 @@ public class SetUtil {
     }
 
     // Manages a distinct union of a modifiable and an immutable set.
-    private static final class GroundedSet<T> extends AbstractSet<T> {
+    public static final class GroundedSet<T> extends AbstractSet<T> {
 
-        private final Set<T> explicitSet;
-        private final Set<? extends T> implicitSet;
+        private final Set<? extends T> ground;
+        private final Set<T> added;
+        private final Set<Object> removed;
 
-        private GroundedSet(Set<T> explicit, Set<? extends T> implicit) {
-            explicitSet = explicit;
-            implicitSet = implicit;
+        public GroundedSet(Set<? extends T> groundSet) {
+            this(groundSet, new HashSet<>());
+        }
+
+        public GroundedSet(Set<? extends T> groundSet, Set<T> addedSet) {
+            this(groundSet, addedSet, new HashSet<>());
+        }
+
+        public GroundedSet(Set<? extends T> groundSet, Set<T> addedSet, Set<Object> removedSet) {
+            ground = groundSet;
+            added = addedSet;
+            removed = removedSet;
+        }
+
+        public Set<? extends T> getGroundSet() {
+            return Collections.unmodifiableSet(ground);
+        }
+
+        public Set<T> getAddedSet() {
+            return Collections.unmodifiableSet(added);
+        }
+
+        public Set<Object> getRemovedSet() {
+            return Collections.unmodifiableSet(removed);
         }
 
         @Override
         public int size() {
-            return explicitSet.size() + implicitSet.size();
+            return added.size() + ground.size() - removed.size();
         }
 
         @Override
         public Iterator<T> iterator() {
-            final Iterator<T> explicitIterator = explicitSet.iterator();
-            final Iterator<? extends T> implicitIterator = implicitSet.iterator();
+            final Iterator<T> explicitIterator = added.iterator();
+            final Iterator<? extends T> implicitIterator = Sets.difference(ground, removed).iterator();
             return new Iterator<>() {
 
-                //Distinguishes the last element of explicitIterator
-                private boolean progressed;
+                //Removable by inserting into the set of removed elements
+                private T currentElement;
 
                 @Override
                 public boolean hasNext() {
@@ -126,14 +141,16 @@ public class SetUtil {
 
                 @Override
                 public T next() {
-                    progressed = progressed || !explicitIterator.hasNext();
-                    return (progressed ? implicitIterator : explicitIterator).next();
+                    if (explicitIterator.hasNext()) {
+                        return explicitIterator.next();
+                    }
+                    return currentElement = implicitIterator.next();
                 }
 
                 @Override
                 public void remove() {
-                    if (progressed) {
-                        throw new UnsupportedOperationException();
+                    if (currentElement != null) {
+                        removed.add(currentElement);
                     }
                     explicitIterator.remove();
                 }
@@ -142,7 +159,7 @@ public class SetUtil {
 
         @Override
         public boolean add(T t) {
-            return !implicitSet.contains(t) && explicitSet.add(t);
+            return !ground.contains(t) && added.add(t);
         }
 
         @Override
@@ -157,34 +174,31 @@ public class SetUtil {
 
         @Override
         public boolean removeAll(Collection<?> c) {
-            if (!Collections.disjoint(c, implicitSet)) {
-                throw new UnsupportedOperationException();
+            boolean change = added.removeAll(c);
+            for (final Object element : c) {
+                change |= ground.contains(element) && removed.add(element);
             }
-            return explicitSet.removeAll(c);
+            return change;
         }
 
         @Override
         public boolean remove(Object o) {
-            if (implicitSet.contains(o)) {
-                throw new UnsupportedOperationException();
-            }
-            return explicitSet.remove(o);
+            return ground.contains(o) ? removed.add(o) : added.remove(o);
         }
 
         @Override
         public boolean retainAll(Collection<?> c) {
-            if (c.containsAll(implicitSet)) {
-                throw new UnsupportedOperationException();
+            boolean change = added.retainAll(c);
+            for (final T element : ground) {
+                change |= !c.contains(element) && removed.add(element);
             }
-            return explicitSet.retainAll(c);
+            return change;
         }
 
         @Override
         public void clear() {
-            if (!implicitSet.isEmpty()) {
-                throw new UnsupportedOperationException();
-            }
-            explicitSet.clear();
+            added.clear();
+            removed.addAll(ground);
         }
     }
 
