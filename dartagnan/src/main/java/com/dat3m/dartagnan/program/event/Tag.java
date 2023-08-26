@@ -336,7 +336,6 @@ public final class Tag {
         public static final String ATOM = "ATOM";
         public static final String ACQUIRE = "ACQ";
         public static final String RELEASE = "REL";
-        public static final String RELAXED = "RLX";
         public static final String ACQ_REL = "ACQ_REL";
         public static final String VISIBLE = "VIS";
         public static final String AVAILABLE = "AV";
@@ -367,37 +366,28 @@ public final class Tag {
         }
 
         public static String loadMO(String mo) {
-            switch (mo) {
-                case ACQ_REL, ACQUIRE:
-                    return ACQUIRE;
-                case VISIBLE:
-                    return VISIBLE;
-                default:
-                    return "";
-            }
+            return switch (mo) {
+                case ACQ_REL, ACQUIRE -> ACQUIRE;
+                case VISIBLE -> VISIBLE;
+                default -> "";
+            };
         }
 
         public static String storeMO(String mo) {
-            switch (mo) {
-                case ACQ_REL, RELEASE:
-                    return RELEASE;
-                case AVAILABLE:
-                    return AVAILABLE;
-                default:
-                    return "";
-            }
+            return switch (mo) {
+                case ACQ_REL, RELEASE -> RELEASE;
+                case AVAILABLE -> AVAILABLE;
+                default -> "";
+            };
         }
     }
 
     public static String getScopeTag(Event e, Arch arch) {
-        switch (arch) {
-            case PTX:
-                return PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
-            case VULKAN:
-                return Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
-            default:
-                throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
-        }
+        return switch (arch) {
+            case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
+        };
 
     }
 }

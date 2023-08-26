@@ -286,7 +286,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
         // Add tags
         e.addTags(mo, avvisSemantic);
-        if (atomatic) {
+        if (atomatic || e instanceof VulkanRMW) {
             e.addTags(Tag.Vulkan.ATOM);
         }
     }
