@@ -10,6 +10,7 @@ import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,9 +50,12 @@ public class C11ToPPCTest extends AbstractCompilationTest {
 	protected List<String> getCompilationBreakers() {
 		return Stream.of(
 				"manual/IRIW-sc-sc-acq-sc-acq-sc",
-				"manual/RWC-sc-acq-sc-sc-sc").map(p -> ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C11/" + p + ".litmus").collect(Collectors.toList());
+				"manual/RWC-sc-acq-sc-sc-sc")
+				.map(p -> ResourceHelper.LITMUS_RESOURCE_PATH + "litmus/C11/" + p + ".litmus")
+				.map(p -> Path.of(p).toString())
+				.collect(Collectors.toList());
 	}
-	
+
     protected Provider<Configuration> getConfigurationProvider() {
 		return Provider.fromSupplier(() -> Configuration.builder().
 				setOption(INITIALIZE_REGISTERS, String.valueOf(true)).

@@ -33,11 +33,7 @@ Thumbs.db
 ##########
 # Builds #
 ##########
-dartagnan/target/
-porthos/target/
-ui/target/
-svcomp/target/
-zombmc/target/
+/*/target/
 
 ##########
 # Boogie #
