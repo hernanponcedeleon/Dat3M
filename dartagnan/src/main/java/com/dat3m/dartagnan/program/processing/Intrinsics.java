@@ -180,7 +180,7 @@ public class Intrinsics {
                     false, false, false, false, this::inlineAssert),
             new Info("exit", false, false, false, true, this::inlineExit),
             new Info("abort", false, false, false, true, this::inlineExit),
-            new Info("io", List.of("puts, putchar, printf"),
+            new Info("io", List.of("puts", "putchar", "printf"),
                     false, false, true, true, this::inlineAsZero)
     ));
 
