@@ -21,6 +21,8 @@ import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -38,6 +40,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class Intrinsics {
 
+    private static final Logger logger = LogManager.getLogger(Intrinsics.class);
+
+    private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
@@ -127,6 +132,7 @@ public class Intrinsics {
             new Info("pthread_join",
                     List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""),
                     false, true, false, false, null),
+            new Info("pthread_barrier_wait", false, false, true, true, this::inlineAsZero),
             // --------------------------- pthread mutex ---------------------------
             new Info("pthread_mutex_init", true, false, true, true, this::inlinePthreadMutexInit),
             new Info("pthread_mutex_lock", true, true, false, true, this::inlinePthreadMutexLock),
@@ -153,6 +159,9 @@ public class Intrinsics {
             new Info("llvm.*",
                     List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz", "llvm.assume"),
                     false, false, true, true, this::handleLLVMIntrinsic),
+            new Info("llvm.stack",
+                    List.of("llvm.stacksave", "llvm.stackrestore"), // NOTE: These are just for allocation optimization
+                    false, false, true, true, this::inlineAsZero),
             // --------------------------- LKMM ---------------------------
             new Info("__LKMM_LOAD", false, true, true, true, this::handleLKMMIntrinsic),
             new Info("__LKMM_STORE", true, false, true, true, this::handleLKMMIntrinsic),
@@ -166,13 +175,13 @@ public class Intrinsics {
             new Info("__LKMM_FENCE", false, false, false, true, this::handleLKMMIntrinsic),
             // --------------------------- Misc ---------------------------
             new Info("malloc", false, false, true, true, this::inlineMalloc),
-            new Info("free", true, false, true, true, e -> List.of()),//TODO support free
+            new Info("free", true, false, true, true, this::inlineAsZero),//TODO support free
             new Info("assert", List.of("__assert_fail", "__assert_rtn"),
                     false, false, false, false, this::inlineAssert),
             new Info("exit", false, false, false, true, this::inlineExit),
             new Info("abort", false, false, false, true, this::inlineExit),
-            new Info("printf", false, false, true, true, e -> List.of()),
-            new Info("puts", false, false, true, true, e -> List.of())
+            new Info("io", List.of("puts, putchar, printf"),
+                    false, false, true, true, this::inlineAsZero)
     ));
 
     private void markIntrinsics(Program program) {
@@ -212,6 +221,17 @@ public class Intrinsics {
             if (info != null && info.isEarly()) {
                 info.replace(call);
             }
+        }
+    }
+
+    private List<Event> inlineAsZero(FunctionCall call) {
+        if (call instanceof ValueFunctionCall valueCall) {
+            final Register reg = valueCall.getResultRegister();
+            final Expression zero = expressions.makeGeneralZero(reg.getType());
+            logger.debug("Replaced (unsupported) call to \"{}\" by zero.", call.getCalledFunction().getName());
+            return List.of(EventFactory.newLocal(reg, zero));
+        } else {
+            return List.of();
         }
     }
 

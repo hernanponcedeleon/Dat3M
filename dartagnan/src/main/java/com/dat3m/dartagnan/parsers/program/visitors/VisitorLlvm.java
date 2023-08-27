@@ -840,7 +840,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type elementType = ((ArrayType)expectedType).getElementType();
         if (ctx.StringLit() != null) {
             //TODO handle strings
-            return makeZeroOfType(expectedType); // We make a 0 for now.
+            return expressions.makeGeneralZero(expectedType); // We make a 0 for now.
         }
         final List<Expression> arrayValues = new ArrayList<>();
         for (TypeConstContext typeConst : ctx.typeConst()) {
@@ -860,28 +860,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitZeroInitializerConst(ZeroInitializerConstContext ctx) {
-        return makeZeroOfType(expectedType);
-    }
-
-    private Expression makeZeroOfType(Type type) {
-        if (type instanceof ArrayType arrayType) {
-            Expression zero = makeZeroOfType(arrayType.getElementType());
-            List<Expression> zeroes = new ArrayList<>(arrayType.getNumElements());
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                zeroes.add(zero);
-            }
-            return expressions.makeArray(arrayType.getElementType(), zeroes, true);
-        } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
-            for (Type fieldType : structType.getDirectFields()) {
-                zeroes.add(makeZeroOfType(fieldType));
-            }
-            return expressions.makeConstruct(zeroes);
-        } else if (type instanceof IntegerType intType) {
-            return expressions.makeZero(intType);
-        } else {
-            throw new UnsupportedOperationException("Cannot create zero of type " + type);
-        }
+        return expressions.makeGeneralZero(expectedType);
     }
 
     // Operations
@@ -1026,7 +1005,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitUndefConst(UndefConstContext ctx) {
         logger.warn("Encountered undef constant of type {}. " +
                 "Constant was replaced by zero.", expectedType);
-        return makeZeroOfType(expectedType);
+        return expressions.makeGeneralZero(expectedType);
     }
 
     private Expression checkPointerExpression(ParserRuleContext context) {

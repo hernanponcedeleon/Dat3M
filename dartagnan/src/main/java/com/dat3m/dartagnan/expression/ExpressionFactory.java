@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ExpressionFactory {
@@ -55,6 +56,29 @@ public final class ExpressionFactory {
 
     public Expression makeBinary(Expression leftOperand, BOpBin operator, Expression rightOperand) {
         return new BExprBin(booleanType, leftOperand, operator, rightOperand);
+    }
+
+    public Expression makeGeneralZero(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            Expression zero = makeGeneralZero(arrayType.getElementType());
+            List<Expression> zeroes = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                zeroes.add(zero);
+            }
+            return makeArray(arrayType.getElementType(), zeroes, true);
+        } else if (type instanceof AggregateType structType) {
+            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
+            for (Type fieldType : structType.getDirectFields()) {
+                zeroes.add(makeGeneralZero(fieldType));
+            }
+            return makeConstruct(zeroes);
+        } else if (type instanceof IntegerType intType) {
+            return makeZero(intType);
+        } else if (type == booleanType) {
+            return makeFalse();
+        } else {
+            throw new UnsupportedOperationException("Cannot create zero of type " + type);
+        }
     }
 
     public IValue makeZero(IntegerType type) {
