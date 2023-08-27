@@ -10,10 +10,10 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -248,15 +248,16 @@ public class Dartagnan extends BaseOptions {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
-                    for(Event e : p.getThreadEvents(Local.class)) {
-                        if(e.hasTag(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                    for(Assert ass: p.getThreadEvents(Assert.class)) {
+                        if(FALSE.equals(model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)))) {
                             final String callStack = makeContextString(
-                                    synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                                    synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
                             summary
-                                    .append("\tE").append(e.getGlobalId())
+                                    .append("\tE").append(ass.getGlobalId())
                                     .append(":\t")
                                     .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                                    .append(getSourceLocationString(e))
+                                    .append(getSourceLocationString(ass))
+                                    .append(": ").append(ass.getErrorMessage())
                                     .append("\n");
                         }
                     }

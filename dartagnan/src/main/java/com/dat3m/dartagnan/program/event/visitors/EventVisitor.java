@@ -27,6 +27,7 @@ public interface EventVisitor<T> {
 
     // ============================== Core-level events ==============================
     default T visitAssume(Assume e) { return visitEvent(e); }
+    default T visitAssert(Assert e) { return visitEvent(e); }
     default T visitCondJump(CondJump e) { return visitEvent(e); }
     default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
     default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
