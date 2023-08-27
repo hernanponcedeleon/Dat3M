@@ -160,7 +160,8 @@ public class Intrinsics {
             new Info("llvm.stack",
                     List.of("llvm.stacksave", "llvm.stackrestore"), // NOTE: These are just for allocation optimization
                     false, false, true, true, this::inlineAsZero),
-            new Info("llvm.memcpy.*", List.of("llvm.memcpy"), true, true, true, false, null),
+            new Info("llvm.memcpy.*", List.of("llvm.memcpy"), // FIXME
+                    true, true, true, false, null),
             // --------------------------- LKMM ---------------------------
             new Info("__LKMM_LOAD", false, true, true, true, this::handleLKMMIntrinsic),
             new Info("__LKMM_STORE", true, false, true, true, this::handleLKMMIntrinsic),

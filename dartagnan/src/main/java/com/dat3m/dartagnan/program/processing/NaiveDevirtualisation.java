@@ -41,7 +41,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(NaiveDevirtualisation.class);
 
-    private int nextAvailableFuncAddress = 1;
+    private int nextAvailableFuncAddress = 8; // We use 8-aligned addresses
 
     private NaiveDevirtualisation() {
     }
@@ -103,7 +103,8 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         if (!func2AddressMap.containsKey(func)) {
             logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
-            func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress++), ptrType));
+            func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress), ptrType));
+            nextAvailableFuncAddress += 8;
             return true;
         }
         return false;
