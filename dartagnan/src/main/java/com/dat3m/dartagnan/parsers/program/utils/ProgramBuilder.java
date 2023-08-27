@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
@@ -28,7 +29,9 @@ import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
 import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
@@ -204,7 +207,7 @@ public class ProgramBuilder {
         initLocEqConst(leftName,getInitialValue(rightName));
     }
 
-    public void initLocEqConst(String locName, IConst iValue){
+    public void initLocEqConst(String locName, Expression iValue){
         getOrNewMemoryObject(locName).setInitialValue(0,iValue);
     }
 
@@ -223,7 +226,7 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
     }
 
-    private IConst getInitialValue(String name) {
+    private Expression getInitialValue(String name) {
         return getOrNewMemoryObject(name).getInitialValue(0);
     }
 

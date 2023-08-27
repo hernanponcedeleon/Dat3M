@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,38 +50,63 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        Map<Function, IValue> func2AddressMap = new HashMap<>();
+        final FunctionCollector functionCollector = new FunctionCollector();
+        final FunctionToAddressTransformer toAddressTransformer = new FunctionToAddressTransformer();
+
+        findAndTransformAddressTakenFunctionsInMemory(program.getMemory(), functionCollector, toAddressTransformer);
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            findAndTransformAddressTakenFunctions(func, func2AddressMap);
+            findAndTransformAddressTakenFunctions(func, functionCollector, toAddressTransformer);
         }
 
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            devirtualise(func, func2AddressMap);
+            devirtualise(func, toAddressTransformer.func2AddressMap);
         }
     }
 
-    private void findAndTransformAddressTakenFunctions(Function function, Map<Function, IValue> func2AddressMap) {
-        final FunctionCollector functionCollector = new FunctionCollector();
-        final FunctionToAddressTransformer toAddressTransformer = new FunctionToAddressTransformer();
-        toAddressTransformer.func2AddressMap = func2AddressMap;
-        final IntegerType ptrType = TypeFactory.getInstance().getArchType();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private void findAndTransformAddressTakenFunctionsInMemory(
+            Memory memory, FunctionCollector functionCollector, FunctionToAddressTransformer toAddressTransformer
+    ) {
+        for (MemoryObject memoryObject : memory.getObjects()) {
+            for (Integer field : memoryObject.getStaticallyInitializedFields()) {
+                functionCollector.reset();
+                final Expression initValue = memoryObject.getInitialValue(field).accept(functionCollector);
 
+                for (Function func : functionCollector.collectedFunctions) {
+                    assignAddressToFunction(func, toAddressTransformer.func2AddressMap);
+                }
+
+                if (!functionCollector.collectedFunctions.isEmpty()) {
+                    memoryObject.setInitialValue(field, initValue.accept(toAddressTransformer));
+                }
+            }
+        }
+    }
+
+    private void findAndTransformAddressTakenFunctions(
+            Function function, FunctionCollector functionCollector, FunctionToAddressTransformer toAddressTransformer
+    ) {
         for (Event e : function.getEvents()) {
-
             functionCollector.reset();
             applyTransformerToEvent(e, functionCollector);
             for (Function func : functionCollector.collectedFunctions) {
-                if (!func2AddressMap.containsKey(func)) {
-                    logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
-                    func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress++), ptrType));
-                }
+                assignAddressToFunction(func, toAddressTransformer.func2AddressMap);
             }
 
             if (!functionCollector.collectedFunctions.isEmpty()) {
                 applyTransformerToEvent(e, toAddressTransformer);
             }
         }
+    }
+
+    private boolean assignAddressToFunction(Function func, Map<Function, IValue> func2AddressMap) {
+        final IntegerType ptrType = TypeFactory.getInstance().getArchType();
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        if (!func2AddressMap.containsKey(func)) {
+            logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
+            func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress++), ptrType));
+            return true;
+        }
+        return false;
     }
 
     private void applyTransformerToEvent(Event e, ExpressionVisitor<Expression> transformer) {
@@ -178,7 +205,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private static class FunctionToAddressTransformer extends ExprTransformer {
 
-        private Map<Function, IValue> func2AddressMap;
+        private final Map<Function, IValue> func2AddressMap = new HashMap<>();
 
         @Override
         public Expression visit(Function function) {
