@@ -30,6 +30,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.collect.Comparators;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +59,6 @@ import static com.google.common.collect.Lists.reverse;
 import static com.google.common.collect.Sets.difference;
 import static com.google.common.collect.Sets.intersection;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 @Options
 public class RelationAnalysis {
@@ -225,66 +225,96 @@ public class RelationAnalysis {
 
     private void run() {
         logger.trace("Start");
-        Wmm memoryModel = task.getMemoryModel();
-        Map<Relation, List<Definition>> dependents = new HashMap<>();
-        for (Relation r : memoryModel.getRelations()) {
-            for (Relation d : r.getDependencies()) {
+        final Wmm memoryModel = task.getMemoryModel();
+        final Map<Relation, List<Definition>> dependents = new HashMap<>();
+        for (final Relation r : memoryModel.getRelations()) {
+            for (final Relation d : r.getDependencies()) {
                 dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
             }
         }
-        // ------------------------------------------------
-        Initializer initializer = new Initializer();
-        Map<Relation, List<Delta>> qGlobal = new HashMap<>();
-        for (Relation r : memoryModel.getRelations()) {
-            Knowledge k = r.getDefinition().accept(initializer);
-            knowledgeMap.put(r, k);
-            if (!k.may.isEmpty() || !k.must.isEmpty()) {
-                qGlobal.computeIfAbsent(r, x -> new ArrayList<>(1))
-                        .add(new Delta(k.may, k.must));
-            }
-        }
-        // ------------------------------------------------
-        Propagator propagator = new Propagator();
-        for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
-            logger.trace("Regular analysis for component {}", scc);
-            Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
-            if (!enable && stratum.stream().noneMatch(Relation::isInternal)) {
-                continue;
-            }
-            // the algorithm has deterministic order, only if all components are deterministically-ordered
-            Map<Relation, List<Delta>> qLocal = new LinkedHashMap<>();
-            // move from global queue
-            for (Relation r : stratum) {
-                List<Delta> d = qGlobal.remove(r);
-                if (d != null) {
-                    qLocal.put(r, d);
+        final Initializer initializer = new Initializer();
+        final Propagator propagator = new Propagator();
+        for (final Set<Relation> scc : getComponents(memoryModel.getRelations(), Relation::getDependencies)) {
+            // Determine initialization order.
+            final var initializationOrder = new ArrayList<Relation>(scc.size());
+            final var feedbackVertexSet = new HashSet<Relation>();
+            if (scc.size() == 1) {
+                initializationOrder.add(scc.iterator().next());
+            } else {
+                //TODO complement of minimal feedback vertex set
+                final var unnamedRelations = new HashSet<Relation>();
+                for (final Relation r : scc) {
+                    (r.getName().isEmpty() ? unnamedRelations : feedbackVertexSet).add(r);
+                }
+                for (final Relation r : feedbackVertexSet) {
+                    knowledgeMap.put(r, new Knowledge(new HashSet<>(), new HashSet<>()));
+                }
+                for (final Set<Relation> set : getComponents(unnamedRelations,
+                        r -> Iterables.filter(r.getDependencies(), unnamedRelations::contains))) {
+                    verify(set.size() == 1, "Recursive group with cycles of unnamed relations.");
+                    initializationOrder.add(set.iterator().next());
                 }
             }
-            // repeat until convergence
-            while (!qLocal.isEmpty()) {
-                Relation relation = qLocal.keySet().iterator().next();
+            verify(scc.containsAll(initializationOrder), "Component %s was extended by %s", scc, initializationOrder);
+            // Initialize knowledge.
+            for (final Relation r : initializationOrder) {
+                knowledgeMap.put(r, r.getDefinition().accept(initializer));
+            }
+            // If propagation is disabled, skip all but internal relations.
+            if (!enable && scc.stream().noneMatch(Relation::isInternal)) {
+                continue;
+            }
+            logger.trace("Regular analysis for component {}", scc);
+            // The algorithm has deterministic order, if all components are deterministically-ordered.
+            final var queue = new LinkedHashMap<Relation, List<Delta>>();
+            for (final Relation dependent : feedbackVertexSet) {
+                final List<Delta> deltas = queue.computeIfAbsent(dependent,
+                        x -> new ArrayList<>(dependent.getDependencies().size()));
+                for (final Relation dependency : dependent.getDependencies()) {
+                    final Knowledge k = knowledgeMap.get(dependency);
+                    deltas.add(new Delta(k.may, k.must));
+                }
+            }
+            // Repeat propagating until convergence.
+            while (!queue.isEmpty()) {
+                final Relation relation = queue.keySet().iterator().next();
                 logger.trace("Regular knowledge update for '{}'", relation);
-                Delta delta = knowledgeMap.get(relation).joinSet(qLocal.remove(relation));
+                final Delta delta = knowledgeMap.get(relation).joinSet(queue.remove(relation));
                 if (delta.may.isEmpty() && delta.must.isEmpty()) {
                     continue;
                 }
                 propagator.source = relation;
                 propagator.may = delta.may;
                 propagator.must = delta.must;
-                for (Definition c : dependents.getOrDefault(relation, List.of())) {
-                    logger.trace("Regular propagation from '{}' to '{}'", relation, c);
-                    Relation r = c.getDefinedRelation();
-                    Delta d = c.accept(propagator);
-                    verify(enableMustSets || d.must.isEmpty(),
-                            "although disabled, computed a non-empty must set for relation %s", r);
-                    (stratum.contains(r) ? qLocal : qGlobal)
-                            .computeIfAbsent(r, k -> new ArrayList<>())
-                            .add(d);
+                for (final Definition c : dependents.getOrDefault(relation, List.of())) {
+                    final Relation r = c.getDefinedRelation();
+                    // Do not propagate into the next components explicitly
+                    if (scc.contains(r)) {
+                        logger.trace("Regular propagation from '{}' to '{}'", relation, c);
+                        final Delta d = c.accept(propagator);
+                        verify(enableMustSets || d.must.isEmpty(),
+                                "although disabled, computed a non-empty must set for relation %s", r);
+                        queue.computeIfAbsent(r, k -> new ArrayList<>()).add(d);
+                    }
                 }
             }
         }
-        verify(!enable || qGlobal.isEmpty(), "knowledge buildup propagated downwards");
         logger.trace("End");
+    }
+
+    private static <T> List<Set<T>> getComponents(
+            Collection<? extends T> base,
+            Function<? super T, Iterable<? extends T>> function) {
+        final List<Set<DependencyGraph<T>.Node>> sccs = DependencyGraph.from(base, function).getSCCs();
+        final var result = new ArrayList<Set<T>>();
+        for (final Set<DependencyGraph<T>.Node> scc : sccs) {
+            final var component = new HashSet<T>(scc.size());
+            for (final DependencyGraph<T>.Node n : scc) {
+                component.add(n.getContent());
+            }
+            result.add(component);
+        }
+        return result;
     }
 
     public static final class Knowledge {
@@ -526,7 +556,230 @@ public class RelationAnalysis {
 
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
-            return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Knowledge visitUnion(Relation rel, Relation... operands) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final List<Knowledge> list = Arrays.stream(operands).map(knowledgeMap::get).toList();
+            return new Knowledge(union(list, Knowledge::getMaySet), union(list, Knowledge::getMustSet));
+        }
+
+        private static Set<Tuple> union(List<Knowledge> list, Function<Knowledge, Set<Tuple>> feature) {
+            assert list.size() > 1;
+            final Set<Tuple> result = new HashSet<>(feature.apply(list.get(0)));
+            for (final Knowledge k : list.subList(1, list.size())) {
+                result.addAll(feature.apply(k));
+            }
+            return result;
+        }
+
+        @Override
+        public Knowledge visitIntersection(Relation rel, Relation... operands) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final List<Knowledge> list = Arrays.stream(operands).map(knowledgeMap::get).toList();
+            return new Knowledge(intersection(list, Knowledge::getMaySet), intersection(list, Knowledge::getMustSet));
+        }
+
+        private static Set<Tuple> intersection(List<Knowledge> list, Function<Knowledge, Set<Tuple>> feature) {
+            final var result = new HashSet<Tuple>();
+            final Knowledge smallest = list.stream()
+                    .min(Comparator.comparingInt(k -> feature.apply(k).size()))
+                    .orElseThrow();
+            for (final Tuple tuple : feature.apply(smallest)) {
+                if (list.stream().allMatch(k -> k == smallest || feature.apply(k).contains(tuple))) {
+                    result.add(tuple);
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public Knowledge visitDifference(Relation rel, Relation superset, Relation complement) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final Knowledge k = knowledgeMap.get(superset);
+            final Knowledge c = knowledgeMap.get(complement);
+            final var may = new HashSet<Tuple>();
+            for (final Tuple t : k.may) {
+                if (!c.containsMust(t)) {
+                    may.add(t);
+                }
+            }
+            final var must = new HashSet<Tuple>();
+            for (final Tuple t : k.must) {
+                if (!c.containsMay(t)) {
+                    must.add(t);
+                }
+            }
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitComposition(Relation rel, Relation front, Relation back) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final Knowledge f = knowledgeMap.get(front);
+            final Knowledge b = knowledgeMap.get(back);
+            final var may = new HashSet<Tuple>();
+            if (f.may.size() < b.may.size()) {
+                final Map<Event, List<Event>> mayMap = map(b.may);
+                for (final Tuple t : f.may) {
+                    final Event e1 = t.getFirst();
+                    for (final Event e2 : mayMap.getOrDefault(t.getSecond(), List.of())) {
+                        if (notExclusive(e1, e2)) {
+                            may.add(new Tuple(e1, e2));
+                        }
+                    }
+                }
+            } else {
+                final Map<Event, List<Event>> mayMap = mapReverse(f.may);
+                for (final Tuple t : b.may) {
+                    final Event e2 = t.getSecond();
+                    for (final Event e1 : mayMap.getOrDefault(t.getFirst(), List.of())) {
+                        if (notExclusive(e1, e2)) {
+                            may.add(new Tuple(e1, e2));
+                        }
+                    }
+                }
+            }
+            final var must = new HashSet<Tuple>();
+            if (f.must.size() < b.must.size()) {
+                final Map<Event, List<Event>> mustMap = map(b.must);
+                for (final Tuple t : enableMustSets ? f.must : Set.<Tuple>of()) {
+                    final Event e1 = t.getFirst();
+                    final Event e = t.getSecond();
+                    final boolean implies = implies(e, e1);
+                    for (final Event e2 : mustMap.getOrDefault(e, List.of())) {
+                        if ((implies || implies(e, e2)) && notExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    }
+                }
+            } else {
+                final Map<Event, List<Event>> mustMap = mapReverse(f.must);
+                for (final Tuple t : enableMustSets ? b.must : Set.<Tuple>of()) {
+                    final Event e2 = t.getSecond();
+                    final Event e = t.getFirst();
+                    final boolean implies = implies(e, e2);
+                    for (final Event e1 : mustMap.getOrDefault(e, List.of())) {
+                        if ((implies || implies(e, e1)) && notExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    }
+                }
+            }
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitDomainIdentity(Relation rel, Relation operand) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final Knowledge k = knowledgeMap.get(operand);
+            final var may = new HashSet<Tuple>();
+            for (final Tuple t : k.may) {
+                may.add(new Tuple(t.getFirst(), t.getFirst()));
+            }
+            final var must = new HashSet<Tuple>();
+            for (final Tuple t : k.must) {
+                if (implies(t.getFirst(), t.getSecond())) {
+                    must.add(new Tuple(t.getFirst(), t.getFirst()));
+                }
+            }
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitRangeIdentity(Relation rel, Relation operand) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final Knowledge k = knowledgeMap.get(operand);
+            final var may = new HashSet<Tuple>();
+            for (final Tuple t : k.may) {
+                may.add(new Tuple(t.getSecond(), t.getSecond()));
+            }
+            final var must = new HashSet<Tuple>();
+            for (final Tuple t : k.must) {
+                if (implies(t.getSecond(), t.getFirst())) {
+                    must.add(new Tuple(t.getSecond(), t.getSecond()));
+                }
+            }
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitInverse(Relation rel, Relation operand) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final Knowledge k = knowledgeMap.get(operand);
+            return new Knowledge(inverse(k.may), inverse(k.must));
+        }
+
+        @Override
+        public Knowledge visitTransitiveClosure(Relation rel, Relation operand) {
+            if (defaultKnowledge != null && !rel.isRecursive()) {
+                return defaultKnowledge;
+            }
+            final Knowledge k = knowledgeMap.get(operand);
+            final Set<Tuple> maySet = new HashSet<>(k.may);
+            final Map<Event, List<Event>> mayMap = map(k.may);
+            for (Collection<Tuple> current = k.may; !current.isEmpty(); ) {
+                update(mayMap, current);
+                final Collection<Tuple> next = new HashSet<>();
+                for (final Tuple tuple : current) {
+                    final Event e1 = tuple.getFirst();
+                    for (final Event e2 : mayMap.getOrDefault(tuple.getSecond(), List.of())) {
+                        final Tuple t = new Tuple(e1, e2);
+                        if (!k.containsMay(t) && !maySet.contains(t) && notExclusive(e1, e2)) {
+                            next.add(t);
+                        }
+                    }
+                }
+                maySet.addAll(next);
+                current = next;
+            }
+            if (!enableMustSets) {
+                return new Knowledge(maySet, new HashSet<>());
+            }
+            final Set<Tuple> mustSet = new HashSet<>(k.must);
+            final Map<Event, List<Event>> mustMap = map(k.must);
+            for (Collection<Tuple> current = k.must; !current.isEmpty(); ) {
+                update(mustMap, current);
+                final Collection<Tuple> next = new HashSet<>();
+                for (final Tuple tuple : current) {
+                    final Event e1 = tuple.getFirst();
+                    final Event e = tuple.getSecond();
+                    final boolean implies = implies(e, e1);
+                    for (final Event e2 : mustMap.getOrDefault(e, List.of())) {
+                        final Tuple t = new Tuple(e1, e2);
+                        if (!k.containsMust(t) &&
+                                !mustSet.contains(t) &&
+                                (implies || implies(e, e2)) &&
+                                notExclusive(e1, e2)) {
+                            next.add(t);
+                        }
+                    }
+                }
+                mustSet.addAll(next);
+                current = next;
+            }
+            return new Knowledge(maySet, mustSet);
+        }
+
+        @Override
+        public Knowledge visitEmpty(Relation rel) {
+            return new Knowledge(new HashSet<>(), new HashSet<>());
         }
 
         private final class ProductSet extends AbstractSet<Tuple> {
