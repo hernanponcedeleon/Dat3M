@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -160,8 +161,10 @@ public class Intrinsics {
             new Info("llvm.stack",
                     List.of("llvm.stacksave", "llvm.stackrestore"), // NOTE: These are just for allocation optimization
                     false, false, true, true, this::inlineAsZero),
-            new Info("llvm.memcpy.*", List.of("llvm.memcpy"), // FIXME
-                    true, true, true, false, null),
+            new Info("llvm.memcpy.*", List.of("llvm.memcpy"),
+                    true, true, true, false, this::inlineMemCpy),
+            new Info("llvm.memset.*", List.of("llvm.memset"),
+                    true, false, true, false, this::inlineMemSet),
             // --------------------------- LKMM ---------------------------
             new Info("__LKMM_LOAD", false, true, true, true, this::handleLKMMIntrinsic),
             new Info("__LKMM_STORE", true, false, true, true, this::handleLKMMIntrinsic),
@@ -174,6 +177,9 @@ public class Intrinsics {
             new Info("__LKMM_SPIN_UNLOCK", true, false, true, true, this::handleLKMMIntrinsic),
             new Info("__LKMM_FENCE", false, false, false, true, this::handleLKMMIntrinsic),
             // --------------------------- Misc ---------------------------
+            new Info("memcpy", true, true, true, false, this::inlineMemCpy),
+            new Info("memset", true, false, true, false, this::inlineMemSet),
+            new Info("memcmp", false, true, true, false, this::inlineMemCmp),
             new Info("malloc", false, false, true, true, this::inlineMalloc),
             new Info("free", true, false, true, true, this::inlineAsZero),//TODO support free
             new Info("assert", List.of("__assert_fail", "__assert_rtn"),
@@ -311,6 +317,15 @@ public class Intrinsics {
                 valueCall.getArguments().get(0),
                 true
         ));
+    }
+
+    private List<Event> inlineAssert(FunctionCall call) {
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final Expression condition = expressions.makeFalse();
+        final Event assertion = EventFactory.newAssert(condition, "user assertion");
+        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        abort.addTags(Tag.EARLYTERMINATION);
+        return List.of(assertion, abort);
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -509,12 +524,115 @@ public class Intrinsics {
         return List.of(EventFactory.newLocal(register, expression));
     }
 
-    private List<Event> inlineAssert(FunctionCall call) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, "user assertion");
-        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION);
-        return List.of(assertion, abort);
+    //FIXME: The following support for memcpy, memcmp, and memset is unsound
+    // For proper support, we need at least alias information and most likely also proper support for mixed-sized accesses
+
+    // Handles both std.memcpy and llvm.memcpy
+    private List<Event> inlineMemCpy(FunctionCall call) {
+        final Function caller = call.getFunction();
+        final Expression dest = call.getArguments().get(0);
+        final Expression src = call.getArguments().get(1);
+        final Expression countExpr = call.getArguments().get(2);
+        // final Expression isVolatile = call.getArguments.get(3) // LLVM's memcpy has an extra argument
+
+        if (!(countExpr instanceof IValue countValue)) {
+            final String error = "Cannot handle memcpy with dynamic count argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        final int count = countValue.getValueAsInt();
+
+        final List<Event> replacement = new ArrayList<>(2 * count + 1);
+        for (int i = 0; i < count; i++) {
+            final Expression offset = expressions.makeValue(BigInteger.valueOf(i), types.getArchType());
+            final Expression srcAddr = expressions.makeADD(src, offset);
+            final Expression destAddr = expressions.makeADD(dest, offset);
+            // FIXME: We have no other choice but to load ptr-sized chunks for now
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
+
+            replacement.addAll(List.of(
+                    EventFactory.newLoad(reg, srcAddr),
+                    EventFactory.newStore(destAddr, reg)
+            ));
+        }
+        if (call instanceof ValueFunctionCall valueCall) {
+            // std.memcpy returns the destination address, llvm.memcpy has no return value
+            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
+        }
+
+        return replacement;
     }
+
+    private List<Event> inlineMemCmp(FunctionCall call) {
+        final Function caller = call.getFunction();
+        final Expression src1 = call.getArguments().get(0);
+        final Expression src2 = call.getArguments().get(1);
+        final Expression numExpr = call.getArguments().get(2);
+        final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
+
+        if (!(numExpr instanceof IValue numValue)) {
+            final String error = "Cannot handle memcmp with dynamic num argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        final int count = numValue.getValueAsInt();
+
+        final List<Event> replacement = new ArrayList<>(4 * count + 1);
+        final Label endCmp = EventFactory.newLabel("__memcmp_end");
+        for (int i = 0; i < count; i++) {
+            final Expression offset = expressions.makeValue(BigInteger.valueOf(i), types.getArchType());
+            final Expression src1Addr = expressions.makeADD(src1, offset);
+            final Expression src2Addr = expressions.makeADD(src2, offset);
+            //FIXME: This method should properly load byte chunks and compare them (unsigned).
+            // This requires proper mixed-size support though
+            final Register regSrc1 = caller.getOrNewRegister("__memcmp_src1_" + i, returnReg.getType());
+            final Register regSrc2 = caller.getOrNewRegister("__memcmp_src2_" + i, returnReg.getType());
+
+            replacement.addAll(List.of(
+                    EventFactory.newLoad(regSrc1, src1Addr),
+                    EventFactory.newLoad(regSrc2, src2Addr),
+                    EventFactory.newLocal(returnReg, expressions.makeSUB(src1, src2)),
+                    EventFactory.newJump(expressions.makeNEQ(src1, src2), endCmp)
+            ));
+        }
+        replacement.add(endCmp);
+
+        return replacement;
+    }
+
+    // Handles both std.memset and llvm.memset
+    private List<Event> inlineMemSet(FunctionCall call) {
+        final Expression dest = call.getArguments().get(0);
+        final Expression fillExpr = call.getArguments().get(1);
+        final Expression countExpr = call.getArguments().get(2);
+        // final Expression isVolatile = call.getArguments.get(3) // LLVM's memset has an extra argument
+
+        if (!(countExpr instanceof IValue countValue)) {
+            final String error = "Cannot handle memset with dynamic count argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        if (!(fillExpr instanceof IValue fillValue && fillValue.isZero())) {
+            //FIXME: We can soundly handle only 0 (and possibly -1) because the concatenation of
+            // byte-sized 0's results in 0's of larger types. This makes the value robust against mixed-sized accesses.
+            final String error = "Cannot handle memset with non-zero fill argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        final int count = countValue.getValueAsInt();
+        final int fill = fillValue.getValueAsInt();
+        assert fill == 0;
+
+        final Expression zero = expressions.makeValue(BigInteger.valueOf(fill), types.getByteType());
+        final List<Event> replacement = new ArrayList<>( count + 1);
+        for (int i = 0; i < count; i++) {
+            final Expression offset = expressions.makeValue(BigInteger.valueOf(i), types.getArchType());
+            final Expression destAddr = expressions.makeADD(dest, offset);
+
+            replacement.add(EventFactory.newStore(destAddr, zero));
+        }
+        if (call instanceof ValueFunctionCall valueCall) {
+            // std.memset returns the destination address, llvm.memset has no return value
+            replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
+        }
+
+        return replacement;
+    }
+
 }
