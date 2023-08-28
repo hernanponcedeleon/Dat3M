@@ -1,0 +1,25 @@
+Vulkan mptransitive4
+"Invocation 0 makes the write x=1 available to invocation 1."
+"Invocation 1 then does a bulk av operation with device scope."
+"Invocation 2->3 does happens-before"
+"Invocation 3 does a bulk vis op with device scope"
+"Invocation 4 does a bulk vis op with workgroup scope"
+"The happens-before is sufficient even though it uses different"
+"storage class semantics."
+{
+P1:r0=0;
+P2:r1=0;
+P3:r2=0;
+P4:r3=0;
+P4:r4=0;
+v=0;
+w=0;
+x=0;
+y=0;
+z=0;
+}
+ P0@sg 0, wg 0, qf 0                  | P1@sg 1,wg 0, qf 0                    | P2@sg 0,wg 1, qf 0                      | P3@sg 0,wg 2, qf 0                       | P4@sg 1,wg 2, qf 0                       ;
+ st.nonpriv.sc0 x, 1                  | ld.atom.acq.wg.sc0.semsc0 r0, y       | ld.atom.acq.dv.sc1.semsc1 r1, z         | ld.atom.acq.dv.sc1.semsc01.semvis r2, v  | ld.atom.acq.wg.sc0.semsc01.semvis r3, w  ;
+ st.atom.rel.wg.sc0.semsc0.semav y, 1 | st.atom.rel.dv.sc1.semsc01.semav z, 1 | st.atom.rel.dv.sc1.semsc1 v, 1          | st.atom.rel.wg.sc0.semsc0 w, 1           | ld.nonpriv.sc0 r4, x                     ;
+filter
+(P1:r0 == 1 /\ P2:r1 == 1 /\ P3:r2 == 1 /\ P4:r3 == 1)

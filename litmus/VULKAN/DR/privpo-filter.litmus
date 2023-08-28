@@ -1,5 +1,5 @@
-Vulkan privwar
-"Fail: private variables require SSW for write-after-read hazard"
+Vulkan privpo
+"Pass: private memory accesses still obey program-order"
 {
 P0:r0=0;
 P1:r1=0;
@@ -7,7 +7,7 @@ x=0;
 y=0;
 }
  P0@sg 0, wg 0, qf 0                       | P1@sg 1,wg 0, qf 0                         ;
- ld.priv.sc0 r0, x                         | ld.atom.acq.wg.sc0.semsc0.semvis r1, y     ;
+ ld.nonpriv.sc0 r0, x                      | ld.atom.acq.wg.sc0.semsc0.semvis r1, y     ;
  st.atom.rel.wg.sc0.semsc0.semav y, 1      | st.priv.sc0 x, 1                           ;
-exists
+filter
 (P1:r1 == 1)

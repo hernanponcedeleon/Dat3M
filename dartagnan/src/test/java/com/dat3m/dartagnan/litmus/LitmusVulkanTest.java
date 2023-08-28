@@ -1,12 +1,14 @@
 package com.dat3m.dartagnan.litmus;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.EnumSet;
 
 @RunWith(Parameterized.class)
 public class LitmusVulkanTest extends AbstractLitmusTest {
@@ -19,6 +21,11 @@ public class LitmusVulkanTest extends AbstractLitmusTest {
     @Override
     protected Provider<Arch> getTargetProvider() {
         return () -> Arch.VULKAN;
+    }
+
+    @Override
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
     public LitmusVulkanTest(String path, Result expected) {

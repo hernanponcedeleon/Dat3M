@@ -1,0 +1,12 @@
+VULKAN test17
+"Passes because the atomic store is implicitly coherent"
+{
+P1:r0=0;
+P1:r1=0;
+a=0;
+}
+ P0@sg 0,wg 0, qf 0               | P1@sg 1,wg 0, qf 0               ;
+ st.atom.rel.wg.sc0.semsc0 a, 1   | ld.atom.acq.wg.sc0.semsc0 r0, a  ;
+                                  | ld.vis.wg.sc0 r1, a              ;
+filter
+(P1:r0 == 1)

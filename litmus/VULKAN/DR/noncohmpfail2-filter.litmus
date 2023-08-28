@@ -9,5 +9,5 @@ z=0;
  P0@sg 0, wg 0, qf 0                     | P1@sg 1, wg 0, qf 0                      ;
  st.nonpriv.sc0 x, 1                     | ld.atom.acq.wg.sc0.semsc0.semvis r0, z   ;
  st.atom.rel.wg.sc0.semsc1.semav z, 1    | ld.nonpriv.sc0 r1, x                    ;
-exists
+filter
 (P1:r0 == 1 /\ P1:r1 == 1)

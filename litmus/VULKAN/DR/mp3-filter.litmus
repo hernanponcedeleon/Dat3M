@@ -1,0 +1,14 @@
+Vulkan mp3
+{
+P1:r0=0;
+P2:r1=0;
+P2:r2=0;
+x=0;
+y=0;
+z=0;
+}
+ P0@sg 0, wg 0, qf 0                 | P1@sg 1,wg 0, qf 0                  | P2@sg 2,wg 0, qf 0                  ;
+ st.av.dv.sc0 x, 1                   | ld.atom.acq.wg.sc1.semsc01 r0, y    | ld.atom.acq.wg.sc1.semsc01 r1, z    ;
+ st.atom.rel.wg.sc1.semsc01 y, 1     | st.atom.rel.wg.sc1.semsc01 z, 1     | ld.vis.dv.sc0 r2, x                 ;
+filter
+(P1:r0 == 1 /\ P2:r1 == 1)

@@ -1,0 +1,16 @@
+VULKAN ssw7
+"Pass: write-after-read hazard of private memory accesses with SSW.SSW in between"
+{
+P0:r0=0;
+P1:r1=0;
+x=0;
+y=0;
+}
+{
+ssw 0 1;
+ssw 1 2;
+}
+ P0@sg 0,wg 0, qf 0               | P1@sg 1,wg 0, qf 0               | P2@sg 2,wg 0, qf 0               ;
+ ld.priv.sc0 r0, x                | ld.priv.sc0 r1, y                | st.priv.sc0 x, 1                 ;
+filter
+(P1:r1 == 0)
