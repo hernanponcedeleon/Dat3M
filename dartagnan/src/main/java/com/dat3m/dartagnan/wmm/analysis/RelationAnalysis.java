@@ -1000,7 +1000,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
 
         @Override
@@ -1047,7 +1047,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
 
         @Override
@@ -1074,7 +1074,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, must);
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
     }
 
