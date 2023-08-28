@@ -2,15 +2,12 @@ package com.dat3m.dartagnan.parsers.program;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.program.Program;
-
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithSmack;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
 
 public class ProgramParser {
 
@@ -18,6 +15,7 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_PPC         = "PPC";
     private static final String TYPE_LITMUS_RISCV       = "RISCV";
     private static final String TYPE_LITMUS_X86         = "X86";
+    private static final String TYPE_LITMUS_PTX         = "PTX";
     private static final String TYPE_LITMUS_LISA        = "LISA";
     private static final String TYPE_LITMUS_C           = "C";
 
@@ -57,7 +55,7 @@ public class ProgramParser {
 				File parsedFile = path.isEmpty() ?
 						// This is for the case where the user fully typed the program instead of loading it
 						File.createTempFile("dat3m", ".c") :
-						// This is for the case where the user loaded the program 						
+						// This is for the case where the user loaded the program
 						new File(path, "dat3m.c");
                 try (FileWriter writer = new FileWriter(parsedFile)) {
                     writer.write(raw);
@@ -109,6 +107,8 @@ public class ProgramParser {
             return new ParserLitmusLISA();
         } else if(programText.indexOf(TYPE_LITMUS_RISCV) == 0){
             return new ParserLitmusRISCV();
+        } else if(programText.indexOf(TYPE_LITMUS_PTX) == 0) {
+            return new ParserLitmusPTX();
         }
         throw new ParsingException("Unknown input file type");
     }

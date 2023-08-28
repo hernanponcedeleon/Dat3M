@@ -1,6 +1,5 @@
 #include "seqlock.h"
 #include <pthread.h>
-#include <assert.h>
 
 #ifndef NREADERS
 #define NREADERS 3

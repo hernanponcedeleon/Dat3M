@@ -1,46 +1,32 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.common.FenceBase;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
-public class AtomicThreadFence extends Fence {
-
-    private final String mo;
+public class AtomicThreadFence extends FenceBase {
 
     public AtomicThreadFence(String mo) {
-        super("atomic_thread_fence");
+        super("atomic_thread_fence", mo);
         Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
-        this.mo = mo;
     }
 
     private AtomicThreadFence(AtomicThreadFence other){
         super(other);
-        this.mo = other.mo;
     }
 
     @Override
-    public String toString() {
-        return name + "(" + mo + ")\t### C11";
+    public String defaultString() {
+        return String.format("%s(%s)\t### C11", name, mo);
     }
-
-    public String getMo() {
-    	return mo;
-    }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public AtomicThreadFence getCopy(){
         return new AtomicThreadFence(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitAtomicThreadFence(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAtomicThreadFence(this);
+    }
 }

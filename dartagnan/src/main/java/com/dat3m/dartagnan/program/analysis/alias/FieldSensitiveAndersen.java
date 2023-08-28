@@ -4,9 +4,8 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
+import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -51,7 +50,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     ///Maps registers to matched value expressions of stores that use the register in their address
     private final Map<Object,List<Offset<Collector>>> stores = new HashMap<>();
     ///Result sets
-    private final Map<MemEvent,ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
+    private final Map<MemoryEvent,ImmutableSet<Location>> eventAddressSpaceMap = new HashMap<>();
 
     // ================================ Construction ================================
 
@@ -61,22 +60,15 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     private FieldSensitiveAndersen(Program program) {
         Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
-        List<MemEvent> memEvents = program.getEvents().stream()
-                .filter(MemEvent.class::isInstance)
-                .map(MemEvent.class::cast)
-                .collect(toList());
-        for (MemEvent e : memEvents) {
+        List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
+        for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
         }
-        for (Event e : program.getEvents()) {
-            if(e instanceof Local) {
-                processRegs((Local)e);
-            }
-        }
+        program.getThreadEvents().forEach(this::processRegs);
         while(!variables.isEmpty()) {
             algorithm(variables.poll());
         }
-        for (MemEvent e : memEvents) {
+        for (MemoryCoreEvent e : memEvents) {
             processResults(e);
         }
     }
@@ -84,34 +76,34 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     // ================================ API ================================
 
     @Override
-    public boolean mayAlias(MemEvent x, MemEvent y) {
+    public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
-    public boolean mustAlias(MemEvent x, MemEvent y) {
+    public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
     }
 
-    private ImmutableSet<Location> getMaxAddressSet(MemEvent e) {
+    private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
         return eventAddressSpaceMap.get(e);
     }
 
     // ================================ Processing ================================
 
-    protected void processLocs(MemEvent e) {
+    protected void processLocs(MemoryCoreEvent e) {
         Collector collector = new Collector(e.getAddress());
-        if(e instanceof RegWriter) {
-            Register result = ((RegWriter)e).getResultRegister();
+        if(e instanceof Load load) {
+            Register result = load.getResultRegister();
             for(Offset<Register> r : collector.register()) {
                 loads.computeIfAbsent(r.base,k->new LinkedList<>()).add(new Offset<>(result,r.offset,r.alignment));
             }
             for(Location f : collector.address()) {
                 addEdge(f,result,0,0);
             }
-        } else {
-            Collector value = new Collector(e.getMemValue());
+        } else if (e instanceof Store store) {
+            Collector value = new Collector(store.getMemValue());
             for(Offset<Register> r : collector.register()) {
                 stores.computeIfAbsent(r.base,k->new LinkedList<>()).add(new Offset<>(value,r.offset,r.alignment));
             }
@@ -121,12 +113,26 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 }
                 addAllAddresses(l,value.address());
             }
+        } else {
+            // Special MemoryEvents that produce no values (e.g. SRCU) will just get skipped
         }
     }
 
-    protected void processRegs(Local e) {
-        Register register = e.getResultRegister();
-        Collector collector = new Collector(e.getExpr());
+
+    protected void processRegs(Event e) {
+        if (!(e instanceof Local || e instanceof ThreadArgument)) {
+            return;
+        }
+        assert e instanceof RegWriter;
+        final Register register = ((RegWriter)e).getResultRegister();
+        final Expression expr;
+        if (e instanceof Local local) {
+            expr = local.getExpr();
+        } else {
+            final ThreadArgument arg = (ThreadArgument) e;
+            expr = arg.getCreator().getArguments().get(arg.getIndex());
+        }
+        final Collector collector = new Collector(expr);
         addAllAddresses(register,collector.address());
         for(Offset<Register> r : collector.register()) {
             addEdge(r.base,register,r.offset,r.alignment);
@@ -161,7 +167,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
     }
 
-    protected void processResults(MemEvent e) {
+    protected void processResults(MemoryCoreEvent e) {
         ImmutableSet.Builder<Location> addresses = ImmutableSet.builder();
         Collector collector = new Collector(e.getAddress());
         addresses.addAll(collector.address());
@@ -276,7 +282,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final HashSet<Register> register = new HashSet<>();
         Result result;
 
-        Collector(ExprInterface x) {
+        Collector(Expression x) {
             result = x.visit(this);
         }
 

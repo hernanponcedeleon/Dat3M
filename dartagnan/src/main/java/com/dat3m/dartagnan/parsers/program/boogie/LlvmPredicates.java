@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.op.COpBin;
 
 import java.util.Arrays;
 import java.util.List;
@@ -58,7 +58,7 @@ public class LlvmPredicates {
 			"$ne.bv8.bool", "$ne.bv16.bool", "$ne.bv32.bool", "$ne.bv64.bool"
 			);
 	
-	public static Object llvmPredicate(String name, List<Object> callParams) {
+	public static Object llvmPredicate(String name, List<Expression> callParams, ExpressionFactory factory) {
 		COpBin op = null;
 		if(name.startsWith("$sle.")) {
 			op = LTE;
@@ -84,6 +84,6 @@ public class LlvmPredicates {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return new Atom((ExprInterface)callParams.get(0), op, (ExprInterface)callParams.get(1));
+		return factory.makeBinary(callParams.get(0), op, callParams.get(1));
 	}
 }

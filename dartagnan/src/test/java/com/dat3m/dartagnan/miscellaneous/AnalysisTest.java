@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.BNonDet;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
@@ -13,6 +16,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.MemoryAllocation;
@@ -25,16 +29,9 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.List;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
-import static com.dat3m.dartagnan.expression.IValue.ONE;
-import static com.dat3m.dartagnan.expression.IValue.ZERO;
-import static com.dat3m.dartagnan.expression.op.COpBin.GT;
-import static com.dat3m.dartagnan.expression.op.COpBin.LT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.MULT;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static org.junit.Assert.*;
 
@@ -46,20 +43,23 @@ public class AnalysisTest {
     private static final Result MAY = Result.MAY;
     private static final Result MUST = Result.MUST;
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
-        Register r2 = b.getOrCreateRegister(0, "r2", getArchPrecision());
-        Label alt = b.getOrCreateLabel("alt");
-        b.addChild(0, newJump(new BNonDet(getArchPrecision()), alt));
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Register r2 = b.getOrNewRegister(0, "r2");
+        Label alt = b.getOrCreateLabel(0, "alt");
+        b.addChild(0, newJump(new BNonDet(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);
         b.addChild(0, e1);
-        Label join = b.getOrCreateLabel("join");
+        Label join = b.getOrCreateLabel(0,"join");
         b.addChild(0, newGoto(join));
         b.addChild(0, alt);
         Local e2 = newLocal(r1, value(2));
@@ -112,13 +112,13 @@ public class AnalysisTest {
     }
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
-        MemoryObject x = b.newObject("x", 2);
-        MemoryObject y = b.getOrNewObject("y");
+        MemoryObject x = b.newMemoryObject("x", 2);
+        MemoryObject y = b.newMemoryObject("y", 1);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
         b.addChild(0, newLocal(r0, mult(x, 1)));
@@ -136,10 +136,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);
@@ -160,14 +160,14 @@ public class AnalysisTest {
     }
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 3);
         x.setInitialValue(0, x);
 
-        b.initThread(0);
+        b.newThread(0);
         Store e0 = newStore(plus(x, 1));
         b.addChild(0, e0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = newLoad(r0, x);
         b.addChild(0, e1);
         Store e2 = newStore(r0);
@@ -180,10 +180,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -204,23 +204,28 @@ public class AnalysisTest {
     }
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        IntegerType type = types.getArchType();
+        MemoryObject x = b.newMemoryObject("x", 3);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
-        b.addChild(0, newLocal(r0, new INonDet(INonDetTypes.INT, getArchPrecision())));
-        Label l0 = b.getOrCreateLabel("l0");
-        b.addChild(0, newJump(new BExprBin(new Atom(r0, GT, ONE), BOpBin.OR, new Atom(r0, LT, ZERO)), l0));
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        b.addChild(0, newLocal(r0, b.newConstant(type, true)));
+        Label l0 = b.getOrCreateLabel(0,"l0");
+        b.addChild(0, newJump(expressions.makeOr(
+                expressions.makeGT(r0, expressions.makeOne(type), true),
+                expressions.makeLT(r0, expressions.makeZero(type), true)), l0));
         Store e0 = newStore(x);
         b.addChild(0, e0);
         Store e1 = newStore(plus(x, 1));
         b.addChild(0, e1);
         Store e2 = newStore(plus(x, 2));
         b.addChild(0, e2);
-        Register r1 = b.getOrCreateRegister(0, "r1", getArchPrecision());
-        b.addChild(0, newLocal(r1, ZERO));
-        Store e3 = newStore(new IExprBin(new IExprBin(x, PLUS, mult(r0, 2)), PLUS, mult(r1, 4)));
+        Register r1 = b.getOrNewRegister(0, "r1");
+        b.addChild(0, newLocal(r1, expressions.makeZero(type)));
+        Store e3 = newStore(expressions.makeADD(
+                expressions.makeADD(x, mult(r0, 2)),
+                mult(r1, 4)));
         b.addChild(0, e3);
         b.addChild(0, l0);
 
@@ -229,10 +234,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -253,12 +258,12 @@ public class AnalysisTest {
     }
 
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.newObject("x", 3);
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 3);
         x.setInitialValue(0, x);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = newLoad(r0, x);
         b.addChild(0, e0);
         Store e1 = newStore(x, plus(r0, 1));
@@ -273,10 +278,10 @@ public class AnalysisTest {
         LoopUnrolling.newInstance().run(program);
         MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);
         assertAlias(expect[1], a, me0, me2);
@@ -297,13 +302,13 @@ public class AnalysisTest {
     }
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.getOrNewObject("x");
-        MemoryObject y = b.getOrNewObject("y");
-        MemoryObject z = b.getOrNewObject("z");
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject z = b.newMemoryObject("z", 1);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, mult(x, 0)));
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
@@ -317,10 +322,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -341,13 +346,13 @@ public class AnalysisTest {
     }
 
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
-        ProgramBuilder b = new ProgramBuilder(SourceLanguage.LITMUS);
-        MemoryObject x = b.getOrNewObject("x");
-        MemoryObject y = b.getOrNewObject("y");
-        MemoryObject z = b.getOrNewObject("z");
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+        MemoryObject y = b.newMemoryObject("y", 1);
+        MemoryObject z = b.newMemoryObject("z", 1);
 
-        b.initThread(0);
-        Register r0 = b.getOrCreateRegister(0, "r0", getArchPrecision());
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, newLocal(r0, y));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
@@ -361,10 +366,10 @@ public class AnalysisTest {
 
         Program program = b.build();
         AliasAnalysis a = analyze(program, method);
-        MemEvent me0 = (MemEvent) findMatchingEventAfterProcessing(program, e0);
-        MemEvent me1 = (MemEvent) findMatchingEventAfterProcessing(program, e1);
-        MemEvent me2 = (MemEvent) findMatchingEventAfterProcessing(program, e2);
-        MemEvent me3 = (MemEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
 
         assertAlias(expect[0], a, me0, me1);//precisely no
         assertAlias(expect[1], a, me0, me2);//precisely must
@@ -374,28 +379,28 @@ public class AnalysisTest {
         assertAlias(expect[5], a, me2, me3);
     }
 
-    private Load newLoad(Register value, IExpr address) {
-        return EventFactory.newLoad(value, address, "");
+    private Load newLoad(Register value, Expression address) {
+        return EventFactory.newLoad(value, address);
     }
 
-    private Store newStore(IExpr address) {
-        return newStore(address, ZERO);
+    private Store newStore(Expression address) {
+        return newStore(address, expressions.makeZero(types.getArchType()));
     }
 
-    private Store newStore(IExpr address, IExpr value) {
-        return EventFactory.newStore(address, value, "");
+    private Store newStore(Expression address, Expression value) {
+        return EventFactory.newStore(address, value);
     }
 
-    private IValue value(long v) {
-        return new IValue(BigInteger.valueOf(v), getArchPrecision());
+    private Expression value(long v) {
+        return expressions.makeValue(BigInteger.valueOf(v), types.getArchType());
     }
 
-    private IExpr plus(IExpr lhs, long rhs) {
-        return new IExprBin(lhs, PLUS, value(rhs));
+    private Expression plus(Expression lhs, long rhs) {
+        return expressions.makeADD(lhs, value(rhs));
     }
 
-    private IExpr mult(IExpr lhs, long rhs) {
-        return new IExprBin(lhs, MULT, value(rhs));
+    private Expression mult(Expression lhs, long rhs) {
+        return expressions.makeMUL(lhs, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {
@@ -404,7 +409,7 @@ public class AnalysisTest {
         return AliasAnalysis.fromConfig(program, Configuration.builder().setOption(ALIAS_METHOD, method.asStringOption()).build());
     }
 
-    private void assertAlias(Result expect, AliasAnalysis a, MemEvent x, MemEvent y) {
+    private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
         switch (expect) {
             case NONE:
                 assertFalse(a.mayAlias(x, y));
@@ -426,6 +431,6 @@ public class AnalysisTest {
     }
 
     private Event findMatchingEventAfterProcessing(Program p, Event orig) {
-        return p.getEvents().stream().filter(e -> e.getOId() == orig.getOId()).findFirst().get();
+        return p.getThreadEvents().stream().filter(e -> e.hasEqualMetadata(orig, OriginalId.class)).findFirst().get();
     }
 }

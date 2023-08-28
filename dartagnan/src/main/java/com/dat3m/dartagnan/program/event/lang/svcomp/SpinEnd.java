@@ -4,20 +4,21 @@ import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 
 public class SpinEnd extends CodeAnnotation {
 
-	public SpinEnd() { }
-	
-	protected SpinEnd(SpinEnd other) {
-		super(other);
-	}
+    public SpinEnd() {
+    }
 
-	@Override
-	public SpinEnd getCopy() {
-		return new SpinEnd(this);
-	}
+    protected SpinEnd(SpinEnd other) {
+        super(other);
+    }
 
-	@Override
-	public String toString() {
-		return "#__VERIFIER_spin_end";
-	}
+    @Override
+    public SpinEnd getCopy() {
+        return new SpinEnd(this);
+    }
+
+    @Override
+    public String defaultString() {
+        return "#__VERIFIER_spin_end";
+    }
 
 }

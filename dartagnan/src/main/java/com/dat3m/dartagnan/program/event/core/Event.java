@@ -2,246 +2,97 @@ package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.EventUser;
+import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
-import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
-public abstract class Event implements Encoder, Comparable<Event> {
+public interface Event extends Encoder, Comparable<Event> {
+    int PRINT_PAD_EXTRA = 50;
 
-	public static final int PRINT_PAD_EXTRA = 50;
+    int getGlobalId();
+    void setGlobalId(int id);
 
-	// This id is dynamically changing during processing.
-	protected transient int globalId = -1;		// (Global) ID within a program
+    // ============================== Metadata ==============================
 
-	// The following three ids are snapshots of the global id at specific points in the processing.
-	// They are meant to be fixed once assigned.
-	protected int oId = -1; 	// Global ID after parsing (original), before any passes have been run
-	protected int uId = -1;		// Global ID right before unrolling
-	protected int cId = -1;		// Global ID right before compilation
+    void copyAllMetadataFrom(Event other);
+    void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass);
+    boolean hasMetadata(Class<? extends Metadata> metadataClass);
+    <T extends Metadata> T getMetadata(Class<T> metadataClass);
+    <T extends Metadata> T setMetadata(T metadata);
+    boolean hasEqualMetadata(Event other, Class<? extends Metadata> metadataClass);
 
-	protected int cLine = -1;				    // line in the original C program
-	protected String sourceCodeFilePath  = "";	// path of the original C program
+    // ============================== Tags ==============================
 
-	protected Thread thread; // The thread this event belongs to
+    // The set of tags should not be modified directly.
+    Set<String> getTags();
+    boolean hasTag(String tag);
+    void addTags(Collection<? extends String> tags);
+    void addTags(String... tags);
+    void removeTags(Collection<? extends String> tags);
+    void removeTags(String... tags);
 
-	protected final Set<String> filter;
+    // ============================== Control-flow ==============================
 
-	protected transient Event successor;
-	protected transient Event predecessor;
+    Function getFunction();
+    void setFunction(Function function);
 
-	protected Event(){
-		filter = new HashSet<>();
-	}
+    Thread getThread();
 
-	protected Event(Event other){
-		copyMetadataFrom(other);
-        this.filter = other.filter; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
-        this.thread = other.thread;
-    }
+    Event getSuccessor();
+    Event getPredecessor();
 
-	public void copyMetadataFrom(Event other) {
-		this.oId = other.oId;
-		this.uId = other.uId;
-		this.cId = other.cId;
-		this.cLine = other.cLine;
-		this.sourceCodeFilePath = other.sourceCodeFilePath;
-	}
+    /*
+        NOTE: These methods return a list including(!) this event.
+     */
+    List<Event> getSuccessors();
+    List<Event> getPredecessors();
 
-	public int getGlobalId() { return globalId; }
-	public void setGlobalId(int id) { this.globalId = id; }
-	public boolean hasGlobalId() { return globalId != -1; }
+    /*
+        WARNING: Directly modifying successors/predecessors can lead to inconsistent state.
+        Use <insertAfter> and <replaceBy> if possible.
+     */
+    void setSuccessor(Event event);
+    void setPredecessor(Event event);
 
-	public int getOId() { return oId; }
-	public void setOId(int id) { this.oId = id; }
-	public boolean hasOId() { return oId != -1; }
+    /*
+        Detaches an event from the control-flow graph, allowing it to be reinserted elsewhere.
+        Use <tryDelete> if the event will not get reinserted.
+     */
+    void detach();
+    void forceDelete(); // DANGEROUS: Deletes the event, including all events that reference it.
+    boolean tryDelete(); // Deletes the event only if no other event references it.
+    void insertAfter(Event toBeInserted);
+    void insertAfter(List<Event> toBeInserted);
+    void replaceBy(Event replacement);
+    void replaceBy(List<Event> replacement);
 
-	public int getUId(){ return uId; }
-	public void setUId(int id) { this.uId = id; }
-	public boolean hasUId() { return uId != -1; }
+    // ============================== Misc ==============================
 
-	public int getCId() { return cId; }
-	public void setCId(int id) { this.cId = id; }
-	public boolean hasCId() { return cId != -1; }
+    Set<EventUser> getUsers();
+    boolean registerUser(EventUser user);
+    boolean removeUser(EventUser user);
+    void replaceAllUsages(Event replacement);
 
-	public int getCLine() { return cLine; }
-    public boolean hasCLine() { return cLine != -1; }
+    @Override
+    int compareTo(Event e);
 
-	public String getSourceCodeFilePath() {
-		return sourceCodeFilePath ;
-	}
+    Event getCopy();
 
-	public String getSourceCodeFileName() {
-        return sourceCodeFilePath.contains("/") ? sourceCodeFilePath.substring(sourceCodeFilePath.lastIndexOf("/") + 1)
-                : sourceCodeFilePath;
-	}
+    <T> T accept(EventVisitor<T> visitor);
 
-	public Event setCFileInformation(int line, String sourceCodeFilePath) {
-		this.cLine = line;
-		this.sourceCodeFilePath  = sourceCodeFilePath ;
-		return this;
-	}
+    void runLocalAnalysis(Program program, Context context);
 
-	public Event getSuccessor(){
-		return successor;
-	}
-	public Event getPredecessor() { return predecessor; }
+    // This method needs to get overwritten for conditional events.
+    boolean cfImpliesExec();
 
-	public void setSuccessor(Event event) {
-		if (successor != null) {
-			successor.predecessor = null;
-		}
-		if (event != null) {
-			if (event.predecessor != null){
-				event.predecessor.successor = null;
-			}
-			event.predecessor = this;
-			event.setThread(this.thread);
-		}
-		successor = event;
-	}
-
-	public void setPredecessor(Event event) {
-		if (predecessor != null) {
-			predecessor.successor = null;
-		}
-		if (event != null) {
-			if (event.successor != null){
-				event.successor.predecessor = null;
-			}
-			event.successor = this;
-			event.setThread(this.thread);
-		}
-		predecessor = event;
-	}
-
-	public Thread getThread() {
-		return thread;
-	}
-	public void setThread(Thread thread) {
-		Preconditions.checkNotNull(thread);
-		this.thread = thread;
-	}
-
-	public final List<Event> getSuccessors(){
-		List<Event> events = new ArrayList<>();
-		Event cur = this;
-		while (cur != null) {
-			events.add( cur);
-			cur = cur.getSuccessor();
-		}
-
-		return events;
-	}
-
-	public final List<Event> getPredecessors(){
-		List<Event> events = new ArrayList<>();
-		Event cur = this;
-		while (cur != null) {
-			events.add( cur);
-			cur = cur.getPredecessor();
-		}
-
-		return events;
-	}
-
-	public boolean is(String param){
-		return param != null && (filter.contains(param));
-	}
-
-	public void addFilters(Collection<? extends String> filters) { filter.addAll(filters); }
-	public void addFilters(String... params){
-		addFilters(Arrays.asList(params));
-	}
-	public void removeFilters(Collection<? extends String> filters) { filter.removeAll(filters); }
-	public void removeFilters(String... params){
-		removeFilters(Arrays.asList(params));
-	}
-
-	// The return value should not get modified directly.
-	public Set<String> getFilters() {
-		return filter;
-	}
-
-	public boolean hasFilter(String f) {
-		return filter.contains(f);
-	}
-	
-	@Override
-	public int compareTo(Event e){
-		if (e == this) {
-			return 0;
-		}
-		int result = Integer.compare(this.getGlobalId(), e.getGlobalId());
-		if (result == 0) {
-			final String error = String.format("Events %s and %s are different but have the same global id %d",
-					this, e, e.getGlobalId());
-			throw new IllegalStateException(error);
-		}
-		return result;
-	}
-
-	// ============================ Utility methods ============================
-
-	public void delete() {
-		if (getPredecessor() != null) {
-			getPredecessor().setSuccessor(this.getSuccessor());
-		} else if (getSuccessor() != null) {
-			this.getSuccessor().setPredecessor(null);
-		}
-	}
-
-	public void insertAfter(Event toBeInserted) {
-		if (this.successor != null) {
-			this.successor.setPredecessor(toBeInserted);
-		}
-		this.setSuccessor(toBeInserted);
-	}
-
-	public void insertAfter(List<Event> toBeInserted) {
-		Event cur = this;
-		for (Event next : toBeInserted) {
-			cur.insertAfter(next);
-			cur = next;
-		}
-	}
-
-	public void replaceBy(Event replacement) {
-		this.insertAfter(replacement);
-		this.delete();
-	}
-
-	// Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
-	public Event getCopy(){
-		throw new UnsupportedOperationException("Copying is not allowed for " + getClass().getSimpleName());
-	}
-
-	public void updateReferences(Map<Event, Event> updateMapping) { }
-
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitEvent(this);
-	}
-
-	// Encoding
-	// -----------------------------------------------------------------------------------------------------------------
-
-	public void runLocalAnalysis(Program program, Context context) { }
-
-	// This method needs to get overwritten for conditional events.
-	public boolean cfImpliesExec() {
-		return true;
-	}
-
-	public BooleanFormula encodeExec(EncodingContext ctx) {
-		return ctx.getBooleanFormulaManager().makeTrue();
-	}
+    BooleanFormula encodeExec(EncodingContext ctx);
 }

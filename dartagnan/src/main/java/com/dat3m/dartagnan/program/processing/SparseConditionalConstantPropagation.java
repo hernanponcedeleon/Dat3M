@@ -1,18 +1,21 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
+import com.google.common.base.Verify;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -22,16 +25,21 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
+import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_SIGNED;
+import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_UNSIGNED;
 
 /*
     Sparse conditional constant propagation performs both CP and DCE simultaneously.
     It is more precise than any sequence of simple CP/DCE passes.
  */
 @Options
-public class SparseConditionalConstantPropagation implements ProgramProcessor {
+public class SparseConditionalConstantPropagation implements FunctionProcessor {
+
+    private static final Logger logger = LogManager.getLogger(SparseConditionalConstantPropagation.class);
 
     @Option(name = PROPAGATE_COPY_ASSIGNMENTS,
             description = "Propagates copy assignments of the form 'reg2 := reg1' to eliminate " +
@@ -58,28 +66,22 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
     // ====================================================================================
 
     @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(program.isUnrolled(), "Constant propagation only works on unrolled programs.");
-        program.getThreads().forEach(this::run);
-    }
-
-    private void run(Thread thread) {
-        final EventSimplifier simplifier = new EventSimplifier();
-        final Predicate<ExprInterface> checkDoPropagate = propagateCopyAssignments
+    public void run(Function func) {
+        final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof IConst || expr instanceof BConst || expr instanceof Register)
                 : (expr -> expr instanceof IConst || expr instanceof BConst);
 
         Set<Event> reachableEvents = new HashSet<>();
-        Map<Label, Map<Register, ExprInterface>> inflowMap = new HashMap<>();
+        Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();
         // NOTE: An absent key represents the TOP value of our lattice (we start from
         // TOP everywhere)
         // BOT is not represented as it is never produced (we only ever join non-BOT
         // values and hence never produce BOT).
-        Map<Register, ExprInterface> propagationMap = new HashMap<>();
+        Map<Register, Expression> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
-        for (Event cur : thread.getEvents()) {
-
+        final ConstantPropagator propagator = new ConstantPropagator();
+        for (Event cur : func.getEvents()) {
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
                 propagationMap = isTraversingDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
@@ -87,35 +89,42 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
             }
 
             if (!isTraversingDeadBranch) {
-                simplifier.setPropagationMap(propagationMap);
-                // We only simplify non-dead code
-                cur.accept(simplifier);
+                propagator.propagationMap = propagationMap;
+                if (cur instanceof RegReader regReader) {
+                    regReader.transformExpressions(propagator);
+                }
                 reachableEvents.add(cur);
 
-                if (cur instanceof Local) {
-                    final Local local = (Local) cur;
-                    final ExprInterface expr = local.getExpr();
-                    final ExprInterface valueToPropagate = checkDoPropagate.apply(expr) ? expr : null;
+                if (cur instanceof Local local) {
+                    final Expression expr = local.getExpr();
+                    final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
                     propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-                } else if (cur instanceof RegWriter) {
+                } else if (cur instanceof RegWriter rw) {
                     // We treat all other register writers as non-constant
-                    propagationMap.remove(((RegWriter) cur).getResultRegister());
+                    propagationMap.remove(rw.getResultRegister());
                 }
 
-                if (cur instanceof CondJump) {
-                    final CondJump jump = (CondJump) cur;
+                if (cur instanceof AbortIf abort && abort.getCondition() instanceof BConst bConst && bConst.getValue()) {
+                    isTraversingDeadBranch = true;
+                    propagationMap.clear();
+                    continue;
+                }
+
+                if (cur instanceof CondJump jump) {
                     final Label target = jump.getLabel();
                     if (jump.isGoto()) {
-                        // The successor event is going to be dead (unless it is a label with other
-                        // inflow).
+                        // The successor event is going to be dead (unless it is a label with other inflow).
                         isTraversingDeadBranch = true;
                         propagationMap.clear();
                     }
                     if (!jump.isDead()) {
                         // Join current map with label-associated map
-                        final Map<Register, ExprInterface> finalPropagationMap = propagationMap;
+                        final Map<Register, Expression> finalPropagationMap = propagationMap;
                         inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
                                 : join(v, finalPropagationMap));
+                    } else {
+                        // We consider dead jumps as not-reachable, so they get deleted.
+                        reachableEvents.remove(jump);
                     }
                 }
             }
@@ -123,77 +132,33 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
         }
 
         // ---------- Remove dead code ----------
-        for (Event e : thread.getEvents()) {
+        for (Event e : func.getEvents()) {
             if (reachableEvents.contains(e)) {
                 continue;
-            } else if (e instanceof Label && e.is(Tag.NOOPT)) {
-                // FIXME: This check is just to avoid deleting loop-related labels (especially
+            } else if (e instanceof Label && e.hasTag(Tag.NOOPT)) {
+                //FIXME: This check is just to avoid deleting loop-related labels (especially
                 // the loop end marker) because those are used to find unrolled loops.
                 // There should be better ways that do not retain such dead code: for example,
                 // we could move the loop end marker into the last non-dead iteration.
                 continue;
             }
-            e.delete();
+            if (!e.tryDelete()) {
+                logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
+            }
         }
     }
 
-    private Map<Register, ExprInterface> join(Map<Register, ExprInterface> x, Map<Register, ExprInterface> y) {
+    private Map<Register, Expression> join(Map<Register, Expression> x, Map<Register, Expression> y) {
         Preconditions.checkNotNull(x);
         Preconditions.checkNotNull(y);
 
-        final Map<Register, ExprInterface> smallerMap = x.size() <= y.size() ? x : y;
-        final Map<Register, ExprInterface> largerMap = smallerMap == x ? y : x;
-        final Map<Register, ExprInterface> joined = new HashMap<>(smallerMap);
+        final Map<Register, Expression> smallerMap = x.size() <= y.size() ? x : y;
+        final Map<Register, Expression> largerMap = smallerMap == x ? y : x;
+        final Map<Register, Expression> joined = new HashMap<>(smallerMap);
         joined.entrySet().removeIf(entry -> entry.getValue() != largerMap.getOrDefault(entry.getKey(), null));
         return joined;
     }
 
-    /*
-     * Simplifies the expressions of events by inserting known constant values.
-     */
-    private static class EventSimplifier implements EventVisitor<Void> {
-
-        private final ConstantPropagator propagator = new ConstantPropagator();
-
-        public void setPropagationMap(Map<Register, ExprInterface> propagationMap) {
-            this.propagator.propagationMap = propagationMap;
-        }
-
-        @Override
-        public Void visitEvent(Event e) {
-            return null;
-        }
-
-        @Override
-        public Void visitCondJump(CondJump e) {
-            e.setGuard((BExpr) e.getGuard().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitLocal(Local e) {
-            e.setExpr(e.getExpr().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitMemEvent(MemEvent e) {
-            e.setAddress((IExpr) e.getAddress().visit(propagator));
-            return null;
-        }
-
-        @Override
-        public Void visitStore(Store e) {
-            e.setMemValue(e.getMemValue().visit(propagator));
-            return visitMemEvent(e);
-        }
-
-        @Override
-        public Void visitMalloc(Malloc e) {
-            e.setSizeExpr((IExpr) e.getSizeExpr().visit(propagator));
-            return null;
-        }
-    }
 
     /*
      * A simple expression transformer that
@@ -201,105 +166,95 @@ public class SparseConditionalConstantPropagation implements ProgramProcessor {
      * - simplifies constant (sub)expressions to a single constant
      * It does NOT
      * - use associativity to find more constant subexpressions
-     * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating
-     * any dependencies
+     * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating any dependencies
      */
     private static class ConstantPropagator extends ExprTransformer {
 
-        private Map<Register, ExprInterface> propagationMap = new HashMap<>();
+        private Map<Register, Expression> propagationMap;
 
         @Override
-        public ExprInterface visit(Register reg) {
-            final ExprInterface retVal = propagationMap.getOrDefault(reg, reg);
-            if (retVal instanceof BConst) {
-                // We only have integral registers, so we need to implicitly convert booleans to
-                // integers.
-                return retVal.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
+        public Expression visit(Register reg) {
+            return propagationMap.getOrDefault(reg, reg);
+        }
+
+        @Override
+        public Expression visit(Atom atom) {
+            Expression lhs = transform(atom.getLHS());
+            Expression rhs = transform(atom.getRHS());
+            if (lhs instanceof IValue left && rhs instanceof IValue right) {
+                return expressions.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));
             } else {
-                return retVal;
+                return expressions.makeBinary(lhs, atom.getOp(), rhs);
             }
         }
 
         @Override
-        public ExprInterface visit(Atom atom) {
-            ExprInterface lhs = atom.getLHS().visit(this);
-            ExprInterface rhs = atom.getRHS().visit(this);
-            if (lhs instanceof BConst) {
-                lhs = lhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
-            }
-            if (rhs instanceof BConst) {
-                rhs = rhs.equals(BConst.TRUE) ? IValue.ONE : IValue.ZERO;
-            }
-            if (lhs instanceof IValue && rhs instanceof IValue) {
-                IValue left = (IValue) lhs;
-                IValue right = (IValue) rhs;
-                return atom.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+        public Expression visit(BExprBin bBin) {
+            Expression lhs = transform(bBin.getLHS());
+            Expression rhs = transform(bBin.getRHS());
+            if (lhs instanceof BConst left && rhs instanceof BConst right) {
+                return expressions.makeValue(bBin.getOp().combine(left.getValue(), right.getValue()));
             } else {
-                return new Atom(lhs, atom.getOp(), rhs);
+                return expressions.makeBinary(lhs, bBin.getOp(), rhs);
             }
         }
 
         @Override
-        public BExpr visit(BExprBin bBin) {
-            ExprInterface lhs = bBin.getLHS().visit(this);
-            ExprInterface rhs = bBin.getRHS().visit(this);
-            if (lhs instanceof BConst && rhs instanceof BConst) {
-                BConst left = (BConst) lhs;
-                BConst right = (BConst) rhs;
-                return bBin.getOp().combine(left.getValue(), right.getValue()) ? BConst.TRUE : BConst.FALSE;
+        public Expression visit(BExprUn bUn) {
+            Expression inner = transform(bUn.getInner());
+            if (inner instanceof BConst bc) {
+                return expressions.makeValue(bUn.getOp().combine(bc.getValue()));
             } else {
-                return new BExprBin(lhs, bBin.getOp(), rhs);
+                return expressions.makeUnary(bUn.getOp(), inner);
             }
         }
 
         @Override
-        public BExpr visit(BExprUn bUn) {
-            ExprInterface inner = bUn.getInner().visit(this);
-            if (inner instanceof BConst) {
-                return bUn.getOp().combine(((BConst) inner).getValue()) ? BConst.TRUE : BConst.FALSE;
+        public Expression visit(IExprBin iBin) {
+            Expression lhs = transform(iBin.getLHS());
+            Expression rhs = transform(iBin.getRHS());
+            if (lhs instanceof IValue left && rhs instanceof IValue right) {
+                return expressions.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
             } else {
-                return new BExprUn(bUn.getOp(), inner);
+                return expressions.makeBinary(lhs, iBin.getOp(), rhs);
             }
         }
 
         @Override
-        public IExpr visit(IExprBin iBin) {
-            IExpr lhs = (IExpr) iBin.getLHS().visit(this);
-            IExpr rhs = (IExpr) iBin.getRHS().visit(this);
-            if (lhs instanceof IValue && rhs instanceof IValue) {
-                IValue left = (IValue) lhs;
-                IValue right = (IValue) rhs;
-                return new IValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getPrecision());
+        public Expression visit(IExprUn iUn) {
+            Expression inner = transform(iUn.getInner());
+            Expression result;
+            if ((iUn.getOp() == CAST_SIGNED || iUn.getOp() == CAST_UNSIGNED) && iUn.getType() == inner.getType()) {
+                result = inner;
             } else {
-                return new IExprBin(lhs, iBin.getOp(), rhs);
+                result = expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
             }
+            if (inner instanceof IValue) {
+                return result.reduce();
+            }
+            return result;
         }
 
         @Override
-        public IExpr visit(IExprUn iUn) {
-            IExpr inner = (IExpr) iUn.getInner().visit(this);
-            if (inner instanceof IValue && iUn.getOp() == IOpUn.MINUS) {
-                return new IValue(((IValue) inner).getValue().negate(), inner.getPrecision());
-            } else if (inner instanceof IValue && iUn.getOp() == IOpUn.CTLZ) {
-                return new IExprUn(iUn.getOp(), inner).reduce();
-            } else {
-                return new IExprUn(iUn.getOp(), inner);
+        public Expression visit(IfExpr ifExpr) {
+            Expression guard = transform(ifExpr.getGuard());
+            Expression trueBranch = transform(ifExpr.getTrueBranch());
+            Expression falseBranch = transform(ifExpr.getFalseBranch());
+            // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
+            if (guard instanceof BConst constant && constant.getValue() && falseBranch.getRegs().isEmpty()) {
+                return trueBranch;
             }
+            if (guard instanceof BConst constant && !constant.getValue() && trueBranch.getRegs().isEmpty()) {
+                return falseBranch;
+            }
+            return expressions.makeConditional(guard, trueBranch, falseBranch);
         }
 
-        @Override
-        public ExprInterface visit(IfExpr ifExpr) {
-            BExpr guard = (BExpr) ifExpr.getGuard().visit(this);
-            IExpr trueBranch = (IExpr) ifExpr.getTrueBranch().visit(this);
-            IExpr falseBranch = (IExpr) ifExpr.getFalseBranch().visit(this);
-            if (guard instanceof BConst && trueBranch instanceof IValue && falseBranch instanceof IValue) {
-                // We optimize ITEs only if all subexpressions are constant to avoid messing up
-                // data dependencies
-                return guard.equals(BConst.TRUE) ? trueBranch : falseBranch;
-            }
-            return new IfExpr(guard, trueBranch, falseBranch);
+        private Expression transform(Expression expression) {
+            Expression result = expression.visit(this);
+            Verify.verify(result.getType().equals(expression.getType()), "Type mismatch in constant propagation.");
+            return result;
         }
-
     }
 
 }

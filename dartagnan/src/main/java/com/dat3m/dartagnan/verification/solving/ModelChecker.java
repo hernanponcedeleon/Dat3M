@@ -38,7 +38,6 @@ import static com.dat3m.dartagnan.program.event.Tag.ASSERTION;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static java.lang.Boolean.FALSE;
-import static java.util.stream.Collectors.toList;
 
 public abstract class ModelChecker {
 
@@ -117,14 +116,15 @@ public abstract class ModelChecker {
      * @exception UnsatisfiedRequirementException Some static analysis is missing.
      */
     public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
-        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), config));
+        analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
     }
 
     private static void computeSpecificationFromProgramAssertions(Program program) {
         // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
         // For litmus tests, this function should not be called.
-        List<Event> assertions = program.getEvents().stream().filter(e -> e.is(ASSERTION)).collect(toList());
+        List<Event> assertions = program.getThreads().stream()
+                .flatMap(t -> t.getEvents().stream().filter(e -> e.hasTag(ASSERTION))).toList();
         AbstractAssert spec = new AssertTrue();
         if(!assertions.isEmpty()) {
             spec = new AssertInline((Local)assertions.get(0));

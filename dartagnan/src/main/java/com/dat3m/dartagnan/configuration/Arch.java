@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.configuration;
 import java.util.Arrays;
 
 public enum Arch implements OptionInterface {
-	C11, ARM8, POWER, TSO, IMM, LKMM, RISCV;
+	C11, ARM8, POWER, PTX, TSO, IMM, LKMM, RISCV;
 
 	// Used to display in UI
     @Override
@@ -15,6 +15,8 @@ public enum Arch implements OptionInterface {
                 return "ARM8";
             case POWER:
                 return "Power";
+            case PTX:
+                return "PTX";
             case TSO:
                 return "TSO";
             case IMM:
@@ -33,9 +35,21 @@ public enum Arch implements OptionInterface {
 	
 	// Used to decide the order shown by the selector in the UI
 	public static Arch[] orderedValues() {
-		Arch[] order = { C11, ARM8, IMM, LKMM, POWER, RISCV, TSO };
+		Arch[] order = { C11, ARM8, IMM, LKMM, POWER, PTX, RISCV, TSO };
 		// Be sure no element is missing
 		assert(Arrays.asList(order).containsAll(Arrays.asList(values())));
 		return order;
 	}
+
+    // used to check if the coherence is not guaranteed to be total in model
+    public static boolean coIsTotal(Arch arch) {
+        Arch[] coNotTotal = {PTX};
+        return !Arrays.asList(coNotTotal).contains(arch);
+    }
+
+    // used to check if supports virtual addressing.
+    public static boolean supportsVirtualAddressing(Arch arch) {
+        Arch[] supportVirtualAddress = {PTX};
+        return Arrays.asList(supportVirtualAddress).contains(arch);
+    }
 }

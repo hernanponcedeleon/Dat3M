@@ -1,0 +1,13 @@
+PTX NoThinAir-register
+"No-Thin-Air"
+{
+P0:r1=0;
+P1:r2=0;
+x=0;
+y=0;
+}
+ P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
+ ld.weak r1, y                    | ld.weak r2, x                    ;
+ st.weak x, r1                    | st.weak y, r2                    ;
+~exists
+(P0:r1 == 42 /\ P1:r2 == 42)

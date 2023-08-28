@@ -1,37 +1,31 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
-public class BeginAtomic extends Event {
-	
+public class BeginAtomic extends AbstractEvent {
+
     public BeginAtomic() {
-        addFilters(Tag.RMW);
+        addTags(Tag.RMW);
     }
 
-    protected BeginAtomic(BeginAtomic other){
-		super(other);
-	}
+    protected BeginAtomic(BeginAtomic other) {
+        super(other);
+    }
 
     @Override
-    public String toString() {
-    	return "begin_atomic()";
+    public String defaultString() {
+        return "begin_atomic()";
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public BeginAtomic getCopy() {
+        return new BeginAtomic(this);
+    }
 
-	@Override
-	public BeginAtomic getCopy(){
-		return new BeginAtomic(this);
-	}
-
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
-
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitBeginAtomic(this);
-	}
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitBeginAtomic(this);
+    }
 }

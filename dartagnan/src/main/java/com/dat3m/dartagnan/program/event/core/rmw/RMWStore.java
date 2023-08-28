@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -10,27 +10,32 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import java.util.Map;
+import java.util.Set;
 
-public class RMWStore extends Store {
+public class RMWStore extends Store implements EventUser {
 
     protected Load loadEvent;
 
-    public RMWStore(Load loadEvent, IExpr address, ExprInterface value, String mo) {
-        super(address, value, mo);
-        Preconditions.checkArgument(loadEvent.is(Tag.RMW), "The provided load event " + loadEvent + " is not tagged RMW.");
+    public RMWStore(Load loadEvent, Expression address, Expression value) {
+        super(address, value);
+        Preconditions.checkArgument(loadEvent.hasTag(Tag.RMW), "The provided load event %s is not tagged RMW.", loadEvent);
         this.loadEvent = loadEvent;
-        addFilters(Tag.RMW);
+        this.loadEvent.registerUser(this);
+        addTags(Tag.RMW);
     }
 
     protected RMWStore(RMWStore other) {
         super(other);
         this.loadEvent = other.loadEvent;
+        this.loadEvent.registerUser(this);
     }
 
     public Load getLoadEvent() { return loadEvent; }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public String defaultString() {
+        return "rmw " + super.defaultString();
+    }
 
     @Override
     public RMWStore getCopy() {
@@ -39,14 +44,17 @@ public class RMWStore extends Store {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.loadEvent = (Load) updateMapping.getOrDefault(loadEvent, loadEvent);
+        this.loadEvent = (Load) EventUser.moveUserReference(this, this.loadEvent, updateMapping);
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(loadEvent);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitRMWStore(this);
     }
+
 }

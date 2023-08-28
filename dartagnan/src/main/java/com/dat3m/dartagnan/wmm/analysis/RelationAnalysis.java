@@ -2,20 +2,23 @@ package com.dat3m.dartagnan.wmm.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Register.UsageType;
+import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
-import com.dat3m.dartagnan.program.event.core.IfAsJump;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -37,12 +40,12 @@ import org.sosy_lab.common.configuration.Options;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
@@ -113,39 +116,48 @@ public class RelationAnalysis {
     public static RelationAnalysis fromConfig(VerificationTask task, Context context, Configuration config) throws InvalidConfigurationException {
         RelationAnalysis a = new RelationAnalysis(task, context, config);
         task.getConfig().inject(a);
-        logger.info("{}: {}", ENABLE_RELATION_ANALYSIS, a.enable);
+
+        final StringBuilder configSummary = new StringBuilder().append("\n");
+        configSummary.append("\t").append(ENABLE_RELATION_ANALYSIS).append(": ").append(a.enable).append("\n");
+        configSummary.append("\t").append(ENABLE_MUST_SETS).append(": ").append(a.enableMustSets).append("\n");
+        configSummary.append("\t").append(ENABLE_EXTENDED_RELATION_ANALYSIS).append(": ").append(a.enableExtended);
+        logger.info(configSummary);
+
         if (a.enableMustSets && !a.enable) {
             logger.warn("{} implies {}", ENABLE_MUST_SETS, ENABLE_RELATION_ANALYSIS);
             a.enableMustSets = false;
         }
-        logger.info("{}: {}", ENABLE_MUST_SETS, a.enableMustSets);
         if (a.enableExtended && !a.enable) {
             logger.warn("{} implies {}", ENABLE_EXTENDED_RELATION_ANALYSIS, ENABLE_RELATION_ANALYSIS);
             a.enableExtended = false;
         }
-        logger.info("{}: {}", ENABLE_EXTENDED_RELATION_ANALYSIS, a.enableExtended);
+
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
         logger.info("Finished regular analysis in {}ms", t1 - t0);
+
+        final StringBuilder summary = new StringBuilder()
+                .append("\n======== RelationAnalysis summary ======== \n");
+        summary.append("\t#Relations: ").append(task.getMemoryModel().getRelations().size()).append("\n");
+        summary.append("\t#Axioms: ").append(task.getMemoryModel().getAxioms().size()).append("\n");
         if (a.enableExtended) {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
             a.runExtended();
             logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
-            logger.info("Count of may-tuples removed: {}", mayCount - a.countMaySet());
-            logger.info("Count of must-tuples added: {}", a.countMustSet() - mustCount);
+            summary.append("\t#may-tuples removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
+            summary.append("\t#must-tuples added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }
         verify(a.enableMustSets || a.knowledgeMap.values().stream().allMatch(k -> k.must.isEmpty()));
-        logger.info("Number of may-tuples: {}", a.countMaySet());
-        logger.info("Number of must-tuples: {}", a.countMustSet());
-        logger.info("Number of mutually-exclusive tuples: {}", a.mutex.size());
         Knowledge rf = a.knowledgeMap.get(task.getMemoryModel().getRelation(RF));
-        logger.info("Number of may-read-from-tuples: {}", rf.may.size());
-        logger.info("Number of must-read-from-tuples: {}", rf.must.size());
         Knowledge co = a.knowledgeMap.get(task.getMemoryModel().getRelation(CO));
-        logger.info("Number of may-coherence-tuples: {}", co.may.size());
-        logger.info("Number of must-coherence-tuples: {}", co.must.size());
+        summary.append("\ttotal #must|may|exclusive tuples: ")
+                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.mutex.size()).append("\n");
+        summary.append("\t#must|may rf tuples: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
+        summary.append("\t#must|may co tuples: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
+        summary.append("===========================================");
+        logger.info(summary);
         return a;
     }
 
@@ -168,8 +180,9 @@ public class RelationAnalysis {
     }
 
     /*
-        Returns a set of co-edges (w1, w2) (subset of may set) whose clock-constraints
-        do not need to get encoded explicitly.
+        Returns a set of edges (e1, e2) (subset of may set) for ordered relations whose
+        clock-constraints do not need to get encoded explicitly.
+        e.g. for co relation: (e1 = w1, e2 = w2)
         The reason is that whenever we have co(w1,w2) then there exists an intermediary
         w3 s.t. co(w1, w3) /\ co(w3, w2). As a result we have c(w1) < c(w3) < c(w2) transitively.
         Reasoning: Let (w1, w2) be a potential co-edge. Suppose there exists a w3 different to w1 and w2,
@@ -191,12 +204,12 @@ public class RelationAnalysis {
         final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
         final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
         for (final Tuple t : k.may) {
-            final MemEvent x = (MemEvent) t.getFirst();
-            final MemEvent z = (MemEvent) t.getSecond();
+            final MemoryEvent x = (MemoryEvent) t.getFirst();
+            final MemoryEvent z = (MemoryEvent) t.getSecond();
             final boolean hasIntermediary = mustOut.apply(x).stream().map(Tuple::getSecond)
-                            .anyMatch(y -> y != x && y != z &&
-                                    (implies(y, x) || implies(y, z)) &&
-                                    !k.containsMay(new Tuple(z, y))) ||
+                    .anyMatch(y -> y != x && y != z &&
+                            (implies(y, x) || implies(y, z)) &&
+                            !k.containsMay(new Tuple(z, y))) ||
                     mustIn.apply(z).stream().map(Tuple::getFirst)
                             .anyMatch(y -> y != x && y != z &&
                                     (implies(y, x) || implies(y, z)) &&
@@ -273,6 +286,7 @@ public class RelationAnalysis {
     }
 
     public static final class Knowledge {
+
         private final Set<Tuple> may;
         private final Set<Tuple> must;
         private final Set<Tuple> mayImplicit;
@@ -281,6 +295,7 @@ public class RelationAnalysis {
         private final Function<Event, Collection<Event>> mustIn;
         private final Function<Event, Collection<Event>> mayOut;
         private final Function<Event, Collection<Event>> mustOut;
+
         private Knowledge(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = checkNotNull(maySet);
             must = checkNotNull(mustSet);
@@ -288,6 +303,7 @@ public class RelationAnalysis {
             mayIn = mustIn = y -> Set.of();
             mayOut = mustOut = x -> Set.of();
         }
+
         private Knowledge(Set<Tuple> mayImplicit, Set<Tuple> mustImplicit,
                           Function<Event, Collection<Event>> mayIn, Function<Event, Collection<Event>> mayOut,
                           Function<Event, Collection<Event>> mustIn, Function<Event, Collection<Event>> mustOut) {
@@ -300,12 +316,15 @@ public class RelationAnalysis {
             this.mustIn = mustIn;
             this.mustOut = mustOut;
         }
+
         public Set<Tuple> getMaySet() {
             return Sets.union(may, mayImplicit);
         }
+
         public boolean containsMay(Tuple t) {
             return may.contains(t) || mayImplicit.contains(t);
         }
+
         public Function<Event, Collection<Tuple>> getMayIn() {
             final Map<Event, ArrayList<Tuple>> map = new HashMap<>();
             for (final Tuple t : may) {
@@ -313,6 +332,7 @@ public class RelationAnalysis {
             }
             return e -> inOutSet(map.getOrDefault(e, new ArrayList<>()), mayIn.apply(e), e, true);
         }
+
         public Function<Event, Collection<Tuple>> getMayOut() {
             final Map<Event, ArrayList<Tuple>> map = new HashMap<>();
             for (final Tuple t : may) {
@@ -320,12 +340,15 @@ public class RelationAnalysis {
             }
             return e -> inOutSet(map.getOrDefault(e, new ArrayList<>()), mayOut.apply(e), e, false);
         }
+
         public Set<Tuple> getMustSet() {
             return Sets.union(must, mustImplicit);
         }
+
         public boolean containsMust(Tuple t) {
             return must.contains(t) || mustImplicit.contains(t);
         }
+
         public Function<Event, Collection<Tuple>> getMustIn() {
             final Map<Event, ArrayList<Tuple>> map = new HashMap<>();
             for (final Tuple t : must) {
@@ -333,6 +356,7 @@ public class RelationAnalysis {
             }
             return e -> inOutSet(map.getOrDefault(e, new ArrayList<>()), mustIn.apply(e), e, true);
         }
+
         public Function<Event, Collection<Tuple>> getMustOut() {
             final Map<Event, Collection<Tuple>> map = new HashMap<>();
             for (final Tuple t : must) {
@@ -340,10 +364,12 @@ public class RelationAnalysis {
             }
             return e -> inOutSet(map.getOrDefault(e, List.of()), mustOut.apply(e), e, false);
         }
+
         @Override
         public String toString() {
             return "(may:" + may.size() + ", must:" + must.size() + ")";
         }
+
         private Delta joinSet(List<Delta> l) {
             verify(!l.isEmpty(), "empty update");
             // NOTE optimization due to initial deltas carrying references to knowledge sets
@@ -363,6 +389,7 @@ public class RelationAnalysis {
             }
             return new Delta(maySet, mustSet);
         }
+
         private ExtendedDelta join(List<ExtendedDelta> l) {
             verify(!l.isEmpty(), "empty update in extended analysis");
             Set<Tuple> disableSet = new HashSet<>();
@@ -391,7 +418,7 @@ public class RelationAnalysis {
         Map<Relation, List<Constraint>> dependents = new HashMap<>();
         Map<Relation, List<ExtendedDelta>> q = new LinkedHashMap<>();
         for (Constraint c : memoryModel.getConstraints()) {
-            if (c instanceof Axiom && ((Axiom) c).isFlagged()) {
+            if (c instanceof Axiom axiom && axiom.isFlagged()) {
                 continue;
             }
             for (Relation r : c.getConstrainedRelations()) {
@@ -438,6 +465,7 @@ public class RelationAnalysis {
     public static final class Delta {
         public final Set<Tuple> may;
         public final Set<Tuple> must;
+
         Delta(Set<Tuple> maySet, Set<Tuple> mustSet) {
             may = maySet;
             must = mustSet;
@@ -448,6 +476,7 @@ public class RelationAnalysis {
     public static final class ExtendedDelta {
         final Set<Tuple> disabled;
         final Set<Tuple> enabled;
+
         public ExtendedDelta(Set<Tuple> d, Set<Tuple> e) {
             disabled = d;
             enabled = e;
@@ -457,11 +486,12 @@ public class RelationAnalysis {
     private final class Initializer implements Definition.Visitor<Knowledge> {
         final Program program = task.getProgram();
         final Knowledge defaultKnowledge;
+
         Initializer() {
             if (enable) {
                 defaultKnowledge = null;
             } else {
-                List<Event> events = program.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+                List<Event> events = program.getThreadEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
                 Set<Tuple> may = new AbstractSet<>() {
                     @Override
                     public Iterator<Tuple> iterator() {
@@ -485,6 +515,7 @@ public class RelationAnalysis {
                 defaultKnowledge = new Knowledge(may, EMPTY_SET, full, full, empty, empty);
             }
         }
+
         @Override
         public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
             return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new HashSet<>(), new HashSet<>());
@@ -492,12 +523,12 @@ public class RelationAnalysis {
 
         private final class ProductSet extends AbstractSet<Tuple> {
 
-            private final FilterAbstract domain;
-            private final FilterAbstract range;
+            private final Filter domain;
+            private final Filter range;
             private final List<Event> domainEvents;
             private final List<Event> rangeEvents;
 
-            private ProductSet(FilterAbstract d, FilterAbstract r, List<Event> domainEvents, List<Event> rangeEvents) {
+            private ProductSet(Filter d, Filter r, List<Event> domainEvents, List<Event> rangeEvents) {
                 domain = d;
                 range = r;
                 this.domainEvents = domainEvents;
@@ -524,27 +555,24 @@ public class RelationAnalysis {
 
             @Override
             public boolean contains(Object o) {
-                if (!(o instanceof Tuple)) {
-                    return false;
-                }
-                Tuple tuple = (Tuple) o;
-                return domain.filter(tuple.getFirst()) &&
-                        range.filter(tuple.getSecond()) &&
+                return o instanceof Tuple tuple &&
+                        domain.apply(tuple.getFirst()) &&
+                        range.apply(tuple.getSecond()) &&
                         notExclusive(tuple);
             }
         }
 
-        private List<Event> getIfNotExcluded(Event event, List<Event> range, FilterAbstract domain) {
-            if (!domain.filter(event)) {
+        private List<Event> getIfNotExcluded(Event event, List<Event> range, Filter domain) {
+            if (!domain.apply(event)) {
                 return List.of();
             }
             return range.stream().filter(notExclusive(event)).collect(toList());
         }
 
         @Override
-        public Knowledge visitProduct(Relation rel, FilterAbstract domain, FilterAbstract range) {
-            List<Event> domainEvents = program.getEvents().stream().filter(domain::filter).collect(toList());
-            List<Event> rangeEvents = program.getEvents().stream().filter(range::filter).collect(toList());
+        public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
+            List<Event> domainEvents = program.getThreadEvents().stream().filter(domain::apply).toList();
+            List<Event> rangeEvents = program.getThreadEvents().stream().filter(range::apply).toList();
             Set<Tuple> set = new ProductSet(domain, range, domainEvents, rangeEvents);
             Function<Event, Collection<Event>> mayIn = e -> getIfNotExcluded(e, domainEvents, range);
             Function<Event, Collection<Event>> mayOut = e -> getIfNotExcluded(e, rangeEvents, domain);
@@ -552,11 +580,12 @@ public class RelationAnalysis {
             Function<Event, Collection<Event>> mustOut = enableMustSets ? mayOut : e -> List.of();
             return new Knowledge(set, enableMustSets ? set : EMPTY_SET, mayIn, mayOut, mustIn, mustOut);
         }
+
         @Override
-        public Knowledge visitIdentity(Relation rel, FilterAbstract set) {
+        public Knowledge visitIdentity(Relation rel, Filter set) {
             Set<Tuple> must = new HashSet<>();
-            for (Event e : program.getEvents()) {
-                if (set.filter(e)) {
+            for (Event e : program.getThreadEvents()) {
+                if (set.apply(e)) {
                     must.add(new Tuple(e, e));
                 }
             }
@@ -594,7 +623,7 @@ public class RelationAnalysis {
             @Override
             public boolean contains(Object o) {
                 // Assume both events are in this program.
-                return o instanceof Tuple && ((Tuple) o).isCrossThread();
+                return o instanceof Tuple tuple && tuple.isCrossThread();
             }
         }
 
@@ -660,20 +689,16 @@ public class RelationAnalysis {
 
             @Override
             public boolean contains(Object o) {
-                if (!(o instanceof Tuple)) {
-                    return false;
-                }
-                Tuple tuple = (Tuple) o;
-                return tuple.isSameThread() && notExclusive(tuple);
+                return o instanceof Tuple tuple && tuple.isSameThread() && notExclusive(tuple);
             }
         }
 
         private List<Event> getInternal(Event x) {
-            if (!x.is(VISIBLE)) {
+            if (!x.hasTag(VISIBLE)) {
                 return List.of();
             }
             return x.getThread().getEvents().stream()
-                    .filter(y -> y.is(VISIBLE) && notExclusive(x, y))
+                    .filter(y -> y.hasTag(VISIBLE) && notExclusive(x, y))
                     .collect(toList());
         }
 
@@ -687,16 +712,16 @@ public class RelationAnalysis {
 
         private final class ProgramOrderSet extends AbstractSet<Tuple> {
 
-            private final FilterAbstract domain;
+            private final Filter domain;
 
-            private ProgramOrderSet(FilterAbstract d) {
+            private ProgramOrderSet(Filter d) {
                 domain = d;
             }
 
             @Override
             public Iterator<Tuple> iterator() {
                 return program.getThreads().stream()
-                        .map(t -> t.getEvents().stream().filter(domain::filter).collect(toList()))
+                        .map(t -> t.getEvents().stream().filter(domain::apply).collect(toList()))
                         .flatMap(t -> IntStream.range(0, t.size())
                                 .mapToObj(i -> t.subList(0, i).stream()
                                         .filter(notExclusive(t.get(i)))
@@ -709,7 +734,7 @@ public class RelationAnalysis {
             public int size() {
                 int sum = 0;
                 for (Thread thread : program.getThreads()) {
-                    List<Event> events = visibleEvents(thread);
+                    List<Event> events = visibleEvents(thread).stream().filter(domain::apply).toList();
                     for (int i = 0; i < events.size(); i++) {
                         Event event = events.get(i);
                         sum += (int) events.subList(0, i).stream().filter(notExclusive(event)).count();
@@ -720,13 +745,10 @@ public class RelationAnalysis {
 
             @Override
             public boolean contains(Object o) {
-                if (!(o instanceof Tuple)) {
-                    return false;
-                }
-                Tuple tuple = (Tuple) o;
-                return tuple.isForward() &&
-                        domain.filter(tuple.getFirst()) &&
-                        domain.filter(tuple.getSecond()) &&
+                return o instanceof Tuple tuple &&
+                        tuple.isForward() &&
+                        domain.apply(tuple.getFirst()) &&
+                        domain.apply(tuple.getSecond()) &&
                         notExclusive(tuple);
             }
         }
@@ -746,7 +768,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitProgramOrder(Relation rel, FilterAbstract type) {
+        public Knowledge visitProgramOrder(Relation rel, Filter type) {
             Set<Tuple> view = new ProgramOrderSet(type);
             Function<Event, Collection<Event>> mayIn = this::getProgramOrderedBefore;
             Function<Event, Collection<Event>> mayOut = this::getProgramOrderedAfter;
@@ -760,40 +782,45 @@ public class RelationAnalysis {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
             // ctrl := idd^+;ctrlDirect & (R*V)
             Set<Tuple> must = new HashSet<>();
-            // NOTE: If's (under Linux) have different notion of ctrl dependency than conditional jumps!
             for (Thread thread : program.getThreads()) {
-                for (Event e1 : thread.getEvents()) {
-                    if (e1.is(CMP)) {
-                        for (Event e2 : ((IfAsJump) e1).getBranchesEvents()) {
-                            if (notExclusive(e1, e2)) {
-                                must.add(new Tuple(e1, e2));
-                            }
-                        }
+                for (CondJump jump : thread.getEvents(CondJump.class)) {
+                    if (jump.isGoto() || jump.isDead()) {
+                        continue; // There is no point in ctrl-edges from unconditional jumps.
                     }
-                }
-                // Relates jumps (except those implementing Ifs and their internal jump to end) with all later events
-                for (Event e1 : thread.getEvents()) {
-                    if (e1.is(JUMP) && !e1.is(CMP) && !e1.is(IFI)) {
-                        for (Event e2 : thread.getEvents()) {
-                            if (e1.getGlobalId() < e2.getGlobalId() && notExclusive(e1, e2)) {
-                                must.add(new Tuple(e1, e2));
-                            }
+
+                    final List<Event> ctrlDependentEvents;
+                    if (jump instanceof IfAsJump ifJump) {
+                        // Ctrl dependencies of Ifs (under Linux) only extend up until the merge point of both
+                        // branches.
+                        ctrlDependentEvents = ifJump.getBranchesEvents();
+                    } else {
+                        // Regular jumps give dependencies to all successors.
+                        ctrlDependentEvents = jump.getSuccessor().getSuccessors();
+                    }
+
+                    for (Event e : ctrlDependentEvents) {
+                        if (notExclusive(jump, e)) {
+                            must.add(new Tuple(jump, e));
                         }
                     }
                 }
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitAddressDependency(Relation rel) {
-            return visitDependency(MEMORY, e -> ((MemEvent) e).getAddress().getRegs());
+            return computeInternalDependencies(EnumSet.of(ADDR));
         }
+
         @Override
         public Knowledge visitInternalDataDependency(Relation rel) {
-            return visitDependency(REG_READER, e -> ((RegReaderData) e).getDataRegs());
+            // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
+            return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
         }
+
         @Override
-        public Knowledge visitFences(Relation rel, FilterAbstract fence) {
+        public Knowledge visitFences(Relation rel, Filter fence) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
             for (Thread t : program.getThreads()) {
@@ -801,7 +828,7 @@ public class RelationAnalysis {
                 int end = events.size();
                 for (int i = 0; i < end; i++) {
                     Event f = events.get(i);
-                    if (!fence.filter(f)) {
+                    if (!fence.apply(f)) {
                         continue;
                     }
                     for (Event x : events.subList(0, i)) {
@@ -824,17 +851,19 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitCompareAndSwapDependency(Relation rel) {
             Set<Tuple> must = new HashSet<>();
-            for (Event e : program.getEvents()) {
-                if (e.is(IMM.CASDEPORIGIN)) {
+            for (Event e : program.getThreadEvents()) {
+                if (e.hasTag(IMM.CASDEPORIGIN)) {
                     // The target of a CASDep is always the successor of the origin
                     must.add(new Tuple(e, e.getSuccessor()));
                 }
             }
             return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitCriticalSections(Relation rel) {
             Set<Tuple> may = new HashSet<>();
@@ -845,9 +874,9 @@ public class RelationAnalysis {
             for (Thread thread : program.getThreads()) {
                 // assume order by cId
                 // assume cId describes a topological sorting over the control flow
-                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.is(Linux.RCU_LOCK)).collect(toList()));
+                List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()));
                 for (Event unlock : thread.getEvents()) {
-                    if (!unlock.is(Linux.RCU_UNLOCK)) {
+                    if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
                         continue;
                     }
                     // iteration order assures that all intermediaries were already iterated
@@ -878,25 +907,20 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitReadModifyWrites(Relation rel) {
             //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
             // ----- Compute must set -----
             Set<Tuple> must = new HashSet<>();
             // RMWLoad -> RMWStore
-            for (RMWStore store : program.getEvents(RMWStore.class)) {
+            for (RMWStore store : program.getThreadEvents(RMWStore.class)) {
                 must.add(new Tuple(store.getLoadEvent(), store));
             }
-            // Locks: Load -> Assume/CondJump -> Store
-            for (Event e : program.getEvents()) {
-                if (e.is(RMW) && e.is(READ) && (e.is(C11.LOCK) || e.is(Linux.LOCK_READ))) {
-                    // Connect Load to Store
-                    must.add(new Tuple(e, e.getSuccessor().getSuccessor()));
-                }
-            }
+
             // Atomics blocks: BeginAtomic -> EndAtomic
-            for (EndAtomic end : program.getEvents(EndAtomic.class)) {
-                List<Event> block = end.getBlock().stream().filter(x -> x.is(VISIBLE)).collect(toList());
+            for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
+                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).collect(toList());
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
@@ -910,12 +934,11 @@ public class RelationAnalysis {
             Set<Tuple> may = new HashSet<>(must);
             // LoadExcl -> StoreExcl
             for (Thread thread : program.getThreads()) {
-                List<Event> events = thread.getEvents().stream().filter(e -> e.is(EXCL)).collect(toList());
-                // assume order by cId
-                // assume cId describes a topological sorting over the control flow
+                List<Event> events = thread.getEvents().stream().filter(e -> e.hasTag(EXCL)).toList();
+                // assume order by globalId
+                // assume globalId describes a topological sorting over the control flow
                 for (int end = 1; end < events.size(); end++) {
-                    Event store = events.get(end);
-                    if (!store.is(WRITE)) {
+                    if (!(events.get(end) instanceof RMWStoreExclusive store)) {
                         continue;
                     }
                     int start = IntStream.iterate(end - 1, i -> i >= 0, i -> i - 1)
@@ -928,14 +951,14 @@ public class RelationAnalysis {
                     for (int i = 0; i < size; i++) {
                         Event load = candidates.get(i);
                         List<Event> intermediaries = candidates.subList(i + 1, size);
-                        if (!load.is(READ) || intermediaries.stream().anyMatch(e -> implies(e, load))) {
+                        if (!(load instanceof Load) || intermediaries.stream().anyMatch(e -> implies(e, load))) {
                             continue;
                         }
                         Tuple tuple = new Tuple(load, store);
                         may.add(tuple);
                         if (enableMustSets &&
                                 intermediaries.stream().allMatch(e -> exclusive(load, e)) &&
-                                (store.is(MATCHADDRESS) || alias.mustAlias((MemEvent) load, (MemEvent) store))) {
+                                (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
                             must.add(tuple);
                         }
                     }
@@ -943,35 +966,34 @@ public class RelationAnalysis {
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitCoherence(Relation rel) {
             logger.trace("Computing knowledge about memory order");
-            List<Store> nonInitWrites = program.getEvents(Store.class);
+            List<Store> nonInitWrites = program.getThreadEvents(Store.class);
+            nonInitWrites.removeIf(Init.class::isInstance);
             Set<Tuple> may = new HashSet<>();
-            for (Event w1 : program.getEvents()) {
-                if (!w1.is(WRITE)) {
-                    continue;
-                }
-                for (MemEvent w2 : nonInitWrites) {
+            for (Store w1 : program.getThreadEvents(Store.class)) {
+                for (Store w2 : nonInitWrites) {
                     if (w1.getGlobalId() != w2.getGlobalId() && notExclusive(w1, w2)
-                            && alias.mayAlias((MemEvent) w1, w2)) {
+                            && alias.mayAlias(w1, w2)) {
                         may.add(new Tuple(w1, w2));
                     }
                 }
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                MemEvent w1 = (MemEvent) t.getFirst();
-                MemEvent w2 = (MemEvent) t.getSecond();
-                if (!w2.is(INIT) && alias.mustAlias(w1, w2) && w1.is(INIT)) {
+                MemoryCoreEvent w1 = (MemoryCoreEvent) t.getFirst();
+                MemoryCoreEvent w2 = (MemoryCoreEvent) t.getSecond();
+                if (!w2.hasTag(INIT) && alias.mustAlias(w1, w2) && w1.hasTag(INIT)) {
                     must.add(t);
                 }
             }
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
                 for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                    MemEvent w1 = (MemEvent) t.getFirst();
-                    MemEvent w2 = (MemEvent) t.getSecond();
+                    MemoryCoreEvent w1 = (MemoryCoreEvent) t.getFirst();
+                    MemoryCoreEvent w2 = (MemoryCoreEvent) t.getSecond();
                     if (alias.mustAlias(w1, w2) && t.isForward()) {
                         must.add(t);
                     }
@@ -980,21 +1002,43 @@ public class RelationAnalysis {
             logger.debug("Initial may set size for memory order: {}", may.size());
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitReadFrom(Relation rel) {
             logger.trace("Computing knowledge about read-from");
+            final BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
             Set<Tuple> may = new HashSet<>();
-            List<Load> loadEvents = program.getEvents(Load.class);
-            for (Event e1 : program.getEvents()) {
-                if (!e1.is(WRITE)) {
-                    continue;
-                }
+            Set<Tuple> must = new HashSet<>();
+            List<Load> loadEvents = program.getThreadEvents(Load.class);
+            for (Store e1 : program.getThreadEvents(Store.class)) {
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias((MemEvent) e1, e2) && notExclusive(e1, e2)) {
+                    if (alias.mayAlias(e1, e2) && notExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
             }
+
+            // Here we add must-rf edges between loads/stores that synchronize threads.
+            for (Thread thread : program.getThreads()) {
+                final ThreadStart start = thread.getEntry();
+                if (!start.isSpawned()) {
+                    continue;
+                }
+
+                // Must-rf edge for thread spawning
+                Event cur = start;
+                while (!(cur instanceof Load startLoad)) { cur = cur.getSuccessor(); }
+                cur = start.getCreator();
+                while (!(cur instanceof Store startStore)) { cur = cur.getSuccessor(); }
+
+                assert startStore.getAddress().equals(startLoad.getAddress());
+
+                must.add(new Tuple(startStore, startLoad));
+                if (eq.isImplied(startLoad, startStore)) {
+                    may.removeIf(t -> t.getSecond() == startLoad && t.getFirst() != startStore);
+                }
+            }
+
             if (wmmAnalysis.isLocallyConsistent()) {
                 // Remove future reads
                 may.removeIf(Tuple::isBackward);
@@ -1004,22 +1048,22 @@ public class RelationAnalysis {
                 for (Tuple t : may) {
                     writesByRead.computeIfAbsent(t.getSecond(), x -> new ArrayList<>()).add(t.getFirst());
                 }
-                for (Load read : program.getEvents(Load.class)) {
+                for (Load read : program.getThreadEvents(Load.class)) {
                     // The set of same-thread writes as well as init writes that could be read from (all before the read)
                     // sorted by order (init events first)
-                    List<MemEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
-                            .filter(e -> (e.getThread() == read.getThread() || e.is(INIT)))
-                            .map(x -> (MemEvent) x)
-                            .sorted((o1, o2) -> o1.is(INIT) == o2.is(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.is(INIT) ? -1 : 1)
-                            .collect(Collectors.toList());
+                    List<MemoryCoreEvent> possibleWrites = writesByRead.getOrDefault(read, List.of()).stream()
+                            .filter(e -> (e.getThread() == read.getThread() || e.hasTag(INIT)))
+                            .map(x -> (MemoryCoreEvent) x)
+                            .sorted((o1, o2) -> o1.hasTag(INIT) == o2.hasTag(INIT) ? (o1.getGlobalId() - o2.getGlobalId()) : o1.hasTag(INIT) ? -1 : 1)
+                            .toList();
                     // The set of writes that won't be readable due getting overwritten.
-                    Set<MemEvent> deletedWrites = new HashSet<>();
+                    Set<MemoryCoreEvent> deletedWrites = new HashSet<>();
                     // A rf-edge (w1, r) is impossible, if there exists a write w2 such that
                     // - w2 is exec-implied by w1 or r (i.e. cf-implied + w2.cfImpliesExec)
                     // - w2 must alias with either w1 or r.
                     for (int i = 0; i < possibleWrites.size(); i++) {
-                        MemEvent w1 = possibleWrites.get(i);
-                        for (MemEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
+                        MemoryCoreEvent w1 = possibleWrites.get(i);
+                        for (MemoryCoreEvent w2 : possibleWrites.subList(i + 1, possibleWrites.size())) {
                             // w2 dominates w1 if it aliases with it and it is guaranteed to execute if either w1 or the read are
                             // executed
                             if ((implies(w2, w1) || implies(w2, read))
@@ -1046,15 +1090,15 @@ public class RelationAnalysis {
                 // we could still encode it.
                 int sizeBefore = may.size();
                 // Atomics blocks: BeginAtomic -> EndAtomic
-                for (EndAtomic endAtomic : program.getEvents(EndAtomic.class)) {
+                for (EndAtomic endAtomic : program.getThreadEvents(EndAtomic.class)) {
                     // Collect memEvents of the atomic block
                     List<Store> writes = new ArrayList<>();
                     List<Load> reads = new ArrayList<>();
                     for (Event b : endAtomic.getBlock()) {
-                        if (b instanceof Load) {
-                            reads.add((Load) b);
-                        } else if (b instanceof Store) {
-                            writes.add((Store) b);
+                        if (b instanceof Load load) {
+                            reads.add(load);
+                        } else if (b instanceof Store store) {
+                            writes.add(store);
                         }
                     }
                     for (Load r : reads) {
@@ -1072,14 +1116,15 @@ public class RelationAnalysis {
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
             logger.debug("Initial may set size for read-from: {}", may.size());
-            return new Knowledge(may, enableMustSets ? new HashSet<>() : EMPTY_SET);
+            return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
+
         @Override
         public Knowledge visitSameAddress(Relation rel) {
             Set<Tuple> may = new HashSet<>();
-            List<MemEvent> events = program.getEvents(MemEvent.class);
-            for (MemEvent e1 : events) {
-                for (MemEvent e2 : events) {
+            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
                     if (alias.mayAlias(e1, e2) && notExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
@@ -1087,50 +1132,135 @@ public class RelationAnalysis {
             }
             Set<Tuple> must = new HashSet<>();
             for (Tuple t : enableMustSets ? may : Set.<Tuple>of()) {
-                if (alias.mustAlias((MemEvent) t.getFirst(), (MemEvent) t.getSecond())) {
+                if (alias.mustAlias((MemoryCoreEvent) t.getFirst(), (MemoryCoreEvent) t.getSecond())) {
                     must.add(t);
                 }
             }
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
         }
-        private Knowledge visitDependency(String tag, Function<Event, Set<Register>> registers) {
+
+        private Knowledge computeInternalDependencies(Set<UsageType> usageTypes) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            // We need to track ExecutionStatus events separately, because they induce data-dependencies
-            // without reading from a register.
-            Set<ExecutionStatus> execStatusRegWriter = new HashSet<>();
-            for (Event regReader : program.getEvents()) {
-                if (!regReader.is(tag)) {
+
+            for (Event regReaderEvent : program.getThreadEvents()) {
+                //TODO: Once "Event" is an interface and RegReader inherits from it,
+                // we can use program.getEvents(RegReader.class) here.
+                if (!(regReaderEvent instanceof RegReader regReader)) {
                     continue;
                 }
-                for (Register register : registers.apply(regReader)) {
+                for (Register.Read regRead : regReader.getRegisterReads()) {
+                    if (!usageTypes.contains(regRead.usageType())) {
+                        continue;
+                    }
+                    final Register register = regRead.register();
                     // Register x0 is hardwired to the constant 0 in RISCV
                     // https://en.wikichip.org/wiki/risc-v/registers,
                     // and thus it generates no dependency, see
                     // https://github.com/herd/herdtools7/issues/408
+                    // TODO: Can't we just replace all reads of "x0" by 0 in RISC-specific preprocessing?
                     if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
                         continue;
                     }
-                    Dependency.State r = dep.of(regReader, register);
+                    Dependency.State r = dep.of(regReaderEvent, register);
                     for (Event regWriter : r.may) {
-                        may.add(new Tuple(regWriter, regReader));
-                        if (regWriter instanceof ExecutionStatus) {
-                            execStatusRegWriter.add((ExecutionStatus) regWriter);
-                        }
+                        may.add(new Tuple(regWriter, regReaderEvent));
                     }
                     for (Event regWriter : enableMustSets ? r.must : List.<Event>of()) {
-                        must.add(new Tuple(regWriter, regReader));
+                        must.add(new Tuple(regWriter, regReaderEvent));
                     }
                 }
             }
-            for (ExecutionStatus execStatus : execStatusRegWriter) {
-                if (execStatus.doesTrackDep()) {
-                    Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
-                    may.add(t);
-                    must.add(t);
+
+            // We need to track ExecutionStatus events separately, because they induce data-dependencies
+            // without reading from a register.
+            if (usageTypes.contains(DATA)) {
+                for (ExecutionStatus execStatus : program.getThreadEvents(ExecutionStatus.class)) {
+                    if (execStatus.doesTrackDep()) {
+                        Tuple t = new Tuple(execStatus.getStatusEvent(), execStatus);
+                        may.add(t);
+                        must.add(t);
+                    }
                 }
             }
+
             return new Knowledge(may, enableMustSets ? must : EMPTY_SET);
+        }
+
+        @Override
+        public Knowledge visitSameScope(Relation rel, String specificScope) {
+            Set<Tuple> must = new HashSet<>();
+            List<Event> events = new ArrayList<>();
+            events.addAll(program.getThreadEvents(Load.class));
+            events.addAll(program.getThreadEvents(Store.class));
+            events.addAll(program.getThreadEvents(Fence.class));
+            events.removeIf(e -> e instanceof Init);
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    ScopedThread thread1 = (ScopedThread) e1.getThread();
+                    ScopedThread thread2 = (ScopedThread) e2.getThread();
+                    if (specificScope != null) { // scope specified
+                        if (thread1.sameAtHigherScope(thread2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    } else {
+                        String scope1 = Tag.PTX.getScopeTag(e1);
+                        String scope2 = Tag.PTX.getScopeTag(e2);
+                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)
+                                && !exec.areMutuallyExclusive(e1, e2)) {
+                            must.add(new Tuple(e1, e2));
+                        }
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
+        }
+
+        @Override
+        public Knowledge visitSyncBarrier(Relation sync_bar) {
+            Set<Tuple> may = new HashSet<>();
+            Set<Tuple> must = new HashSet<>();
+            List<PTXFenceWithId> fenceEvents = program.getThreadEvents(PTXFenceWithId.class);
+            for (PTXFenceWithId e1 : fenceEvents) {
+                for (PTXFenceWithId e2 : fenceEvents) {
+                    if(exec.areMutuallyExclusive(e1, e2)) {
+                        continue;
+                    }
+                    may.add(new Tuple(e1, e2));
+                    if (e1.getFenceID().equals(e2.getFenceID())) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitSyncFence(Relation sync_fen) {
+            Set<Tuple> may = new HashSet<>();
+            List<Fence> fenceEvents = program.getThreadEvents(Fence.class);
+            for (Fence e1 : fenceEvents) {
+                for (Fence e2 : fenceEvents) {
+                    if (e1.hasTag(Tag.PTX.SC) && e2.hasTag(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+                        may.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(may, EMPTY_SET);
+        }
+
+        @Override
+        public Knowledge visitVirtualLocation(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+            for (MemoryCoreEvent e1 : events) {
+                for (MemoryCoreEvent e2 : events) {
+                    if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, new HashSet<>(must));
         }
     }
 
@@ -1138,6 +1268,7 @@ public class RelationAnalysis {
         public Relation source;
         public Set<Tuple> may;
         public Set<Tuple> must;
+
         @Override
         public Delta visitUnion(Relation rel, Relation... operands) {
             if (Arrays.asList(operands).contains(source)) {
@@ -1145,6 +1276,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitIntersection(Relation rel, Relation... operands) {
             if (!Arrays.asList(operands).contains(source)) {
@@ -1161,11 +1293,12 @@ public class RelationAnalysis {
                     .reduce(Sets::intersection)
                     .orElseThrow();
             return new Delta(
-                        new HashSet<>(maySet),
-                        enableMustSets ?
-                                new HashSet<>(mustSet) :
-                                EMPTY_SET);
+                    new HashSet<>(maySet),
+                    enableMustSets ?
+                            new HashSet<>(mustSet) :
+                            EMPTY_SET);
         }
+
         @Override
         public Delta visitDifference(Relation rel, Relation r1, Relation r2) {
             if (r1.equals(source)) {
@@ -1177,6 +1310,7 @@ public class RelationAnalysis {
             // cannot handle updates from r2
             return EMPTY;
         }
+
         @Override
         public Delta visitComposition(Relation rel, Relation r1, Relation r2) {
             Set<Tuple> maySet = new HashSet<>();
@@ -1229,6 +1363,7 @@ public class RelationAnalysis {
             }
             return new Delta(maySet, mustSet);
         }
+
         @Override
         public Delta visitDomainIdentity(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1246,6 +1381,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitRangeIdentity(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1263,6 +1399,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitInverse(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1270,6 +1407,7 @@ public class RelationAnalysis {
             }
             return EMPTY;
         }
+
         @Override
         public Delta visitTransitiveClosure(Relation rel, Relation r1) {
             if (r1.equals(source)) {
@@ -1641,7 +1779,7 @@ public class RelationAnalysis {
             //TODO use transitivity
             Set<Tuple> e = new HashSet<>();
             for (Tuple xy : disabled) {
-                if (alias.mustAlias((MemEvent) xy.getFirst(), (MemEvent) xy.getSecond())) {
+                if (alias.mustAlias((MemoryCoreEvent) xy.getFirst(), (MemoryCoreEvent) xy.getSecond())) {
                     e.add(xy.getInverse());
                 }
             }
@@ -1650,7 +1788,7 @@ public class RelationAnalysis {
     }
 
     private static List<Event> visibleEvents(Thread t) {
-        return t.getEvents().stream().filter(e -> e.is(VISIBLE)).collect(toList());
+        return t.getEvents().stream().filter(e -> e.hasTag(VISIBLE)).collect(toList());
     }
 
     private static int getThreadIndex(Event event, List<Event> thread) {
@@ -1743,5 +1881,18 @@ public class RelationAnalysis {
 
     private long countMustSet() {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
+    }
+
+    // GPU memory models make use of virtual addresses.
+    // This models same_alias_r from the PTX Alloy model
+    // Checking address1 and address2 hold the same generic address
+    private boolean sameGenericAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
+        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
+        // then `x + offset` and `y + offset` should too
+        if (!(e1.getAddress() instanceof VirtualMemoryObject addr1)
+                || !(e2.getAddress() instanceof VirtualMemoryObject addr2)) {
+            return false;
+        }
+        return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 }

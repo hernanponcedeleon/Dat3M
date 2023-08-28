@@ -30,6 +30,6 @@ else
     export CFLAGS=$cflags
     export SMACK_FLAGS=$smackflags
 
-    cmd="java -jar svcomp/target/svcomp-"$version".jar "$svcompflags" --svcomp.property="$propertypath" "$programpath" "$witness
+    cmd="java -jar svcomp/target/svcomp.jar "$svcompflags" --svcomp.property="$propertypath" "$programpath" "$witness
     $cmd
 fi

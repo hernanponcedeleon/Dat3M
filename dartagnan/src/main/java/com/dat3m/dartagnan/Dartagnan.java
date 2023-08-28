@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.solving.*;
 import com.dat3m.dartagnan.witness.WitnessBuilder;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
+import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
@@ -109,10 +111,16 @@ public class Dartagnan extends BaseOptions {
             witness = new ParserWitness().parse(new File(o.getWitnessPath()));
         }
 
-        VerificationTask task = VerificationTask.builder()
+        VerificationTaskBuilder builder = VerificationTask.builder()
                 .withConfig(config)
-                .withWitness(witness)
-                .build(p, mcm, properties);
+                .withWitness(witness);
+        // If the arch has been set during parsing (this only happens for litmus tests)
+        // and the user did not explicitly add the target option, we use the one
+        // obtained during parsing.
+        if (p.getArch() != null && !config.hasProperty(TARGET)) {
+            builder = builder.withTarget(p.getArch());
+        }
+        VerificationTask task = builder.build(p, mcm, properties);
 
         ShutdownManager sdm = ShutdownManager.create();
         Thread t = new Thread(() -> {
@@ -241,8 +249,8 @@ public class Dartagnan extends BaseOptions {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
-                    for(Event e : p.getEvents(Local.class)) {
-                        if(e.is(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                    for(Event e : p.getThreadEvents(Local.class)) {
+                        if(e.hasTag(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary
@@ -257,8 +265,8 @@ public class Dartagnan extends BaseOptions {
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
-                    for(CondJump e : p.getEvents(CondJump.class)) {
-                        if(e.is(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
+                    for(CondJump e : p.getThreadEvents(CondJump.class)) {
+                        if(e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
                             && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
@@ -342,12 +350,12 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
-        for (Event e : p.getEvents()) {
-            if (e.is(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
+        for (Event e : p.getThreadEvents()) {
+            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",
-                        e.getThread().getId(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS);
+                        e.getThread(), OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS);
                 break;
             }
         }

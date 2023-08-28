@@ -1,13 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.boogie;
 
-import com.dat3m.dartagnan.expression.BExprUn;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,7 +30,7 @@ public class LlvmFunctions {
 			"$and.",
 			"$nand.");
 	
-	public static Object llvmFunction(String name, List<Object> callParams) {
+	public static Object llvmFunction(String name, List<Expression> callParams, ExpressionFactory factory) {
 		IOpBin op = null; 
 		if(name.startsWith("$add.")) {
 			op = PLUS;
@@ -60,12 +57,11 @@ public class LlvmFunctions {
 		} else if(name.startsWith("$xor.")) {
 			//TODO: This is a temporary fix to parse xor.x1 as boolean negation.
 			// Once we have proper preprocessing code, we should remove this here!
-			if (name.startsWith("$xor.i1") && callParams.get(1) instanceof IConst) {
-				IConst c = (IConst) callParams.get(1);
+			if (name.startsWith("$xor.i1") && callParams.get(1) instanceof IConst c) {
 				if (c.getValueAsInt() == 0) {
 					return callParams.get(0);
 				} else if (c.getValueAsInt() == 1) {
-					return new BExprUn(BOpUn.NOT, (ExprInterface) callParams.get(0));
+					return factory.makeNot(callParams.get(0));
 				}
 			}
 			op = XOR;
@@ -77,6 +73,6 @@ public class LlvmFunctions {
 		if(op == null) {
 			throw new ParsingException("Function " + name + " has no implementation");
 		}
-		return new IExprBin((IExpr)callParams.get(0), op, (IExpr)callParams.get(1));
+		return factory.makeBinary(callParams.get(0), op, callParams.get(1));
 	}
 }

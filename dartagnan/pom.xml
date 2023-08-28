@@ -16,12 +16,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
     <project.dependency.relativepath>dependency</project.dependency.relativepath>
     <project.dependency.path>${project.build.directory}/${project.dependency.relativepath}</project.dependency.path>
-    <argLine>-Djava.library.path=${project.dependency.path}</argLine>
+    <argLine>-Djava.library.path=${project.dependency.path}:${java.library.path}</argLine>
   </properties>
 
   <!--
@@ -41,7 +40,7 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.8</version>
+          <version>5.6.10</version>
           <classifier>libmathsat5j</classifier>
           <type>so</type>
         </dependency>
@@ -50,14 +49,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>so</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>so</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -119,42 +118,42 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-cvc5</artifactId>
-          <version>1.0.1-g8c2b8db17</version>
+          <version>1.0.5-g4cb2ab9eb</version>
           <type>jar</type>
           <classifier>cvc5</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId> 
           <artifactId>javasmt-solver-cvc5</artifactId>
-          <version>1.0.1-g8c2b8db17</version>
+          <version>1.0.5-g4cb2ab9eb</version>
           <type>so</type>
           <classifier>libcvc5</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
          <artifactId>javasmt-solver-cvc5</artifactId>
-         <version>1.0.1-g8c2b8db17</version>
+         <version>1.0.5-g4cb2ab9eb</version>
           <type>so</type>
          <classifier>libcvc5jni</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-cvc5</artifactId>
-          <version>1.0.1-g8c2b8db17</version>
+          <version>1.0.5-g4cb2ab9eb</version>
           <type>so</type>
           <classifier>libcvc5parser</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-cvc5</artifactId>
-          <version>1.0.1-g8c2b8db17</version>
+          <version>1.0.5-g4cb2ab9eb</version>
          <type>so</type>
          <classifier>libpoly</classifier>
        </dependency>
        <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-cvc5</artifactId>
-          <version>1.0.1-g8c2b8db17</version>
+          <version>1.0.5-g4cb2ab9eb</version>
           <type>so</type>
           <classifier>libpolyxx</classifier>
         </dependency>
@@ -163,7 +162,7 @@
 	    <dependency>
 	      <groupId>org.sosy-lab</groupId>
 	      <artifactId>javasmt-yices2</artifactId>
-	      <version>3.12.0</version> <!-- version of Yices2 bindings in JavaSMT -->
+	      <version>4.0.1</version> <!-- version of Yices2 bindings in JavaSMT -->
 	      <type>jar</type>
 	    </dependency>
 	    <dependency>
@@ -344,14 +343,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>dylib</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>dylib</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -426,14 +425,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>dylib</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>dylib</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -473,7 +472,7 @@
                 <artifactItem>
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>java-smt</artifactId>
-                    <version>3.14.2</version>
+                    <version>4.0.2</version>
                 </artifactItem>
                 <!--<artifactItem>
                   <groupId>org.sosy-lab</groupId>
@@ -514,21 +513,21 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.8</version>
+          <version>5.6.10</version>
           <classifier>mathsat5j</classifier>
           <type>dll</type>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.8</version>
+          <version>5.6.10</version>
           <classifier>mathsat</classifier>
           <type>dll</type>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-mathsat5</artifactId>
-          <version>5.6.8</version>
+          <version>5.6.10</version>
           <classifier>mpir</classifier>
           <type>dll</type>
         </dependency>
@@ -536,14 +535,14 @@
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>dll</type>
           <classifier>libz3</classifier>
         </dependency>
         <dependency>
           <groupId>org.sosy-lab</groupId>
           <artifactId>javasmt-solver-z3</artifactId>
-          <version>4.10.1</version>
+          <version>4.12.2</version>
           <type>dll</type>
           <classifier>libz3java</classifier>
         </dependency>
@@ -625,12 +624,12 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>java-smt</artifactId>
-      <version>3.14.2</version>
+      <version>4.0.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>31.1-jre</version>
+      <version>32.0.0-jre</version>
     </dependency>
     <dependency>
       <groupId>org.antlr</groupId>
@@ -647,13 +646,14 @@
     <dependency>
       <groupId>org.sosy-lab</groupId>
       <artifactId>javasmt-solver-z3</artifactId>
-      <version>4.10.1</version>
+      <version>4.12.2</version>
       <type>jar</type>
       <classifier>com.microsoft.z3</classifier>
     </dependency>
   </dependencies>
 
   <build>
+    <finalName>${project.artifactId}</finalName>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -749,8 +749,8 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>11</source>
-          <target>11</target>
+          <source>17</source>
+          <target>17</target>
         </configuration>
       </plugin>
       <plugin>

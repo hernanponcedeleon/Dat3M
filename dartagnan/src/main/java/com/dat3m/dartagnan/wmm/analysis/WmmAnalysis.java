@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.wmm.analysis;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -49,13 +50,19 @@ public class WmmAnalysis {
         return respectsAtomicBlocks;
     }
 
-    private WmmAnalysis(Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
+    // Set assumeLocalConsistency to false for architectures don't hold local consistency e.g. PTX
+    // When location accessed via different proxies but not properly synchronized,
+    // they can form intra-thread data races.
+    private WmmAnalysis(Wmm memoryModel, Arch arch, Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         checkWellformedness(memoryModel);
+        if (arch == Arch.PTX) {
+            this.assumeLocalConsistency = false;
+        }
     }
 
-    public static WmmAnalysis fromConfig(Wmm memoryModel, Configuration config) throws InvalidConfigurationException {
-        return new WmmAnalysis(memoryModel, config);
+    public static WmmAnalysis fromConfig(Wmm memoryModel, Arch arch, Configuration config) throws InvalidConfigurationException {
+        return new WmmAnalysis(memoryModel, arch, config);
     }
 
     private void checkWellformedness(Wmm memoryModel) {
@@ -68,7 +75,7 @@ public class WmmAnalysis {
                     throw new UnsupportedOperationException(String.format(
                             "Unary relation %s not supported in recursive definitions.", node.getContent()
                     ));
-                } else if (d instanceof Difference && scc.contains(depGraph.get(((Difference) d).complement))) {
+                } else if (d instanceof Difference diff && scc.contains(depGraph.get(diff.complement))) {
                     // Non-monotonic recursion gives ill-defined memory models.
                     throw new MalformedMemoryModelException(String.format(
                             "Non-monotonic recursion is not supported: %s", node.getContent()

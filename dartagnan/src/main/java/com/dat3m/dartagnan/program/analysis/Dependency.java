@@ -5,8 +5,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.verification.Context;
 import org.apache.logging.log4j.LogManager;
@@ -101,27 +100,22 @@ public final class Dependency {
             if (j != null) {
                 state.addAll(j);
             }
-            //collecting dependencies, mixing 'data' and 'addr'
+            //collecting all register dependencies
             Set<Register> registers = new HashSet<>();
-            if (event instanceof RegReaderData) {
-                registers.addAll(((RegReaderData) event).getDataRegs());
+            if (event instanceof RegReader regReader) {
+                regReader.getRegisterReads().forEach( read -> registers.add(read.register()));
             }
-            if (event instanceof MemEvent) {
-                registers.addAll(((MemEvent) event).getAddress().getRegs());
-            }
+
             if (!registers.isEmpty()) {
                 Map<Register, State> result = new HashMap<>();
                 for (Register register : registers) {
-                    if (register.getThreadId() == Register.NO_THREAD) {
-                        continue;
-                    }
                     State writers;
-                    if (register.getThreadId() != event.getThread().getId()) {
+                    if (register.getFunction() != event.getThread()) {
                         writers = finalWriters.get(register);
                         checkArgument(writers != null,
                                 "Helper thread %s should be listed after their creator thread %s.",
-                                thread.getId(),
-                                register.getThreadId());
+                                thread,
+                                register.getFunction());
                         if (writers.may.size() != 1) {
                             logger.warn("Writers {} for inter-thread register {} read by event {} of thread {}",
                                     writers.may,
@@ -143,17 +137,17 @@ public final class Dependency {
                 map.put(event, result);
             }
             //update state, if changed by event
-            if (event instanceof RegWriter) {
-                Register register = ((RegWriter) event).getResultRegister();
+            if (event instanceof RegWriter rw) {
+                Register register = rw.getResultRegister();
                 if (event.cfImpliesExec()) {
                     state.removeIf(e -> e.register.equals(register));
                 }
                 state.add(new Writer(register, event));
             }
             //copy state, if branching
-            if (event instanceof CondJump) {
-                jumps.computeIfAbsent(((CondJump) event).getLabel(), k -> new HashSet<>()).addAll(state);
-                if (((CondJump) event).isGoto()) {
+            if (event instanceof CondJump jump) {
+                jumps.computeIfAbsent(jump.getLabel(), k -> new HashSet<>()).addAll(state);
+                if (jump.isGoto()) {
                     state.clear();
                 }
             }
@@ -201,10 +195,10 @@ public final class Dependency {
 
         @Override
         public boolean equals(Object o) {
-            return this == o || o instanceof Writer
+            return this == o || o instanceof Writer writer
                     && (event == null
-                    ? ((Writer) o).event == null && register.equals(((Writer) o).register)
-                    : event.equals(((Writer) o).event));
+                    ? writer.event == null && register.equals(writer.register)
+                    : event.equals(writer.event));
         }
 
         @Override

@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
+import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -21,8 +21,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDE
 
 /*
     This class performs reordering of code as follows
-    (1) The linear sequence of parsed code is decomposed into "moveable" branches:
-        - Moveable branches have the property that any permutation of these branches
+    (1) The linear sequence of parsed code is decomposed into "movable" branches:
+        - Movable branches have the property that any permutation of these branches
           exhibits the same control flow behaviour (with the exception that the final branch must stay fixed)
     (2) These branches are rearranged to minimize the number of backjumps
         - A backjump can cause a loop or just a "fake loop"
@@ -32,9 +32,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.DETERMINISTIC_REORDE
  */
 
 @Options
-public class BranchReordering implements ProgramProcessor {
-
-    private static final Logger logger = LogManager.getLogger(BranchReordering.class);
+public class BranchReordering implements FunctionProcessor {
 
     // =========================== Configurables ===========================
 
@@ -59,19 +57,14 @@ public class BranchReordering implements ProgramProcessor {
         return new BranchReordering();
     }
 
-
     @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(!program.isUnrolled(), "Reordering should be performed before unrolling.");
-
-        program.getThreads().forEach(t -> new ThreadReordering(t).run());
-        // We need to reassign Ids, because they do not match with the ordering of the code now.
-        EventIdReassignment.newInstance().run(program);
-        logger.info("Branches reordered");
-        logger.info("{}: {}", DETERMINISTIC_REORDERING, reorderDeterministically);
+    public void run(Function function) {
+        if (function.hasBody()) {
+            new FunctionReordering(function).run();
+        }
     }
 
-    private class ThreadReordering {
+    private class FunctionReordering {
         private class MovableBranch {
             int id = 0;
             final List<Event> events = new ArrayList<>();
@@ -96,21 +89,21 @@ public class BranchReordering implements ProgramProcessor {
             }
         }
 
-        private final Thread thread;
+        private final Function function;
         private final List<MovableBranch> branches = new ArrayList<>();
         private final Map<Event, MovableBranch> eventBranchMap = new HashMap<>();
 
-        public ThreadReordering(Thread t) {
-            this.thread = t;
+        public FunctionReordering(Function f) {
+            this.function = f;
         }
 
         private void computeBranchDecomposition() {
-            final Event exit = thread.getExit();
+            final Event exit = function.getExit();
 
             MovableBranch curBranch = new MovableBranch();
             branches.add(curBranch);
             int id = 1;
-            Event e = thread.getEntry();
+            Event e = function.getEntry();
             while (e != null) {
                 curBranch.events.add(e);
                 eventBranchMap.put(e, curBranch);
@@ -118,13 +111,19 @@ public class BranchReordering implements ProgramProcessor {
                 if (e.equals(exit)) {
                     break;
                 }
-                if (e instanceof CondJump && ((CondJump) e).isGoto()) {
+                if (isAlwaysBranching(e)) {
                     curBranch = new MovableBranch();
                     curBranch.id = id++;
                     branches.add(curBranch);
                 }
                 e = e.getSuccessor();
             }
+        }
+
+        private boolean isAlwaysBranching(Event e) {
+            return e instanceof Return
+                    || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue()
+                    || e instanceof CondJump jump && jump.isGoto();
         }
 
         private List<MovableBranch> computeReordering(final List<MovableBranch> movables) {
@@ -141,8 +140,7 @@ public class BranchReordering implements ProgramProcessor {
             }
             for (MovableBranch branch : movables) {
                 for (Event e : branch.events) {
-                    if (e instanceof CondJump) {
-                        final CondJump jump = (CondJump) e;
+                    if (e instanceof CondJump jump) {
                         final MovableBranch targetBranch = eventBranchMap.get(jump.getLabel());
                         if (targetBranch != startBranch && successorMap.containsKey(targetBranch)) {
                             successorMap.get(branch).add(targetBranch);
@@ -168,17 +166,30 @@ public class BranchReordering implements ProgramProcessor {
         public void run() {
             computeBranchDecomposition();
             final List<MovableBranch> branches = this.branches;
-            // Reorder branches but keep the last branch fixed.
-            final List<MovableBranch> reordering = computeReordering(branches.subList(0, branches.size() - 1));
-            reordering.add(branches.get(branches.size() - 1));
-            final Iterable<Event> reorderedEvents = reordering.stream().flatMap(x -> x.events.stream())::iterator;
+            final List<MovableBranch> reordering;
+            if (this.function instanceof Thread) {
+                // Reorder branches but keep the last branch fixed for threads.
+                reordering = computeReordering(branches.subList(0, branches.size() - 1));
+                reordering.add(branches.get(branches.size() - 1));
+            } else {
+                reordering = computeReordering(branches);
+            }
+            final List<Event> reorderedEvents = reordering.stream().flatMap(x -> x.events.stream()).toList();
+            assert reorderedEvents.get(0) == function.getEntry();
+            if (this.function instanceof Thread) {
+                assert function.getExit() == reorderedEvents.get(reorderedEvents.size() - 1);
+            }
 
             Event pred = null;
             for (Event next : reorderedEvents) {
                 next.setPredecessor(pred);
+                if (pred != null) {
+                    pred.setSuccessor(next);
+                }
                 pred = next;
             }
-            assert pred == thread.getExit();
+            pred.setSuccessor(null);
+            this.function.updateExit(pred);
         }
     }
 }

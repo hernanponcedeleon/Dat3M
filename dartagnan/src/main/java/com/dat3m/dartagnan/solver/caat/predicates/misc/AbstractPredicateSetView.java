@@ -30,8 +30,8 @@ public abstract class AbstractPredicateSetView<T extends Derivable> implements S
     @Override
     public boolean contains(Object o) {
         CAATPredicate pred = getPredicate();
-        if (o instanceof Derivable) {
-            return pred.contains((Derivable) o);
+        if (o instanceof Derivable der) {
+            return pred.contains(der);
         }
         return false;
     }

@@ -1,48 +1,34 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigInteger;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class IfExpr extends IExpr {
 
-	private final BExpr guard;
-	private final IExpr tbranch;
-	private final IExpr fbranch;
+	private final Expression guard;
+	private final Expression tbranch;
+	private final Expression fbranch;
 	
-	public IfExpr(BExpr guard, IExpr tbranch, IExpr fbranch) {
-    	Preconditions.checkArgument(tbranch.getPrecision() == fbranch.getPrecision(), 
-    			"The type of " + tbranch + " and " + fbranch + " does not match");
+	public IfExpr(Expression guard, Expression tbranch, Expression fbranch) {
+		super(checkIntegerType(tbranch));
+		checkArgument(guard.getType() instanceof BooleanType, "IfThenElse with non-boolean guard %s.", guard);
+        checkArgument(tbranch.getType().equals(fbranch.getType()),
+                "IfThenElse with mismatching branches %s and %s.", tbranch, fbranch);
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
 	}
 
-	@Override
-	public Formula toIntFormula(Event e, FormulaManager m) {
-		return m.getBooleanFormulaManager().ifThenElse(
-				guard.toBoolFormula(e, m), tbranch.toIntFormula(e, m), fbranch.toIntFormula(e, m));
-	}
-
-	@Override
-	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-		return m.getBooleanFormulaManager().ifThenElse(
-				guard.toBoolFormula(e, m), tbranch.toBoolFormula(e, m), fbranch.toBoolFormula(e, m));
-	}
-
-	@Override
-	public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
-		return guard.getBoolValue(e, model, m) ? tbranch.getIntValue(e, model, m) : fbranch.getIntValue(e, model, m);
-	}
-
-	@Override
-	public boolean getBoolValue(Event e, Model model, FormulaManager m) {
-		return guard.getBoolValue(e, model, m)? tbranch.getBoolValue(e, model, m) : fbranch.getBoolValue(e, model, m);
+	private static IntegerType checkIntegerType(Expression tbranch) {
+		if (tbranch.getType() instanceof IntegerType integerType) {
+			return integerType;
+		}
+		throw new IllegalArgumentException(String.format("IfThenElse with non-integer branch %s.", tbranch));
 	}
 
 	@Override
@@ -55,21 +41,16 @@ public class IfExpr extends IExpr {
         return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
     }
 
-	public BExpr getGuard() {
+	public Expression getGuard() {
 		return guard;
 	}
 
-	public IExpr getTrueBranch() {
+	public Expression getTrueBranch() {
 		return tbranch;
 	}
 
-	public IExpr getFalseBranch() {
+	public Expression getFalseBranch() {
 		return fbranch;
-	}
-
-	@Override
-	public int getPrecision() {
-		return tbranch.getPrecision();
 	}
 
 	@Override

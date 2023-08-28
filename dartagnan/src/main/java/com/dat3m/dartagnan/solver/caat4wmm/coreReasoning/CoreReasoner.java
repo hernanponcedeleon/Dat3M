@@ -49,8 +49,8 @@ public class CoreReasoner {
 
         List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
         for (CAATLiteral lit : baseReason.getLiterals()) {
-            if (lit instanceof ElementLiteral) {
-                Event e = domain.getObjectById(((ElementLiteral) lit).getElement().getId()).getEvent();
+            if (lit instanceof ElementLiteral elLit) {
+                Event e = domain.getObjectById(elLit.getElement().getId()).getEvent();
                 // We only have static tags, so all of them reduce to execution literals
                 coreReason.add(new ExecLiteral(e, lit.isNegative()));
             } else {
@@ -103,10 +103,10 @@ public class CoreReasoner {
         // Their execution variable can only be removed if it is contained in some
         // RelLiteral but not if it gets cf-implied!
         reason.removeIf( lit -> {
-            if (!(lit instanceof ExecLiteral) || lit.isNegative()) {
+            if (!(lit instanceof ExecLiteral execLit) || lit.isNegative()) {
                 return false;
             }
-            Event ev = ((ExecLiteral) lit).getData();
+            Event ev = execLit.getData();
             return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
                     .anyMatch(e -> exec.isImplied(e.getData().getFirst(), ev)

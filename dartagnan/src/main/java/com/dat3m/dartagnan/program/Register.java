@@ -1,114 +1,106 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.LastValueInterface;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigInteger;
+import java.util.Objects;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sosy_lab.java_smt.api.FormulaType.IntegerType;
-import static org.sosy_lab.java_smt.api.FormulaType.getBitvectorTypeWithSize;
 
-public class Register extends IExpr implements LastValueInterface {
+public class Register implements Expression {
 
-	public static final int NO_THREAD = -1;
+    private final String name;
+    private String cVar;
+    private final Function function;
+    private final Type type;
 
-	private final String name;
-	private String cVar;
-    private final int threadId;
+    public Register(String name, Function func, Type type) {
+        this.name = checkNotNull(name);
+        this.function = func;
+        this.type = checkNotNull(type);
+    }
 
-    private final int precision;
-
-	public Register(String name, int threadId, int precision) {
-		this.name = name;
-		this.threadId = threadId;
-		this.precision = precision;
-	}
-	
-	public String getName() {
-		return name;
-	}
-
-	public String getCVar() {
-		return cVar;
-	}
-
-	public void setCVar(String name) {
-		this.cVar = name;
-	}
-
-	public int getThreadId(){
-		return threadId;
-	}
-
-	@Override
-	public String toString() {
+    public String getName() {
         return name;
-	}
+    }
+
+    public String getCVar() {
+        return cVar;
+    }
+
+    public void setCVar(String name) {
+        this.cVar = name;
+    }
+
+    public Function getFunction() {
+        return function;
+    }
 
     @Override
-    public int hashCode(){
-        return name.hashCode() + threadId;
+    public Type getType() {
+        return type;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode() + Objects.hashCode(function);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
-			return true;
-		} else if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
+            return true;
+        } else if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
 
         Register rObj = (Register) obj;
-        return name.equals(rObj.name) && threadId == rObj.threadId;
+        return name.equals(rObj.name) && function == rObj.function;
     }
 
-	@Override
-	public Formula toIntFormula(Event e, FormulaManager m) {
-		String name = getName() + "(" + e.getGlobalId() + ")";
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return m.makeVariable(type, name);
-	}
-
-	public Formula toIntFormulaResult(Event e, FormulaManager m) {
-		String name = getName() + "(" + e.getGlobalId() + "_result)";
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return m.makeVariable(type, name);
-	}
-
-	@Override
-	public ImmutableSet<Register> getRegs() {
-		return ImmutableSet.of(this);
-	}
-
-	@Override
-	public Formula getLastValueExpr(FormulaManager m) {
-		String name = getName() + "_" + threadId + "_final";
-		FormulaType<?> type = precision > 0 ? getBitvectorTypeWithSize(precision) : IntegerType;
-		return m.makeVariable(type, name);
-	}
-
-	@Override
-	public BigInteger getIntValue(Event e, Model model, FormulaManager m) {
-		return new BigInteger(checkNotNull(model.evaluate(toIntFormula(e, m))).toString());
-	}
-
-	@Override
-	public <T> T visit(ExpressionVisitor<T> visitor) {
-		return visitor.visit(this);
-	}
-
-	@Override
-	public int getPrecision() {
-    	return precision;
+    @Override
+    public ImmutableSet<Register> getRegs() {
+        return ImmutableSet.of(this);
     }
 
-	@Override
-	public IExpr getBase() {
-    	return this;
+    @Override
+    public <T> T visit(ExpressionVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    // ============================== Static utility =============================
+
+    public static Set<Read> collectRegisterReads(Expression expr, Register.UsageType usageType, Set<Read> collector) {
+        expr.getRegs().stream().map(r -> new Register.Read(r, usageType)).forEach(collector::add);
+        return collector;
+    }
+
+    // ==========================================================================
+    // ==========================================================================
+    // ============================== Inner classes =============================
+    // ==========================================================================
+    // ==========================================================================
+
+    public enum UsageType {
+        CTRL, DATA, ADDR, // The register value is used to determine control, data, or address.
+        OTHER;            // The register value is used for a different purpose.
+    }
+
+    /*
+        Describes for what purpose a register was read.
+    */
+    public record Read(Register register, UsageType usageType) {
+        @Override
+        public String toString() {
+            return String.format("RegRead[%s, %s]", register, usageType);
+        }
     }
 }

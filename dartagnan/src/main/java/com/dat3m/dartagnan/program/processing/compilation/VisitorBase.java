@@ -1,203 +1,167 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag.C11;
-import com.dat3m.dartagnan.program.event.arch.lisa.RMW;
-import com.dat3m.dartagnan.program.event.arch.tso.Xchg;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.rmw.*;
-import com.dat3m.dartagnan.program.event.lang.catomic.AtomicAbstract;
+import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
+import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
+import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
-import com.dat3m.dartagnan.program.event.lang.llvm.*;
-import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
+import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
+import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.base.Preconditions;
 
 import java.util.Collections;
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.COpBin.NEQ;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
-import static com.dat3m.dartagnan.program.event.Tag.RMW;
 
 class VisitorBase implements EventVisitor<List<Event>> {
 
-	protected boolean forceStart;
+    protected final TypeFactory types = TypeFactory.getInstance();
+    protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-	protected VisitorBase(boolean forceStart) {
-		this.forceStart = forceStart;
-	}
-	
-	@Override
-	public List<Event> visitEvent(Event e) {
-		return Collections.singletonList(e);
-	};
+    protected Function funcToBeCompiled;
 
-	@Override
-	public List<Event> visitCondJump(CondJump e) {
-    	Preconditions.checkState(e.getSuccessor() != null, "Malformed CondJump event");
-		return visitEvent(e);
-	};
+    protected VisitorBase() { }
 
-	@Override
-	public List<Event> visitStart(Start e) {
-        Register resultRegister = e.getResultRegister();
-        Register statusRegister = e.getThread().newRegister(resultRegister.getPrecision());
-
-        return eventSequence(
-                forceStart ? newExecutionStatus(statusRegister, e.getCreationEvent()) : null,
-                forceStart ? newAssume(new BExprBin(resultRegister, BOpBin.OR, statusRegister)) : null
-        );
-	}
-	
-	@Override
-	public List<Event> visitInitLock(InitLock e) {
-		return eventSequence(
-                newStore(e.getAddress(), e.getMemValue(), e.getMo())
-        );
-	}
-
-	@Override
-    public List<Event> visitLock(Lock e) {
-        Register resultRegister = e.getResultRegister();
-		String mo = e.getMo();
-		
-		List<Event> events = eventSequence(
-                newLoad(resultRegister, e.getAddress(), mo),
-                newJump(new Atom(resultRegister, NEQ, IValue.ZERO), (Label) e.getThread().getExit()),
-                newStore(e.getAddress(), IValue.ONE, mo)
-        );
-        
-		for(Event child : events) {
-            child.addFilters(C11.LOCK, RMW);
+    protected Event newTerminator(Expression guard) {
+        if (funcToBeCompiled instanceof Thread thread) {
+            return newJump(guard, (Label)thread.getExit());
+        } else {
+            return newAbortIf(guard);
         }
-        
-		return events;
     }
-    
+
     @Override
-	public List<Event> visitUnlock(Unlock e) {
-        Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-		
-		List<Event> events = eventSequence(
-                newLoad(resultRegister, address, mo),
-                newJump(new Atom(resultRegister, NEQ, IValue.ONE), (Label) e.getThread().getExit()),
-                newStore(address, IValue.ZERO, mo)
+    public List<Event> visitEvent(Event e) {
+        return Collections.singletonList(e);
+    }
+
+    @Override
+    public List<Event> visitInitLock(InitLock e) {
+        return eventSequence(
+                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
         );
-        
-		for(Event child : events) {
-            child.addFilters(C11.LOCK, RMW);
-        }
-        
-		return events;
-	}
+    }
 
-	@Override
-	public List<Event> visitStoreExclusive(StoreExclusive e) {
-		throw error(e);
+    @Override
+    public List<Event> visitLock(Lock e) {
+        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
+        Register dummy = e.getFunction().newRegister(type);
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
+        String mo = e.getMo();
 
-	};
+        Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
+        return eventSequence(
+                rmwLoad,
+                newTerminator(expressions.makeNEQ(dummy, zero)),
+                newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
+        );
+    }
 
-	@Override
-	public List<Event> visitRMWAbstract(RMWAbstract e) {
-		throw error(e);
+    @Override
+    public List<Event> visitUnlock(Unlock e) {
+        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
+        Register dummy = e.getFunction().newRegister(type);
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
+        Expression address = e.getAddress();
+        String mo = e.getMo();
 
-	};
+        Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
+        return eventSequence(
+                rmwLoad,
+                newTerminator(expressions.makeNEQ(dummy, one)),
+                newRMWStoreWithMo(rmwLoad, address, zero, mo)
+        );
+    }
 
-	@Override
-	public List<Event> visitRMWAddUnless(RMWAddUnless e) {
-		throw error(e);
+    @Override
+    public List<Event> visitStoreExclusive(StoreExclusive e) {
+        throw error(e);
+    }
 
-	};
+    @Override
+    public List<Event> visitLKMMAddUnless(LKMMAddUnless e) {
+        throw error(e);
+    }
 
-	@Override
-	public List<Event> visitRMWCmpXchg(RMWCmpXchg e) {
-		throw error(e);
+    @Override
+    public List<Event> visitLKMMCmpXchg(LKMMCmpXchg e) {
+        throw error(e);
+    }
 
-	};
+    @Override
+    public List<Event> visitLKMMFetchOp(LKMMFetchOp e) {
+        throw error(e);
+    }
 
-	@Override
-	public List<Event> visitRMWFetchOp(RMWFetchOp e) {
-		throw error(e);
+    @Override
+    public List<Event> visitLKMMOpNoReturn(LKMMOpNoReturn e) {
+        throw error(e);
+    }
 
-	};
+    @Override
+    public List<Event> visitLKMMOpAndTest(LKMMOpAndTest e) {
+        throw error(e);
+    }
 
-	@Override
-	public List<Event> visitRMWOp(RMWOp e) {
-		throw error(e);
+    @Override
+    public List<Event> visitLKMMOpReturn(LKMMOpReturn e) {
+        throw error(e);
+    }
 
-	};
+    @Override
+    public List<Event> visitLKMMXchg(LKMMXchg e) {
+        throw error(e);
+    }
 
-	@Override
-	public List<Event> visitRMWOpAndTest(RMWOpAndTest e) {
-		throw error(e);
+    @Override
+    public List<Event> visitTSOXchg(TSOXchg e) {
+        throw error(e);
+    }
 
-	};
-
-	@Override
-	public List<Event> visitRMWOpReturn(RMWOpReturn e) {
-		throw error(e);
-
-	};
-
-	@Override
-	public List<Event> visitRMWXchg(RMWXchg e) {
-		throw error(e);
-
-	};
-
-	@Override
-	public List<Event> visitXchg(Xchg e) {
-		throw error(e);
-
-	}
-
-	@Override
-	public List<Event> visitRMW(RMW e) {
+    @Override
+    public List<Event> visitLISARMW(LISARMW e) {
         Register resultRegister = e.getResultRegister();
-		IExpr address = e.getAddress();
-		String mo = e.getMo();
-        Register dummyReg = e.getThread().newRegister(resultRegister.getPrecision());
-		Load load = newRMWLoad(dummyReg, address, mo);
-        RMWStore store = newRMWStore(load, address, e.getMemValue(), mo);
-		return eventSequence(
-        		load,
+        Expression address = e.getAddress();
+        String mo = e.getMo();
+        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
+        Load load = newRMWLoadWithMo(dummyReg, address, mo);
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
+        return eventSequence(
+                load,
                 store,
                 newLocal(resultRegister, dummyReg)
         );
-	}
-	
-	@Override
-	public List<Event> visitAtomicAbstract(AtomicAbstract e) {
-		throw error(e);
+    }
 
-	}
+    @Override
+    public List<Event> visitLlvmLoad(LlvmLoad e) {
+        throw error(e);
+    }
 
-	// LLVM Events
-	@Override
-	public List<Event> visitLlvmAbstract(LlvmAbstractRMW e) {
-		throw error(e);
+    @Override
+    public List<Event> visitLlvmStore(LlvmStore e) {
+        throw error(e);
+    }
 
-	}
+    private IllegalArgumentException error(Event e) {
+        return new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() +
+                " is not supported by " + getClass().getSimpleName());
+    }
 
-	@Override
-	public List<Event> visitLlvmLoad(LlvmLoad e) {
-		throw error(e);
-
-	}
-
-	@Override
-	public List<Event> visitLlvmStore(LlvmStore e) {
-		throw error(e);
-	}
-
-	private IllegalArgumentException error(Event e) {
-		return new IllegalArgumentException("Compilation for " + e.getClass().getSimpleName() + 
-				" is not supported by " + getClass().getSimpleName());
-	}
-	
 }

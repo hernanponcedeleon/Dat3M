@@ -2,31 +2,24 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
 
 public class Atom extends BExpr {
 	
-	private final ExprInterface lhs;
-	private final ExprInterface rhs;
+	private final Expression lhs;
+	private final Expression rhs;
 	private final COpBin op;
 	
-	public Atom (ExprInterface lhs, COpBin op, ExprInterface rhs) {
+	public Atom(BooleanType type, Expression lhs, COpBin op, Expression rhs) {
+		super(type);
 		this.lhs = lhs;
 		this.rhs = rhs;
 		this.op = op;
 	}
 
-    @Override
-	public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-		return op.encode(lhs.toIntFormula(e, m), rhs.toIntFormula(e, m), m);
-	}
-
-    @Override
+	@Override
 	public ImmutableSet<Register> getRegs() {
 		return new ImmutableSet.Builder<Register>().addAll(lhs.getRegs()).addAll(rhs.getRegs()).build();
 	}
@@ -35,21 +28,16 @@ public class Atom extends BExpr {
     public String toString() {
         return lhs + " " + op + " " + rhs;
     }
-    
-    @Override
-	public boolean getBoolValue(Event e, Model model, FormulaManager m) {
-		return op.combine(lhs.getIntValue(e, model, m), rhs.getIntValue(e, model, m));
-	}
-    
-    public COpBin getOp() {
+
+	public COpBin getOp() {
     	return op;
     }
     
-    public ExprInterface getLHS() {
+    public Expression getLHS() {
     	return lhs;
     }
     
-    public ExprInterface getRHS() {
+    public Expression getRHS() {
     	return rhs;
     }
 

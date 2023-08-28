@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm;
 
-import com.dat3m.dartagnan.program.filter.FilterAbstract;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.CAATModel;
 import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
@@ -57,7 +57,7 @@ public class ExecutionGraph {
     private final VerificationTask verificationTask;
     private final RelationAnalysis ra;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
-    private final BiMap<FilterAbstract, SetPredicate> filterSetMap;
+    private final BiMap<Filter, SetPredicate> filterSetMap;
     private final BiMap<Axiom, Constraint> constraintMap;
     private final Set<Relation> cutRelations;
 
@@ -298,7 +298,7 @@ public class ExecutionGraph {
         return graph;
     }
 
-    private SetPredicate getOrCreateSetFromFilter(FilterAbstract filter) {
+    private SetPredicate getOrCreateSetFromFilter(Filter filter) {
         if (filterSetMap.containsKey(filter)) {
             return filterSetMap.get(filter);
         }

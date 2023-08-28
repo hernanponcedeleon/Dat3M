@@ -1,22 +1,37 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.LastValueInterface;
-import org.sosy_lab.java_smt.api.*;
+import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
-public class Location implements LastValueInterface {
+public class Location extends IExpr {
 
 	private final String name;
 	private final MemoryObject base;
 	private final int offset;
 
 	public Location(String name, MemoryObject b, int o) {
+		super(TypeFactory.getInstance().getArchType());
 		this.name = name;
 		base = b;
 		offset = o;
 	}
-	
+
 	public String getName() {
 		return name;
+	}
+
+	public MemoryObject getMemoryObject() {
+		return base;
+	}
+
+	public int getOffset() {
+		return offset;
+	}
+
+	@Override
+	public <T> T visit(ExpressionVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	@Override
@@ -38,10 +53,5 @@ public class Location implements LastValueInterface {
 		}
 		Location o = (Location)obj;
 		return base.equals(o.base) && offset == o.offset;
-	}
-
-	@Override
-	public Formula getLastValueExpr(FormulaManager m) {
-		return base.getLastMemValueExpr(m, offset);
 	}
 }

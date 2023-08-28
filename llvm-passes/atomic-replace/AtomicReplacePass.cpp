@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022. Huawei Technologies Co., Ltd.
+ * Copyright (C) 2022-2023. Huawei Technologies Co., Ltd.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the MIT License.
@@ -45,15 +45,12 @@ private:
     }
   };
 
-  Function *my_load_atomic_4;
-  Function *my_load_atomic_8;
-  Function *my_store_atomic_4;
-  Function *my_store_atomic_8;
-  Function *my_cmpxchg_atomic_4;
-  Function *my_cmpxchg_atomic_8;
-  Function *my_rmw_atomic_4;
-  Function *my_rmw_atomic_8;
+  std::map<int, Function *> my_load_atomic_fun;
+  std::map<int, Function *> my_store_atomic_fun;
+  std::map<int, Function *> my_cmpxchg_atomic_fun;
+  std::map<int, Function *> my_rmw_atomic_fun;
   Function *my_fence_atomic;
+
   std::map<AtomicOrdering, Constant *, compareAtomicOrdering> my_ordering_constants;
   std::map<AtomicRMWInst::BinOp, Constant *> my_rmw_operation_constants;
 
@@ -63,51 +60,50 @@ private:
     return Function::Create(ft, Function::ExternalLinkage, name, M);
   }
 
+  void validate_size(int size) {
+    assert((size == 1 || size == 2 || size == 4 || size == 8) && "unsupported type size");
+  }
+
   std::string my_atomics_name_suffix(int size) {
-    switch (size) {
-      case 0:
-        return "";
-      case 4:
-        return "32";
-      case 8:
-        return "64";
-      default:
-        assert(0 && "unsupported type size");
+    if (size == 0) {
+      return "";
+    } else {
+      validate_size(size);
+      return std::to_string(8*size);
     }
-    return "";
   }
 
   std::string my_atomics_name(const std::string &op, int size = 0) {
     return std::string("__llvm_atomic") + my_atomics_name_suffix(size) + "_" + op;
   }
 
-  void createDeclarations(Module &M) {
-    LLVMContext &ctx      = M.getContext();
-    const auto i32_ty     = Type::getInt32Ty(ctx);
-    const auto i32_ptr_ty = Type::getInt32PtrTy(ctx);
-    const auto i64_ty     = Type::getInt64Ty(ctx);
-    const auto i64_ptr_ty = Type::getInt64PtrTy(ctx);
-    const auto i1_ty      = Type::getInt1Ty(ctx);
-    const auto void_ty    = Type::getVoidTy(ctx);
+  void createDeclarationsSize(Module &M, int size) {
+    LLVMContext &ctx   = M.getContext();
+    const auto ty      = Type::getIntNTy(ctx, 8*size);
+    const auto ptr_ty  = Type::getIntNPtrTy(ctx, 8*size);
+    const auto i32_ty  = Type::getInt32Ty(ctx);
+    const auto i1_ty   = Type::getInt1Ty(ctx);
+    const auto void_ty = Type::getVoidTy(ctx);
 
-    my_load_atomic_4 = createDeclaration(M, my_atomics_name("load", 4),
-        i32_ty, {i32_ptr_ty, i32_ty});
-    my_load_atomic_8 = createDeclaration(M, my_atomics_name("load", 8),
-        i64_ty, {i64_ptr_ty, i32_ty});
-    my_store_atomic_4 = createDeclaration(M, my_atomics_name("store", 4),
-        void_ty, {i32_ptr_ty, i32_ty, i32_ty});
-    my_store_atomic_8 = createDeclaration(M, my_atomics_name("store", 8),
-        void_ty, {i64_ptr_ty, i64_ty, i32_ty});
-    my_cmpxchg_atomic_4 = createDeclaration(M, my_atomics_name("cmpxchg", 4),
-        StructType::get(ctx, {i32_ty, i1_ty}),
-        {i32_ptr_ty, i32_ty, i32_ty, i32_ty, i32_ty});
-    my_cmpxchg_atomic_8 = createDeclaration(M, my_atomics_name("cmpxchg", 8),
-        StructType::get(ctx, {i64_ty, i1_ty}),
-        {i64_ptr_ty, i64_ty, i64_ty, i32_ty, i32_ty});
-    my_rmw_atomic_4 = createDeclaration(M, my_atomics_name("rmw", 4),
-        i32_ty, {i32_ptr_ty, i32_ty, i32_ty, i32_ty});
-    my_rmw_atomic_8 = createDeclaration(M, my_atomics_name("rmw", 8),
-        i64_ty, {i64_ptr_ty, i64_ty, i32_ty, i32_ty});
+    my_load_atomic_fun[size] = createDeclaration(M, my_atomics_name("load", size),
+        ty, {ptr_ty, i32_ty});
+    my_store_atomic_fun[size] = createDeclaration(M, my_atomics_name("store", size),
+        void_ty, {ptr_ty, ty, i32_ty});
+    my_cmpxchg_atomic_fun[size] = createDeclaration(M, my_atomics_name("cmpxchg", size),
+        StructType::get(ctx, {ty, i1_ty}), {ptr_ty, ty, ty, i32_ty, i32_ty});
+    my_rmw_atomic_fun[size] = createDeclaration(M, my_atomics_name("rmw", size),
+        ty, {ptr_ty, ty, i32_ty, i32_ty});
+  }
+
+  void createDeclarations(Module &M) {
+    LLVMContext &ctx   = M.getContext();
+    const auto i32_ty  = Type::getInt32Ty(ctx);
+    const auto void_ty = Type::getVoidTy(ctx);
+
+    createDeclarationsSize(M, 1);
+    createDeclarationsSize(M, 2);
+    createDeclarationsSize(M, 4);
+    createDeclarationsSize(M, 8);
 
     my_fence_atomic = createDeclaration(M, my_atomics_name("fence"),
         void_ty, {i32_ty});
@@ -163,17 +159,11 @@ private:
     return order != AtomicOrdering::NotAtomic;
   }
 
-  Function *get_my_atomic(Module &M, Type *ty, Function *my_atomic_4,
-                          Function *my_atomic_8) {
+  Function *get_my_atomic(Module &M, Type *ty, std::map<int, Function *>& my_atomic_fun) {
     const DataLayout &DL = M.getDataLayout();
-    auto size            = DL.getTypeStoreSize(ty);
-    if (size == 4)
-      return my_atomic_4;
-    else if (size == 8)
-      return my_atomic_8;
-    else
-      assert(0 && "unsupported type size");
-    return NULL;
+    int size             = DL.getTypeStoreSize(ty);
+    validate_size(size);
+    return my_atomic_fun[size];
   }
 
   void visitLoadInst(LoadInst *loadInst, Module &M, IRBuilder<> &builder) {
@@ -181,7 +171,7 @@ private:
       auto c = my_ordering_constants[loadInst->getOrdering()];
 
       Function *my_load_atomic = get_my_atomic(M, loadInst->getType(),
-          my_load_atomic_4, my_load_atomic_8);
+          my_load_atomic_fun);
 
       insertCallInstruction(builder, loadInst, my_load_atomic,
           {loadInst->getPointerOperand(), c});
@@ -194,7 +184,7 @@ private:
 
       Function *my_store_atomic = get_my_atomic(M,
           storeInst->getValueOperand()->getType(),
-          my_store_atomic_4, my_store_atomic_8);
+          my_store_atomic_fun);
 
       insertCallInstruction(builder, storeInst, my_store_atomic,
           {storeInst->getPointerOperand(), storeInst->getValueOperand(), c});
@@ -208,7 +198,7 @@ private:
 
     Function *my_cmpxchg_atomic = get_my_atomic(M,
         cmpxchgInst->getCompareOperand()->getType(),
-        my_cmpxchg_atomic_4, my_cmpxchg_atomic_8);
+        my_cmpxchg_atomic_fun);
 
     insertCallInstruction(builder, cmpxchgInst, my_cmpxchg_atomic,
         {cmpxchgInst->getPointerOperand(), cmpxchgInst->getCompareOperand(),
@@ -220,7 +210,7 @@ private:
 
     Function *my_rmw_atomic = get_my_atomic(M,
         rmwInst->getValOperand()->getType(),
-        my_rmw_atomic_4, my_rmw_atomic_8);
+        my_rmw_atomic_fun);
 
     insertCallInstruction(builder, rmwInst, my_rmw_atomic,
         {rmwInst->getPointerOperand(), rmwInst->getValOperand(), c,

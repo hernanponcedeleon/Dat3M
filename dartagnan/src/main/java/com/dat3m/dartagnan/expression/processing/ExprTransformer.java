@@ -1,68 +1,85 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-public abstract class ExprTransformer implements ExpressionVisitor<ExprInterface> {
+public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
+
+    protected final TypeFactory types = TypeFactory.getInstance();
+    protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Override
-    public ExprInterface visit(Atom atom) {
-        return new Atom(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
+    public Expression visit(Atom atom) {
+        return expressions.makeBinary(atom.getLHS().visit(this), atom.getOp(), atom.getRHS().visit(this));
     }
 
     @Override
-    public BExpr visit(BConst bConst) {
+    public Expression visit(BConst bConst) {
         return bConst;
     }
 
     @Override
-    public BExpr visit(BExprBin bBin) {
-        return new BExprBin(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
+    public Expression visit(BExprBin bBin) {
+        return expressions.makeBinary(bBin.getLHS().visit(this), bBin.getOp(), bBin.getRHS().visit(this));
     }
 
     @Override
-    public BExpr visit(BExprUn bUn) {
-        return new BExprUn(bUn.getOp(), bUn.getInner().visit(this));
+    public Expression visit(BExprUn bUn) {
+        return expressions.makeUnary(bUn.getOp(), bUn.getInner().visit(this));
     }
 
     @Override
-    public BExpr visit(BNonDet bNonDet) {
+    public Expression visit(BNonDet bNonDet) {
         return bNonDet;
     }
 
     @Override
-    public IValue visit(IValue iValue) {
+    public Expression visit(IValue iValue) {
         return iValue;
     }
 
     @Override
-    public IExpr visit(IExprBin iBin) {
-        return new IExprBin((IExpr) iBin.getLHS().visit(this), iBin.getOp(), (IExpr) iBin.getRHS().visit(this));
+    public Expression visit(IExprBin iBin) {
+        return expressions.makeBinary(iBin.getLHS().visit(this), iBin.getOp(), iBin.getRHS().visit(this));
     }
 
     @Override
-    public IExpr visit(IExprUn iUn) {
-        return new IExprUn(iUn.getOp(), (IExpr) iUn.getInner().visit(this));
+    public Expression visit(IExprUn iUn) {
+        return expressions.makeUnary(iUn.getOp(), iUn.getInner().visit(this), iUn.getType());
     }
 
     @Override
-    public ExprInterface visit(IfExpr ifExpr) {
-        return new IfExpr((BExpr)ifExpr.getGuard().visit(this), (IExpr)ifExpr.getTrueBranch().visit(this), (IExpr)ifExpr.getFalseBranch().visit(this));
+    public Expression visit(IfExpr ifExpr) {
+        return expressions.makeConditional(
+                ifExpr.getGuard().visit(this),
+                ifExpr.getTrueBranch().visit(this),
+                ifExpr.getFalseBranch().visit(this));
     }
 
     @Override
-    public IExpr visit(INonDet iNonDet) {
+    public Expression visit(INonDet iNonDet) {
         return iNonDet;
     }
 
     @Override
-    public ExprInterface visit(Register reg) {
+    public Expression visit(Register reg) {
         return reg;
     }
 
     @Override
-    public ExprInterface visit(MemoryObject address) {
+    public Expression visit(MemoryObject address) {
         return address;
     }
+
+    @Override
+    public Expression visit(Location location) {
+        return location;
+    }
+
+    @Override
+    public Expression visit(Function function) { return function; }
 }

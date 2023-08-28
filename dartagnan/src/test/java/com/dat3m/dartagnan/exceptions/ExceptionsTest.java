@@ -1,63 +1,49 @@
 package com.dat3m.dartagnan.exceptions;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.processing.BranchReordering;
-import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.java_smt.api.ProverEnvironment;
-import org.sosy_lab.java_smt.api.SolverContext;
-import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
-
-import static com.dat3m.dartagnan.utils.TestHelper.createContext;
+import java.math.BigInteger;
 
 public class ExceptionsTest {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
     @Test(expected = MalformedProgramException.class)
     public void noThread() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        // Thread 1 does not exists
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        // Thread 1 does not exist
         pb.addChild(1, new Skip());
     }
 
     @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Thread t = pb.build().getThreads().get(0);
-        t.newRegister("r1", -1);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        Thread t = pb.newThread(0);
+        t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
-        t.newRegister("r1", -1);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void reorderAfterUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
-        Program p = pb.build();
-        LoopUnrolling.newInstance().run(p);
-        // Reordering cannot be called after unrolling
-        BranchReordering.newInstance().run(p);
+        t.newRegister("r1", types.getIntegerType());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void analyzeBeforeUnrollException() throws Exception {
-        ProgramBuilder pb = new ProgramBuilder(SourceLanguage.LITMUS);
-        pb.initThread(0);
+        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        pb.newThread(0);
         Program p = pb.build();
         Configuration config = Configuration.defaultConfiguration();
         // The program must be unrolled before being able to construct an Encoder for it
@@ -67,32 +53,14 @@ public class ExceptionsTest {
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() throws Exception {
         // Both arguments should have same precision
-        new IExprBin(new Register("a", 0, 32), IOpBin.PLUS, new Register("b", 0, 64));
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void noModelBNonDet() throws Exception {
-        try (SolverContext ctx = createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-            prover.isUnsat();
-            BNonDet nonDet = new BNonDet(32);
-            nonDet.getBoolValue(null, prover.getModel(), ctx.getFormulaManager());
-        }
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void noModelINonDet() throws Exception {
-        try (SolverContext ctx = createContext();
-             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-            prover.isUnsat();
-            INonDet nonDet = new INonDet(INonDetTypes.INT, 32);
-            nonDet.getIntValue(null, prover.getModel(), ctx.getFormulaManager());
-        }
+        Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
+        Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
+        ExpressionFactory.getInstance().makeADD(a, b);
     }
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() throws Exception {
-        EventFactory.newJump(BConst.FALSE, null);
+        EventFactory.newJump(ExpressionFactory.getInstance().makeFalse(), null);
     }
 
     @Test(expected = NullPointerException.class)

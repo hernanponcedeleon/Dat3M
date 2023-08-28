@@ -2,40 +2,33 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.BOpBin;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
 
 public class BExprBin extends BExpr {
 
-    private final ExprInterface b1;
-    private final ExprInterface b2;
+    private final Expression b1;
+    private final Expression b2;
     private final BOpBin op;
 
-    public BExprBin(ExprInterface b1, BOpBin op, ExprInterface b2) {
+    public BExprBin(BooleanType type, Expression b1, BOpBin op, Expression b2) {
+        super(type);
         this.b1 = b1;
         this.b2 = b2;
         this.op = op;
     }
 
-    public ExprInterface getLHS() {
+    public Expression getLHS() {
     	return b1;
     }
     
-    public ExprInterface getRHS() {
+    public Expression getRHS() {
     	return b2;
     }
     
     public BOpBin getOp() {
     	return op;
-    }
-
-    @Override
-    public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-        return op.encode(b1.toBoolFormula(e, m), b2.toBoolFormula(e, m), m);
     }
 
     @Override
@@ -46,11 +39,6 @@ public class BExprBin extends BExpr {
     @Override
     public String toString() {
         return "(" + b1 + " " + op + " " + b2 + ")";
-    }
-
-    @Override
-    public boolean getBoolValue(Event e, Model model, FormulaManager m) {
-        return op.combine(b1.getBoolValue(e, model, m), b2.getBoolValue(e, model, m));
     }
 
     @Override

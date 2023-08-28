@@ -41,7 +41,7 @@ public interface SetPredicate extends CAATPredicate {
 
     @Override
     default Element get(Derivable value) {
-        return (value instanceof Element) ? get((Element)value) : null;
+        return (value instanceof Element elem) ? get(elem) : null;
     }
     @Override
     default Stream<Element> valueStream() { return elementStream(); }

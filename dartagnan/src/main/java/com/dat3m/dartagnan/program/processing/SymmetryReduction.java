@@ -12,7 +12,6 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 /**
@@ -49,17 +48,17 @@ public class SymmetryReduction implements ProgramProcessor {
 
         for (EquivalenceClass<Thread> c : symmClasses) {
             Thread rep = c.getRepresentative();
-            if (rep.getEvents().stream().noneMatch(x -> x.is(Tag.ASSERTION))) {
+            if (rep.getEvents().stream().noneMatch(x -> x.hasTag(Tag.ASSERTION))) {
                 continue;
             }
 
             rep.setName(rep.getName() + "__symm_unique");
 
-            for (Thread t : c.stream().filter(x -> x != rep).collect(Collectors.toList())) {
+            for (Thread t : c.stream().filter(x -> x != rep).toList()) {
                 for (Event e : t.getEvents()) {
-                    if (e.is(Tag.ASSERTION)) {
-                        e.getSuccessor().delete();
-                        e.delete();
+                    if (e.hasTag(Tag.ASSERTION)) {
+                        e.getSuccessor().tryDelete();
+                        e.tryDelete();
                     }
                 }
             }

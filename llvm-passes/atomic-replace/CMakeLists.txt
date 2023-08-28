@@ -18,7 +18,6 @@ else()
 endif()
 
 add_library(atomic-replace MODULE AtomicReplacePass.cpp)
-target_link_libraries(atomic-replace "$<$<PLATFORM_ID:Darwin>:-undefined dynamic_lookup>")
 target_compile_options(atomic-replace PUBLIC -Wall -Werror)
 install(TARGETS atomic-replace DESTINATION lib)
 

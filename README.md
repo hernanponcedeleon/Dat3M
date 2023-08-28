@@ -13,7 +13,7 @@ Requirements
 * [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
-* [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library
+* [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library (only to verify C programs)
 * [Graphviz](https://graphviz.org) (only if option `--witness.graphviz=true` is used)
 
 Installation
@@ -41,11 +41,11 @@ export DAT3M_HOME=<Dat3M's root>
 export DAT3M_OUTPUT=$DAT3M_HOME/output
 ```
 
-At least the following compiler flag needs to be set, further can be added  
+At least the following compiler flag needs to be set, further can be added (only to verify C programs)
 ```
 export CFLAGS="-I$DAT3M_HOME/include"
 export SMACK_FLAGS="-q -t --no-memory-splitting"
-export ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -simplifycfg -gvn"
+export ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"
 ```
 
 If you are verifying C code, be sure both `clang` and `smack` are in your `PATH`.
@@ -72,7 +72,7 @@ Usage
 Dartagnan comes with a user interface (not available from the docker container) where it is easy to import, export and modify both the program and the memory model and select the options for the verification engine (see below).
 You can start the user interface by running
 ```
-java -jar ui/target/ui-3.1.1.jar
+java -jar ui/target/ui.jar
 ```
 <p align="center"> 
 <img src="ui/src/main/resources/ui.jpg">
@@ -88,9 +88,9 @@ There are three possible results for the verification:
 You can also run Dartagnan from the console:
 
 ```
-java -jar dartagnan/target/dartagnan-3.1.1.jar <CAT file> [--target=<arch>] <program file> [options]
+java -jar dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
-For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. It must be one of the following: 
+For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
 - c11
 - lkmm
 - imm
@@ -98,8 +98,9 @@ For programs written in `.c` and `.bpl`, value `<arch>` specifies the programmin
 - power
 - arm8
 - riscv
+- ptx
 
-Program written in `.litmus` format do not require such option. The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
+The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 
 Further options can be specified using `--<option>=<value>`. Common options include:
 - `bound`: unrolling bound for the BMC (default is 1).
@@ -118,6 +119,7 @@ Authors and Contact
 
 * [Thomas Haas](https://www.tcs.cs.tu-bs.de/group/haas/home.html)
 * [René Pascal Maseli](https://www.tcs.cs.tu-bs.de/group/maseli/home.html)
+* [Haining Tong](https://researchportal.helsinki.fi/fi/persons/haining-tong)
 
 **Former Developers:**
 
@@ -139,3 +141,5 @@ References
 [5] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: Leveraging Compiler Optimizations and the Price of Precision (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2021.pdf). TACAS 2021.
 
 [6] Hernán Ponce de León, Thomas Haas, Roland Meyer: [**Dartagnan: SMT-based Violation Witness Validation (Competition Contribution)**](https://hernanponcedeleon.github.io/pdfs/svcomp2022.pdf). TACAS 2022.
+
+[7] Thomas Haas, Roland Meyer, Hernán Ponce de León: [**CAAT: Consistency as a Theory**](https://hernanponcedeleon.github.io/pdfs/oopsla2022.pdf). OOSPLA 2022.

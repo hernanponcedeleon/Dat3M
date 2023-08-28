@@ -119,7 +119,7 @@ public abstract class AbstractCompilationTest {
 
     @Test
     public void testIncremental() throws Exception {
-    	if(task1Provider.get().getProgram().getEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
+    	if(task1Provider.get().getProgram().getThreadEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
             IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
             if(!s1.hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
@@ -137,6 +137,6 @@ public abstract class AbstractCompilationTest {
         return Stream.of(
                 Tag.Linux.RCU_LOCK, Tag.Linux.RCU_UNLOCK, Tag.Linux.RCU_SYNC,
                 Tag.Linux.SRCU_LOCK, Tag.Linux.SRCU_UNLOCK, Tag.Linux.SRCU_SYNC)
-                .anyMatch(e::is);
+                .anyMatch(e::hasTag);
     }
 }

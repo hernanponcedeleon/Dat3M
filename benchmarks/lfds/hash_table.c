@@ -46,10 +46,10 @@ int main()
     init();
 
     for (int i = 0; i < PAIRS; i++)
-        pthread_create(&t[i], 0, thread_1, (void *)i);
+        pthread_create(&t[i], 0, thread_1, (void *)(size_t)i);
 
     for (int i = 0; i < PAIRS; i++)
-        pthread_create(&t[PAIRS + i], 0, thread_2, (void *)i);
+        pthread_create(&t[PAIRS + i], 0, thread_2, (void *)(size_t)i);
 
     for (int i = 0; i < NTHREADS; i++)
         pthread_join(t[i], 0);

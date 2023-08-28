@@ -1,15 +1,14 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReaderData;
+import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.google.common.collect.Lists;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -20,9 +19,7 @@ import java.util.Set;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
-public class DeadAssignmentElimination implements ProgramProcessor {
-
-    private static final Logger logger = LogManager.getLogger(DeadAssignmentElimination.class);
+public class DeadAssignmentElimination implements FunctionProcessor {
 
     private DeadAssignmentElimination() { }
 
@@ -35,65 +32,43 @@ public class DeadAssignmentElimination implements ProgramProcessor {
     }
 
     @Override
-    public void run(Program program) {
-        logger.info("#Events before DSE: " + program.getEvents().size());
-
-        for (Thread t : program.getThreads()) {
-            eliminateDeadAssignments(program, t);
-        }
-        logger.info("#Events after DSE: " + program.getEvents().size());
+    public void run(Function function) {
+        eliminateDeadAssignments(function);
     }
 
-    private void eliminateDeadAssignments(Program program, Thread thread) {
+    private void eliminateDeadAssignments(Function function) {
+        final Program program = function.getProgram();
         Set<Register> usedRegs = new HashSet<>();
         if(program.getSpecification() != null) {
+            usedRegs.addAll(program.getSpecification().getRegs());
             // for litmus tests
             if (program.getFilterSpecification() != null) {
                 usedRegs.addAll(program.getFilterSpecification().getRegs());
             }
-            usedRegs.addAll(program.getSpecification().getRegs());
         }
-        // Registers that are used by assertions or other threads cannot be removed
-        final List<Event> programEvents = program.getEvents();
-        programEvents.stream()
-                .filter(e -> e.is(ASSERTION))
-                .filter(RegWriter.class::isInstance).map(RegWriter.class::cast)
-                .map(RegWriter::getResultRegister)
-                .forEach(usedRegs::add);
-        programEvents.stream()
-                .filter(e -> !e.getThread().equals(thread))
-                .filter(RegReaderData.class::isInstance).map(RegReaderData.class::cast)
-                .forEach(e -> usedRegs.addAll(e.getDataRegs()));
-        programEvents.stream()
-                .filter(e -> !e.getThread().equals(thread))
-                .filter(MemEvent.class::isInstance).map(MemEvent.class::cast)
-                .forEach(e -> usedRegs.addAll(e.getAddress().getRegs()));
-
 
         // Compute events to be removed (removal is delayed)
-        final List<Event> threadEvents = thread.getEvents();
+        final List<Event> funcEvents = function.getEvents();
         final Set<Event> toBeRemoved = new HashSet<>();
-        for(Event e : Lists.reverse(threadEvents)) {
-            if (e instanceof RegWriter && !e.is(NOOPT) && !e.is(VISIBLE) && !usedRegs.contains(((RegWriter)e).getResultRegister())) {
-                // TODO (TH): Can we also remove loads to unused registers here?
-                // Invisible RegWriters that write to an unused reg can get removed
+        for(Event e : Lists.reverse(funcEvents)) {
+            if (e instanceof RegWriter regWriter && !usedRegs.contains(regWriter.getResultRegister()) &&
+                    !e.hasTag(NOOPT) && isSideEffectFree(regWriter)) {
+                // Unused RegWriters that have no side effects are removable.
                 toBeRemoved.add(e);
-            } else {
+            } else if (e instanceof RegReader regReader) {
                 // An event that was not removed adds its dependencies to the used registers
-                if (e instanceof RegReaderData) {
-                    // Data & Ctrl dependencies
-                    usedRegs.addAll(((RegReaderData) e).getDataRegs());
-                }
-                if (e instanceof MemEvent) {
-                    // Address dependencies
-                    usedRegs.addAll(((MemEvent) e).getAddress().getRegs());
-                }
+                regReader.getRegisterReads().stream().map(Register.Read::register).forEach(usedRegs::add);
             }
         }
 
         // Here is the actual removal
-        threadEvents.stream()
+        funcEvents.stream()
                 .filter(toBeRemoved::contains)
-                .forEach(Event::delete);
+                .forEach(Event::tryDelete);
+    }
+
+    private boolean isSideEffectFree(Event event) {
+        return !event.hasTag(ASSERTION) &&
+                !event.hasTag(VISIBLE) && (event instanceof Local || event instanceof Malloc);
     }
 }

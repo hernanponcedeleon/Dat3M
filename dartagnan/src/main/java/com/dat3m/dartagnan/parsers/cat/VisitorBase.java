@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.exception.MalformedMemoryModelException;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.CatBaseVisitor;
 import com.dat3m.dartagnan.parsers.CatParser.*;
-import com.dat3m.dartagnan.program.filter.*;
+import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -77,12 +77,10 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Void visitLetDefinition(LetDefinitionContext ctx) {
         String name = ctx.n.getText();
         Object definedPredicate = ctx.e.accept(this);
-        if (definedPredicate instanceof Relation) {
-            Relation rel = (Relation)definedPredicate;
+        if (definedPredicate instanceof Relation rel) {
             String alias = createUniqueName(name);
             wmm.addAlias(alias, rel);
-        } else if (definedPredicate instanceof FilterAbstract) {
-            FilterAbstract filter = (FilterAbstract) definedPredicate;
+        } else if (definedPredicate instanceof Filter filter) {
             String alias = createUniqueName(name);
             // NOTE: The support for re-defined filters is limited:
             // The Wmm will recognize all aliases, but the filter itself has a single name,
@@ -148,7 +146,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Object visitExprBasic(ExprBasicContext ctx) {
         String name = ctx.n.getText();
         Object predicate = namespace.computeIfAbsent(name,
-                k -> wmm.containsRelation(k) ? wmm.getRelation(k) : FilterBasic.get(k));
+                k -> wmm.containsRelation(k) ? wmm.getRelation(k) : Filter.byTag(k));
         return predicate;
     }
 
@@ -161,7 +159,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
             Relation r0 = defRel.orElseGet(wmm::newRelation);
             return addDefinition(new Intersection(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
-        return FilterIntersection.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
+        return Filter.intersection(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
 
     @Override
@@ -173,7 +171,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
             Relation r0 = wmm.newRelation();
             return addDefinition(new Difference(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
-        return FilterMinus.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
+        return Filter.difference(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
 
     @Override
@@ -185,21 +183,21 @@ class VisitorBase extends CatBaseVisitor<Object> {
             Relation r0 = defRel.orElseGet(wmm::newRelation);
             return addDefinition(new Union(r0, (Relation) o1, parseAsRelation(o2, c)));
         }
-        return FilterUnion.get(parseAsFilter(o1, c), parseAsFilter(o2, c));
+        return Filter.union(parseAsFilter(o1, c), parseAsFilter(o2, c));
     }
 
     @Override
     public Object visitExprComplement(ExprComplementContext c) {
         checkNoRecursion(c);
         Object o1 = c.e.accept(this);
-        FilterBasic visible = FilterBasic.get(VISIBLE);
+        Filter visible = Filter.byTag(VISIBLE);
         if (o1 instanceof Relation) {
             Relation r0 = wmm.newRelation();
             Relation all = wmm.newRelation();
             Relation r1 = wmm.addDefinition(new CartesianProduct(all, visible, visible));
             return addDefinition(new Difference(r0, r1, (Relation) o1));
         }
-        return FilterMinus.get(visible, parseAsFilter(o1, c));
+        return Filter.difference(visible, parseAsFilter(o1, c));
     }
 
     @Override
@@ -264,7 +262,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Relation visitExprIdentity(ExprIdentityContext c) {
         checkNoRecursion(c);
         Relation r0 = wmm.newRelation();
-        FilterAbstract s1 = parseAsFilter(c.e);
+        Filter s1 = parseAsFilter(c.e);
         return addDefinition(new Identity(r0, s1));
     }
 
@@ -272,8 +270,8 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Relation visitExprCartesian(ExprCartesianContext c) {
         checkNoRecursion(c);
         Relation r0 = wmm.newRelation();
-        FilterAbstract s1 = parseAsFilter(c.e1);
-        FilterAbstract s2 = parseAsFilter(c.e2);
+        Filter s1 = parseAsFilter(c.e1);
+        Filter s2 = parseAsFilter(c.e2);
         return addDefinition(new CartesianProduct(r0, s1, s2));
     }
 
@@ -281,7 +279,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Relation visitExprFencerel(ExprFencerelContext ctx) {
         checkNoRecursion(ctx);
         Relation r0 = wmm.newRelation();
-        FilterAbstract s1 = parseAsFilter(ctx.e);
+        Filter s1 = parseAsFilter(ctx.e);
         return addDefinition(new Fences(r0, s1));
     }
 
@@ -324,19 +322,19 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     private Relation parseAsRelation(Object o, ExpressionContext t) {
-        if (o instanceof Relation) {
-            return (Relation) o;
+        if (o instanceof Relation relation) {
+            return relation;
         }
         throw new ParsingException("Expected relation, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }
 
-    private FilterAbstract parseAsFilter(ExpressionContext t) {
+    private Filter parseAsFilter(ExpressionContext t) {
         return parseAsFilter(t.accept(this), t);
     }
 
-    private static FilterAbstract parseAsFilter(Object o, ExpressionContext t) {
-        if (o instanceof FilterAbstract) {
-            return (FilterAbstract) o;
+    private static Filter parseAsFilter(Object o, ExpressionContext t) {
+        if (o instanceof Filter filter) {
+            return filter;
         }
         throw new ParsingException("Expected set, got " + o.getClass().getSimpleName() + " " + o + " from expression " + t.getText());
     }

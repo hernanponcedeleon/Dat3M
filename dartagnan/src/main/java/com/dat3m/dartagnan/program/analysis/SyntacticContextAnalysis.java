@@ -3,8 +3,9 @@ package com.dat3m.dartagnan.program.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
@@ -65,15 +66,15 @@ public class SyntacticContextAnalysis {
     }
 
     public static class CallContext implements Context {
-        private final FunCall funCall;
+        private final FunCallMarker funCallMarker;
 
-        private CallContext(FunCall funCall) { this.funCall = funCall; }
+        private CallContext(FunCallMarker funCallMarker) { this.funCallMarker = funCallMarker; }
 
-        public FunCall getFunctionCall() { return this.funCall; }
+        public FunCallMarker getFunctionCall() { return this.funCallMarker; }
 
         @Override
         public String toString() {
-            return String.format("%s %s", funCall.getFunctionName(), getSourceLocationString(funCall));
+            return String.format("%s %s", funCallMarker.getFunctionName(), getSourceLocationString(funCallMarker));
         }
     }
 
@@ -160,9 +161,9 @@ public class SyntacticContextAnalysis {
             infoMap.put(ev, new Info(ev, copyOfCurContextStack));
             // TODO: The above could be made more efficient by sharing unchanged context
 
-            if (ev instanceof FunCall) {
-                curContextStack.push(new CallContext((FunCall) ev));
-            } else if (ev instanceof FunRet) {
+            if (ev instanceof FunCallMarker fc) {
+                curContextStack.push(new CallContext(fc));
+            } else if (ev instanceof FunReturnMarker) {
                 assert curContextStack.peek() instanceof CallContext;
                 curContextStack.pop();
             }
@@ -188,8 +189,8 @@ public class SyntacticContextAnalysis {
 
     private Map<Event, LoopMarkerTypes> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
         final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = new HashMap<>();
-        for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfThread(thread)) {
-            final List<LoopAnalysis.LoopIterationInfo> iterations = loop.getIterations();
+        for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfFunction(thread)) {
+            final List<LoopAnalysis.LoopIterationInfo> iterations = loop.iterations();
 
             loopMarkerTypesMap.put(iterations.get(0).getIterationStart(), LoopMarkerTypes.START);
             iterations.subList(1, iterations.size())
@@ -205,7 +206,8 @@ public class SyntacticContextAnalysis {
     // ============================================================================
 
     public static String getSourceLocationString(Event ev) {
-        return ev.hasCLine() ? String.format("@%s#%s", ev.getSourceCodeFileName(), ev.getCLine()) : "@unknown";
+        SourceLocation loc = ev.getMetadata(SourceLocation.class);
+        return loc != null ? String.format("@%s#%s", loc.getSourceCodeFileName(), loc.lineNumber()) : "@unknown";
     }
 
     public static <T extends Context> String makeContextString(Iterable<T> contextStack, String separator) {

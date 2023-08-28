@@ -38,7 +38,7 @@ public interface RelationGraph extends CAATPredicate {
 
     @Override
     default Edge get(Derivable value) {
-        return (value instanceof Edge) ? get((Edge)value) : null;
+        return (value instanceof Edge edge) ? get(edge) : null;
     }
     @Override
     default Stream<Edge> valueStream() { return edgeStream(); }

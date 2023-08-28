@@ -1,8 +1,7 @@
 package com.dat3m.dartagnan.program.event.core.rmw;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.ExprInterface;
-import com.dat3m.dartagnan.expression.IExpr;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -11,27 +10,39 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class RMWStoreExclusive extends Store {
 
-    public RMWStoreExclusive(IExpr address, ExprInterface value, String mo, boolean strong) {
-        super(address, value, mo);
-        addFilters(Tag.EXCL, Tag.RMW);
-        if (strong) {
-            addFilters(Tag.STRONG);
+    private final boolean isStrong;
+    private final boolean requiresMatchingAddresses;
+
+    public RMWStoreExclusive(Expression address, Expression value,
+                             boolean isStrong, boolean requiresMatchingAddresses) {
+        super(address, value);
+        addTags(Tag.EXCL, Tag.RMW);
+        this.isStrong = isStrong;
+        this.requiresMatchingAddresses = requiresMatchingAddresses;
+        if (isStrong) {
+            addTags(Tag.STRONG);
         }
     }
 
     protected RMWStoreExclusive(RMWStoreExclusive other) {
         super(other);
+        this.isStrong = other.isStrong;
+        this.requiresMatchingAddresses = other.requiresMatchingAddresses;
     }
+
+    public boolean isStrong() { return this.isStrong; }
+    public boolean doesRequireMatchingAddresses() { return this. requiresMatchingAddresses; }
 
     @Override
     public boolean cfImpliesExec() {
-        return is(Tag.STRONG); // Strong RMWs always succeed
+        return isStrong; // Strong RMWs always succeed
     }
 
     @Override
-    public String toString() {
-        String tag = is(Tag.STRONG) ? " strong" : "";
-        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", super.toString()) + "# opt" + tag;
+    public String defaultString() {
+        String tag = isStrong ? " strong" : "";
+        tag += requiresMatchingAddresses ? " addrmatch" : "";
+        return String.format("%1$-" + Event.PRINT_PAD_EXTRA + "s", "excl " + super.defaultString()) + "# opt" + tag;
     }
 
     @Override
@@ -39,16 +50,10 @@ public class RMWStoreExclusive extends Store {
         return ctx.getBooleanFormulaManager().implication(ctx.execution(this), ctx.controlFlow(this));
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
-
     @Override
     public RMWStoreExclusive getCopy(){
         return new RMWStoreExclusive(this);
     }
-
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

@@ -1,4 +1,6 @@
 #include <stdatomic.h>
+#include <assert.h>
+#include <stdlib.h>
 
 #ifdef FAIL
 #define CAS(ptr, expected, desired) (atomic_compare_exchange_strong_explicit(ptr, expected, desired, __ATOMIC_RELAXED, __ATOMIC_RELAXED))

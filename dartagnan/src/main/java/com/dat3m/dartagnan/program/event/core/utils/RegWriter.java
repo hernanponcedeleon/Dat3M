@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.program.event.core.utils;
 
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.core.Event;
 
-public interface RegWriter {
+public interface RegWriter extends Event {
 
     Register getResultRegister();
+    void setResultRegister(Register reg);
 }

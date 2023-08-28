@@ -1,57 +1,107 @@
 package com.dat3m.dartagnan.program.event.lang.catomic;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.MemoryAccess;
+import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.common.SingleAccessMemoryEvent;
+import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.google.common.base.Preconditions;
 
-import static com.dat3m.dartagnan.program.event.Tag.STRONG;
+import java.util.Set;
 
-public class AtomicCmpXchg extends AtomicAbstract {
+import static com.dat3m.dartagnan.program.Register.UsageType.ADDR;
+import static com.dat3m.dartagnan.program.Register.UsageType.DATA;
 
-    private IExpr expectedAddr;
 
-    public AtomicCmpXchg(Register register, IExpr address, IExpr expectedAddr, IExpr value, String mo, boolean strong) {
-        super(address, register, value, mo);
+// TODO: Add mo-on-failure
+// NOTE: We do not inherit from RMWCmpXchgBase because it defines a "expected value" but a C11 CAS
+// defines a "expected address".
+public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter {
+
+    private Register resultRegister;
+    private Expression expectedAddr;
+    private Expression storeValue;
+    private boolean isStrong;
+
+    public AtomicCmpXchg(Register register, Expression address, Expression expectedAddr, Expression value, String mo, boolean isStrong) {
+        super(address, register.getType(), mo);
+        Preconditions.checkArgument(!mo.isEmpty(), "Atomic events cannot have empty memory order");
+        this.resultRegister = register;
         this.expectedAddr = expectedAddr;
-        if(strong) {
-        	addFilters(STRONG);
-        }
+        this.storeValue = value;
+        this.isStrong = isStrong;
+        addTags(Tag.WRITE, Tag.READ, Tag.RMW);
     }
 
-    private AtomicCmpXchg(AtomicCmpXchg other){
+    private AtomicCmpXchg(AtomicCmpXchg other) {
         super(other);
+        this.resultRegister = other.resultRegister;
         this.expectedAddr = other.expectedAddr;
+        this.storeValue = other.storeValue;
+        this.isStrong = other.isStrong;
     }
 
-    //TODO: Override getDataRegs???
+    public Expression getStoreValue() { return storeValue; }
 
-    public IExpr getExpectedAddr() {
-    	return expectedAddr;
-    }
-    
-    public void setExpectedAddr(IExpr expectedAddr) {
-    	this.expectedAddr = expectedAddr;
-    }
-    
-    @Override
-    public String toString() {
-        return resultRegister + " = atomic_compare_exchange" + (is(STRONG) ? "_strong" : "_weak") + 
-            "(*" + address + ", " + expectedAddr + ", " + value + ", " + mo + ")\t### C11";
+    public boolean isStrong() {
+        return this.isStrong;
     }
 
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
+    public boolean isWeak() {
+        return !this.isStrong;
+    }
+
+    public Expression getAddressOfExpected() {
+        return expectedAddr;
+    }
 
     @Override
-    public AtomicCmpXchg getCopy(){
+    public Register getResultRegister() {
+        return resultRegister;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.resultRegister = reg;
+    }
+
+    @Override
+    public Set<Register.Read> getRegisterReads() {
+        return  Register.collectRegisterReads(storeValue, DATA,
+                Register.collectRegisterReads(expectedAddr, ADDR, // note the address dependency here
+                        super.getRegisterReads()));
+    }
+
+    @Override
+    public MemoryAccess getMemoryAccess() {
+        return new MemoryAccess(address, accessType, MemoryAccess.Mode.RMW);
+    }
+
+    @Override
+    public String defaultString() {
+        final String strongSuffix = isStrong ? "strong" : "weak";
+        return String.format("%s := atomic_compare_exchange_%s(*%s, %s, %s, %s)\t### C11",
+                resultRegister, strongSuffix, address, expectedAddr, storeValue, mo);
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        super.transformExpressions(exprTransformer);
+        this.storeValue = storeValue.visit(exprTransformer);
+        this.expectedAddr = expectedAddr.visit(exprTransformer);
+    }
+
+    @Override
+    public AtomicCmpXchg getCopy() {
         return new AtomicCmpXchg(this);
     }
 
-	// Visitor
-	// -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAtomicCmpXchg(this);
+    }
 
-	@Override
-	public <T> T accept(EventVisitor<T> visitor) {
-		return visitor.visitAtomicCmpXchg(this);
-	}
 }

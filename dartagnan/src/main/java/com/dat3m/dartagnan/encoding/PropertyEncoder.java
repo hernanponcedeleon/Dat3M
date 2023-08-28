@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
@@ -8,6 +9,7 @@ import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -26,6 +28,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
@@ -88,8 +91,8 @@ public class PropertyEncoder implements Encoder {
     public BooleanFormula encodeBoundEventExec() {
         logger.info("Encoding bound events execution");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        return program.getEvents()
-                .stream().filter(e -> e.hasFilter(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
+        return program.getThreadEvents()
+                .stream().filter(e -> e.hasTag(Tag.BOUND)).map(context::execution).reduce(bmgr.makeFalse(), bmgr::or);
     }
 
     public BooleanFormula encodeProperties(EnumSet<Property> properties) {
@@ -97,7 +100,7 @@ public class PropertyEncoder implements Encoder {
         if (specType == Property.Type.MIXED) {
             final String error = String.format(
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
-                    "Cannot encode mixed properties into a single SMT-query.", properties);
+                            "Cannot encode mixed properties into a single SMT-query.", properties);
             throw new IllegalArgumentException(error);
         }
 
@@ -160,7 +163,7 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
         final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
-        final List<Init> initEvents = program.getEvents(Init.class);
+        final List<Init> initEvents = program.getThreadEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
@@ -172,11 +175,7 @@ public class PropertyEncoder implements Encoder {
         // ---- Construct encoding ----
         List<BooleanFormula> enc = new ArrayList<>();
         final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
-        for (Event writeEvent : program.getEvents()) {
-            if (!writeEvent.is(Tag.WRITE)) {
-                continue;
-            }
-            MemEvent w1 = (MemEvent) writeEvent;
+        for (Store w1 : program.getThreadEvents(Store.class)) {
             if (dominatedWrites.contains(w1)) {
                 enc.add(bmgr.not(lastCoVar(w1)));
                 continue;
@@ -195,17 +194,40 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
             enc.add(bmgr.equivalence(lastCoExpr, isLast));
-            if (doEncodeFinalAddressValues) {
+            if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
                 // ---- Encode final values of addresses ----
                 for (Init init : initEvents) {
                     if (!alias.mayAlias(w1, init)) {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    Formula v2 = init.getBase().getLastMemValueExpr(fmgr, init.getOffset());
+                    Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
+            }
+        }
+        if (doEncodeFinalAddressValues && !Arch.coIsTotal(program.getArch())) {
+            // Coherence is not guaranteed to be total in all models (e.g., PTX),
+            // but the final value of a location should always match that of some coLast event.
+            // lastCo(w) => (lastVal(w.address) = w.val)
+            //           \/ (exists w2 : lastCo(w2) /\ lastVal(w.address) = w2.val))
+            for (Init init : program.getThreadEvents(Init.class)) {
+                BooleanFormula lastValueEnc = bmgr.makeFalse();
+                BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
+                Formula v2 = ExpressionEncoder.getLastMemValueExpr(init.getBase(), init.getOffset(), fmgr);
+                BooleanFormula readFromInit = context.equal(context.value(init), v2);
+                for (Store w : program.getThreadEvents(Store.class)) {
+                    if (!alias.mayAlias(w, init)) {
+                        continue;
+                    }
+                    BooleanFormula isLast = lastCoVar(w);
+                    BooleanFormula sameAddr = context.sameAddress(init, w);
+                    BooleanFormula sameValue = context.equal(context.value(w), v2);
+                    lastValueEnc = bmgr.or(lastValueEnc, bmgr.and(isLast, sameAddr, sameValue));
+                    lastStoreExistsEnc = bmgr.or(lastStoreExistsEnc, bmgr.and(isLast, sameAddr));
+                }
+                enc.add(bmgr.ifThenElse(lastStoreExistsEnc, lastValueEnc, readFromInit));
             }
         }
         return bmgr.and(enc);
@@ -308,6 +330,11 @@ public class PropertyEncoder implements Encoder {
         final Program program = this.program;
         final AliasAnalysis alias = this.alias;
 
+        final Predicate<MemoryEvent> canRace = (m -> {
+            final MemoryOrder mo = m.getMetadata(MemoryOrder.class);
+            return mo == null || mo.value().equals(Tag.C11.NONATOMIC);
+        });
+
         BooleanFormula hasRace = bmgr.makeFalse();
         for(Thread t1 : program.getThreads()) {
             for(Thread t2 : program.getThreads()) {
@@ -315,19 +342,19 @@ public class PropertyEncoder implements Encoder {
                     continue;
                 }
                 for (Event e1 : t1.getEvents()) {
-                    if (!e1.hasFilter(Tag.WRITE) || e1.hasFilter(Tag.INIT)) {
+                    if (!e1.hasTag(Tag.WRITE) || e1.hasTag(Tag.INIT)) {
                         continue;
                     }
-                    MemEvent w = (MemEvent)e1;
-                    if (!w.canRace()) {
+                    MemoryCoreEvent w = (MemoryCoreEvent)e1;
+                    if (!canRace.test(w)) {
                         continue;
                     }
                     for(Event e2 : t2.getEvents()) {
-                        if (!e2.hasFilter(Tag.MEMORY) || e2.hasFilter(Tag.INIT)) {
+                        if (!e2.hasTag(Tag.MEMORY) || e2.hasTag(Tag.INIT)) {
                             continue;
                         }
-                        MemEvent m = (MemEvent)e2;
-                        if((w.hasFilter(Tag.RMW) && m.hasFilter(Tag.RMW)) || !m.canRace() || !alias.mayAlias(m, w)) {
+                        MemoryCoreEvent m = (MemoryCoreEvent)e2;
+                        if((w.hasTag(Tag.RMW) && m.hasTag(Tag.RMW)) || !canRace.test(m) || !alias.mayAlias(m, w)) {
                             continue;
                         }
 
@@ -411,7 +438,7 @@ public class PropertyEncoder implements Encoder {
                 final BooleanFormula isStuck = isStuckMap.get(thread);
                 final BooleanFormula isTerminatingNormally = thread
                         .getEvents().stream()
-                        .filter(e -> e.hasFilter(Tag.EARLYTERMINATION))
+                        .filter(e -> e.hasTag(Tag.EARLYTERMINATION))
                         .map(CondJump.class::cast)
                         .map(j -> bmgr.not(bmgr.and(context.execution(j), context.jumpCondition(j))))
                         .reduce(bmgr.makeTrue(), bmgr::and);
@@ -458,22 +485,22 @@ public class PropertyEncoder implements Encoder {
         }
 
         private List<SpinIteration> findSpinLoopsInThread(Thread thread, LoopAnalysis loopAnalysis) {
-            final List<LoopAnalysis.LoopInfo> loops = loopAnalysis.getLoopsOfThread(thread);
+            final List<LoopAnalysis.LoopInfo> loops = loopAnalysis.getLoopsOfFunction(thread);
             final List<SpinIteration> spinIterations = new ArrayList<>();
 
             for (LoopAnalysis.LoopInfo loop : loops) {
-                for (LoopAnalysis.LoopIterationInfo iter : loop.getIterations()) {
+                for (LoopAnalysis.LoopIterationInfo iter : loop.iterations()) {
                     final List<Event> iterBody = iter.computeBody();
                     final List<CondJump> spinningJumps = iterBody.stream()
-                            .filter(e -> e instanceof CondJump && e.is(Tag.SPINLOOP))
+                            .filter(e -> e instanceof CondJump && e.hasTag(Tag.SPINLOOP))
                             .map(CondJump.class::cast)
-                            .collect(Collectors.toList());
+                            .toList();
 
                     if (!spinningJumps.isEmpty()) {
                         final List<Load> loads = iterBody.stream()
                                 .filter(Load.class::isInstance)
                                 .map(Load.class::cast)
-                                .collect(Collectors.toList());
+                                .toList();
 
                         final SpinIteration spinIter = new SpinIteration();
                         spinIter.spinningJumps.addAll(spinningJumps);

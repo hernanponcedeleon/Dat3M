@@ -2,19 +2,17 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.op.BOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.google.common.collect.ImmutableSet;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.Model;
 
 public class BExprUn extends BExpr {
 
-    private final ExprInterface b;
+    private final Expression b;
     private final BOpUn op;
 
-    public BExprUn(BOpUn op, ExprInterface b) {
+    public BExprUn(BooleanType type, BOpUn op, Expression b) {
+        super(type);
         this.b = b;
         this.op = op;
     }
@@ -23,13 +21,8 @@ public class BExprUn extends BExpr {
         return op;
     }
 
-    public ExprInterface getInner() {
+    public Expression getInner() {
         return b;
-    }
-
-    @Override
-    public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-        return op.encode(b.toBoolFormula(e, m), m);
     }
 
     @Override
@@ -40,11 +33,6 @@ public class BExprUn extends BExpr {
     @Override
     public String toString() {
         return "(" + op + " " + b + ")";
-    }
-
-    @Override
-    public boolean getBoolValue(Event e, Model model, FormulaManager m) {
-        return op.combine(b.getBoolValue(e, model, m));
     }
 
     @Override

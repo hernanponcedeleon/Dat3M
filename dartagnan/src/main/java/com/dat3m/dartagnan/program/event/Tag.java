@@ -1,39 +1,40 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.program.event.core.Event;
+
+import java.util.Set;
+
+/*
+    Tags can be attached to any event.
+    There are two types of tags:
+        (1) Tags referencable from CAT
+        (2) Tags used only internally (prefixed with a double underscore "__");
+ */
 public final class Tag {
     private Tag() { }
 
-    public static final String ANY              = "_";
+    public static final String VISIBLE          = "_";
     public static final String INIT             = "IW";
     public static final String READ             = "R";
     public static final String WRITE            = "W";
     public static final String MEMORY           = "M";
     public static final String FENCE            = "F";
+    public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
     public static final String RMW              = "RMW";
-    public static final String EXCL             = "EXCL";
-    public static final String STRONG           = "STRONG";
-    // For SC events in RISCV and Power, addresses should match
-    public static final String MATCHADDRESS     = "MATCHADDRESS";
-    public static final String LOCAL            = "T";
-    public static final String LABEL            = "LB";
-    public static final String CMP              = "C";
-    public static final String IFI              = "IFI";    // Internal jump in Ifs to goto end
-    public static final String JUMP             = "J";
-    public static final String VISIBLE          = "V";
-    public static final String REG_WRITER       = "rW";
-    public static final String REG_READER       = "rR";
-    public static final String ASSERTION        = "ASS";
+
+    // ---------- Internally used tags (not referenced in CAT) ----------
+    public static final String EXCL             = "__EXCL";
+    public static final String ASSERTION        = "__ASS";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
-    public static final String BOUND            = "BOUND";
+    public static final String BOUND            = "__BOUND";
     // Marks jumps that somehow terminate a thread earlier than "normally"
     // This can be bound events, spinning events, assertion violations, etc.
-    public static final String EARLYTERMINATION = "EARLYTERMINATION";
+    public static final String EARLYTERMINATION = "__EARLYTERMINATION";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
-    public static final String SPINLOOP         = "SPINLOOP";
+    public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
-    public static final String NOOPT            = "NOOPT";
-    public static final String ANNOTATION       = "ANNOTATION";
-    public static final String STARTLOAD        = "STARTLOAD";
+    public static final String NOOPT            = "__NOOPT";
+    public static final String STARTLOAD        = "__STARTLOAD";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
@@ -117,15 +118,14 @@ public final class Tag {
         public static final String ATOMIC               = "A";
         public static final String NONATOMIC            = "NA";
 
-        public static final String PTHREAD              = "PTHREAD";
-        public static final String LOCK                 = "LOCK";
-
         public static final String MO_RELAXED           = "RLX";
         public static final String MO_CONSUME           = "CON";
         public static final String MO_ACQUIRE           = "ACQ";
         public static final String MO_RELEASE           = "REL";
         public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
         public static final String MO_SC                 = "SC";
+
+        public static final String PTHREAD              = "__PTHREAD";
 
         public static String intToMo(int i) {
             switch (i) {
@@ -160,6 +160,7 @@ public final class Tag {
         public static final String MO_MB                    = "Mb";
         public static final String MO_RMB                   = "Rmb";
         public static final String MO_WMB                   = "Wmb";
+        public static final String BARRIER                  = "Barrier";
         public static final String MO_RELAXED               = "Relaxed";
         public static final String MO_RELEASE               = "Release";
         public static final String MO_ACQUIRE               = "Acquire";
@@ -199,6 +200,7 @@ public final class Tag {
                 case 10:    return BEFORE_ATOMIC;
                 case 11:    return AFTER_ATOMIC;
                 case 12:    return AFTER_SPINLOCK;
+                case 13:    return BARRIER;
                 default:
                     throw new UnsupportedOperationException("The memory order is not recognized");
             }
@@ -223,7 +225,7 @@ public final class Tag {
     public static final class SVCOMP {
         private SVCOMP() { }
 
-        public static final String SVCOMPATOMIC = "A-SVCOMP";
+        public static final String SVCOMPATOMIC = "__A-SVCOMP";
     }
 
     // =============================================================================================
@@ -233,7 +235,7 @@ public final class Tag {
     public static final class Std {
         private Std() { }
 
-        public static final String MALLOC = "MALLOC";
+        public static final String MALLOC = "__MALLOC";
     }
 
     // =============================================================================================
@@ -243,7 +245,7 @@ public final class Tag {
     public static final class IMM {
         private IMM() { }
 
-        public static final String CASDEPORIGIN = "CASDEPORIGIN";
+        public static final String CASDEPORIGIN = "__CASDEPORIGIN";
 
         public static String extractStoreMo(String cMo) {
             switch (cMo) {
@@ -258,6 +260,70 @@ public final class Tag {
                 case C11.MO_ACQUIRE_RELEASE:    return C11.MO_ACQUIRE;
                 case C11.MO_RELEASE:            return C11.MO_RELAXED;
                 default:                        return cMo;
+            }
+        }
+    }
+
+    // =============================================================================================
+    // =========================================== PTX =============================================
+    // =============================================================================================
+    public static final class PTX {
+        // Scopes
+        public static final String CTA = "CTA";
+        public static final String GPU = "GPU";
+        public static final String SYS = "SYS";
+        // Memory orders
+        public static final String WEAK = "WEAK";
+        public static final String RLX = "RLX"; // RELAXED
+        public static final String ACQ = "ACQ"; // ACQUIRE
+        public static final String REL = "REL"; // RELEASE
+        public static final String ACQ_REL = "ACQ_REL";
+        public static final String SC = "SC";
+        // Proxies
+        public static final String GEN = "GEN"; // GENERIC
+        public static final String TEX = "TEX"; // TEXTURE
+        public static final String SUR = "SUR"; // SURFACE
+        public static final String CON = "CON"; // CONSTANT
+        // Virtual memory
+        public static final String ALIAS = "ALIAS";
+        private PTX() {
+        }
+
+        public static Set<String> getScopeTags() {
+            return Set.of(CTA, GPU, SYS);
+        }
+
+        public static Set<String> getProxyTags() {
+            return Set.of(GEN, TEX, SUR, CON);
+        }
+
+        public static String getScopeTag(Event e) {
+            return getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+        }
+    
+        public static String getProxyTag(Event e) {
+            return getProxyTags().stream().filter(e::hasTag).findFirst().orElse("");
+        }
+        
+        public static String loadMO(String mo) {
+            switch (mo) {
+                case ACQ_REL:
+                    return ACQ;
+                case RLX:
+                    return RLX;
+                default:
+                    return "";
+            }
+        }
+
+        public static String storeMO(String mo) {
+            switch (mo) {
+                case ACQ_REL:
+                    return REL;
+                case RLX:
+                    return RLX;
+                default:
+                    return "";
             }
         }
     }

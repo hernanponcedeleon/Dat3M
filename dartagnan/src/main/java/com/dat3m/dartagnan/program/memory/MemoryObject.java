@@ -1,21 +1,14 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IExpr;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.program.event.core.Event;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -28,6 +21,8 @@ public class MemoryObject extends IConst {
     private int size;
     BigInteger address;
     private String cVar;
+    private boolean isThreadLocal;
+
     // TODO
     // Right now we assume that either the whole object is atomic or it is not.
     // Generally, this is no necessarily true for structs, but right now we
@@ -39,13 +34,15 @@ public class MemoryObject extends IConst {
     private final HashMap<Integer, IConst> initialValues = new HashMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated) {
+        super(TypeFactory.getInstance().getArchType());
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
+        this.isThreadLocal = false;
 
         if (isStaticallyAllocated) {
             // Static allocations are default-initialized
-            initialValues.put(0, IValue.ZERO);
+            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
         }
     }
 
@@ -64,6 +61,9 @@ public class MemoryObject extends IConst {
     public BigInteger getAddress() { return this.address; }
     public void setAddress(BigInteger addr) { this.address = addr; }
 
+    public boolean isThreadLocal() { return this.isThreadLocal; }
+    public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
+
     /**
      * @return Number of fields in this array.
      */
@@ -77,7 +77,7 @@ public class MemoryObject extends IConst {
      */
     public IConst getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, IValue.ZERO);
+        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
     }
 
     /**
@@ -108,34 +108,6 @@ public class MemoryObject extends IConst {
         initialValues.put(offset, value);
     }
 
-    /**
-     * Expresses the address of a field of this array.
-     *
-     * @param offset Non-negative number of fields before the target field.
-     * @return Points to the target.
-     */
-    public IExpr add(int offset) {
-        checkArgument(0 <= offset && offset < size, "array index out of bounds");
-        return offset == 0 ? this : new IExprBin(this, PLUS, new IValue(BigInteger.valueOf(offset), getPrecision()));
-    }
-
-    /**
-     * Encodes the final state of a location.
-     *
-     * @param m      Builder of formulas.
-     * @param offset Non-negative number of fields before the target field.
-     * @return Variable associated with the value at the location after the execution ended.
-     */
-    public Formula getLastMemValueExpr(FormulaManager m, int offset) {
-        checkArgument(0 <= offset && offset < size, "array index out of bounds");
-        String name = String.format("last_val_at_memory_%d_%d", index, offset);
-        if (getArchPrecision() > -1) {
-            return m.getBitvectorFormulaManager().makeVariable(getArchPrecision(), name);
-        } else {
-            return m.getIntegerFormulaManager().makeVariable(name);
-        }
-    }
-
     public boolean isAtomic() {
         return atomic;
     }
@@ -146,16 +118,6 @@ public class MemoryObject extends IConst {
     @Override
     public BigInteger getValue() {
         return address != null ? address : BigInteger.valueOf(index);
-    }
-
-    @Override
-    public int getPrecision() {
-        return getArchPrecision();
-    }
-
-    @Override
-    public BooleanFormula toBoolFormula(Event e, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeTrue();
     }
 
     @Override

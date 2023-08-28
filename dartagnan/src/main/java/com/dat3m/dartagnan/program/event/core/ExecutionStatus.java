@@ -1,21 +1,21 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.*;
 
-import java.math.BigInteger;
 import java.util.Map;
+import java.util.Set;
 
-public class ExecutionStatus extends Event implements RegWriter {
+public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUser {
 
-    private final Register register;
+    private Register register;
     private Event event;
     private final boolean trackDep;
 
@@ -23,7 +23,8 @@ public class ExecutionStatus extends Event implements RegWriter {
         this.register = register;
         this.event = event;
         this.trackDep = trackDep;
-        addFilters(Tag.ANY, Tag.LOCAL, Tag.REG_WRITER);
+
+        this.event.registerUser(this);
     }
 
     protected ExecutionStatus(ExecutionStatus other) {
@@ -31,11 +32,18 @@ public class ExecutionStatus extends Event implements RegWriter {
         this.register = other.register;
         this.event = other.event;
         this.trackDep = other.trackDep;
+
+        this.event.registerUser(this);
     }
 
     @Override
     public Register getResultRegister() {
         return register;
+    }
+
+    @Override
+    public void setResultRegister(Register reg) {
+        this.register = reg;
     }
 
     public Event getStatusEvent() {
@@ -47,25 +55,40 @@ public class ExecutionStatus extends Event implements RegWriter {
     }
 
     @Override
-    public String toString() {
-        return register + " <- status(" + event.toString() + ")";
+    public String defaultString() {
+        return register + " <- not_exec(" + event + ")";
     }
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        FormulaManager fmgr = context.getFormulaManager();
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final FormulaManager fmgr = context.getFormulaManager();
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final Type type = register.getType();
+        final BooleanFormula eventExecuted = context.execution(event);
+        final Formula result = context.result(this);
 
-        int precision = register.getPrecision();
-        return bmgr.and(super.encodeExec(context),
-                bmgr.implication(context.execution(event),
-                        context.equalZero(context.result(this))),
-                bmgr.or(context.execution(event),
-                        context.equal(context.result(this), new IValue(BigInteger.ONE, precision).toIntFormula(this, fmgr))));
+        if (type instanceof IntegerType integerType) {
+            final Formula one;
+            if (integerType.isMathematical()) {
+                IntegerFormulaManager integerFormulaManager = fmgr.getIntegerFormulaManager();
+                one = integerFormulaManager.makeNumber(1);
+            } else {
+                BitvectorFormulaManager bitvectorFormulaManager = fmgr.getBitvectorFormulaManager();
+                int bitWidth = integerType.getBitWidth();
+                one = bitvectorFormulaManager.makeBitvector(bitWidth, 1);
+            }
+            return bmgr.and(super.encodeExec(context),
+                    bmgr.ifThenElse(eventExecuted, context.equalZero(result), context.equal(result, one))
+            );
+        } else if (type instanceof BooleanType) {
+            //TODO: We have "result == not exec(event)", because we use 0/false for executed events.
+            // The reason is that ExecutionStatus follows the behavior of Store-Conditionals on hardware.
+            // However, this is very counterintuitive and I think we should return 1/true on success and instead
+            // change the compilation of Store-Conditional to invert the value.
+            return bmgr.and(super.encodeExec(context), context.equal(result, bmgr.not(eventExecuted)));
+        }
+        throw new UnsupportedOperationException(String.format("Encoding ExecutionStatus on type %s.", type));
     }
-
-    // Unrolling
-    // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     public Event getCopy() {
@@ -74,14 +97,17 @@ public class ExecutionStatus extends Event implements RegWriter {
 
     @Override
     public void updateReferences(Map<Event, Event> updateMapping) {
-        this.event = updateMapping.getOrDefault(event, event);
+        this.event = EventUser.moveUserReference(this, this.event, updateMapping);
     }
 
-    // Visitor
-    // -----------------------------------------------------------------------------------------------------------------
+    @Override
+    public Set<Event> getReferencedEvents() {
+        return Set.of(event);
+    }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitExecutionStatus(this);
     }
+
 }

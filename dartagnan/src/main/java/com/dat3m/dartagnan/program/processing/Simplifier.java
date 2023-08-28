@@ -1,24 +1,18 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExpr;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.annotations.FunCall;
-import com.dat3m.dartagnan.program.event.core.annotations.FunRet;
-import com.google.common.base.Preconditions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
+import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-public class Simplifier implements ProgramProcessor {
-
-	private static final Logger logger = LogManager.getLogger(Simplifier.class);
+public class Simplifier implements FunctionProcessor {
 
     private Simplifier() { }
 
@@ -31,18 +25,14 @@ public class Simplifier implements ProgramProcessor {
     }
 
     @Override
-    public void run(Program program) {
-        Preconditions.checkArgument(!program.isUnrolled(), "Simplifying should be performed before unrolling.");
-
-        logger.info("pre-simplification: " + program.getEvents().size() + " events");
-        for (Thread thread : program.getThreads()) {
-            simplify(thread);
+    public void run(Function function) {
+        if (function.hasBody()) {
+            simplify(function);
         }
-        logger.info("post-simplification: " + program.getEvents().size() + " events");
     }
 
-    private void simplify(Thread t) {
-        Event cur = t.getEntry();
+    private void simplify(Function func) {
+        Event cur = func.getEntry();
         Event next;
         while ((next = cur.getSuccessor()) != null) {
             // Some simplifications are only applicable after others.
@@ -55,16 +45,16 @@ public class Simplifier implements ProgramProcessor {
     }
 
     private boolean simplifyEvent(Event next) {
-        if (next.is(Tag.NOOPT)) {
+        if (next.hasTag(Tag.NOOPT)) {
             return false;
         }
         boolean changed = false;
-        if (next instanceof CondJump) {
-            changed = simplifyJump((CondJump) next);
-        } else if (next instanceof Label) {
-            changed = simplifyLabel((Label) next);
-        } else if (next instanceof FunCall) {
-            changed = simplifyFunCall((FunCall) next);
+        if (next instanceof CondJump jump) {
+            changed = simplifyJump(jump);
+        } else if (next instanceof Label label) {
+            changed = simplifyLabel(label);
+        } else if (next instanceof FunCallMarker fc) {
+            changed = simplifyFunCallMarkers(fc);
         }
         return changed;
     }
@@ -72,33 +62,32 @@ public class Simplifier implements ProgramProcessor {
     private boolean simplifyJump(CondJump jump) {
         final Label jumpTarget = jump.getLabel();
         final Event successor = jump.getSuccessor();
-        final BExpr guard = jump.getGuard();
+        final Expression guard = jump.getGuard();
         if(jumpTarget.equals(successor) && guard instanceof BConst) {
-            jump.delete();
-            return true;
+            return jump.tryDelete();
         }
         return false;
     }
 
     private boolean simplifyLabel(Label label) {
-        if (label.getJumpSet().isEmpty() && label != label.getThread().getExit()) {
-            label.delete();
-            return true;
+        if (label.getJumpSet().isEmpty() && label != label.getFunction().getExit()) {
+            return label.tryDelete();
         }
         return false;
     }
 
-    private boolean simplifyFunCall(FunCall call) {
+    private boolean simplifyFunCallMarkers(FunCallMarker call) {
         // If simplifyEvent returns false, the function is either non-empty or we reached the return statement
         while (simplifyEvent(call.getSuccessor())) { }
 
         // Check if we reached the return statement
         final Event successor = call.getSuccessor();
-        if(successor instanceof FunRet && ((FunRet)successor).getFunctionName().equals(call.getFunctionName())) {
-            call.delete();
-            successor.delete();
+        if(successor instanceof FunReturnMarker funRet && funRet.getFunctionName().equals(call.getFunctionName())) {
+            call.tryDelete();
+            successor.tryDelete();
             return true;
         }
         return false;
     }
+
 }

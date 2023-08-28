@@ -15,6 +15,7 @@ public class OptionNames {
 	// Modeling Options
 	public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
 	public static final String ARCH_PRECISION = "modeling.precision";
+	public static final String RECURSION_BOUND = "modeling.recursionBound";
 
 	// Compilation Options
 	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
@@ -26,7 +27,6 @@ public class OptionNames {
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";//TODO also influences RA
 	public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
 	public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
-	public static final String PRECISION = "encoding.precision";
 	public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
 	public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
