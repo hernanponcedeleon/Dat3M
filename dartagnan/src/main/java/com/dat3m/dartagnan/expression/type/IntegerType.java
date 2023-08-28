@@ -46,6 +46,14 @@ public final class IntegerType implements Type {
         return value.signum() >= 0 ? value : BigInteger.TWO.pow(bitWidth).add(value);
     }
 
+    public BigInteger getMaximumValue(boolean signed) {
+        return BigInteger.ONE.shiftLeft(signed ? bitWidth - 1 : bitWidth).subtract(BigInteger.ONE);
+    }
+
+    public BigInteger getMinimumValue(boolean signed) {
+        return signed ? BigInteger.ONE.shiftLeft(bitWidth - 1).negate() : BigInteger.ZERO;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {

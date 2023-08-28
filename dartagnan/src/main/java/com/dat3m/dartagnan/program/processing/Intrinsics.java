@@ -172,8 +172,10 @@ public class Intrinsics {
                     false, false, true, false, this::inlineNonDet),
             // --------------------------- LLVM ---------------------------
             new Info("llvm.*",
-                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz",
-                            "llvm.ctpop", "llvm.assume"),
+                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
+                            "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
+                            "llvm.ctlz", "llvm.ctpop",
+                            "llvm.assume"),
                     false, false, true, true, this::handleLLVMIntrinsic),
             new Info("llvm.stack",
                     List.of("llvm.stacksave", "llvm.stackrestore"), // NOTE: These are just for allocation optimization
@@ -359,6 +361,10 @@ public class Intrinsics {
             return inlineLLVMCtlz(valueCall);
         } else if (name.startsWith("llvm.ctpop")) {
             return inlineLLVMCtpop(valueCall);
+        } else if (name.contains("add.sat")) {
+            return inlineLLVMSaturatedAdd(valueCall);
+        } else if (name.contains("sub.sat")) {
+            return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
                 || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")) {
             return inlineLLVMMinMax(valueCall);
@@ -436,6 +442,85 @@ public class Intrinsics {
         final Expression isLess = expressions.makeLT(left, right, signed);
         final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+    }
+
+    private List<Event> inlineLLVMSaturatedSub(ValueFunctionCall call) {
+        /*
+            signedSatSub(x, y):
+                ret = (x < 0) ? MIN : MAX;
+                if ((x < 0) == (y < (x-ret))
+                    ret = x - y;
+                return ret;
+
+            unsignedSatSub(x, y)
+                return x > y ? x - y : 0;
+         */
+        final Register resultReg = call.getResultRegister();
+        final List<Expression> arguments = call.getArguments();
+        final Expression x = arguments.get(0);
+        final Expression y = arguments.get(1);
+        final String name = call.getCalledFunction().getName();
+        final boolean isSigned = name.startsWith("llvm.s");
+        final IntegerType type = (IntegerType) x.getType();
+
+        assert x.getType() == y.getType();
+
+        if (isSigned) {
+            final Expression min = expressions.makeValue(type.getMinimumValue(true), type);
+            final Expression max = expressions.makeValue(type.getMaximumValue(true), type);
+
+            final Expression leftIsNegative = expressions.makeLT(x, expressions.makeZero(type), true);
+            final Expression noOverflow = expressions.makeEQ(
+                    leftIsNegative,
+                    expressions.makeLT(y, expressions.makeSUB(x, resultReg), true)
+            );
+
+            return List.of(
+                    EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
+                    EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeSUB(x, y), resultReg))
+            );
+        } else {
+            final Expression noUnderflow = expressions.makeGT(x, y, false);
+            final Expression zero = expressions.makeZero(type);
+            return List.of(
+                    EventFactory.newLocal(resultReg, expressions.makeConditional(noUnderflow, expressions.makeSUB(x, y), zero))
+            );
+        }
+    }
+
+    private List<Event> inlineLLVMSaturatedAdd(ValueFunctionCall call) {
+        /*
+            (un)signedSatAdd(x, y):
+                ret = (x < 0) ? MIN : MAX; // MIN/MAX depends on signedness
+                if ((x < 0) == (y > (ret-x))
+                    ret = x + y;
+                return ret;
+         */
+        final Register resultReg = call.getResultRegister();
+        final List<Expression> arguments = call.getArguments();
+        final Expression x = arguments.get(0);
+        final Expression y = arguments.get(1);
+        final String name = call.getCalledFunction().getName();
+        final boolean isSigned = name.startsWith("llvm.s");
+        final IntegerType type = (IntegerType) x.getType();
+
+        assert x.getType() == y.getType();
+
+        final Expression min = expressions.makeValue(type.getMinimumValue(isSigned), type);
+        final Expression max = expressions.makeValue(type.getMaximumValue(isSigned), type);
+
+        final Expression leftIsNegative = isSigned ?
+                expressions.makeLT(x, expressions.makeZero(type), true) :
+                expressions.makeFalse();
+        final Expression noOverflow = expressions.makeEQ(
+                leftIsNegative,
+                expressions.makeGT(y, expressions.makeSUB(resultReg, x), isSigned)
+        );
+
+        return List.of(
+                EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
+                EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeADD(x, y), resultReg))
+        );
     }
 
     // --------------------------------------------------------------------------------------------------------
