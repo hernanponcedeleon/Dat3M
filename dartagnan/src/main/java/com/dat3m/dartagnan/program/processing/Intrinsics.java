@@ -116,6 +116,16 @@ public class Intrinsics {
                 }
                 call.replaceBy(replacement);
                 replacement.forEach(e -> e.copyAllMetadataFrom(call));
+
+                // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
+                // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
+                // We may want to change this behaviour though.
+                replacement.get(0).getPredecessor().insertAfter(EventFactory.newStringAnnotation(
+                                String.format("=== Calling intrinsic %s ===", call.getCalledFunction().getName())
+                ));
+                replacement.get(replacement.size() - 1).insertAfter(EventFactory.newStringAnnotation(
+                                String.format("=== Returning from intrinsic %s ===", call.getCalledFunction().getName())
+                ));
             }
         }
 
@@ -162,7 +172,8 @@ public class Intrinsics {
                     false, false, true, false, this::inlineNonDet),
             // --------------------------- LLVM ---------------------------
             new Info("llvm.*",
-                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz", "llvm.assume"),
+                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin", "llvm.ctlz",
+                            "llvm.ctpop", "llvm.assume"),
                     false, false, true, true, this::handleLLVMIntrinsic),
             new Info("llvm.stack",
                     List.of("llvm.stacksave", "llvm.stackrestore"), // NOTE: These are just for allocation optimization
@@ -346,6 +357,8 @@ public class Intrinsics {
             return List.of(EventFactory.newAssume(call.getArguments().get(0)));
         } else if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
+        } else if (name.startsWith("llvm.ctpop")) {
+            return inlineLLVMCtpop(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
                 || name.startsWith("llvm.umax") || name.startsWith("llvm.umin")) {
             return inlineLLVMMinMax(valueCall);
@@ -357,10 +370,60 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
-        // TODO: Handle the second parameter as well
         final Expression input = call.getArguments().get(0);
-        final Expression result = expressions.makeCTLZ(input, (IntegerType) call.getResultRegister().getType());
-        return List.of(EventFactory.newLocal(call.getResultRegister(), result));
+        // TODO: Handle the second parameter as well
+        final Register resultReg = call.getResultRegister();
+        final IntegerType type = (IntegerType) resultReg.getType();
+        final Expression increment = expressions.makeADD(resultReg, expressions.makeOne(type));
+
+        final List<Event> replacement = new ArrayList<>();
+        final Label endCtlz = EventFactory.newLabel("__ctlz_end");
+        replacement.add(EventFactory.newLocal(resultReg, expressions.makeZero(type)));
+        //TODO: There might be more efficient ways to count leading zeroes, though it is not clear
+        // if they are also more friendly for the SMT backend.
+        for (int i = type.getBitWidth() - 1; i >= 0; i--) {
+            final Expression testMask = expressions.makeValue(BigInteger.ONE.shiftLeft(i), type);
+            //TODO: dedicated test-bit expressions might yield better results, and they are supported by the SMT backend
+            // in the form of extract operations.
+            final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
+
+            replacement.addAll(List.of(
+                    // FIXME: This generates a control dependency, but it should not!
+                    EventFactory.newJump(testBit, endCtlz),
+                    EventFactory.newLocal(resultReg, increment)
+                    // We could also do a direct assignment instead of an increment, but CP will resolve this either way.
+            ));
+        }
+        replacement.add(endCtlz);
+
+        return replacement;
+        /*final Expression result = expressions.makeCTLZ(input, (IntegerType) call.getResultRegister().getType());
+        return List.of(EventFactory.newLocal(call.getResultRegister(), result));*/
+    }
+
+    private List<Event> inlineLLVMCtpop(ValueFunctionCall call) {
+        final Expression input = call.getArguments().get(0);
+        // TODO: Handle the second parameter as well
+        final Register resultReg = call.getResultRegister();
+        final IntegerType type = (IntegerType) resultReg.getType();
+        final Expression increment = expressions.makeADD(resultReg, expressions.makeOne(type));
+
+        final List<Event> replacement = new ArrayList<>();
+        replacement.add(EventFactory.newLocal(resultReg, expressions.makeZero(type)));
+        //TODO: There might be more efficient ways to count bits set, though it is not clear
+        // if they are also more friendly for the SMT backend.
+        for (int i = type.getBitWidth() - 1; i >= 0; i--) {
+            final Expression testMask = expressions.makeValue(BigInteger.ONE.shiftLeft(i), type);
+            //TODO: dedicated test-bit expressions might yield better results, and they are supported by the SMT backend
+            // in the form of extract operations.
+            final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
+
+            replacement.add(
+                    EventFactory.newLocal(resultReg, expressions.makeConditional(testBit, increment, resultReg))
+            );
+        }
+
+        return replacement;
     }
 
     private List<Event> inlineLLVMMinMax(ValueFunctionCall call) {
