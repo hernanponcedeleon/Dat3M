@@ -72,13 +72,13 @@ let avsg = [AV & SG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AV & WG]
 let avqf = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AV & QF]
 let avsh = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?); [AV & SHADER]
-let avdv = [AV & DV]
+let avdv = [AV & DV & F]
 
 let vissg = [VIS & SG]
 let viswg = [VIS & WG]; (chains & ((hb & ssg & avvisinc); vissg)?)
 let visqf = [VIS & QF]; (chains & ((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
 let vissh = [VIS & SHADER]; (chains & ((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
-let visdv = [VIS & DV]
+let visdv = [VIS & DV & F]
 
 // loc order, relates memory accesses to the same location
 let locord = loc &
@@ -121,5 +121,6 @@ let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
 (* data_races *)
-let dr = loc & ((W * W | W * R | R * W) \ mutordatom \ id \ (locord | locord^-1))
+let pair_with_write = (W * W | W * R | R * W) \ ((IW * _) | (_ * IW)) // ignore IW
+let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy
