@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
@@ -27,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiPredicate;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -108,6 +110,10 @@ public class Intrinsics {
             if (replacement.isEmpty()) {
                 call.tryDelete();
             } else if (replacement.get(0) != call) {
+                if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
+                    final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
+                    call.getUsers().forEach(user -> user.updateReferences(updateMapping));
+                }
                 call.replaceBy(replacement);
                 replacement.forEach(e -> e.copyAllMetadataFrom(call));
             }
@@ -453,22 +459,17 @@ public class Intrinsics {
     }
 
     private void inlineLate(Function function) {
-        for (FunctionCall call : function.getEvents(FunctionCall.class)) {
-            assert call.isDirectCall() && !call.getCalledFunction().hasBody();
-            final Function calledFunction = call.getCalledFunction();
-
-            final List<Event> replacement = switch (calledFunction.getName()) {
-                case "__VERIFIER_nondet_bool",
-                        "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
-                        "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
-                        "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
-                        "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar" -> inlineNonDet(call);
-                default -> throw new UnsupportedOperationException(
-                        String.format("Undefined function %s", calledFunction.getName()));
-            };
-
-            replacement.forEach(e -> e.copyAllMetadataFrom(call));
-            call.replaceBy(replacement);
+        for (final FunctionCall call : function.getEvents(FunctionCall.class)) {
+            if (!call.isDirectCall()) {
+                continue;
+            }
+            final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
+            if (info != null && !info.isEarly()) {
+                info.replace(call);
+            } else {
+                final String error = String.format("Undefined function %s", call.getCalledFunction().getName());
+                throw new UnsupportedOperationException(error);
+            }
         }
     }
 
