@@ -158,6 +158,11 @@ public class SetUtil {
         }
 
         @Override
+        public boolean contains(Object o) {
+            return added.contains(o) || ground.contains(o) && !removed.contains(o);
+        }
+
+        @Override
         public boolean add(T t) {
             return !ground.contains(t) && added.add(t);
         }

@@ -592,7 +592,14 @@ public class RelationAnalysis {
                     .min(Comparator.comparingInt(k -> feature.apply(k).size()))
                     .orElseThrow();
             for (final Tuple tuple : feature.apply(smallest)) {
-                if (list.stream().allMatch(k -> k == smallest || feature.apply(k).contains(tuple))) {
+                boolean contained = true;
+                for (final Knowledge k : list) {
+                    if (!feature.apply(k).contains(tuple)) {
+                        contained = false;
+                        break;
+                    }
+                }
+                if (contained) {
                     result.add(tuple);
                 }
             }
@@ -1543,21 +1550,44 @@ public class RelationAnalysis {
             if (!Arrays.asList(operands).contains(source)) {
                 return EMPTY;
             }
-            Set<Tuple> maySet = Arrays.stream(operands)
+            //NOTE this section was optimized using a profiler
+            final var maySet = new HashSet<Tuple>();
+            final List<Set<Tuple>> maySetList = Arrays.stream(operands)
                     .map(r -> source.equals(r) ? may : knowledgeMap.get(r).may)
                     .sorted(Comparator.comparingInt(Set::size))
-                    .reduce(Sets::intersection)
-                    .orElseThrow();
-            Set<Tuple> mustSet = Arrays.stream(operands)
-                    .map(r -> source.equals(r) ? must : knowledgeMap.get(r).must)
-                    .sorted(Comparator.comparingInt(Set::size))
-                    .reduce(Sets::intersection)
-                    .orElseThrow();
-            return new Delta(
-                    new HashSet<>(maySet),
-                    enableMustSets ?
-                            new HashSet<>(mustSet) :
-                            EMPTY_SET);
+                    .toList();
+            for (final Tuple tuple : maySetList.get(0)) {
+                boolean contained = true;
+                for (final Set<Tuple> otherSet : maySetList.subList(1, maySetList.size())) {
+                    if (!otherSet.contains(tuple)) {
+                        contained = false;
+                        break;
+                    }
+                }
+                if (contained) {
+                    maySet.add(tuple);
+                }
+            }
+            final var mustSet = new HashSet<Tuple>();
+            if (enableMustSets) {
+                final List<Set<Tuple>> mustSetList = Arrays.stream(operands)
+                        .map(r -> source.equals(r) ? must : knowledgeMap.get(r).must)
+                        .sorted(Comparator.comparingInt(Set::size))
+                        .toList();
+                for (final Tuple tuple : mustSetList.get(0)) {
+                    boolean contained = true;
+                    for (final Set<Tuple> otherSet : mustSetList.subList(1, mustSetList.size())) {
+                        if (!otherSet.contains(tuple)) {
+                            contained = false;
+                            break;
+                        }
+                    }
+                    if (contained) {
+                        mustSet.add(tuple);
+                    }
+                }
+            }
+            return new Delta(maySet, enableMustSets ? mustSet : EMPTY_SET);
         }
 
         @Override
