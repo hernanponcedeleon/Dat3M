@@ -249,7 +249,9 @@ public class Dartagnan extends BaseOptions {
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
                     for(Assert ass: p.getThreadEvents(Assert.class)) {
-                        if(FALSE.equals(model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)))) {
+                        final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
+                                && FALSE.equals(model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
+                        if(isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
                             summary
