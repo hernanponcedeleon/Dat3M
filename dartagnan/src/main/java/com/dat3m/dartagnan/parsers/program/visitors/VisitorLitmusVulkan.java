@@ -242,6 +242,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     private void tagChecker(Event e, Boolean atomic, String mo, String scope, String avvisSemantic) {
+        // ----------------------------------------------------------------------------------------------------------------
+        // check tags
         // Check if the event is tagged with the right mo
         if (e instanceof Store) {
             if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
@@ -287,10 +289,23 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Visible avvisSemantic must be acquire mo");
         }
 
+        // ----------------------------------------------------------------------------------------------------------------
         // Add tags
         e.addTags(mo, avvisSemantic);
         if (atomic || e instanceof VulkanRMW) {
             e.addTags(Tag.Vulkan.ATOM);
+        }
+
+        // Atomics implicitly have AV/VIS ops
+        if (atomic && e instanceof Store) {
+            e.addTags(Tag.Vulkan.AVAILABLE);
+        }
+        if (atomic && e instanceof Load) {
+            e.addTags(Tag.Vulkan.VISIBLE);
+        }
+        // AV, VIS, and atomics are all implicitly nonpriv
+        if (mo.equals(Tag.Vulkan.AVAILABLE) || mo.equals(Tag.Vulkan.VISIBLE) || atomic) {
+            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
     }
 }
