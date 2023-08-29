@@ -234,7 +234,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
         Event fence = EventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
-        if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE)) {
+        if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             fence.removeTags(Tag.FENCE);
         }
         fence.addTags(scope, mo, classSemantic);
