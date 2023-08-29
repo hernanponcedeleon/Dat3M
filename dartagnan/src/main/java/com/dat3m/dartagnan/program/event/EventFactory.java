@@ -436,7 +436,7 @@ public class EventFactory {
             return new SpinEnd();
         }
 
-        public static LoopBound newLoopBound(int bound) {
+        public static LoopBound newLoopBound(Expression bound) {
             return new LoopBound(bound);
         }
     }

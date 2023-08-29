@@ -1,18 +1,35 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
+import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.google.common.base.Preconditions;
 
-public class LoopBound extends CodeAnnotation {
+import java.util.HashSet;
+import java.util.Set;
 
-    private final int bound;
+public class LoopBound extends CodeAnnotation implements RegReader {
 
-    public int getBound() {
+    private Expression bound;
+
+    public Expression getBound() {
         return bound;
     }
 
-    public LoopBound(int bound) {
-        Preconditions.checkArgument(bound > 0, "The provided loop bound '%s' must be positive.", bound);
+    public int getConstantBound() {
+        int bound = this.bound.reduce().getValueAsInt();
+        if (bound <= 0) {
+            throw new MalformedProgramException("Non-positive loop bound annotation: " + this);
+        }
+        return bound;
+    }
+
+    public LoopBound(Expression bound) {
+        Preconditions.checkArgument(bound.getType() instanceof IntegerType);
         this.bound = bound;
     }
 
@@ -29,5 +46,15 @@ public class LoopBound extends CodeAnnotation {
     @Override
     public LoopBound getCopy() {
         return new LoopBound(this);
+    }
+
+    @Override
+    public Set<Register.Read> getRegisterReads() {
+        return Register.collectRegisterReads(bound, Register.UsageType.OTHER, new HashSet<>());
+    }
+
+    @Override
+    public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
+        this.bound = bound.accept(exprTransformer);
     }
 }

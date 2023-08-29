@@ -270,10 +270,7 @@ public class Intrinsics {
 
     private List<Event> inlineLoopBound(FunctionCall call) {
         final Expression boundExpression = call.getArguments().get(0);
-        if (!(boundExpression instanceof IValue value)) {
-            throw new MalformedProgramException("Non-constant bound for loop.");
-        }
-        return List.of(EventFactory.Svcomp.newLoopBound(value.getValueAsInt()));
+        return List.of(EventFactory.Svcomp.newLoopBound(boundExpression));
     }
 
     private List<Event> inlineSpinStart(FunctionCall ignored) {
