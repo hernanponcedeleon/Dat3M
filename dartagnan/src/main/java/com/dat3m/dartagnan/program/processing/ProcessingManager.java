@@ -93,6 +93,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 Simplifier.fromConfig(config)
                         ), Target.FUNCTIONS, true
                 ),
+                RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
