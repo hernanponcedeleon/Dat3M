@@ -10,11 +10,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Program {
@@ -109,6 +105,10 @@ public class Program {
         func.setProgram(this);
     }
 
+    public boolean removeFunction(Function func) {
+        return functions.remove(func);
+    }
+
     // Ensures that a function with name and type exists in this program.
     public Function declareFunction(String name, FunctionType type, List<String> parameterNames) {
         for (Function function : functions) {
@@ -136,12 +136,7 @@ public class Program {
 
     // Looks up a declared function by name.
     public Optional<Function> getFunctionByName(String name) {
-        for (Function function : functions) {
-            if (function.getName().equals(name)) {
-                return Optional.of(function);
-            }
-        }
-        return Optional.empty();
+        return functions.stream().filter(f -> f.getName().equals(name)).findFirst();
     }
 
     public void addConstant(INonDet constant) {

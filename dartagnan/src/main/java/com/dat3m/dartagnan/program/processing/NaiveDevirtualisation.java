@@ -181,6 +181,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                     callReplacement.add(EventFactory.newGoto(endLabel));
                 }
                 callReplacement.add(endLabel);
+                callReplacement.add(EventFactory.newStringAnnotation("=== End of devirtualized call ==="));
 
                 call.replaceBy(callReplacement);
                 callReplacement.forEach(e -> e.copyAllMetadataFrom(call));

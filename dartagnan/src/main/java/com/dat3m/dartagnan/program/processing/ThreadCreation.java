@@ -92,7 +92,7 @@ public class ThreadCreation implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final IntegerType archType = types.getArchType();
 
-        final Optional<Function> main = program.getFunctions().stream().filter(f -> f.getName().equals("main")).findFirst();
+        final Optional<Function> main = program.getFunctionByName("main");
         if (main.isEmpty()) {
             throw new MalformedProgramException("Program contains no main function");
         }
