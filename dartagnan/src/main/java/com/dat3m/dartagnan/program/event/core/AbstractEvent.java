@@ -183,10 +183,6 @@ public abstract class AbstractEvent implements Event {
             user.getReferencedEvents().forEach(e -> e.removeUser(user));
         }
         this.detach();
-
-        for (Event user : currentUsers) {
-            user.forceDelete();
-        }
     }
 
     @Override

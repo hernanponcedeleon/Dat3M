@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
@@ -132,19 +133,20 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         // ---------- Remove dead code ----------
+        final Set<Event> toBeDeleted = new HashSet<>();
         for (Event e : func.getEvents()) {
-            if (reachableEvents.contains(e)) {
-                continue;
-            } else if (e instanceof Label && e.hasTag(Tag.NOOPT)) {
-                //FIXME: This check is just to avoid deleting loop-related labels (especially
+            if (reachableEvents.contains(e) || (e instanceof Label && e.hasTag(Tag.NOOPT))) {
+                //FIXME: The second check is just to avoid deleting loop-related labels (especially
                 // the loop end marker) because those are used to find unrolled loops.
                 // There should be better ways that do not retain such dead code: for example,
                 // we could move the loop end marker into the last non-dead iteration.
                 continue;
             }
-            if (!e.tryDelete()) {
-                logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
-            }
+            toBeDeleted.add(e);
+        }
+        final Set<Event> failedToDelete = IRHelper.bulkDelete(toBeDeleted);
+        for (Event e : failedToDelete) {
+            logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
         }
     }
 
