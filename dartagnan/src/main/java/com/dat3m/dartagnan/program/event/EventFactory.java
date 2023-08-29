@@ -117,6 +117,10 @@ public class EventFactory {
         return fence;
     }
 
+    public static FenceWithId newFenceWithId(String name, Expression fenceId) {
+        return new FenceWithId(name, fenceId);
+    }
+
     public static Init newInit(MemoryObject base, int offset) {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
@@ -696,9 +700,6 @@ public class EventFactory {
             return red;
         }
 
-        public static FenceWithId newFenceWithId(String name, Expression fenceId) {
-            return new FenceWithId(name, fenceId);
-        }
     }
 
     // =============================================================================================

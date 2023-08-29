@@ -146,14 +146,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitStoreConstant(LitmusVulkanParser.StoreConstantContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
-        Boolean atomatic = ctx.atomatic().isAtomic;
+        Boolean atomic = ctx.atomic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        tagChecker(store, atomatic, mo, scope, avvisSemantic);
+        tagChecker(store, atomic, mo, scope, avvisSemantic);
         store.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
@@ -162,7 +162,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitStoreRegister(LitmusVulkanParser.StoreRegisterContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Register register = (Register) ctx.register().accept(this);
-        Boolean atomatic = ctx.atomatic().isAtomic;
+        Boolean atomic = ctx.atomic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
@@ -170,7 +170,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
-        tagChecker(store, atomatic, mo, scope, avvisSemantic);
+        tagChecker(store, atomic, mo, scope, avvisSemantic);
         store.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, store);
     }
@@ -186,14 +186,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitLoadLocation(LitmusVulkanParser.LoadLocationContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        Boolean atomatic = ctx.atomatic().isAtomic;
+        Boolean atomic = ctx.atomic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
         String classSemantic = ctx.storageClassSemantic().content;
         String avvisSemantic = ctx.avvisSemantic().content;
         Load load = EventFactory.newLoadWithMo(register, location, mo);
-        tagChecker(load, atomatic, mo, scope, avvisSemantic);
+        tagChecker(load, atomic, mo, scope, avvisSemantic);
         load.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, load);
     }
@@ -203,7 +203,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
-        Boolean atomatic = ctx.atomatic().isAtomic;
+        Boolean atomic = ctx.atomic().isAtomic;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
@@ -211,7 +211,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvisSemantic = ctx.avvisSemantic().content;
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
         rmw.addTags(scope, classSemantic, avvisSemantic);
-        tagChecker(rmw, atomatic, mo, scope, avvisSemantic);
+        tagChecker(rmw, atomic, mo, scope, avvisSemantic);
         rmw.addTags(scope, storageClass, classSemantic);
         return programBuilder.addChild(mainThread, rmw);
     }
@@ -233,12 +233,15 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        Event fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        Event fence = EventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE)) {
+            fence.removeTags(Tag.FENCE);
+        }
         fence.addTags(scope, mo, classSemantic);
         return programBuilder.addChild(mainThread, fence);
     }
 
-    private void tagChecker(Event e, Boolean atomatic, String mo, String scope, String avvisSemantic) {
+    private void tagChecker(Event e, Boolean atomic, String mo, String scope, String avvisSemantic) {
         // Check if the event is tagged with the right mo
         if (e instanceof Store) {
             if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.AVAILABLE)) {
@@ -269,10 +272,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         }
 
         // Check if mo is consistent with atomatic
-        if (!(e.hasTag(Tag.FENCE)) && mo.equals(Tag.Vulkan.ACQUIRE) && !atomatic) {
+        if (!(e.hasTag(Tag.FENCE)) && mo.equals(Tag.Vulkan.ACQUIRE) && !atomic) {
             throw new ParsingException("Acquire mo must be atomatic");
         }
-        if (!(e.hasTag(Tag.FENCE)) && mo.equals(Tag.Vulkan.RELEASE) && !atomatic) {
+        if (!(e.hasTag(Tag.FENCE)) && mo.equals(Tag.Vulkan.RELEASE) && !atomic) {
             throw new ParsingException("Release mo must be atomatic");
         }
 
@@ -286,7 +289,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
         // Add tags
         e.addTags(mo, avvisSemantic);
-        if (atomatic || e instanceof VulkanRMW) {
+        if (atomic || e instanceof VulkanRMW) {
             e.addTags(Tag.Vulkan.ATOM);
         }
     }

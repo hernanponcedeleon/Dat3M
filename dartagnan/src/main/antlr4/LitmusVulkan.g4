@@ -105,11 +105,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomatic mo scope storageClass storageClassSemantic avvisSemantic location Comma constant
+    :   Store atomic mo scope storageClass storageClassSemantic avvisSemantic location Comma constant
     ;
 
 storeRegister
-    :   Store atomatic mo scope storageClass storageClassSemantic avvisSemantic location Comma register
+    :   Store atomic mo scope storageClass storageClassSemantic avvisSemantic location Comma register
     ;
 
 loadInstruction
@@ -118,11 +118,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomatic mo scope storageClass storageClassSemantic avvisSemantic register Comma constant
+    :   Load atomic mo scope storageClass storageClassSemantic avvisSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomatic mo scope storageClass storageClassSemantic avvisSemantic register Comma location
+    :   Load atomic mo scope storageClass storageClassSemantic avvisSemantic register Comma location
     ;
 
 rmwInstruction
@@ -130,7 +130,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomatic mo scope storageClass storageClassSemantic avvisSemantic register Comma location Comma constant
+    :   RMW atomic mo scope storageClass storageClassSemantic avvisSemantic register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -165,7 +165,7 @@ assertionValue
     |   constant
     ;
 
-atomatic returns [Boolean isAtomic]
+atomic returns [Boolean isAtomic]
     :   Period Atom {$isAtomic = true;}
     |   {$isAtomic = false;}
     ;
@@ -219,7 +219,7 @@ Register
     :   'r' DigitSequence
     ;
 
-Aliases     :   'aliases';
+Aliases         :   'aliases';
 Ssw             :   'ssw';
 
 Load            :   'ld';
