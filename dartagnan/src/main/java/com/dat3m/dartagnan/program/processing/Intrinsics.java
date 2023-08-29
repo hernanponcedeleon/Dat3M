@@ -112,7 +112,7 @@ public class Intrinsics {
             } else if (replacement.get(0) != call) {
                 if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
                     final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
-                    call.getUsers().forEach(user -> user.updateReferences(updateMapping));
+                    ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
                 }
                 call.replaceBy(replacement);
                 replacement.forEach(e -> e.copyAllMetadataFrom(call));

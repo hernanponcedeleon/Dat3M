@@ -74,7 +74,8 @@ public class ProcessingManager implements ProgramProcessor {
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        Intrinsics intrinsics = Intrinsics.newInstance();
+        final Intrinsics intrinsics = Intrinsics.newInstance();
+        final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         programProcessors.addAll(Arrays.asList(
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
@@ -100,12 +101,13 @@ public class ProcessingManager implements ProgramProcessor {
                         SimpleSpinLoopDetection.fromConfig(config),
                         Target.FUNCTIONS, false
                 ),
+                ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
+                                sccp,
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                                 RemoveDeadCondJumps.fromConfig(config)
                         ), Target.FUNCTIONS, true
