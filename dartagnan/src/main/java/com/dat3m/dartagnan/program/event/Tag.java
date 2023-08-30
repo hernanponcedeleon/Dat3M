@@ -330,7 +330,6 @@ public final class Tag {
         public static final String WORK_GROUP = "WG";
         public static final String QUEUE_FAMILY = "QF";
         public static final String DEVICE = "DV";
-        public static final String PRIVATE = "PRIV";
         public static final String NON_PRIVATE = "NONPRIV";
         // Memory orders
         public static final String ATOM = "ATOM";
@@ -349,8 +348,8 @@ public final class Tag {
         public static final String SEM_SC1 = "SEMSC1";
         public static final String SEM_SC01 = "SEMSC01";
 
-        public static Set<String> getMoTags() {
-            return Set.of(ACQUIRE, RELEASE, ACQ_REL, VISIBLE, AVAILABLE);
+        public static Set<String> getAvvisTags() {
+            return Set.of(AVAILABLE, VISIBLE);
         }
 
         public static Set<String> getStorageClassTags() {
@@ -361,6 +360,10 @@ public final class Tag {
             return Set.of(SEM_SC0, SEM_SC1, SEM_SC01);
         }
 
+        public static Set<String> getAvvisSemanticTags() {
+            return Set.of(SEM_AVAILABLE, SEM_VISIBLE);
+        }
+
         public static Set<String> getScopeTags() {
             return Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
         }
@@ -368,7 +371,6 @@ public final class Tag {
         public static String loadMO(String mo) {
             return switch (mo) {
                 case ACQ_REL, ACQUIRE -> ACQUIRE;
-                case VISIBLE -> VISIBLE;
                 default -> "";
             };
         }
@@ -376,9 +378,45 @@ public final class Tag {
         public static String storeMO(String mo) {
             return switch (mo) {
                 case ACQ_REL, RELEASE -> RELEASE;
-                case AVAILABLE -> AVAILABLE;
                 default -> "";
             };
+        }
+
+        public static void assignTags(Event rmw, Event r, Event w) {
+            getAvvisTags().forEach(tag -> {
+                if (rmw.hasTag(tag)) {
+                    switch (tag) {
+                        case AVAILABLE -> w.addTags(tag);
+                        case VISIBLE -> r.addTags(tag);
+                    }
+                }
+            });
+            getAvvisSemanticTags().forEach(tag -> {
+                if (rmw.hasTag(tag)) {
+                    switch (tag) {
+                        case SEM_AVAILABLE -> w.addTags(tag);
+                        case SEM_VISIBLE -> r.addTags(tag);
+                    }
+                }
+            });
+            getScopeTags().forEach(tag -> {
+                if (rmw.hasTag(tag)) {
+                    r.addTags(tag);
+                    w.addTags(tag);
+                }
+            });
+            getStorageClassTags().forEach(tag -> {
+                if (rmw.hasTag(tag)) {
+                    r.addTags(tag);
+                    w.addTags(tag);
+                }
+            });
+            getStorageClassSemanticTags().forEach(tag -> {
+                if (rmw.hasTag(tag)) {
+                    r.addTags(tag);
+                    w.addTags(tag);
+                }
+            });
         }
     }
 

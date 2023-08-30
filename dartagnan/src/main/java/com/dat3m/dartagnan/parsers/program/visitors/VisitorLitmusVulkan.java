@@ -157,8 +157,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Stores must be release or available");
         }
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        tagChecker(store, atomic, mo, avvis, scope, avvisSemantic);
-        store.addTags(storageClass, classSemantic);
+        tagChecker(store, atomic, mo, avvis, scope, classSemantic, avvisSemantic);
+        store.addTags(storageClass);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -178,8 +178,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         }
         Store store = EventFactory.newStoreWithMo(object, register, mo);
         store.addTags(scope, classSemantic, avvisSemantic);
-        tagChecker(store, atomic, mo, avvis, scope, avvisSemantic);
-        store.addTags(storageClass, classSemantic);
+        tagChecker(store, atomic, mo, avvis, scope, classSemantic, avvisSemantic);
+        store.addTags(storageClass);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -205,8 +205,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Loads must be acquire or visible");
         }
         Load load = EventFactory.newLoadWithMo(register, location, mo);
-        tagChecker(load, atomic, mo, avvis, scope, avvisSemantic);
-        load.addTags(storageClass, classSemantic);
+        tagChecker(load, atomic, mo, avvis, scope, classSemantic, avvisSemantic);
+        load.addTags(storageClass);
         return programBuilder.addChild(mainThread, load);
     }
 
@@ -226,8 +226,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("RMW must be acq_rel");
         }
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
-        tagChecker(rmw, atomic, mo, avvis, scope, avvisSemantic);
-        rmw.addTags(storageClass, classSemantic, Tag.Vulkan.ATOM);
+        tagChecker(rmw, atomic, mo, avvis, scope, classSemantic, avvisSemantic);
+        rmw.addTags(storageClass, Tag.Vulkan.ATOM);
         return programBuilder.addChild(mainThread, rmw);
     }
 
@@ -243,8 +243,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
         }
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        tagChecker(fence, false, mo, avvis, scope, "");
-        fence.addTags(classSemantic);
+        tagChecker(fence, false, mo, avvis, scope, classSemantic, "");
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -255,23 +254,22 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvis = ctx.avvis().content;
         String classSemantic = ctx.storageClassSemantic().content;
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        Event fence = EventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        String fenceIdString = ctx.getText().replace(fenceId.toString(), "");
+        Event fence = EventFactory.newFenceWithId(fenceIdString.toLowerCase(), fenceId);
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             fence.removeTags(Tag.FENCE);
         }
-        tagChecker(fence, false, mo, avvis, scope, "");
-        fence.addTags(classSemantic);
+        tagChecker(fence, false, mo, avvis, scope, classSemantic, "");
         return programBuilder.addChild(mainThread, fence);
     }
 
-    private void tagChecker(Event e, Boolean atomic, String mo, String avvis, String scope, String avvisSemantic) {
+    private void tagChecker(Event e, Boolean atomic, String mo, String avvis, String scope,
+                            String storageClassSemantic, String avvisSemantic) {
         // ----------------------------------------------------------------------------------------------------------------
         // check tags
-        // Check if the event is tagged with the right scope
-        if (scope.equals(Tag.Vulkan.PRIVATE)) {
-            if (!(e instanceof Store) && !(e instanceof Load)) {
-                throw new ParsingException("Private scope is only for stores and loads");
-            }
+        // Check if nonpriv is tagged with memory access
+        if (!(e instanceof Store) && !(e instanceof Load) && scope.equals(Tag.Vulkan.NON_PRIVATE)) {
+                throw new ParsingException("Nonpriv is only meaningful for memory accesses");
         }
 
         // Check if mo is consistent with atomatic
@@ -290,27 +288,39 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Visible avvisSemantic must be acquire mo");
         }
 
+        // All acquire/release ops have one or more semantics storage classes
+        if ((mo.equals(Tag.Vulkan.ACQUIRE) || mo.equals(Tag.Vulkan.RELEASE)) && storageClassSemantic.isEmpty()) {
+            throw new ParsingException("Acquire/release ops must have one or more storage classes semantics");
+        }
+
         // ----------------------------------------------------------------------------------------------------------------
         // Add tags
-        e.addTags(mo, avvis, scope, avvisSemantic);
+        e.addTags(mo, avvis, scope, storageClassSemantic, avvisSemantic);
         if (atomic) {
             e.addTags(Tag.Vulkan.ATOM);
         }
 
+        // ACQ_REL is both ACQ and REL
         if (mo.equals(Tag.Vulkan.ACQ_REL)) {
-            e.addTags(Tag.Vulkan.ACQUIRE);
-            e.addTags(Tag.Vulkan.RELEASE);
+            e.addTags(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE);
         }
 
-        // Atomics implicitly have AV/VIS ops
+        if (storageClassSemantic.equals(Tag.Vulkan.SEM_SC01)) {
+            e.addTags(Tag.Vulkan.SEM_SC0, Tag.Vulkan.SEM_SC1);
+        }
+
+        // AV, VIS, and atomics are all implicitly nonpriv
+        if (avvis.equals(Tag.Vulkan.AVAILABLE) || avvis.equals(Tag.Vulkan.VISIBLE) || atomic) {
+            e.addTags(Tag.Vulkan.NON_PRIVATE);
+        }
+
+        // Atomics implicitly have AV/VIS ops, hence they are implicitly nonpriv
         if (atomic && e instanceof Store) {
             e.addTags(Tag.Vulkan.AVAILABLE);
+            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
         if (atomic && e instanceof Load) {
             e.addTags(Tag.Vulkan.VISIBLE);
-        }
-        // AV, VIS, and atomics are all implicitly nonpriv
-        if (avvis.equals(Tag.Vulkan.AVAILABLE) || avvis.equals(Tag.Vulkan.VISIBLE) || atomic) {
             e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
     }

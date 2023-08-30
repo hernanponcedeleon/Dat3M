@@ -22,6 +22,7 @@ public class VisitorVulkan extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
+        Tag.Vulkan.assignTags(e, load, store);
         return eventSequence(
                 load,
                 store,

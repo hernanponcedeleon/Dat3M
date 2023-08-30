@@ -1070,8 +1070,8 @@ public class RelationAnalysis {
                     if (thread1.getSyncSet().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
                         must.add(new Tuple(e1, e2));
                     }
-                    if (thread2.getSyncSet().contains(thread1) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(new Tuple(e1, e2));
+                    if (thread2.getSyncSet().contains(thread1) && !exec.areMutuallyExclusive(e2, e1)) {
+                        must.add(new Tuple(e2, e1));
                     }
                 }
             }

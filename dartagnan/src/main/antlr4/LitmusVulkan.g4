@@ -175,8 +175,8 @@ scope returns [String content]
     |   Period Workgroup {$content = "WG";}
     |   Period Queuefamily {$content = "QF";}
     |   Period Device {$content = "DV";}
-    |   Period Private {$content = "PRIV";}
     |   Period Nonprivate {$content = "NONPRIV";}
+    |   {$content = "";}
     ;
 
 scopeID returns [int id]
@@ -238,6 +238,8 @@ Workgroup       :   'wg';
 Queuefamily     :   'qf';
 Device          :   'dv';
 
+Nonprivate      :   'nonpriv';
+
 Atom            :   'atom';
 Acquire         :   'acq';
 Release         :   'rel';
@@ -247,12 +249,9 @@ Relaxed         :   'rlx';
 Visible         :   'vis';
 Available       :   'av';
 
-Private         :   'priv';
-Nonprivate      :   'nonpriv';
-
 SemVis          :   'semvis';
 SemAv           :   'semav';
-SemAvvis       :   'semavvis';
+SemAvvis        :   'semavvis';
 
 Sc0             :   'sc0';
 Sc1             :   'sc1';

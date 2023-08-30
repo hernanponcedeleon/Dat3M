@@ -21,6 +21,7 @@ SPIRV
 (*******************)
 (*  Auxiliaries *)
 (*******************)
+let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
 let mutordatom = (loc & vloc & sr & (ATOM * ATOM)) \ id // mutually ordered atomics (same loc, inscope)
 
 let avvisSem = ((SC0 | SC1) * ((AV | VIS) & DV))
