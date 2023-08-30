@@ -151,8 +151,11 @@ public class LoopAnalysis {
         if (!(eventToParse instanceof Label label && label.getName().contains(LOOP_LABEL_IDENTIFIER))) {
             return null;
         }
-
         final int labelInfoIndex = label.getName().lastIndexOf(LOOP_INFO_SEPARATOR);
+        if (labelInfoIndex < 0) {
+            // This can happen if a loop was partially eliminated by another pass (i.e., the backjump gets deleted)
+            return null;
+        }
         final String loopName = label.getName().substring(0, labelInfoIndex);
         final String labelInfo = label.getName().substring(labelInfoIndex + LOOP_INFO_SEPARATOR.length());
 
