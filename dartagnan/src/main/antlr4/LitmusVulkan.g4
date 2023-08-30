@@ -105,11 +105,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomic mo scope storageClass storageClassSemantic avvisSemantic location Comma constant
+    :   Store atomic mo avvis scope storageClass storageClassSemantic avvisSemantic location Comma constant
     ;
 
 storeRegister
-    :   Store atomic mo scope storageClass storageClassSemantic avvisSemantic location Comma register
+    :   Store atomic mo avvis scope storageClass storageClassSemantic avvisSemantic location Comma register
     ;
 
 loadInstruction
@@ -118,11 +118,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomic mo scope storageClass storageClassSemantic avvisSemantic register Comma constant
+    :   Load atomic mo avvis scope storageClass storageClassSemantic avvisSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomic mo scope storageClass storageClassSemantic avvisSemantic register Comma location
+    :   Load atomic mo avvis scope storageClass storageClassSemantic avvisSemantic register Comma location
     ;
 
 rmwInstruction
@@ -130,7 +130,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomic mo scope storageClass storageClassSemantic avvisSemantic register Comma location Comma constant
+    :   RMW atomic mo avvis scope storageClass storageClassSemantic avvisSemantic register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -139,11 +139,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo scope storageClassSemantic avvisSemantic
+    :   MemoryBarrier mo avvis scope storageClassSemantic avvisSemantic
     ;
 
 controlBarrier
-    :   ControlBarrier mo scope storageClassSemantic avvisSemantic barID
+    :   ControlBarrier mo avvis scope storageClassSemantic avvisSemantic barID
     ;
 
 barID
@@ -187,7 +187,11 @@ mo returns [String content]
     :   Period Acquire {$content = "ACQ";}
     |   Period Release {$content = "REL";}
     |   Period Acq_rel {$content = "ACQ_REL";}
-    |   Period Visible {$content = "VIS";}
+    |   {$content = "";}
+    ;
+
+avvis returns [String content]
+    :   Period Visible {$content = "VIS";}
     |   Period Available {$content = "AV";}
     |   {$content = "";}
     ;

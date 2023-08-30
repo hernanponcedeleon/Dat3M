@@ -1061,9 +1061,10 @@ public class RelationAnalysis {
             events.removeIf(e -> e instanceof Init);
             for (Event e1 : events) {
                 for (Event e2 : events) {
+                    // both threads must have a sync set, and they must contain each other
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (thread1 == thread2 || thread1.hasSyncSet() || thread2.hasSyncSet()) {
+                    if (thread1 == thread2 || !thread1.hasSyncSet() || !thread2.hasSyncSet()) {
                         continue;
                     }
                     if (thread1.getSyncSet().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
