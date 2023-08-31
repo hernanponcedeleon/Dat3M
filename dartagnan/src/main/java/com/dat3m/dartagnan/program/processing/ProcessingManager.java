@@ -103,6 +103,7 @@ public class ProcessingManager implements ProgramProcessor {
                         Target.FUNCTIONS, false
                 ),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
+                ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
@@ -118,6 +119,7 @@ public class ProcessingManager implements ProgramProcessor {
                 intrinsics.lateInliningPass(),
                 RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.newInstance(),
+                //TODO ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
