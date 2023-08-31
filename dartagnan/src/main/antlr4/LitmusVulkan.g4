@@ -105,11 +105,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomic mo avvis scope storageClass storageClassSemantic avvisSemantic location Comma constant
+    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic location Comma constant
     ;
 
 storeRegister
-    :   Store atomic mo avvis scope storageClass storageClassSemantic avvisSemantic location Comma register
+    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic location Comma register
     ;
 
 loadInstruction
@@ -118,11 +118,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomic mo avvis scope storageClass storageClassSemantic avvisSemantic register Comma constant
+    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic register Comma constant
     ;
 
 loadLocation
-    :   Load atomic mo avvis scope storageClass storageClassSemantic avvisSemantic register Comma location
+    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic register Comma location
     ;
 
 rmwInstruction
@@ -130,7 +130,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomic mo avvis scope storageClass storageClassSemantic avvisSemantic register Comma location Comma constant
+    :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -139,11 +139,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo avvis scope storageClassSemantic avvisSemantic
+    :   MemoryBarrier mo avvis scope storageClassSemanticList avvisSemantic
     ;
 
 controlBarrier
-    :   ControlBarrier mo avvis scope storageClassSemantic avvisSemantic barID
+    :   ControlBarrier mo avvis scope storageClassSemanticList avvisSemantic barID
     ;
 
 barID
@@ -204,8 +204,10 @@ storageClass returns [String content]
 storageClassSemantic returns [String content]
     :   Period Semsc0 {$content = "SEMSC0";}
     |   Period Semsc1 {$content = "SEMSC1";}
-    |   Period Semsc01 {$content = "SEMSC01";}
-    |   {$content = "";}
+    ;
+
+storageClassSemanticList
+    :   (storageClassSemantic)*
     ;
 
 avvisSemantic returns [String content]

@@ -342,14 +342,13 @@ public final class Tag {
         // StorageClass Semantics
         public static final String SEMSC0 = "SEMSC0";
         public static final String SEMSC1 = "SEMSC1";
-        public static final String SEMSC01 = "SEMSC01";
 
         public static Set<String> getScopeTags() {
             return Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
         }
 
         public static void propagateTags(Event source, Event target) {
-            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, AVAILABLE, VISIBLE, SC0, SC1, SEMSC0, SEMSC1, SEMSC01, SEM_AVAILABLE, SEM_VISIBLE)) {
+            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, AVAILABLE, VISIBLE, SC0, SC1, SEMSC0, SEMSC1, SEM_AVAILABLE, SEM_VISIBLE)) {
                 if (source.hasTag(tag)) {
                     target.addTags(tag);
                 }
