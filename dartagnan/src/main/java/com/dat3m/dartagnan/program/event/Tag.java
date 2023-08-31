@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Store;
 
-import java.util.Map;
 import java.util.Set;
 
 /*
@@ -269,29 +266,9 @@ public final class Tag {
     }
 
     // =============================================================================================
-    // ======================================== TagPropagator ======================================
-    // =============================================================================================
-    public static class TagPropagator {
-        TagPropagator() {
-        }
-
-        Map<String, String> getGeneralTags() {
-            return null;
-        }
-
-        Map<String, String> getStTags() {
-            return null;
-        }
-
-        Map<String, String> getLdTags() {
-            return null;
-        }
-    }
-
-    // =============================================================================================
     // =========================================== PTX =============================================
     // =============================================================================================
-    public static final class PTX extends TagPropagator {
+    public static final class PTX {
         // Scopes
         public static final String CTA = "CTA";
         public static final String GPU = "GPU";
@@ -310,37 +287,40 @@ public final class Tag {
         public static final String CON = "CON"; // CONSTANT
         // Virtual memory
         public static final String ALIAS = "ALIAS";
-        public static final Map<String, String> generalTagMap = Map.of(CTA, CTA, GPU, GPU, SYS, SYS, GEN, GEN, TEX, TEX, SUR, SUR, CON, CON);
-        public static final Map<String, String> stTagMap = Map.of(ACQ_REL, REL, RLX, RLX);
-        public static final Map<String, String> ldTagMap = Map.of(ACQ_REL, ACQ, RLX, RLX);
 
-        private PTX() {
+        public static void propagateTags(Event source, Event target) {
+            for (String tag : Set.of(CTA, GPU, SYS, GEN, TEX, SUR, CON)) {
+                if (source.hasTag(tag)) {
+                    target.addTags(tag);
+                }
+            }
+        }
+
+        public static String loadMO(String mo) {
+            return switch (mo) {
+                case ACQ_REL -> ACQ;
+                case RLX -> RLX;
+                default -> "";
+            };
+        }
+
+        public static String storeMO(String mo) {
+            return switch (mo) {
+                case ACQ_REL -> REL;
+                case RLX -> RLX;
+                default -> "";
+            };
         }
 
         public static Set<String> getScopeTags() {
             return Set.of(CTA, GPU, SYS);
-        }
-
-        @Override
-        public Map<String, String> getGeneralTags() {
-            return generalTagMap;
-        }
-
-        @Override
-        public Map<String, String> getStTags() {
-            return stTagMap;
-        }
-
-        @Override
-        public Map<String, String> getLdTags() {
-            return ldTagMap;
         }
     }
 
     // =============================================================================================
     // ========================================= Vulkan ============================================
     // =============================================================================================
-    public static final class Vulkan extends TagPropagator {
+    public static final class Vulkan {
         // Scopes
         public static final String SUB_GROUP = "SG";
         public static final String WORK_GROUP = "WG";
@@ -363,56 +343,33 @@ public final class Tag {
         public static final String SEMSC0 = "SEMSC0";
         public static final String SEMSC1 = "SEMSC1";
         public static final String SEMSC01 = "SEMSC01";
-        public static final Map<String, String> generalTagMap = Map.of(SUB_GROUP, SUB_GROUP, WORK_GROUP, WORK_GROUP, QUEUE_FAMILY, QUEUE_FAMILY, DEVICE, DEVICE, ATOM, ATOM, SC0, SC0, SC1, SC1, SEMSC0, SEMSC0, SEMSC1, SEMSC1);
-        public static final Map<String, String> stTagMap = Map.of(ACQ_REL, RELEASE, RELEASE, RELEASE, AVAILABLE, AVAILABLE, SEM_AVAILABLE, SEM_AVAILABLE);
-        public static final Map<String, String> ldTagMap = Map.of(ACQ_REL, ACQUIRE, ACQUIRE, ACQUIRE, VISIBLE, VISIBLE, SEM_VISIBLE, SEM_VISIBLE);
 
         public static Set<String> getScopeTags() {
             return Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
         }
 
-        private Vulkan() {
-        }
-        @Override
-        public Map<String, String> getGeneralTags() {
-            return generalTagMap;
-        }
-
-        @Override
-        public Map<String, String> getStTags() {
-            return stTagMap;
-        }
-
-        @Override
-        public Map<String, String> getLdTags() {
-            return ldTagMap;
-        }
-    }
-
-    public static void propagateTags(Arch arch, Event source, Event target) {
-        TagPropagator tagPropragator;
-        switch (arch) {
-            case PTX -> tagPropragator = new PTX();
-            case VULKAN -> tagPropragator = new Vulkan();
-            default -> throw new UnsupportedOperationException("Tag propagation not implemented for architecture " + arch);
-        }
-        for (String tag : tagPropragator.getGeneralTags().keySet()) {
-            if (source.hasTag(tag)) {
-                target.addTags(tagPropragator.getGeneralTags().get(tag));
-            }
-        }
-        if (target instanceof Load) {
-            for (String tag : tagPropragator.getLdTags().keySet()) {
+        public static void propagateTags(Event source, Event target) {
+            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, AVAILABLE, VISIBLE, SC0, SC1, SEMSC0, SEMSC1, SEMSC01, SEM_AVAILABLE, SEM_VISIBLE)) {
                 if (source.hasTag(tag)) {
-                    target.addTags(tagPropragator.getLdTags().get(tag));
+                    target.addTags(tag);
                 }
             }
-        } else if (target instanceof Store) {
-            for (String tag : tagPropragator.getStTags().keySet()) {
-                if (source.hasTag(tag)) {
-                    target.addTags(tagPropragator.getStTags().get(tag));
-                }
-            }
+        }
+
+        public static String loadMO(String mo) {
+            return switch (mo) {
+                case ACQ_REL -> ACQUIRE;
+                case ACQUIRE -> ACQUIRE;
+                default -> "";
+            };
+        }
+
+        public static String storeMO(String mo) {
+            return switch (mo) {
+                case ACQ_REL -> RELEASE;
+                case RELEASE -> RELEASE;
+                default -> "";
+            };
         }
     }
 

@@ -226,7 +226,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         }
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
         tagChecker(rmw, atomic, mo, avvis, scope, classSemantic, avvisSemantic);
-        rmw.addTags(storageClass, Tag.Vulkan.ATOM);
+        rmw.addTags(storageClass);
         return programBuilder.addChild(mainThread, rmw);
     }
 

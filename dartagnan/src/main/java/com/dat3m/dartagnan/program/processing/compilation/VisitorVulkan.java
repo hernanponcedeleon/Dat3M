@@ -21,10 +21,10 @@ public class VisitorVulkan extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoad(dummy, address);
-        RMWStore store = newRMWStore(load, address, e.getValue());
-        Tag.propagateTags(Arch.VULKAN, e, load);
-        Tag.propagateTags(Arch.VULKAN, e, store);
+        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
+        Tag.Vulkan.propagateTags(e, load);
+        Tag.Vulkan.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,

@@ -22,11 +22,11 @@ public class VisitorPTX extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoad(dummy, address);
-        RMWStore store = newRMWStore(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
-        Tag.propagateTags(Arch.PTX, e, load);
-        Tag.propagateTags(Arch.PTX, e, store);
+        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address,
+                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
+        Tag.PTX.propagateTags(e, load);
+        Tag.PTX.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,
@@ -38,11 +38,11 @@ public class VisitorPTX extends VisitorBase {
     public List<Event> visitPtxRedOp(PTXRedOp e) {
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(types.getArchType());
-        Load load = newRMWLoad(dummy, address);
-        RMWStore store = newRMWStore(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
-        Tag.propagateTags(Arch.PTX, e, load);
-        Tag.propagateTags(Arch.PTX, e, store);
+        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
+        RMWStore store = newRMWStoreWithMo(load, address,
+                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
+        Tag.PTX.propagateTags(e, load);
+        Tag.PTX.propagateTags(e, store);
         return eventSequence(
                 load,
                 store
