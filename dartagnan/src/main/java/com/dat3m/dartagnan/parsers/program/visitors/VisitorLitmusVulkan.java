@@ -14,7 +14,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -305,8 +304,8 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             e.addTags(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE);
         }
 
-        if (storageClassSemantic.equals(Tag.Vulkan.SEM_SC01)) {
-            e.addTags(Tag.Vulkan.SEM_SC0, Tag.Vulkan.SEM_SC1);
+        if (storageClassSemantic.equals(Tag.Vulkan.SEMSC01)) {
+            e.addTags(Tag.Vulkan.SEMSC0, Tag.Vulkan.SEMSC1);
         }
 
         // AV, VIS, and atomics are all implicitly nonpriv

@@ -22,11 +22,11 @@ public class VisitorPTX extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
-        load.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
-        store.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
+        Load load = newRMWLoad(dummy, address);
+        RMWStore store = newRMWStore(load, address,
+                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
+        Tag.propagateTags(Arch.PTX, e, load);
+        Tag.propagateTags(Arch.PTX, e, store);
         return eventSequence(
                 load,
                 store,
@@ -37,12 +37,12 @@ public class VisitorPTX extends VisitorBase {
     @Override
     public List<Event> visitPtxRedOp(PTXRedOp e) {
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
-        RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
-        load.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
-        store.addTags(Tag.getScopeTag(e, Arch.PTX), Tag.PTX.getProxyTag(e));
+        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Load load = newRMWLoad(dummy, address);
+        RMWStore store = newRMWStore(load, address,
+                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()));
+        Tag.propagateTags(Arch.PTX, e, load);
+        Tag.propagateTags(Arch.PTX, e, store);
         return eventSequence(
                 load,
                 store
