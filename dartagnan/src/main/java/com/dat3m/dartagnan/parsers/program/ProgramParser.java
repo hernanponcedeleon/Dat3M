@@ -7,7 +7,8 @@ import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 
 public class ProgramParser {
 
@@ -49,8 +50,7 @@ public class ProgramParser {
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
-            case "c":
-            case "i":
+            case "c", "i" -> {
                 File parsedFile = path.isEmpty() ?
                         // This is for the case where the user fully typed the program instead of loading it
                         File.createTempFile("dat3m", ".c") :
@@ -64,21 +64,25 @@ public class ProgramParser {
                     compiledFile = compileWithClang(parsedFile, cflags);
                 }
                 File optimisedFile = applyLlvmPasses(compiledFile != null ? compiledFile : parsedFile);
-                File bplFile = compileWithSmack(optimisedFile, cflags);
-                Program p = new ProgramParser().parse(bplFile);
+                //File bplFile = compileWithSmack(optimisedFile, cflags);
+                Program p = new ProgramParser().parse(optimisedFile);
                 parsedFile.delete();
                 if (compiledFile != null) {
                     compiledFile.delete();
                 }
                 optimisedFile.delete();
-                bplFile.delete();
+               // bplFile.delete();
                 return p;
-            case "ll":
+            }
+            case "ll" -> {
                 return new ParserLlvm().parse(CharStreams.fromString(raw));
-            case "bpl":
+            }
+            case "bpl" -> {
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
-            case "litmus":
+            }
+            case "litmus" -> {
                 return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
+            }
         }
         throw new ParsingException("Unknown input file type");
     }
