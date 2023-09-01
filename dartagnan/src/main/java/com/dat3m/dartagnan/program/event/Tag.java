@@ -321,6 +321,7 @@ public final class Tag {
     // ========================================= Vulkan ============================================
     // =============================================================================================
     public static final class Vulkan {
+        public static final String CBAR = "CBAR";
         // Scopes
         public static final String SUB_GROUP = "SG";
         public static final String WORK_GROUP = "WG";

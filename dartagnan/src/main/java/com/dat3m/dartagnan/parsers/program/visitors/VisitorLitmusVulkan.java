@@ -280,6 +280,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Expression fenceId = (Expression) ctx.barID().accept(this);
         String fenceIdString = ctx.getText().replace(fenceId.toString(), "");
         Event fence = EventFactory.newFenceWithId(fenceIdString.toLowerCase(), fenceId);
+        fence.addTags(Tag.Vulkan.CBAR);
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             fence.removeTags(Tag.FENCE);
         }
