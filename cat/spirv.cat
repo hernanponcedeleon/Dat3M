@@ -40,7 +40,12 @@ let AVSG = AV | SEMAV
 let VISSG = VIS | SEMVIS
 
 (* Relations *)
-let mutordatom = (loc & vloc & sr & (ATOM * ATOM)) \ id // mutually ordered atomics (same loc, inscope)
+let inscope = (DV * DV) |
+              (sqf & ((DV | QF) * (DV | QF))) |
+              (swg & ((DV | QF | WG) * (DV | QF | WG))) |
+              (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
+
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics (scope requirement is different from PTX)
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
@@ -57,13 +62,13 @@ let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relat
 let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
-let sw = sr & (
+let sw = inscope & (
     ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; (syncbar & sr \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
+    ([REL & F]; po?; [CBAR]; (syncbar & inscope \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
 )
 
 let ithbsemsc0 = ( ssw |
