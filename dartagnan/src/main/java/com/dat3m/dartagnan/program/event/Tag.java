@@ -322,6 +322,8 @@ public final class Tag {
     // =============================================================================================
     public static final class Vulkan {
         public static final String CBAR = "CBAR";
+        public static final String AVDEVICE = "AVDEVICE";
+        public static final String VISDEVICE = "VISDEVICE";
         // Scopes
         public static final String SUB_GROUP = "SG";
         public static final String WORK_GROUP = "WG";

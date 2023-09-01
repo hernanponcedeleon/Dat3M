@@ -97,6 +97,7 @@ instruction
     |   loadInstruction
     |   rmwInstruction
     |   fenceInstruction
+    |   deviceOperation
     ;
 
 storeInstruction
@@ -144,6 +145,11 @@ memoryBarrier
 
 controlBarrier
     :   ControlBarrier mo avvis scope storageClassSemanticList avvisSemantic barID
+    ;
+
+deviceOperation
+    :   AVDEVICE
+    |   VISDEVICE
     ;
 
 barID
@@ -224,6 +230,9 @@ Locations
 Register
     :   'r' DigitSequence
     ;
+
+AVDEVICE        :   'avdevice';
+VISDEVICE       :   'visdevice';
 
 Aliases         :   'aliases';
 Ssw             :   'ssw';

@@ -288,6 +288,21 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return programBuilder.addChild(mainThread, fence);
     }
 
+    // TODO: Using fences(without 'F' tag) as special device operations for now, need to be changed
+    @Override
+    public Object visitDeviceOperation(LitmusVulkanParser.DeviceOperationContext ctx) {
+        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        fence.removeTags(Tag.FENCE);
+        if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.AVDEVICE)) {
+            fence.addTags(Tag.Vulkan.AVDEVICE);
+        } else if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.VISDEVICE)) {
+            fence.addTags(Tag.Vulkan.VISDEVICE);
+        } else {
+            throw new ParsingException("Unknown device operation");
+        }
+        return programBuilder.addChild(mainThread, fence);
+    }
+
     private void tagChecker(Event e, Boolean atomic, String mo, String avvis, String scope,
                             List<String> storageClassSemantics, String avvisSemantic) {
         // ----------------------------------------------------------------------------------------------------------------

@@ -21,9 +21,28 @@ SPIRV
 (*******************)
 (*  Auxiliaries *)
 (*******************)
+
+(* Tags *)
+let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
+
+let SEMSC01 = SEMSC0 & SEMSC1
+
+let AVSHADER = (AV | SEMAV) & DV
+let VISSHADER = (VIS | SEMVIS) & DV
+
+let AVQF = (AV | SEMAV) & (DV | QF)
+let VISQF = (VIS | SEMVIS) & (DV | QF)
+
+let AVWG = (AV | SEMAV) & (DV | QF | WG)
+let VISWG = (VIS | SEMVIS) & (DV | QF | WG)
+
+let AVSG = AV | SEMAV
+let VISSG = VIS | SEMVIS
+
+(* Relations *)
 let mutordatom = (loc & vloc & sr & (ATOM * ATOM)) \ id // mutually ordered atomics (same loc, inscope)
 
-let avvisSem = ((SC0 | SC1) * ((AV | VIS) & DV))
+let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
                 | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
 let avvisSet = [AV | VIS]; (vloc & loc)
@@ -67,17 +86,17 @@ let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
 let chains = [M | F | CBAR]
 
-let avsg = [AV & SG]
-let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AV & WG]
-let avqf = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AV & QF]
-let avsh = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?); [AV & SHADER]
-let avdv = [AV & DV]
+let avsg = [AVSG]
+let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
+let avqf = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?); [AVQF]
+let avsh = (chains & (avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?); [AVSHADER]
+let avdv = [AVDEVICE]
 
-let vissg = [VIS & SG]
-let viswg = [VIS & WG]; (chains & ((hb & ssg & avvisinc); vissg)?)
-let visqf = [VIS & QF]; (chains & ((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
-let vissh = [VIS & SHADER]; (chains & ((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
-let visdv = [VIS & DV]
+let vissg = [VISSG]
+let viswg = [VISWG]; (chains & ((hb & ssg & avvisinc); vissg)?)
+let visqf = [VISQF]; (chains & ((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
+let vissh = [VISSHADER]; (chains & ((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
+let visdv = [VISDEVICE]
 
 // loc order, relates memory accesses to the same location
 let locord = loc &
@@ -120,5 +139,6 @@ let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
 (* data_races *)
-let dr = loc & ((W * W | W * R | R * W) \ mutordatom \ id \ (locord | locord^-1))
+let pair_with_write = (W * W | W * R | R * W) \ ((IW * _) | (_ * IW)) // ignore IW
+let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy
