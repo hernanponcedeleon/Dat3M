@@ -1,18 +1,21 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IExprUn;
-import com.dat3m.dartagnan.expression.IfExpr;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.Comparators;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,28 +23,34 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 
 /*
  * Replaces memory accesses that involve addresses that are only used by one thread.
  * Loops are allowed, this analysis ensures termination by storing local copies for each destination of a backwards jump.
- * A distributive framework on the power-set lattice of D:
- * D := (Event times (Register | Allocation | {global}) times (Allocation | {global})).
+ * On each function, the iteration happens on the finite function lattice E -> (((R+A) -> (A+top))+bot):
+ * A is the finite set of allocation events.
+ * E is the finite set of events.
+ * R is the finite set of registers.
+ * A+top is the co-semi-lattice with new top element over A.
+ * (R+A) -> (A+top) is the function semi-lattice over A+1.
+ * ((R+A) -> (A+top))+bot is the lattice with new bottom element over (R+A) -> (A+top).
  * Tracks when a register or address contains an address.
  * Unifies all global addresses into one element represented by {@code null}.
- * TODO Field-sensitivity: Distinguish between data stored in a[0] and a[1]
- * TODO also replaces memcpy memset memcmp alloc malloc.  Currently treated as calls to unknown
+ * TODO also replace memcpy memset memcmp.  Currently treated as calls to unknown.
  */
 public class MemToReg implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(MemToReg.class);
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final Comparator<Event> eventComparator = Comparator.comparingInt(Event::getGlobalId);
 
     private MemToReg() {
     }
@@ -54,232 +63,284 @@ public class MemToReg implements FunctionProcessor {
     public void run(Function function) {
         logger.trace("Processing function \"{}\".", function.getName());
         final var matcher = new Matcher();
-        final Comparator<Event> eventComparator = Comparator.comparingInt(Event::getGlobalId);
         final List<Event> events = function.getEvents();
         assert Comparators.isInOrder(events, eventComparator);
-        // Initially, all parameters contain published addresses.
-        for (final Register parameter : function.getParameterRegisters()) {
-            matcher.state.add(new Edge(parameter, null, null));
+        // Initially, all locally-allocated addresses are potentially replaceable.
+        for (final Alloc allocation : function.getEvents(Alloc.class)) {
+            matcher.reachabilityGraph.put(allocation, new HashSet<>());
         }
         // This loop should terminate, since back jumps occur, only if changes were made.
         Label back;
         for (int i = 0; i < events.size(); i = back == null ? i + 1 : Collections.binarySearch(events, back, eventComparator)) {
             back = events.get(i).accept(matcher);
         }
-        // Incrementally mark local addresses as global if published.
-        final Set<RegWriter> emptySet = new HashSet<>();
-        final Set<RegWriter> marked = new HashSet<>(matcher.reachabilityGraph.getOrDefault(null, emptySet));
-        final Queue<RegWriter> queue = new ArrayDeque<>(marked);
-        while (!queue.isEmpty()) {
-            final RegWriter publishedAddress = queue.remove();
-            for (final RegWriter contained : matcher.reachabilityGraph.getOrDefault(publishedAddress, emptySet)) {
-                if (marked.add(contained)) {
-                    queue.add(contained);
+        // Replace every unmarked address
+        final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
+        for (final Alloc allocation : function.getEvents(Alloc.class)) {
+            if (matcher.reachabilityGraph.containsKey(allocation)) {
+                List<Type> registers = getReplacingRegisters(allocation);
+                if (registers != null) {
+                    replacingRegisters.put(allocation, registers.stream().map(function::newRegister).toList());
                 }
             }
         }
-        // TODO Replace
-        assert false;
-    }
-
-    private static Iterable<Expression> getPublishingArguments(FunctionCall call) {
-        final String name = call.getCalledFunction().getName();
-        if (name.equals("__VERIFIER_assert") || name.startsWith("__VERIFIER_nondet_")) {
-            return List.of();
+        int loadCount = 0, storeCount = 0;
+        // Replace all loads and stores to replaceable storage.
+        for (final Map.Entry<MemoryEvent, AddressOffset> entry : matcher.accesses.entrySet()) {
+            final MemoryEvent event = entry.getKey();
+            final AddressOffset access = entry.getValue();
+            final List<Register> registers = access == null ? null : replacingRegisters.get(access.base);
+            if (registers == null || access.offset < 0 || access.offset >= registers.size()) {
+                continue;
+            }
+            if (event instanceof Load load) {
+                final Register reg = load.getResultRegister();
+                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(registers.get(access.offset), reg.getType())));
+                loadCount++;
+            }
+            if (event instanceof Store store) {
+                final Register reg = registers.get(access.offset);
+                store.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(store.getMemValue(), reg.getType())));
+                storeCount++;
+            }
         }
-        return call.getArguments();
+        //TODO remove allocations and associated local events
+        if (loadCount + storeCount > 0) {
+            logger.info("Removed {} loads and {} stores.", loadCount, storeCount);
+        }
     }
 
-    // Describes a local containment relationship.
-    // A container is either a register, a local memory section returned by an event, or the global memory.
-    // A tracked element is either a local memory section
-    // Invariant: register == null || from == null
-    private record Edge(Register register, RegWriter address, RegWriter value) {}
+    private List<Type> getReplacingRegisters(Alloc allocation) {
+        if (!(allocation.getArraySize() instanceof IValue sizeExpression)) {
+            return null;
+        }
+        final int size = sizeExpression.getValueAsInt();
+        if (size != 1) {
+            //TODO arrays
+            return null;
+        }
+        final List<Type> replacementTypes = new ArrayList<>();
+        final Type type = allocation.getAllocationType();
+        //TODO PointerType
+        if (type instanceof IntegerType || type instanceof BooleanType) {
+            replacementTypes.add(type);
+        } else {
+            //TODO aggregate types
+            return null;
+        }
+        //TODO check for mixed-size accesses
+        return replacementTypes;
+    }
+
+    // Invariant: base != null
+    private record AddressOffset(RegWriter base, int offset) {
+        private AddressOffset increase(int o) {
+            return o == 0 ? this : new AddressOffset(base, offset + o);
+        }
+        @Override
+        public String toString() {
+            return base + (offset == 0 ? "" : " + " + offset);
+        }
+    }
+
+    // Invariant: register != null
+    private record RegisterOffset(Register register, int offset) {}
 
     // Processes events in program order.
     // Returns a label, if it is program-ordered before the current event and its symbolic state was updated.
     private static final class Matcher implements EventVisitor<Label> {
 
-        // Current symbolic state.
-        private final Set<Edge> state = new HashSet<>();
+        // Current local symbolic state.  Missing values mean irreplaceable contents.
+        private final Map<Object, AddressOffset> state = new HashMap<>();
         // Maps labels and jumps to symbolic state information.
-        private final Map<Event, Set<Edge>> jumps = new HashMap<>();
-        // Join over all memory information.
+        private final Map<Label, Map<Object, AddressOffset>> jumps = new HashMap<>();
+        // Since it is not allowed to get the address of a register, once an address is
+        // Join over all memory information.  Initialized to all empty.  Missing entries mean irreplaceable address.
         private final Map<RegWriter, Set<RegWriter>> reachabilityGraph = new HashMap<>();
+        // Collects candidates to be replaced.  Maps to null if indirect or global.
+        private final Map<MemoryEvent, AddressOffset> accesses = new HashMap<>();
+        private boolean dead;
 
         @Override
         public Label visitEvent(Event e) {
-            assert !(e instanceof MemoryEvent);//FIXME this is for debugging
-            // Publish all values passed as arguments.
-            if (e instanceof FunctionCall call) {
-                final Set<Register> registers = new HashSet<>();
-                for (final Expression argument : getPublishingArguments(call)) {
-                    registers.addAll(argument.getRegs());
-                }
-                publishRegisters(registers);
+            if (dead) {
+                return null;
             }
-            // Publish all returned values.
-            if (e instanceof Return ret && ret.getValue().isPresent()) {
-                final Set<Register> registers = ret.getValue().get().getRegs();
+            // Publish all values passed as arguments.
+            if (e instanceof RegReader reader) {
+                final var registers = new HashSet<Register>();
+                for (Register.Read read : reader.getRegisterReads()) {
+                    registers.add(read.register());
+                }
                 publishRegisters(registers);
             }
             // Includes function call return values.
             if (e instanceof RegWriter writer) {
-                state.add(new Edge(writer.getResultRegister(), null, writer));
+                state.put(writer.getResultRegister(), new AddressOffset(writer, 0));
             }
             return null;
         }
 
         @Override
         public Label visitLocal(Local assignment) {
-            final Register register = assignment.getResultRegister();
-            for (final RegWriter value : collect(assignment.getExpr())) {
-                state.add(new Edge(register, null, value));
+            if (dead) {
+                return null;
             }
+            final Register register = assignment.getResultRegister();
+            final RegisterOffset expression = matchGEP(assignment.getExpr());
+            assert expression == null || expression.register != null;
+            final AddressOffset valueBase = expression == null ? null : state.get(expression.register);
+            final AddressOffset value = valueBase == null ? null : valueBase.increase(expression.offset);
+            // If too complex, treat like a global address.
+            if (value == null) {
+                publishRegisters(assignment.getExpr().getRegs());
+            }
+            update(state, register, value);
             return null;
         }
 
         @Override
         public Label visitLoad(Load load) {
+            if (dead) {
+                return null;
+            }
+            // Each path must update state and accesses.
             final Register register = load.getResultRegister();
-            final Set<RegWriter> addresses = collect(load.getAddress());
-            // Read all local addresses previously stored in any address.  Read a global address if previously stored.
-            // Avoid concurrent modification.
-            final var values = new HashSet<RegWriter>();
-            for (final Edge edge : state) {
-                if (edge.register == null && addresses.contains(edge.address)) {
-                    values.add(edge.value);
-                }
+            final RegisterOffset addressExpression = matchGEP(load.getAddress());
+            assert addressExpression == null || addressExpression.register != null;
+            final AddressOffset addressBase = addressExpression == null ? null : state.get(addressExpression.register);
+            final var address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
+            // If too complex, treat like global address.
+            if (addressExpression == null) {
+                publishRegisters(load.getAddress().getRegs());
             }
-            for (final RegWriter value : values) {
-                state.add(new Edge(register, null, value));
-            }
-            // If reading from published storage, read a global address.
-            if (addresses.contains(null)) {
-                state.add(new Edge(register, null, null));
-            }
+            final var value = address == null ? null : state.get(address);
+            update(accesses, load, address);
+            update(state, register, value);
             return null;
         }
 
         @Override
         public Label visitStore(Store store) {
-            // Store every value in every address.
-            final Set<RegWriter> values = collect(store.getMemValue());
-            for (final RegWriter address : collect(store.getAddress())) {
-                storeValues(address, values);
+            if (dead) {
+                return null;
+            }
+            // Each path must update state and accesses.
+            final RegisterOffset addressExpression = matchGEP(store.getAddress());
+            assert addressExpression == null || addressExpression.register != null;
+            final AddressOffset addressBase = addressExpression == null ? null : state.get(addressExpression.register);
+            final AddressOffset address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
+            final RegisterOffset valueExpression = matchGEP(store.getMemValue());
+            assert valueExpression == null || valueExpression.register != null;
+            final AddressOffset value = valueExpression == null ? null : state.get(valueExpression.register);
+            // On complex address expression, give up on any address that could contribute here.
+            if (addressExpression == null) {
+                publishRegisters(store.getAddress().getRegs());
+            }
+            // On ambiguous address, give up on any address that could be stored here.
+            if (address == null || valueExpression == null) {
+                publishRegisters(store.getMemValue().getRegs());
+            }
+            update(accesses, store, address);
+            update(state, address, value);
+            final Set<RegWriter> reachableSet = address == null ? null : reachabilityGraph.get(address.base);
+            if (reachableSet != null && value != null) {
+                reachableSet.add(value.base);
             }
             return null;
         }
 
         @Override
         public Label visitLabel(Label label) {
-            final int globalId = label.getGlobalId();
-            final boolean looping = label.getJumpSet().stream().anyMatch(jump -> globalId < jump.getGlobalId());
-            // If destination of a back jump, keep the state.
-            final Set<Edge> s = looping ? jumps.get(label) : jumps.remove(label);
-            if (s != null) {
-                state.addAll(s);
+            //TODO store state only if some backward jump, or in a loop with forward jumps from before that loop.
+            final Map<Object, AddressOffset> restoredState = jumps.get(label);
+            if (restoredState != null) {
+                if (dead) {
+                    assert state.isEmpty();
+                    state.putAll(restoredState);
+                    dead = false;
+                } else {
+                    mergeInto(state, restoredState);
+                    mergeInto(restoredState, state);
+                }
+            } else {
+                jumps.put(label, new HashMap<>(state));
             }
             return null;
         }
 
         @Override
         public Label visitCondJump(CondJump jump) {
-            if (jump.isDead()) {
+            if (dead || jump.isDead()) {
                 return null;
             }
+            // Give up on every address used in the condition.
+            publishRegisters(jump.getGuard().getRegs());
             final Label label = jump.getLabel();
             final boolean looping = label.getGlobalId() < jump.getGlobalId();
             final boolean isGoto = jump.isGoto();
-            // If conditional back jump, send state to next event.
-            if (looping && !isGoto) {
-                jumps.computeIfAbsent(jump, k -> new HashSet<>()).addAll(state);
+            assert !looping || jumps.containsKey(label);
+            // Prepare the current state for continuing from the label.
+            final Map<Object, AddressOffset> labelState = jumps.get(label);
+            if (labelState != null) {
+                //NOTE no short-circuiting.
+                final boolean change = mergeInto(labelState, state);
+                if (looping && change) {
+                    state.clear();
+                    state.putAll(labelState);
+                    return label;
+                }
+            } else {
+                jumps.put(label, new HashMap<>(state));
             }
-            // The state of the label was kept.  When jumping back, only propagate new information.
-            if (looping) {
-                assert jumps.containsKey(label);
-                state.removeAll(jumps.get(label));
-            }
-            // Jump back only if there is new information.
-            if (looping && !state.isEmpty()) {
-                return label;
-            }
-            // No jumping back means continuing with the next event.
-            // If not looping, send a copy of the state into the future.  If looping, do nothing.
-            jumps.computeIfAbsent(label, k -> new HashSet<>()).addAll(state);
             // If unconditional, discard the state.
             if (isGoto) {
                 state.clear();
-            }
-            // Merge with states sent to next event.
-            final Set<Edge> restoredState = jumps.remove(jump);
-            if (restoredState != null) {
-                assert looping && !isGoto;
-                state.addAll(restoredState);
+                dead = true;
             }
             return null;
         }
 
         private void publishRegisters(Set<Register> registers) {
-            final Set<RegWriter> values = new HashSet<>();
-            for (final Edge edge : state) {
-                if (registers.contains(edge.register)) {
-                    values.add(edge.value);
+            final var queue = new ArrayDeque<RegWriter>();
+            for (final Register register : registers) {
+                final AddressOffset value = state.remove(register);
+                if (value != null) {
+                    queue.add(value.base);
                 }
             }
-            storeValues(null, values);
-        }
-
-        private void storeValues(RegWriter address, Set<RegWriter> values) {
-            for (final RegWriter value : values) {
-                state.add(new Edge(null, address, value));
-            }
-            reachabilityGraph.computeIfAbsent(address, k -> new HashSet<>()).addAll(values);
-        }
-
-        // Returned set contains null iff some static address is involved.
-        private Set<RegWriter> collect(Expression expression) {
-            final var result = new HashSet<RegWriter>();
-            // Insert null if a global address could be returned.
-            if (expression.accept(new ContainsMemoryObject()) != null) {
-                result.add(null);
-            }
-            //
-            final Set<Register> registers = expression.getRegs();
-            if (!registers.isEmpty()) {
-                for (final Edge entry : state) {
-                    if (registers.contains(entry.register)) {
-                        result.add(entry.value);
-                    }
+            while (!queue.isEmpty()) {
+                final RegWriter allocation = queue.remove();
+                final Set<RegWriter> reachableSet = reachabilityGraph.remove(allocation);
+                if (reachableSet != null) {
+                    queue.addAll(reachableSet);
                 }
             }
-            return result;
-        }
-    }
-
-    // Checks if an expression may return a static address directly.  Returns null otherwise.
-    private static final class ContainsMemoryObject implements ExpressionVisitor<Object> {
-
-        @Override
-        public Object visit(IExprBin iBin) {
-            final Object object = iBin.getLHS().accept(this);
-            return object != null ? object : iBin.getRHS().accept(this);
         }
 
-        @Override
-        public Object visit(IExprUn iUn) {
-            return iUn.getInner().accept(this);
+        private RegisterOffset matchGEP(Expression expression) {
+            if (expression instanceof Register register) {
+                return new RegisterOffset(register, 0);
+            }
+            if (expression instanceof IExprBin bin &&
+                    bin.getLHS() instanceof Register register &&
+                    bin.getOp() == IOpBin.ADD &&
+                    bin.getRHS() instanceof IValue offset) {
+                return new RegisterOffset(register, offset.getValueAsInt());
+            }
+            return null;
         }
 
-        @Override
-        public Object visit(IfExpr ifExpr) {
-            final Object object = ifExpr.getFalseBranch().accept(this);
-            return object != null ? object : ifExpr.getTrueBranch().accept(this);
+        private static <K, V> boolean mergeInto(Map<K, V> target, Map<K, V> other) {
+            return target.entrySet().removeIf(entry -> !entry.getValue().equals(other.get(entry.getKey())));
         }
 
-        @Override
-        public Object visit(MemoryObject address) {
-            return address;
+        private static <K, V> void update(Map<K, V> target, K key, V value) {
+            if (value == null) {
+                target.remove(key);
+            } else {
+                target.put(key, value);
+            }
         }
     }
 }
