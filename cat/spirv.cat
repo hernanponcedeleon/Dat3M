@@ -28,7 +28,7 @@ let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
 let SEMSC01 = SEMSC0 & SEMSC1
 
 let AVSHADER = (AV | SEMAV) & DV
-let VISDEVICE = (VIS | SEMVIS) & DV
+let VISSHADER = (VIS | SEMVIS) & DV
 
 let AVQF = (AV | SEMAV) & (DV | QF)
 let VISQF = (VIS | SEMVIS) & (DV | QF)
