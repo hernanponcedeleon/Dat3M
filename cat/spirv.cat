@@ -68,7 +68,7 @@ let sw = inscope & (
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; (syncbar & inscope \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
 )
 
 let ithbsemsc0 = ( ssw |
@@ -107,7 +107,7 @@ let visdv = [VISDEVICE]
 // loc order, relates memory accesses to the same location
 let locord = loc &
              (  (hb & int & vloc) |
-                ([R \ PRIV]; hb; [R | W \ PRIV]) | // RaR, WaR (non-private)
+                ([R \ PRIV]; hb; [(R | W) \ PRIV]) | // RaR, WaR (non-private)
                 ([R]; ssw+; [R | W]) | // RaR, WaR (any)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
                 (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
@@ -145,6 +145,6 @@ let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
 (* data_races *)
-let pair_with_write = (W * W | W * R | R * W) \ ((IW * _) | (_ * IW)) // ignore IW
+let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
 let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy
