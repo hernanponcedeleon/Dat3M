@@ -54,8 +54,8 @@ let avvisSet = [AV | VIS]; (vloc & loc)
 let avvisinc = (avvisSem | avvisSem^-1) \ id |
                (avvisSet | avvisSet^-1)
 
-let posctosem = (SC0 * SEMSC0 | SC1 * SEMSC1) & po
-let posemtosc = (SEMSC0 * SC0 | SEMSC1 * SC1) & po
+let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
+let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & (ATOM * ATOM)
 let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
@@ -100,8 +100,8 @@ let avdv = [AVDEVICE]
 
 let vissg = [VISSG]
 let viswg = [VISWG]; (chains & ((hb & ssg & avvisinc); vissg)?)
-let visqf = [VISQF]; (chains & ((hb & ssg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
-let vissh = [VISSHADER]; (chains & ((hb & ssg & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & sqf & avvisinc); vissg)?)
+let visqf = [VISQF]; (chains & ((hb & swg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?)
+let vissh = [VISSHADER]; (chains & ((hb & sqf & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & ssg & avvisinc); vissg)?)
 let visdv = [VISDEVICE]
 
 // loc order, relates memory accesses to the same location
