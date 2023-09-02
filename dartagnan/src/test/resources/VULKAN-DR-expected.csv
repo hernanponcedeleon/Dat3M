@@ -36,7 +36,7 @@ litmus/VULKAN/DR/releaseseq3-filter.litmus,1
 litmus/VULKAN/DR/releaseseq4-filter.litmus,1
 litmus/VULKAN/DR/samethread-filter.litmus,1
 litmus/VULKAN/DR/samethread2-filter.litmus,1
-litmus/VULKAN/DR/scnottransitive-filter.litmus,1
+litmus/VULKAN/DR/scnottransitive-filter.litmus,0
 litmus/VULKAN/DR/scopeaccum-filter.litmus,1
 litmus/VULKAN/DR/ssw0-filter.litmus,1
 litmus/VULKAN/DR/ssw1-filter.litmus,1
@@ -47,8 +47,8 @@ litmus/VULKAN/DR/ssw5-filter.litmus,1
 litmus/VULKAN/DR/ssw6-filter.litmus,1
 litmus/VULKAN/DR/ssw7-filter.litmus,1
 litmus/VULKAN/DR/ssw8-filter.litmus,1
-litmus/VULKAN/DR/test0-filter.litmus,1
-litmus/VULKAN/DR/test1-filter.litmus,1
+litmus/VULKAN/DR/test0-filter.litmus,0
+litmus/VULKAN/DR/test1-filter.litmus,0
 litmus/VULKAN/DR/test10-filter.litmus,1
 litmus/VULKAN/DR/test11-filter.litmus,1
 litmus/VULKAN/DR/test12-filter.litmus,1
@@ -60,7 +60,7 @@ litmus/VULKAN/DR/test18-filter.litmus,1
 litmus/VULKAN/DR/test19-filter.litmus,1
 litmus/VULKAN/DR/test2-filter.litmus,0
 litmus/VULKAN/DR/test20-filter.litmus,1
-litmus/VULKAN/DR/test21-filter.litmus,1
+litmus/VULKAN/DR/test21-filter.litmus,0
 litmus/VULKAN/DR/test3-filter.litmus,1
 litmus/VULKAN/DR/test4-filter.litmus,1
 litmus/VULKAN/DR/test5-filter.litmus,1
