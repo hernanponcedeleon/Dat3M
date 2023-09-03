@@ -253,6 +253,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String avvis = ctx.avvis().content;
         String scope = ctx.scope().content;
+        String semavis = ctx.avvisSemantic().content;
         List<String> storageClassSemantics = new ArrayList<>();
         List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
         for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
@@ -263,7 +264,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
         }
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, "");
+        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, semavis);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -272,6 +273,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String mo = ctx.mo().content;
         String avvis = ctx.avvis().content;
+        String semavis = ctx.avvisSemantic().content;
         List<String> storageClassSemantics = new ArrayList<>();
         List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
         for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
@@ -284,7 +286,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             fence.removeTags(Tag.FENCE);
         }
-        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, "");
+        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, semavis);
         return programBuilder.addChild(mainThread, fence);
     }
 
