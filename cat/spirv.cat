@@ -58,8 +58,8 @@ let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & (ATOM * ATOM)
-let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
-let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [R & W])* // NB: recursive relation in the right-hand-side of a difference
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])* // NB: recursive relation in the right-hand-side of a difference
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])* // NB: recursive relation in the right-hand-side of a difference
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
