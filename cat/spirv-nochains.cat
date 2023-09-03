@@ -89,7 +89,8 @@ let ithbsemsc01 = ( ssw |
 
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
-let chains = [M | F | CBAR]
+let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW // events
+let chains = [E]
 
 let avsg = [AVSG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
