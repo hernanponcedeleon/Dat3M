@@ -319,16 +319,17 @@ public class MemToReg implements FunctionProcessor {
         }
 
         private RegisterOffset matchGEP(Expression expression) {
-            if (expression instanceof Register register) {
-                return new RegisterOffset(register, 0);
+            int sum = 0;
+            while (!(expression instanceof Register register)) {
+                if (!(expression instanceof IExprBin bin) ||
+                        bin.getOp() != IOpBin.ADD ||
+                        !(bin.getRHS() instanceof IValue offset)) {
+                    return null;
+                }
+                sum += offset.getValueAsInt();
+                expression = bin.getLHS();
             }
-            if (expression instanceof IExprBin bin &&
-                    bin.getLHS() instanceof Register register &&
-                    bin.getOp() == IOpBin.ADD &&
-                    bin.getRHS() instanceof IValue offset) {
-                return new RegisterOffset(register, offset.getValueAsInt());
-            }
-            return null;
+            return new RegisterOffset(register, sum);
         }
 
         private static <K, V> boolean mergeInto(Map<K, V> target, Map<K, V> other) {
