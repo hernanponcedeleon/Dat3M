@@ -11,4 +11,4 @@ ssw 0 1;
  st.nonpriv.sc0 x, 1              | membar.acq.qf.semsc0.semvis      ;
  membar.rel.qf.semsc0.semav       | ld.nonpriv.sc0 r0, x             ;
 exists
-(P1:r0 == 0)
+(x == 1)

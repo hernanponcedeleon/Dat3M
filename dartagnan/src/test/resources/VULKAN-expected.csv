@@ -33,8 +33,14 @@ litmus/VULKAN/releaseseq3.litmus,1
 litmus/VULKAN/releaseseq4.litmus,1
 litmus/VULKAN/samethread.litmus,1
 litmus/VULKAN/samethread2.litmus,1
+litmus/VULKAN/scopeaccum.litmus,1
+litmus/VULKAN/ssw0.litmus,1
+litmus/VULKAN/ssw1.litmus,1
+litmus/VULKAN/ssw3.litmus,1
+litmus/VULKAN/ssw5.litmus,1
+litmus/VULKAN/ssw6.litmus,1
 litmus/VULKAN/ssw7.litmus,1
-litmus/VULKAN/test0.litmus,1
+litmus/VULKAN/ssw8.litmus,1
 litmus/VULKAN/test10.litmus,1
 litmus/VULKAN/test11.litmus,1
 litmus/VULKAN/test12.litmus,1

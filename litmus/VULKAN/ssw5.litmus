@@ -1,7 +1,6 @@
 VULKAN ssw5
 {
 P2:r0=0;
-P2:r1=0;
 x=0;
 y=0;
 z=0;
@@ -11,7 +10,7 @@ ssw 0 1;
 ssw 1 2;
 }
  P0@sg 0,wg 0, qf 0               | P1@sg 1,wg 0, qf 0               | P2@sg 2,wg 0, qf 0               ;
- st.priv.sc0 x, 1                 | avdevice                         | ld.priv.sc1 r0, z                ;
- st.priv.sc1 y, 1                 | visdevice                        | ld.priv.sc0 r1, x                ;
+ st.sc0 x, 1                      | avdevice                         | st.sc1 z, 1                      ;
+ st.sc1 y, 1                      | visdevice                        | ld.sc0 r0, x                     ;
 exists
 (P2:r0 == 1)
