@@ -338,7 +338,7 @@ public final class Tag {
         public static final String VISIBLE = "VIS";
         public static final String AVAILABLE = "AV";
         public static final String SEM_VISIBLE = "SEMVIS";
-        public static final String SEM_AVAILABLE = "SEMAVA";
+        public static final String SEM_AVAILABLE = "SEMAV";
         // StorageClass
         public static final String SC0 = "SC0";
         public static final String SC1 = "SC1";

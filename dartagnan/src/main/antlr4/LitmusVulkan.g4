@@ -106,11 +106,11 @@ storeInstruction
     ;
 
 storeConstant
-    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic location Comma constant
+    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList location Comma constant
     ;
 
 storeRegister
-    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic location Comma register
+    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList location Comma register
     ;
 
 loadInstruction
@@ -119,11 +119,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic register Comma constant
+    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma constant
     ;
 
 loadLocation
-    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic register Comma location
+    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma location
     ;
 
 rmwInstruction
@@ -131,7 +131,7 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemantic register Comma location Comma constant
+    :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -140,11 +140,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo avvis scope storageClassSemanticList avvisSemantic
+    :   MemoryBarrier mo avvis scope storageClassSemanticList avvisSemanticList
     ;
 
 controlBarrier
-    :   ControlBarrier mo avvis scope storageClassSemanticList avvisSemantic barID
+    :   ControlBarrier mo avvis scope storageClassSemanticList avvisSemanticList barID
     ;
 
 deviceOperation
@@ -219,8 +219,10 @@ storageClassSemanticList
 avvisSemantic returns [String content]
     :   Period SemVis {$content = "SEMVIS";}
     |   Period SemAv {$content = "SEMAV";}
-    |   Period SemAvvis {$content = "SEMAVVIS";}
-    |   {$content = "";}
+    ;
+
+avvisSemanticList
+    :   (avvisSemantic)*
     ;
 
 Locations

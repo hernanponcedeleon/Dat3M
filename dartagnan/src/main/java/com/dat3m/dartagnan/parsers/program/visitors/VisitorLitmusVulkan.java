@@ -154,16 +154,20 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
         List<String> storageClassSemantics = new ArrayList<>();
-        List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
-        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
             storageClassSemantics.add(scSemantic.content);
         }
-        String avvisSemantic = ctx.avvisSemantic().content;
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
+        }
         if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.RELEASE) && !avvis.isEmpty() && !avvis.equals(Tag.Vulkan.AVAILABLE)) {
             throw new ParsingException("Stores must be release or available");
         }
         Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        tagChecker(store, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantic);
+        tagChecker(store, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         store.addTags(storageClass);
         return programBuilder.addChild(mainThread, store);
     }
@@ -178,16 +182,20 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvis = ctx.avvis().content;
         String storageClass = ctx.storageClass().content;
         List<String> storageClassSemantics = new ArrayList<>();
-        List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
-        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
             storageClassSemantics.add(scSemantic.content);
         }
-        String avvisSemantic = ctx.avvisSemantic().content;
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
+        }
         if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.RELEASE) && !avvis.isEmpty() && !avvis.equals(Tag.Vulkan.AVAILABLE)) {
             throw new ParsingException("Stores must be release or available");
         }
         Store store = EventFactory.newStoreWithMo(object, register, mo);
-        tagChecker(store, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantic);
+        tagChecker(store, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         store.addTags(storageClass);
         return programBuilder.addChild(mainThread, store);
     }
@@ -209,16 +217,20 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
         List<String> storageClassSemantics = new ArrayList<>();
-        List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
-        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
             storageClassSemantics.add(scSemantic.content);
         }
-        String avvisSemantic = ctx.avvisSemantic().content;
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
+        }
         if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQUIRE) && !avvis.isEmpty() && !avvis.equals(Tag.Vulkan.VISIBLE)) {
             throw new ParsingException("Loads must be acquire or visible");
         }
         Load load = EventFactory.newLoadWithMo(register, location, mo);
-        tagChecker(load, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantic);
+        tagChecker(load, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         load.addTags(storageClass);
         return programBuilder.addChild(mainThread, load);
     }
@@ -234,16 +246,20 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String storageClass = ctx.storageClass().content;
         List<String> storageClassSemantics = new ArrayList<>();
-        List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
-        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
             storageClassSemantics.add(scSemantic.content);
         }
-        String avvisSemantic = ctx.avvisSemantic().content;
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
+        }
         if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             throw new ParsingException("RMW must be acq_rel");
         }
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
-        tagChecker(rmw, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantic);
+        tagChecker(rmw, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         rmw.addTags(storageClass);
         return programBuilder.addChild(mainThread, rmw);
     }
@@ -253,18 +269,22 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String mo = ctx.mo().content;
         String avvis = ctx.avvis().content;
         String scope = ctx.scope().content;
-        String semavis = ctx.avvisSemantic().content;
         List<String> storageClassSemantics = new ArrayList<>();
-        List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
-        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
             storageClassSemantics.add(scSemantic.content);
+        }
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
         }
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)
                 && !avvis.equals(Tag.Vulkan.AVAILABLE) && !avvis.equals(Tag.Vulkan.VISIBLE)) {
             throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
         }
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, semavis);
+        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -273,11 +293,15 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = ctx.scope().content;
         String mo = ctx.mo().content;
         String avvis = ctx.avvis().content;
-        String semavis = ctx.avvisSemantic().content;
         List<String> storageClassSemantics = new ArrayList<>();
-        List<LitmusVulkanParser.StorageClassSemanticContext> scSemantics = ctx.storageClassSemanticList().storageClassSemantic();
-        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : scSemantics) {
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
             storageClassSemantics.add(scSemantic.content);
+        }
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
         }
         Expression fenceId = (Expression) ctx.barID().accept(this);
         String fenceIdString = ctx.getText().replace(fenceId.toString(), "");
@@ -286,7 +310,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             fence.removeTags(Tag.FENCE);
         }
-        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, semavis);
+        tagChecker(fence, false, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -306,7 +330,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     private void tagChecker(Event e, Boolean atomic, String mo, String avvis, String scope,
-                            List<String> storageClassSemantics, String avvisSemantic) {
+                            List<String> storageClassSemantics, List<String> avvisSemantics) {
         // ----------------------------------------------------------------------------------------------------------------
         // check tags
         // Check if nonpriv is tagged with memory access
@@ -323,10 +347,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         }
 
         // Check if avvisSemantic is consistent with mo
-        if (avvisSemantic.equals(Tag.Vulkan.SEM_AVAILABLE) && !mo.equals(Tag.Vulkan.RELEASE)) {
+        if (avvisSemantics.contains(Tag.Vulkan.SEM_AVAILABLE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             throw new ParsingException("Available avvisSemantic must be release mo");
         }
-        if (avvisSemantic.equals(Tag.Vulkan.SEM_VISIBLE) && !mo.equals(Tag.Vulkan.ACQUIRE)) {
+        if (avvisSemantics.contains(Tag.Vulkan.SEM_VISIBLE) && !mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
             throw new ParsingException("Visible avvisSemantic must be acquire mo");
         }
 
@@ -337,8 +361,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
         // ----------------------------------------------------------------------------------------------------------------
         // Add tags
-        e.addTags(mo, avvis, scope, avvisSemantic);
+        e.addTags(mo, avvis, scope);
         e.addTags(storageClassSemantics);
+        e.addTags(avvisSemantics);
         if (atomic) {
             e.addTags(Tag.Vulkan.ATOM);
         }
