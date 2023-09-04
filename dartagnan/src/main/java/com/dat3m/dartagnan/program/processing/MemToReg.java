@@ -78,9 +78,11 @@ public class MemToReg implements FunctionProcessor {
         final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             if (matcher.reachabilityGraph.containsKey(allocation)) {
-                List<Type> registers = getReplacingRegisters(allocation);
+                final List<Type> registers = getReplacingRegisters(allocation);
                 if (registers != null) {
                     replacingRegisters.put(allocation, registers.stream().map(function::newRegister).toList());
+                    assert allocation.getUsers().isEmpty();
+                    allocation.tryDelete();
                 }
             }
         }
@@ -95,18 +97,26 @@ public class MemToReg implements FunctionProcessor {
             }
             if (event instanceof Load load) {
                 final Register reg = load.getResultRegister();
+                assert load.getUsers().isEmpty();
                 load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(registers.get(access.offset), reg.getType())));
                 loadCount++;
             }
             if (event instanceof Store store) {
                 final Register reg = registers.get(access.offset);
+                assert store.getUsers().isEmpty();
                 store.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(store.getMemValue(), reg.getType())));
                 storeCount++;
             }
         }
-        //TODO remove allocations and associated local events
+        // Remove involved local assignments.
+        for (final Map.Entry<Local, AddressOffset> entry : matcher.assignments.entrySet()) {
+            if (replacingRegisters.containsKey(entry.getValue().base)) {
+                assert entry.getKey().getUsers().isEmpty();
+                entry.getKey().tryDelete();
+            }
+        }
         if (loadCount + storeCount > 0) {
-            logger.info("Removed {} loads and {} stores.", loadCount, storeCount);
+            logger.debug("Removed {} loads and {} stores in function \"{}\".", loadCount, storeCount, function.getName());
         }
     }
 
@@ -157,8 +167,10 @@ public class MemToReg implements FunctionProcessor {
         // Since it is not allowed to get the address of a register, once an address is
         // Join over all memory information.  Initialized to all empty.  Missing entries mean irreplaceable address.
         private final Map<RegWriter, Set<RegWriter>> reachabilityGraph = new HashMap<>();
-        // Collects candidates to be replaced.  Maps to null if indirect or global.
+        // Collects candidates to be replaced.
         private final Map<MemoryEvent, AddressOffset> accesses = new HashMap<>();
+        // Collects pointer operations.  Maps to
+        private final Map<Local, AddressOffset> assignments = new HashMap<>();
         private boolean dead;
 
         @Override
@@ -195,6 +207,7 @@ public class MemToReg implements FunctionProcessor {
             if (value == null) {
                 publishRegisters(assignment.getExpr().getRegs());
             }
+            update(assignments, assignment, value);
             update(state, register, value);
             return null;
         }
@@ -252,8 +265,9 @@ public class MemToReg implements FunctionProcessor {
 
         @Override
         public Label visitLabel(Label label) {
-            //TODO store state only if some backward jump, or in a loop with forward jumps from before that loop.
-            final Map<Object, AddressOffset> restoredState = jumps.get(label);
+            final int globalId = label.getGlobalId();
+            final boolean looping = label.getJumpSet().stream().anyMatch(jump -> globalId < jump.getGlobalId());
+            final Map<Object, AddressOffset> restoredState = looping ? jumps.get(label) : jumps.remove(label);
             if (restoredState != null) {
                 if (dead) {
                     assert state.isEmpty();
