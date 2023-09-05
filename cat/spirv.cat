@@ -90,7 +90,7 @@ let ithbsemsc01 = ( ssw |
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW // events
-let chains = E * E // TODO: unsound for litmus tests with NOCHAINS assertions
+let chains = E * E
 
 let avsg = [AVSG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
