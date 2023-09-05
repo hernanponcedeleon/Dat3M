@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusRISCVBaseVisitor;
@@ -16,6 +18,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
@@ -50,7 +53,31 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
             String raw = ctx.assertionFilter().getStart().getInputStream().getText(new Interval(a, b));
             programBuilder.setAssertFilter(AssertionHelper.parseAssertionFilter(programBuilder, raw));
         }
-        return programBuilder.build();
+
+        Program prog = programBuilder.build();
+        replaceX0Register(prog);
+
+        return prog;
+    }
+
+    /*
+    The "x0" register plays a special role in RISCV:
+      1. Reading accesses always return the value 0.
+      2. Writing accesses are discarded.
+     TODO: The below code is a simple fix to guarantee point 1. above.
+      Point 2. might also be resolved: although we do not prevent writing to x0,
+      the value of x0 is never read after the transformation so its value is effectively 0.
+      However, the exists/forall clauses could still refer to that register and observe a non-zero value.
+     */
+    private void replaceX0Register(Program program) {
+        final ExpressionVisitor<Expression> x0Replacer = new ExprTransformer() {
+            @Override
+            public Expression visit(Register reg) {
+                return reg.getName().equals("x0") ? expressions.makeGeneralZero(reg.getType()) : reg;
+            }
+        };
+        program.getThreadEvents(RegReader.class)
+                .forEach(e -> e.transformExpressions(x0Replacer));
     }
 
 
