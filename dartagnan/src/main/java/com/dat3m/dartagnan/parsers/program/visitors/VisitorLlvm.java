@@ -319,7 +319,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
                 final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
                 final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
-                metadata.add(new SourceLocation((directory + filename).intern(), lineNumber));
+                metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
             }
         }
 
