@@ -1,22 +1,21 @@
 SPIRV
+(* Vulkan + SPIR-V Memory Model *)
+(* For when availability/visibility chains are supported *)
 
-(* Terms from spirv.als *)
-// stor = [] "set to relation, (s,s) for all s in E, lift a set to a relation (the [_] operator in Herd)"
-// rai-r = r | r^-1
-// sthd = int
-// immpo = po - po;po
-// rc[r] = r?
-// ssg, swg, sqf = same scope id @ subgroup, workgroup, queuefamily
-// inscope = sr
-// sloc = loc
-// sref = vloc
-// scbarinst = syncbar "relates pairs of control barriers, same control barrier dynamic instance"
-// imm-r = r - (r;r+)
-// twoplus-r = r;r+
+// Base relations:
+// vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
+// syncbar: synchronize by barriers with same logical barrier resource (barID)
+// ssg: same subgroup
+// swg: same workgroup
+// sqf: same queuefamily
+// ssw: system-synchronizes-with
 
-//???????????
-// chains = new relation
-// ssw = new relation for system-synchronizes-with?
+// Tags:
+// SC0, SC1: storage class 0, 1
+// SEMSC0, SEMSC1: storage class semantics 0. 1
+// SG, WG, QF, DV: subgroup, workgroup, queuefamily, device domains
+// AV, VIS: availability, visibility
+// AVDEVICE, VISDEVICE: availability, visibility op to the device domain
 
 (*******************)
 (*  Auxiliaries *)
@@ -58,8 +57,8 @@ let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & (ATOM * ATOM)
-let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])* // NB: recursive relation in the right-hand-side of a difference
-let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])* // NB: recursive relation in the right-hand-side of a difference
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
 
 // synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
 let sw = inscope & (
@@ -87,9 +86,11 @@ let ithbsemsc01 = ( ssw |
                    ([ACQ & SEMSC01]; po; [SC0 | SC1 | SEMSC01])
                  )+
 
-let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
+// happens-before
+let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po
 
-let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW // events
+// chains will produce the availability/visibility chains with this pattern:
+let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
 let chains = E * E
 
 let avsg = [AVSG]
@@ -123,19 +124,20 @@ let locord = loc &
 
 let w-locord = [W]; locord
 
-let visto = (w-locord \ (w-locord; w-locord+)); [R] // visible to = location ordered W->R with no intervening write (W->W->R)
-(*******************)
-
+// visible to = location ordered W->R with no intervening write (W->W->R)
+let visto = (w-locord \ (w-locord; w-locord+)); [R]
 
 (****************)
 (* restrictions *)
 (****************)
-// rai[asmo] = ((A&W) -> (A&W)) & mutordatom
+
+// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
 empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
+
 // consistency: locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle
 // consistency: non-atomic cannot read-from a value that is shadowed by another write
@@ -144,7 +146,7 @@ empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
-(* data_races *)
+(* data race *)
 let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
 let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy
