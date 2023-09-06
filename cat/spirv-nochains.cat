@@ -51,7 +51,7 @@ let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
                 | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
 let avvisSet = [AV | VIS]; (vloc & loc)
-let avvisinc = (avvisSem | avvisSem^-1) \ id |
+let avvisinc = ((avvisSem | avvisSem^-1) \ id) |
                (avvisSet | avvisSet^-1)
 
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
@@ -89,16 +89,19 @@ let ithbsemsc01 = ( ssw |
 
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po // happens-before
 
+let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW // events
+let chains = [E]
+
 let avsg = [AVSG]
-let avwg = [AVWG]
-let avqf = [AVQF]
-let avsh = [AVSHADER]
+let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
+let avqf = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?)); [AVQF]
+let avsh = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?)); [AVSHADER]
 let avdv = [AVDEVICE]
 
 let vissg = [VISSG]
-let viswg = [VISWG]
-let visqf = [VISQF]
-let vissh = [VISSHADER]
+let viswg = [VISWG]; (chains & (((hb & ssg & avvisinc); vissg)?))
+let visqf = [VISQF]; (chains & (((hb & swg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?))
+let vissh = [VISSHADER]; (chains & (((hb & sqf & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & ssg & avvisinc); vissg)?))
 let visdv = [VISDEVICE]
 
 // loc order, relates memory accesses to the same location
