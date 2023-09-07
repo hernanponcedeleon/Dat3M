@@ -17,7 +17,7 @@ public class LitmusVulkanCheckerTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-CK");
+        return buildLitmusTests("litmus/VULKAN/DR/", "VULKAN", "-CK");
     }
 
     @Override
@@ -27,7 +27,7 @@ public class LitmusVulkanCheckerTest extends AbstractLitmusTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
+        return Provider.fromSupplier(() -> EnumSet.of(Property.CAT_SPEC));
     }
 
     public LitmusVulkanCheckerTest(String path, Result expected) {

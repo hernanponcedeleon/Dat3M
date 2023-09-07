@@ -132,57 +132,80 @@ let visto = (w-locord \ (w-locord; w-locord+)); [R]
 (********************)
 
 // RMW atomics in A
-empty ([RMW] \ [ATOM]) as AssertRMWIsAtomic
+let rmwIsAtomic = ([RMW] \ [ATOM])
+flag ~empty rmwIsAtomic as checkRmwIsAtomic
 
 // Atomics are reads and writes, not fences
-empty ([ATOM] \ [R | W]) as AssertAtomicIsRW
+let atomicIsRW = ([ATOM] \ [R | W])
+flag ~empty atomicIsRW as checkAtomicIsRW
 
 // acquire can be used on atomic reads or fences
-empty ([ACQ] \ [(R & ATOM) | F]) as AssertAcqIsRF
+let acqIsRF = ([ACQ] \ [(R & ATOM) | F])
+flag ~empty acqIsRF as checkAcqIsRF
 
 // releases can be used on atomic writes or fences
-empty ([REL] \ [(W & ATOM) | F]) as AssertRelIsWF
+let relIsWF = ([REL] \ [(W & ATOM) | F])
+flag ~empty relIsWF as checkRelIsWF
 
 // Fences must release or acquire
-empty ([F] \ [REL | ACQ]) as AssertFenceIsRelAcq
+let fIsRelAcq = ([F] \ [REL | ACQ])
+flag ~empty fIsRelAcq as checkFIsRelAcq
 
 // Only writes/reads can have explicit availability/visibility ops, respectively
-empty ([AV] \ [W]) as AssertAvIsW
-empty ([VIS] \ [R]) as AssertVisIsR
+let avIsRW = ([AV] \ [W])
+flag ~empty avIsRW as checkAvIsRW
+let visIsRW = ([VIS] \ [R])
+flag ~empty visIsRW as checkVisIsRW
 
 // nonpriv is only meaningful for memory accesses
-empty ([NONPRIV] \ [R | W]) as AssertNonprivIsRW
+let nonprivIsRW = ([NONPRIV] \ [R | W])
+flag ~empty nonprivIsRW as checkNonprivIsRW
 
 // PRIV is the complement of NONPRIV
-empty ([PRIV] \ [(R | W) \ NONPRIV]) as AssertPrivIsNonpriv
+let privIsNonpriv = ([PRIV] \ [(R | W) \ NONPRIV])
+flag ~empty privIsNonpriv as checkPrivIsNonpriv
 
 // Atomic operations are always considered non-private
-empty ([ATOM] \ [NONPRIV]) as AssertAtomicIsNonpriv
+let atomicIsNonpriv = ([ATOM] \ [NONPRIV])
+flag ~empty atomicIsNonpriv as checkAtomicIsNonpriv
 
 // Atomic operations implicitly have availability/visibility operations
-empty ([W & ATOM] \ [AV]) as AssertAtomicIsAv
-empty ([R & ATOM] \ [VIS]) as AssertAtomicIsVis
+let atomicIsAv = ([W & ATOM] \ [AV])
+flag ~empty atomicIsAv as checkAtomicIsAv
+let atomicIsVis = ([R & ATOM] \ [VIS])
+flag ~empty atomicIsVis as checkAtomicIsVis
 
 // availability/visibility semantics in REL/ACQ only, respectively
-empty ([SEMAV] \ [REL]) as AssertSemAvIsRel
-empty ([SEMVIS] \ [ACQ]) as AssertSemAvIsAcq
+let semavIsRel = ([SEMAV] \ [REL])
+flag ~empty semavIsRel as checkSemAvIsRel
+let semvisIsAcq = ([SEMVIS] \ [ACQ])
+flag ~empty semvisIsAcq as checkSemVisIsAcq
 
 // scbarinst relates pairs of control barriers
-empty (syncbar & (po | po^-1)) as AssertScbarinstIsPo
+let scbarinstIsPo = (syncbar & (po | po^-1))
+flag ~empty scbarinstIsPo as checkScbarinstIsPo
 
 // can't have two cbars where one comes first in po in one thread and second in po in another thread
-empty ((po; syncbar; po) & syncbar) as AssertScbarinstIsPo2
+let scbarinstIsPo2 = (syncbar & (po; syncbar; po) & syncbar)
+flag ~empty scbarinstIsPo2 as checkScbarinstIsPo2
 
 // the same instance of a control barrier must have same scope, acq/rel, semantics
-empty (syncbar & (DV * (_ \ DV))) as AssertScbarinstIsDv
-empty (syncbar & (QF * (_ \ QF))) as AssertScbarinstIsQf
-empty (syncbar & (WG * (_ \ WG))) as AssertScbarinstIsWg
-empty (syncbar & (SG * (_ \ SG))) as AssertScbarinstIsSg
-empty (syncbar & (ACQ * (_ \ ACQ))) as AssertScbarinstIsAcq
-empty (syncbar & (REL * (_ \ REL))) as AssertScbarinstIsRel
-empty (syncbar & (SEMSC0 * (_ \ SEMSC0))) as AssertScbarinstIsSemsc0
-empty (syncbar & (SEMSC1 * (_ \ SEMSC1))) as AssertScbarinstIsSemsc1
-
+let scbarinstIsDV = (syncbar & (DV * (_ \ DV)))
+flag ~empty scbarinstIsDV as checkScbarinstIsDV
+let scbarinstIsQF = (syncbar & (QF * (_ \ QF)))
+flag ~empty scbarinstIsQF as checkScbarinstIsQF
+let scbarinstIsWG = (syncbar & (WG * (_ \ WG)))
+flag ~empty scbarinstIsWG as checkScbarinstIsWG
+let scbarinstIsSG = (syncbar & (SG * (_ \ SG)))
+flag ~empty scbarinstIsSG as checkScbarinstIsSG
+let scbarinstIsAcq = (syncbar & (ACQ * (_ \ ACQ)))
+flag ~empty scbarinstIsAcq as checkScbarinstIsAcq
+let scbarinstIsRel = (syncbar & (REL * (_ \ REL)))
+flag ~empty scbarinstIsRel as checkScbarinstIsRel
+let scbarinstIsSemsc0 = (syncbar & (SEMSC0 * (_ \ SEMSC0)))
+flag ~empty scbarinstIsSemsc0 as checkScbarinstIsSemsc0
+let scbarinstIsSemsc1 = (syncbar & (SEMSC1 * (_ \ SEMSC1)))
+flag ~empty scbarinstIsSemsc1 as checkScbarinstIsSemsc1
 
 (**************************)
 (* assertion restrictions *)
