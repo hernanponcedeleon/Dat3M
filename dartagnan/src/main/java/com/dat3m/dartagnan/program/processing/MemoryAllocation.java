@@ -92,8 +92,7 @@ public class MemoryAllocation implements ProgramProcessor {
             // The last case "heuristically checks" if Smack generated initialization or not:
             // if any field is statically initialized, then likely everything is initialized.
             final boolean isStaticallyInitialized = !isLitmus
-                    && memObj.isStaticallyAllocated()
-                    && memObj.getStaticallyInitializedFields().size() > 1;
+                    && memObj.isStaticallyAllocated();
             final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 

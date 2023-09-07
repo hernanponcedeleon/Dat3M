@@ -36,7 +36,10 @@ public class Compilation {
 		final String outputFileName = getOutputName(file, "-opt.ll");
         ArrayList<String> cmd = new ArrayList<>();
     	cmd.add("opt");
-		Collections.addAll(cmd, System.getenv().getOrDefault("ATOMIC_REPLACE_OPTS", "").split(" "));
+		String replaceOptions = System.getenv().getOrDefault("ATOMIC_REPLACE_OPTS", "");
+		if (!replaceOptions.isEmpty()) {
+			Collections.addAll(cmd, replaceOptions.split(" "));
+		}
     	cmd.add(file.getAbsolutePath());
     	cmd.add("-S");
     	cmd.add("-o");
@@ -78,7 +81,7 @@ public class Compilation {
     	proc.waitFor();
     	if(proc.exitValue() != 0) {
 			String errorString =  Files.asCharSource(log, Charsets.UTF_8).read();
-			throw new IOException(errorString);
+			throw new IOException("'" + String.join("' '", cmd) + "': " + errorString);
     	}
 	}
 }

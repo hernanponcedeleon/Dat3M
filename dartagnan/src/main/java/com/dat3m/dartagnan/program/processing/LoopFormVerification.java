@@ -11,9 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -32,7 +30,7 @@ import java.util.stream.Stream;
     NOTE: This should only be run after BranchReordering since it relies on the linear syntax produced by it.
  */
 
-public class LoopFormVerification implements ProgramProcessor, FunctionProcessor {
+public class LoopFormVerification implements ProgramProcessor {
 
     private static final Logger logger = LogManager.getLogger(LoopFormVerification.class);
 
@@ -45,21 +43,6 @@ public class LoopFormVerification implements ProgramProcessor, FunctionProcessor
         final int numberOfLoops = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
                 .mapToInt(f -> checkAndCountLoops(f, Event::getGlobalId)).sum();
         logger.info("Detected {} loops in the program.", numberOfLoops);
-    }
-
-    @Override
-    public void run(Function function) {
-        if (function.hasBody()) {
-            //TODO: Since we have no notion of local id, we construct our own temporarily
-            // Me may want to introduce a LocalId or make sure to retain a proper GlobalId
-            // even for non-thread functions.
-            int id = 0;
-            Map<Event, Integer> localIdMap = new HashMap<>();
-            for (Event e : function.getEvents()) {
-                localIdMap.put(e, id++);
-            }
-            checkAndCountLoops(function, localIdMap::get);
-        }
     }
 
     private int checkAndCountLoops(Function function, ToIntFunction<Event> linId) {
