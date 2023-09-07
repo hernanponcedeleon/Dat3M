@@ -351,10 +351,24 @@ public final class Tag {
         }
 
         public static void propagateTags(Event source, Event target) {
-            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, AVAILABLE, VISIBLE, SC0, SC1, SEMSC0, SEMSC1, SEM_AVAILABLE, SEM_VISIBLE)) {
+            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1)) {
                 if (source.hasTag(tag)) {
                     target.addTags(tag);
                 }
+            }
+        }
+
+        public static void propagateLoadTags(Event source, Event target) {
+            // Atomic loads are always visible
+            if (source.hasTag(ATOM)) {
+                target.addTags(VISIBLE);
+            }
+        }
+
+        public static void propagateStoreTags(Event source, Event target) {
+            // Atomic stores are always available
+            if (source.hasTag(ATOM)) {
+                target.addTags(AVAILABLE);
             }
         }
 

@@ -124,9 +124,6 @@ let locord = loc &
 
 let w-locord = [W]; locord
 
-// visible to = location ordered W->R with no intervening write (W->W->R)
-let visto = (w-locord \ (w-locord; w-locord+)); [R]
-
 (****************)
 (* restrictions *)
 (****************)

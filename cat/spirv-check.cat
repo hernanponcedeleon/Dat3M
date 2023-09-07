@@ -1,6 +1,6 @@
 SPIRV
 (* Vulkan + SPIR-V Memory Model *)
-(* For when availability/visibility chains are not supported *)
+(* For when availability/visibility chains are supported *)
 
 // Base relations:
 // vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
@@ -44,8 +44,7 @@ let inscope = (DV * DV) |
               (swg & ((DV | QF | WG) * (DV | QF | WG))) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
-// mutually ordered atomics (scope requirement is different from PTX)
-let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics (scope requirement is different from PTX)
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
@@ -68,7 +67,7 @@ let sw = inscope & (
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
 )
 
 let ithbsemsc0 = ( ssw |
@@ -90,9 +89,9 @@ let ithbsemsc01 = ( ssw |
 // happens-before
 let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po
 
-// chains will turn off nontrivial availability/visibility with this pattern:
+// chains will produce the availability/visibility chains with this pattern:
 let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
-let chains = [E]
+let chains = E * E
 
 let avsg = [AVSG]
 let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
@@ -125,26 +124,75 @@ let locord = loc &
 
 let w-locord = [W]; locord
 
-(****************)
-(* restrictions *)
-(****************)
+// visible to = location ordered W->R with no intervening write (W->W->R)
+let visto = (w-locord \ (w-locord; w-locord+)); [R]
 
-// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
+(********************)
+(* tag restrictions *)
+(********************)
+
+// RMW atomics in A
+empty ([RMW] \ [ATOM]) as AssertRMWIsAtomic
+
+// Atomics are reads and writes, not fences
+empty ([ATOM] \ [R | W]) as AssertAtomicIsRW
+
+// acquire can be used on atomic reads or fences
+empty ([ACQ] \ [(R & ATOM) | F]) as AssertAcqIsRF
+
+// releases can be used on atomic writes or fences
+empty ([REL] \ [(W & ATOM) | F]) as AssertRelIsWF
+
+// Fences must release or acquire
+empty ([F] \ [REL | ACQ]) as AssertFenceIsRelAcq
+
+// Only writes/reads can have explicit availability/visibility ops, respectively
+empty ([AV] \ [W]) as AssertAvIsW
+empty ([VIS] \ [R]) as AssertVisIsR
+
+// nonpriv is only meaningful for memory accesses
+empty ([NONPRIV] \ [R | W]) as AssertNonprivIsRW
+
+// PRIV is the complement of NONPRIV
+empty ([PRIV] \ [(R | W) \ NONPRIV]) as AssertPrivIsNonpriv
+
+// Atomic operations are always considered non-private
+empty ([ATOM] \ [NONPRIV]) as AssertAtomicIsNonpriv
+
+// Atomic operations implicitly have availability/visibility operations
+empty ([W & ATOM] \ [AV]) as AssertAtomicIsAv
+empty ([R & ATOM] \ [VIS]) as AssertAtomicIsVis
+
+// availability/visibility semantics in REL/ACQ only, respectively
+empty ([SEMAV] \ [REL]) as AssertSemAvIsRel
+empty ([SEMVIS] \ [ACQ]) as AssertSemAvIsAcq
+
+// scbarinst relates pairs of control barriers
+empty (syncbar & (po | po^-1)) as AssertScbarinstIsPo
+
+// can't have two cbars where one comes first in po in one thread and second in po in another thread
+empty ((po; syncbar; po) & syncbar) as AssertScbarinstIsPo2
+
+// the same instance of a control barrier must have same scope, acq/rel, semantics
+empty (syncbar & (DV * (_ \ DV))) as AssertScbarinstIsDv
+empty (syncbar & (QF * (_ \ QF))) as AssertScbarinstIsQf
+empty (syncbar & (WG * (_ \ WG))) as AssertScbarinstIsWg
+empty (syncbar & (SG * (_ \ SG))) as AssertScbarinstIsSg
+empty (syncbar & (ACQ * (_ \ ACQ))) as AssertScbarinstIsAcq
+empty (syncbar & (REL * (_ \ REL))) as AssertScbarinstIsRel
+empty (syncbar & (SEMSC0 * (_ \ SEMSC0))) as AssertScbarinstIsSemsc0
+empty (syncbar & (SEMSC1 * (_ \ SEMSC1))) as AssertScbarinstIsSemsc1
+
+
+(**************************)
+(* assertion restrictions *)
+(**************************)
+
+// locord only relates operations at the same location
 empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 
-(***********************)
-(* Memory Model Axioms *)
-(***********************)
+// assert AssertLocordSameLoc { all X : Exec | X.locord in X.sloc }
+empty (locord \ loc) as AssertLocordSameLoc
 
-// consistency: locord, rf, fr, asmo must not form cycles
-acyclic (locord | rf | fr | asmo) as consistency-cycle
-// consistency: non-atomic cannot read-from a value that is shadowed by another write
-empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
-
-let non-rmw-reads = (R \ RMW) * (R \ RMW)
-empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
-
-(* data race *)
-let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
-let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
-flag ~empty dr as racy
+// no (W->W->R) in visto
+empty (visto & ([W]; locord; [W]; locord; [R])) as AssertVisTo

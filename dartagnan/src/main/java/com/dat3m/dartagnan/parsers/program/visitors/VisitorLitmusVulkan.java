@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
+import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -240,7 +241,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
-        Boolean atomic = ctx.atomic().isAtomic;
+        Boolean atomic = true; // RMW is always atomic
         String mo = ctx.mo().content;
         String avvis = ctx.avvis().content;
         String scope = ctx.scope().content;
@@ -373,13 +374,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             e.addTags(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE);
         }
 
-        // AV, VIS, and atomics are all implicitly nonpriv
-        if (avvis.equals(Tag.Vulkan.AVAILABLE) || avvis.equals(Tag.Vulkan.VISIBLE) || atomic) {
+        // AV, VIS, and atomics M are all implicitly nonpriv
+        if ((avvis.equals(Tag.Vulkan.AVAILABLE) || avvis.equals(Tag.Vulkan.VISIBLE) || atomic)
+                && (e instanceof MemoryEvent)) {
             e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
 
-        // add nonpriv tag to all ops with scope
-        if (!scope.isEmpty()) {
+        // add nonpriv tag to all M with scope
+        if (!scope.isEmpty() && (e instanceof MemoryEvent)) {
             e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
 

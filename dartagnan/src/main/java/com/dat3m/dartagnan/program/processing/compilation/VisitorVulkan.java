@@ -24,7 +24,9 @@ public class VisitorVulkan extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
         Tag.Vulkan.propagateTags(e, load);
+        Tag.Vulkan.propagateLoadTags(e, load);
         Tag.Vulkan.propagateTags(e, store);
+        Tag.Vulkan.propagateStoreTags(e, store);
         return eventSequence(
                 load,
                 store,
