@@ -58,7 +58,7 @@ public class Inlining implements FunctionProcessor {
 
     private void inlineAllCalls(Function function) {
         int scopeCounter = 0;
-        Map<Event, List<FunctionCall>> exitToCallMap = new HashMap<>();
+        final Map<Event, List<Function>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
         Event event = function.getEntry();
         while (event != null) {
@@ -69,16 +69,15 @@ public class Inlining implements FunctionProcessor {
                 continue;
             }
             // Check whether recursion bound was reached.
-            // FIXME: The recursion check does not work
-            exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(call);
-            long depth = exitToCallMap.values().stream().filter(c -> c.contains(call)).count();
+            final Function callTarget = call.getCalledFunction();
+            exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(callTarget);
+            final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
-                AbortIf boundEvent = newAbortIf(ExpressionFactory.getInstance().makeTrue());
+                final AbortIf boundEvent = newAbortIf(ExpressionFactory.getInstance().makeTrue());
                 boundEvent.copyAllMetadataFrom(call);
                 boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 call.replaceBy(boundEvent);
             } else {
-                Function callTarget = call.getCalledFunction();
                 if (callTarget instanceof Thread) {
                     throw new MalformedProgramException(
                             String.format("Cannot call thread %s directly.", callTarget));
@@ -97,7 +96,7 @@ public class Inlining implements FunctionProcessor {
                 }
                 // -----------------------------
                 // Calls with result will write the return value to this register.
-                Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
+                final Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
                 inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);
                 event = call.getSuccessor();
                 call.forceDelete();
