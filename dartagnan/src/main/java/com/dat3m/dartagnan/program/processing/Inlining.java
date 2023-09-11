@@ -63,8 +63,7 @@ public class Inlining implements FunctionProcessor {
         Event event = function.getEntry();
         while (event != null) {
             exitToCallMap.remove(event);
-            // Work with successor because when calls get removed, the loop variable would be invalidated.
-            if (!(event.getSuccessor() instanceof FunctionCall call) || !canInline(call)) {
+            if (!(event instanceof FunctionCall call) || !canInline(call)) {
                 event = event.getSuccessor();
                 continue;
             }
@@ -77,6 +76,7 @@ public class Inlining implements FunctionProcessor {
                 boundEvent.copyAllMetadataFrom(call);
                 boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 call.replaceBy(boundEvent);
+                event = boundEvent;
             } else {
                 if (callTarget instanceof Thread) {
                     throw new MalformedProgramException(
