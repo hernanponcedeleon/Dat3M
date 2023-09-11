@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -20,6 +21,7 @@ import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.google.common.collect.Iterables;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -39,6 +41,9 @@ public class Inlining implements FunctionProcessor {
             secure = true)
     private int bound = 1;
 
+    // This map is updated when a new program is passed to this instance.
+    private final Map<Function, CacheEntry> cache = new HashMap<>();
+
     private Inlining() {}
 
     public static Inlining fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -49,7 +54,20 @@ public class Inlining implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
+        if (!cache.containsKey(function)) {
+            resetCache(function.getProgram());
+        }
         inlineAllCalls(function);
+    }
+
+    private record CacheEntry(List<Event> events, Collection<Register> registers) {}
+
+    private void resetCache(Program program) {
+        cache.clear();
+        for (final Function function : Iterables.concat(program.getThreads(), program.getFunctions())) {
+            cache.put(function,
+                    new CacheEntry(List.copyOf(function.getEvents()), List.copyOf(function.getRegisters())));
+        }
     }
 
     private boolean canInline(FunctionCall call) {
@@ -78,54 +96,57 @@ public class Inlining implements FunctionProcessor {
                 call.replaceBy(boundEvent);
                 event = boundEvent;
             } else {
-                if (callTarget instanceof Thread) {
-                    throw new MalformedProgramException(
-                            String.format("Cannot call thread %s directly.", callTarget));
-                }
-                final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.getName());
-                final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.getName());
-                callMarker.copyAllMetadataFrom(call);
-                returnMarker.copyAllMetadataFrom(call);
-                call.getPredecessor().insertAfter(callMarker);
-                call.insertAfter(returnMarker);
-                //  --- SVCOMP-specific code ---
-                if (callTarget.getName().startsWith("__VERIFIER_atomic")) {
-                    final BeginAtomic beginAtomic = EventFactory.Svcomp.newBeginAtomic();
-                    call.getPredecessor().insertAfter(beginAtomic);
-                    call.insertAfter(EventFactory.Svcomp.newEndAtomic(beginAtomic));
-                }
-                // -----------------------------
-                // Calls with result will write the return value to this register.
-                final Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
-                inlineBodyAfterCall(call, result, call.getArguments(), callTarget, ++scopeCounter);
-                event = call.getSuccessor();
-                call.forceDelete();
+                event = inlineBodyAfterCall(call, callTarget, ++scopeCounter);
             }
         }
     }
 
-    static void inlineBodyAfterCall(Event entry, Register result, List<Expression> arguments, Function callTarget, int scope) {
+    private Event inlineBodyAfterCall(FunctionCall call, Function callTarget, int scope) {
+        if (callTarget instanceof Thread) {
+            throw new MalformedProgramException(
+                    String.format("Cannot call thread %s directly.", callTarget));
+        }
+        final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.getName());
+        final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.getName());
+        callMarker.copyAllMetadataFrom(call);
+        returnMarker.copyAllMetadataFrom(call);
+        call.getPredecessor().insertAfter(callMarker);
+        call.insertAfter(returnMarker);
+        //  --- SVCOMP-specific code ---
+        if (callTarget.getName().startsWith("__VERIFIER_atomic")) {
+            final BeginAtomic beginAtomic = EventFactory.Svcomp.newBeginAtomic();
+            call.getPredecessor().insertAfter(beginAtomic);
+            call.insertAfter(EventFactory.Svcomp.newEndAtomic(beginAtomic));
+        }
+        // -----------------------------
+        // Calls with result will write the return value to this register.
+        final Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
         // All occurrences of return events will jump here instead.
         Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.getName() + "_" + scope);
         var inlinedBody = new ArrayList<Event>();
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
+        final List<Expression> arguments = call.getArguments();
         assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
         // All registers have to be replaced
-        for (Register register : List.copyOf(callTarget.getRegisters())) {
-            String newName = scope + ":" + register.getName();
-            registerMap.put(register, entry.getFunction().newRegister(newName, register.getType()));
+        for (final Register register : cache.get(callTarget).registers) {
+            final String newName = scope + ":" + register.getName();
+            registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
         }
         var parameterAssignments = new ArrayList<Event>();
         for (int j = 0; j < arguments.size(); j++) {
             Register register = registerMap.get(callTarget.getParameterRegisters().get(j));
             parameterAssignments.add(newLocal(register, arguments.get(j)));
         }
-        for (Event functionEvent : callTarget.getEvents()) {
+        for (Event functionEvent : cache.get(callTarget).events) {
             if (functionEvent instanceof Return returnEvent) {
-                Optional<Expression> expression = returnEvent.getValue();
-                checkReturnType(result, expression.orElse(null));
-                expression.ifPresent(iExpr -> inlinedBody.add(newLocal(result, iExpr)));
+                final Expression expression = returnEvent.getValue().orElse(null);
+                checkReturnType(result, expression);
+                if (expression != null) {
+                    final Event assignment = newLocal(result, expression);
+                    assignment.addTags("RETURN");
+                    inlinedBody.add(assignment);
+                }
                 inlinedBody.add(newGoto(exitLabel));
             } else {
                 Event copy = functionEvent.getCopy();
@@ -154,7 +175,7 @@ public class Inlining implements FunctionProcessor {
             if (event instanceof RegReader reader) {
                 reader.transformExpressions(substitution);
             }
-            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg)) {
+            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !(writer.hasTag("RETURN"))) {
                 Register oldRegister = writer.getResultRegister();
                 Register newRegister = registerMap.get(oldRegister);
                 assert newRegister != null || writer.getResultRegister() == oldRegister;
@@ -176,9 +197,12 @@ public class Inlining implements FunctionProcessor {
 
         // Replace call with replacement
         // this places parameterAssignments before inlinedBody
-        entry.insertAfter(exitLabel);
-        entry.insertAfter(inlinedBody);
-        entry.insertAfter(parameterAssignments);
+        call.insertAfter(exitLabel);
+        call.insertAfter(inlinedBody);
+        call.insertAfter(parameterAssignments);
+        final Event successor = call.getSuccessor();
+        call.tryDelete();
+        return successor;
     }
 
     private static void checkReturnType(Register result, Expression expression) {
