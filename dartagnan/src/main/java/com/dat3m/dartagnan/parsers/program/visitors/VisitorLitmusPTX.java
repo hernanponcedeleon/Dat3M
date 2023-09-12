@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusPTXParser;
@@ -18,6 +19,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -25,6 +27,9 @@ import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.PTX);
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    private final TypeFactory types = programBuilder.getTypeFactory();
+    private final IntegerType archType = types.getArchType();
     private int mainThread;
     private int threadCount = 0;
 
@@ -74,7 +79,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusPTXParser.VariableDeclaratorRegisterLocationContext ctx) {
         programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(),
-                TypeFactory.getInstance().getArchType());
+                archType);
         return null;
     }
 
@@ -115,12 +120,12 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     // Instruction list (the program itself)
     @Override
     public Object visitConstant(LitmusPTXParser.ConstantContext ctx) {
-        return ExpressionFactory.getInstance().parseValue(ctx.getText(), TypeFactory.getInstance().getArchType());
+        return ExpressionFactory.getInstance().parseValue(ctx.getText(), archType);
     }
 
     @Override
     public Object visitRegister(LitmusPTXParser.RegisterContext ctx) {
-        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), TypeFactory.getInstance().getArchType());
+        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), archType);
     }
 
     @Override
@@ -222,9 +227,9 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
 
     @Override
     public Object visitAtomRegister(LitmusPTXParser.AtomRegisterContext ctx) {
-        Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().get(0).getText(), TypeFactory.getInstance().getArchType());
+        Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().get(0).getText(), archType);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        Register register_operand = programBuilder.getOrNewRegister(mainThread, ctx.register().get(1).getText(), TypeFactory.getInstance().getArchType());
+        Register register_operand = programBuilder.getOrNewRegister(mainThread, ctx.register().get(1).getText(), archType);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope;
@@ -305,5 +310,19 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression fenceId = (Expression) ctx.barID().accept(this);
         Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitLabel(LitmusPTXParser.LabelContext ctx) {
+        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+    }
+
+    @Override
+    public Object visitBranchCond(LitmusPTXParser.BranchCondContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Expression expr = expressions.makeBinary(r1, ctx.cond().op, r2);
+        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 }
