@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusVulkanParser;
@@ -19,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -27,6 +29,9 @@ import java.util.List;
 
 public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forArch(Program.SourceLanguage.LITMUS, Arch.VULKAN);
+    private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
+    private final TypeFactory types = programBuilder.getTypeFactory();
+    private final IntegerType archType = types.getArchType();
     private int mainThread;
     private int threadCount = 0;
 
@@ -76,8 +81,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorRegisterLocation(LitmusVulkanParser.VariableDeclaratorRegisterLocationContext ctx) {
-        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(),
-                TypeFactory.getInstance().getArchType());
+        programBuilder.initRegEqLocPtr(ctx.threadId().id, ctx.register().getText(), ctx.location().getText(), archType);
         return null;
     }
 
@@ -128,12 +132,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     // Instruction list (the program itself)
     @Override
     public Object visitConstant(LitmusVulkanParser.ConstantContext ctx) {
-        return ExpressionFactory.getInstance().parseValue(ctx.getText(), TypeFactory.getInstance().getArchType());
+        return ExpressionFactory.getInstance().parseValue(ctx.getText(), archType);
     }
 
     @Override
     public Object visitRegister(LitmusVulkanParser.RegisterContext ctx) {
-        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), TypeFactory.getInstance().getArchType());
+        return programBuilder.getOrNewRegister(mainThread, ctx.getText(), archType);
     }
 
     @Override
@@ -328,6 +332,20 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             throw new ParsingException("Unknown device operation");
         }
         return programBuilder.addChild(mainThread, fence);
+    }
+
+    @Override
+    public Object visitLabel(LitmusVulkanParser.LabelContext ctx) {
+        return programBuilder.addChild(mainThread, programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText()));
+    }
+
+    @Override
+    public Object visitBranchCond(LitmusVulkanParser.BranchCondContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
+        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
+        Expression expr = expressions.makeBinary(r1, ctx.cond().op, r2);
+        return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
     private void tagChecker(Event e, Boolean atomic, String mo, String avvis, String scope,

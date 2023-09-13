@@ -98,6 +98,8 @@ instruction
     |   rmwInstruction
     |   fenceInstruction
     |   deviceOperation
+    |   label
+    |   branchCond
     ;
 
 storeInstruction
@@ -150,6 +152,14 @@ controlBarrier
 deviceOperation
     :   AVDEVICE
     |   VISDEVICE
+    ;
+
+label
+    :   Label Colon
+    ;
+
+branchCond
+    :   cond register Comma register Comma Label
     ;
 
 barID
@@ -225,6 +235,15 @@ avvisSemanticList
     :   (avvisSemantic)*
     ;
 
+cond returns [COpBin op]
+    :   Beq {$op = COpBin.EQ;}
+    |   Bne {$op = COpBin.NEQ;}
+    |   Bge {$op = COpBin.GTE;}
+    |   Ble {$op = COpBin.LTE;}
+    |   Bgt {$op = COpBin.GT;}
+    |   Blt {$op = COpBin.LT;}
+    ;
+
 Locations
     :   'locations'
     ;
@@ -272,6 +291,13 @@ Sc1             :   'sc1';
 Semsc0          :   'semsc0';
 Semsc1          :   'semsc1';
 Semsc01         :   'semsc01';
+
+Beq             :   'beq';
+Bne             :   'bne';
+Blt             :   'blt';
+Bgt             :   'bgt';
+Ble             :   'ble';
+Bge             :   'bge';
 
 LitmusLanguage
     :   'VULKAN'
