@@ -348,6 +348,12 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
+    @Override
+    public Object visitJump(LitmusVulkanParser.JumpContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
+    }
+
     private void tagChecker(Event e, Boolean atomic, String mo, String avvis, String scope,
                             List<String> storageClassSemantics, List<String> avvisSemantics) {
         // ----------------------------------------------------------------------------------------------------------------

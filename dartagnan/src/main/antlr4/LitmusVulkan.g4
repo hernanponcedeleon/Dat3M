@@ -100,6 +100,7 @@ instruction
     |   deviceOperation
     |   label
     |   branchCond
+    |   jump
     ;
 
 storeInstruction
@@ -160,6 +161,10 @@ label
 
 branchCond
     :   cond register Comma register Comma Label
+    ;
+
+jump
+    :   Goto Label
     ;
 
 barID
@@ -252,6 +257,11 @@ Register
     :   'r' DigitSequence
     ;
 
+Label
+    :   'LC' DigitSequence
+    ;
+
+
 AVDEVICE        :   'avdevice';
 VISDEVICE       :   'visdevice';
 
@@ -298,6 +308,8 @@ Blt             :   'blt';
 Bgt             :   'bgt';
 Ble             :   'ble';
 Bge             :   'bge';
+
+Goto            :   'goto';
 
 LitmusLanguage
     :   'VULKAN'
