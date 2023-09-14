@@ -1,4 +1,4 @@
-PTX Ticketlock-same-cta
+PTX Ticketlock-acq2rlx-1
 "https://github.com/NVIDIA/libcudacxx/blob/main/benchmarks/concurrency.cpp#L152"
 {
 in=0; out=0;
@@ -6,7 +6,7 @@ x=0;
 d1=0; d2=0;
 }
  P0@cta 0,gpu 0                    | P1@cta 0,gpu 0                   ;
- atom.acquire.cta.plus r1, in, 1   | atom.acquire.cta.plus r1, in, 1  ;
+ atom.relaxed.cta.plus r1, in, 1   | atom.acquire.cta.plus r1, in, 1  ;
  LC00:                             | LC00:                            ;
  ld.acquire.cta r2, out            | ld.acquire.cta r2, out           ;
  beq r1,r2,LC01                    | beq r1,r2,LC01                   ;

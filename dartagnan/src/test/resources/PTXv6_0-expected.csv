@@ -44,5 +44,8 @@ litmus/PTX/SB+sc-gpu-multiFence.litmus,1
 litmus/PTX/SB+sc-gpu-multiFence-TotalOrder.litmus,1
 litmus/PTX/SB+sc-sys.litmus,1
 litmus/PTX/SB-weak.litmus,1
-litmus/PTX/Ticketlock-same-cta.litmus,1
-litmus/PTX/Ticketlock-diff-cta.litmus,0
+litmus/PTX/Ticketlock-same-cta.litmus,0
+litmus/PTX/Ticketlock-diff-cta.litmus,1
+litmus/PTX/Ticketlock-acq2rlx-1.litmus,0
+litmus/PTX/Ticketlock-acq2rlx-2.litmus,1
+litmus/PTX/Ticketlock-rel2rlx.litmus,1

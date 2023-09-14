@@ -1,4 +1,4 @@
-PTX Ticketlock-same-cta
+PTX Ticketlock-rel2rlx
 "https://github.com/NVIDIA/libcudacxx/blob/main/benchmarks/concurrency.cpp#L152"
 {
 in=0; out=0;
@@ -14,7 +14,7 @@ d1=0; d2=0;
  LC01:                             | LC01:                            ;
  ld.weak r3, x                     | ld.weak r3, x                    ;
  st.weak x, 1                      | st.weak x, 2                     ;
- atom.release.cta.plus r1, out, 1  | atom.release.cta.plus r1, out, 1 ;
+ atom.relaxed.cta.plus r1, out, 1  | atom.release.cta.plus r1, out, 1 ;
  st.release.cta d1, 1              | st.release.cta d2, 1             ;
 exists
 (d1 == 1 /\ d2 == 1 /\ P0:r3 == 0 /\ P1:r3 == 0)
