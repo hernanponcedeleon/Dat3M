@@ -6,7 +6,7 @@ target triple = "arm64-apple-macosx13.0.0"
 @x = global i32 0, align 4
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1
 @.str = private unnamed_addr constant [12 x i8] c"recursion.c\00", align 1
-@.str.1 = private unnamed_addr constant [2 x i8] c"0\00", align 1
+@.str.1 = private unnamed_addr constant [12 x i8] c"result == 2\00", align 1
 
 ; Function Attrs: noinline nounwind optnone ssp uwtable
 define i32 @fibonacci(i32 noundef %0) #0 {
@@ -174,8 +174,26 @@ define i32 @main() #0 {
   store i32 %17, ptr %7, align 4
   %18 = load ptr, ptr %2, align 8
   %19 = call i32 @"\01_pthread_join"(ptr noundef %18, ptr noundef null)
+  %20 = load i32, ptr %7, align 4
+  %21 = icmp eq i32 %20, 2
+  %22 = xor i1 %21, true
+  %23 = zext i1 %22 to i32
+  %24 = sext i32 %23 to i64
+  %25 = icmp ne i64 %24, 0
+  br i1 %25, label %26, label %28
+
+26:                                               ; preds = %0
   call void @__assert_rtn(ptr noundef @__func__.main, ptr noundef @.str, i32 noundef 66, ptr noundef @.str.1) #3
   unreachable
+
+27:                                               ; No predecessors!
+  br label %29
+
+28:                                               ; preds = %0
+  br label %29
+
+29:                                               ; preds = %28, %27
+  ret i32 0
 }
 
 declare i32 @pthread_create(ptr noundef, ptr noundef, ptr noundef, ptr noundef) #1

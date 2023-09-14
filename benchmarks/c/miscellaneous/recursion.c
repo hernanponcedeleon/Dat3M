@@ -57,13 +57,13 @@ int main()
     pthread_join(t0, NULL);
 #ifdef ACKERMANN_LARGE
     //ack(ack(1,1),ack(1,1)) needs a recursion bound of 64.
-    assert(result != 61);
+    assert(result == 3 || result == 61);
 #else
 #ifdef ACKERMANN_SMALL
-    //ack(ack(0,0),ack(0,0) needs recursion bound of 4 and mem2reg after unrolling to be feasible.
-    assert(result != 3);
+    //ack(ack(0,0),ack(0,0)) needs recursion bound of 4 and mem2reg after unrolling to be feasible.
+    assert(result == 1 || result == 3);
 #else
-    assert(0/*result != 2*/);
+    assert(result == 2);
 #endif
 #endif
     return 0;
