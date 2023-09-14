@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -21,7 +20,6 @@ import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.google.common.collect.Iterables;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -41,9 +39,6 @@ public class Inlining implements FunctionProcessor {
             secure = true)
     private int bound = 1;
 
-    // This map is updated when a new program is passed to this instance.
-    private final Map<Function, CacheEntry> cache = new HashMap<>();
-
     private Inlining() {}
 
     public static Inlining fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -54,20 +49,7 @@ public class Inlining implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        if (!cache.containsKey(function)) {
-            resetCache(function.getProgram());
-        }
         inlineAllCalls(function);
-    }
-
-    private record CacheEntry(List<Event> events, Collection<Register> registers) {}
-
-    private void resetCache(Program program) {
-        cache.clear();
-        for (final Function function : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            cache.put(function,
-                    new CacheEntry(List.copyOf(function.getEvents()), List.copyOf(function.getRegisters())));
-        }
     }
 
     private boolean canInline(FunctionCall call) {
@@ -96,16 +78,17 @@ public class Inlining implements FunctionProcessor {
                 call.replaceBy(boundEvent);
                 event = boundEvent;
             } else {
-                event = inlineBodyAfterCall(call, callTarget, ++scopeCounter);
+                if (callTarget instanceof Thread) {
+                    throw new MalformedProgramException(
+                            String.format("Cannot call thread %s directly.", callTarget));
+                }
+                event = inlineBody(call, callTarget, ++scopeCounter);
             }
         }
     }
 
-    private Event inlineBodyAfterCall(FunctionCall call, Function callTarget, int scope) {
-        if (callTarget instanceof Thread) {
-            throw new MalformedProgramException(
-                    String.format("Cannot call thread %s directly.", callTarget));
-        }
+    // Returns the first event of the inlined code, from where to continue from
+    private static Event inlineBody(FunctionCall call, Function callTarget, int scope) {
         final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.getName());
         final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.getName());
         callMarker.copyAllMetadataFrom(call);
@@ -127,24 +110,25 @@ public class Inlining implements FunctionProcessor {
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
         final List<Expression> arguments = call.getArguments();
-        assert arguments.size() == callTarget.getFunctionType().getParameterTypes().size();
+        assert arguments.size() == callTarget.getParameterRegisters().size();
         // All registers have to be replaced
-        for (final Register register : cache.get(callTarget).registers) {
+        for (final Register register : List.copyOf(callTarget.getRegisters())) {
             final String newName = scope + ":" + register.getName();
             registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
         }
         var parameterAssignments = new ArrayList<Event>();
+        var returnEvents = new HashSet<Event>();
         for (int j = 0; j < arguments.size(); j++) {
             Register register = registerMap.get(callTarget.getParameterRegisters().get(j));
             parameterAssignments.add(newLocal(register, arguments.get(j)));
         }
-        for (Event functionEvent : cache.get(callTarget).events) {
+        for (Event functionEvent : callTarget.getEvents()) {
             if (functionEvent instanceof Return returnEvent) {
                 final Expression expression = returnEvent.getValue().orElse(null);
                 checkReturnType(result, expression);
                 if (expression != null) {
                     final Event assignment = newLocal(result, expression);
-                    assignment.addTags("RETURN");
+                    returnEvents.add(assignment);
                     inlinedBody.add(assignment);
                 }
                 inlinedBody.add(newGoto(exitLabel));
@@ -155,6 +139,7 @@ public class Inlining implements FunctionProcessor {
             }
         }
 
+        // Post process copies.
         for (Event event : inlinedBody) {
             if (event instanceof EventUser user) {
                 user.updateReferences(replacementMap);
@@ -175,7 +160,7 @@ public class Inlining implements FunctionProcessor {
             if (event instanceof RegReader reader) {
                 reader.transformExpressions(substitution);
             }
-            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !(writer.hasTag("RETURN"))) {
+            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !returnEvents.contains(event)) {
                 Register oldRegister = writer.getResultRegister();
                 Register newRegister = registerMap.get(oldRegister);
                 assert newRegister != null || writer.getResultRegister() == oldRegister;
