@@ -215,7 +215,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope;
-        if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
+        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
@@ -233,7 +233,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope;
-        if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
+        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
@@ -250,7 +250,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope;
-        if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
+        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
@@ -267,7 +267,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope;
-        if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
+        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
             scope = ctx.scope().content;
         } else {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);

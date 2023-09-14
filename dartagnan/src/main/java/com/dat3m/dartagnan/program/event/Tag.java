@@ -306,25 +306,19 @@ public final class Tag {
         }
         
         public static String loadMO(String mo) {
-            switch (mo) {
-                case ACQ_REL:
-                    return ACQ;
-                case RLX:
-                    return RLX;
-                default:
-                    return "";
-            }
+            return switch (mo) {
+                case ACQ, ACQ_REL -> ACQ;
+                case RLX -> RLX;
+                default -> "";
+            };
         }
 
         public static String storeMO(String mo) {
-            switch (mo) {
-                case ACQ_REL:
-                    return REL;
-                case RLX:
-                    return RLX;
-                default:
-                    return "";
-            }
+            return switch (mo) {
+                case REL, ACQ_REL -> REL;
+                case RLX -> RLX;
+                default -> "";
+            };
         }
     }
 }
