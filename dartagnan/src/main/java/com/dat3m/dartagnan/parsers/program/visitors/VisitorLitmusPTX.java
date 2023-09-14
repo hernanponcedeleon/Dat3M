@@ -325,4 +325,11 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Expression expr = expressions.makeBinary(r1, ctx.cond().op, r2);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
+
+    @Override
+    public Object visitJump(LitmusPTXParser.JumpContext ctx) {
+        Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
+        return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
+    }
+
 }

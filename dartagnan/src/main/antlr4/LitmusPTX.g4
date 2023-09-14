@@ -89,6 +89,7 @@ instruction
     |   atomInstruction
     |   redInstruction
     |   branchCond
+    |   jump
     |   label
     ;
 
@@ -170,6 +171,10 @@ redRegister
 
 branchCond
     :   cond register Comma register Comma Label
+    ;
+
+jump
+    :   Goto Label
     ;
 
 label
@@ -323,6 +328,8 @@ Blt    :   'blt';
 Bgt    :   'bgt';
 Ble    :   'ble';
 Bge    :   'bge';
+
+Goto   :   'goto';
 
 LitmusLanguage
     :   'PTX'
