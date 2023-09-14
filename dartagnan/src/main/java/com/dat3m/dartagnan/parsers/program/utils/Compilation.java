@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static java.util.Arrays.asList;
 
 public class Compilation {
@@ -54,7 +55,7 @@ public class Compilation {
 	}	
 
 	private static String getOutputName(File file, String postfix) {
-		return System.getenv("DAT3M_OUTPUT") + "/" + 
+		return getOutputDirectory() + "/" +
 			file.getName().substring(0, file.getName().lastIndexOf('.')) + postfix;
 	}
 

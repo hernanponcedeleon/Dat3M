@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -190,7 +191,7 @@ public class Dartagnan extends BaseOptions {
                     // FR edges only give ordering information which is known if the pair is also in PO
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
-                            (x, y) -> !x.getThread().equals(y.getThread()), System.getenv("DAT3M_OUTPUT") + "/", name,
+                            (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
                             synContext);
                 }
 

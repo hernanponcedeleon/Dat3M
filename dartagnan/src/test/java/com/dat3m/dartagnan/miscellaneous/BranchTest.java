@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -30,6 +29,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
@@ -42,11 +43,11 @@ public class BranchTest {
     public static Iterable<Object[]> data() throws IOException {
         ImmutableMap<String, Result> expected = readExpectedResults();
 
-        Wmm linuxWmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
-        Wmm aarch64Wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/aarch64.cat"));
+        Wmm linuxWmm = new ParserCat().parse(new File(getRootPath("cat/linux-kernel.cat")));
+        Wmm aarch64Wmm = new ParserCat().parse(new File(getRootPath("cat/aarch64.cat")));
 
         List<Object[]> data;
-        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/C/"))) {
+        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("branch/C/")))) {
             data = fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
@@ -54,12 +55,12 @@ public class BranchTest {
                     .collect(Collectors.toList());
         }
 
-        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "branch/AARCH64/"))) {
+        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("branch/AARCH64/")))) {
             data.addAll(fileStream.
                     filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))
                     .map(f -> new Object[]{f.toString(), expected.get(f.getFileName().toString()), aarch64Wmm})
-                    .collect(Collectors.toList()));
+                    .toList());
         }
 
         return data;
@@ -67,7 +68,7 @@ public class BranchTest {
 
     private static ImmutableMap<String, Result> readExpectedResults() throws IOException {
         ImmutableMap.Builder<String, Result> builder;
-        try (BufferedReader reader = new BufferedReader(new FileReader(ResourceHelper.TEST_RESOURCE_PATH + "branch/expected.csv"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(getTestResourcePath("branch/expected.csv")))) {
             builder = new ImmutableMap.Builder<>();
             String str;
             while ((str = reader.readLine()) != null) {

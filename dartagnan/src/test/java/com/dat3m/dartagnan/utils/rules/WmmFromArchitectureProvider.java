@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.CAT_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 
 /*
     DESC: This Provider provides the canonical Wmm (.cat) associated with a target architecture.
@@ -26,12 +26,12 @@ public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
     private static final Map<Arch, UncheckedSupplier<Wmm>> ARCH_WMM_MAP = new HashMap<>();
 
     static {
-        ARCH_WMM_MAP.put(Arch.TSO, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/tso.cat")));
-        ARCH_WMM_MAP.put(Arch.ARM8, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/aarch64.cat")));
-        ARCH_WMM_MAP.put(Arch.POWER, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/power.cat")));
-        ARCH_WMM_MAP.put(Arch.RISCV, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/riscv.cat")));
-        ARCH_WMM_MAP.put(Arch.LKMM, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/linux-kernel.cat")));
-        ARCH_WMM_MAP.put(Arch.IMM, () -> new ParserCat().parse(new File(CAT_RESOURCE_PATH + "cat/imm.cat")));
+        ARCH_WMM_MAP.put(Arch.TSO, () -> new ParserCat().parse(new File(getRootPath("cat/tso.cat"))));
+        ARCH_WMM_MAP.put(Arch.ARM8, () -> new ParserCat().parse(new File(getRootPath("cat/aarch64.cat"))));
+        ARCH_WMM_MAP.put(Arch.POWER, () -> new ParserCat().parse(new File(getRootPath("cat/power.cat"))));
+        ARCH_WMM_MAP.put(Arch.RISCV, () -> new ParserCat().parse(new File(getRootPath("cat/riscv.cat"))));
+        ARCH_WMM_MAP.put(Arch.LKMM, () -> new ParserCat().parse(new File(getRootPath("cat/linux-kernel.cat"))));
+        ARCH_WMM_MAP.put(Arch.IMM, () -> new ParserCat().parse(new File(getRootPath("cat/imm.cat"))));
     }
 
     private final Supplier<Arch> archSupplier;
@@ -44,7 +44,7 @@ public class WmmFromArchitectureProvider extends AbstractProvider<Wmm> {
     }
 
     @Override
-    protected Wmm provide() throws Throwable {
+    protected Wmm provide() {
         Supplier<Wmm> wmmSupplier = ARCH_WMM_MAP.get(archSupplier.get());
         if (wmmSupplier == null) {
             throw new IllegalArgumentException(String.format("The provided architecture %s has no associated memory model", archSupplier.get()));
