@@ -136,10 +136,14 @@ empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 (* Memory Model Axioms *)
 (***********************)
 
-// consistency: locord, rf, fr, asmo must not form cycles
+// locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle
-// consistency: non-atomic cannot read-from a value that is shadowed by another write
+
+// non-atomic cannot read-from a value that is shadowed by another write
 empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
+
+// rmw events are atomic
+empty rmw & (fre; coe) as atomic
 
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
