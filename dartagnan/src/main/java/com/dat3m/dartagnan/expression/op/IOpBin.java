@@ -39,7 +39,7 @@ public enum IOpBin {
         }
     }
 
-    public String toLinuxName(){
+    public String toTextualName(){
         switch(this){
             case PLUS:
                 return "add";
@@ -52,7 +52,7 @@ public enum IOpBin {
             case XOR:
                 return "xor";
             default:
-            	throw new UnsupportedOperationException("Linux op name is not defined for " + this);
+            	throw new UnsupportedOperationException("Op textual name is not defined for " + this);
         }
     }
 

@@ -46,7 +46,7 @@ public abstract class RMWOpBase extends SingleAccessMemoryEvent {
 
     @Override
     protected String defaultString() {
-        return String.format("rmw %s(%s, %s)", operator.toLinuxName(), address, operand);
+        return String.format("rmw %s(%s, %s)", operator.toTextualName(), address, operand);
     }
 
     @Override

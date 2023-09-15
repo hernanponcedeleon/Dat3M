@@ -20,7 +20,7 @@ public class LKMMOpAndTest extends RMWOpResultBase {
     @Override
     public String defaultString() {
         return String.format("%s := atomic_%s_and_test(%s, %s)\t### LKMM",
-                resultRegister, operator.toLinuxName(), operand, address);
+                resultRegister, operator.toTextualName(), operand, address);
     }
 
     @Override
