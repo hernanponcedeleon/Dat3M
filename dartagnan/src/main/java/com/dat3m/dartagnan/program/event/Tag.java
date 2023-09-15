@@ -351,7 +351,7 @@ public final class Tag {
         }
 
         public static void propagateTags(Event source, Event target) {
-            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1)) {
+            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1, SEM_VISIBLE, SEM_AVAILABLE)) {
                 if (source.hasTag(tag)) {
                     target.addTags(tag);
                 }
