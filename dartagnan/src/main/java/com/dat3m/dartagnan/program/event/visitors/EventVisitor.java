@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.visitors;
 
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
@@ -107,4 +108,5 @@ public interface EventVisitor<T> {
 	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
 	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
     default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
+    default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
 }

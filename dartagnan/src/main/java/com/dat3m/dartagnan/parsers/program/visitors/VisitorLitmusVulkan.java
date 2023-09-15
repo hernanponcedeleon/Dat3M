@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
@@ -21,6 +22,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -260,10 +262,34 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
             avvisSemantics.add(avvisSemantic.content);
         }
-        if (!mo.isEmpty() && !mo.equals(Tag.Vulkan.ACQ_REL)) {
-            throw new ParsingException("RMW must be acq_rel");
-        }
         VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
+        tagChecker(rmw, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantics);
+        rmw.addTags(storageClass);
+        return programBuilder.addChild(mainThread, rmw);
+    }
+
+    @Override
+    public Object visitRmwConstantOp(LitmusVulkanParser.RmwConstantOpContext ctx) {
+        Register register = (Register) ctx.register().accept(this);
+        MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        IConst constant = (IConst) ctx.constant().accept(this);
+        Boolean atomic = true; // RMW is always atomic
+        String mo = ctx.mo().content;
+        String avvis = ctx.avvis().content;
+        String scope = ctx.scope().content;
+        String storageClass = ctx.storageClass().content;
+        List<String> storageClassSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.StorageClassSemanticContext> storageClassSemanticList = ctx.storageClassSemanticList().storageClassSemantic();
+        IOpBin op = ctx.operation().op;
+        for (LitmusVulkanParser.StorageClassSemanticContext scSemantic : storageClassSemanticList) {
+            storageClassSemantics.add(scSemantic.content);
+        }
+        List<String> avvisSemantics = new ArrayList<>();
+        List<LitmusVulkanParser.AvvisSemanticContext> avvisSemanticList = ctx.avvisSemanticList().avvisSemantic();
+        for (LitmusVulkanParser.AvvisSemanticContext avvisSemantic : avvisSemanticList) {
+            avvisSemantics.add(avvisSemantic.content);
+        }
+        VulkanRMWOp rmw = EventFactory.Vulkan.newRMWOp(location, register, constant, op, mo, scope);
         tagChecker(rmw, atomic, mo, avvis, scope, storageClassSemantics, avvisSemantics);
         rmw.addTags(storageClass);
         return programBuilder.addChild(mainThread, rmw);

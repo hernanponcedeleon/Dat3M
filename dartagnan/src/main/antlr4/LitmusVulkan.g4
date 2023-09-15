@@ -131,10 +131,15 @@ loadLocation
 
 rmwInstruction
     :   rmwConstant
+    |   rmwConstantOp
     ;
 
 rmwConstant
     :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
+    ;
+
+rmwConstantOp
+    :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -240,6 +245,16 @@ avvisSemanticList
     :   (avvisSemantic)*
     ;
 
+operation locals [IOpBin op]
+    :   Period Add {$op = IOpBin.PLUS;}
+    |   Period Sub {$op = IOpBin.MINUS;}
+    |   Period Mult {$op = IOpBin.MULT;}
+    |   Period Div {$op = IOpBin.DIV;}
+    |   Period And {$op = IOpBin.AND;}
+    |   Period Or {$op = IOpBin.OR;}
+    |   Period Xor {$op = IOpBin.XOR;}
+    ;
+
 cond returns [COpBin op]
     :   Beq {$op = COpBin.EQ;}
     |   Bne {$op = COpBin.NEQ;}
@@ -308,6 +323,14 @@ Blt             :   'blt';
 Bgt             :   'bgt';
 Ble             :   'ble';
 Bge             :   'bge';
+
+Add             :   'plus';
+Sub             :   'minus';
+Mult            :   'mult';
+Div             :   'div';
+And             :   'and';
+Or              :   'or';
+Xor             :   'xor';
 
 Goto            :   'goto';
 

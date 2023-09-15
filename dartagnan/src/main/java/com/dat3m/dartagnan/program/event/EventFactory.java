@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
@@ -711,6 +712,13 @@ public class EventFactory {
         public static VulkanRMW newRMW(Expression address, Register register, Expression value,
                                           String mo, String scope) {
             VulkanRMW atom = new VulkanRMW(register, address, value, mo);
+            atom.addTags(scope);
+            return atom;
+        }
+
+        public static VulkanRMWOp newRMWOp(Expression address, Register register, Expression value,
+                                       IOpBin op, String mo, String scope) {
+            VulkanRMWOp atom = new VulkanRMWOp(register, address, op, value, mo);
             atom.addTags(scope);
             return atom;
         }
