@@ -58,3 +58,6 @@ litmus/VULKAN/test9.litmus,1
 litmus/VULKAN/waw.litmus,1
 litmus/VULKAN/ticketlock-same-wg.litmus,1
 litmus/VULKAN/ticketlock-diff-wg.litmus,0
+litmus/VULKAN/ticketlock-rel2rlx.litmus,1
+litmus/VULKAN/ticketlock-rel2rlx-1.litmus,1
+litmus/VULKAN/ticketlock-rel2rlx-2.litmus,1

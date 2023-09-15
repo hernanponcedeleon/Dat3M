@@ -301,7 +301,6 @@ Atom            :   'atom';
 Acquire         :   'acq';
 Release         :   'rel';
 Acq_rel         :   'acq_rel';
-Relaxed         :   'rlx';
 
 Visible         :   'vis';
 Available       :   'av';
