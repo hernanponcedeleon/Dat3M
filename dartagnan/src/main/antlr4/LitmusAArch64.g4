@@ -194,9 +194,9 @@ branchRegInstruction returns [COpBin op]
     ;
 
 shiftOperator returns [IOpBin op]
-    :   LSL { $op = IOpBin.L_SHIFT; }
-    |   LSR { $op = IOpBin.R_SHIFT; }
-    |   ASR { $op = IOpBin.AR_SHIFT; }
+    :   LSL { $op = IOpBin.LSHIFT; }
+    |   LSR { $op = IOpBin.RSHIFT; }
+    |   ASR { $op = IOpBin.ARSHIFT; }
     ;
 
 expr64

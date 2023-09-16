@@ -49,11 +49,11 @@ public class LlvmFunctions {
 		} else if(name.startsWith("$udiv.")) {
 			op = UDIV;
 		} else if(name.startsWith("$shl.")) {
-			op = L_SHIFT;
+			op = LSHIFT;
 		} else if(name.startsWith("$lshr.")) {
-			op = R_SHIFT;
+			op = RSHIFT;
 		} else if(name.startsWith("$ashr.")) {
-			op = AR_SHIFT;
+			op = ARSHIFT;
 		} else if(name.startsWith("$xor.")) {
 			//TODO: This is a temporary fix to parse xor.x1 as boolean negation.
 			// Once we have proper preprocessing code, we should remove this here!

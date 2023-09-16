@@ -19,7 +19,7 @@ public class LKMMOpNoReturn extends RMWOpBase {
 
     @Override
     public String defaultString() {
-        return String.format("atomic_%s(%s, %s)\t### LKMM", operator.toTextualName(), operand, address);
+        return String.format("atomic_%s(%s, %s)\t### LKMM", operator.getName(), operand, address);
     }
 
     @Override

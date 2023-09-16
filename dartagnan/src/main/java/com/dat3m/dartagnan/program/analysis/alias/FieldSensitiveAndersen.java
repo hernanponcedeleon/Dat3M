@@ -308,7 +308,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         public Result visit(IExprBin x) {
             Result l = x.getLHS().visit(this);
             Result r = x.getRHS().visit(this);
-            if(l == null || r == null || x.getOp() == R_SHIFT) {
+            if(l == null || r == null || x.getOp() == RSHIFT) {
                 return null;
             }
             if(l.address==null && l.register==null && l.alignment==0 && r.address==null && r.register==null && r.alignment==0) {

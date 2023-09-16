@@ -155,14 +155,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                                     bitvectorFormulaManager.makeBitvector(32, i1),
                                     bitvectorFormulaManager.makeBitvector(32, i2)),
                             false);
-                case L_SHIFT:
+                case LSHIFT:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.shiftLeft(
                                     bitvectorFormulaManager.makeBitvector(32, i1),
                                     bitvectorFormulaManager.makeBitvector(32, i2)),
                             false);
-                case R_SHIFT:
+                case RSHIFT:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.shiftRight(
@@ -170,7 +170,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                                     bitvectorFormulaManager.makeBitvector(32, i2),
                                     false),
                             false);
-                case AR_SHIFT:
+                case ARSHIFT:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.shiftRight(
@@ -222,11 +222,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return bitvectorFormulaManager.or(bv1, bv2);
                 case XOR:
                     return bitvectorFormulaManager.xor(bv1, bv2);
-                case L_SHIFT:
+                case LSHIFT:
                     return bitvectorFormulaManager.shiftLeft(bv1, bv2);
-                case R_SHIFT:
+                case RSHIFT:
                     return bitvectorFormulaManager.shiftRight(bv1, bv2, false);
-                case AR_SHIFT:
+                case ARSHIFT:
                     return bitvectorFormulaManager.shiftRight(bv1, bv2, true);
                 default:
                     throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on bitvector formulas.");

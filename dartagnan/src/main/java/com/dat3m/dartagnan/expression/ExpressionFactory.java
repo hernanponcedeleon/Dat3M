@@ -182,11 +182,11 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLSH(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.L_SHIFT, rightOperand);
+        return makeBinary(leftOperand, IOpBin.LSHIFT, rightOperand);
     }
 
     public Expression makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IOpBin.AR_SHIFT : IOpBin.R_SHIFT, rightOperand);
+        return makeBinary(leftOperand, signed ? IOpBin.ARSHIFT : IOpBin.RSHIFT, rightOperand);
     }
 
     public Expression makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {

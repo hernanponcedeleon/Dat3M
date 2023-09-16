@@ -17,7 +17,7 @@ public class PTXRedOp extends RMWOpBase {
 
     @Override
     public String defaultString() {
-        return String.format("red_%s(%s, %s)", operator.toTextualName(), operand, address);
+        return String.format("red_%s(%s, %s)", operator.getName(), operand, address);
     }
 
     @Override
