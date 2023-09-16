@@ -351,7 +351,7 @@ public final class Tag {
         }
 
         public static void propagateTags(Event source, Event target) {
-            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1, SEM_VISIBLE, SEM_AVAILABLE)) {
+            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1)) {
                 if (source.hasTag(tag)) {
                     target.addTags(tag);
                 }
@@ -363,6 +363,9 @@ public final class Tag {
             if (source.hasTag(ATOM)) {
                 target.addTags(VISIBLE);
             }
+            if (source.hasTag(SEM_VISIBLE)) {
+                target.addTags(SEM_VISIBLE);
+            }
         }
 
         public static void propagateStoreTags(Event source, Event target) {
@@ -370,7 +373,10 @@ public final class Tag {
             if (source.hasTag(ATOM)) {
                 target.addTags(AVAILABLE);
             }
-        }
+            if (source.hasTag(SEM_AVAILABLE)) {
+                target.addTags(SEM_AVAILABLE);
+            }
+    }
 
         public static String loadMO(String mo) {
             return switch (mo) {
