@@ -44,7 +44,7 @@ let inscope = (DV * DV) |
               (swg & ((DV | QF | WG) * (DV | QF | WG))) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
-let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics (scope requirement is different from PTX)
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
@@ -67,7 +67,7 @@ let sw = inscope & (
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
 )
 
 let ithbsemsc0 = ( ssw |
@@ -124,16 +124,12 @@ let locord = loc &
 
 let w-locord = [W]; locord
 
-(****************)
-(* restrictions *)
-(****************)
-
-// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
-empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
-
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
+
+// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
+empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 
 // locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle
@@ -147,7 +143,10 @@ empty rmw & (fre; coe) as atomic
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
-(* data race *)
+(***************)
+(* Data Races *)
+(***************)
+
 let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
 let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy

@@ -44,7 +44,7 @@ let inscope = (DV * DV) |
               (swg & ((DV | QF | WG) * (DV | QF | WG))) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
-// mutually ordered atomics (scope requirement is different from PTX)
+// mutually ordered atomics
 let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
@@ -125,16 +125,12 @@ let locord = loc &
 
 let w-locord = [W]; locord
 
-(****************)
-(* restrictions *)
-(****************)
-
-// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
-empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
-
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
+
+// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
+empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
 
 // locord, rf, fr, asmo must not form cycles
 acyclic (locord | rf | fr | asmo) as consistency-cycle
@@ -148,7 +144,10 @@ empty rmw & (fre; coe) as atomic
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
 
-(* data race *)
+(***************)
+(* Data Races *)
+(***************)
+
 let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
 let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
 flag ~empty dr as racy

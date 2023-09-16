@@ -1,6 +1,6 @@
 SPIRV
 (* Vulkan + SPIR-V Memory Model *)
-(* For when availability/visibility chains are supported *)
+(* This file is not intended for verification purposes, but rather to perform several sanity checks *)
 
 // Base relations:
 // vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
@@ -44,7 +44,7 @@ let inscope = (DV * DV) |
               (swg & ((DV | QF | WG) * (DV | QF | WG))) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
-let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics (scope requirement is different from PTX)
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
@@ -127,9 +127,9 @@ let w-locord = [W]; locord
 // visible to = location ordered W->R with no intervening write (W->W->R)
 let visto = (w-locord \ (w-locord; w-locord+)); [R]
 
-(********************)
-(* tag restrictions *)
-(********************)
+(**************************)
+(* Sanity checks for tags *)
+(**************************)
 
 // RMW atomics in A
 let rmwIsAtomic = ([RMW] \ [ATOM])
@@ -161,10 +161,6 @@ flag ~empty visIsRW as checkVisIsRW
 let nonprivIsRW = ([NONPRIV] \ [R | W])
 flag ~empty nonprivIsRW as checkNonprivIsRW
 
-// PRIV is the complement of NONPRIV
-let privIsNonpriv = ([PRIV] \ [(R | W) \ NONPRIV])
-flag ~empty privIsNonpriv as checkPrivIsNonpriv
-
 // Atomic operations are always considered non-private
 let atomicIsNonpriv = ([ATOM] \ [NONPRIV])
 flag ~empty atomicIsNonpriv as checkAtomicIsNonpriv
@@ -181,7 +177,7 @@ flag ~empty semavIsRel as checkSemAvIsRel
 let semvisIsAcq = ([SEMVIS] \ [ACQ])
 flag ~empty semvisIsAcq as checkSemVisIsAcq
 
-// scbarinst relates pairs of control barriers
+// no pair of the same control barrier instance can be in the same thread
 let scbarinstIsPo = (syncbar & (po | po^-1))
 flag ~empty scbarinstIsPo as checkScbarinstIsPo
 
@@ -207,15 +203,12 @@ flag ~empty scbarinstIsSemsc0 as checkScbarinstIsSemsc0
 let scbarinstIsSemsc1 = (syncbar & (SEMSC1 * (_ \ SEMSC1)))
 flag ~empty scbarinstIsSemsc1 as checkScbarinstIsSemsc1
 
-(**************************)
-(* assertion restrictions *)
-(**************************)
-
-// locord only relates operations at the same location
-empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
+(*******************************)
+(* Sanity checks for relations *)
+(*******************************)
 
 // assert AssertLocordSameLoc { all X : Exec | X.locord in X.sloc }
-empty (locord \ loc) as AssertLocordSameLoc
+flag ~empty (locord \ loc) as AssertLocordSameLoc
 
 // no (W->W->R) in visto
-empty (visto & ([W]; locord; [W]; locord; [R])) as AssertVisTo
+flag ~empty (visto & ([W]; locord; [W]; locord; [R])) as AssertVisTo
