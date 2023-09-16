@@ -5,18 +5,18 @@ import java.util.Arrays;
 import java.util.List;
 
 public enum IOpBin {
-    PLUS, MINUS, MULT, DIV, UDIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM;
+    ADD, SUB, MUL, DIV, UDIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM;
 	
 	public static List<IOpBin> BWOps = Arrays.asList(UDIV, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM); 
 	
     @Override
     public String toString() {
         switch(this){
-            case PLUS:
+            case ADD:
                 return "+";
-            case MINUS:
+            case SUB:
                 return "-";
-            case MULT:
+            case MUL:
                 return "*";
             case DIV:
                 return "/";
@@ -45,8 +45,8 @@ public enum IOpBin {
 
     public static IOpBin intToOp(int i) {
         switch(i) {
-            case 0: return PLUS;
-            case 1: return MINUS;
+            case 0: return ADD;
+            case 1: return SUB;
             case 2: return AND;
             case 3: return OR;
             default:
@@ -56,11 +56,11 @@ public enum IOpBin {
 
     public BigInteger combine(BigInteger a, BigInteger b){
         switch(this){
-            case PLUS:
+            case ADD:
                 return a.add(b);
-            case MINUS:
+            case SUB:
                 return a.subtract(b);
-            case MULT:
+            case MUL:
                 return a.multiply(b);
             case DIV:
             case UDIV:

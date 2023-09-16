@@ -126,14 +126,14 @@ public class ExprSimplifier extends ExprTransformer {
         if (lhs instanceof IConst lc) {
             BigInteger val = lc.getValue();
             switch (op) {
-                case MULT:
+                case MUL:
                     if (val.equals(BigInteger.ZERO)) {
                         return lhs;
                     }
                     if (val.equals(BigInteger.ONE)) {
                         return rhs;
                     }
-                case PLUS:
+                case ADD:
                     if (val.equals(BigInteger.ZERO)) {
                         return rhs;
                     }
@@ -144,7 +144,7 @@ public class ExprSimplifier extends ExprTransformer {
         IConst rc = (IConst)rhs;
         BigInteger val = rc.getValue();
         switch (op) {
-            case MULT:
+            case MUL:
                 if (val.equals(BigInteger.ZERO)) {
                     return rhs;
                 }
@@ -152,8 +152,8 @@ public class ExprSimplifier extends ExprTransformer {
                     return lhs;
                 }
                 break;
-            case PLUS:
-            case MINUS:
+            case ADD:
+            case SUB:
                 if(val.equals(BigInteger.ZERO)) {
                     return lhs;
                 }

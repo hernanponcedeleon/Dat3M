@@ -51,45 +51,45 @@ elseExpression
     ;
 
 re locals [IOpBin op, String mo]
-    :   ( AtomicAddReturn        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_MB;}
-        | AtomicAddReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELAXED;}
-        | AtomicAddReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicAddReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELEASE;}
-        | AtomicSubReturn        LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_MB;}
-        | AtomicSubReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELAXED;}
-        | AtomicSubReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicSubReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELEASE;}
-        | AtomicIncReturn        LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_MB;}
-        | AtomicIncReturnRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELAXED;}
-        | AtomicIncReturnAcquire LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicIncReturnRelease LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELEASE;}
-        | AtomicDecReturn        LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_MB;}
-        | AtomicDecReturnRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELAXED;}
-        | AtomicDecReturnAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicDecReturnRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELEASE;})                  # reAtomicOpReturn
+    :   ( AtomicAddReturn        LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_MB;}
+        | AtomicAddReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELAXED;}
+        | AtomicAddReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_ACQUIRE;}
+        | AtomicAddReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELEASE;}
+        | AtomicSubReturn        LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_MB;}
+        | AtomicSubReturnRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELAXED;}
+        | AtomicSubReturnAcquire LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_ACQUIRE;}
+        | AtomicSubReturnRelease LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELEASE;}
+        | AtomicIncReturn        LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_MB;}
+        | AtomicIncReturnRelaxed LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELAXED;}
+        | AtomicIncReturnAcquire LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_ACQUIRE;}
+        | AtomicIncReturnRelease LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELEASE;}
+        | AtomicDecReturn        LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_MB;}
+        | AtomicDecReturnRelaxed LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELAXED;}
+        | AtomicDecReturnAcquire LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_ACQUIRE;}
+        | AtomicDecReturnRelease LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELEASE;})                  # reAtomicOpReturn
     
-    |   ( C11AtomicAdd LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.PLUS;}
-        | C11AtomicSub LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.MINUS;}
+    |   ( C11AtomicAdd LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.ADD;}
+        | C11AtomicSub LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.SUB;}
         | C11AtomicOr LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.OR;}
         | C11AtomicXor LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.XOR;}
         | C11AtomicAnd LPar address = re Comma value = re Comma c11Mo RPar {$op = IOpBin.AND;})                         # C11AtomicOp
 
-    |   ( AtomicFetchAdd        LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_MB;}
-        | AtomicFetchAddRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELAXED;}
-        | AtomicFetchAddAcquire LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicFetchAddRelease LPar value = re Comma address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELEASE;}
-        | AtomicFetchSub        LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_MB;}
-        | AtomicFetchSubRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELAXED;}
-        | AtomicFetchSubAcquire LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicFetchSubRelease LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELEASE;}
-        | AtomicFetchInc        LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_MB;}
-        | AtomicFetchIncRelaxed LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELAXED;}
-        | AtomicFetchIncAcquire LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicFetchIncRelease LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_RELEASE;}
-        | AtomicFetchDec        LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_MB;}
-        | AtomicFetchDecRelaxed LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELAXED;}
-        | AtomicFetchDecAcquire LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_ACQUIRE;}
-        | AtomicFetchDecRelease LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_RELEASE;})                   # reAtomicFetchOp
+    |   ( AtomicFetchAdd        LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_MB;}
+        | AtomicFetchAddRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELAXED;}
+        | AtomicFetchAddAcquire LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_ACQUIRE;}
+        | AtomicFetchAddRelease LPar value = re Comma address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELEASE;}
+        | AtomicFetchSub        LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_MB;}
+        | AtomicFetchSubRelaxed LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELAXED;}
+        | AtomicFetchSubAcquire LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_ACQUIRE;}
+        | AtomicFetchSubRelease LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELEASE;}
+        | AtomicFetchInc        LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_MB;}
+        | AtomicFetchIncRelaxed LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELAXED;}
+        | AtomicFetchIncAcquire LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_ACQUIRE;}
+        | AtomicFetchIncRelease LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_RELEASE;}
+        | AtomicFetchDec        LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_MB;}
+        | AtomicFetchDecRelaxed LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELAXED;}
+        | AtomicFetchDecAcquire LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_ACQUIRE;}
+        | AtomicFetchDecRelease LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_RELEASE;})                   # reAtomicFetchOp
 
     |   ( AtomicXchg        LPar address = re Comma value = re RPar {$mo = Linux.MO_MB;}
         | AtomicXchgRelaxed LPar address = re Comma value = re RPar {$mo = Linux.MO_RELAXED;}
@@ -114,9 +114,9 @@ re locals [IOpBin op, String mo]
         | CmpXchgAcquire LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_ACQUIRE;}
         | CmpXchgRelease LPar address = re Comma cmp = re Comma value = re RPar {$mo = Linux.MO_RELEASE;})              # reCmpXchg
 
-    |   ( AtomicSubAndTest LPar value = re Comma address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_MB;}
-        | AtomicIncAndTest LPar address = re RPar {$op = IOpBin.PLUS; $mo = Linux.MO_MB;}
-        | AtomicDecAndTest LPar address = re RPar {$op = IOpBin.MINUS; $mo = Linux.MO_MB;})                             # reAtomicOpAndTest
+    |   ( AtomicSubAndTest LPar value = re Comma address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_MB;}
+        | AtomicIncAndTest LPar address = re RPar {$op = IOpBin.ADD; $mo = Linux.MO_MB;}
+        | AtomicDecAndTest LPar address = re RPar {$op = IOpBin.SUB; $mo = Linux.MO_MB;})                             # reAtomicOpAndTest
 
     |   AtomicAddUnless LPar address = re Comma value = re Comma cmp = re RPar                                          # reAtomicAddUnless
 
@@ -148,10 +148,10 @@ re locals [IOpBin op, String mo]
     ;
 
 nre locals [IOpBin op, String mo, String name]
-    :   ( AtomicAdd LPar value = re Comma address = re RPar {$op = IOpBin.PLUS;}
-        | AtomicSub LPar value = re Comma address = re RPar {$op = IOpBin.MINUS;}
-        | AtomicInc LPar address = re RPar {$op = IOpBin.PLUS;}
-        | AtomicDec LPar address = re RPar {$op = IOpBin.MINUS;})                                                       # nreAtomicOp
+    :   ( AtomicAdd LPar value = re Comma address = re RPar {$op = IOpBin.ADD;}
+        | AtomicSub LPar value = re Comma address = re RPar {$op = IOpBin.SUB;}
+        | AtomicInc LPar address = re RPar {$op = IOpBin.ADD;}
+        | AtomicDec LPar address = re RPar {$op = IOpBin.SUB;})                                                       # nreAtomicOp
 
     |   ( AtomicSet         LPar address = re Comma value = re RPar {$mo = Linux.MO_ONCE;}
         | AtomicSetRelease  LPar address = re Comma value = re RPar {$mo = Linux.MO_RELEASE;}
@@ -214,8 +214,8 @@ opCompare returns [COpBin op]
     ;
 
 opArith returns [IOpBin op]
-    :   Plus    {$op = IOpBin.PLUS;}
-    |   Minus   {$op = IOpBin.MINUS;}
+    :   Plus    {$op = IOpBin.ADD;}
+    |   Minus   {$op = IOpBin.SUB;}
     |   Amp     {$op = IOpBin.AND;}
     |   Bar     {$op = IOpBin.OR;}
     |   Circ    {$op = IOpBin.XOR;}

@@ -33,11 +33,11 @@ public class LlvmFunctions {
 	public static Object llvmFunction(String name, List<Expression> callParams, ExpressionFactory factory) {
 		IOpBin op = null; 
 		if(name.startsWith("$add.")) {
-			op = PLUS;
+			op = ADD;
 		} else if(name.startsWith("$sub.")) {
-			op = MINUS;
+			op = SUB;
 		} else if(name.startsWith("$mul.")) {
-			op = MULT;
+			op = MUL;
 		} else if(name.startsWith("$smod.")) {
 			op = MOD;
 		} else if(name.startsWith("$srem.")) {

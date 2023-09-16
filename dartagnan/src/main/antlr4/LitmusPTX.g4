@@ -196,9 +196,9 @@ register
     ;
 
 operation locals [IOpBin op]
-    :   Add {$op = IOpBin.PLUS;}
-    |   Sub {$op = IOpBin.MINUS;}
-    |   Mult {$op = IOpBin.MULT;}
+    :   Add {$op = IOpBin.ADD;}
+    |   Sub {$op = IOpBin.SUB;}
+    |   Mult {$op = IOpBin.MUL;}
     |   Div {$op = IOpBin.DIV;}
     |   And {$op = IOpBin.AND;}
     |   Or {$op = IOpBin.OR;}

@@ -146,15 +146,15 @@ public final class ExpressionFactory {
     }
 
     public Expression makeADD(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.PLUS, rightOperand);
+        return makeBinary(leftOperand, IOpBin.ADD, rightOperand);
     }
 
     public Expression makeSUB(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.MINUS, rightOperand);
+        return makeBinary(leftOperand, IOpBin.SUB, rightOperand);
     }
 
     public Expression makeMUL(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.MULT, rightOperand);
+        return makeBinary(leftOperand, IOpBin.MUL, rightOperand);
     }
 
     public Expression makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {

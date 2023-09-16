@@ -273,8 +273,8 @@ term
     ;
 
 add_op returns [IOpBin op]
-    :   Plus		{$op = IOpBin.PLUS;} 
-    |	Minus		{$op = IOpBin.MINUS;}
+    :   Plus		{$op = IOpBin.ADD;}
+    |	Minus		{$op = IOpBin.SUB;}
     ;
 
 factor
@@ -282,7 +282,7 @@ factor
     ;
 
 mul_op returns [IOpBin op]
-    :	Ast			{$op = IOpBin.MULT;}
+    :	Ast			{$op = IOpBin.MUL;}
     |	Div			{$op = IOpBin.DIV;}
     |	Mod			{$op = IOpBin.MOD;}
     ;

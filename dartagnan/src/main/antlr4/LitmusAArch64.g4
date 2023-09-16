@@ -152,9 +152,9 @@ storeExclusiveInstruction locals [String mo]
     ;
 
 arithmeticInstruction locals [IOpBin op]
-    :   ADD     { $op = IOpBin.PLUS; }
+    :   ADD     { $op = IOpBin.ADD; }
 //    |   ADDS    { throw new RuntimeException("Instruction ADDS is not implemented"); }
-    |   SUB     { $op = IOpBin.MINUS; }
+    |   SUB     { $op = IOpBin.SUB; }
 //    |   SUBS    { throw new RuntimeException("Instruction SUBS is not implemented"); }
 //    |   ADC     { throw new RuntimeException("Instruction ADC is not implemented"); }
 //    |   ADCS    { throw new RuntimeException("Instruction ADCS is not implemented"); }

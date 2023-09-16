@@ -110,6 +110,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IValue iValue) {
+        
         BigInteger value = iValue.getValue();
         Type type = iValue.getType();
         return makeLiteral(type, value);
@@ -123,11 +124,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             BitvectorFormulaManager bitvectorFormulaManager;
             IntegerFormulaManager integerFormulaManager = integerFormulaManager();
             switch (iBin.getOp()) {
-                case PLUS:
+                case ADD:
                     return integerFormulaManager.add(i1, i2);
-                case MINUS:
+                case SUB:
                     return integerFormulaManager.subtract(i1, i2);
-                case MULT:
+                case MUL:
                     return integerFormulaManager.multiply(i1, i2);
                 case DIV:
                 case UDIV:
@@ -192,11 +193,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             switch (iBin.getOp()) {
-                case PLUS:
+                case ADD:
                     return bitvectorFormulaManager.add(bv1, bv2);
-                case MINUS:
+                case SUB:
                     return bitvectorFormulaManager.subtract(bv1, bv2);
-                case MULT:
+                case MUL:
                     return bitvectorFormulaManager.multiply(bv1, bv2);
                 case DIV:
                     return bitvectorFormulaManager.divide(bv1, bv2, true);
