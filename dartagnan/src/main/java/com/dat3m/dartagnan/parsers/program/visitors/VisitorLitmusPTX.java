@@ -214,10 +214,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
-        String scope;
-        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
+        String scope = ctx.scope().content;
+        if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
         PTXAtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, constant, op, mo, scope);
@@ -232,10 +230,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register_operand = programBuilder.getOrNewRegister(mainThread, ctx.register().get(1).getText(), archType);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
-        String scope;
-        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
+        String scope = ctx.scope().content;
+        if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
         PTXAtomOp atom = EventFactory.PTX.newAtomOp(object, register_destination, register_operand, op, mo, scope);
@@ -249,10 +245,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         IConst constant = (IConst) ctx.constant().accept(this);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
-        String scope;
-        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
+        String scope = ctx.scope().content;
+        if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
         PTXRedOp red = EventFactory.PTX.newRedOp(object, constant, op, mo, scope);
@@ -266,10 +260,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register_operand = (Register) ctx.register().accept(this);
         IOpBin op = ctx.operation().op;
         String mo = ctx.mo().content;
-        String scope;
-        if (mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX)) {
-            scope = ctx.scope().content;
-        } else {
+        String scope = ctx.scope().content;
+        if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
             throw new ParsingException("Red instruction doesn't support mo: " + mo);
         }
         PTXRedOp red = EventFactory.PTX.newRedOp(object, register_operand, op, mo, scope);
@@ -280,10 +272,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitFencePhysic(LitmusPTXParser.FencePhysicContext ctx) {
         String mo = ctx.mo().content;
-        String scope;
-        if (mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC)) {
-            scope = ctx.scope().content;
-        } else {
+        String scope = ctx.scope().content;
+        if (!(mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC))) {
             throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
         Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
