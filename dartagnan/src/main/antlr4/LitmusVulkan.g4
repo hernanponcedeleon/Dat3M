@@ -104,16 +104,7 @@ instruction
     ;
 
 storeInstruction
-    :   storeConstant
-    |   storeRegister
-    ;
-
-storeConstant
-    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList location Comma constant
-    ;
-
-storeRegister
-    :   Store atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList location Comma register
+    :   Store atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList location Comma value
     ;
 
 loadInstruction
@@ -122,11 +113,11 @@ loadInstruction
     ;
 
 localConstant
-    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma constant
+    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma constant
     ;
 
 loadLocation
-    :   Load atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma location
+    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location
     ;
 
 rmwInstruction
@@ -135,11 +126,11 @@ rmwInstruction
     ;
 
 rmwConstant
-    :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
+    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
     ;
 
 rmwConstantOp
-    :   RMW atomic mo avvis scope storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
+    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
     ;
 
 fenceInstruction
@@ -148,11 +139,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo avvis scope storageClassSemanticList avvisSemanticList
+    :   MemoryBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList
     ;
 
 controlBarrier
-    :   ControlBarrier mo avvis scope storageClassSemanticList avvisSemanticList barID
+    :   ControlBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList value
     ;
 
 deviceOperation
@@ -172,7 +163,7 @@ jump
     :   Goto Label
     ;
 
-barID
+value
     :   constant
     |   register
     ;
@@ -202,7 +193,6 @@ scope returns [String content]
     |   Period Queuefamily {$content = "QF";}
     |   Period Device {$content = "DV";}
     |   Period Nonprivate {$content = "NONPRIV";}
-    |   {$content = "";}
     ;
 
 scopeID returns [int id]
@@ -213,13 +203,11 @@ mo returns [String content]
     :   Period Acquire {$content = "ACQ";}
     |   Period Release {$content = "REL";}
     |   Period Acq_rel {$content = "ACQ_REL";}
-    |   {$content = "";}
     ;
 
 avvis returns [String content]
     :   Period Visible {$content = "VIS";}
     |   Period Available {$content = "AV";}
-    |   {$content = "";}
     ;
 
 storageClass returns [String content]
@@ -307,14 +295,12 @@ Available       :   'av';
 
 SemVis          :   'semvis';
 SemAv           :   'semav';
-SemAvvis        :   'semavvis';
 
 Sc0             :   'sc0';
 Sc1             :   'sc1';
 
 Semsc0          :   'semsc0';
 Semsc1          :   'semsc1';
-Semsc01         :   'semsc01';
 
 Beq             :   'beq';
 Bne             :   'bne';

@@ -8,9 +8,9 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class VulkanRMW extends RMWXchgBase {
 
-    public VulkanRMW(Register register, Expression address, Expression value, String mo) {
+    public VulkanRMW(Register register, Expression address, Expression value, String mo, String scope) {
         super(register, address, value, mo);
-        this.addTags(Tag.Vulkan.ATOM);
+        this.addTags(Tag.Vulkan.ATOM, scope);
     }
 
     private VulkanRMW(VulkanRMW other) {

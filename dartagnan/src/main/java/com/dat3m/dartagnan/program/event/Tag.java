@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
 
 import java.util.Set;
 
@@ -356,27 +358,24 @@ public final class Tag {
                     target.addTags(tag);
                 }
             }
+            if (target instanceof Load) {
+                // Atomic loads are always visible
+                if (source.hasTag(ATOM)) {
+                    target.addTags(VISIBLE);
+                }
+                if (source.hasTag(SEM_VISIBLE)) {
+                    target.addTags(SEM_VISIBLE);
+                }
+            } else if (target instanceof Store) {
+                // Atomic stores are always available
+                if (source.hasTag(ATOM)) {
+                    target.addTags(AVAILABLE);
+                }
+                if (source.hasTag(SEM_AVAILABLE)) {
+                    target.addTags(SEM_AVAILABLE);
+                }
+            }
         }
-
-        public static void propagateLoadTags(Event source, Event target) {
-            // Atomic loads are always visible
-            if (source.hasTag(ATOM)) {
-                target.addTags(VISIBLE);
-            }
-            if (source.hasTag(SEM_VISIBLE)) {
-                target.addTags(SEM_VISIBLE);
-            }
-        }
-
-        public static void propagateStoreTags(Event source, Event target) {
-            // Atomic stores are always available
-            if (source.hasTag(ATOM)) {
-                target.addTags(AVAILABLE);
-            }
-            if (source.hasTag(SEM_AVAILABLE)) {
-                target.addTags(SEM_AVAILABLE);
-            }
-    }
 
         public static String loadMO(String mo) {
             return switch (mo) {

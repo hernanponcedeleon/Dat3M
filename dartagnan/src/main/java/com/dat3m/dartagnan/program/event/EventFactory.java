@@ -711,16 +711,12 @@ public class EventFactory {
 
         public static VulkanRMW newRMW(Expression address, Register register, Expression value,
                                           String mo, String scope) {
-            VulkanRMW atom = new VulkanRMW(register, address, value, mo);
-            atom.addTags(scope);
-            return atom;
+            return new VulkanRMW(register, address, value, mo, scope);
         }
 
         public static VulkanRMWOp newRMWOp(Expression address, Register register, Expression value,
                                        IOpBin op, String mo, String scope) {
-            VulkanRMWOp atom = new VulkanRMWOp(register, address, op, value, mo);
-            atom.addTags(scope);
-            return atom;
+            return new VulkanRMWOp(register, address, op, value, mo, scope);
         }
     }
 

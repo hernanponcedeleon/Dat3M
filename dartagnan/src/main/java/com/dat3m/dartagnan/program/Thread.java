@@ -10,7 +10,6 @@ import java.util.Set;
 
 public class Thread extends Function {
 
-    // Optional fields
     // Scope hierarchy of the thread
     private final Optional<ScopeHierarchy> scopeHierarchy;
 

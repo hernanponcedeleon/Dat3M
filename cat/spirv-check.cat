@@ -177,6 +177,12 @@ flag ~empty semavIsRel as checkSemAvIsRel
 let semvisIsAcq = ([SEMVIS] \ [ACQ])
 flag ~empty semvisIsAcq as checkSemVisIsAcq
 
+// acquire/release ops have one or more semantics storage classes
+let acqIsSem = ([ACQ] \ [SEMSC0 | SEMSC1])
+flag ~empty acqIsSem as checkAcqIsSem
+let relIsSem = ([REL] \ [SEMSC0 | SEMSC1])
+flag ~empty relIsSem as checkRelIsSem
+
 // no pair of the same control barrier instance can be in the same thread
 let scbarinstIsPo = (syncbar & (po | po^-1))
 flag ~empty scbarinstIsPo as checkScbarinstIsPo
