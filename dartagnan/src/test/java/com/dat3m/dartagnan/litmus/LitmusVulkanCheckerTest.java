@@ -17,12 +17,7 @@ public class LitmusVulkanCheckerTest extends AbstractLitmusTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        return buildLitmusTests("litmus/VULKAN/", "VULKAN");
-    }
-
-    @Override
-    protected Provider<Result> getExpectedResultProvider() {
-        return () -> Result.PASS;
+        return buildLitmusTests("litmus/VULKAN/", "VULKAN", "-CK");
     }
 
     @Override

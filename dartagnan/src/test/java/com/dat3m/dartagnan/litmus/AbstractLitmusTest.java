@@ -89,11 +89,6 @@ public abstract class AbstractLitmusTest {
         return 10000;
     }
 
-    protected Provider<Result> getExpectedResultProvider() {
-        return Provider.fromSupplier(
-                () -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
-    }
-
     // ============================================================
 
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
@@ -104,7 +99,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Result> expectedResultProvider = getExpectedResultProvider();
+    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
     protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
