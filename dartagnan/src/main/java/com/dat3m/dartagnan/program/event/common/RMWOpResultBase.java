@@ -36,7 +36,7 @@ public abstract class RMWOpResultBase extends RMWOpBase implements RegWriter {
 
     @Override
     protected String defaultString() {
-        return String.format("%s := rmw %s_result(%s, %s)", resultRegister, operator.toLinuxName(), address, operand);
+        return String.format("%s := rmw %s_result(%s, %s)", resultRegister, operator.getName(), address, operand);
     }
 
 }

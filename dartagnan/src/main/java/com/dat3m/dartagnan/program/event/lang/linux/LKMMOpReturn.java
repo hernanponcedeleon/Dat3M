@@ -20,7 +20,7 @@ public class LKMMOpReturn extends RMWOpResultBase {
     @Override
     public String defaultString() {
         return String.format("%s := atomic_%s_return%s(%s, %s)\t### LKMM",
-                resultRegister, operator.toLinuxName(), Tag.Linux.toText(mo), operand, address);
+                resultRegister, operator.getName(), Tag.Linux.toText(mo), operand, address);
     }
 
     @Override

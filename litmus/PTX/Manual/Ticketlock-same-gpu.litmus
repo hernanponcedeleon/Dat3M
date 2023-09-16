@@ -1,0 +1,18 @@
+PTX Ticketlock-same-gpu
+"https://github.com/NVIDIA/libcudacxx/blob/main/benchmarks/concurrency.cpp#L152"
+{
+in=0; out=0;
+x=0;
+}
+ P0@cta 0,gpu 0                    | P1@cta 0,gpu 0                   ;
+ atom.acquire.gpu.plus r1, in, 1   | atom.acquire.gpu.plus r1, in, 1  ;
+ LC00:                             | LC00:                            ;
+ ld.acquire.gpu r2, out            | ld.acquire.gpu r2, out           ;
+ beq r1,r2,LC01                    | beq r1,r2,LC01                   ;
+ goto LC00                         | goto LC00                        ;
+ LC01:                             | LC01:                            ;
+ ld.weak r3, x                     | ld.weak r3, x                    ;
+ st.weak x, 1                      | st.weak x, 2                     ;
+ atom.release.gpu.plus r1, out, 1  | atom.release.gpu.plus r1, out, 1 ;
+exists
+(P0:r1 != P1:r1 /\ P0:r2 != P1:r2 /\ P0:r3 == 0 /\ P1:r3 == 0)

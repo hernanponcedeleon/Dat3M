@@ -101,8 +101,8 @@ public class LlvmProcedures {
                         visitor.addEvent(Llvm.newExchange(reg, p0, p1, mo));
                         return true;
                     }
-                    case 1 -> op = IOpBin.PLUS;
-                    case 2 -> op = IOpBin.MINUS;
+                    case 1 -> op = IOpBin.ADD;
+                    case 2 -> op = IOpBin.SUB;
                     case 3 -> op = IOpBin.AND;
                     case 4 -> op = IOpBin.OR;
                     case 5 -> op = IOpBin.XOR;

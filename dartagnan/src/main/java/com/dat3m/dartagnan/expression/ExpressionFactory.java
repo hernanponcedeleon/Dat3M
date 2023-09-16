@@ -146,15 +146,15 @@ public final class ExpressionFactory {
     }
 
     public Expression makeADD(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.PLUS, rightOperand);
+        return makeBinary(leftOperand, IOpBin.ADD, rightOperand);
     }
 
     public Expression makeSUB(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.MINUS, rightOperand);
+        return makeBinary(leftOperand, IOpBin.SUB, rightOperand);
     }
 
     public Expression makeMUL(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.MULT, rightOperand);
+        return makeBinary(leftOperand, IOpBin.MUL, rightOperand);
     }
 
     public Expression makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
@@ -182,11 +182,11 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLSH(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IOpBin.L_SHIFT, rightOperand);
+        return makeBinary(leftOperand, IOpBin.LSHIFT, rightOperand);
     }
 
     public Expression makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IOpBin.AR_SHIFT : IOpBin.R_SHIFT, rightOperand);
+        return makeBinary(leftOperand, signed ? IOpBin.ARSHIFT : IOpBin.RSHIFT, rightOperand);
     }
 
     public Expression makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {

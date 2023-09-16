@@ -325,7 +325,7 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newFADD(Register register, Expression address, Expression value, String mo) {
-            return newFetchOp(register, address, value, IOpBin.PLUS, mo);
+            return newFetchOp(register, address, value, IOpBin.ADD, mo);
         }
 
         public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
@@ -333,7 +333,7 @@ public class EventFactory {
                 throw new IllegalArgumentException(
                         String.format("Non-integer type %s for increment operation.", register.getType()));
             }
-            return newFetchOp(register, address, expressions.makeOne(integerType), IOpBin.PLUS, mo);
+            return newFetchOp(register, address, expressions.makeOne(integerType), IOpBin.ADD, mo);
         }
 
         public static AtomicLoad newLoad(Register register, Expression address, String mo) {

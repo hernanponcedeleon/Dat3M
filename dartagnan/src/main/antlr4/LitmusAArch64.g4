@@ -152,9 +152,9 @@ storeExclusiveInstruction locals [String mo]
     ;
 
 arithmeticInstruction locals [IOpBin op]
-    :   ADD     { $op = IOpBin.PLUS; }
+    :   ADD     { $op = IOpBin.ADD; }
 //    |   ADDS    { throw new RuntimeException("Instruction ADDS is not implemented"); }
-    |   SUB     { $op = IOpBin.MINUS; }
+    |   SUB     { $op = IOpBin.SUB; }
 //    |   SUBS    { throw new RuntimeException("Instruction SUBS is not implemented"); }
 //    |   ADC     { throw new RuntimeException("Instruction ADC is not implemented"); }
 //    |   ADCS    { throw new RuntimeException("Instruction ADCS is not implemented"); }
@@ -194,9 +194,9 @@ branchRegInstruction returns [COpBin op]
     ;
 
 shiftOperator returns [IOpBin op]
-    :   LSL { $op = IOpBin.L_SHIFT; }
-    |   LSR { $op = IOpBin.R_SHIFT; }
-    |   ASR { $op = IOpBin.AR_SHIFT; }
+    :   LSL { $op = IOpBin.LSHIFT; }
+    |   LSR { $op = IOpBin.RSHIFT; }
+    |   ASR { $op = IOpBin.ARSHIFT; }
     ;
 
 expr64

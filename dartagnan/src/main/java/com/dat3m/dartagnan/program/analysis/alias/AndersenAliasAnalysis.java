@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.PLUS;
+import static com.dat3m.dartagnan.expression.op.IOpBin.ADD;
 
 /**
  * Inclusion-based pointer analysis by Andersen.
@@ -274,7 +274,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 failed = false;
                 return;
             }
-            if (x instanceof IExprBin iBin && iBin.getOp() == PLUS) {
+            if (x instanceof IExprBin iBin && iBin.getOp() == ADD) {
                 Expression lhs = iBin.getLHS();
                 Expression rhs = iBin.getRHS();
                 if (lhs instanceof MemoryObject mem && rhs instanceof IConst ic && !(rhs instanceof MemoryObject)) {

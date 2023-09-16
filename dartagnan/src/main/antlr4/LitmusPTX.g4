@@ -88,6 +88,9 @@ instruction
     |   fenceInstruction
     |   atomInstruction
     |   redInstruction
+    |   branchCond
+    |   jump
+    |   label
     ;
 
 storeInstruction
@@ -166,6 +169,17 @@ redRegister
     :   red Period mo Period scope Period operation location Comma register
     ;
 
+branchCond
+    :   cond register Comma register Comma Label
+    ;
+
+jump
+    :   Goto Label
+    ;
+
+label
+    :   Label Colon
+    ;
 
 scope returns [String content]
     :   CTA {$content = "CTA";}
@@ -182,13 +196,22 @@ register
     ;
 
 operation locals [IOpBin op]
-    :   Add {$op = IOpBin.PLUS;}
-    |   Sub {$op = IOpBin.MINUS;}
-    |   Mult {$op = IOpBin.MULT;}
+    :   Add {$op = IOpBin.ADD;}
+    |   Sub {$op = IOpBin.SUB;}
+    |   Mult {$op = IOpBin.MUL;}
     |   Div {$op = IOpBin.DIV;}
     |   And {$op = IOpBin.AND;}
     |   Or {$op = IOpBin.OR;}
     |   Xor {$op = IOpBin.XOR;}
+    ;
+
+cond returns [COpBin op]
+    :   Beq {$op = COpBin.EQ;}
+    |   Bne {$op = COpBin.NEQ;}
+    |   Bge {$op = COpBin.GTE;}
+    |   Ble {$op = COpBin.LTE;}
+    |   Bgt {$op = COpBin.GT;}
+    |   Blt {$op = COpBin.LT;}
     ;
 
 assertionValue
@@ -249,6 +272,10 @@ Register
     :   'r' DigitSequence
     ;
 
+Label
+    :   'LC' DigitSequence
+    ;
+
 Load            :   'ld';
 TextureLoad     :   'tld';
 SurfaceLoad     :   'suld';
@@ -294,6 +321,15 @@ Surface     :   'surface';
 Texture     :   'texture';
 Aliases     :   'aliases';
 Alias       :   'alias';
+
+Beq    :   'beq';
+Bne    :   'bne';
+Blt    :   'blt';
+Bgt    :   'bgt';
+Ble    :   'ble';
+Bge    :   'bge';
+
+Goto   :   'goto';
 
 LitmusLanguage
     :   'PTX'

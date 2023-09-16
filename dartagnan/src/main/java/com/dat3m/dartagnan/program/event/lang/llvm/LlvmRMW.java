@@ -21,7 +21,7 @@ public class LlvmRMW extends RMWOpResultBase {
     @Override
     public String defaultString() {
         return String.format("%s := llvm_rmw_%s(*%s, %s, %s)\t### LLVM",
-                resultRegister, operator.toLinuxName(), address, operand, mo);
+                resultRegister, operator.getName(), address, operand, mo);
     }
 
     @Override
