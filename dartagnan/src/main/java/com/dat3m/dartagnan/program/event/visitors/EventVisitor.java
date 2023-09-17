@@ -34,7 +34,8 @@ public interface EventVisitor<T> {
     default T visitLocal(Local e) { return visitEvent(e); }
     default T visitSkip(Skip e) { return visitEvent(e); }
 
-    default T visitFence(Fence e) { return visitEvent(e); }
+    default T visitTaggedEvent(TaggedEvent e) { return visitEvent(e); }
+    default T visitFence(Fence e) { return visitTaggedEvent(e); }
     default T visitMemCoreEvent(MemoryCoreEvent e) { return visitMemEvent(e); }
     default T visitLoad(Load e) { return visitMemCoreEvent(e); }
     default T visitStore(Store e) { return visitMemCoreEvent(e); }
