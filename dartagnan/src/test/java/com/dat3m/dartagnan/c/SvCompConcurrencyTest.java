@@ -7,7 +7,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
 public class SvCompConcurrencyTest extends AbstractSvCompTest {
@@ -18,7 +18,7 @@ public class SvCompConcurrencyTest extends AbstractSvCompTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return () -> TEST_RESOURCE_PATH + "boogie/concurrency/" + name + "-O0.bpl";
+        return () -> getTestResourcePath("boogie/concurrency/" + name + "-O0.bpl");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, bound={1}")

@@ -9,7 +9,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
 public class SvCompControlFlowTest extends AbstractSvCompTest {
@@ -20,7 +20,7 @@ public class SvCompControlFlowTest extends AbstractSvCompTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "boogie/cf/" + name + "-O3.bpl");
+        return Provider.fromSupplier(() -> getTestResourcePath("boogie/cf/" + name + "-O3.bpl"));
     }
 
     @Override

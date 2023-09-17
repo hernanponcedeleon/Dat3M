@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.utils.rules;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -19,6 +18,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import java.io.File;
 import java.util.EnumSet;
 import java.util.function.Supplier;
+
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 
 
 /*
@@ -45,7 +46,7 @@ public class Providers {
     }
 
     public static Provider<Wmm> createWmmFromName(Supplier<String> nameSupplier) {
-        return createWmmFromPath(() -> ResourceHelper.CAT_RESOURCE_PATH + "cat/" + nameSupplier.get() + ".cat");
+        return createWmmFromPath(() -> getRootPath("cat/" + nameSupplier.get() + ".cat"));
     }
 
     // =========================== Program providers ==============================

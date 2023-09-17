@@ -8,6 +8,10 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.ARCH_PRECISION;
 
 @Options
@@ -52,5 +56,31 @@ public class GlobalSettings {
         // Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
         logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
+    }
+
+    public static String getOrCreateOutputDirectory() throws IOException {
+        String path = getOutputDirectory();
+        Files.createDirectories(Paths.get(path));
+        return path;
+    }
+
+    public static String getOutputDirectory() {
+        if (isJUnitTest()) {
+            return "target/output";
+        }
+        String env = System.getenv("DAT3M_OUTPUT");
+        if (env != null) {
+            return env;
+        }
+        return "";
+    }
+
+    private static boolean isJUnitTest() {
+        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+            if (element.getClassName().startsWith("org.junit.")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

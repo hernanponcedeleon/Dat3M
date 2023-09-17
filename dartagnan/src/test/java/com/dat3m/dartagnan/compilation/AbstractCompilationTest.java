@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +49,7 @@ public abstract class AbstractCompilationTest {
 
     static Iterable<Object[]> buildLitmusTests(String litmusPath) throws IOException {
         Set<String> skip = ResourceHelper.getSkipSet();
-        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.LITMUS_RESOURCE_PATH + litmusPath))) {
+        try (Stream<Path> fileStream = Files.walk(Paths.get(getRootPath(litmusPath)))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .map(Path::toString)
