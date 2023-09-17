@@ -11,7 +11,7 @@ public class VulkanRMWOp extends RMWOpResultBase {
 
     public VulkanRMWOp(Register register, Expression address, IOpBin op, Expression operand, String mo, String scope) {
         super(register, address, op, operand, mo);
-        this.addTags(Tag.Vulkan.ATOM);
+        this.addTags(Tag.Vulkan.ATOM, scope);
     }
 
     private VulkanRMWOp(VulkanRMWOp other) {

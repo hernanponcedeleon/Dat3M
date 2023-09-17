@@ -15,7 +15,6 @@ public class VulkanRMW extends RMWXchgBase {
 
     private VulkanRMW(VulkanRMW other) {
         super(other);
-        this.addTags(Tag.Vulkan.ATOM);
     }
 
     @Override
