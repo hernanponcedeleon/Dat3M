@@ -83,9 +83,9 @@ public class ProcessingManager implements ProgramProcessor {
                 StaticMemoryInitializer.newInstance(),
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 NaiveDevirtualisation.newInstance(),
+                Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                Inlining.fromConfig(config),
                                 intrinsics.earlyInliningPass(),
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),

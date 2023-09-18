@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -32,7 +33,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Options
-public class Inlining implements FunctionProcessor {
+public class Inlining implements ProgramProcessor {
 
     @Option(name = RECURSION_BOUND,
             description = "Inlines each function call up to this many times.",
@@ -48,15 +49,30 @@ public class Inlining implements FunctionProcessor {
     }
 
     @Override
-    public void run(Function function) {
-        inlineAllCalls(function);
+    public void run(Program program) {
+        final Map<Function, Snapshot> snapshots = new HashMap<>();
+        for (final Function function : program.getFunctions()) {
+            snapshots.put(function, new Snapshot(
+                    function.getName(),
+                    function.getParameterRegisters(),
+                    function.getEvents(),
+                    List.copyOf(function.getRegisters())));
+        }
+        for (final Function function : program.getFunctions()) {
+            inlineAllCalls(function, snapshots);
+        }
+        for (final Thread thread : program.getThreads()) {
+            inlineAllCalls(thread, snapshots);
+        }
     }
+
+    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers) {}
 
     private boolean canInline(FunctionCall call) {
         return call.isDirectCall() && call.getCalledFunction().hasBody();
     }
 
-    private void inlineAllCalls(Function function) {
+    private void inlineAllCalls(Function function, Map<Function, Snapshot> snapshots) {
         int scopeCounter = 0;
         final Map<Event, List<Function>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
@@ -82,21 +98,21 @@ public class Inlining implements FunctionProcessor {
                     throw new MalformedProgramException(
                             String.format("Cannot call thread %s directly.", callTarget));
                 }
-                event = inlineBody(call, callTarget, ++scopeCounter);
+                event = inlineBody(call, snapshots.get(callTarget), ++scopeCounter);
             }
         }
     }
 
     // Returns the first event of the inlined code, from where to continue from
-    private static Event inlineBody(FunctionCall call, Function callTarget, int scope) {
-        final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.getName());
-        final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.getName());
+    private static Event inlineBody(FunctionCall call, Snapshot callTarget, int scope) {
+        final Event callMarker = EventFactory.newFunctionCallMarker(callTarget.name);
+        final Event returnMarker = EventFactory.newFunctionReturnMarker(callTarget.name);
         callMarker.copyAllMetadataFrom(call);
         returnMarker.copyAllMetadataFrom(call);
         call.getPredecessor().insertAfter(callMarker);
         call.insertAfter(returnMarker);
         //  --- SVCOMP-specific code ---
-        if (callTarget.getName().startsWith("__VERIFIER_atomic")) {
+        if (callTarget.name.startsWith("__VERIFIER_atomic")) {
             final BeginAtomic beginAtomic = EventFactory.Svcomp.newBeginAtomic();
             call.getPredecessor().insertAfter(beginAtomic);
             call.insertAfter(EventFactory.Svcomp.newEndAtomic(beginAtomic));
@@ -105,24 +121,24 @@ public class Inlining implements FunctionProcessor {
         // Calls with result will write the return value to this register.
         final Register result = call instanceof ValueFunctionCall c ? c.getResultRegister() : null;
         // All occurrences of return events will jump here instead.
-        Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.getName() + "_" + scope);
+        Label exitLabel = newLabel("EXIT_OF_CALL_" + callTarget.name + "_" + scope);
         var inlinedBody = new ArrayList<Event>();
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
         final List<Expression> arguments = call.getArguments();
-        assert arguments.size() == callTarget.getParameterRegisters().size();
+        assert arguments.size() == callTarget.parameters.size();
         // All registers have to be replaced
-        for (final Register register : List.copyOf(callTarget.getRegisters())) {
+        for (final Register register : callTarget.registers) {
             final String newName = scope + ":" + register.getName();
             registerMap.put(register, call.getFunction().newRegister(newName, register.getType()));
         }
         var parameterAssignments = new ArrayList<Event>();
         var returnEvents = new HashSet<Event>();
         for (int j = 0; j < arguments.size(); j++) {
-            Register register = registerMap.get(callTarget.getParameterRegisters().get(j));
+            Register register = registerMap.get(callTarget.parameters.get(j));
             parameterAssignments.add(newLocal(register, arguments.get(j)));
         }
-        for (Event functionEvent : callTarget.getEvents()) {
+        for (Event functionEvent : callTarget.events) {
             if (functionEvent instanceof Return returnEvent) {
                 final Expression expression = returnEvent.getValue().orElse(null);
                 checkReturnType(result, expression);

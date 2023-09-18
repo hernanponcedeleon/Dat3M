@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
@@ -8,6 +9,8 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -41,6 +44,19 @@ public class MiscellaneousTest extends AbstractCTest {
     @Override
     protected long getTimeout() {
         return 10000;
+    }
+
+    @Override
+    protected Provider<Configuration> getConfigurationProvider() {
+        return () -> {
+            if (name.equals("recursion")) {
+                try {
+                    return Configuration.builder().setOption(OptionNames.RECURSION_BOUND, "2").build();
+                } catch (InvalidConfigurationException ignore) {
+                }
+            }
+            return Configuration.defaultConfiguration();
+        };
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
