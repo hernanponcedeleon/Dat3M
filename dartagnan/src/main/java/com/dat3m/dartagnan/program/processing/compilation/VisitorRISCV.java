@@ -91,8 +91,8 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         String mo = e.getMo();
-        TaggedEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
-        TaggedEvent optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence()
+        GenericVisibleEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
+        GenericVisibleEvent optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence()
                 : null;
 
         return eventSequence(
@@ -105,7 +105,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
         String mo = e.getMo();
-        TaggedEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme
+        GenericVisibleEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme
                 ? RISCV.newRWWFence()
                 : null;
 
@@ -187,7 +187,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-        TaggedEvent fence = null;
+        GenericVisibleEvent fence = null;
         switch (e.getMo()) {
             case Tag.C11.MO_ACQUIRE:
                 fence = RISCV.newRRWFence();
@@ -283,8 +283,8 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         String mo = e.getMo();
-        TaggedEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
-        TaggedEvent optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? RISCV.newRWRWFence() : null;
+        GenericVisibleEvent optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 optionalBarrierBefore,
@@ -296,7 +296,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
         String mo = e.getMo();
-        TaggedEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() : null;
+        GenericVisibleEvent optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_RELEASE.equals(mo) || useRC11Scheme ? RISCV.newRWWFence() : null;
 
         return eventSequence(
                 optionalBarrierBefore,
@@ -306,7 +306,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
-        TaggedEvent fence = null;
+        GenericVisibleEvent fence = null;
         switch (e.getMo()) {
             case Tag.C11.MO_ACQUIRE:
                 fence = RISCV.newRRWFence();
@@ -356,7 +356,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMLoad(LKMMLoad e) {
         String mo = e.getMo();
-        TaggedEvent optionalMemoryBarrier = mo.equals(MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrier = mo.equals(MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 newLoad(e.getResultRegister(), e.getAddress()),
@@ -368,7 +368,7 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLKMMStore(LKMMStore e) {
         String mo = e.getMo();
-        TaggedEvent optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
 
         return eventSequence(
                 optionalMemoryBarrier,
@@ -379,7 +379,7 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        TaggedEvent optionalMemoryBarrier;
+        GenericVisibleEvent optionalMemoryBarrier;
         switch (e.getName()) {
             // smp_mb()
             case Tag.Linux.MO_MB:
@@ -441,8 +441,8 @@ class VisitorRISCV extends VisitorBase {
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
-        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
@@ -477,7 +477,7 @@ class VisitorRISCV extends VisitorBase {
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 load,
@@ -542,8 +542,8 @@ class VisitorRISCV extends VisitorBase {
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
-        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
@@ -577,8 +577,8 @@ class VisitorRISCV extends VisitorBase {
         ExecutionStatus status = newExecutionStatusWithDependencyTracking(statusReg, store);
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newJump(statusReg, label); // TODO: Do we really need a fakedep from the store?
-        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_RELEASE) ? RISCV.newRWWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 optionalMemoryBarrierBefore,
@@ -620,7 +620,7 @@ class VisitorRISCV extends VisitorBase {
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 load,
@@ -655,7 +655,7 @@ class VisitorRISCV extends VisitorBase {
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? RISCV.newRWRWFence() : mo.equals(Tag.Linux.MO_ACQUIRE) ? RISCV.newRRWFence() : null;
 
         return eventSequence(
                 load,

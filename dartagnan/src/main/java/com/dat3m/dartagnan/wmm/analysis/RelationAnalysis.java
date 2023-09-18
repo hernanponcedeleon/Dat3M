@@ -976,8 +976,8 @@ public class RelationAnalysis {
             List<Event> events = new ArrayList<>();
             events.addAll(program.getThreadEvents(Load.class));
             events.addAll(program.getThreadEvents(Store.class));
-            events.addAll(program.getThreadEvents(TaggedEvent.class));
-            events.removeIf(e -> e instanceof TaggedEvent && !e.hasTag(Tag.FENCE));
+            events.addAll(program.getThreadEvents(GenericVisibleEvent.class));
+            events.removeIf(e -> e instanceof GenericVisibleEvent && !e.hasTag(Tag.FENCE));
             events.removeIf(e -> e instanceof Init);
             for (Event e1 : events) {
                 for (Event e2 : events) {
@@ -1022,9 +1022,9 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSyncFence(Relation sync_fen) {
             Set<Tuple> may = new HashSet<>();
-            List<TaggedEvent> fenceEvents = program.getThreadEvents(TaggedEvent.class).stream().filter(e -> e.hasTag(Tag.FENCE)).toList();
-            for (TaggedEvent e1 : fenceEvents) {
-                for (TaggedEvent e2 : fenceEvents) {
+            List<GenericVisibleEvent> fenceEvents = program.getThreadEvents(GenericVisibleEvent.class).stream().filter(e -> e.hasTag(Tag.FENCE)).toList();
+            for (GenericVisibleEvent e1 : fenceEvents) {
+                for (GenericVisibleEvent e2 : fenceEvents) {
                     if (e1.hasTag(Tag.PTX.SC) && e2.hasTag(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }

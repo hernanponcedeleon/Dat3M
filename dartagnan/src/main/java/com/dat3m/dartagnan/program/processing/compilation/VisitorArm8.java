@@ -171,7 +171,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
         String mo = e.getMo();
-        TaggedEvent fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ?
+        GenericVisibleEvent fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ?
                 AArch64.DMB.newISHBarrier() :
                 mo.equals(C11.MO_ACQUIRE) ?
                         AArch64.DSB.newISHLDBarrier() :
@@ -272,7 +272,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         String mo = e.getMo();
-        TaggedEvent fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ? AArch64.DMB.newISHBarrier()
+        GenericVisibleEvent fence = mo.equals(C11.MO_RELEASE) || mo.equals(C11.MO_ACQUIRE_RELEASE) || mo.equals(C11.MO_SC) ? AArch64.DMB.newISHBarrier()
                 : mo.equals(C11.MO_ACQUIRE) ? AArch64.DSB.newISHLDBarrier() : null;
 
         return eventSequence(
@@ -337,7 +337,7 @@ class VisitorArm8 extends VisitorBase {
     //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        TaggedEvent optionalMemoryBarrier;
+        GenericVisibleEvent optionalMemoryBarrier;
         switch (e.getName()) {
             // mb()
             case Tag.Linux.MO_MB:
@@ -408,7 +408,7 @@ class VisitorArm8 extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,
@@ -435,7 +435,7 @@ class VisitorArm8 extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,
@@ -483,7 +483,7 @@ class VisitorArm8 extends VisitorBase {
         Store store = newRMWStoreExclusiveWithMo(address, dummy, true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,
@@ -512,7 +512,7 @@ class VisitorArm8 extends VisitorBase {
                 true, ARMv8.extractStoreMoFromLKMo(mo));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,
@@ -547,7 +547,7 @@ class VisitorArm8 extends VisitorBase {
         Expression unless = e.getCmp();
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,
@@ -582,7 +582,7 @@ class VisitorArm8 extends VisitorBase {
         Local testOp = newLocal(resultRegister, expressions.makeCast(testResult, resultRegister.getType()));
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
-        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
+        GenericVisibleEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? AArch64.DMB.newISHBarrier() : null;
 
         return eventSequence(
                 load,

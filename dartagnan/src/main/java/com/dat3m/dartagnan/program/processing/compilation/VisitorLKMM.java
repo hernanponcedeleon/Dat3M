@@ -82,9 +82,9 @@ public class VisitorLKMM extends VisitorBase {
         Expression address = e.getAddress();
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        TaggedEvent optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        GenericVisibleEvent optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
-        TaggedEvent optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        GenericVisibleEvent optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
         Expression storeValue = expressions.makeBinary(dummy, e.getOperator(), e.getOperand());
 
         return eventSequence(
@@ -138,8 +138,8 @@ public class VisitorLKMM extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
-        TaggedEvent optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
-        TaggedEvent optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        GenericVisibleEvent optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        GenericVisibleEvent optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
@@ -180,8 +180,8 @@ public class VisitorLKMM extends VisitorBase {
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo));
-        TaggedEvent optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
-        TaggedEvent optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        GenericVisibleEvent optionalMbBefore = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
+        GenericVisibleEvent optionalMbAfter = mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null;
 
         return eventSequence(
                 optionalMbBefore,
@@ -224,7 +224,7 @@ public class VisitorLKMM extends VisitorBase {
         for example, with custom printing capabilities.
      */
 
-    private static TaggedEvent newCoreMemoryBarrier() {
+    private static GenericVisibleEvent newCoreMemoryBarrier() {
         return newFence(Tag.Linux.MO_MB);
     }
 
