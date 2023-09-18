@@ -26,7 +26,6 @@ public class Function implements Expression {
 
     protected FunctionType functionType;
     protected List<Register> parameterRegs;
-    protected boolean isVarArgs = false;
 
     protected Intrinsics.Info intrinsicInfo;
 
@@ -174,7 +173,7 @@ public class Function implements Expression {
     @Override
     public String toString() {
         final String prefix = getFunctionType().getReturnType() + " " + getName() + "(";
-        final String suffix = isVarArgs ? ", ...)" : ")";
+        final String suffix = getFunctionType().isVarArgs() ? ", ...)" : ")";
         return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
     }

@@ -1,10 +1,7 @@
 package com.dat3m.dartagnan.program;
 
-
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
@@ -107,25 +104,6 @@ public class Program {
 
     public boolean removeFunction(Function func) {
         return functions.remove(func);
-    }
-
-    // Ensures that a function with name and type exists in this program.
-    public Function declareFunction(String name, FunctionType type, List<String> parameterNames) {
-        for (Function function : functions) {
-            if (!function.getName().equals(name)) {
-                continue;
-            }
-            if (function.getType().equals(type)) {
-                return function;
-            }
-            throw new MalformedProgramException(String.format("Unexpected type for intrinsic function \"%s\"", name));
-        }
-        //TODO this may not be unique
-        int id = functions.size();
-        Function function = new Function(name, type, parameterNames, id, null);
-        functions.add(function);
-        function.setProgram(this);
-        return function;
     }
 
     public List<Thread> getThreads() {
