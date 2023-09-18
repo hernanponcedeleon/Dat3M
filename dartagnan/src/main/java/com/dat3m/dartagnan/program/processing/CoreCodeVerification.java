@@ -34,7 +34,7 @@ public class CoreCodeVerification implements FunctionProcessor {
          Introducing a CoreEvent interface or a @Core annotation would do the trick.
      */
     private static final Set<Class<? extends Event>> CORE_CLASSES = new HashSet<>(Arrays.asList(
-            Load.class, Store.class, Init.class, GenericMemoryEvent.class, Fence.class,
+            Load.class, Store.class, Init.class, GenericMemoryEvent.class, Fence.class, TaggedEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
