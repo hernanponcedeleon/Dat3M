@@ -11,7 +11,7 @@ public class GenericVisibleEvent extends AbstractEvent {
     public GenericVisibleEvent(String name, String ... tags) {
         Preconditions.checkArgument(!name.isEmpty());
         this.name = name;
-        this.addTags(Tag.VISIBLE, name);
+        this.addTags(Tag.VISIBLE);
         this.addTags(tags);
     }
 

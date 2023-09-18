@@ -452,11 +452,17 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newSYBarrier() {
-                return newFence("DMB.SY");
+                String name = "DMB.SY";
+                GenericVisibleEvent fence = newFence(name);
+                fence.addTags(name);
+                return fence;
             }
 
             public static GenericVisibleEvent newISHBarrier() {
-                return newFence("DMB.ISH");
+                String name = "DMB.ISH";
+                GenericVisibleEvent fence = newFence(name);
+                fence.addTags(name);
+                return fence;
             }
         }
 
@@ -469,19 +475,31 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newSYBarrier() {
-                return newFence("DSB.SY");
+                String name = "DSB.SY";
+                GenericVisibleEvent fence = newFence(name);
+                fence.addTags(name);
+                return fence;
             }
 
             public static GenericVisibleEvent newISHBarrier() {
-                return newFence("DSB.ISH");
+                String name = "DSB.ISH";
+                GenericVisibleEvent fence = newFence(name);
+                fence.addTags(name);
+                return fence;
             }
 
             public static GenericVisibleEvent newISHLDBarrier() {
-                return newFence("DSB.ISHLD");
+                String name = "DSB.ISHLD";
+                GenericVisibleEvent fence = newFence(name);
+                fence.addTags(name);
+                return fence;
             }
 
             public static GenericVisibleEvent newISHSTBarrier() {
-                return newFence("DMB.ISHST");
+                String name = "DMB.ISHST";
+                GenericVisibleEvent fence = newFence(name);
+                fence.addTags(name);
+                return fence;
             }
 
         }
@@ -568,7 +586,9 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newMemoryFence() {
-            return newFence(MFENCE);
+            GenericVisibleEvent fence = newFence(MFENCE);
+            fence.addTags(MFENCE);
+            return fence;
         }
     }
 
@@ -592,43 +612,73 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newRRFence() {
-            return newFence("Fence.r.r");
+            String name = "Fence.r.r";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newRWFence() {
-            return newFence("Fence.r.w");
+            String name = "Fence.r.w";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newRRWFence() {
-            return newFence("Fence.r.rw");
+            String name = "Fence.r.rw";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newWRFence() {
-            return newFence("Fence.w.r");
+            String name = "Fence.w.r";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newWWFence() {
-            return newFence("Fence.w.w");
+            String name = "Fence.w.w";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newWRWFence() {
-            return newFence("Fence.w.rw");
-        }
+            String name = "Fence.w.rw";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
+s        }
 
         public static GenericVisibleEvent newRWRFence() {
-            return newFence("Fence.rw.r");
+            String name = "Fence.rw.r";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newRWWFence() {
-            return newFence("Fence.rw.w");
+            String name = "Fence.rw.w";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newRWRWFence() {
-            return newFence("Fence.rw.rw");
+            String name = "Fence.rw.rw";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
         public static GenericVisibleEvent newTsoFence() {
-            return newFence("Fence.tso");
+            String name = "Fence.tso";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
         }
 
     }
@@ -658,15 +708,21 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newISyncBarrier() {
-            return newFence(ISYNC);
+            GenericVisibleEvent fence = newFence(ISYNC);
+            fence.addTags(ISYNC);
+            return fence;
         }
 
         public static GenericVisibleEvent newSyncBarrier() {
-            return newFence(SYNC);
+            GenericVisibleEvent fence = newFence(SYNC);
+            fence.addTags(SYNC);
+            return fence;
         }
 
         public static GenericVisibleEvent newLwSyncBarrier() {
-            return newFence(LWSYNC);
+            GenericVisibleEvent fence = newFence(LWSYNC);
+            fence.addTags(LWSYNC);
+            return fence;
         }
     }
 
