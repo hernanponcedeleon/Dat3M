@@ -361,7 +361,7 @@ public class ExecutionModel {
 
         } else if (data.isFence()) {
             // ===== Fences =====
-            String name = ((TaggedEvent)data.getEvent()).getName();
+            String name = ((GenericVisibleEvent)data.getEvent()).getName();
             fenceMap.computeIfAbsent(name, key -> new HashSet<>()).add(data);
         } else if (data.isJump()) {
             // ===== Jumps =====

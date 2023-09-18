@@ -4,13 +4,13 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.TaggedEvent;
+import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class PTXFenceWithId extends TaggedEvent implements RegReader {
+public class PTXFenceWithId extends GenericVisibleEvent implements RegReader {
     private Expression fenceID;
 
     public PTXFenceWithId(String name, Expression fenceID) {

@@ -273,21 +273,21 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC))) {
             throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
-        TaggedEvent fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        GenericVisibleEvent fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(mo, scope);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceProxy(LitmusPTXParser.FenceProxyContext ctx) {
-        TaggedEvent fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        GenericVisibleEvent fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(ctx.proxyType().content);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
-        TaggedEvent fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        GenericVisibleEvent fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(Tag.PTX.ALIAS);
         return programBuilder.addChild(mainThread, fence);
     }
@@ -295,7 +295,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        TaggedEvent fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        GenericVisibleEvent fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
     }
 
