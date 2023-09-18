@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Fence;
+import com.dat3m.dartagnan.program.event.core.TaggedEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -638,8 +638,8 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitSyncFence(Relation syncFence) {
             boolean idl = !context.useSATEncoding;
-            List<Fence> allFenceSC = program.getThreadEvents(Fence.class).stream()
-                    .filter(e -> e.hasTag(Tag.PTX.SC))
+            List<TaggedEvent> allFenceSC = program.getThreadEvents(TaggedEvent.class).stream()
+                    .filter(e -> e.hasTag(Tag.FENCE) && e.hasTag(Tag.PTX.SC))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .toList();
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
@@ -647,8 +647,8 @@ public class WmmEncoder implements Encoder {
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
             // ---- Encode syncFence ----
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
-                Fence x = allFenceSC.get(i);
-                for (Fence z : allFenceSC.subList(i + 1, allFenceSC.size())) {
+                TaggedEvent x = allFenceSC.get(i);
+                for (TaggedEvent z : allFenceSC.subList(i + 1, allFenceSC.size())) {
                     String scope1 = Tag.PTX.getScopeTag(x);
                     String scope2 = Tag.PTX.getScopeTag(z);
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
@@ -674,7 +674,7 @@ public class WmmEncoder implements Encoder {
                     } else {
                         enc.add(bmgr.or(bmgr.not(scF), bmgr.not(scB)));
                         if (!k.containsMust(xz) && !k.containsMust(zx)) {
-                            for (Fence y : allFenceSC) {
+                            for (TaggedEvent y : allFenceSC) {
                                 Tuple xy = new Tuple(x, y);
                                 Tuple yz = new Tuple(y, z);
                                 if (forwardPossible && k.containsMay(xy) && k.containsMay(yz)) {

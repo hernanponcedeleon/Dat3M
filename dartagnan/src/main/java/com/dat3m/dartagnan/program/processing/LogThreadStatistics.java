@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
@@ -38,7 +39,7 @@ public class LogThreadStatistics implements ProgramProcessor {
                     storeCount++;
                 } else if (e instanceof Load) {
                     loadCount++;
-                } else if (e instanceof Fence) {
+                } else if (e.hasTag(Tag.FENCE)) {
                     fenceCount++;
                 }
             }

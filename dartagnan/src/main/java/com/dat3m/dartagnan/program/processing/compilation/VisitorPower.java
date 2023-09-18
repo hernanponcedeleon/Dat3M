@@ -82,11 +82,11 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitLlvmLoad(LlvmLoad e) {
         Register resultRegister = e.getResultRegister();
 
-        Fence optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierBefore = null;
         Load load = newLoad(resultRegister, e.getAddress());
         Label optionalLabel = null;
         CondJump optionalFakeCtrlDep = null;
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (e.getMo()) {
             case C11.MO_SC:
@@ -122,9 +122,9 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmStore(LlvmStore e) {
-        Fence optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierBefore = null;
         Store store = newStore(e.getAddress(), e.getMemValue());
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (e.getMo()) {
             case C11.MO_SC:
@@ -158,8 +158,8 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -207,13 +207,13 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierBefore = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync
         // barrier is enough
         // However, power compilers in godbolt.org use a lwsync.
         // We stick to the literature to potentially find bugs in what researchers
         // claim.
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -263,8 +263,8 @@ public class VisitorPower extends VisitorBase {
         Load load = newRMWLoadExclusive(oldValueRegister, address);
         Store store = Power.newRMWStoreConditional(address, e.getStoreValue(), true);
 
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -300,7 +300,7 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmFence(LlvmFence e) {
-        Fence fence = e.getMo().equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+        TaggedEvent fence = e.getMo().equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
 
         return eventSequence(
                 fence);
@@ -341,8 +341,8 @@ public class VisitorPower extends VisitorBase {
             optionalExecStatus = newExecutionStatus(statusReg, storeValue);
             optionalUpdateCasCmpResult = newLocal(booleanResultRegister, expressions.makeNot(statusReg));
         }
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierAfter = null;
         switch (mo) {
             case C11.MO_SC:
                 if (cToPowerScheme.equals(LEADING_SYNC)) {
@@ -396,11 +396,11 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierBefore = null;
         // Academics papers (e.g. https://plv.mpi-sws.org/imm/paper.pdf) say an isync barrier is enough
         // However, power compilers in godbolt.org use a lwsync.
         // We stick to the literature to potentially find bugs in what researchers claim.
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -441,11 +441,11 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Fence optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierBefore = null;
         Load load = newLoad(resultRegister, address);
         Label optionalLabel = null;
         CondJump optionalFakeCtrlDep = null;
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -486,9 +486,9 @@ public class VisitorPower extends VisitorBase {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Fence optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierBefore = null;
         Store store = newStore(address, value);
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -514,7 +514,7 @@ public class VisitorPower extends VisitorBase {
     @Override
     public List<Event> visitAtomicThreadFence(AtomicThreadFence e) {
         String mo = e.getMo();
-        Fence fence = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
+        TaggedEvent fence = mo.equals(Tag.C11.MO_SC) ? Power.newSyncBarrier() : Power.newLwSyncBarrier();
 
         return eventSequence(
                 fence
@@ -532,8 +532,8 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(resultRegister, label);
 
-        Fence optionalBarrierBefore = null;
-        Fence optionalBarrierAfter = null;
+        TaggedEvent optionalBarrierBefore = null;
+        TaggedEvent optionalBarrierAfter = null;
 
         switch (mo) {
             case C11.MO_SC:
@@ -581,7 +581,7 @@ public class VisitorPower extends VisitorBase {
 
         // Power does not have mo tags, thus we use the empty string
         Load load = newLoad(resultRegister, address);
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newLwSyncBarrier() : null;
+        TaggedEvent optionalMemoryBarrier = mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newLwSyncBarrier() : null;
 
         return eventSequence(
                 load,
@@ -598,7 +598,7 @@ public class VisitorPower extends VisitorBase {
         String mo = e.getMo();
 
         Store store = newStore(address, value);
-        Fence optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
+        TaggedEvent optionalMemoryBarrier = mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
 
         return eventSequence(
                 optionalMemoryBarrier,
@@ -610,7 +610,7 @@ public class VisitorPower extends VisitorBase {
     //		https://elixir.bootlin.com/linux/v5.18/source/arch/powerpc/include/asm/barrier.h
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
-        Fence optionalMemoryBarrier;
+        TaggedEvent optionalMemoryBarrier;
         switch (e.getName()) {
             case Tag.Linux.MO_MB:
             case Tag.Linux.MO_RMB:
@@ -687,9 +687,9 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
         return eventSequence(
@@ -717,9 +717,9 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
         return eventSequence(
@@ -746,9 +746,9 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
 
@@ -776,9 +776,9 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
 
@@ -808,9 +808,9 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
         return eventSequence(
@@ -848,9 +848,9 @@ public class VisitorPower extends VisitorBase {
         Label cauEnd = newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = newJumpUnless(dummy, cauEnd);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
         return eventSequence(
@@ -888,9 +888,9 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         Event fakeCtrlDep = newFakeCtrlDep(dummy, label);
 
-        Fence optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierBefore = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_RELEASE) ? Power.newLwSyncBarrier() : null;
-        Fence optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
+        TaggedEvent optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? Power.newSyncBarrier()
                 : mo.equals(Tag.Linux.MO_ACQUIRE) ? Power.newISyncBarrier() : null;
 
 

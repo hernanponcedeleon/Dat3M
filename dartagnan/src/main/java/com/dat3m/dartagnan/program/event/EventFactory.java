@@ -106,12 +106,12 @@ public class EventFactory {
         return store;
     }
 
-    public static Fence newFence(String name) {
-        return new Fence(name);
+    public static TaggedEvent newFence(String name) {
+        return new TaggedEvent(name, Tag.FENCE);
     }
 
-    public static Fence newFenceOpt(String name, String opt) {
-        Fence fence = new Fence(name + "." + opt);
+    public static TaggedEvent newFenceOpt(String name, String opt) {
+        TaggedEvent fence = newFence(name + "." + opt);
         fence.addTags(name);
         return fence;
     }
@@ -447,16 +447,16 @@ public class EventFactory {
             private DMB() {
             }
 
-            public static Fence newBarrier() {
+            public static TaggedEvent newBarrier() {
                 return newSYBarrier(); // Default barrier
             }
 
-            public static Fence newSYBarrier() {
-                return new Fence("DMB.SY");
+            public static TaggedEvent newSYBarrier() {
+                return newFence("DMB.SY");
             }
 
-            public static Fence newISHBarrier() {
-                return new Fence("DMB.ISH");
+            public static TaggedEvent newISHBarrier() {
+                return newFence("DMB.ISH");
             }
         }
 
@@ -464,24 +464,24 @@ public class EventFactory {
             private DSB() {
             }
 
-            public static Fence newBarrier() {
+            public static TaggedEvent newBarrier() {
                 return newSYBarrier(); // Default barrier
             }
 
-            public static Fence newSYBarrier() {
-                return new Fence("DSB.SY");
+            public static TaggedEvent newSYBarrier() {
+                return newFence("DSB.SY");
             }
 
-            public static Fence newISHBarrier() {
-                return new Fence("DSB.ISH");
+            public static TaggedEvent newISHBarrier() {
+                return newFence("DSB.ISH");
             }
 
-            public static Fence newISHLDBarrier() {
-                return new Fence("DSB.ISHLD");
+            public static TaggedEvent newISHLDBarrier() {
+                return newFence("DSB.ISHLD");
             }
 
-            public static Fence newISHSTBarrier() {
-                return new Fence("DMB.ISHST");
+            public static TaggedEvent newISHSTBarrier() {
+                return newFence("DMB.ISHST");
             }
 
         }
@@ -567,7 +567,7 @@ public class EventFactory {
             return new TSOXchg(address, register);
         }
 
-        public static Fence newMemoryFence() {
+        public static TaggedEvent newMemoryFence() {
             return newFence(MFENCE);
         }
     }
@@ -591,44 +591,44 @@ public class EventFactory {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
 
-        public static Fence newRRFence() {
-            return new Fence("Fence.r.r");
+        public static TaggedEvent newRRFence() {
+            return newFence("Fence.r.r");
         }
 
-        public static Fence newRWFence() {
-            return new Fence("Fence.r.w");
+        public static TaggedEvent newRWFence() {
+            return newFence("Fence.r.w");
         }
 
-        public static Fence newRRWFence() {
-            return new Fence("Fence.r.rw");
+        public static TaggedEvent newRRWFence() {
+            return newFence("Fence.r.rw");
         }
 
-        public static Fence newWRFence() {
-            return new Fence("Fence.w.r");
+        public static TaggedEvent newWRFence() {
+            return newFence("Fence.w.r");
         }
 
-        public static Fence newWWFence() {
-            return new Fence("Fence.w.w");
+        public static TaggedEvent newWWFence() {
+            return newFence("Fence.w.w");
         }
 
-        public static Fence newWRWFence() {
-            return new Fence("Fence.w.rw");
+        public static TaggedEvent newWRWFence() {
+            return newFence("Fence.w.rw");
         }
 
-        public static Fence newRWRFence() {
-            return new Fence("Fence.rw.r");
+        public static TaggedEvent newRWRFence() {
+            return newFence("Fence.rw.r");
         }
 
-        public static Fence newRWWFence() {
-            return new Fence("Fence.rw.w");
+        public static TaggedEvent newRWWFence() {
+            return newFence("Fence.rw.w");
         }
 
-        public static Fence newRWRWFence() {
-            return new Fence("Fence.rw.rw");
+        public static TaggedEvent newRWRWFence() {
+            return newFence("Fence.rw.rw");
         }
 
-        public static Fence newTsoFence() {
-            return new Fence("Fence.tso");
+        public static TaggedEvent newTsoFence() {
+            return newFence("Fence.tso");
         }
 
     }
@@ -657,15 +657,15 @@ public class EventFactory {
             return new RMWStoreExclusive(address, value, isStrong, true);
         }
 
-        public static Fence newISyncBarrier() {
+        public static TaggedEvent newISyncBarrier() {
             return newFence(ISYNC);
         }
 
-        public static Fence newSyncBarrier() {
+        public static TaggedEvent newSyncBarrier() {
             return newFence(SYNC);
         }
 
-        public static Fence newLwSyncBarrier() {
+        public static TaggedEvent newLwSyncBarrier() {
             return newFence(LWSYNC);
         }
     }
