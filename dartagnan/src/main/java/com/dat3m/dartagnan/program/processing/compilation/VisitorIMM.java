@@ -51,8 +51,8 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        GenericVisibleEvent optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        GenericVisibleEvent optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         Expression expectedAddr = e.getAddressOfExpected();
         Type type = resultRegister.getType();
         Register booleanResultRegister = type instanceof BooleanType ? resultRegister :
@@ -93,8 +93,8 @@ class VisitorIMM extends VisitorBase {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        GenericVisibleEvent optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        GenericVisibleEvent optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceBefore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceAfter = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, extractLoadMo(mo));
@@ -111,7 +111,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         String mo = e.getMo();
-        GenericVisibleEvent optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
                 optionalFence,
                 newLoadWithMo(e.getResultRegister(), e.getAddress(), extractLoadMo(mo))
@@ -121,7 +121,7 @@ class VisitorIMM extends VisitorBase {
     @Override
     public List<Event> visitAtomicStore(AtomicStore e) {
         String mo = e.getMo();
-        GenericVisibleEvent optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFence = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
         return eventSequence(
                 optionalFence,
                 newStoreWithMo(e.getAddress(), e.getMemValue(), extractStoreMo(mo))
@@ -137,8 +137,8 @@ class VisitorIMM extends VisitorBase {
     public List<Event> visitAtomicXchg(AtomicXchg e) {
         Expression address = e.getAddress();
         String mo = e.getMo();
-        GenericVisibleEvent optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
-        GenericVisibleEvent optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceLoad = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
+        Event optionalFenceStore = mo.equals(Tag.C11.MO_SC) ? newFence(Tag.C11.MO_SC) : null;
 
         Load load = newRMWLoadWithMo(e.getResultRegister(), address, mo);
 
