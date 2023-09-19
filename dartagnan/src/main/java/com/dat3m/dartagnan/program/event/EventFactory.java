@@ -651,7 +651,7 @@ public class EventFactory {
             GenericVisibleEvent fence = newFence(name);
             fence.addTags(name);
             return fence;
-s        }
+        }
 
         public static GenericVisibleEvent newRWRFence() {
             String name = "Fence.rw.r";
