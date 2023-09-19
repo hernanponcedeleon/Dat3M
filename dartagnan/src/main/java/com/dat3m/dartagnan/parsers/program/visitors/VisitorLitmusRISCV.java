@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
+import com.dat3m.dartagnan.program.event.core.Event;
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
@@ -230,43 +230,20 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
-        GenericVisibleEvent fence;
-        switch(ctx.fenceMode().mode) {
-            case "r.r": 
-                fence = EventFactory.RISCV.newRRFence();
-                break;
-            case "r.w": 
-                fence = EventFactory.RISCV.newRWFence();
-                break;
-            case "r.rw": 
-                fence = EventFactory.RISCV.newRRWFence();
-                break;
-            case "w.r": 
-                fence = EventFactory.RISCV.newWRFence();
-                break;
-            case "w.w": 
-                fence = EventFactory.RISCV.newWWFence();
-                break;
-            case "w.rw":
-                fence = EventFactory.RISCV.newWRWFence();
-                break;
-            case "rw.r":
-                fence = EventFactory.RISCV.newRWRFence();
-                break;
-            case "rw.w":
-                fence = EventFactory.RISCV.newRWWFence();
-                break;
-            case "rw.rw":
-                fence = EventFactory.RISCV.newRWRWFence();
-                break;
-            case "tso":
-                fence = EventFactory.RISCV.newTsoFence();
-                break;
-            case "i":
-                fence = EventFactory.RISCV.newSynchronizeFence();
-                break;
-            default: throw new ParsingException("No support fence mode");
-        }
+        Event fence = switch(ctx.fenceMode().mode) {
+            case "r.r" -> EventFactory.RISCV.newRRFence();
+            case "r.w" -> EventFactory.RISCV.newRWFence();
+            case "r.rw" -> EventFactory.RISCV.newRRWFence();
+            case "w.r" -> EventFactory.RISCV.newWRFence();
+            case "w.w" -> EventFactory.RISCV.newWWFence();
+            case "w.rw" -> EventFactory.RISCV.newWRWFence();
+            case "rw.r" -> EventFactory.RISCV.newRWRFence();
+            case "rw.w" -> EventFactory.RISCV.newRWWFence();
+            case "rw.rw" -> EventFactory.RISCV.newRWRWFence();
+            case "tso" -> EventFactory.RISCV.newTsoFence();
+            case "i" -> EventFactory.RISCV.newSynchronizeFence();
+            default -> throw new ParsingException("No support fence mode");
+        };
 		return programBuilder.addChild(mainThread, fence);
 	}
 
