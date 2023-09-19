@@ -181,7 +181,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     public Object visitFence(LitmusX86Parser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
         if(fences.contains(name)) {
-            return programBuilder.addChild(mainThread, EventFactory.newFenceWithNameTag(name));
+            return programBuilder.addChild(mainThread, EventFactory.newFence(name));
         }
         throw new ParsingException("Unrecognised fence " + name);
     }

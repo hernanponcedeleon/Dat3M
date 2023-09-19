@@ -154,7 +154,7 @@ public class VisitorLKMM extends VisitorBase {
     @Override
     public List<Event> visitLKMMFence(LKMMFence e) {
         return eventSequence(
-                newFenceWithNameTag(e.getName())
+                newFence(e.getName())
         );
     }
 
@@ -225,7 +225,7 @@ public class VisitorLKMM extends VisitorBase {
      */
 
     private static Event newCoreMemoryBarrier() {
-        return newFenceWithNameTag(Tag.Linux.MO_MB);
+        return newFence(Tag.Linux.MO_MB);
     }
 
     private static Load newCoreLoad(Register reg, Expression addr, String mo) {
