@@ -110,9 +110,12 @@ public class EventFactory {
         return new GenericVisibleEvent(name, Tag.FENCE);
     }
 
+    private static GenericVisibleEvent newFenceWithNameTag(String name) {
+        return new GenericVisibleEvent(name, name, Tag.FENCE);
+    }
+
     public static GenericVisibleEvent newFenceOpt(String name, String opt) {
-        GenericVisibleEvent fence = newFence(name + "." + opt);
-        fence.addTags(name);
+        GenericVisibleEvent fence = newFenceWithNameTag(name + "." + opt);
         return fence;
     }
 
@@ -452,17 +455,11 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newSYBarrier() {
-                String name = "DMB.SY";
-                GenericVisibleEvent fence = newFence(name);
-                fence.addTags(name);
-                return fence;
+                return newFenceWithNameTag("DMB.SY");
             }
 
             public static GenericVisibleEvent newISHBarrier() {
-                String name = "DMB.ISH";
-                GenericVisibleEvent fence = newFence(name);
-                fence.addTags(name);
-                return fence;
+                return newFenceWithNameTag("DMB.ISH");
             }
         }
 
@@ -475,31 +472,19 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newSYBarrier() {
-                String name = "DSB.SY";
-                GenericVisibleEvent fence = newFence(name);
-                fence.addTags(name);
-                return fence;
+                return newFenceWithNameTag("DSB.SY");
             }
 
             public static GenericVisibleEvent newISHBarrier() {
-                String name = "DSB.ISH";
-                GenericVisibleEvent fence = newFence(name);
-                fence.addTags(name);
-                return fence;
+                return newFenceWithNameTag("DSB.ISH");
             }
 
             public static GenericVisibleEvent newISHLDBarrier() {
-                String name = "DSB.ISHLD";
-                GenericVisibleEvent fence = newFence(name);
-                fence.addTags(name);
-                return fence;
+                return newFenceWithNameTag("DSB.ISHLD");
             }
 
             public static GenericVisibleEvent newISHSTBarrier() {
-                String name = "DMB.ISHST";
-                GenericVisibleEvent fence = newFence(name);
-                fence.addTags(name);
-                return fence;
+                return newFenceWithNameTag("DMB.ISHST");
             }
 
         }
@@ -586,9 +571,7 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newMemoryFence() {
-            GenericVisibleEvent fence = newFence(MFENCE);
-            fence.addTags(MFENCE);
-            return fence;
+            return newFenceWithNameTag(MFENCE);
         }
     }
 
@@ -612,80 +595,47 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newRRFence() {
-            String name = "Fence.r.r";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.r.r");
         }
 
         public static GenericVisibleEvent newRWFence() {
-            String name = "Fence.r.w";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.r.w");
         }
 
         public static GenericVisibleEvent newRRWFence() {
-            String name = "Fence.r.rw";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.r.rw");
         }
 
         public static GenericVisibleEvent newWRFence() {
-            String name = "Fence.w.r";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.w.r");
         }
 
         public static GenericVisibleEvent newWWFence() {
-            String name = "Fence.w.w";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.w.w");
         }
 
         public static GenericVisibleEvent newWRWFence() {
-            String name = "Fence.w.rw";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.w.rw");
         }
 
         public static GenericVisibleEvent newRWRFence() {
-            String name = "Fence.rw.r";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.rw.r");
         }
 
         public static GenericVisibleEvent newRWWFence() {
-            String name = "Fence.rw.w";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.rw.w");
         }
 
         public static GenericVisibleEvent newRWRWFence() {
-            String name = "Fence.rw.rw";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.rw.rw");
         }
 
         public static GenericVisibleEvent newTsoFence() {
-            String name = "Fence.tso";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.tso");
         }
 
         public static GenericVisibleEvent newSynchronizeFence() {
-            String name = "Fence.i";
-            GenericVisibleEvent fence = newFence(name);
-            fence.addTags(name);
-            return fence;
+            return newFenceWithNameTag("Fence.i");
         }
     }
 
@@ -714,19 +664,19 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newISyncBarrier() {
-            GenericVisibleEvent fence = newFence(ISYNC);
+            GenericVisibleEvent fence = newFenceWithNameTag(ISYNC);
             fence.addTags(ISYNC);
             return fence;
         }
 
         public static GenericVisibleEvent newSyncBarrier() {
-            GenericVisibleEvent fence = newFence(SYNC);
+            GenericVisibleEvent fence = newFenceWithNameTag(SYNC);
             fence.addTags(SYNC);
             return fence;
         }
 
         public static GenericVisibleEvent newLwSyncBarrier() {
-            GenericVisibleEvent fence = newFence(LWSYNC);
+            GenericVisibleEvent fence = newFenceWithNameTag(LWSYNC);
             fence.addTags(LWSYNC);
             return fence;
         }
