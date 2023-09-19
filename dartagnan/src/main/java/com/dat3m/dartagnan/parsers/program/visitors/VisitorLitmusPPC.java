@@ -211,7 +211,7 @@ public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
     public Object visitFence(LitmusPPCParser.FenceContext ctx) {
         String name = ctx.getText().toLowerCase();
         if(fences.contains(name)){
-            return programBuilder.addChild(mainThread, EventFactory.newFence(name));
+            return programBuilder.addChild(mainThread, EventFactory.newFenceWithNameTag(name));
         }
         throw new ParsingException("Unrecognised fence " + name);
     }

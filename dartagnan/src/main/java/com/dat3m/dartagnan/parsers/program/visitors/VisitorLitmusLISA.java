@@ -144,7 +144,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
     @Override
     public Object visitFence(LitmusLISAParser.FenceContext ctx) {
         String mo = ctx.mo() != null ? ctx.mo().getText() : "";
-        programBuilder.addChild(mainThread, EventFactory.newFence(mo));
+        programBuilder.addChild(mainThread, EventFactory.newFenceWithNameTag(mo));
         return null;
     }
 
