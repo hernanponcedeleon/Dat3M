@@ -2,19 +2,20 @@ package com.dat3m.dartagnan.program.event.common;
 
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.google.common.base.Preconditions;
 
 @NoInterface
 public abstract class FenceBase extends AbstractEvent {
 
     protected final String name;
-    protected final String mo; // For fences that do not support a mo, use Fence instead.
+    protected final String mo; // May be NULL or empty for fences that do not support a mo.
 
     public FenceBase(String name, String mo) {
-        Preconditions.checkArgument(!mo.isEmpty());
         this.name = name;
         this.mo = mo;
-        addTags(Tag.VISIBLE, Tag.FENCE, mo);
+        this.addTags(Tag.VISIBLE, Tag.FENCE);
+        if (mo != null && !mo.isEmpty()) {
+            addTags(mo);
+        }
     }
 
     protected FenceBase(FenceBase other) {
