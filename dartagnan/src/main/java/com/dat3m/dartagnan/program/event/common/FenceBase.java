@@ -32,7 +32,11 @@ public abstract class FenceBase extends AbstractEvent {
 
     @Override
     public String defaultString() {
-        return String.format("%s(%s)", name, mo);
+        if (mo == null || mo.isEmpty()) {
+            return name;
+        } else {
+            return String.format("%s(%s)", name, mo);
+        }
     }
 
 }

@@ -660,21 +660,15 @@ public class EventFactory {
         }
 
         public static GenericVisibleEvent newISyncBarrier() {
-            GenericVisibleEvent fence = newFence(ISYNC);
-            fence.addTags(ISYNC);
-            return fence;
+            return newFence(ISYNC);
         }
 
         public static GenericVisibleEvent newSyncBarrier() {
-            GenericVisibleEvent fence = newFence(SYNC);
-            fence.addTags(SYNC);
-            return fence;
+            return newFence(SYNC);
         }
 
         public static GenericVisibleEvent newLwSyncBarrier() {
-            GenericVisibleEvent fence = newFence(LWSYNC);
-            fence.addTags(LWSYNC);
-            return fence;
+            return newFence(LWSYNC);
         }
     }
 

@@ -86,7 +86,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Thread declarator list (on top of instructions), e.g. " P0 P1 P2  ;"
+    // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
 
     @Override
     public Object visitThreadDeclaratorList(LitmusRISCVParser.ThreadDeclaratorListContext ctx) {

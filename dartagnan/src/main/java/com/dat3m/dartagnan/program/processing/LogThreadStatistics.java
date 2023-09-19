@@ -58,8 +58,8 @@ public class LogThreadStatistics implements ProgramProcessor {
                 .append("#Events: ").append(totalEventCount).append("\n")
                 .append("\t#Stores: ").append(storeCount).append("\n")
                 .append("\t#Loads: ").append(loadCount).append("\n")
-                .append("\t#Other: ").append(otherVisibleCount).append("\n")
                 .append("\t#Inits: ").append(initCount).append("\n")
+                .append("\t#Others: ").append(otherVisibleCount).append("\n")
                 .append("#Allocated bytes: ").append(totalAddressSpaceSize).append("\n")
                 .append("\tStatically allocated: ").append(staticAddressSpaceSize).append("\n")
                 .append("\tDynamically allocated: ").append(dynamicAddressSpaceSize).append("\n");
