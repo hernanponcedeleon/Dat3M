@@ -110,7 +110,7 @@ public class EventFactory {
         return new GenericVisibleEvent(name, Tag.FENCE);
     }
 
-    private static GenericVisibleEvent newFenceWithNameTag(String name) {
+    public static GenericVisibleEvent newFenceWithNameTag(String name) {
         return new GenericVisibleEvent(name, name, Tag.FENCE);
     }
 
