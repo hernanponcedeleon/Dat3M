@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
@@ -85,7 +86,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Thread declarator list (on top of instructions), e.g. " P0  |   P1  |   P2  ;"
+    // Thread declarator list (on top of instructions), e.g. " P0 P1 P2  ;"
 
     @Override
     public Object visitThreadDeclaratorList(LitmusRISCVParser.ThreadDeclaratorListContext ctx) {
@@ -229,12 +230,50 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
-		return programBuilder.addChild(mainThread, EventFactory.newFence("Fence." + ctx.fenceMode().mode));
+        GenericVisibleEvent fence;
+        switch(ctx.fenceMode().mode) {
+            case "r.r": 
+                fence = EventFactory.RISCV.newRRFence();
+                break;
+            case "r.w": 
+                fence = EventFactory.RISCV.newRWFence();
+                break;
+            case "r.rw": 
+                fence = EventFactory.RISCV.newRRWFence();
+                break;
+            case "w.r": 
+                fence = EventFactory.RISCV.newWRFence();
+                break;
+            case "w.w": 
+                fence = EventFactory.RISCV.newWWFence();
+                break;
+            case "w.rw":
+                fence = EventFactory.RISCV.newWRWFence();
+                break;
+            case "rw.r":
+                fence = EventFactory.RISCV.newRWRFence();
+                break;
+            case "rw.w":
+                fence = EventFactory.RISCV.newRWWFence();
+                break;
+            case "rw.rw":
+                fence = EventFactory.RISCV.newRWRWFence();
+                break;
+            case "tso":
+                fence = EventFactory.RISCV.newTsoFence();
+                break;
+            case "i":
+                fence = EventFactory.RISCV.newSynchronizeFence();
+                break;
+            default: throw new ParsingException("No support fence mode");
+        }
+		return programBuilder.addChild(mainThread, fence);
 	}
 
 	@Override
 	public Object visitAmoadd(LitmusRISCVParser.AmoaddContext ctx) {
-		throw new ParsingException("No support for amoadd instructions");	}
+		throw new ParsingException("No support for amoadd instructions");
+    }
 
 	@Override
 	public Object visitAmoor(LitmusRISCVParser.AmoorContext ctx) {

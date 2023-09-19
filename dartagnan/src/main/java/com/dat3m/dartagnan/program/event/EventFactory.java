@@ -681,6 +681,12 @@ public class EventFactory {
             return fence;
         }
 
+        public static GenericVisibleEvent newSynchronizeFence() {
+            String name = "Fence.i";
+            GenericVisibleEvent fence = newFence(name);
+            fence.addTags(name);
+            return fence;
+        }
     }
 
     // =============================================================================================
