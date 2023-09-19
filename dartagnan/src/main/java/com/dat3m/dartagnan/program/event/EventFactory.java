@@ -112,6 +112,7 @@ public class EventFactory {
 
     public static GenericVisibleEvent newFenceOpt(String name, String opt) {
         GenericVisibleEvent fence = newFence(name + "." + opt);
+        fence.addTags(name);
         return fence;
     }
 
