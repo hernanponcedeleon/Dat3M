@@ -24,7 +24,7 @@ public final class Extraction implements Expression {
             final var arrayType = (ArrayType) objectType;
             checkArgument(0 <= index && (!arrayType.hasKnownNumElements() || index < arrayType.getNumElements()),
                     "Index %s out of bounds [0,%s].", index, arrayType.getNumElements() - 1);
-            this.type = ((ArrayType) object.getType()).getElementType();
+            this.type = arrayType.getElementType();
         }
         this.index = index;
         this.object = object;

@@ -77,11 +77,11 @@ public class ProcessingManager implements ProgramProcessor {
         final Intrinsics intrinsics = Intrinsics.newInstance();
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         programProcessors.addAll(Arrays.asList(
+                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
                 StaticMemoryInitializer.newInstance(),
-                printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(

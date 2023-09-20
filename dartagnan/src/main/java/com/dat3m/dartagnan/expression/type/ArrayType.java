@@ -6,7 +6,7 @@ public class ArrayType implements Type {
     private final int numElements;
 
     ArrayType(Type elementType, int numElements) {
-        this.elementType  = elementType;
+        this.elementType = elementType;
         this.numElements = numElements;
     }
 
@@ -14,20 +14,15 @@ public class ArrayType implements Type {
     // numElements = 0 is commonly used in LLVM to represent unknown sizes,
     // however, even with numElements > 0, the size can be unreliable.
     // see https://llvm.org/docs/LangRef.html#array-type
-    public boolean hasKnownNumElements() { return this.numElements > 0; }
+    public boolean hasKnownNumElements() { return this.numElements >= 0; }
     public int getNumElements() { return this.numElements; }
 
     public Type getElementType() { return elementType; }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj == null || this.getClass() != obj.getClass()) {
-            return false;
-        }
-        ArrayType other = (ArrayType) obj;
-        return this.elementType == other.elementType && this.numElements == other.numElements;
+        return this == obj ||
+                obj instanceof ArrayType o && elementType.equals(o.elementType) && numElements == o.numElements;
     }
 
     @Override

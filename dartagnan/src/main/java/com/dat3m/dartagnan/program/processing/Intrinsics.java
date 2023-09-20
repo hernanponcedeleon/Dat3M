@@ -27,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
@@ -88,126 +89,121 @@ public class Intrinsics {
     // --------------------------------------------------------------------------------------------------------
     // Marking
 
-    public record Info(
-            String groupName, // Can end with a "*", in which case the variants are treated as prefixes
-            List<String> variants,
-            boolean writesMemory,
-            boolean readsMemory,
-            boolean alwaysReturns,
-            boolean isEarly,
-            Replacer replacer) {
-        public Info(String name, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
+    public enum Info {
+        // --------------------------- pthread threading ---------------------------
+        P_THREAD_CREATE("pthread_create", true, false, true, false, null),
+        P_THREAD_EXIT("pthread_exit", false, false, false, false, null),
+        P_THREAD_JOIN(List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""), false, true, false, false, null),
+        P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- pthread mutex ---------------------------
+        P_THREAD_MUTEX_INIT("pthread_mutex_init", true, false, true, true, Intrinsics::inlinePthreadMutexInit),
+        P_THREAD_MUTEX_LOCK("pthread_mutex_lock", true, true, false, true, Intrinsics::inlinePthreadMutexLock),
+        P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, false, true, true, Intrinsics::inlinePthreadMutexUnlock),
+        P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, false, true, true, Intrinsics::inlinePthreadMutexDestroy),
+        // --------------------------- SVCOMP ---------------------------
+        VERIFIER_ATOMIC_BEGIN("__VERIFIER_atomic_begin", false, false, true, true, Intrinsics::inlineAtomicBegin),
+        VERIFIER_ATOMIC_END("__VERIFIER_atomic_end", false, false, true, true, Intrinsics::inlineAtomicEnd),
+        // --------------------------- __VERIFIER ---------------------------
+        VERIFIER_LOOP_BEGIN("__VERIFIER_loop_begin", false, false, true, true, Intrinsics::inlineLoopBegin),
+        VERIFIER_LOOP_BOUND("__VERIFIER_loop_bound", false, false, true, true, Intrinsics::inlineLoopBound),
+        VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineSpinStart),
+        VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineSpinEnd),
+        VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
+        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineAssert),
+        VERIFIER_NONDET(List.of("__VERIFIER_nondet_bool",
+                "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
+                "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
+                "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
+                "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
+                false, false, true, false, Intrinsics::inlineNonDet),
+        // --------------------------- LLVM ---------------------------
+        LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
+                "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
+                "llvm.ctlz", "llvm.ctpop"),
+                false, false, true, true, Intrinsics::handleLLVMIntrinsic),
+        LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
+        LLVM_STACK(List.of("llvm.stacksave", "llvm.stackrestore"), false, false, true, true, Intrinsics::inlineAsZero),
+        LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
+        LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
+        // --------------------------- LKMM ---------------------------
+        LKMM_LOAD("__LKMM_LOAD", false, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_STORE("__LKMM_STORE", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_XCHG("__LKMM_XCHG", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_CMPXCHG("__LKMM_CMPXCHG", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_ATOMIC_FETCH_OP("__LKMM_ATOMIC_FETCH_OP", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_ATOMIC_OP("__LKMM_ATOMIC_OP", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_ATOMIC_OP_RETURN("__LKMM_ATOMIC_OP_RETURN", true, true, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_SPIN_LOCK("__LKMM_SPIN_LOCK", true, true, false, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_SPIN_UNLOCK("__LKMM_SPIN_UNLOCK", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
+        LKMM_FENCE("__LKMM_FENCE", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
+        // --------------------------- Misc ---------------------------
+        STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
+        STD_MEMSET("memset", true, false, true, false, Intrinsics::inlineMemSet),
+        STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
+        STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
+        STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
+        STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineAssert),
+        STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
+        STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
+        STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
+        ;
+
+        private final List<String> variants;
+        private final boolean writesMemory;
+        private final boolean readsMemory;
+        private final boolean alwaysReturns;
+        private final boolean isEarly;
+        private final Replacer replacer;
+
+        Info(List<String> variants, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
                 Replacer replacer) {
-            this(name, List.of(name), writesMemory, readsMemory, alwaysReturns, isEarly, replacer);
+            this.variants = variants;
+            this.writesMemory = writesMemory;
+            this.readsMemory = readsMemory;
+            this.alwaysReturns = alwaysReturns;
+            this.isEarly = isEarly;
+            this.replacer = replacer;
         }
 
-        public void replace(FunctionCall call) {
-            if (replacer == null) {
-                throw new MalformedProgramException(
-                        String.format("Intrinsic \"%s\" without replacer", call.getCalledFunction().getName()));
-            }
-            final List<Event> replacement = replacer.replace(call);
-            if (replacement.isEmpty()) {
-                call.tryDelete();
-            } else if (replacement.get(0) != call) {
-                if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
-                    final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
-                    ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
-                }
-                call.replaceBy(replacement);
-                replacement.forEach(e -> e.copyAllMetadataFrom(call));
+        Info(String name, boolean writesMemory, boolean readsMemory, boolean alwaysReturns, boolean isEarly,
+                Replacer replacer) {
+            this(List.of(name), writesMemory, readsMemory, alwaysReturns, isEarly, replacer);
+        }
 
-                // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
-                // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
-                // We may want to change this behaviour though.
-                replacement.get(0).getPredecessor().insertAfter(EventFactory.newStringAnnotation(
-                                String.format("=== Calling intrinsic %s ===", call.getCalledFunction().getName())
-                ));
-                replacement.get(replacement.size() - 1).insertAfter(EventFactory.newStringAnnotation(
-                                String.format("=== Returning from intrinsic %s ===", call.getCalledFunction().getName())
-                ));
-            }
+        public List<String> variants() {
+            return variants;
+        }
+
+        public boolean writesMemory() {
+            return writesMemory;
+        }
+
+        public boolean readsMemory() {
+            return readsMemory;
+        }
+
+        public boolean alwaysReturns() {
+            return alwaysReturns;
+        }
+
+        public boolean isEarly() {
+            return isEarly;
         }
 
         private boolean matches(String funcName) {
-            BiPredicate<String, String> matchingFunction = groupName.endsWith("*") ? String::startsWith : String::equals;
+            boolean isPrefix = switch(this) {
+                case LLVM, LLVM_ASSUME, LLVM_STACK, LLVM_MEMCPY, LLVM_MEMSET -> true;
+                default -> false;
+            };
+            BiPredicate<String, String> matchingFunction = isPrefix ? String::startsWith : String::equals;
             return variants.stream().anyMatch(v -> matchingFunction.test(funcName, v));
         }
     }
 
     @FunctionalInterface
     private interface Replacer {
-        List<Event> replace(FunctionCall call);
+        List<Event> replace(Intrinsics self, FunctionCall call);
     }
-
-    private final List<Info> INTRINSICS = ImmutableList.copyOf(List.of(
-            // --------------------------- pthread threading ---------------------------
-            new Info("pthread_create", true, false, true, false, null),
-            new Info("pthread_exit", false, false, false, false, null),
-            new Info("pthread_join",
-                    List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""),
-                    false, true, false, false, null),
-            new Info("pthread_barrier_wait", false, false, true, true, this::inlineAsZero),
-            // --------------------------- pthread mutex ---------------------------
-            new Info("pthread_mutex_init", true, false, true, true, this::inlinePthreadMutexInit),
-            new Info("pthread_mutex_lock", true, true, false, true, this::inlinePthreadMutexLock),
-            new Info("pthread_mutex_unlock", true, false, true, true, this::inlinePthreadMutexUnlock),
-            new Info("pthread_mutex_destroy", true, false, true, true, this::inlinePthreadMutexDestroy),
-            // --------------------------- SVCOMP ---------------------------
-            new Info("__VERIFIER_atomic_begin", false, false, true, true, this::inlineAtomicBegin),
-            new Info("__VERIFIER_atomic_end", false, false, true, true, this::inlineAtomicEnd),
-            // --------------------------- __VERIFIER ---------------------------
-            new Info("__VERIFIER_loop_begin", false, false, true, true, this::inlineLoopBegin),
-            new Info("__VERIFIER_loop_bound", false, false, true, true, this::inlineLoopBound),
-            new Info("__VERIFIER_spin_start", false, false, true, true, this::inlineSpinStart),
-            new Info("__VERIFIER_spin_end", false, false, true, true, this::inlineSpinEnd),
-            new Info("__VERIFIER_assume", false, false, true, true, this::inlineAssume),
-            new Info("__VERIFIER_assert", false, false, false, false, this::inlineAssert),
-            new Info("__VERIFIER_nondet",
-                    List.of("__VERIFIER_nondet_bool",
-                            "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
-                            "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
-                            "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
-                            "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
-                    false, false, true, false, this::inlineNonDet),
-            // --------------------------- LLVM ---------------------------
-            new Info("llvm.*",
-                    List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
-                            "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
-                            "llvm.ctlz", "llvm.ctpop",
-                            "llvm.assume"),
-                    false, false, true, true, this::handleLLVMIntrinsic),
-            new Info("llvm.stack",
-                    List.of("llvm.stacksave", "llvm.stackrestore"), // NOTE: These are just for allocation optimization
-                    false, false, true, true, this::inlineAsZero),
-            new Info("llvm.memcpy.*", List.of("llvm.memcpy"),
-                    true, true, true, false, this::inlineMemCpy),
-            new Info("llvm.memset.*", List.of("llvm.memset"),
-                    true, false, true, false, this::inlineMemSet),
-            // --------------------------- LKMM ---------------------------
-            new Info("__LKMM_LOAD", false, true, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_STORE", true, false, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_XCHG", true, true, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_CMPXCHG", true, true, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_ATOMIC_FETCH_OP", true, true, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_ATOMIC_OP", true, true, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_ATOMIC_OP_RETURN", true, true, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_SPIN_LOCK", true, true, false, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_SPIN_UNLOCK", true, false, true, true, this::handleLKMMIntrinsic),
-            new Info("__LKMM_FENCE", false, false, false, true, this::handleLKMMIntrinsic),
-            // --------------------------- Misc ---------------------------
-            new Info("memcpy", true, true, true, false, this::inlineMemCpy),
-            new Info("memset", true, false, true, false, this::inlineMemSet),
-            new Info("memcmp", false, true, true, false, this::inlineMemCmp),
-            new Info("malloc", false, false, true, true, this::inlineMalloc),
-            new Info("free", true, false, true, true, this::inlineAsZero),//TODO support free
-            new Info("assert", List.of("__assert_fail", "__assert_rtn"),
-                    false, false, false, true, this::inlineAssert),
-            new Info("exit", false, false, false, true, this::inlineExit),
-            new Info("abort", false, false, false, true, this::inlineExit),
-            new Info("io", List.of("puts", "putchar", "printf"),
-                    false, false, true, true, this::inlineAsZero)
-    ));
 
     private void markIntrinsics(Program program) {
         declareNondetBool(program);
@@ -215,7 +211,7 @@ public class Intrinsics {
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
                 final String funcName = func.getName();
-                final Info intrinsicsInfo = INTRINSICS.stream()
+                final Info intrinsicsInfo = Arrays.stream(Info.values())
                         .filter(info -> info.matches(funcName))
                         .findFirst()
                         .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName));
@@ -234,6 +230,34 @@ public class Intrinsics {
         }
     }
 
+    private void replace(FunctionCall call, Replacer replacer) {
+        if (replacer == null) {
+            throw new MalformedProgramException(
+                    String.format("Intrinsic \"%s\" without replacer", call.getCalledFunction().getName()));
+        }
+        final List<Event> replacement = replacer.replace(this, call);
+        if (replacement.isEmpty()) {
+            call.tryDelete();
+        } else if (replacement.get(0) != call) {
+            if (!call.getUsers().isEmpty() && call.getUsers().stream().allMatch(ExecutionStatus.class::isInstance)) {
+                final Map<Event, Event> updateMapping = Map.of(call, replacement.get(0));
+                ImmutableList.copyOf(call.getUsers()).forEach(user -> user.updateReferences(updateMapping));
+            }
+            call.replaceBy(replacement);
+            replacement.forEach(e -> e.copyAllMetadataFrom(call));
+
+            // NOTE: We deliberately do not use the call markers, because (1) we want to distinguish between
+            // intrinsics and normal calls, and (2) we do not want to have intrinsics in the call stack.
+            // We may want to change this behaviour though.
+            replacement.get(0).getPredecessor().insertAfter(EventFactory.newStringAnnotation(
+                    String.format("=== Calling intrinsic %s ===", call.getCalledFunction().getName())
+            ));
+            replacement.get(replacement.size() - 1).insertAfter(EventFactory.newStringAnnotation(
+                    String.format("=== Returning from intrinsic %s ===", call.getCalledFunction().getName())
+            ));
+        }
+    }
+
     // --------------------------------------------------------------------------------------------------------
     // Simple early intrinsics
 
@@ -244,7 +268,7 @@ public class Intrinsics {
             }
             final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
             if (info != null && info.isEarly()) {
-                info.replace(call);
+                replace(call, info.replacer);
             }
         }
     }
@@ -352,9 +376,7 @@ public class Intrinsics {
         final ValueFunctionCall valueCall = (ValueFunctionCall) call;
         final String name = call.getCalledFunction().getName();
 
-        if (name.startsWith("llvm.assume")) {
-            return List.of(EventFactory.newAssume(call.getArguments().get(0)));
-        } else if (name.startsWith("llvm.ctlz")) {
+        if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
         } else if (name.startsWith("llvm.ctpop")) {
             return inlineLLVMCtpop(valueCall);
@@ -372,7 +394,13 @@ public class Intrinsics {
         }
     }
 
+    private List<Event> inlineLLVMAssume(FunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#llvm-assume-intrinsic
+        return List.of(EventFactory.newAssume(call.getArguments().get(0)));
+    }
+
     private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#llvm-ctlz-intrinsic
         final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
@@ -405,6 +433,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMCtpop(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#llvm-ctpop-intrinsic
         final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
@@ -430,6 +459,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMMinMax(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
         final List<Expression> arguments = call.getArguments();
         final Expression left = arguments.get(0);
         final Expression right = arguments.get(1);
@@ -442,6 +472,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMSaturatedSub(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#saturation-arithmetic-intrinsics
         /*
             signedSatSub(x, y):
                 ret = (x < 0) ? MIN : MAX;
@@ -486,6 +517,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMSaturatedAdd(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#saturation-arithmetic-intrinsics
         /*
             (un)signedSatAdd(x, y):
                 ret = (x < 0) ? MIN : MAX; // MIN/MAX depends on signedness
@@ -610,7 +642,7 @@ public class Intrinsics {
             }
             final Intrinsics.Info info = call.getCalledFunction().getIntrinsicInfo();
             if (info != null && !info.isEarly()) {
-                info.replace(call);
+                replace(call, info.replacer);
             } else {
                 final String error = String.format("Undefined function %s", call.getCalledFunction().getName());
                 throw new UnsupportedOperationException(error);
