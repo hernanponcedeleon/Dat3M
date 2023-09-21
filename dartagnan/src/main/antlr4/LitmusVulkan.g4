@@ -234,9 +234,9 @@ avvisSemanticList
     ;
 
 operation locals [IOpBin op]
-    :   Period Add {$op = IOpBin.PLUS;}
-    |   Period Sub {$op = IOpBin.MINUS;}
-    |   Period Mult {$op = IOpBin.MULT;}
+    :   Period Add {$op = IOpBin.ADD;}
+    |   Period Sub {$op = IOpBin.SUB;}
+    |   Period Mult {$op = IOpBin.MUL;}
     |   Period Div {$op = IOpBin.DIV;}
     |   Period And {$op = IOpBin.AND;}
     |   Period Or {$op = IOpBin.OR;}
