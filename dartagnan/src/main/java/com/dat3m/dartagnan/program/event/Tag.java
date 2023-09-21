@@ -300,16 +300,18 @@ public final class Tag {
 
         public static String loadMO(String mo) {
             return switch (mo) {
-                case ACQ_REL -> ACQ;
-                case RLX -> RLX;
+                case ACQ, ACQ_REL -> ACQ;
+                // REL -> RLX to preserve morally-strong in RMW
+                case REL, RLX -> RLX;
                 default -> "";
             };
         }
 
         public static String storeMO(String mo) {
             return switch (mo) {
-                case ACQ_REL -> REL;
-                case RLX -> RLX;
+                case REL, ACQ_REL -> REL;
+                // ACQ -> RLX to preserve morally-strong in RMW
+                case ACQ, RLX -> RLX;
                 default -> "";
             };
         }
