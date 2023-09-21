@@ -18,10 +18,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
-import com.dat3m.dartagnan.program.event.core.Fence;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -276,21 +273,21 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         if (!(mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.SC))) {
             throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
-        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(mo, scope);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceProxy(LitmusPTXParser.FenceProxyContext ctx) {
-        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(ctx.proxyType().content);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitFenceAlias(LitmusPTXParser.FenceAliasContext ctx) {
-        Fence fence = EventFactory.newFence(ctx.getText().toLowerCase());
+        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         fence.addTags(Tag.PTX.ALIAS);
         return programBuilder.addChild(mainThread, fence);
     }
@@ -298,7 +295,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        Fence fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        Event fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
     }
 

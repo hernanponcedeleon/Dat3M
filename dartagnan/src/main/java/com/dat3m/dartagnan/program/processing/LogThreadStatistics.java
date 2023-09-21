@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
@@ -28,7 +29,7 @@ public class LogThreadStatistics implements ProgramProcessor {
         int storeCount = 0;
         int loadCount = 0;
         int initCount = 0;
-        int fenceCount = 0;
+        int otherVisibleCount = 0;
         for (Thread thread : threads) {
             for (Event e : thread.getEvents()) {
                 totalEventCount++;
@@ -38,8 +39,8 @@ public class LogThreadStatistics implements ProgramProcessor {
                     storeCount++;
                 } else if (e instanceof Load) {
                     loadCount++;
-                } else if (e instanceof Fence) {
-                    fenceCount++;
+                } else if (e instanceof GenericVisibleEvent) {
+                    otherVisibleCount++;
                 }
             }
         }
@@ -57,8 +58,8 @@ public class LogThreadStatistics implements ProgramProcessor {
                 .append("#Events: ").append(totalEventCount).append("\n")
                 .append("\t#Stores: ").append(storeCount).append("\n")
                 .append("\t#Loads: ").append(loadCount).append("\n")
-                .append("\t#Fences: ").append(fenceCount).append("\n")
-                .append("\t#Init: ").append(initCount).append("\n")
+                .append("\t#Inits: ").append(initCount).append("\n")
+                .append("\t#Others: ").append(otherVisibleCount).append("\n")
                 .append("#Allocated bytes: ").append(totalAddressSpaceSize).append("\n")
                 .append("\tStatically allocated: ").append(staticAddressSpaceSize).append("\n")
                 .append("\tDynamically allocated: ").append(dynamicAddressSpaceSize).append("\n");

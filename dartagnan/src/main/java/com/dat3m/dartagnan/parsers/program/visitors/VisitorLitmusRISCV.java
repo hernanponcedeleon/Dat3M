@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Event;
 import org.antlr.v4.runtime.misc.Interval;
 
 public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
@@ -229,12 +230,28 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
-		return programBuilder.addChild(mainThread, EventFactory.newFence("Fence." + ctx.fenceMode().mode));
+        String mo = ctx.fenceMode().mode;
+        Event fence = switch(mo) {
+            case "r.r" -> EventFactory.RISCV.newRRFence();
+            case "r.w" -> EventFactory.RISCV.newRWFence();
+            case "r.rw" -> EventFactory.RISCV.newRRWFence();
+            case "w.r" -> EventFactory.RISCV.newWRFence();
+            case "w.w" -> EventFactory.RISCV.newWWFence();
+            case "w.rw" -> EventFactory.RISCV.newWRWFence();
+            case "rw.r" -> EventFactory.RISCV.newRWRFence();
+            case "rw.w" -> EventFactory.RISCV.newRWWFence();
+            case "rw.rw" -> EventFactory.RISCV.newRWRWFence();
+            case "tso" -> EventFactory.RISCV.newTsoFence();
+            case "i" -> EventFactory.RISCV.newSynchronizeFence();
+            default -> throw new ParsingException("Invalid fence mode " + mo);
+        };
+		return programBuilder.addChild(mainThread, fence);
 	}
 
 	@Override
 	public Object visitAmoadd(LitmusRISCVParser.AmoaddContext ctx) {
-		throw new ParsingException("No support for amoadd instructions");	}
+		throw new ParsingException("No support for amoadd instructions");
+    }
 
 	@Override
 	public Object visitAmoor(LitmusRISCVParser.AmoorContext ctx) {

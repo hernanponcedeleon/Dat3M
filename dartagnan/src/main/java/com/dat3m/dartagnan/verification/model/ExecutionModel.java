@@ -361,7 +361,9 @@ public class ExecutionModel {
 
         } else if (data.isFence()) {
             // ===== Fences =====
-            String name = ((Fence)data.getEvent()).getName();
+            // FIXME this assumes not only that the event has a fence tag but also that it
+            // is a GenericVisibleEvent. This is dangerous and should be fixed.
+            String name = ((GenericVisibleEvent)data.getEvent()).getName();
             fenceMap.computeIfAbsent(name, key -> new HashSet<>()).add(data);
         } else if (data.isJump()) {
             // ===== Jumps =====
