@@ -638,7 +638,6 @@ public class WmmEncoder implements Encoder {
             final boolean idl = !context.useSATEncoding;
             final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
-            allFenceSC.sort(Comparator.comparingInt(Event::getGlobalId));
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
