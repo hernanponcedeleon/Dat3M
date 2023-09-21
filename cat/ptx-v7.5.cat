@@ -31,7 +31,7 @@ PTX
 (*******************)
 
 // Explicitly add transitivity for coherence since the co in PTX is not total
-let co = co+
+let co = co+ \ id
 
 (* Events *)
 let strong-write = W & (RLX | REL)
