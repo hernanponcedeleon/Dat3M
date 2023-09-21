@@ -15,4 +15,4 @@ x=0;
  st.weak x, 1                      | st.weak x, 2                     ;
  atom.relaxed.gpu.plus r4, out, 1  | atom.release.gpu.plus r4, out, 1 ;
 exists
-(P0:r1 != P1:r1 /\ P0:r2 != P1:r2 /\ P0:r3 == 0 /\ P1:r3 == 0)
+(P0:r1 == P0:r2 /\ P1:r1 == P1:r2 /\ P0:r3 == 0 /\ P1:r3 == 0)
