@@ -36,8 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Sets.difference;
@@ -636,11 +635,10 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitSyncFence(Relation syncFence) {
-            boolean idl = !context.useSATEncoding;
-            List<Event> allFenceSC = program.getThreadEvents(Event.class).stream()
-                    .filter(e -> e.hasTag(Tag.VISIBLE) && e.hasTag(Tag.FENCE) && e.hasTag(Tag.PTX.SC))
-                    .sorted(Comparator.comparingInt(Event::getGlobalId))
-                    .toList();
+            final boolean idl = !context.useSATEncoding;
+            final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
+            List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
+            allFenceSC.sort(Comparator.comparingInt(Event::getGlobalId));
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
@@ -668,8 +666,6 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula scB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
                     enc.add(bmgr.equivalence(pairingCond, bmgr.or(scF, scB)));
                     if (idl) {
-                        // syncFence is base, it always has a name
-                        String relName = syncFence.getName().get();
                         enc.add(bmgr.implication(scF, imgr.lessThan(context.clockVariable(relName, x), context.clockVariable(relName, z))));
                         enc.add(bmgr.implication(scB, imgr.lessThan(context.clockVariable(relName, z), context.clockVariable(relName, x))));
                     } else {

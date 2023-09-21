@@ -973,26 +973,25 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
-            List<Event> events = new ArrayList<>();
-            events.addAll(program.getThreadEvents(Event.class));
-            events.removeIf(e -> e.hasTag(Tag.VISIBLE) && !e.hasTag(Tag.FENCE));
-            // These two need to be added after the removal above
-            events.addAll(program.getThreadEvents(Load.class));
-            events.addAll(program.getThreadEvents(Store.class));
-            events.removeIf(e -> e instanceof Init || !(e.getThread() instanceof ScopedThread));
+            List<Event> events = program.getThreadEvents().stream()
+                    .filter(e -> e.hasTag(VISIBLE) && e.getThread() instanceof ScopedThread)
+                    .toList();
+
             for (Event e1 : events) {
                 for (Event e2 : events) {
+                    if (exec.areMutuallyExclusive(e1, e2)) {
+                        continue;
+                    }
                     ScopedThread thread1 = (ScopedThread) e1.getThread();
                     ScopedThread thread2 = (ScopedThread) e2.getThread();
                     if (specificScope != null) { // scope specified
-                        if (thread1.sameAtHigherScope(thread2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                        if (thread1.sameAtHigherScope(thread2, specificScope)) {
                             must.add(new Tuple(e1, e2));
                         }
                     } else {
                         String scope1 = Tag.PTX.getScopeTag(e1);
                         String scope2 = Tag.PTX.getScopeTag(e2);
-                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)
-                                && !exec.areMutuallyExclusive(e1, e2)) {
+                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)) {
                             must.add(new Tuple(e1, e2));
                         }
                     }
@@ -1023,7 +1022,7 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSyncFence(Relation sync_fen) {
             Set<Tuple> may = new HashSet<>();
-            List<Event> fenceEventsSC = program.getThreadEvents(Event.class).stream().filter(e -> e.hasTag(Tag.VISIBLE) && e.hasTag(Tag.FENCE) && e.hasTag(Tag.PTX.SC)).toList();
+            List<Event> fenceEventsSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
             for (Event e1 : fenceEventsSC) {
                 for (Event e2 : fenceEventsSC) {
                     if (!exec.areMutuallyExclusive(e1, e2)) {

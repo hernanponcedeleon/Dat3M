@@ -8,10 +8,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Program {
@@ -131,6 +128,11 @@ public class Program {
 
     public <T extends Event> List<T> getThreadEvents(Class<T> cls) {
         return getThreadEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
+    }
+
+    public List<Event> getThreadEventsWithAllTags(String... tags) {
+        final List<String> tagList = Arrays.asList(tags);
+        return getThreadEvents().stream().filter(e -> e.getTags().containsAll(tagList)).collect(Collectors.toList());
     }
 
     // Unrolling
