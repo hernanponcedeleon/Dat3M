@@ -230,7 +230,8 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
 
 	@Override
 	public Object visitFence(LitmusRISCVParser.FenceContext ctx) {
-        Event fence = switch(ctx.fenceMode().mode) {
+        String mo = ctx.fenceMode().mode;
+        Event fence = switch(mo) {
             case "r.r" -> EventFactory.RISCV.newRRFence();
             case "r.w" -> EventFactory.RISCV.newRWFence();
             case "r.rw" -> EventFactory.RISCV.newRRWFence();
@@ -242,7 +243,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
             case "rw.rw" -> EventFactory.RISCV.newRWRWFence();
             case "tso" -> EventFactory.RISCV.newTsoFence();
             case "i" -> EventFactory.RISCV.newSynchronizeFence();
-            default -> throw new ParsingException("No support fence mode");
+            default -> throw new ParsingException("Invalid fence mode " + mo);
         };
 		return programBuilder.addChild(mainThread, fence);
 	}

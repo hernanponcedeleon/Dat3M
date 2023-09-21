@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -638,8 +637,8 @@ public class WmmEncoder implements Encoder {
         @Override
         public Void visitSyncFence(Relation syncFence) {
             boolean idl = !context.useSATEncoding;
-            List<GenericVisibleEvent> allFenceSC = program.getThreadEvents(GenericVisibleEvent.class).stream()
-                    .filter(e -> e.hasTag(Tag.FENCE) && e.hasTag(Tag.PTX.SC))
+            List<Event> allFenceSC = program.getThreadEvents(Event.class).stream()
+                    .filter(e -> e.hasTag(Tag.VISIBLE) && e.hasTag(Tag.FENCE) && e.hasTag(Tag.PTX.SC))
                     .sorted(Comparator.comparingInt(Event::getGlobalId))
                     .toList();
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
@@ -647,8 +646,8 @@ public class WmmEncoder implements Encoder {
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
             // ---- Encode syncFence ----
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
-                GenericVisibleEvent x = allFenceSC.get(i);
-                for (GenericVisibleEvent z : allFenceSC.subList(i + 1, allFenceSC.size())) {
+                Event x = allFenceSC.get(i);
+                for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
                     String scope1 = Tag.PTX.getScopeTag(x);
                     String scope2 = Tag.PTX.getScopeTag(z);
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
@@ -669,12 +668,14 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula scB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
                     enc.add(bmgr.equivalence(pairingCond, bmgr.or(scF, scB)));
                     if (idl) {
-                        enc.add(bmgr.implication(scF, imgr.lessThan(context.clockVariable(x.getName(), x), context.clockVariable(z.getName(), z))));
-                        enc.add(bmgr.implication(scB, imgr.lessThan(context.clockVariable(z.getName(), z), context.clockVariable(x.getName(), x))));
+                        // syncFence is base, it always has a name
+                        String relName = syncFence.getName().get();
+                        enc.add(bmgr.implication(scF, imgr.lessThan(context.clockVariable(relName, x), context.clockVariable(relName, z))));
+                        enc.add(bmgr.implication(scB, imgr.lessThan(context.clockVariable(relName, z), context.clockVariable(relName, x))));
                     } else {
                         enc.add(bmgr.or(bmgr.not(scF), bmgr.not(scB)));
                         if (!k.containsMust(xz) && !k.containsMust(zx)) {
-                            for (GenericVisibleEvent y : allFenceSC) {
+                            for (Event y : allFenceSC) {
                                 Tuple xy = new Tuple(x, y);
                                 Tuple yz = new Tuple(y, z);
                                 if (forwardPossible && k.containsMay(xy) && k.containsMay(yz)) {

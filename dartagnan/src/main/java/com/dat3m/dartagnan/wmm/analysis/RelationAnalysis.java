@@ -974,11 +974,12 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = new ArrayList<>();
+            events.addAll(program.getThreadEvents(Event.class));
+            events.removeIf(e -> e.hasTag(Tag.VISIBLE) && !e.hasTag(Tag.FENCE));
+            // These two need to be added after the removal above
             events.addAll(program.getThreadEvents(Load.class));
             events.addAll(program.getThreadEvents(Store.class));
-            events.addAll(program.getThreadEvents(GenericVisibleEvent.class));
-            events.removeIf(e -> e instanceof GenericVisibleEvent && !e.hasTag(Tag.FENCE));
-            events.removeIf(e -> e instanceof Init);
+            events.removeIf(e -> e instanceof Init || !(e.getThread() instanceof ScopedThread));
             for (Event e1 : events) {
                 for (Event e2 : events) {
                     ScopedThread thread1 = (ScopedThread) e1.getThread();
@@ -1022,10 +1023,10 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSyncFence(Relation sync_fen) {
             Set<Tuple> may = new HashSet<>();
-            List<GenericVisibleEvent> fenceEvents = program.getThreadEvents(GenericVisibleEvent.class).stream().filter(e -> e.hasTag(Tag.FENCE)).toList();
-            for (GenericVisibleEvent e1 : fenceEvents) {
-                for (GenericVisibleEvent e2 : fenceEvents) {
-                    if (e1.hasTag(Tag.PTX.SC) && e2.hasTag(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+            List<Event> fenceEventsSC = program.getThreadEvents(Event.class).stream().filter(e -> e.hasTag(Tag.VISIBLE) && e.hasTag(Tag.FENCE) && e.hasTag(Tag.PTX.SC)).toList();
+            for (Event e1 : fenceEventsSC) {
+                for (Event e2 : fenceEventsSC) {
+                    if (!exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
