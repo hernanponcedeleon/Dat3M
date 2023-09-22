@@ -637,6 +637,7 @@ public class WmmEncoder implements Encoder {
             final boolean idl = !context.useSATEncoding;
             final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
+            allFenceSC.removeIf(e -> !e.getThread().hasScope());
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
@@ -649,8 +650,7 @@ public class WmmEncoder implements Encoder {
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
                         continue;
                     }
-                    if (!x.getThread().hasScope() || !z.getThread().hasScope() ||
-                            !x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()),scope1)) {
+                    if (!x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()),scope1)) {
                         continue;
                     }
                     Tuple xz = new Tuple(x, z);
