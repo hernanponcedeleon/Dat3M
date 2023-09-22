@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -401,35 +402,19 @@ public class Intrinsics {
 
     private List<Event> inlineLLVMCtlz(ValueFunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-ctlz-intrinsic
+        checkArgument(call.getArguments().size() == 2,
+                "Expected 2 parameters for \"llvm.ctlz\", got %s.", call.getArguments().size());
         final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
-        final IntegerType type = (IntegerType) resultReg.getType();
-        final Expression increment = expressions.makeADD(resultReg, expressions.makeOne(type));
-
-        final List<Event> replacement = new ArrayList<>();
-        final Label endCtlz = EventFactory.newLabel("__ctlz_end");
-        replacement.add(EventFactory.newLocal(resultReg, expressions.makeZero(type)));
-        //TODO: There might be more efficient ways to count leading zeroes, though it is not clear
-        // if they are also more friendly for the SMT backend.
-        for (int i = type.getBitWidth() - 1; i >= 0; i--) {
-            final Expression testMask = expressions.makeValue(BigInteger.ONE.shiftLeft(i), type);
-            //TODO: dedicated test-bit expressions might yield better results, and they are supported by the SMT backend
-            // in the form of extract operations.
-            final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
-
-            replacement.addAll(List.of(
-                    // FIXME: This generates a control dependency, but it should not!
-                    EventFactory.newJump(testBit, endCtlz),
-                    EventFactory.newLocal(resultReg, increment)
-                    // We could also do a direct assignment instead of an increment, but CP will resolve this either way.
-            ));
-        }
-        replacement.add(endCtlz);
-
-        return replacement;
-        /*final Expression result = expressions.makeCTLZ(input, (IntegerType) call.getResultRegister().getType());
-        return List.of(EventFactory.newLocal(call.getResultRegister(), result));*/
+        final Type type = resultReg.getType();
+        checkArgument(resultReg.getType() instanceof IntegerType,
+                "Non-integer %s type for \"llvm.ctlz\".", type);
+        checkArgument(input.getType().equals(type),
+                "Return type %s of \"llvm.ctlz\" must match argument type %s.", type, input.getType());
+        final Expression resultExpression = expressions.makeCTLZ(input, (IntegerType) type);
+        final Event assignment = EventFactory.newLocal(resultReg, resultExpression);
+        return List.of(assignment);
     }
 
     private List<Event> inlineLLVMCtpop(ValueFunctionCall call) {
