@@ -24,8 +24,8 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
-        Tag.PTX.propagateTags(e, load);
-        Tag.PTX.propagateTags(e, store);
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
         return eventSequence(
                 load,
                 store,
@@ -40,11 +40,19 @@ public class VisitorPTX extends VisitorBase {
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
-        Tag.PTX.propagateTags(e, load);
-        Tag.PTX.propagateTags(e, store);
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
         return eventSequence(
                 load,
                 store
         );
+    }
+
+    private void propagateTags(Event source, Event target) {
+        for (String tag : List.of(Tag.PTX.CTA, Tag.PTX.GPU, Tag.PTX.SYS, Tag.PTX.GEN, Tag.PTX.TEX, Tag.PTX.SUR, Tag.PTX.CON)) {
+            if (source.hasTag(tag)) {
+                target.addTags(tag);
+            }
+        }
     }
 }

@@ -290,14 +290,6 @@ public final class Tag {
         // Virtual memory
         public static final String ALIAS = "ALIAS";
 
-        public static void propagateTags(Event source, Event target) {
-            for (String tag : List.of(CTA, GPU, SYS, GEN, TEX, SUR, CON)) {
-                if (source.hasTag(tag)) {
-                    target.addTags(tag);
-                }
-            }
-        }
-
         public static String loadMO(String mo) {
             return switch (mo) {
                 case ACQ, ACQ_REL -> ACQ;
@@ -352,31 +344,6 @@ public final class Tag {
 
         public static List<String> getScopeTags() {
             return List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
-        }
-
-        public static void propagateTags(Event source, Event target) {
-            for (String tag : List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1)) {
-                if (source.hasTag(tag)) {
-                    target.addTags(tag);
-                }
-            }
-            if (target instanceof Load) {
-                // Atomic loads are always visible
-                if (source.hasTag(ATOM)) {
-                    target.addTags(VISIBLE);
-                }
-                if (source.hasTag(SEM_VISIBLE)) {
-                    target.addTags(SEM_VISIBLE);
-                }
-            } else if (target instanceof Store) {
-                // Atomic stores are always available
-                if (source.hasTag(ATOM)) {
-                    target.addTags(AVAILABLE);
-                }
-                if (source.hasTag(SEM_AVAILABLE)) {
-                    target.addTags(SEM_AVAILABLE);
-                }
-            }
         }
 
         public static String loadMO(String mo) {
