@@ -1056,7 +1056,7 @@ public class RelationAnalysis {
             List<Event> events = new ArrayList<>();
             events.addAll(program.getThreadEvents(Load.class));
             events.addAll(program.getThreadEvents(Store.class));
-            events.addAll(program.getThreadEventsWithAllTags(VISIBLE, FENCE));
+            events.addAll(program.getThreadEventsWithAllTags(VISIBLE));
             events.addAll(program.getThreadEvents(RMWXchgBase.class));
             events.removeIf(e -> e instanceof Init);
             for (Event e1 : events) {

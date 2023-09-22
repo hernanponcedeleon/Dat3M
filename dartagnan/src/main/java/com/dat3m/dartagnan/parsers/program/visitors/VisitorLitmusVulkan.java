@@ -342,7 +342,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.AVDEVICE)) {
             e = EventFactory.PTX.newAvDevice();
         } else if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.VISDEVICE)) {
-            e = EventFactory.PTX.newAvDevice();
+            e = EventFactory.PTX.newVisDevice();
         } else {
             throw new ParsingException("Unknown device operation");
         }
