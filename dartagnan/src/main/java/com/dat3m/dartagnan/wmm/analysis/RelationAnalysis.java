@@ -1054,10 +1054,7 @@ public class RelationAnalysis {
         public Knowledge visitSyncWith(Relation rel) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = new ArrayList<>();
-            events.addAll(program.getThreadEvents(Load.class));
-            events.addAll(program.getThreadEvents(Store.class));
             events.addAll(program.getThreadEventsWithAllTags(VISIBLE));
-            events.addAll(program.getThreadEvents(RMWXchgBase.class));
             events.removeIf(e -> e instanceof Init);
             for (Event e1 : events) {
                 for (Event e2 : events) {
