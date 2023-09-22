@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.*;
 
+import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,22 +62,13 @@ public class ExecutionStatus extends AbstractEvent implements RegWriter, EventUs
 
     @Override
     public BooleanFormula encodeExec(EncodingContext context) {
-        final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final Type type = register.getType();
         final BooleanFormula eventExecuted = context.execution(event);
         final Formula result = context.result(this);
 
         if (type instanceof IntegerType integerType) {
-            final Formula one;
-            if (integerType.isMathematical()) {
-                IntegerFormulaManager integerFormulaManager = fmgr.getIntegerFormulaManager();
-                one = integerFormulaManager.makeNumber(1);
-            } else {
-                BitvectorFormulaManager bitvectorFormulaManager = fmgr.getBitvectorFormulaManager();
-                int bitWidth = integerType.getBitWidth();
-                one = bitvectorFormulaManager.makeBitvector(bitWidth, 1);
-            }
+            final Formula one = context.makeLiteral(integerType, BigInteger.ONE);
             return bmgr.and(super.encodeExec(context),
                     bmgr.ifThenElse(eventExecuted, context.equalZero(result), context.equal(result, one))
             );

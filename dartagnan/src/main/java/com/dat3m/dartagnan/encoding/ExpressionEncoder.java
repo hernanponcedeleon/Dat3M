@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -14,9 +13,8 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
 import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
@@ -62,16 +60,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return expression.accept(this);
     }
 
-    static Formula getLastMemValueExpr(MemoryObject object, int offset, FormulaManager formulaManager) {
-        checkArgument(0 <= offset && offset < object.size(), "array index out of bounds");
-        String name = String.format("last_val_at_%s_%d", object, offset);
-        if (getArchPrecision() > -1) {
-            return formulaManager.getBitvectorFormulaManager().makeVariable(getArchPrecision(), name);
-        } else {
-            return formulaManager.getIntegerFormulaManager().makeVariable(name);
-        }
-    }
-
     @Override
     public Formula visit(Atom atom) {
         Formula lhs = encode(atom.getLHS());
@@ -112,7 +100,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(IValue iValue) {
         BigInteger value = iValue.getValue();
         Type type = iValue.getType();
-        return makeLiteral(type, value);
+        return context.makeLiteral(type, value);
     }
 
     @Override
@@ -253,15 +241,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 if (inner instanceof BooleanFormula bool) {
                     return bool;
                 }
-                if (iUn.getType().isMathematical()) {
-                    if (inner instanceof IntegerFormula) {
-                        return inner;
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
-                    }
+                if (context.useIntegers || iUn.getType().isMathematical()) {
+                    verify(inner instanceof IntegerFormula);
+                    //TODO If narrowing, constrain the value.
+                    return inner;
                 } else {
-                    int bitWidth = iUn.getType().getBitWidth();
+                    final int bitWidth = iUn.getType().getBitWidth();
                     if (inner instanceof IntegerFormula number) {
                         return bitvectorFormulaManager().makeBitvector(bitWidth, number);
                     }
@@ -322,23 +307,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(MemoryObject address) {
         BigInteger value = address.getValue();
         Type type = address.getType();
-        return makeLiteral(type, value);
+        return context.makeLiteral(type, value);
     }
 
     @Override
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
-        return getLastMemValueExpr(location.getMemoryObject(), location.getOffset(), formulaManager);
-    }
-
-    private Formula makeLiteral(Type type, BigInteger value) {
-        if (type instanceof IntegerType integerType) {
-            if (integerType.isMathematical()) {
-                return integerFormulaManager().makeNumber(value);
-            }
-            int bitWidth = integerType.getBitWidth();
-            return bitvectorFormulaManager().makeBitvector(bitWidth, value);
-        }
-        throw new UnsupportedOperationException(String.format("Encoding literal of type %s.", type));
+        return context.lastValue(location.getMemoryObject(), location.getOffset());
     }
 }

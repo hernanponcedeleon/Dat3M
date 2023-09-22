@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,11 +23,11 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.GlobalSettings.getArchPrecision;
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
 
@@ -153,19 +154,19 @@ public class ProgramEncoder implements Encoder {
         final FormulaManager fmgr = context.getFormulaManager();
 
         // For all objects, their 'final' value fetched here represents their constant value.
-        BooleanFormula[] addrExprs;
-        if(getArchPrecision() > -1) {
-            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-            addrExprs = memory.getObjects().stream()
-                    .map(addr -> bvmgr.equal((BitvectorFormula) context.encodeFinalExpression(addr),
-                    		bvmgr.makeBitvector(getArchPrecision(), addr.getValue().intValue())))
-                    .toArray(BooleanFormula[]::new);        	
-        } else {
-            final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-            addrExprs = memory.getObjects().stream()
-                    .map(addr -> imgr.equal((IntegerFormula) context.encodeFinalExpression(addr),
-                            imgr.makeNumber(addr.getValue().intValue())))
-                    .toArray(BooleanFormula[]::new);        	
+        final var addrExprs = new ArrayList<BooleanFormula>();
+        for (final MemoryObject object : memory.getObjects()) {
+            final BigInteger addressInteger = object.getValue();
+            final Formula addressVariable = context.encodeFinalExpression(object);
+            if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
+                final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+                final int length = bvmgr.getLength(bitvectorVariable);
+                addrExprs.add(bvmgr.equal(bitvectorVariable, bvmgr.makeBitvector(length, addressInteger)));
+            } else {
+                assert addressVariable instanceof IntegerFormula;
+                final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
+                addrExprs.add(imgr.equal((IntegerFormula) addressVariable, imgr.makeNumber(addressInteger)));
+            }
         }
         return fmgr.getBooleanFormulaManager().and(addrExprs);
     }
