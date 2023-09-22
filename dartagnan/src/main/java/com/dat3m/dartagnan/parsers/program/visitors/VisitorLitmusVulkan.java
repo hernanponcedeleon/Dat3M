@@ -336,19 +336,17 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return programBuilder.addChild(mainThread, fence);
     }
 
-    // TODO: Using fences(without 'F' tag) as special device operations for now, need to be changed
     @Override
     public Object visitDeviceOperation(LitmusVulkanParser.DeviceOperationContext ctx) {
-        Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        fence.removeTags(Tag.FENCE);
+        Event e;
         if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.AVDEVICE)) {
-            fence.addTags(Tag.Vulkan.AVDEVICE);
+            e = EventFactory.PTX.newAvDevice();
         } else if (ctx.getText().equalsIgnoreCase(Tag.Vulkan.VISDEVICE)) {
-            fence.addTags(Tag.Vulkan.VISDEVICE);
+            e = EventFactory.PTX.newAvDevice();
         } else {
             throw new ParsingException("Unknown device operation");
         }
-        return programBuilder.addChild(mainThread, fence);
+        return programBuilder.addChild(mainThread, e);
     }
 
     @Override

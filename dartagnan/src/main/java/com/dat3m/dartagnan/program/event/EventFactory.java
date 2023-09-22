@@ -701,6 +701,14 @@ public class EventFactory {
             return red;
         }
 
+        public static GenericVisibleEvent newAvDevice() {
+            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
+        }
+    
+        public static GenericVisibleEvent newVisDevice() {
+            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
+        }
+    
     }
 
     // =============================================================================================
