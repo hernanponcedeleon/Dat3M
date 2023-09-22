@@ -1366,7 +1366,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         @Override
         default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
         @Override
-        default IConst reduce() { throw new UnsupportedOperationException(); }
+        default IValue reduce() { throw new UnsupportedOperationException(); }
     }
 
     private static final MdNode MD_NULL = new MdNode() {

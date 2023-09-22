@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -212,9 +212,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Expression base = iBin.getLHS();
         if (base instanceof MemoryObject mem) {
             Expression rhs = iBin.getRHS();
-            //FIXME Address extends IConst
-            if (rhs instanceof IConst ic) {
-                addTarget(reg, new Location(mem, ic.getValueAsInt()));
+            if (rhs instanceof IValue rightValue) {
+                addTarget(reg, new Location(mem, rightValue.getValueAsInt()));
             } else {
                 addTargetArray(reg, (MemoryObject) base);
             }
@@ -226,9 +225,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
             Expression rhs = ((IExprBin) exp).getRHS();
-            //FIXME Address extends IConst
-            if (rhs instanceof IConst ic) {
-                int o = target.offset + ic.getValueAsInt();
+            if (rhs instanceof IValue rightValue) {
+                int o = target.offset + rightValue.getValueAsInt();
                 if (o < target.base.size()) {
                     addTarget(reg, new Location(target.base, o));
                 }
@@ -269,16 +267,21 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          * Tries to match an expression as a constant address.
          */
         Constant(Expression x) {
-            if (x instanceof IConst) {
-                location = x instanceof MemoryObject mem ? new Location(mem, 0) : null;
+            if (x instanceof MemoryObject base) {
+                location = new Location(base, 0);
+                failed = false;
+                return;
+            }
+            if (x instanceof IValue) {
+                location = null;
                 failed = false;
                 return;
             }
             if (x instanceof IExprBin iBin && iBin.getOp() == ADD) {
                 Expression lhs = iBin.getLHS();
                 Expression rhs = iBin.getRHS();
-                if (lhs instanceof MemoryObject mem && rhs instanceof IConst ic && !(rhs instanceof MemoryObject)) {
-                    location = new Location(mem, ic.getValueAsInt());
+                if (lhs instanceof MemoryObject mem && rhs instanceof IValue rightValue) {
+                    location = new Location(mem, rightValue.getValueAsInt());
                     failed = false;
                     return;
                 }

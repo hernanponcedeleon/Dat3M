@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -223,8 +222,8 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
-    public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
+    public void initRegEqConst(int regThread, String regName, Expression constant) {
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, constant.getType()), constant));
     }
 
     private Expression getInitialValue(String name) {
@@ -290,7 +289,7 @@ public class ProgramBuilder {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
-    public void initVirLocEqCon(String leftName, IConst iValue){
+    public void initVirLocEqCon(String leftName, Expression iValue){
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);

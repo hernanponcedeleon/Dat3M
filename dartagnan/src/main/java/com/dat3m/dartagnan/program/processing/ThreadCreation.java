@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -207,7 +206,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final int tid = tidCandidate.getValueAsInt();
                 final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidCandidate);
 
-                if (tidExpr instanceof IConst iConst && iConst.getValueAsInt() != tid) {
+                if (tidExpr instanceof IValue tidConstant && tidConstant.getValueAsInt() != tid) {
                     // Little optimization if we join with a constant address
                     continue;
                 }

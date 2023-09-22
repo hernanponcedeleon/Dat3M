@@ -557,49 +557,50 @@ public class Intrinsics {
         final List<Event> result = new ArrayList<>();
         switch (call.getCalledFunction().getName()) {
             case "__LKMM_LOAD" -> {
-                checkArgument(p1 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p1).getValueAsInt());
+                checkArgument(p1 instanceof IValue, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IValue) p1).getValueAsInt());
                 result.add(EventFactory.Linux.newLKMMLoad(reg, p0, mo));
             }
             case "__LKMM_STORE" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
+                checkArgument(p2 instanceof IValue, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IValue) p2).getValueAsInt());
                 result.add(EventFactory.Linux.newLKMMStore(p0, p1, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
                 if (mo.equals(Tag.Linux.MO_MB)) {
                     result.add(EventFactory.Linux.newMemoryBarrier());
                 }
             }
             case "__LKMM_XCHG" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
+                checkArgument(p2 instanceof IValue, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IValue) p2).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWExchange(p0, reg, p1, mo));
             }
             case "__LKMM_CMPXCHG" -> {
-                checkArgument(p3 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p3).getValueAsInt());
+                checkArgument(p3 instanceof IValue, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IValue) p3).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWCompareExchange(p0, reg, p1, p2, mo));
             }
             case "__LKMM_ATOMIC_FETCH_OP" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
-                checkArgument(p3 instanceof IConst, "No support for variable operator.");
-                op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
+                checkArgument(p2 instanceof IValue, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IValue) p2).getValueAsInt());
+                checkArgument(p3 instanceof IValue, "No support for variable operator.");
+                op = IOpBin.intToOp(((IValue) p3).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWFetchOp(p0, reg, p1, op, mo));
             }
             case "__LKMM_ATOMIC_OP_RETURN" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
-                checkArgument(p3 instanceof IConst, "No support for variable operator.");
-                op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
+                checkArgument(p2 instanceof IValue, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IValue) p2).getValueAsInt());
+                checkArgument(p3 instanceof IValue, "No support for variable operator.");
+                op = IOpBin.intToOp(((IValue) p3).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWOpReturn(p0, reg, p1, op, mo));
             }
             case "__LKMM_ATOMIC_OP" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable operator.");
-                op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
+                checkArgument(p2 instanceof IValue, "No support for variable operator.");
+                op = IOpBin.intToOp(((IValue) p2).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWOp(p0, p1, op));
             }
             case "__LKMM_FENCE" -> {
-                String fence = Tag.Linux.intToMo(((IConst) p0).getValueAsInt());
+                checkArgument(p0 instanceof IValue, "No support for variable operator.");
+                String fence = Tag.Linux.intToMo(((IValue) p0).getValueAsInt());
                 result.add(EventFactory.Linux.newLKMMFence(fence));
             }
             case "__LKMM_SPIN_LOCK" -> {

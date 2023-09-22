@@ -45,11 +45,11 @@ public class IExprUn extends IExpr {
     }
 
     @Override
-    public IConst reduce() {
+    public IValue reduce() {
         if (!(b.getType() instanceof IntegerType innerType)) {
             throw new IllegalStateException(String.format("Non-integer operand %s.", b));
         }
-        IConst inner = b.reduce();
+        IValue inner = b.reduce();
         verify(inner.getType().equals(innerType),
                 "Reduced to wrong type %s instead of %s.", inner.getType(), innerType);
         BigInteger value = inner.getValue();

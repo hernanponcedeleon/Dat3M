@@ -8,7 +8,7 @@ import java.math.BigInteger;
 /**
  * Immutable constant integer values.
  */
-public final class IValue extends IConst {
+public final class IValue extends IExpr {
 
     private final BigInteger value;
 
@@ -17,9 +17,12 @@ public final class IValue extends IConst {
         this.value = value;
     }
 
-    @Override
     public BigInteger getValue() {
         return value;
+    }
+
+    public int getValueAsInt() {
+        return getValue().intValue();
     }
 
     public boolean isOne() { return value.equals(BigInteger.ONE); }
@@ -28,6 +31,11 @@ public final class IValue extends IConst {
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public IValue reduce() {
+        return this;
     }
 
     @Override

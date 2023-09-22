@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import java.math.BigInteger;
 import java.util.Optional;
 
-// TODO why is INonDet not a IConst?
 public class INonDet extends IExpr {
 
     private final int id;
@@ -51,7 +50,7 @@ public class INonDet extends IExpr {
     }
 
     @Override
-    public IConst reduce() {
+    public IValue reduce() {
         if (min.equals(max)) {
             return new IValue(min, getType());
         }

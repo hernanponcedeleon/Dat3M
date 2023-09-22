@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.GEPExpression;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
@@ -61,7 +61,7 @@ public class GEPToAddition implements ProgramProcessor {
                 if (!(type instanceof AggregateType aggregateType)) {
                     throw new MalformedProgramException(String.format("GEP from non-compound type %s.", type));
                 }
-                if (!(offset instanceof IConst constant)) {
+                if (!(offset instanceof IValue constant)) {
                     throw new MalformedProgramException(
                             String.format("Non-constant field index %s for aggregate of type %s.", offset, type));
                 }
