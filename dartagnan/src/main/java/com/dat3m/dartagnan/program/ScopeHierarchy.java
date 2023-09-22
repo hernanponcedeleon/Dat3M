@@ -13,22 +13,23 @@ public class ScopeHierarchy{
     // is important, thus we use a LinkedHashMap
     protected final Map<String, Integer> scopeIds = new LinkedHashMap<>();
 
-    public ScopeHierarchy(Arch arch, int... ids) {
-        switch (arch) {
-            case VULKAN:
-                this.scopeIds.put(Tag.Vulkan.DEVICE, 0);
-                this.scopeIds.put(Tag.Vulkan.QUEUE_FAMILY, ids[0]);
-                this.scopeIds.put(Tag.Vulkan.WORK_GROUP, ids[1]);
-                this.scopeIds.put(Tag.Vulkan.SUB_GROUP, ids[2]);
-                break;
-            case PTX:
-                this.scopeIds.put(Tag.PTX.SYS, 0);
-                this.scopeIds.put(Tag.PTX.GPU, ids[0]);
-                this.scopeIds.put(Tag.PTX.CTA, ids[1]);
-                break;
-            default:
-                throw new UnsupportedOperationException("Scope hierarchy not implemented for architecture " + arch);
-        }
+    private ScopeHierarchy() {}
+
+    public static ScopeHierarchy ScopeHierarchyForVulkan(int queueFamily, int workGroup, int subGroup) {
+        ScopeHierarchy scopeHierarchy = new ScopeHierarchy();
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.DEVICE, 0);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.QUEUE_FAMILY, queueFamily);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.WORK_GROUP, workGroup);
+        scopeHierarchy.scopeIds.put(Tag.Vulkan.SUB_GROUP, subGroup);
+        return scopeHierarchy;
+    }
+
+    public static ScopeHierarchy ScopeHierarchyForPTX(int gpu, int cta) {
+        ScopeHierarchy scopeHierarchy = new ScopeHierarchy();
+        scopeHierarchy.scopeIds.put(Tag.PTX.SYS, 0);
+        scopeHierarchy.scopeIds.put(Tag.PTX.GPU, gpu);
+        scopeHierarchy.scopeIds.put(Tag.PTX.CTA, cta);
+        return scopeHierarchy;
     }
 
     public ArrayList<String> getScopes() {

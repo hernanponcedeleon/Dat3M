@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 
-import java.util.Set;
+import java.util.List;
 
 /*
     Tags can be attached to any event.
@@ -291,7 +291,7 @@ public final class Tag {
         public static final String ALIAS = "ALIAS";
 
         public static void propagateTags(Event source, Event target) {
-            for (String tag : Set.of(CTA, GPU, SYS, GEN, TEX, SUR, CON)) {
+            for (String tag : List.of(CTA, GPU, SYS, GEN, TEX, SUR, CON)) {
                 if (source.hasTag(tag)) {
                     target.addTags(tag);
                 }
@@ -316,8 +316,8 @@ public final class Tag {
             };
         }
 
-        public static Set<String> getScopeTags() {
-            return Set.of(CTA, GPU, SYS);
+        public static List<String> getScopeTags() {
+            return List.of(CTA, GPU, SYS);
         }
     }
 
@@ -350,12 +350,12 @@ public final class Tag {
         public static final String SEMSC0 = "SEMSC0";
         public static final String SEMSC1 = "SEMSC1";
 
-        public static Set<String> getScopeTags() {
-            return Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
+        public static List<String> getScopeTags() {
+            return List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
         }
 
         public static void propagateTags(Event source, Event target) {
-            for (String tag : Set.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1)) {
+            for (String tag : List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE, NON_PRIVATE, ATOM, SC0, SC1, SEMSC0, SEMSC1)) {
                 if (source.hasTag(tag)) {
                     target.addTags(tag);
                 }

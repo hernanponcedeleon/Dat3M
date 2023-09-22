@@ -16,12 +16,11 @@ public class VulkanRMWOp extends RMWOpResultBase {
 
     private VulkanRMWOp(VulkanRMWOp other) {
         super(other);
-        this.addTags(Tag.Vulkan.ATOM);
     }
 
     @Override
     public String defaultString() {
-        return String.format("%s := rmw[%s](%s, %s)", resultRegister, mo, operand, address);
+        return String.format("%s := rmw_%s[%s](%s, %s)", resultRegister, operator.getName(), mo, operand, address);
     }
 
     @Override
