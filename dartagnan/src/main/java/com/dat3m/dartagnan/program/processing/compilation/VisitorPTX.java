@@ -36,7 +36,7 @@ public class VisitorPTX extends VisitorBase {
     @Override
     public List<Event> visitPtxRedOp(PTXRedOp e) {
         Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(types.getArchType());
+        Register dummy = e.getFunction().newRegister(e.getAccessType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
                 expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
