@@ -39,6 +39,7 @@ public class TwoSolvers extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
+        long t0 = System.nanoTime();
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
@@ -47,7 +48,9 @@ public class TwoSolvers extends ModelChecker {
     	preprocessProgram(task, config);
         preprocessMemoryModel(task);
         performStaticProgramAnalyses(task, analysisContext, config);
+        long t1 = System.nanoTime();
         performStaticWmmAnalyses(task, analysisContext, config);
+        long t2 = System.nanoTime();
 
         context = EncodingContext.of(task, analysisContext, ctx.getFormulaManager());
         ProgramEncoder programEncoder = ProgramEncoder.withContext(context);
@@ -97,5 +100,6 @@ public class TwoSolvers extends ModelChecker {
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
+        System.out.printf("%s;%s;%d;%d%n", task.getProgram().getName(), res, t2 - t1, System.nanoTime() - t0);
     }
 }
