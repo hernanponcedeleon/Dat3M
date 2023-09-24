@@ -99,6 +99,7 @@ For programs written in `.c` and `.bpl`, value `<arch>` specifies the programmin
 - arm8
 - riscv
 - ptx
+- vulkan
 
 The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 
