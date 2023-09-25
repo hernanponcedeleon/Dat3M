@@ -1,10 +1,13 @@
 package com.dat3m.dartagnan.program.event.visitors;
 
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -100,7 +103,10 @@ public interface EventVisitor<T> {
 	// ------------------ Std events ------------------
 	default T visitMalloc(Malloc e) { return visitEvent(e); }
 
-	// ------------------ PTX Events ------------------
+    // ------------------ GPU Events ------------------
+    default T visitFenceWithId(FenceWithId e) { return visitEvent(e); }
 	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
 	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
+    default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
+    default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
 }

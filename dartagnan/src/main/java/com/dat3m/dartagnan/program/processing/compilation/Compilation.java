@@ -125,6 +125,7 @@ public class Compilation implements ProgramProcessor {
             case IMM -> new VisitorIMM();
             case RISCV -> new VisitorRISCV(useRC11Scheme);
             case PTX -> new VisitorPTX();
+            case VULKAN -> new VisitorVulkan();
         };
     }
 

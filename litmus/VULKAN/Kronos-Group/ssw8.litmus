@@ -1,0 +1,14 @@
+VULKAN ssw8
+"Passes, SSW between W+AV -> VIS+R"
+{
+P1:r0=0;
+x=0;
+}
+{
+ssw 0 1;
+}
+ P0@sg 0,wg 0, qf 0               | P1@sg 0,wg 1, qf 0               ;
+ st.nonpriv.sc0 x, 1              | membar.acq.qf.semsc0.semvis      ;
+ membar.rel.qf.semsc0.semav       | ld.nonpriv.sc0 r0, x             ;
+exists
+(x == 1)

@@ -107,7 +107,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         for (LitmusPTXParser.ThreadScopeContext threadScopeContext : ctx.threadScope()) {
             int ctaID = threadScopeContext.scopeID().ctaID().id;
             int gpuID = threadScopeContext.scopeID().gpuID().id;
-            programBuilder.newScopedThread(threadScopeContext.threadId().id, ctaID, gpuID);
+            // NB: the order of scopeIDs is important
+            programBuilder.newScopedThread(Arch.PTX, threadScopeContext.threadId().id, gpuID, ctaID);
             threadCount++;
         }
         return null;
@@ -295,7 +296,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
         Expression fenceId = (Expression) ctx.barID().accept(this);
-        Event fence = EventFactory.PTX.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        Event fence = EventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
         return programBuilder.addChild(mainThread, fence);
     }
 

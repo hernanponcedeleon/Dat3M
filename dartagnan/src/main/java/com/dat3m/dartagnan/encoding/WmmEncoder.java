@@ -4,10 +4,9 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
@@ -614,8 +613,8 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
-                PTXFenceWithId e1 = (PTXFenceWithId) tuple.getFirst();
-                PTXFenceWithId e2 = (PTXFenceWithId) tuple.getSecond();
+                FenceWithId e1 = (FenceWithId) tuple.getFirst();
+                FenceWithId e2 = (FenceWithId) tuple.getSecond();
                 BooleanFormula sameId;
                 // If they are in must, they are guaranteed to have the same id
                 if (k.containsMust(tuple)) {
@@ -638,6 +637,7 @@ public class WmmEncoder implements Encoder {
             final boolean idl = !context.useSATEncoding;
             final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
+            allFenceSC.removeIf(e -> !e.getThread().hasScope());
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
@@ -645,12 +645,12 @@ public class WmmEncoder implements Encoder {
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
                 Event x = allFenceSC.get(i);
                 for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
-                    String scope1 = Tag.PTX.getScopeTag(x);
-                    String scope2 = Tag.PTX.getScopeTag(z);
+                    String scope1 = Tag.getScopeTag(x, program.getArch());
+                    String scope2 = Tag.getScopeTag(z, program.getArch());
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
                         continue;
                     }
-                    if (!((ScopedThread) x.getThread()).sameAtHigherScope(((ScopedThread) z.getThread()),scope1)) {
+                    if (!x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()),scope1)) {
                         continue;
                     }
                     Tuple xz = new Tuple(x, z);

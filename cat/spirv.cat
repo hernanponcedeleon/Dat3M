@@ -1,0 +1,152 @@
+SPIRV
+(* Vulkan + SPIR-V Memory Model *)
+(* For when availability/visibility chains are supported *)
+
+// Base relations:
+// vloc: events accessing the same virtual location, aka "same reference (sref)" in the Vulkan spec
+// syncbar: synchronize by barriers with same logical barrier resource (barID)
+// ssg: same subgroup
+// swg: same workgroup
+// sqf: same queuefamily
+// ssw: system-synchronizes-with
+
+// Tags:
+// SC0, SC1: storage class 0, 1
+// SEMSC0, SEMSC1: storage class semantics 0. 1
+// SG, WG, QF, DV: subgroup, workgroup, queuefamily, device domains
+// AV, VIS: availability, visibility
+// AVDEVICE, VISDEVICE: availability, visibility op to the device domain
+
+(*******************)
+(*  Auxiliaries *)
+(*******************)
+
+(* Tags *)
+let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
+
+let SEMSC01 = SEMSC0 & SEMSC1
+
+let AVSHADER = (AV | SEMAV) & DV
+let VISSHADER = (VIS | SEMVIS) & DV
+
+let AVQF = (AV | SEMAV) & (DV | QF)
+let VISQF = (VIS | SEMVIS) & (DV | QF)
+
+let AVWG = (AV | SEMAV) & (DV | QF | WG)
+let VISWG = (VIS | SEMVIS) & (DV | QF | WG)
+
+let AVSG = AV | SEMAV
+let VISSG = VIS | SEMVIS
+
+(* Relations *)
+let inscope = (DV * DV) |
+              (sqf & ((DV | QF) * (DV | QF))) |
+              (swg & ((DV | QF | WG) * (DV | QF | WG))) |
+              (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
+
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics
+
+let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
+                | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
+                | (SC1 * ((SEMAV | SEMVIS) & SEMSC1))
+let avvisSet = [AV | VIS]; (vloc & loc)
+let avvisinc = ((avvisSem | avvisSem^-1) \ id) |
+               (avvisSet | avvisSet^-1)
+
+let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
+let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
+
+let asmo = co & (ATOM * ATOM)
+let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
+
+// synchronizes-with is similar to C++, with an additional case for fence->cbar->cbar->fence
+let sw = inscope & (
+    ([REL & ATOM]; rs; (rf & mutordatom); [ACQ & ATOM]) |                                               // atomic->atomic
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ACQ & ATOM]) |                       // fence->atomic
+    ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
+    ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
+    // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
+)
+
+let ithbsemsc0 = ( ssw |
+                   ([SEMSC0]; sw; [SEMSC0]) |
+                   ([SC0 | SEMSC0]; po; [REL & SEMSC0]) |
+                   ([ACQ & SEMSC0]; po; [SC0 | SEMSC0])
+                 )+
+let ithbsemsc1 = ( ssw |
+                   ([SEMSC1]; sw; [SEMSC1]) |
+                   ([SC1 | SEMSC1]; po; [REL & SEMSC1]) |
+                   ([ACQ & SEMSC1]; po; [SC1 | SEMSC1])
+                 )+
+let ithbsemsc01 = ( ssw |
+                   ([SEMSC01]; sw; [SEMSC01]) |
+                   ([SC0 | SC1 | SEMSC01]; po; [REL & SEMSC01]) |
+                   ([ACQ & SEMSC01]; po; [SC0 | SC1 | SEMSC01])
+                 )+
+
+// happens-before
+let hb = ithbsemsc0 | ithbsemsc1 | ithbsemsc01 | po
+
+// chains will produce the availability/visibility chains with this pattern:
+let E = (M | F | CBAR | AVDEVICE | VISDEVICE) \ IW
+let chains = E * E
+
+let avsg = [AVSG]
+let avwg = (chains & (avsg; (hb & ssg & avvisinc))?); [AVWG]
+let avqf = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?)); [AVQF]
+let avsh = (chains & ((avsg; (hb & ssg & avvisinc))? ; (avwg; (hb & swg & avvisinc))?; (avqf; (hb & sqf & avvisinc))?)); [AVSHADER]
+let avdv = [AVDEVICE]
+
+let vissg = [VISSG]
+let viswg = [VISWG]; (chains & (((hb & ssg & avvisinc); vissg)?))
+let visqf = [VISQF]; (chains & (((hb & swg & avvisinc) ; viswg)?; ((hb & ssg & avvisinc); vissg)?))
+let vissh = [VISSHADER]; (chains & (((hb & sqf & avvisinc) ; visqf)?; ((hb & swg & avvisinc); viswg)?; ((hb & ssg & avvisinc); vissg)?))
+let visdv = [VISDEVICE]
+
+// loc order, relates memory accesses to the same location
+let locord = loc &
+             (  (hb & int & vloc) |
+                ([R \ PRIV]; hb; [(R | W) \ PRIV]) | // RaR, WaR (non-private)
+                ([R]; ssw+; [R | W]) | // RaR, WaR (any)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsg; (hb & ssg); vissg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg);                          [W \ PRIV])) |   // WaW (via subgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avwg; (hb & swg); viswg; (po? & avvisinc); [R \ PRIV])) |   // RaW (via workgroup instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf);                          [W \ PRIV])) |   // WaW (via queue family instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avqf; (hb & sqf); visqf; (po? & avvisinc); [R \ PRIV])) |   // RaW (via queue family instance domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);                                [W \ PRIV])) |   // WaW (via shader domain)
+                (vloc & ([W \ PRIV]; (po? & avvisinc); avsh; (hb);       vissh; (po? & avvisinc); [R \ PRIV])) |   // RaW (via shader domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);                                [W]))        |   // WaW (via device domain)
+                (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc);  [R]))            // RaW (via device domain)
+             )
+
+let w-locord = [W]; locord
+
+(***********************)
+(* Memory Model Axioms *)
+(***********************)
+
+// Atom instructions' scoped modification order must relate all mutually ordered atomics writes at the same location
+empty ([ATOM & W]; mutordatom; [ATOM & W]) \ (asmo | asmo^-1) as coherence
+
+// locord, rf, fr, asmo must not form cycles
+acyclic (locord | rf | fr | asmo) as consistency-cycle
+
+// non-atomic cannot read-from a value that is shadowed by another write
+empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
+
+// rmw events are atomic
+empty rmw & (fre; coe) as atomic
+
+let non-rmw-reads = (R \ RMW) * (R \ RMW)
+empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
+
+(***************)
+(* Data Races *)
+(***************)
+
+let pair_with_write = ((W * W) | (W * R) | (R * W)) \ ((IW * _) | (_ * IW)) // ignore IW
+let dr = loc & (pair_with_write \ mutordatom \ id \ (locord | locord^-1))
+flag ~empty dr as racy

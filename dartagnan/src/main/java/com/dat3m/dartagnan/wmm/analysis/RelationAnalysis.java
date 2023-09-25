@@ -3,14 +3,14 @@ package com.dat3m.dartagnan.wmm.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
-import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -974,7 +974,7 @@ public class RelationAnalysis {
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
             List<Event> events = program.getThreadEvents().stream()
-                    .filter(e -> e.hasTag(VISIBLE) && e.getThread() instanceof ScopedThread)
+                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
                     .toList();
 
             for (Event e1 : events) {
@@ -982,31 +982,32 @@ public class RelationAnalysis {
                     if (exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }
-                    ScopedThread thread1 = (ScopedThread) e1.getThread();
-                    ScopedThread thread2 = (ScopedThread) e2.getThread();
+                    Thread thread1 = e1.getThread();
+                    Thread thread2 = e2.getThread();
                     if (specificScope != null) { // scope specified
-                        if (thread1.sameAtHigherScope(thread2, specificScope)) {
+                        if (thread1.getScopeHierarchy().sameAtHigherScope(thread2.getScopeHierarchy(), specificScope)) {
                             must.add(new Tuple(e1, e2));
                         }
-                    } else {
-                        String scope1 = Tag.PTX.getScopeTag(e1);
-                        String scope2 = Tag.PTX.getScopeTag(e2);
-                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)) {
+                    } else { // scope not specified
+                        String scope1 = Tag.getScopeTag(e1, program.getArch());
+                        String scope2 = Tag.getScopeTag(e2, program.getArch());
+                        if (scope1.equals(scope2) && !scope1.isEmpty()
+                                && thread1.getScopeHierarchy().sameAtHigherScope(thread2.getScopeHierarchy(), scope1)) {
                             must.add(new Tuple(e1, e2));
                         }
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
 
         @Override
         public Knowledge visitSyncBarrier(Relation sync_bar) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            List<PTXFenceWithId> fenceEvents = program.getThreadEvents(PTXFenceWithId.class);
-            for (PTXFenceWithId e1 : fenceEvents) {
-                for (PTXFenceWithId e2 : fenceEvents) {
+            List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
+            for (FenceWithId e1 : fenceEvents) {
+                for (FenceWithId e2 : fenceEvents) {
                     if(exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }
@@ -1044,7 +1045,28 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
+        }
+
+        @Override
+        public Knowledge visitSyncWith(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            List<Event> events = new ArrayList<>();
+            events.addAll(program.getThreadEventsWithAllTags(VISIBLE));
+            events.removeIf(e -> e instanceof Init);
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    Thread thread1 = e1.getThread();
+                    Thread thread2 = e2.getThread();
+                    if (thread1 == thread2 || !thread1.hasSyncSet()) {
+                        continue;
+                    }
+                    if (thread1.getSyncSet().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
     }
 

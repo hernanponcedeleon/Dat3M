@@ -10,9 +10,11 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
@@ -114,6 +116,10 @@ public class EventFactory {
         GenericVisibleEvent fence = newFence(name + "." + opt);
         fence.addTags(name);
         return fence;
+    }
+
+    public static FenceWithId newFenceWithId(String name, Expression fenceId) {
+        return new FenceWithId(name, fenceId);
     }
 
     public static Init newInit(MemoryObject base, int offset) {
@@ -695,8 +701,30 @@ public class EventFactory {
             return red;
         }
 
-        public static PTXFenceWithId newFenceWithId(String name, Expression fenceId) {
-            return new PTXFenceWithId(name, fenceId);
+        public static GenericVisibleEvent newAvDevice() {
+            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
+        }
+    
+        public static GenericVisibleEvent newVisDevice() {
+            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
+        }
+    
+    }
+
+    // =============================================================================================
+    // =========================================== Vulkan ==========================================
+    // =============================================================================================
+    public static class Vulkan {
+        private Vulkan() {}
+
+        public static VulkanRMW newRMW(Expression address, Register register, Expression value,
+                                          String mo, String scope) {
+            return new VulkanRMW(register, address, value, mo, scope);
+        }
+
+        public static VulkanRMWOp newRMWOp(Expression address, Register register, Expression value,
+                                       IOpBin op, String mo, String scope) {
+            return new VulkanRMWOp(register, address, op, value, mo, scope);
         }
     }
 

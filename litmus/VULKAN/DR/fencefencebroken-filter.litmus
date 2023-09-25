@@ -1,0 +1,13 @@
+Vulkan fencefencebroken
+{
+P1:r0=0;
+P1:r1=0;
+x=0;
+y=0;
+}
+ P0@sg 0, wg 0, qf 0                 | P1@sg 0,wg 1, qf 0                  ;
+ st.av.dv.sc0 x, 1                   | ld.atom.dv.sc0 r0, y                ;
+ membar.rel.wg.semsc0                | membar.acq.wg.semsc0                ;
+ st.atom.dv.sc0 y, 1                 | ld.vis.dv.sc0 r1, x                 ;
+filter
+(P1:r0 == 1)
