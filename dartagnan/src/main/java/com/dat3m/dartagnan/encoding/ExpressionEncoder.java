@@ -12,6 +12,7 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
@@ -124,6 +125,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case MOD:
                     return integerFormulaManager.modulo(i1, i2);
                 case AND:
+                    // optimized encoding for (x bitand 1), (x bitand 3), etc.
+                    if (iBin.getRHS() instanceof IValue rightValue && isAllOnes(rightValue.getValue())) {
+                        return integerFormulaManager.modulo(i1, integerFormulaManager.makeNumber(rightValue.getValue().add(BigInteger.ONE)));
+                    }
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.and(
@@ -223,6 +228,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         } else {
             throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
         }
+    }
+
+    private static boolean isAllOnes(BigInteger value) {
+        int length = value.bitLength();
+        return value.signum() != -1 && IntStream.range(0, length).allMatch(value::testBit);
     }
 
     @Override
