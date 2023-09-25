@@ -50,6 +50,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
+import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
 import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -662,7 +663,7 @@ public class RefinementSolver extends ModelChecker {
 
         String programName = task.getProgram().getName();
         programName = programName.substring(0, programName.lastIndexOf("."));
-        String directoryName = String.format("%s/refinement/%s-%s-debug/", System.getenv("DAT3M_OUTPUT"), programName,
+        String directoryName = String.format("%s/refinement/%s-%s-debug/", getOutputDirectory(), programName,
                 task.getProgram().getArch());
         String fileNameBase = String.format("%s-%d", programName, iterationCount);
         final SyntacticContextAnalysis emptySynContext = getEmptyInstance();

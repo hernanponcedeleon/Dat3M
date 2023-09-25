@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
@@ -31,7 +31,7 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "miscellaneous/" + name + ".ll");
+        return Provider.fromSupplier(() -> getTestResourcePath("miscellaneous/" + name + ".ll"));
     }
 
     @Override

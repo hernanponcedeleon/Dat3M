@@ -60,7 +60,7 @@ public class IExprBin extends IExpr {
 
     @Override
     public int hashCode() {
-    	if(op.equals(IOpBin.R_SHIFT)) {
+    	if(op.equals(IOpBin.RSHIFT)) {
     		return lhs.hashCode() >>> rhs.hashCode();
     	}
         return (op.combine(BigInteger.valueOf(lhs.hashCode()), BigInteger.valueOf(rhs.hashCode()))).intValue();

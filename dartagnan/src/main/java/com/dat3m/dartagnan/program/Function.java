@@ -94,6 +94,11 @@ public class Function implements Expression {
         return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
 
+    public List<Event> getEventsWithAllTags(String... tags) {
+        final List<String> tagList = Arrays.asList(tags);
+        return getEvents().stream().filter(e -> e.getTags().containsAll(tagList)).collect(Collectors.toList());
+    }
+
     public Collection<Register> getRegisters() {
         return registers.values();
     }

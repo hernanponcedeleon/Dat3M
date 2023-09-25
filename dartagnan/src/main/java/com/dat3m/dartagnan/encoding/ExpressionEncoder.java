@@ -98,6 +98,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IValue iValue) {
+        
         BigInteger value = iValue.getValue();
         Type type = iValue.getType();
         return context.makeLiteral(type, value);
@@ -111,11 +112,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             BitvectorFormulaManager bitvectorFormulaManager;
             IntegerFormulaManager integerFormulaManager = integerFormulaManager();
             switch (iBin.getOp()) {
-                case PLUS:
+                case ADD:
                     return integerFormulaManager.add(i1, i2);
-                case MINUS:
+                case SUB:
                     return integerFormulaManager.subtract(i1, i2);
-                case MULT:
+                case MUL:
                     return integerFormulaManager.multiply(i1, i2);
                 case DIV:
                 case UDIV:
@@ -143,14 +144,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                                     bitvectorFormulaManager.makeBitvector(32, i1),
                                     bitvectorFormulaManager.makeBitvector(32, i2)),
                             false);
-                case L_SHIFT:
+                case LSHIFT:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.shiftLeft(
                                     bitvectorFormulaManager.makeBitvector(32, i1),
                                     bitvectorFormulaManager.makeBitvector(32, i2)),
                             false);
-                case R_SHIFT:
+                case RSHIFT:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.shiftRight(
@@ -158,7 +159,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                                     bitvectorFormulaManager.makeBitvector(32, i2),
                                     false),
                             false);
-                case AR_SHIFT:
+                case ARSHIFT:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
                             bitvectorFormulaManager.shiftRight(
@@ -180,11 +181,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
             switch (iBin.getOp()) {
-                case PLUS:
+                case ADD:
                     return bitvectorFormulaManager.add(bv1, bv2);
-                case MINUS:
+                case SUB:
                     return bitvectorFormulaManager.subtract(bv1, bv2);
-                case MULT:
+                case MUL:
                     return bitvectorFormulaManager.multiply(bv1, bv2);
                 case DIV:
                     return bitvectorFormulaManager.divide(bv1, bv2, true);
@@ -210,11 +211,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return bitvectorFormulaManager.or(bv1, bv2);
                 case XOR:
                     return bitvectorFormulaManager.xor(bv1, bv2);
-                case L_SHIFT:
+                case LSHIFT:
                     return bitvectorFormulaManager.shiftLeft(bv1, bv2);
-                case R_SHIFT:
+                case RSHIFT:
                     return bitvectorFormulaManager.shiftRight(bv1, bv2, false);
-                case AR_SHIFT:
+                case ARSHIFT:
                     return bitvectorFormulaManager.shiftRight(bv1, bv2, true);
                 default:
                     throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on bitvector formulas.");

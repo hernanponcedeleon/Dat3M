@@ -20,7 +20,7 @@ public class LKMMFetchOp extends RMWOpResultBase {
     @Override
     public String defaultString() {
         return String.format("%s := atomic_fetch_%s%s(%s, %s)\t### LKMM",
-                resultRegister, operator.toLinuxName(), Tag.Linux.toText(mo), operand, address);
+                resultRegister, operator.getName(), Tag.Linux.toText(mo), operand, address);
     }
 
     @Override

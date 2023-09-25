@@ -6,14 +6,10 @@ public enum Result {
 	PASS, FAIL, UNKNOWN;
 
 	public Result invert() {
-		switch (this) {
-		case PASS:
-			return FAIL;
-		case FAIL:
-			return PASS;
-		case UNKNOWN:
-			return UNKNOWN;
-		}
-		throw new UnsupportedOperationException("Illegal operator in Result");
-	}
+        return switch (this) {
+            case PASS -> FAIL;
+            case FAIL -> PASS;
+            case UNKNOWN -> UNKNOWN;
+        };
+    }
 }

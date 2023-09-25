@@ -7,7 +7,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 @RunWith(Parameterized.class)
 public class SvCompTestLarge extends AbstractSvCompTest {
@@ -18,7 +18,7 @@ public class SvCompTestLarge extends AbstractSvCompTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + "large/" + name + "-O0.bpl");
+        return Provider.fromSupplier(() -> getTestResourcePath("large/" + name + "-O0.bpl"));
     }
 
     @Parameterized.Parameters(name = "{index}: {0} bound={1}")
@@ -70,5 +70,4 @@ public class SvCompTestLarge extends AbstractSvCompTest {
                 {"thin000_tso.opt", 1}
         });
     }
-
 }

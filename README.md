@@ -9,8 +9,8 @@
 
 Requirements
 ======
-* [Maven](https://maven.apache.org/)
-* [Java](https://openjdk.java.net/projects/jdk/16/) 8 or above
+* [Maven](https://maven.apache.org/) 3.8 or above
+* [Java](https://openjdk.java.net/projects/jdk/17/) 17 or above
 * [Smack](https://github.com/smackers/smack) 2.8.0 or above (only to verify C programs)
 * [Clang](https://clang.llvm.org) the concrete version depends on Smack (only to verify C programs)
 * [Atomic-replace](https://github.com/hernanponcedeleon/Dat3M/tree/master/llvm-passes/atomic-replace) library (only to verify C programs)
@@ -99,6 +99,7 @@ For programs written in `.c` and `.bpl`, value `<arch>` specifies the programmin
 - arm8
 - riscv
 - ptx
+- vulkan
 
 The target architecture is supposed to match (this is responsibility of the user) the intended weak memory model specified by the CAT file. 
 

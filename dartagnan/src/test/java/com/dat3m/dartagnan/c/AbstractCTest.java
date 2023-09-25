@@ -4,13 +4,11 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
@@ -21,7 +19,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.utils.ResourceHelper.TEST_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 public abstract class AbstractCTest {
 
@@ -38,7 +36,7 @@ public abstract class AbstractCTest {
     // =================== Modifiable behavior ====================
 
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> TEST_RESOURCE_PATH + name + ".bpl");
+        return Provider.fromSupplier(() -> getTestResourcePath(name + ".bpl"));
     }
 
     protected abstract long getTimeout();
@@ -61,10 +59,6 @@ public abstract class AbstractCTest {
 
     // =============================================================
 
-
-    @ClassRule
-    public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
-
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> target;
@@ -80,7 +74,7 @@ public abstract class AbstractCTest {
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
-    protected final CSVLogger csvLogger = CSVLogger.create(() -> name, () -> expected);
+
     protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
@@ -93,7 +87,6 @@ public abstract class AbstractCTest {
             .around(wmmProvider)
             .around(propertyProvider)
             .around(taskProvider)
-            .around(csvLogger)
             .around(timeout)
             // Context/Prover need to be created inside test-thread spawned by <timeout>
             .around(contextProvider)

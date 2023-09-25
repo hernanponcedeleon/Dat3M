@@ -12,9 +12,11 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
@@ -112,14 +114,18 @@ public class EventFactory {
         return store;
     }
 
-    public static Fence newFence(String name) {
-        return new Fence(name);
+    public static GenericVisibleEvent newFence(String name) {
+        return new GenericVisibleEvent(name, name, Tag.FENCE);
     }
 
-    public static Fence newFenceOpt(String name, String opt) {
-        Fence fence = new Fence(name + "." + opt);
+    public static GenericVisibleEvent newFenceOpt(String name, String opt) {
+        GenericVisibleEvent fence = newFence(name + "." + opt);
         fence.addTags(name);
         return fence;
+    }
+
+    public static FenceWithId newFenceWithId(String name, Expression fenceId) {
+        return new FenceWithId(name, fenceId);
     }
 
     public static Init newInit(MemoryObject base, int offset) {
@@ -343,7 +349,7 @@ public class EventFactory {
         }
 
         public static AtomicFetchOp newFADD(Register register, Expression address, Expression value, String mo) {
-            return newFetchOp(register, address, value, IOpBin.PLUS, mo);
+            return newFetchOp(register, address, value, IOpBin.ADD, mo);
         }
 
         public static AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
@@ -351,7 +357,7 @@ public class EventFactory {
                 throw new IllegalArgumentException(
                         String.format("Non-integer type %s for increment operation.", register.getType()));
             }
-            return newFetchOp(register, address, expressions.makeOne(integerType), IOpBin.PLUS, mo);
+            return newFetchOp(register, address, expressions.makeOne(integerType), IOpBin.ADD, mo);
         }
 
         public static AtomicLoad newLoad(Register register, Expression address, String mo) {
@@ -453,16 +459,16 @@ public class EventFactory {
             private DMB() {
             }
 
-            public static Fence newBarrier() {
+            public static GenericVisibleEvent newBarrier() {
                 return newSYBarrier(); // Default barrier
             }
 
-            public static Fence newSYBarrier() {
-                return new Fence("DMB.SY");
+            public static GenericVisibleEvent newSYBarrier() {
+                return newFence("DMB.SY");
             }
 
-            public static Fence newISHBarrier() {
-                return new Fence("DMB.ISH");
+            public static GenericVisibleEvent newISHBarrier() {
+                return newFence("DMB.ISH");
             }
         }
 
@@ -470,24 +476,24 @@ public class EventFactory {
             private DSB() {
             }
 
-            public static Fence newBarrier() {
+            public static GenericVisibleEvent newBarrier() {
                 return newSYBarrier(); // Default barrier
             }
 
-            public static Fence newSYBarrier() {
-                return new Fence("DSB.SY");
+            public static GenericVisibleEvent newSYBarrier() {
+                return newFence("DSB.SY");
             }
 
-            public static Fence newISHBarrier() {
-                return new Fence("DSB.ISH");
+            public static GenericVisibleEvent newISHBarrier() {
+                return newFence("DSB.ISH");
             }
 
-            public static Fence newISHLDBarrier() {
-                return new Fence("DSB.ISHLD");
+            public static GenericVisibleEvent newISHLDBarrier() {
+                return newFence("DSB.ISHLD");
             }
 
-            public static Fence newISHSTBarrier() {
-                return new Fence("DMB.ISHST");
+            public static GenericVisibleEvent newISHSTBarrier() {
+                return newFence("DMB.ISHST");
             }
 
         }
@@ -573,7 +579,7 @@ public class EventFactory {
             return new TSOXchg(address, register);
         }
 
-        public static Fence newMemoryFence() {
+        public static GenericVisibleEvent newMemoryFence() {
             return newFence(MFENCE);
         }
     }
@@ -597,46 +603,49 @@ public class EventFactory {
             return RISCV.newRMWStoreConditional(address, value, mo, false);
         }
 
-        public static Fence newRRFence() {
-            return new Fence("Fence.r.r");
+        public static GenericVisibleEvent newRRFence() {
+            return newFence("Fence.r.r");
         }
 
-        public static Fence newRWFence() {
-            return new Fence("Fence.r.w");
+        public static GenericVisibleEvent newRWFence() {
+            return newFence("Fence.r.w");
         }
 
-        public static Fence newRRWFence() {
-            return new Fence("Fence.r.rw");
+        public static GenericVisibleEvent newRRWFence() {
+            return newFence("Fence.r.rw");
         }
 
-        public static Fence newWRFence() {
-            return new Fence("Fence.w.r");
+        public static GenericVisibleEvent newWRFence() {
+            return newFence("Fence.w.r");
         }
 
-        public static Fence newWWFence() {
-            return new Fence("Fence.w.w");
+        public static GenericVisibleEvent newWWFence() {
+            return newFence("Fence.w.w");
         }
 
-        public static Fence newWRWFence() {
-            return new Fence("Fence.w.rw");
+        public static GenericVisibleEvent newWRWFence() {
+            return newFence("Fence.w.rw");
         }
 
-        public static Fence newRWRFence() {
-            return new Fence("Fence.rw.r");
+        public static GenericVisibleEvent newRWRFence() {
+            return newFence("Fence.rw.r");
         }
 
-        public static Fence newRWWFence() {
-            return new Fence("Fence.rw.w");
+        public static GenericVisibleEvent newRWWFence() {
+            return newFence("Fence.rw.w");
         }
 
-        public static Fence newRWRWFence() {
-            return new Fence("Fence.rw.rw");
+        public static GenericVisibleEvent newRWRWFence() {
+            return newFence("Fence.rw.rw");
         }
 
-        public static Fence newTsoFence() {
-            return new Fence("Fence.tso");
+        public static GenericVisibleEvent newTsoFence() {
+            return newFence("Fence.tso");
         }
 
+        public static GenericVisibleEvent newSynchronizeFence() {
+            return newFence("Fence.i");
+        }
     }
 
     // =============================================================================================
@@ -663,15 +672,15 @@ public class EventFactory {
             return new RMWStoreExclusive(address, value, isStrong, true);
         }
 
-        public static Fence newISyncBarrier() {
+        public static GenericVisibleEvent newISyncBarrier() {
             return newFence(ISYNC);
         }
 
-        public static Fence newSyncBarrier() {
+        public static GenericVisibleEvent newSyncBarrier() {
             return newFence(SYNC);
         }
 
-        public static Fence newLwSyncBarrier() {
+        public static GenericVisibleEvent newLwSyncBarrier() {
             return newFence(LWSYNC);
         }
     }
@@ -698,8 +707,30 @@ public class EventFactory {
             return red;
         }
 
-        public static PTXFenceWithId newFenceWithId(String name, Expression fenceId) {
-            return new PTXFenceWithId(name, fenceId);
+        public static GenericVisibleEvent newAvDevice() {
+            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
+        }
+    
+        public static GenericVisibleEvent newVisDevice() {
+            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
+        }
+    
+    }
+
+    // =============================================================================================
+    // =========================================== Vulkan ==========================================
+    // =============================================================================================
+    public static class Vulkan {
+        private Vulkan() {}
+
+        public static VulkanRMW newRMW(Expression address, Register register, Expression value,
+                                          String mo, String scope) {
+            return new VulkanRMW(register, address, value, mo, scope);
+        }
+
+        public static VulkanRMWOp newRMWOp(Expression address, Register register, Expression value,
+                                       IOpBin op, String mo, String scope) {
+            return new VulkanRMWOp(register, address, op, value, mo, scope);
         }
     }
 

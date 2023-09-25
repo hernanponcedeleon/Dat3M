@@ -14,7 +14,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopedThread.PTXThread;
+import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -30,6 +30,7 @@ import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -268,19 +269,25 @@ public class ProgramBuilder {
     // ----------------------------------------------------------------------------------------------------------------
     // PTX
 
-    public void newScopedThread(String name, int id, int ctaID, int gpuID) {
+    public void newScopedThread(Arch arch, String name, int id, int ...scopeIds) {
         if(id2FunctionsMap.containsKey(id)) {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = EventFactory.newThreadStart(null);
-        PTXThread ptxThread = new PTXThread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry, gpuID, ctaID);
-        id2FunctionsMap.put(id, ptxThread);
-        program.addThread(ptxThread);
+        Thread scopedThread = switch (arch) {
+            case PTX -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
+                    ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());
+            case VULKAN -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
+                    ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]), new HashSet<>());
+            default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
+        };
+        id2FunctionsMap.put(id, scopedThread);
+        program.addThread(scopedThread);
     }
 
-    public void newScopedThread(int id, int ctaID, int gpuID) {
-        newScopedThread(String.valueOf(id), id, ctaID, gpuID);
+    public void newScopedThread(Arch arch, int id, int ...ids) {
+        newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
     public void initVirLocEqCon(String leftName, IConst iValue){
@@ -321,5 +328,15 @@ public class ProgramBuilder {
                 leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
         object.setCVar(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Vulkan
+    public void addSwwPairThreads(int threadId0, int threadId1) {
+        Thread thread0 = (Thread) getFunctionOrError(threadId0);
+        Thread thread1 = (Thread) getFunctionOrError(threadId1);
+        if (thread0.hasSyncSet()) {
+            thread0.getSyncSet().add(thread1);
+        }
     }
 }

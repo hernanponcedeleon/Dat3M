@@ -4,12 +4,10 @@ import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Fence;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -37,8 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
+import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Sets.difference;
@@ -616,8 +613,8 @@ public class WmmEncoder implements Encoder {
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             for (Tuple tuple : encodeSets.get(rel)) {
-                PTXFenceWithId e1 = (PTXFenceWithId) tuple.getFirst();
-                PTXFenceWithId e2 = (PTXFenceWithId) tuple.getSecond();
+                FenceWithId e1 = (FenceWithId) tuple.getFirst();
+                FenceWithId e2 = (FenceWithId) tuple.getSecond();
                 BooleanFormula sameId;
                 // If they are in must, they are guaranteed to have the same id
                 if (k.containsMust(tuple)) {
@@ -637,24 +634,23 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitSyncFence(Relation syncFence) {
-            boolean idl = !context.useSATEncoding;
-            List<Fence> allFenceSC = program.getThreadEvents(Fence.class).stream()
-                    .filter(e -> e.hasTag(Tag.PTX.SC))
-                    .sorted(Comparator.comparingInt(Event::getGlobalId))
-                    .toList();
+            final boolean idl = !context.useSATEncoding;
+            final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
+            List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
+            allFenceSC.removeIf(e -> !e.getThread().hasScope());
             EncodingContext.EdgeEncoder edge = context.edge(syncFence);
             RelationAnalysis.Knowledge k = ra.getKnowledge(syncFence);
             IntegerFormulaManager imgr = idl ? context.getFormulaManager().getIntegerFormulaManager() : null;
             // ---- Encode syncFence ----
             for (int i = 0; i < allFenceSC.size() - 1; i++) {
-                Fence x = allFenceSC.get(i);
-                for (Fence z : allFenceSC.subList(i + 1, allFenceSC.size())) {
-                    String scope1 = Tag.PTX.getScopeTag(x);
-                    String scope2 = Tag.PTX.getScopeTag(z);
+                Event x = allFenceSC.get(i);
+                for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
+                    String scope1 = Tag.getScopeTag(x, program.getArch());
+                    String scope2 = Tag.getScopeTag(z, program.getArch());
                     if (!scope1.equals(scope2) || scope1.isEmpty()) {
                         continue;
                     }
-                    if (!((ScopedThread) x.getThread()).sameAtHigherScope(((ScopedThread) z.getThread()),scope1)) {
+                    if (!x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()),scope1)) {
                         continue;
                     }
                     Tuple xz = new Tuple(x, z);
@@ -669,12 +665,12 @@ public class WmmEncoder implements Encoder {
                     BooleanFormula scB = backwardPossible ? edge.encode(zx) : bmgr.makeFalse();
                     enc.add(bmgr.equivalence(pairingCond, bmgr.or(scF, scB)));
                     if (idl) {
-                        enc.add(bmgr.implication(scF, imgr.lessThan(context.clockVariable(x.getName(), x), context.clockVariable(z.getName(), z))));
-                        enc.add(bmgr.implication(scB, imgr.lessThan(context.clockVariable(z.getName(), z), context.clockVariable(x.getName(), x))));
+                        enc.add(bmgr.implication(scF, imgr.lessThan(context.clockVariable(relName, x), context.clockVariable(relName, z))));
+                        enc.add(bmgr.implication(scB, imgr.lessThan(context.clockVariable(relName, z), context.clockVariable(relName, x))));
                     } else {
                         enc.add(bmgr.or(bmgr.not(scF), bmgr.not(scB)));
                         if (!k.containsMust(xz) && !k.containsMust(zx)) {
-                            for (Fence y : allFenceSC) {
+                            for (Event y : allFenceSC) {
                                 Tuple xy = new Tuple(x, y);
                                 Tuple yz = new Tuple(y, z);
                                 if (forwardPossible && k.containsMay(xy) && k.containsMay(yz)) {
@@ -726,9 +722,9 @@ public class WmmEncoder implements Encoder {
                 continue;
             }
             for (Relation c : r.getDependencies()) {
-                p.source = c;
-                p.may = ra.getKnowledge(p.source).getMaySet();
-                p.must = ra.getKnowledge(p.source).getMustSet();
+                p.setSource(c);
+                p.setMay(ra.getKnowledge(p.getSource()).getMaySet());
+                p.setMust(ra.getKnowledge(p.getSource()).getMustSet());
                 RelationAnalysis.Delta s = r.getDefinition().accept(p);
                 may.addAll(s.may);
                 must.addAll(s.must);

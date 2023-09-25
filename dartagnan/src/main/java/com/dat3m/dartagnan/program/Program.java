@@ -138,6 +138,11 @@ public class Program {
         return getThreadEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
 
+    public List<Event> getThreadEventsWithAllTags(String... tags) {
+        final List<String> tagList = Arrays.asList(tags);
+        return getThreadEvents().stream().filter(e -> e.getTags().containsAll(tagList)).collect(Collectors.toList());
+    }
+
     // Unrolling
     // -----------------------------------------------------------------------------------------------------------------
 

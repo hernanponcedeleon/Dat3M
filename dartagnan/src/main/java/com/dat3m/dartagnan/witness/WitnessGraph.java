@@ -17,6 +17,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
 
@@ -136,7 +137,7 @@ public class WitnessGraph extends ElemWithAttributes {
 
 	public void write() {
 		try (FileWriter fw = new FileWriter(String.format("%s/%s.graphml",
-				System.getenv("DAT3M_OUTPUT"), Files.getNameWithoutExtension(getProgram())))) {
+				getOrCreateOutputDirectory(), Files.getNameWithoutExtension(getProgram())))) {
 			fw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n");
 			fw.write("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
 			for (GraphAttributes attr : GraphAttributes.values()) {

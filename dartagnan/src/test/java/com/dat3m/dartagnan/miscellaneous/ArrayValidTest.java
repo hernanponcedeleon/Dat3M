@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
@@ -25,6 +24,8 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -34,8 +35,8 @@ public class ArrayValidTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Iterable<Object[]> data() throws IOException {
-        Wmm wmm = new ParserCat().parse(new File(ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.cat"));
-        try (Stream<Path> fileStream = Files.walk(Paths.get(ResourceHelper.TEST_RESOURCE_PATH + "arrays/ok/"))) {
+        Wmm wmm = new ParserCat().parse(new File(getRootPath("cat/linux-kernel.cat")));
+        try (Stream<Path> fileStream = Files.walk(Paths.get(getTestResourcePath("arrays/ok/")))) {
             return fileStream
                     .filter(Files::isRegularFile)
                     .filter(f -> (f.toString().endsWith("litmus")))

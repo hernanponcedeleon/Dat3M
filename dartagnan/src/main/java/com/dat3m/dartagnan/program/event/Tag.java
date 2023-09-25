@@ -1,8 +1,11 @@
 package com.dat3m.dartagnan.program.event;
 
+import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.Store;
 
-import java.util.Set;
+import java.util.List;
 
 /*
     Tags can be attached to any event.
@@ -285,45 +288,84 @@ public final class Tag {
         public static final String CON = "CON"; // CONSTANT
         // Virtual memory
         public static final String ALIAS = "ALIAS";
-        private PTX() {
-        }
 
-        public static Set<String> getScopeTags() {
-            return Set.of(CTA, GPU, SYS);
-        }
-
-        public static Set<String> getProxyTags() {
-            return Set.of(GEN, TEX, SUR, CON);
-        }
-
-        public static String getScopeTag(Event e) {
-            return getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
-        }
-    
-        public static String getProxyTag(Event e) {
-            return getProxyTags().stream().filter(e::hasTag).findFirst().orElse("");
-        }
-        
         public static String loadMO(String mo) {
-            switch (mo) {
-                case ACQ_REL:
-                    return ACQ;
-                case RLX:
-                    return RLX;
-                default:
-                    return "";
-            }
+            return switch (mo) {
+                case ACQ, ACQ_REL -> ACQ;
+                // REL -> RLX to preserve morally-strong in RMW
+                case REL, RLX -> RLX;
+                default -> "";
+            };
         }
 
         public static String storeMO(String mo) {
-            switch (mo) {
-                case ACQ_REL:
-                    return REL;
-                case RLX:
-                    return RLX;
-                default:
-                    return "";
-            }
+            return switch (mo) {
+                case REL, ACQ_REL -> REL;
+                // ACQ -> RLX to preserve morally-strong in RMW
+                case ACQ, RLX -> RLX;
+                default -> "";
+            };
         }
+
+        public static List<String> getScopeTags() {
+            return List.of(CTA, GPU, SYS);
+        }
+    }
+
+    // =============================================================================================
+    // ========================================= Vulkan ============================================
+    // =============================================================================================
+    public static final class Vulkan {
+        public static final String CBAR = "CBAR";
+        public static final String AVDEVICE = "AVDEVICE";
+        public static final String VISDEVICE = "VISDEVICE";
+        // Scopes
+        public static final String SUB_GROUP = "SG";
+        public static final String WORK_GROUP = "WG";
+        public static final String QUEUE_FAMILY = "QF";
+        public static final String DEVICE = "DV";
+        public static final String NON_PRIVATE = "NONPRIV";
+        // Memory orders
+        public static final String ATOM = "ATOM";
+        public static final String ACQUIRE = "ACQ";
+        public static final String RELEASE = "REL";
+        public static final String ACQ_REL = "ACQ_REL";
+        public static final String VISIBLE = "VIS";
+        public static final String AVAILABLE = "AV";
+        public static final String SEM_VISIBLE = "SEMVIS";
+        public static final String SEM_AVAILABLE = "SEMAV";
+        // StorageClass
+        public static final String SC0 = "SC0";
+        public static final String SC1 = "SC1";
+        // StorageClass Semantics
+        public static final String SEMSC0 = "SEMSC0";
+        public static final String SEMSC1 = "SEMSC1";
+
+        public static List<String> getScopeTags() {
+            return List.of(SUB_GROUP, WORK_GROUP, QUEUE_FAMILY, DEVICE);
+        }
+
+        public static String loadMO(String mo) {
+            return switch (mo) {
+                case ACQ_REL, ACQUIRE -> ACQUIRE;
+                default -> "";
+            };
+        }
+
+        public static String storeMO(String mo) {
+            return switch (mo) {
+                case ACQ_REL, RELEASE -> RELEASE;
+                default -> "";
+            };
+        }
+    }
+
+    public static String getScopeTag(Event e, Arch arch) {
+        return switch (arch) {
+            case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
+        };
+
     }
 }

@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.R_SHIFT;
+import static com.dat3m.dartagnan.expression.op.IOpBin.RSHIFT;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -113,8 +113,8 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeBinary(lhs, op, rhs);
         } else if (lhs instanceof IConst && rhs instanceof IConst) {
             // If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
-            // We cannot call reduce for R_SHIFT (lack of implementation)
-            if(!(lhs instanceof MemoryObject) && op != R_SHIFT) {
+            // We cannot call reduce for RSHIFT (lack of implementation)
+            if(!(lhs instanceof MemoryObject) && op != RSHIFT) {
                 return expressions.makeBinary(lhs, op, rhs).reduce();
             }
             // Rule to reduce &mem + 0
@@ -126,14 +126,14 @@ public class ExprSimplifier extends ExprTransformer {
         if (lhs instanceof IConst lc) {
             BigInteger val = lc.getValue();
             switch (op) {
-                case MULT:
+                case MUL:
                     if (val.equals(BigInteger.ZERO)) {
                         return lhs;
                     }
                     if (val.equals(BigInteger.ONE)) {
                         return rhs;
                     }
-                case PLUS:
+                case ADD:
                     if (val.equals(BigInteger.ZERO)) {
                         return rhs;
                     }
@@ -144,7 +144,7 @@ public class ExprSimplifier extends ExprTransformer {
         IConst rc = (IConst)rhs;
         BigInteger val = rc.getValue();
         switch (op) {
-            case MULT:
+            case MUL:
                 if (val.equals(BigInteger.ZERO)) {
                     return rhs;
                 }
@@ -152,15 +152,15 @@ public class ExprSimplifier extends ExprTransformer {
                     return lhs;
                 }
                 break;
-            case PLUS:
-            case MINUS:
+            case ADD:
+            case SUB:
                 if(val.equals(BigInteger.ZERO)) {
                     return lhs;
                 }
                 // Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
                 // Either op can be +/-, but this does not affect correctness
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
-                if(lhs instanceof IExprBin lhsBin && lhsBin.getRHS() instanceof IConst && lhsBin.getOp() != R_SHIFT) {
+                if(lhs instanceof IExprBin lhsBin && lhsBin.getRHS() instanceof IConst && lhsBin.getOp() != RSHIFT) {
                     Expression newLHS = lhsBin.getLHS();
                     Expression newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);

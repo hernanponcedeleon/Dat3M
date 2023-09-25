@@ -18,7 +18,7 @@ public class PTXAtomOp extends RMWOpResultBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := atom_%s%s(%s, %s)", resultRegister, operator, mo, operand, address);
+        return String.format("%s := atom_%s_%s(%s, %s)", resultRegister, operator.getName(), mo, operand, address);
     }
 
     @Override

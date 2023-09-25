@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.utils.ResourceHelper;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
@@ -10,7 +9,8 @@ import static com.dat3m.dartagnan.configuration.Method.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.configuration.Property.DATARACEFREEDOM;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
-import static com.dat3m.dartagnan.utils.ResourceHelper.LITMUS_RESOURCE_PATH;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 public class ApplicationTest {
 
@@ -53,9 +53,9 @@ public class ApplicationTest {
     public void Validation() throws Exception {
         String[] options = new String[3];
 
-        options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
-        options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
-        options[2] = String.format("--%s=%s", VALIDATE, ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01.graphml");
+        options[0] = getTestResourcePath("witness/lazy01-for-witness.bpl");
+        options[1] = getRootPath("cat/svcomp.cat");
+        options[2] = String.format("--%s=%s", VALIDATE, getTestResourcePath("witness/lazy01.graphml"));
 
         Dartagnan.main(options);
     }
@@ -64,8 +64,8 @@ public class ApplicationTest {
     public void Litmus() throws Exception {
         String[] options = new String[2];
 
-        options[0] = LITMUS_RESOURCE_PATH + "litmus/X86/2+2W.litmus";
-        options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/tso.cat";
+        options[0] = getRootPath("litmus/X86/2+2W.litmus");
+        options[1] = getRootPath("cat/tso.cat");
 
         Dartagnan.main(options);
     }
@@ -74,7 +74,7 @@ public class ApplicationTest {
     public void WrongProgramFormat() throws Exception {
         String[] options = new String[1];
 
-        options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bc";
+        options[0] = getTestResourcePath("witness/lazy01-for-witness.bc");
 
         Dartagnan.main(options);
     }
@@ -83,8 +83,8 @@ public class ApplicationTest {
     public void WrongCATFormat() throws Exception {
         String[] options = new String[2];
 
-        options[0] = ResourceHelper.TEST_RESOURCE_PATH + "witness/lazy01-for-witness.bpl";
-        options[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/linux-kernel.bell";
+        options[0] = getTestResourcePath("witness/lazy01-for-witness.bpl");
+        options[1] = getRootPath("cat/linux-kernel.bell");
 
         Dartagnan.main(options);
     }
@@ -113,8 +113,8 @@ public class ApplicationTest {
     private String[] createAndFillOptions(String property, String method, String solver) {
         String[] dartagnanOptions = new String[6];
 
-        dartagnanOptions[0] = ResourceHelper.TEST_RESOURCE_PATH + "locks/ttas.ll";
-        dartagnanOptions[1] = ResourceHelper.CAT_RESOURCE_PATH + "cat/svcomp.cat";
+        dartagnanOptions[0] = getTestResourcePath("locks/ttas.ll");
+        dartagnanOptions[1] = getRootPath("cat/svcomp.cat");
         dartagnanOptions[2] = String.format("--%s=%s", BOUND, 2);
         dartagnanOptions[3] = String.format("--%s=%s", PROPERTY, property);
         dartagnanOptions[4] = String.format("--%s=%s", METHOD, method);

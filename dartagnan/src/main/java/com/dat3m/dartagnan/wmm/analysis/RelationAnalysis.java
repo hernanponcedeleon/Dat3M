@@ -3,14 +3,14 @@ package com.dat3m.dartagnan.wmm.analysis;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
-import com.dat3m.dartagnan.program.ScopedThread.ScopedThread;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -973,39 +973,41 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSameScope(Relation rel, String specificScope) {
             Set<Tuple> must = new HashSet<>();
-            List<Event> events = new ArrayList<>();
-            events.addAll(program.getThreadEvents(Load.class));
-            events.addAll(program.getThreadEvents(Store.class));
-            events.addAll(program.getThreadEvents(Fence.class));
-            events.removeIf(e -> e instanceof Init);
+            List<Event> events = program.getThreadEvents().stream()
+                    .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
+                    .toList();
+
             for (Event e1 : events) {
                 for (Event e2 : events) {
-                    ScopedThread thread1 = (ScopedThread) e1.getThread();
-                    ScopedThread thread2 = (ScopedThread) e2.getThread();
+                    if (exec.areMutuallyExclusive(e1, e2)) {
+                        continue;
+                    }
+                    Thread thread1 = e1.getThread();
+                    Thread thread2 = e2.getThread();
                     if (specificScope != null) { // scope specified
-                        if (thread1.sameAtHigherScope(thread2, specificScope) && !exec.areMutuallyExclusive(e1, e2)) {
+                        if (thread1.getScopeHierarchy().sameAtHigherScope(thread2.getScopeHierarchy(), specificScope)) {
                             must.add(new Tuple(e1, e2));
                         }
-                    } else {
-                        String scope1 = Tag.PTX.getScopeTag(e1);
-                        String scope2 = Tag.PTX.getScopeTag(e2);
-                        if (scope1.equals(scope2) && !scope1.isEmpty() && thread1.sameAtHigherScope(thread2, scope1)
-                                && !exec.areMutuallyExclusive(e1, e2)) {
+                    } else { // scope not specified
+                        String scope1 = Tag.getScopeTag(e1, program.getArch());
+                        String scope2 = Tag.getScopeTag(e2, program.getArch());
+                        if (scope1.equals(scope2) && !scope1.isEmpty()
+                                && thread1.getScopeHierarchy().sameAtHigherScope(thread2.getScopeHierarchy(), scope1)) {
                             must.add(new Tuple(e1, e2));
                         }
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
 
         @Override
         public Knowledge visitSyncBarrier(Relation sync_bar) {
             Set<Tuple> may = new HashSet<>();
             Set<Tuple> must = new HashSet<>();
-            List<PTXFenceWithId> fenceEvents = program.getThreadEvents(PTXFenceWithId.class);
-            for (PTXFenceWithId e1 : fenceEvents) {
-                for (PTXFenceWithId e2 : fenceEvents) {
+            List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
+            for (FenceWithId e1 : fenceEvents) {
+                for (FenceWithId e2 : fenceEvents) {
                     if(exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }
@@ -1021,10 +1023,10 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSyncFence(Relation sync_fen) {
             Set<Tuple> may = new HashSet<>();
-            List<Fence> fenceEvents = program.getThreadEvents(Fence.class);
-            for (Fence e1 : fenceEvents) {
-                for (Fence e2 : fenceEvents) {
-                    if (e1.hasTag(Tag.PTX.SC) && e2.hasTag(Tag.PTX.SC) && !exec.areMutuallyExclusive(e1, e2)) {
+            List<Event> fenceEventsSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
+            for (Event e1 : fenceEventsSC) {
+                for (Event e2 : fenceEventsSC) {
+                    if (!exec.areMutuallyExclusive(e1, e2)) {
                         may.add(new Tuple(e1, e2));
                     }
                 }
@@ -1043,14 +1045,60 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, new HashSet<>(must));
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
+        }
+
+        @Override
+        public Knowledge visitSyncWith(Relation rel) {
+            Set<Tuple> must = new HashSet<>();
+            List<Event> events = new ArrayList<>();
+            events.addAll(program.getThreadEventsWithAllTags(VISIBLE));
+            events.removeIf(e -> e instanceof Init);
+            for (Event e1 : events) {
+                for (Event e2 : events) {
+                    Thread thread1 = e1.getThread();
+                    Thread thread2 = e2.getThread();
+                    if (thread1 == thread2 || !thread1.hasSyncSet()) {
+                        continue;
+                    }
+                    if (thread1.getSyncSet().contains(thread2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        must.add(new Tuple(e1, e2));
+                    }
+                }
+            }
+            return new Knowledge(must, enableMustSets ? new HashSet<>(must) : EMPTY_SET);
         }
     }
 
     public final class Propagator implements Definition.Visitor<Delta> {
-        public Relation source;
-        public Set<Tuple> may;
-        public Set<Tuple> must;
+
+        private Relation source;
+        private Set<Tuple> may;
+        private Set<Tuple> must;
+
+        public Relation getSource() {
+            return source;
+        }
+
+        public void setSource(Relation source) {
+            this.source = source;
+        }
+
+        public Set<Tuple> getMay() {
+            return may;
+        }
+
+        public void setMay(Set<Tuple> may) {
+            this.may = may;
+        }
+
+        public Set<Tuple> getMust() {
+            return must;
+        }
+
+        public void setMust(Set<Tuple> must) {
+            this.must = must;
+        }
 
         @Override
         public Delta visitUnion(Relation rel, Relation... operands) {
@@ -1062,24 +1110,20 @@ public class RelationAnalysis {
 
         @Override
         public Delta visitIntersection(Relation rel, Relation... operands) {
-            if (!Arrays.asList(operands).contains(source)) {
-                return EMPTY;
+            if (Arrays.asList(operands).contains(source)) {
+                Set<Tuple> maySet = Arrays.stream(operands)
+                        .map(r -> source.equals(r) ? may : knowledgeMap.get(r).may)
+                        .sorted(Comparator.comparingInt(Set::size))
+                        .reduce(Sets::intersection)
+                        .orElseThrow();
+                Set<Tuple> mustSet = Arrays.stream(operands)
+                        .map(r -> source.equals(r) ? must : knowledgeMap.get(r).must)
+                        .sorted(Comparator.comparingInt(Set::size))
+                        .reduce(Sets::intersection)
+                        .orElseThrow();
+                return new Delta(maySet, enableMustSets ? mustSet : EMPTY_SET);
             }
-            Set<Tuple> maySet = Arrays.stream(operands)
-                    .map(r -> source.equals(r) ? may : knowledgeMap.get(r).may)
-                    .sorted(Comparator.comparingInt(Set::size))
-                    .reduce(Sets::intersection)
-                    .orElseThrow();
-            Set<Tuple> mustSet = Arrays.stream(operands)
-                    .map(r -> source.equals(r) ? must : knowledgeMap.get(r).must)
-                    .sorted(Comparator.comparingInt(Set::size))
-                    .reduce(Sets::intersection)
-                    .orElseThrow();
-            return new Delta(
-                    new HashSet<>(maySet),
-                    enableMustSets ?
-                            new HashSet<>(mustSet) :
-                            EMPTY_SET);
+            return EMPTY;
         }
 
         @Override
@@ -1090,7 +1134,6 @@ public class RelationAnalysis {
                         enableMustSets ? difference(may, k.must) : may,
                         enableMustSets ? difference(must, k.may) : EMPTY_SET);
             }
-            // cannot handle updates from r2
             return EMPTY;
         }
 
@@ -1099,67 +1142,53 @@ public class RelationAnalysis {
             Set<Tuple> maySet = new HashSet<>();
             Set<Tuple> mustSet = new HashSet<>();
             if (r1.equals(source)) {
-                Knowledge k = knowledgeMap.get(r2);
-                Map<Event, List<Event>> mayMap = map(k.may);
-                for (Tuple t : may) {
-                    Event e1 = t.getFirst();
-                    for (Event e2 : mayMap.getOrDefault(t.getSecond(), List.of())) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
-                            maySet.add(new Tuple(e1, e2));
-                        }
-                    }
-                }
-                Map<Event, List<Event>> mustMap = map(k.must);
-                for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
-                    Event e1 = t.getFirst();
-                    Event e = t.getSecond();
-                    boolean implies = exec.isImplied(e1, e);
-                    for (Event e2 : mustMap.getOrDefault(e, List.of())) {
-                        if ((implies || exec.isImplied(e2, e)) && !exec.areMutuallyExclusive(e1, e2)) {
-                            mustSet.add(new Tuple(e1, e2));
-                        }
-                    }
-                }
+                computeComposition(maySet, map(may), map(knowledgeMap.get(r2).may), true);
+                computeComposition(mustSet, map(must), map(knowledgeMap.get(r2).must), false);
             }
             if (r2.equals(source)) {
-                Knowledge k = knowledgeMap.get(r1);
-                Map<Event, List<Event>> mayMap = mapReverse(k.may);
-                for (Tuple t : may) {
-                    Event e2 = t.getSecond();
-                    for (Event e1 : mayMap.getOrDefault(t.getFirst(), List.of())) {
-                        if (!exec.areMutuallyExclusive(e1, e2)) {
-                            maySet.add(new Tuple(e1, e2));
-                        }
+                computeComposition(maySet, map(knowledgeMap.get(r1).may), map(may), true);
+                computeComposition(mustSet, map(knowledgeMap.get(r1).must), map(must), false);
+            }
+            return new Delta(maySet, mustSet);
+        }
+
+        private void computeComposition(Set<Tuple> result, Map<Event, Set<Event>> left, Map<Event, Set<Event>> right, final boolean isMay) {
+            for (Map.Entry<Event, Set<Event>> entry : left.entrySet()) {
+                Event e1 = entry.getKey();
+                Set<Event> update = new HashSet<>();
+                for (Event e : entry.getValue()) {
+                    update.addAll(right.getOrDefault(e, Set.of()));
+                    if (!isMay && !exec.isImplied(e1, e)) {
+                        update.removeIf(e2 -> !exec.isImplied(e2, e));
                     }
                 }
-                Map<Event, List<Event>> mustMap = mapReverse(k.must);
-                for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
-                    Event e2 = t.getSecond();
-                    Event e = t.getFirst();
-                    boolean implies = exec.isImplied(e2, e);
-                    for (Event e1 : mustMap.getOrDefault(e, List.of())) {
-                        if ((implies || exec.isImplied(e1, e)) && !exec.areMutuallyExclusive(e1, e2)) {
-                            mustSet.add(new Tuple(e1, e2));
-                        }
+                for (Event e2 : update) {
+                    if (!exec.areMutuallyExclusive(e1, e2)) {
+                        result.add(new Tuple(e1, e2));
                     }
                 }
             }
-            return new Delta(maySet, mustSet);
         }
 
         @Override
         public Delta visitDomainIdentity(Relation rel, Relation r1) {
             if (r1.equals(source)) {
-                Set<Tuple> maySet = new HashSet<>();
-                Set<Tuple> mustSet = new HashSet<>();
-                for (Tuple t : may) {
-                    maySet.add(new Tuple(t.getFirst(), t.getFirst()));
+                Set<Tuple> maySet = may.stream()
+                        .map(Tuple::getFirst)
+                        .collect(toSet())
+                        .stream()
+                        .map(e -> new Tuple(e, e))
+                        .collect(toSet());
+                if (!enableMustSets) {
+                    return new Delta(maySet, Set.of());
                 }
-                for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
-                    if (exec.isImplied(t.getFirst(), t.getSecond())) {
-                        mustSet.add(new Tuple(t.getFirst(), t.getFirst()));
-                    }
-                }
+                Set<Tuple> mustSet = must.stream()
+                        .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
+                        .map(Tuple::getFirst)
+                        .collect(toSet())
+                        .stream()
+                        .map(e -> new Tuple(e, e))
+                        .collect(toSet());
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
@@ -1168,16 +1197,22 @@ public class RelationAnalysis {
         @Override
         public Delta visitRangeIdentity(Relation rel, Relation r1) {
             if (r1.equals(source)) {
-                Set<Tuple> maySet = new HashSet<>();
-                Set<Tuple> mustSet = new HashSet<>();
-                for (Tuple t : may) {
-                    maySet.add(new Tuple(t.getSecond(), t.getSecond()));
+                Set<Tuple> maySet = may.stream()
+                        .map(Tuple::getSecond)
+                        .collect(toSet())
+                        .stream()
+                        .map(e -> new Tuple(e, e))
+                        .collect(toSet());
+                if (!enableMustSets) {
+                    return new Delta(maySet, Set.of());
                 }
-                for (Tuple t : enableMustSets ? must : Set.<Tuple>of()) {
-                    if (exec.isImplied(t.getSecond(), t.getFirst())) {
-                        mustSet.add(new Tuple(t.getSecond(), t.getSecond()));
-                    }
-                }
+                Set<Tuple> mustSet = must.stream()
+                        .filter(t -> exec.isImplied(t.getSecond(), t.getFirst()))
+                        .map(Tuple::getSecond)
+                        .collect(toSet())
+                        .stream()
+                        .map(e -> new Tuple(e, e))
+                        .collect(toSet());
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
@@ -1195,48 +1230,52 @@ public class RelationAnalysis {
         public Delta visitTransitiveClosure(Relation rel, Relation r1) {
             if (r1.equals(source)) {
                 Set<Tuple> maySet = new HashSet<>(may);
-                Knowledge k = knowledgeMap.get(rel);
-                Map<Event, List<Event>> mayMap = map(k.may);
-                for (Collection<Tuple> current = may; !current.isEmpty(); ) {
-                    update(mayMap, current);
-                    Collection<Tuple> next = new HashSet<>();
-                    for (Tuple tuple : current) {
-                        Event e1 = tuple.getFirst();
-                        for (Event e2 : mayMap.getOrDefault(tuple.getSecond(), List.of())) {
-                            Tuple t = new Tuple(e1, e2);
-                            if (!k.containsMay(t) && !maySet.contains(t) && !exec.areMutuallyExclusive(e1, e2)) {
-                                next.add(t);
-                            }
-                        }
-                    }
-                    maySet.addAll(next);
-                    current = next;
+                computeTransitiveClosure(maySet, map(knowledgeMap.get(rel).may), map(may), true);
+                if (enableMustSets) {
+                    Set<Tuple> mustSet = new HashSet<>(must);
+                    computeTransitiveClosure(mustSet, map(knowledgeMap.get(rel).must), map(must), false);
+                    return new Delta(maySet, mustSet);
                 }
-                if (!enableMustSets) {
-                    return new Delta(maySet, EMPTY_SET);
-                }
-                Set<Tuple> mustSet = new HashSet<>(must);
-                Map<Event, List<Event>> mustMap = map(k.must);
-                for (Collection<Tuple> current = must; !current.isEmpty(); ) {
-                    update(mustMap, current);
-                    Collection<Tuple> next = new HashSet<>();
-                    for (Tuple tuple : current) {
-                        Event e1 = tuple.getFirst();
-                        Event e = tuple.getSecond();
-                        boolean implies = exec.isImplied(e1, e);
-                        for (Event e2 : mustMap.getOrDefault(e, List.of())) {
-                            Tuple t = new Tuple(e1, e2);
-                            if (!k.containsMust(t) && !mustSet.contains(t) && (implies || exec.isImplied(e2, e)) && !exec.areMutuallyExclusive(e1, e2)) {
-                                next.add(t);
-                            }
-                        }
-                    }
-                    mustSet.addAll(next);
-                    current = next;
-                }
-                return new Delta(maySet, mustSet);
+                return new Delta(maySet, EMPTY_SET);
             }
             return EMPTY;
+        }
+
+        private void computeTransitiveClosure(Set<Tuple> result, Map<Event, Set<Event>> outer, Map<Event, Set<Event>> inner, boolean isMay) {
+            Map<Event, Set<Event>> next;
+            inner.forEach((k, v) -> outer.computeIfAbsent(k, key -> new HashSet<>()).addAll(v));
+            for (Map<Event, Set<Event>> current = inner; !current.isEmpty(); current = next) {
+                next = new HashMap<>();
+                for (Map.Entry<Event, Set<Event>> entry : current.entrySet()) {
+                    Event e1 = entry.getKey();
+                    Set<Event> update = new HashSet<>();
+                    for (Event e2 : entry.getValue()) {
+                        if (isMay) {
+                            update.addAll(outer.getOrDefault(e2, Set.of()));
+                        } else {
+                            boolean implies = exec.isImplied(e1, e2);
+                            update.addAll(outer.getOrDefault(e2, Set.of()).stream()
+                                    .filter(e -> implies || exec.isImplied(e, e2))
+                                    .toList());
+                        }
+                    }
+                    Set<Event> known = outer.get(e1);
+                    update.removeIf(e -> known.contains(e) || exec.areMutuallyExclusive(e1, e));
+                    if (!update.isEmpty()) {
+                        next.put(e1, update);
+                    }
+                }
+                next.forEach((k, v) -> outer.computeIfAbsent(k, key -> new HashSet<>()).addAll(v));
+            }
+            for (Map.Entry<Event, Set<Event>> entry : outer.entrySet()) {
+                Event e1 = entry.getKey();
+                Set<Event> innerSet = inner.getOrDefault(e1, Set.of());
+                for (Event e2 : entry.getValue()) {
+                    if (!innerSet.contains(e2)) {
+                        result.add(new Tuple(e1, e2));
+                    }
+                }
+            }
         }
     }
 
@@ -1322,16 +1361,16 @@ public class RelationAnalysis {
             Knowledge k1 = knowledgeMap.get(r1);
             Knowledge k2 = knowledgeMap.get(r2);
             Relation origin = this.origin;
-            Map<Event, List<Event>> mayOut1 = (origin.equals(r1) || origin.equals(r2)) && !disabled.isEmpty() ? map(k1.may) : Map.of();
+            Map<Event, Set<Event>> mayOut1 = (origin.equals(r1) || origin.equals(r2)) && !disabled.isEmpty() ? map(k1.may) : Map.of();
             if (origin.equals(r0)) {
-                Map<Event, List<Event>> mustOut1 = disabled.isEmpty() ? Map.of() : map(k1.must);
-                Map<Event, List<Event>> mustIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.must);
+                Map<Event, Set<Event>> mustOut1 = disabled.isEmpty() ? Map.of() : map(k1.must);
+                Map<Event, Set<Event>> mustIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.must);
                 for (Tuple xz : disabled) {
                     Event x = xz.getFirst();
                     Event z = xz.getSecond();
                     boolean implies = exec.isImplied(x, z);
                     boolean implied = exec.isImplied(z, x);
-                    for (Event y : mustOut1.getOrDefault(x, List.of())) {
+                    for (Event y : mustOut1.getOrDefault(x, Set.of())) {
                         if (implied || exec.isImplied(y, x)) {
                             Tuple yz = new Tuple(y, z);
                             if (k2.containsMay(yz)) {
@@ -1339,7 +1378,7 @@ public class RelationAnalysis {
                             }
                         }
                     }
-                    for (Event y : mustIn2.getOrDefault(z, List.of())) {
+                    for (Event y : mustIn2.getOrDefault(z, Set.of())) {
                         if (implies || exec.isImplied(y, z)) {
                             Tuple xy = new Tuple(x, y);
                             if (k1.containsMay(xy)) {
@@ -1350,17 +1389,17 @@ public class RelationAnalysis {
                 }
             }
             if (origin.equals(r1)) {
-                Map<Event, List<Event>> mayOut2 = map(k2.may);
-                Map<Event, List<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
+                Map<Event, Set<Event>> mayOut2 = map(k2.may);
+                Map<Event, Set<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
                 Map<Event, Set<Event>> alternativesMap = new HashMap<>();
-                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, List.of()));
+                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, Set.of()));
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
                     Set<Event> alternatives = alternativesMap.computeIfAbsent(x, newAlternatives);
-                    for (Event z : mayOut2.getOrDefault(y, List.of())) {
+                    for (Event z : mayOut2.getOrDefault(y, Set.of())) {
                         if (!exec.areMutuallyExclusive(x, z)
-                                && Collections.disjoint(alternatives, mayIn2.getOrDefault(z, List.of()))) {
+                                && Collections.disjoint(alternatives, mayIn2.getOrDefault(z, Set.of()))) {
                             d0.add(new Tuple(x, z));
                         }
                     }
@@ -1370,7 +1409,7 @@ public class RelationAnalysis {
                     Event y = xy.getSecond();
                     boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
-                    for (Event z : mayOut2.getOrDefault(y, List.of())) {
+                    for (Event z : mayOut2.getOrDefault(y, Set.of())) {
                         if (exec.areMutuallyExclusive(x, z)) {
                             continue;
                         }
@@ -1386,17 +1425,17 @@ public class RelationAnalysis {
                 }
             }
             if (origin.equals(r2)) {
-                Map<Event, List<Event>> mayIn1 = mapReverse(k1.may);
-                Map<Event, List<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
+                Map<Event, Set<Event>> mayIn1 = mapReverse(k1.may);
+                Map<Event, Set<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
                 Map<Event, Set<Event>> alternativesMap = new HashMap<>();
-                Function<Event, Set<Event>> newAlternatives = y -> new HashSet<>(mayIn2.getOrDefault(y, List.of()));
+                Function<Event, Set<Event>> newAlternatives = y -> new HashSet<>(mayIn2.getOrDefault(y, Set.of()));
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
                     Set<Event> alternatives = alternativesMap.computeIfAbsent(y, newAlternatives);
-                    for (Event w : mayIn1.getOrDefault(x, List.of())) {
+                    for (Event w : mayIn1.getOrDefault(x, Set.of())) {
                         if (!exec.areMutuallyExclusive(w, y)
-                                && Collections.disjoint(alternatives, mayOut1.getOrDefault(w, List.of()))) {
+                                && Collections.disjoint(alternatives, mayOut1.getOrDefault(w, Set.of()))) {
                             d0.add(new Tuple(w, y));
                         }
                     }
@@ -1406,7 +1445,7 @@ public class RelationAnalysis {
                     Event y = xy.getSecond();
                     boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
-                    for (Event w : mayIn1.getOrDefault(x, List.of())) {
+                    for (Event w : mayIn1.getOrDefault(x, Set.of())) {
                         if (exec.areMutuallyExclusive(w, y)) {
                             continue;
                         }
@@ -1447,27 +1486,27 @@ public class RelationAnalysis {
             Knowledge k0 = knowledgeMap.get(r0);
             Knowledge k1 = knowledgeMap.get(r1);
             if (origin.equals(r1)) {
-                Map<Event, List<Event>> mayOut0 = map(k0.may);
-                Map<Event, List<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : map(k1.may);
-                Map<Event, List<Event>> mayIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.may);
+                Map<Event, Set<Event>> mayOut0 = map(k0.may);
+                Map<Event, Set<Event>> mayOut1 = disabled.isEmpty() ? Map.of() : map(k1.may);
+                Map<Event, Set<Event>> mayIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.may);
                 Map<Event, Set<Event>> alternativesMap = new HashMap<>();
-                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, List.of()));
+                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, Set.of()));
                 for (Tuple xy : disabled) {
                     Event x = xy.getFirst();
                     Event y = xy.getSecond();
                     Set<Event> alternatives = alternativesMap.computeIfAbsent(x, newAlternatives);
                     if (k0.containsMay(xy)
-                            && Collections.disjoint(alternatives, mayIn0.getOrDefault(y, List.of()))) {
+                            && Collections.disjoint(alternatives, mayIn0.getOrDefault(y, Set.of()))) {
                         d0.add(xy);
                     }
                     if (xy.isLoop()) {
                         continue;
                     }
-                    for (Event z : mayOut0.getOrDefault(y, List.of())) {
+                    for (Event z : mayOut0.getOrDefault(y, Set.of())) {
                         Tuple xz = new Tuple(x, z);
                         if (k0.containsMay(xz)
                                 && !alternatives.contains(z)
-                                && Collections.disjoint(alternatives, mayIn0.getOrDefault(z, List.of()))) {
+                                && Collections.disjoint(alternatives, mayIn0.getOrDefault(z, Set.of()))) {
                             d0.add(xz);
                         }
                     }
@@ -1481,7 +1520,7 @@ public class RelationAnalysis {
                     Event y = xy.getSecond();
                     boolean implied = exec.isImplied(y, x);
                     boolean implies = exec.isImplied(x, y);
-                    for (Event z : mayOut0.getOrDefault(y, List.of())) {
+                    for (Event z : mayOut0.getOrDefault(y, Set.of())) {
                         if (exec.areMutuallyExclusive(x, z)) {
                             continue;
                         }
@@ -1497,9 +1536,9 @@ public class RelationAnalysis {
                 }
             }
             if (origin.equals(r0)) {
-                Map<Event, List<Event>> mustIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.must);
-                Map<Event, List<Event>> mayIn1 = enabled.isEmpty() ? Map.of() : mapReverse(k1.may);
-                Map<Event, List<Event>> mustOut1 = disabled.isEmpty() ? Map.of() : map(k1.must);
+                Map<Event, Set<Event>> mustIn0 = disabled.isEmpty() ? Map.of() : mapReverse(k0.must);
+                Map<Event, Set<Event>> mayIn1 = enabled.isEmpty() ? Map.of() : mapReverse(k1.may);
+                Map<Event, Set<Event>> mustOut1 = disabled.isEmpty() ? Map.of() : map(k1.must);
                 d1.addAll(intersection(disabled, k1.may));
                 for (Tuple xz : disabled) {
                     if (xz.isLoop()) {
@@ -1509,7 +1548,7 @@ public class RelationAnalysis {
                     Event z = xz.getSecond();
                     boolean implied = exec.isImplied(z, x);
                     boolean implies = exec.isImplied(x, z);
-                    for (Event y : mustOut1.getOrDefault(x, List.of())) {
+                    for (Event y : mustOut1.getOrDefault(x, Set.of())) {
                         if (implied || exec.isImplied(y, x)) {
                             Tuple yz = new Tuple(y, z);
                             if (k0.containsMay(yz)) {
@@ -1517,7 +1556,7 @@ public class RelationAnalysis {
                             }
                         }
                     }
-                    for (Event y : mustIn0.getOrDefault(z, List.of())) {
+                    for (Event y : mustIn0.getOrDefault(z, Set.of())) {
                         if (implies || exec.isImplied(y, z)) {
                             Tuple xy = new Tuple(x, y);
                             if (k1.containsMay(xy)) {
@@ -1534,7 +1573,7 @@ public class RelationAnalysis {
                     Event z = yz.getSecond();
                     boolean implied = exec.isImplied(z, y);
                     boolean implies = exec.isImplied(y, z);
-                    for (Event x : mayIn1.getOrDefault(y, List.of())) {
+                    for (Event x : mayIn1.getOrDefault(y, Set.of())) {
                         if (exec.areMutuallyExclusive(x, z)) {
                             continue;
                         }
@@ -1582,23 +1621,23 @@ public class RelationAnalysis {
         return r;
     }
 
-    private static Map<Event, List<Event>> mapReverse(Set<Tuple> set) {
-        Map<Event, List<Event>> map = new HashMap<>();
+    private static Map<Event, Set<Event>> mapReverse(Set<Tuple> set) {
+        Map<Event, Set<Event>> map = new HashMap<>();
         for (Tuple t : set) {
-            map.computeIfAbsent(t.getSecond(), x -> new ArrayList<>()).add(t.getFirst());
+            map.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
         }
         return map;
     }
 
-    private static Map<Event, List<Event>> map(Set<Tuple> set) {
-        Map<Event, List<Event>> map = new HashMap<>();
+    private static Map<Event, Set<Event>> map(Set<Tuple> set) {
+        Map<Event, Set<Event>> map = new HashMap<>();
         update(map, set);
         return map;
     }
 
-    private static void update(Map<Event, List<Event>> map, Collection<Tuple> set) {
+    private static void update(Map<Event, Set<Event>> map, Collection<Tuple> set) {
         for (Tuple t : set) {
-            map.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
+            map.computeIfAbsent(t.getFirst(), x -> new HashSet<>()).add(t.getSecond());
         }
     }
 

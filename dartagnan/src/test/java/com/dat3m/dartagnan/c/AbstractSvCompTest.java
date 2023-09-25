@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
-import com.dat3m.dartagnan.utils.rules.CSVLogger;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
@@ -16,7 +15,6 @@ import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -80,9 +78,6 @@ public abstract class AbstractSvCompTest {
                 "unreach-call.prp"));
     }
 
-    @ClassRule
-    public static CSVLogger.Initialization csvInit = CSVLogger.Initialization.create();
-
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> Arch.C11;
@@ -100,7 +95,6 @@ public abstract class AbstractSvCompTest {
 
     // Special rules
     protected final Timeout timeout = Timeout.millis(getTimeout());
-    protected final CSVLogger csvLogger = CSVLogger.create(() -> name, expectedResultProvider);
     protected final RequestShutdownOnError shutdownOnError = RequestShutdownOnError.create(shutdownManagerProvider);
 
     @Rule
@@ -114,7 +108,6 @@ public abstract class AbstractSvCompTest {
             .around(propertyProvider)
             .around(taskProvider)
             .around(expectedResultProvider)
-            .around(csvLogger)
             .around(timeout)
             // Context/Prover need to be created inside test-thread spawned by <timeout>
             .around(contextProvider)
@@ -123,28 +116,24 @@ public abstract class AbstractSvCompTest {
 
 
     //@Test
-    @CSVLogger.FileName("csv/two-solvers")
     public void testTwoSolvers() throws Exception {
         TwoSolvers s = TwoSolvers.run(contextProvider.get(), proverProvider.get(), prover2Provider.get(), taskProvider.get());
         assertEquals(expectedResultProvider.get(), s.getResult());
     }
 
     //@Test
-    @CSVLogger.FileName("csv/assume")
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expectedResultProvider.get(), s.getResult());
     }
 
     @Test
-    @CSVLogger.FileName("csv/incremental")
     public void testIncremental() throws Exception {
         IncrementalSolver s = IncrementalSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expectedResultProvider.get(), s.getResult());
     }
 
     //@Test
-    @CSVLogger.FileName("csv/refinement")
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expectedResultProvider.get(), s.getResult());

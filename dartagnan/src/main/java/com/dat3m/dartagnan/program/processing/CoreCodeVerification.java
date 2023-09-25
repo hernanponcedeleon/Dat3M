@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.event.arch.ptx.PTXFenceWithId;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
@@ -34,12 +34,12 @@ public class CoreCodeVerification implements FunctionProcessor {
          Introducing a CoreEvent interface or a @Core annotation would do the trick.
      */
     private static final Set<Class<? extends Event>> CORE_CLASSES = new HashSet<>(Arrays.asList(
-            Load.class, Store.class, Init.class, GenericMemoryEvent.class, Fence.class,
+            Load.class, Store.class, Init.class, GenericMemoryEvent.class, GenericVisibleEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
             Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
             Assert.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
-            PTXFenceWithId.class, // For PTX
+            FenceWithId.class, // For PTX and Vulkan
             BeginAtomic.class, EndAtomic.class
             // We add SVCOMP atomic blocks here as well, despite them not being part of the core package.
             // TODO: We might want to find a more systematic way to extend the core with these custom events.

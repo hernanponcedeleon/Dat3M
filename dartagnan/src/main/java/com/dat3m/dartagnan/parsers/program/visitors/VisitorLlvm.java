@@ -741,8 +741,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             event = Llvm.newExchange(register, address, operand, mo);
         } else {
             final IOpBin op = switch (operator) {
-                case "add" -> IOpBin.PLUS;
-                case "sub" -> IOpBin.MINUS;
+                case "add" -> IOpBin.ADD;
+                case "sub" -> IOpBin.SUB;
                 case "and" -> IOpBin.AND;
                 case "or" -> IOpBin.OR;
                 case "xor" -> IOpBin.XOR;
