@@ -722,9 +722,9 @@ public class WmmEncoder implements Encoder {
                 continue;
             }
             for (Relation c : r.getDependencies()) {
-                p.source = c;
-                p.may = ra.getKnowledge(p.source).getMaySet();
-                p.must = ra.getKnowledge(p.source).getMustSet();
+                p.setSource(c);
+                p.setMay(ra.getKnowledge(p.getSource()).getMaySet());
+                p.setMust(ra.getKnowledge(p.getSource()).getMustSet());
                 RelationAnalysis.Delta s = r.getDefinition().accept(p);
                 may.addAll(s.may);
                 must.addAll(s.must);
