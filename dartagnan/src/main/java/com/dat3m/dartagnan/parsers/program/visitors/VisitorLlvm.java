@@ -1133,7 +1133,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private IntegerType getIntegerType(int precision) {
-        return GlobalSettings.isMixedType() ? types.getIntegerType(precision) : types.getArchType();
+        return types.getIntegerType(precision);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

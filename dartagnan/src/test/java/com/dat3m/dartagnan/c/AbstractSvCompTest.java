@@ -63,7 +63,6 @@ public abstract class AbstractSvCompTest {
         return Provider.fromSupplier(() -> {
             Configuration config = Configuration.builder()
                             .setOption(OptionNames.ARCH_PRECISION, "64")
-                            .setOption(OptionNames.MIXED_TYPE, "true")
                             .setOption(OptionNames.USE_INTEGERS, "false")
                             .build();
             // FIXME: Setting the global settings here is super fishy, but we have no other choice for now...

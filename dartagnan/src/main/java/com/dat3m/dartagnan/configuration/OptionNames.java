@@ -16,7 +16,6 @@ public class OptionNames {
 	public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
 	public static final String ARCH_PRECISION = "modeling.precision";
 	public static final String RECURSION_BOUND = "modeling.recursionBound";
-	public static final String MIXED_TYPE = "modeling.mixedType";
 
 	// Compilation Options
 	public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
