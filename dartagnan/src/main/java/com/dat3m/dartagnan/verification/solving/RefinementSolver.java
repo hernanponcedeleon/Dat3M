@@ -165,7 +165,7 @@ public class RefinementSolver extends ModelChecker {
         return solver;
     }
 
-    private void runInternal(SolverContext ctx, ProverEnvironment prover, VerificationTask task)
+    private void runInternal(SolverContext ctx, ProverEnvironment p, VerificationTask task)
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
@@ -175,6 +175,7 @@ public class RefinementSolver extends ModelChecker {
         final VerificationTask baselineTask = VerificationTask.builder()
                 .withConfig(task.getConfig())
                 .build(program, baselineModel, task.getProperty());
+        final LoggingProver prover = new LoggingProver(ctx.getFormulaManager(), p);
 
         // ------------------------ Preprocessing / Analysis ------------------------
 
@@ -227,6 +228,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Checking target property.");
         prover.push();
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
+        prover.printAll(System.out);
 
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();

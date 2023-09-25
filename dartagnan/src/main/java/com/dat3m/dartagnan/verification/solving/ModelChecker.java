@@ -23,12 +23,21 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.google.common.collect.ImmutableMap;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.FunctionDeclaration;
 import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
+import org.sosy_lab.java_smt.api.visitors.DefaultFormulaVisitor;
 
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -166,4 +175,99 @@ public abstract class ModelChecker {
         }
     }
 
+    protected static class LoggingProver implements ProverEnvironment {
+
+        private final FormulaManager manager;
+        private final ProverEnvironment inner;
+        private final List<String> log = new ArrayList<>();
+        private final DefaultFormulaVisitor<Void> visitor = new DefaultFormulaVisitor<>() {
+
+            @Override
+            protected Void visitDefault(Formula formula) {
+                log.add(formula.toString());
+                return null;
+            }
+
+            @Override
+            public Void visitFunction(Formula f, List<Formula> args, FunctionDeclaration<?> functionDeclaration) {
+                if (functionDeclaration.getName().equals("and")) {
+                    for (var a : args) {
+                        manager.visit(a, this);
+                    }
+                    return null;
+                }
+                return super.visitFunction(f, args, functionDeclaration);
+            }
+        };
+
+        protected LoggingProver(FormulaManager m, ProverEnvironment i) {
+            manager = m;
+            inner = i;
+        }
+
+        public void printAll(PrintStream out) {
+            log.stream().sorted().forEach(out::println);
+        }
+
+        @Override
+        public Void addConstraint(BooleanFormula constraint) throws InterruptedException {
+            inner.addConstraint(constraint);
+            manager.visit(constraint, visitor);
+            return null;
+        }
+
+        @Override
+        public void pop() {
+            inner.pop();
+        }
+
+        @Override
+        public void push() throws InterruptedException {
+            inner.push();
+        }
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public boolean isUnsat() throws SolverException, InterruptedException {
+            return inner.isUnsat();
+        }
+
+        @Override
+        public boolean isUnsatWithAssumptions(Collection<BooleanFormula> collection) throws SolverException, InterruptedException {
+            return inner.isUnsatWithAssumptions(collection);
+        }
+
+        @Override
+        public Model getModel() throws SolverException {
+            return inner.getModel();
+        }
+
+        @Override
+        public List<BooleanFormula> getUnsatCore() {
+            return inner.getUnsatCore();
+        }
+
+        @Override
+        public Optional<List<BooleanFormula>> unsatCoreOverAssumptions(Collection<BooleanFormula> collection) throws SolverException, InterruptedException {
+            return inner.unsatCoreOverAssumptions(collection);
+        }
+
+        @Override
+        public ImmutableMap<String, String> getStatistics() {
+            return inner.getStatistics();
+        }
+
+        @Override
+        public void close() {
+            inner.close();
+        }
+
+        @Override
+        public <R> R allSat(AllSatCallback<R> allSatCallback, List<BooleanFormula> list) throws InterruptedException, SolverException {
+            return null;
+        }
+    }
 }
