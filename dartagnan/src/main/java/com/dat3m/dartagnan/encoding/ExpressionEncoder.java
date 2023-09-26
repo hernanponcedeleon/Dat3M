@@ -243,7 +243,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return bool;
                 }
                 if (context.useIntegers || iUn.getType().isMathematical()) {
-                    verify(inner instanceof IntegerFormula);
+                    verify(!context.useIntegers || inner instanceof IntegerFormula);
+                    if(inner instanceof BitvectorFormula number) {
+                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
+                    }
                     //TODO If narrowing, constrain the value.
                     return inner;
                 } else {
