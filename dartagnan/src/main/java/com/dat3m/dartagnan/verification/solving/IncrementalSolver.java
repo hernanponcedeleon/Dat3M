@@ -20,12 +20,12 @@ public class IncrementalSolver extends ModelChecker {
     private static final Logger logger = LogManager.getLogger(IncrementalSolver.class);
 
     private final SolverContext ctx;
-    private final LoggingProver prover;
+    private final ProverEnvironment prover;
     private final VerificationTask task;
 
     private IncrementalSolver(SolverContext c, ProverEnvironment p, VerificationTask t) {
         ctx = c;
-        prover = new LoggingProver(c.getFormulaManager(), p);
+        prover = p;
         task = t;
     }
 
@@ -63,7 +63,7 @@ public class IncrementalSolver extends ModelChecker {
         logger.info("Starting push()");
         prover.push();
         prover.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
-        prover.printAll(System.out);
+        
         logger.info("Starting first solver.check()");
         if(prover.isUnsat()) {
         	prover.pop();
