@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.program.Register;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +65,16 @@ public final class GEPExpression implements Expression {
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override
+    public ImmutableSet<Register> getRegs() {
+        final ImmutableSet.Builder<Register> set = ImmutableSet.builder();
+        set.addAll(base.getRegs());
+        for (final Expression offset : offsets) {
+            set.addAll(offset.getRegs());
+        }
+        return set.build();
     }
 
     @Override

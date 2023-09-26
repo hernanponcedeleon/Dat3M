@@ -3,7 +3,10 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -12,6 +15,8 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -328,5 +333,58 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visit(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return context.lastValue(location.getMemoryObject(), location.getOffset());
+    }
+
+    @Override
+    public Formula visit(GEPExpression gep) {
+        final TypeFactory types = TypeFactory.getInstance();
+        final List<Expression> offsetExpressions = gep.getOffsetExpressions();
+        final List<Type> indexingTypes = gep.getIndexingTypes();
+        final Formula base = gep.getBaseExpression().accept(this);
+        verify(indexingTypes.size() == offsetExpressions.size(), "Offset - Size mismatch for %s", gep);
+        final boolean integer = base instanceof IntegerFormula;
+        verify(integer || base instanceof BitvectorFormula, "%s cannot represent pointers", base);
+        final IntegerFormulaManager integerFormulaManager = integer ? integerFormulaManager() : null;
+        final BitvectorFormulaManager bitvectorFormulaManager = integer ? null : bitvectorFormulaManager();
+        final List<IntegerFormula> integers = integer ? new ArrayList<>(List.of((IntegerFormula) base)) : null;
+        final List<BitvectorFormula> bitvectors = new ArrayList<>();
+        final int length = integer ? 0 : bitvectorFormulaManager.getLength((BitvectorFormula) base);
+        for (int i = 0; i < indexingTypes.size(); i++) {
+            final Expression offset = offsetExpressions.get(i);
+            final IValue value = offset instanceof IValue v ? v : null;
+            if (value != null && value.isZero()) {
+                continue;
+            }
+            // Encodes the subexpression only if it is neither 0 or 1
+            final Formula count = value != null && value.isOne() ? null : offset.accept(this);
+            final Type indexingType = i == 0 ? null : indexingTypes.get(i - 1);
+            verify(indexingType instanceof ArrayType || indexingType instanceof AggregateType,
+                    "Non-container type %s", indexingType);
+            verify(!(indexingType instanceof AggregateType) || value != null,
+                    "Non-constant index %s", offset);
+            if (indexingType instanceof ArrayType) {
+                final int elementSize = types.getMemorySizeInBytes(indexingTypes.get(i));
+                if (integer) {
+                    final IntegerFormula coefficient = integerFormulaManager.makeNumber(elementSize);
+                    integers.add(count == null ? coefficient :
+                            integerFormulaManager.multiply(coefficient, count instanceof IntegerFormula f ? f :
+                                    bitvectorFormulaManager().toIntegerFormula((BitvectorFormula) count, false)));
+                } else {
+                    final BitvectorFormula coefficient = bitvectorFormulaManager.makeBitvector(elementSize, length);
+                    bitvectors.add(count == null ? coefficient :
+                            bitvectorFormulaManager.multiply(coefficient, count instanceof BitvectorFormula f ? f :
+                                    bitvectorFormulaManager.makeBitvector(length, (IntegerFormula) count)));
+                }
+            } else {
+                final int o = types.getByteOffset(indexingType, List.of(0, value.getValue()));
+                if (integer) {
+                    integers.add(integerFormulaManager.makeNumber(o));
+                } else {
+                    bitvectors.add(bitvectorFormulaManager.makeBitvector(o, length));
+                }
+            }
+        }
+        return integer ? integerFormulaManager.sum(integers) :
+                bitvectors.stream().reduce((BitvectorFormula) base, bitvectorFormulaManager::add);
     }
 }

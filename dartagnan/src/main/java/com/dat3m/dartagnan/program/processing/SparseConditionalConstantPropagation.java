@@ -272,6 +272,19 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             return expressions.makeConditional(guard, trueBranch, falseBranch);
         }
 
+        @Override
+        public Expression visit(GEPExpression gep) {
+            final Expression base = transform(gep.getBaseExpression());
+            final List<Expression> offsets = new ArrayList<>();
+            for (final Expression offset : gep.getOffsetExpressions()) {
+                offsets.add(transform(offset));
+            }
+            if (offsets.size() == 1 && offsets.get(0) instanceof IValue offsetValue && offsetValue.isZero()) {
+                return base;
+            }
+            return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
+        }
+
         private Expression transform(Expression expression) {
             Expression result = expression.accept(this);
             Verify.verify(result.getType().equals(expression.getType()), "Type mismatch in constant propagation.");

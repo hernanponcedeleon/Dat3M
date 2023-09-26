@@ -17,6 +17,7 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
+    private final PointerType pointerType = new PointerType(64);
     private final IntegerType pointerDifferenceType;
     private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
 
@@ -37,8 +38,8 @@ public final class TypeFactory {
 
     public VoidType getVoidType() { return voidType; }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public PointerType getPointerType() {
+        return pointerType;
     }
 
     public IntegerType getIntegerType() {
@@ -220,6 +221,8 @@ public final class TypeFactory {
             } else {
                 sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
             }
+        } else if (type instanceof PointerType pointer) {
+            sizeInBytes = IntMath.divide(pointer.getBitWidth(), 8, RoundingMode.CEILING);
         } else if (type instanceof BooleanType) {
             sizeInBytes = 1;
         } else {
