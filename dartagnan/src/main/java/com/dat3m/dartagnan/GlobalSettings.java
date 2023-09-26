@@ -5,14 +5,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.ARCH_PRECISION;
 
 @Options
 public class GlobalSettings {
@@ -22,13 +19,6 @@ public class GlobalSettings {
     private GlobalSettings() {}
 
     private static final GlobalSettings instance = new GlobalSettings();
-
-    @Option(name = ARCH_PRECISION,
-            description = "Integer encoding: use -1 for integer theory or X for bit-vectors with precision X.",
-            secure = true)
-    private int arch_precision = -1;
-
-    public static int getArchPrecision() { return instance.arch_precision; }
 
     public static void configure(Configuration config) throws InvalidConfigurationException {
        config.inject(instance);
@@ -50,9 +40,6 @@ public class GlobalSettings {
     // --------------------
 
     public static void LogGlobalSettings() {
-        // General settings
-        logger.info("ARCH_PRECISION: " + getArchPrecision());
-
         // Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
         logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());

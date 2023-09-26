@@ -206,7 +206,11 @@ public final class EncodingContext {
     public Formula lastValue(MemoryObject base, int offset) {
         checkArgument(0 <= offset && offset < base.size(), "array index out of bounds");
         final String name = String.format("last_val_at_%s_%d", base, offset);
-        return formulaManager.getIntegerFormulaManager().makeVariable(name);
+        if (useIntegers) {
+            return formulaManager.getIntegerFormulaManager().makeVariable(name);
+        }
+        //TODO match this with the actual type.
+        return formulaManager.getBitvectorFormulaManager().makeVariable(64, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {

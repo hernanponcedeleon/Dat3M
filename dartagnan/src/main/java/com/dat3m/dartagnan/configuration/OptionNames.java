@@ -14,7 +14,6 @@ public class OptionNames {
 
 	// Modeling Options
 	public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
-	public static final String ARCH_PRECISION = "modeling.precision";
 	public static final String RECURSION_BOUND = "modeling.recursionBound";
 
 	// Compilation Options
