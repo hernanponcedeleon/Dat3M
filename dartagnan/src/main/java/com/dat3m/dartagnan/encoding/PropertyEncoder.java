@@ -16,7 +16,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -27,7 +27,6 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -165,15 +164,17 @@ public class PropertyEncoder implements Encoder {
         final List<Init> initEvents = program.getThreadEvents(Init.class);
         final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
         // Find transitively implied coherences. We can use these to reduce the encoding.
-        final Set<Tuple> transCo = ra.findTransitivelyImpliedCo(co);
+        final EventGraph transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.
-        final Set<Event> dominatedWrites = knowledge.getMustSet().stream()
-                .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
-                .map(Tuple::getFirst).collect(Collectors.toSet());
-
+        Set<Event> dominatedWrites = new HashSet<>();
+        knowledge.getMustSet().apply((e1, e2) -> {
+            if (exec.isImplied(e1, e2)) {
+                dominatedWrites.add(e1);
+            }
+        });
         // ---- Construct encoding ----
         List<BooleanFormula> enc = new ArrayList<>();
-        final Function<Event, Collection<Tuple>> out = knowledge.getMayOut();
+        Map<Event, Set<Event>> out = knowledge.getMaySet().getOutMap();
         for (Store w1 : program.getThreadEvents(Store.class)) {
             if (dominatedWrites.contains(w1)) {
                 enc.add(bmgr.not(lastCoVar(w1)));
@@ -181,14 +182,13 @@ public class PropertyEncoder implements Encoder {
             }
             BooleanFormula isLast = context.execution(w1);
             // ---- Find all possibly overwriting writes ----
-            for (Tuple coEdge : out.apply(w1)) {
-                if (transCo.contains(coEdge)) {
+            for (Event w2 : out.getOrDefault(w1, Set.of())) {
+                if (transCo.contains(w1, w2)) {
                     // We can skip the co-edge (w1,w2), because there will be an intermediate write w3
                     // that already witnesses that w1 is not last.
                     continue;
                 }
-                Event w2 = coEdge.getSecond();
-                BooleanFormula isAfter = bmgr.not(knowledge.containsMust(coEdge) ? context.execution(w2) : coEncoder.encode(coEdge));
+                BooleanFormula isAfter = bmgr.not(knowledge.getMustSet().contains(w1, w2) ? context.execution(w2) : coEncoder.encode(w1, w2));
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
@@ -457,7 +457,7 @@ public class PropertyEncoder implements Encoder {
             final RelationAnalysis ra = PropertyEncoder.this.ra;
             final Relation rf = memoryModel.getRelation(RelationNameRepository.RF);
             final EncodingContext.EdgeEncoder rfEncoder = context.edge(rf);
-            final Function<Event, Collection<Tuple>> rfMayIn = ra.getKnowledge(rf).getMayIn();
+            final Map<Event, Set<Event>> rfMayIn = ra.getKnowledge(rf).getMaySet().getInMap();
 
             if (loops.isEmpty()) {
                 return bmgr.makeFalse();
@@ -467,8 +467,8 @@ public class PropertyEncoder implements Encoder {
             for (SpinIteration loop : loops) {
                 BooleanFormula allLoadsAreCoMaximal = bmgr.makeTrue();
                 for (Load load : loop.containedLoads) {
-                    final BooleanFormula readsCoMaximalStore = rfMayIn.apply(load).stream()
-                            .map(rfEdge -> bmgr.and(rfEncoder.encode(rfEdge), lastCoVar(rfEdge.getFirst())))
+                    final BooleanFormula readsCoMaximalStore = rfMayIn.getOrDefault(load, Set.of()).stream()
+                            .map(store -> bmgr.and(rfEncoder.encode(store, load), lastCoVar(store)))
                             .reduce(bmgr.makeFalse(), bmgr::or);
                     final BooleanFormula isCoMaximalLoad = bmgr.implication(context.execution(load), readsCoMaximalStore);
                     allLoadsAreCoMaximal = bmgr.and(allLoadsAreCoMaximal, isCoMaximalLoad);

@@ -5,157 +5,158 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Definition.Visitor;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 // Propagates relationships in a verification task that need to be constrained in an SMT-based verification.
-final class EncodeSets implements Visitor<Map<Relation, Stream<Tuple>>> {
+final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {
 
     private final RelationAnalysis ra;
-    List<Tuple> news;
-    // Caches the collection of may sets in frequently-used relations
-    // for when those relations get multiple encode set updates in one runtime.
-    Map<Relation, Function<Event, Collection<Tuple>>> mayOutCache = new HashMap<>();
+    EventGraph news;
 
     EncodeSets(Context analysisContext) {
         ra = analysisContext.requires(RelationAnalysis.class);
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitDefinition(Relation r, List<? extends Relation> d) {
+    public Map<Relation, EventGraph> visitDefinition(Relation r, List<? extends Relation> d) {
         return Map.of();
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitUnion(Relation rel, Relation... operands) {
-        Map<Relation, Stream<Tuple>> m = new HashMap<>();
+    public Map<Relation, EventGraph> visitUnion(Relation rel, Relation... operands) {
+        Map<Relation, EventGraph> m = new HashMap<>();
         for (Relation r : operands) {
-            m.merge(r, filterUnknowns(news, r), Stream::concat);
+            m.merge(r, filterUnknowns(news, r), EventGraph::union);
         }
         return m;
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitIntersection(Relation rel, Relation... operands) {
-        Map<Relation, Stream<Tuple>> m = new HashMap<>();
+    public Map<Relation, EventGraph> visitIntersection(Relation rel, Relation... operands) {
+        Map<Relation, EventGraph> m = new HashMap<>();
         for (Relation r : operands) {
-            m.merge(r, filterUnknowns(news, r), Stream::concat);
+            m.merge(r, filterUnknowns(news, r), EventGraph::union);
         }
         return m;
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitDifference(Relation rel, Relation r1, Relation r2) {
+    public Map<Relation, EventGraph> visitDifference(Relation rel, Relation r1, Relation r2) {
         return map(r1, filterUnknowns(news, r1), r2, filterUnknowns(news, r2));
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitComposition(Relation rel, Relation r1, Relation r2) {
+    public Map<Relation, EventGraph> visitComposition(Relation rel, Relation r1, Relation r2) {
         if (news.isEmpty()) {
             return Map.of();
         }
-        final Set<Tuple> set1 = new HashSet<>();
-        final Set<Tuple> set2 = new HashSet<>();
+        final EventGraph set1 = new EventGraph();
+        final EventGraph set2 = new EventGraph();
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
         final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
-        final Function<Event, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k1.getMayOut());
-        for (Tuple t : news) {
-            Event e = t.getSecond();
-            for (Tuple t1 : out.apply(t.getFirst())) {
-                Tuple t2 = new Tuple(t1.getSecond(), e);
-                if (k2.containsMay(t2)) {
-                    if (!k1.containsMust(t1)) {
-                        set1.add(t1);
+        Map<Event, Set<Event>> out = ra.getKnowledge(r1).getMaySet().getOutMap();
+        news.apply((e1, e2) -> {
+            for (Event e : out.getOrDefault(e1, Set.of())) {
+                if (k2.getMaySet().contains(e, e2)) {
+                    if (!k1.getMustSet().contains(e1, e)) {
+                        set1.add(e1, e);
                     }
-                    if (!k2.containsMust(t2)) {
-                        set2.add(t2);
+                    if (!k2.getMustSet().contains(e, e2)) {
+                        set2.add(e, e2);
                     }
                 }
             }
-        }
-        return map(r1, set1.stream(), r2, set2.stream());
+        });
+        return map(r1, set1, r2, set2);
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitDomainIdentity(Relation rel, Relation r1) {
+    public Map<Relation, EventGraph> visitDomainIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        final Function<Event, Collection<Tuple>> out = k1.getMayOut();
-        return Map.of(r1, news.stream()
-                .flatMap(t -> out.apply(t.getFirst()).stream())
-                .filter(t -> !k1.containsMust(t)));
+        Map<Event, Set<Event>> out = k1.getMaySet().getOutMap();
+        EventGraph result = new EventGraph();
+        news.apply((e1, e2) ->
+            out.getOrDefault(e1, Set.of()).forEach(e -> {
+                if (!k1.getMustSet().contains(e1, e)) {
+                    result.add(e1, e);
+                }
+            })
+        );
+        return Map.of(r1, result);
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitRangeIdentity(Relation rel, Relation r1) {
+    public Map<Relation, EventGraph> visitRangeIdentity(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        final Function<Event, Collection<Tuple>> in = k1.getMayIn();
-        return Map.of(r1, news.stream()
-                .flatMap(t -> in.apply(t.getSecond()).stream())
-                .filter(t -> !k1.containsMust(t)));
+        Map<Event, Set<Event>> in = k1.getMaySet().getInMap();
+        EventGraph result = new EventGraph();
+        news.apply((e1, e2) ->
+            in.getOrDefault(e2, Set.of()).forEach(e -> {
+                if (!k1.getMustSet().contains(e, e2)) {
+                    result.add(e, e2);
+                }
+            })
+        );
+        return Map.of(r1, result);
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitInverse(Relation rel, Relation r1) {
+    public Map<Relation, EventGraph> visitInverse(Relation rel, Relation r1) {
         final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
-        return Map.of(r1, news.stream().map(Tuple::getInverse).filter(t -> k1.containsMay(t) && !k1.containsMust(t)));
+        return Map.of(r1, news.inverse().filter((e1, e2) -> k1.getMaySet().contains(e1, e2) && !k1.getMustSet().contains(e1, e2)));
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitTransitiveClosure(Relation rel, Relation r1) {
-        HashSet<Tuple> factors = new HashSet<>();
+    public Map<Relation, EventGraph> visitTransitiveClosure(Relation rel, Relation r1) {
+        EventGraph factors = new EventGraph();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rel);
-        final Function<Event, Collection<Tuple>> out = mayOutCache.computeIfAbsent(r1, k -> k0.getMayOut());
-        for (Tuple t : news) {
-            Event e = t.getSecond();
-            for (Tuple t1 : out.apply(t.getFirst())) {
-                Tuple t2 = new Tuple(t1.getSecond(), e);
-                if (k0.containsMay(t2)) {
-                    if (!k0.containsMust(t1)) {
-                        factors.add(t1);
+        Map<Event, Set<Event>> out = k0.getMaySet().getOutMap();
+        news.apply((e1, e2) -> {
+            for (Event e : out.getOrDefault(e1, Set.of())) {
+                if (k0.getMaySet().contains(e, e2)) {
+                    if (!k0.getMustSet().contains(e1, e)) {
+                        factors.add(e1, e);
                     }
-                    if (!k0.containsMust(t2)) {
-                        factors.add(t2);
+                    if (!k0.getMustSet().contains(e, e2)) {
+                        factors.add(e, e2);
                     }
                 }
             }
-        }
-        return map(rel, factors.stream(), r1, filterUnknowns(news, r1));
+        });
+        return map(rel, factors, r1, filterUnknowns(news, r1));
     }
 
     @Override
-    public Map<Relation, Stream<Tuple>> visitCriticalSections(Relation rscs) {
-        List<Tuple> queue = new ArrayList<>();
+    public Map<Relation, EventGraph> visitCriticalSections(Relation rscs) {
+        EventGraph queue = new EventGraph();
         final RelationAnalysis.Knowledge k0 = ra.getKnowledge(rscs);
-        final Function<Event, Collection<Tuple>> in = k0.getMayIn();
-        final Function<Event, Collection<Tuple>> out = k0.getMayOut();
-        for (Tuple tuple : news) {
-            Event lock = tuple.getFirst();
-            Event unlock = tuple.getSecond();
-            for (Tuple t : in.apply(unlock)) {
-                Event e = t.getFirst();
+        Map<Event, Set<Event>> in = k0.getMaySet().getInMap();
+        Map<Event, Set<Event>> out = k0.getMaySet().getOutMap();
+        news.apply((lock, unlock) -> {
+            for (Event e : in.getOrDefault(unlock, Set.of())) {
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
-                    queue.add(t);
+                    queue.add(e, unlock);
                 }
             }
-            for (Tuple t : out.apply(lock)) {
-                Event e = t.getSecond();
+            for (Event e : out.getOrDefault(lock, Set.of())) {
                 if (lock.getGlobalId() < e.getGlobalId() && e.getGlobalId() < unlock.getGlobalId()) {
-                    queue.add(t);
+                    queue.add(lock, e);
                 }
             }
-        }
-        return Map.of(rscs, queue.stream());
+        });
+        return Map.of(rscs, queue);
     }
 
-    private Stream<Tuple> filterUnknowns(Collection<Tuple> news, Relation relation) {
-        final RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
-        return news.stream().filter(t -> k.containsMay(t) && !k.containsMust(t));
+    private EventGraph filterUnknowns(EventGraph news, Relation relation) {
+        RelationAnalysis.Knowledge k = ra.getKnowledge(relation);
+        EventGraph may = k.getMaySet();
+        EventGraph must = k.getMustSet();
+        return news.filter((e1, e2) -> may.contains(e1, e2) && !must.contains(e1, e2));
     }
 
-    private static Map<Relation, Stream<Tuple>> map(Relation r1, Stream<Tuple> s1, Relation r2, Stream<Tuple> s2) {
-        return r1.equals(r2) ? Map.of(r1, Stream.concat(s1, s2)) : Map.of(r1, s1, r2, s2);
+    private static Map<Relation, EventGraph> map(Relation r1, EventGraph s1, Relation r2, EventGraph s2) {
+        return r1.equals(r2) ? Map.of(r1, EventGraph.union(s1, s2)) : Map.of(r1, s1, r2, s2);
     }
 }

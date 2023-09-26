@@ -22,7 +22,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
@@ -76,7 +75,7 @@ public abstract class ModelChecker {
             computeSpecificationFromProgramAssertions(program);
         }
     }
-    public static void preprocessMemoryModel(VerificationTask task) throws InvalidConfigurationException {
+    public static void preprocessMemoryModel(VerificationTask task) {
         task.getMemoryModel().simplify();
     }
 
@@ -143,24 +142,24 @@ public abstract class ModelChecker {
         for(Axiom ax : wmm.getAxioms()) {
             if(ax.isFlagged() && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, ctx)))) {
                 StringBuilder violatingPairs = new StringBuilder("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm())).append("\n");
-                for(Tuple tuple : encoder.getTuples(ax.getRelation(), model)) {
+                encoder.getEventGraph(ax.getRelation(), model).apply((e1, e2) -> {
                     final String callSeparator = " -> ";
                     final String callStackFirst = makeContextString(
-                            synContext.getContextInfo(tuple.getFirst()).getContextOfType(CallContext.class),
+                            synContext.getContextInfo(e1).getContextOfType(CallContext.class),
                             callSeparator);
                     final String callStackSecond = makeContextString(
-                            synContext.getContextInfo(tuple.getSecond()).getContextOfType(CallContext.class),
+                            synContext.getContextInfo(e2).getContextOfType(CallContext.class),
                             callSeparator);
 
                     violatingPairs
-                        .append("\tE").append(tuple.getFirst().getGlobalId())
-                        .append(" / E").append(tuple.getSecond().getGlobalId())
-                        .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
-                        .append(getSourceLocationString(tuple.getFirst()))
-                        .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
-                        .append(getSourceLocationString(tuple.getSecond()))
-                        .append("\n");
-                }
+                            .append("\tE").append(e1.getGlobalId())
+                            .append(" / E").append(e2.getGlobalId())
+                            .append("\t").append(callStackFirst).append(callStackFirst.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e1))
+                            .append(" / ").append(callStackSecond).append(callStackSecond.isEmpty() ? "" : callSeparator)
+                            .append(getSourceLocationString(e2))
+                            .append("\n");
+                });
                 flaggedPairsOutput += violatingPairs.toString();
             }
         }

@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclic;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -89,10 +89,10 @@ public final class EncodingContext {
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         context.initialize();
         if (logger.isInfoEnabled()) {
-            logger.info("Number of encoded tuples for acyclicity: {}",
+            logger.info("Number of encoded edges for acyclicity: {}",
                     task.getMemoryModel().getAxioms().stream()
                             .filter(Acyclic.class::isInstance)
-                            .mapToInt(a -> ((Acyclic) a).getEncodeTupleSetSize(analysisContext))
+                            .mapToInt(a -> ((Acyclic) a).getEncodeGraphSize(analysisContext))
                             .sum());
         }
         return context;
@@ -326,30 +326,23 @@ public final class EncodingContext {
 
     @FunctionalInterface
     public interface EdgeEncoder {
-
-        BooleanFormula encode(Tuple tuple);
-
-        default BooleanFormula encode(Event first, Event second) {
-            return encode(new Tuple(first, second));
-        }
+        BooleanFormula encode(Event e1, Event e2);
     }
 
     public EdgeEncoder edge(Relation relation) {
         RelationAnalysis.Knowledge k = relationAnalysis.getKnowledge(relation);
+        EventGraph may = k.getMaySet();
+        EventGraph must = k.getMustSet();
         EdgeEncoder variable = relation.getDefinition().getEdgeVariableEncoder(this);
-        return tuple -> {
-            if (!k.containsMay(tuple)) {
+        return (e1, e2) -> {
+            if (!may.contains(e1, e2)) {
                 return booleanFormulaManager.makeFalse();
             }
-            if (k.containsMust(tuple)) {
-                return execution(tuple.getFirst(), tuple.getSecond());
+            if (must.contains(e1, e2)) {
+                return execution(e1, e2);
             }
-            return variable.encode(tuple);
+            return variable.encode(e1, e2);
         };
-    }
-
-    public BooleanFormula edge(Relation relation, Tuple tuple) {
-        return edge(relation).encode(tuple);
     }
 
     public BooleanFormula edge(Relation relation, Event first, Event second) {
