@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
-import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
@@ -1143,11 +1142,15 @@ public class RelationAnalysis {
             Set<Tuple> mustSet = new HashSet<>();
             if (r1.equals(source)) {
                 computeComposition(maySet, map(may), map(knowledgeMap.get(r2).may), true);
-                computeComposition(mustSet, map(must), map(knowledgeMap.get(r2).must), false);
+                if (enableMustSets) {
+                    computeComposition(mustSet, map(must), map(knowledgeMap.get(r2).must), false);
+                }
             }
             if (r2.equals(source)) {
                 computeComposition(maySet, map(knowledgeMap.get(r1).may), map(may), true);
-                computeComposition(mustSet, map(knowledgeMap.get(r1).must), map(must), false);
+                if (enableMustSets) {
+                    computeComposition(mustSet, map(knowledgeMap.get(r1).must), map(must), false);
+                }
             }
             return new Delta(maySet, mustSet);
         }
@@ -1157,9 +1160,11 @@ public class RelationAnalysis {
                 Event e1 = entry.getKey();
                 Set<Event> update = new HashSet<>();
                 for (Event e : entry.getValue()) {
-                    update.addAll(right.getOrDefault(e, Set.of()));
-                    if (!isMay && !exec.isImplied(e1, e)) {
-                        update.removeIf(e2 -> !exec.isImplied(e2, e));
+                    if (isMay || exec.isImplied(e1, e)) {
+                        update.addAll(right.getOrDefault(e, Set.of()));
+                    } else {
+                        update.addAll(right.getOrDefault(e, Set.of()).stream()
+                                .filter(e2 -> exec.isImplied(e2, e)).toList());
                     }
                 }
                 for (Event e2 : update) {
@@ -1179,10 +1184,7 @@ public class RelationAnalysis {
                         .stream()
                         .map(e -> new Tuple(e, e))
                         .collect(toSet());
-                if (!enableMustSets) {
-                    return new Delta(maySet, Set.of());
-                }
-                Set<Tuple> mustSet = must.stream()
+                Set<Tuple> mustSet = !enableMustSets ? Set.of() : must.stream()
                         .filter(t -> exec.isImplied(t.getFirst(), t.getSecond()))
                         .map(Tuple::getFirst)
                         .collect(toSet())
@@ -1203,10 +1205,7 @@ public class RelationAnalysis {
                         .stream()
                         .map(e -> new Tuple(e, e))
                         .collect(toSet());
-                if (!enableMustSets) {
-                    return new Delta(maySet, Set.of());
-                }
-                Set<Tuple> mustSet = must.stream()
+                Set<Tuple> mustSet = !enableMustSets ? Set.of() : must.stream()
                         .filter(t -> exec.isImplied(t.getSecond(), t.getFirst()))
                         .map(Tuple::getSecond)
                         .collect(toSet())
@@ -1360,7 +1359,6 @@ public class RelationAnalysis {
             Knowledge k0 = knowledgeMap.get(r0);
             Knowledge k1 = knowledgeMap.get(r1);
             Knowledge k2 = knowledgeMap.get(r2);
-            Relation origin = this.origin;
             Map<Event, Set<Event>> mayOut1 = (origin.equals(r1) || origin.equals(r2)) && !disabled.isEmpty() ? map(k1.may) : Map.of();
             if (origin.equals(r0)) {
                 Map<Event, Set<Event>> mustOut1 = disabled.isEmpty() ? Map.of() : map(k1.must);
@@ -1388,83 +1386,100 @@ public class RelationAnalysis {
                     }
                 }
             }
+
             if (origin.equals(r1)) {
-                Map<Event, Set<Event>> mayOut2 = map(k2.may);
-                Map<Event, Set<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
-                Map<Event, Set<Event>> alternativesMap = new HashMap<>();
-                Function<Event, Set<Event>> newAlternatives = x -> new HashSet<>(mayOut1.getOrDefault(x, Set.of()));
-                for (Tuple xy : disabled) {
-                    Event x = xy.getFirst();
-                    Event y = xy.getSecond();
-                    Set<Event> alternatives = alternativesMap.computeIfAbsent(x, newAlternatives);
-                    for (Event z : mayOut2.getOrDefault(y, Set.of())) {
-                        if (!exec.areMutuallyExclusive(x, z)
-                                && Collections.disjoint(alternatives, mayIn2.getOrDefault(z, Set.of()))) {
-                            d0.add(new Tuple(x, z));
-                        }
-                    }
-                }
-                for (Tuple xy : enabled) {
-                    Event x = xy.getFirst();
-                    Event y = xy.getSecond();
-                    boolean implied = exec.isImplied(y, x);
-                    boolean implies = exec.isImplied(x, y);
-                    for (Event z : mayOut2.getOrDefault(y, Set.of())) {
-                        if (exec.areMutuallyExclusive(x, z)) {
-                            continue;
-                        }
-                        Tuple xz = new Tuple(x, z);
-                        Tuple yz = new Tuple(y, z);
-                        if ((implies || exec.isImplied(z, y)) && k2.containsMust(yz)) {
-                            e0.add(xz);
-                        }
-                        if ((implied || exec.isImplied(z, x)) && !k0.containsMay(xz)) {
-                            d2.add(yz);
-                        }
-                    }
-                }
+                List<Map<Event, Set<Event>>> result = handleCompositionChild(map(disabled), map(enabled),
+                        map(k0.may), mayOut1, map(k2.may), map(k2.must));
+                result.get(0).forEach((e1, value) -> value.forEach(e2 -> d0.add(new Tuple(e1, e2))));
+                result.get(1).forEach((e1, value) -> value.forEach(e2 -> e0.add(new Tuple(e1, e2))));
+                result.get(2).forEach((e1, value) -> value.forEach(e2 -> d2.add(new Tuple(e1, e2))));
             }
+
             if (origin.equals(r2)) {
-                Map<Event, Set<Event>> mayIn1 = mapReverse(k1.may);
-                Map<Event, Set<Event>> mayIn2 = disabled.isEmpty() ? Map.of() : mapReverse(k2.may);
-                Map<Event, Set<Event>> alternativesMap = new HashMap<>();
-                Function<Event, Set<Event>> newAlternatives = y -> new HashSet<>(mayIn2.getOrDefault(y, Set.of()));
-                for (Tuple xy : disabled) {
-                    Event x = xy.getFirst();
-                    Event y = xy.getSecond();
-                    Set<Event> alternatives = alternativesMap.computeIfAbsent(y, newAlternatives);
-                    for (Event w : mayIn1.getOrDefault(x, Set.of())) {
-                        if (!exec.areMutuallyExclusive(w, y)
-                                && Collections.disjoint(alternatives, mayOut1.getOrDefault(w, Set.of()))) {
-                            d0.add(new Tuple(w, y));
-                        }
-                    }
-                }
-                for (Tuple xy : enabled) {
-                    Event x = xy.getFirst();
-                    Event y = xy.getSecond();
-                    boolean implied = exec.isImplied(y, x);
-                    boolean implies = exec.isImplied(x, y);
-                    for (Event w : mayIn1.getOrDefault(x, Set.of())) {
-                        if (exec.areMutuallyExclusive(w, y)) {
-                            continue;
-                        }
-                        Tuple wx = new Tuple(w, x);
-                        Tuple wy = new Tuple(w, y);
-                        if ((implied || exec.isImplied(w, x)) && k1.containsMust(wx)) {
-                            e0.add(wy);
-                        }
-                        if ((implies || exec.isImplied(w, y)) && !k0.containsMay(wy)) {
-                            d1.add(wx);
-                        }
-                    }
-                }
+                List<Map<Event, Set<Event>>> result = handleCompositionChild(mapReverse(disabled), mapReverse(enabled),
+                        mapReverse(k0.may), mapReverse(k2.may), mapReverse(k1.may), mapReverse(k1.must));
+                result.get(0).forEach((e2, value) -> value.forEach(e1 -> d0.add(new Tuple(e1, e2))));
+                result.get(1).forEach((e2, value) -> value.forEach(e1 -> e0.add(new Tuple(e1, e2))));
+                result.get(2).forEach((e2, value) -> value.forEach(e1 -> d1.add(new Tuple(e1, e2))));
             }
+
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             map.put(r0, new ExtendedDelta(d0, e0));
             map.computeIfAbsent(r1, k -> new ExtendedDelta(d1, new HashSet<>())).disabled.addAll(d1);
             map.computeIfAbsent(r2, k -> new ExtendedDelta(d2, new HashSet<>())).disabled.addAll(d2);
             return map;
+        }
+
+        private List<Map<Event, Set<Event>>> handleCompositionChild(
+                Map<Event, Set<Event>> disOut1,
+                Map<Event, Set<Event>> enOut1,
+                Map<Event, Set<Event>> mayOut0,
+                Map<Event, Set<Event>> mayOut1,
+                Map<Event, Set<Event>> mayOut2,
+                Map<Event, Set<Event>> mustOut2
+        ) {
+            List<Map<Event, Set<Event>>> result = handleCompositionEnabledSet(enOut1, mayOut2, mustOut2, mayOut0);
+            Map<Event, Set<Event>> disOut0 = handleCompositionDisabledSet(disOut1, mayOut1, mayOut2);
+            Map<Event, Set<Event>> enOut0 = result.get(0);
+            Map<Event, Set<Event>> disOut2 = result.get(1);
+            return List.of(disOut0, enOut0, disOut2);
+        }
+
+        private  Map<Event, Set<Event>> handleCompositionDisabledSet(
+                Map<Event, Set<Event>> disOut1,
+                Map<Event, Set<Event>> mayOut1,
+                Map<Event, Set<Event>> mayOut2
+        ) {
+            Map<Event, Set<Event>> result = new HashMap<>();
+            for (Map.Entry<Event, Set<Event>> entry : disOut1.entrySet()) {
+                Event e1 = entry.getKey();
+                for (Event e : entry.getValue()) {
+                    Set<Event> e2Set = new HashSet<>(mayOut2.getOrDefault(e, Set.of()));
+                    e2Set.removeIf(e2 -> exec.areMutuallyExclusive(e1, e2));
+                    e2Set.removeAll(result.getOrDefault(e1, Set.of()));
+                    if (!e2Set.isEmpty()) {
+                        for (Event eAlt : mayOut1.getOrDefault(e1, Set.of())) {
+                            e2Set.removeAll(mayOut2.getOrDefault(eAlt, Set.of()));
+                            if (e2Set.isEmpty()) {
+                                break;
+                            }
+                        }
+                    }
+                    result.computeIfAbsent(e1, x -> new HashSet<>()).addAll(e2Set);
+                }
+            }
+            return result;
+        }
+
+        private List<Map<Event, Set<Event>>> handleCompositionEnabledSet(
+                Map<Event, Set<Event>> enOut1,
+                Map<Event, Set<Event>> mayOut2,
+                Map<Event, Set<Event>> mustOut2,
+                Map<Event, Set<Event>> mayOut0
+        ) {
+            Map<Event, Set<Event>> enOut0 = new HashMap<>();
+            Map<Event, Set<Event>> disOut2 = new HashMap<>();
+            for (Map.Entry<Event, Set<Event>> entry : enOut1.entrySet()) {
+                Event e1 = entry.getKey();
+                for (Event e : entry.getValue()) {
+                    Set<Event> e2Set = new HashSet<>(mayOut2.getOrDefault(e, Set.of()));
+                    e2Set.removeIf(e2 -> exec.areMutuallyExclusive(e1, e2));
+                    if (!e2Set.isEmpty()) {
+                        Set<Event> e2SetCopy = new HashSet<>(e2Set);
+                        e2Set.retainAll(mustOut2.getOrDefault(e, Set.of()));
+                        if (!exec.isImplied(e1, e)) {
+                            e2Set.removeIf(e2 -> !exec.isImplied(e2, e));
+                        }
+                        enOut0.computeIfAbsent(e1, x -> new HashSet<>()).addAll(e2Set);
+                        e2SetCopy.removeAll(mayOut0.getOrDefault(e1, Set.of()));
+                        if (!exec.isImplied(e, e1)) {
+                            e2SetCopy.removeIf(e2 -> !exec.isImplied(e2, e1));
+                        }
+                        disOut2.computeIfAbsent(e, x -> new HashSet<>()).addAll(e2SetCopy);
+                    }
+                }
+            }
+            return List.of(enOut0, disOut2);
         }
 
         @Override
