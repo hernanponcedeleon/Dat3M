@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.type.Type;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
@@ -11,8 +13,8 @@ public class VirtualMemoryObject extends MemoryObject {
     // the generic address of this virtual address
     private final VirtualMemoryObject genericAddress;
 
-    VirtualMemoryObject(int index, int size, boolean isStaticallyAllocated, boolean generic, VirtualMemoryObject alias) {
-        super(index, size, isStaticallyAllocated);
+    VirtualMemoryObject(int index, Type datatype, int size, boolean isStaticallyAllocated, boolean generic, VirtualMemoryObject alias) {
+        super(index, datatype, size, isStaticallyAllocated);
         checkArgument(generic || alias != null,
                 "Non-generic virtualMemoryObject must have generic address it alias target");
         if (alias == null) {

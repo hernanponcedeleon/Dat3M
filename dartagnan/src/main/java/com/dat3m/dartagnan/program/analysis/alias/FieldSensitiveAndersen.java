@@ -241,9 +241,9 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     private static List<Location> fields(Collection<Location> v, int offset, int alignment) {
         final List<Location> result = new ArrayList<>();
         for (Location l : v) {
-            for (int i = 0; i < div(l.base.size(), alignment); i++) {
+            for (int i = 0; i < div(l.base.getSizeInBytes(), alignment); i++) {
                 int mapped = l.offset + offset + i * alignment;
-                if ( 0 <= mapped && mapped < l.base.size()) {
+                if ( 0 <= mapped && mapped < l.base.getSizeInBytes()) {
                     Location loc = new Location(l.base, mapped);
                     result.add(loc);
                 }
@@ -291,7 +291,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 verify(address.size() == 1);
                 return fields(List.of(new Location(result.address,0)),result.offset.intValue(),result.alignment);
             }
-            return address.stream().flatMap(a->range(0,a.size()).mapToObj(i->new Location(a,i))).collect(toList());
+            return address.stream().flatMap(a->range(0,a.getSizeInBytes()).mapToObj(i->new Location(a,i))).collect(toList());
         }
 
         List<Offset<Register>> register() {

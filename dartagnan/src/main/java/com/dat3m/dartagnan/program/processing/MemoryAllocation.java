@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -16,7 +17,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /*
@@ -40,8 +40,9 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void processAllocations(Program program) {
+        final IntegerType byteType = TypeFactory.getInstance().getByteType();
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc), false);
+            final MemoryObject allocatedObject = program.getMemory().allocate(byteType, getSize(alloc), false);
             final Local local = EventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);
@@ -75,7 +76,7 @@ public class MemoryAllocation implements ProgramProcessor {
             //  => padding = k*alignment - curAddr - size
             //  => padding mod alignment = (-size) mod alignment    // k*alignment and curAddr are 0 mod alignment.
             //  => padding = (-size) mod alignment                  // Because padding < alignment
-            final BigInteger memObjSize = BigInteger.valueOf(memObj.size());
+            final BigInteger memObjSize = BigInteger.valueOf(memObj.getSizeInBytes());
             final BigInteger padding = memObjSize.negate().mod(alignment);
             nextAddr = nextAddr.add(memObjSize).add(padding);
         }
@@ -92,7 +93,7 @@ public class MemoryAllocation implements ProgramProcessor {
             final boolean isStaticallyInitialized = !isLitmus
                     && memObj.isStaticallyAllocated();
             final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
-                    memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
+                    memObj.getStaticallyInitializedFields() : memObj.getPrimitiveFields();
 
             for(int i : fieldsToInit) {
                 final Event init = EventFactory.newInit(memObj, i);

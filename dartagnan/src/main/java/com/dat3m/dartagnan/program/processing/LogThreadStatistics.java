@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
@@ -47,9 +46,9 @@ public class LogThreadStatistics implements ProgramProcessor {
 
         int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
-                .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::size).sum();
+                .filter(MemoryObject::isStaticallyAllocated).mapToInt(MemoryObject::getSizeInBytes).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()
-                .filter(MemoryObject::isDynamicallyAllocated).mapToInt(MemoryObject::size).sum();
+                .filter(MemoryObject::isDynamicallyAllocated).mapToInt(MemoryObject::getSizeInBytes).sum();
         int totalAddressSpaceSize = dynamicAddressSpaceSize + staticAddressSpaceSize;
 
         StringBuilder output = new StringBuilder();

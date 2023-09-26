@@ -4,13 +4,17 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -19,6 +23,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class MemoryObject extends IExpr {
 
     private final int index;
+    private final Type dataType;
     private int size;
     BigInteger address;
     private String cVar;
@@ -34,9 +39,10 @@ public class MemoryObject extends IExpr {
 
     private final HashMap<Integer, Expression> initialValues = new HashMap<>();
 
-    MemoryObject(int index, int size, boolean isStaticallyAllocated) {
+    MemoryObject(int index, Type dataType, int size, boolean isStaticallyAllocated) {
         super(TypeFactory.getInstance().getArchType());
         this.index = index;
+        this.dataType = checkNotNull(dataType);
         this.size = size;
         this.isStatic = isStaticallyAllocated;
         this.isThreadLocal = false;
@@ -53,6 +59,26 @@ public class MemoryObject extends IExpr {
     public boolean isStaticallyAllocated() { return isStatic; }
     public boolean isDynamicallyAllocated() { return !isStatic; }
 
+    public Iterable<Integer> getPrimitiveFields() {
+        final List<Integer> offsets = new ArrayList<>();
+        int currentOffset = 0;
+        for (final Type field : TypeFactory.getInstance().getPrimitiveFields(dataType)) {
+            offsets.add(currentOffset);
+            currentOffset += TypeFactory.getInstance().getMemorySizeInBytes(field);
+        }
+        if (size == 1) {
+            return offsets;
+        }
+        final List<Integer> result = new ArrayList<>(offsets.size() * size);
+        final int bytesPerElement = TypeFactory.getInstance().getMemorySizeInBytes(dataType);
+        for (int i = 0; i < size; i++) {
+            for (final Integer o : offsets) {
+                result.add(o + bytesPerElement * i);
+            }
+        }
+        return result;
+    }
+
     // Should only be called for statically allocated objects.
     public Set<Integer> getStaticallyInitializedFields() {
         checkState(this.isStaticallyAllocated());
@@ -66,9 +92,20 @@ public class MemoryObject extends IExpr {
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
 
     /**
+     * @return Type of elements in this object, or null if unknown.
+     */
+    public Type getDataType() { return dataType; }
+
+    /**
      * @return Number of fields in this array.
      */
-    public int size() { return size; }
+    public int getSizeInBytes() {
+        return size * TypeFactory.getInstance().getMemorySizeInBytes(dataType);
+    }
+
+    public int getNumElements() {
+        return size;
+    }
 
     /**
      * Initial value at a certain field of this array.
@@ -77,7 +114,8 @@ public class MemoryObject extends IExpr {
      * @return Readable value at the start of each execution.
      */
     public Expression getInitialValue(int offset) {
-        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        checkArgument(offset >= 0 && offset < size * TypeFactory.getInstance().getMemorySizeInBytes(dataType),
+                "array index out of bounds");
         return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
     }
 
@@ -88,7 +126,8 @@ public class MemoryObject extends IExpr {
      * @param value  New value to be read at the start of each execution.
      */
     public void setInitialValue(int offset, Expression value) {
-        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        checkArgument(offset >= 0 && offset < size * TypeFactory.getInstance().getMemorySizeInBytes(dataType),
+                "array index out of bounds");
         initialValues.put(offset, value);
     }
 

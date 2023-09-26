@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -13,19 +14,21 @@ public class Memory {
 
     /**
      * Creates a new object.
-     * @return
-     * Points to the created location.
+     * @param dataType Program type for elements in the created object, null if unknown.
+     * @param size Number of data elements, or bytes if unknown, in the object.
+     * @param isStatic True if this object is statically allocated, false if dynamically allocated.
+     * @return Created unique object accessible by memory events of the program.
      */
-    public MemoryObject allocate(int size, boolean isStatic) {
+    public MemoryObject allocate(Type dataType, int size, boolean isStatic) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        MemoryObject address = new MemoryObject(nextIndex++, size, isStatic);
+        MemoryObject address = new MemoryObject(nextIndex++, dataType, size, isStatic);
         objects.add(address);
         return address;
     }
 
-    public VirtualMemoryObject allocateVirtual(int size, boolean isStatic, boolean generic, VirtualMemoryObject alias) {
+    public VirtualMemoryObject allocateVirtual(Type datatype, int size, boolean isStatic, boolean generic, VirtualMemoryObject alias) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, size, isStatic, generic, alias);
+        VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, datatype, size, isStatic, generic, alias);
         objects.add(address);
         return address;
     }

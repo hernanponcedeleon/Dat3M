@@ -245,7 +245,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
         final int size = types.getMemorySizeInBytes(type);
-        final MemoryObject globalObject = program.getMemory().allocate(size, true);
+        final MemoryObject globalObject = program.getMemory().allocate(types.getByteType(), size, true);
         globalObject.setCVar(name);
         if (ctx.threadLocal() != null) {
             globalObject.setIsThreadLocal(true);

@@ -204,7 +204,7 @@ public final class EncodingContext {
     }
 
     public Formula lastValue(MemoryObject base, int offset) {
-        checkArgument(0 <= offset && offset < base.size(), "array index out of bounds");
+        checkArgument(0 <= offset && offset < base.getSizeInBytes(), "array index out of bounds");
         final String name = String.format("last_val_at_%s_%d", base, offset);
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);

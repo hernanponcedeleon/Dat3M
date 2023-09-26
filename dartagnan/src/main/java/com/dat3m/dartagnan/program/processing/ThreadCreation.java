@@ -129,7 +129,7 @@ public class ThreadCreation implements ProgramProcessor {
 
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
                         final IValue tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
-                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
+                        final MemoryObject comAddress = program.getMemory().allocate(types.getBooleanType(), 1, true);
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
                         final List<Event> replacement = eventSequence(
@@ -350,11 +350,11 @@ public class ThreadCreation implements ProgramProcessor {
             @Override
             public Expression visit(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
-                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
+                    final MemoryObject threadLocalCopy = memory.allocate(memObj.getDataType(), memObj.getNumElements(), true);
                     final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
                     threadLocalCopy.setCVar(varName);
-                    for (int i = 0; i < memObj.size(); i++) {
-                        threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
+                    for (Integer field : memObj.getPrimitiveFields()) {
+                        threadLocalCopy.setInitialValue(field, memObj.getInitialValue(field));
                     }
                     global2ThreadLocal.put(memObj, threadLocalCopy);
                 }
