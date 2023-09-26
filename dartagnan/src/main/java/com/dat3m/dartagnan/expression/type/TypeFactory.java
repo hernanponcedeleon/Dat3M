@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression.type;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.utils.Normalizer;
 import com.google.common.math.IntMath;
 
@@ -16,11 +15,14 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
+    private final IntegerType pointerDifferenceType;
     private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
 
     private final Normalizer typeNormalizer = new Normalizer();
 
-    private TypeFactory() {}
+    private TypeFactory() {
+        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
+    }
 
     //TODO make this part of the program.
     public static TypeFactory getInstance() {
@@ -32,6 +34,10 @@ public final class TypeFactory {
     }
 
     public VoidType getVoidType() { return voidType; }
+
+    public Type getPointerType() {
+        return pointerDifferenceType;
+    }
 
     public IntegerType getIntegerType() {
         return mathematicalIntegerType;
@@ -69,8 +75,7 @@ public final class TypeFactory {
     }
 
     public IntegerType getArchType() {
-        final int archPrecision = GlobalSettings.getArchPrecision();
-        return archPrecision < 0 ? getIntegerType() : getIntegerType(archPrecision);
+        return pointerDifferenceType;
     }
 
     public IntegerType getByteType() {
