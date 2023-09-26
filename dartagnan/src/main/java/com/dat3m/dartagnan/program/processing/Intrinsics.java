@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.BooleanType;
@@ -677,7 +678,7 @@ public class Intrinsics {
             default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
         };
         if (!(register.getType() instanceof IntegerType type)) {
-            throw new MalformedProgramException(String.format("Non-integer result register %s.", register));
+            throw new ParsingException(String.format("Non-integer result register %s.", register));
         }
         var expression = new INonDet(constantId++, type, signed);
         expression.setMin(min);

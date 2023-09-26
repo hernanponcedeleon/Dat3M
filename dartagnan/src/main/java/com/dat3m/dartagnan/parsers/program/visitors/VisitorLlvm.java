@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
@@ -44,7 +45,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
+    private final Type pointerType = GlobalSettings.getArchPrecision() == -1 ?
+            // Intentionally ignore the given precision for pointers
+            types.getIntegerType() : types.getIntegerType(64);
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
