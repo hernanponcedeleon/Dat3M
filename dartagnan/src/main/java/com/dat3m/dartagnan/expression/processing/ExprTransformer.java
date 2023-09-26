@@ -114,4 +114,10 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         }
         return expressions.makeGetElementPointer(getElementPointer.getIndexingType(), base, offsets);
     }
+
+    @Override
+    public Expression visit(PointerCast pointerCast) {
+        final Expression inner = pointerCast.getInnerExpression().accept(this);
+        return expressions.makeCast(inner, pointerCast.getType(), pointerCast.isSigned());
+    }
 }

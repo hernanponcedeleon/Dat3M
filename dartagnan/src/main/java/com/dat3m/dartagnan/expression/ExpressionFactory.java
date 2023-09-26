@@ -101,11 +101,18 @@ public final class ExpressionFactory {
     }
 
     public Expression makeCast(Expression expression, Type type) {
+        return makeCast(expression, type, false);
+    }
+
+    public Expression makeCast(Expression expression, Type type, boolean signed) {
         if (type instanceof BooleanType) {
             return makeBooleanCast(expression);
         }
+        if (type instanceof PointerType pointerType) {
+            return makeToPointerCast(expression, pointerType, signed);
+        }
         if (type instanceof IntegerType integerType) {
-            return makeIntegerCast(expression, integerType, false);
+            return makeIntegerCast(expression, integerType, signed);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s.", expression, type));
     }
@@ -163,6 +170,9 @@ public final class ExpressionFactory {
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
         if (operand.getType() instanceof BooleanType) {
             return makeConditional(operand, makeOne(targetType), makeZero(targetType));
+        }
+        if (operand.getType() instanceof PointerType) {
+            return new PointerCast(operand, targetType, signed);
         }
         return makeUnary(signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED, operand, targetType);
     }
@@ -249,9 +259,13 @@ public final class ExpressionFactory {
     }
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        //TODO getPointerType()
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
-                "Applying offsets to non-pointer expression.");
-        return new GEPExpression(types.getArchType(), indexingType, base, offsets);
+        return new GEPExpression(base.getType(), indexingType, base, offsets);
+    }
+
+    public Expression makeToPointerCast(Expression expression, PointerType targetType, boolean signed) {
+        if (expression.getType() instanceof PointerType) {
+            return expression;
+        }
+        return new PointerCast(expression, targetType, signed);
     }
 }

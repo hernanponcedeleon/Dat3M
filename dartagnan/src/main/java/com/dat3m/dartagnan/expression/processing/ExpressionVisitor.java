@@ -25,4 +25,5 @@ public interface ExpressionVisitor<T> {
     default T visit(Extraction extraction) { return null; }
     default T visit(NullPointer nullPointer) { return null; }
     default T visit(GEPExpression getElementPointer) { return null; }
+    default T visit(PointerCast pointerCast) { return null; }
 }

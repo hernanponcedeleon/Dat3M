@@ -61,6 +61,12 @@ public interface ExpressionInspector extends ExpressionVisitor<Expression>{
         return getElementPointer;
     }
 
+    @Override
+    default Expression visit(PointerCast pointerCast) {
+        pointerCast.getInnerExpression().accept(this);
+        return pointerCast;
+    }
+
     default Expression visit(Location location) {
         location.getMemoryObject().accept(this);
         return location;

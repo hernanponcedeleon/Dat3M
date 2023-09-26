@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -283,6 +285,33 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 return base;
             }
             return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
+        }
+
+        @Override
+        public Expression visit(PointerCast cast) {
+            final Expression inner = transform(cast.getInnerExpression());
+            if (cast.getType() instanceof PointerType) {
+                Verify.verify(inner.getType() instanceof IntegerType, "Invalid cast to pointer: %s", cast);
+                if (inner instanceof IValue value && value.isZero()) {
+                    return expressions.makeNullPointer();
+                }
+                if (inner instanceof PointerCast innerCast) {
+                    final Expression innerInner = innerCast.getInnerExpression();
+                    Verify.verify(innerInner.getType() instanceof PointerType);
+                    //FIXME ignores narrowing to i.e. i8
+                    return innerInner;
+                }
+                return expressions.makeToPointerCast(inner, (PointerType) cast.getType(), cast.isSigned());
+            } else {
+                Verify.verify(cast.getType() instanceof IntegerType && inner.getType() instanceof PointerType,
+                        "Invalid cast from pointer: %s", cast);
+                if (inner instanceof NullPointer) {
+                    return expressions.makeZero((IntegerType) cast.getType());
+                }
+                final var type = (IntegerType) cast.getType();
+                final var template = inner instanceof PointerCast i ? i : cast;
+                return expressions.makeIntegerCast(template.getInnerExpression(), type, template.isSigned());
+            }
         }
 
         private Expression transform(Expression expression) {
