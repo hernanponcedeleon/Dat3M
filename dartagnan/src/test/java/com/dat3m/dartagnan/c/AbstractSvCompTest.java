@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.c;
 
-import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -60,14 +58,7 @@ public abstract class AbstractSvCompTest {
     }
 
     protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> {
-            Configuration config = Configuration.builder()
-                            .setOption(OptionNames.USE_INTEGERS, "false")
-                            .build();
-            // FIXME: Setting the global settings here is super fishy, but we have no other choice for now...
-            GlobalSettings.configure(config);
-            return config;
-        });
+        return Provider.fromSupplier(Configuration::defaultConfiguration);
     }
 
     protected Provider<Result> getExpectedResultProvider() {

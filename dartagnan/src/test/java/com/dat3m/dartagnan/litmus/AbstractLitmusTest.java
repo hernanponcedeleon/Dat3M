@@ -30,13 +30,12 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.google.common.io.Files.getNameWithoutExtension;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractLitmusTest {
-
-    private static final boolean DO_INITIALIZE_REGISTERS = true;
 
     private String path;
     private final Result expected;
@@ -81,6 +80,13 @@ public abstract class AbstractLitmusTest {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(() -> Configuration.builder()
+                .setOption(INITIALIZE_REGISTERS, "true")
+                .setOption(USE_INTEGERS, "true")
+                .build());
+    }
+
     protected Provider<Integer> getBoundProvider() {
         return Provider.fromSupplier(() -> 1);
     }
@@ -100,7 +106,7 @@ public abstract class AbstractLitmusTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() -> expectedResults.get(filePathProvider.get().substring(filePathProvider.get().indexOf("/") + 1)));
-    protected final Provider<Configuration> configProvider = Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+    protected final Provider<Configuration> configProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, ProverOptions.GENERATE_MODELS);

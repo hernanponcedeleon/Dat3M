@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -47,10 +48,12 @@ public class MiscellaneousTest extends AbstractCTest {
     @Override
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> {
+            ConfigurationBuilder builder = Configuration.builder();
+            builder.setOption(OptionNames.USE_INTEGERS, "true");
             if (name.equals("recursion")) {
-                return Configuration.builder().setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound)).build();
+                builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
             }
-            return Configuration.defaultConfiguration();
+            return builder.build();
         });
     }
 

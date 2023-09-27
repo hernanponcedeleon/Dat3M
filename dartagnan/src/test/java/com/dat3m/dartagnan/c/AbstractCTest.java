@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
@@ -54,7 +55,9 @@ public abstract class AbstractCTest {
     }
 
     protected Provider<Configuration> getConfigurationProvider() {
-        return Configuration::defaultConfiguration;
+        return Provider.fromSupplier(() -> Configuration.builder()
+                .setOption(OptionNames.USE_INTEGERS, "true")
+                .build());
     }
 
     // =============================================================
