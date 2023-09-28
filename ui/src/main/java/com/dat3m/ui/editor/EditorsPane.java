@@ -12,7 +12,7 @@ import java.awt.*;
 public class EditorsPane {
 
     private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), "litmus", "c", "bpl", "ll"),
+            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), "litmus", "c", "ll"),
             EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), "cat")
     );
 

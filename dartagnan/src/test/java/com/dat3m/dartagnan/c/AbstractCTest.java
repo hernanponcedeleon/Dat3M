@@ -37,7 +37,7 @@ public abstract class AbstractCTest {
     // =================== Modifiable behavior ====================
 
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath(name + ".bpl"));
+        return Provider.fromSupplier(() -> getTestResourcePath(name + ".ll"));
     }
 
     protected abstract long getTimeout();

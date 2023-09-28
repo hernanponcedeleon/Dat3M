@@ -86,7 +86,7 @@ You can also run Dartagnan from the console:
 ```
 java -jar dartagnan/target/dartagnan.jar <CAT file> [--target=<arch>] <program file> [options]
 ```
-For programs written in `.c` and `.bpl`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
+For programs written in `.c`, value `<arch>` specifies the programming language or architectures to which the program will be compiled. For programs written in `.litmus` format, if the `--target` option is not given, Dartagnan will automatically extract the `<arch>` from the litmus test header. `<arch>` must be one of the following: 
 - c11
 - lkmm
 - imm

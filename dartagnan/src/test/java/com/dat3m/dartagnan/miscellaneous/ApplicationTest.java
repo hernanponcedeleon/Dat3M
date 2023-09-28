@@ -53,7 +53,7 @@ public class ApplicationTest {
     public void Validation() throws Exception {
         String[] options = new String[3];
 
-        options[0] = getTestResourcePath("witness/lazy01-for-witness.bpl");
+        options[0] = getTestResourcePath("witness/lazy01-for-witness.ll");
         options[1] = getRootPath("cat/svcomp.cat");
         options[2] = String.format("--%s=%s", VALIDATE, getTestResourcePath("witness/lazy01.graphml"));
 
@@ -83,7 +83,7 @@ public class ApplicationTest {
     public void WrongCATFormat() throws Exception {
         String[] options = new String[2];
 
-        options[0] = getTestResourcePath("witness/lazy01-for-witness.bpl");
+        options[0] = getTestResourcePath("witness/lazy01-for-witness.ll");
         options[1] = getRootPath("cat/linux-kernel.bell");
 
         Dartagnan.main(options);
