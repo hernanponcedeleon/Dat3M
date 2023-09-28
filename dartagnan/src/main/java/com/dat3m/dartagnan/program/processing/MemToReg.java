@@ -74,7 +74,7 @@ public class MemToReg implements FunctionProcessor {
         for (int i = 0; i < events.size(); i = back == null ? i + 1 : Collections.binarySearch(events, back, eventComparator)) {
             back = events.get(i).accept(matcher);
         }
-        // Replace every unmarked address
+        // Replace every unmarked address.
         final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             if (matcher.reachabilityGraph.containsKey(allocation)) {
@@ -147,10 +147,6 @@ public class MemToReg implements FunctionProcessor {
         private AddressOffset increase(int o) {
             return o == 0 ? this : new AddressOffset(base, offset + o);
         }
-        @Override
-        public String toString() {
-            return base + (offset == 0 ? "" : " + " + offset);
-        }
     }
 
     // Invariant: register != null
@@ -169,7 +165,7 @@ public class MemToReg implements FunctionProcessor {
         private final Map<RegWriter, Set<RegWriter>> reachabilityGraph = new HashMap<>();
         // Collects candidates to be replaced.
         private final Map<MemoryEvent, AddressOffset> accesses = new HashMap<>();
-        // Collects pointer operations.  Maps to
+        // Keeps track of pointer operations.  Maps assignments to the address value they must return.
         private final Map<Local, AddressOffset> assignments = new HashMap<>();
         private boolean dead;
 
@@ -351,11 +347,7 @@ public class MemToReg implements FunctionProcessor {
         }
 
         private static <K, V> void update(Map<K, V> target, K key, V value) {
-            if (value == null) {
-                target.remove(key);
-            } else {
-                target.put(key, value);
-            }
+            target.compute(key, (k, v) -> value);
         }
     }
 }
