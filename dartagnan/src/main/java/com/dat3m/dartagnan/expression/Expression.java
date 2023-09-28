@@ -13,8 +13,7 @@ public interface Expression {
         return ImmutableSet.of();
     }
 
-    // TODO: Rename to "accept"
-    <T> T visit(ExpressionVisitor<T> visitor);
+    <T> T accept(ExpressionVisitor<T> visitor);
 
     default IConst reduce() {
         throw new UnsupportedOperationException("Reduce not supported for " + this);

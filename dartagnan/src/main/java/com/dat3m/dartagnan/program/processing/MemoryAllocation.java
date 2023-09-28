@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -34,26 +34,28 @@ public class MemoryAllocation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        processMallocs(program);
+        processAllocations(program);
         moveAndAlignMemoryObjects(program.getMemory());
         createInitEvents(program);
     }
 
-    private void processMallocs(Program program) {
-        for (Malloc malloc : program.getThreadEvents(Malloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(malloc), false);
-            final Local local = EventFactory.newLocal(malloc.getResultRegister(), allocatedObject);
+    private void processAllocations(Program program) {
+        for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
+            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc), false);
+            final Local local = EventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
-            local.copyAllMetadataFrom(malloc);
-            malloc.replaceBy(local);
+            local.copyAllMetadataFrom(alloc);
+            alloc.replaceBy(local);
+
+            // TODO: We can initialize the initial memory based on the allocation type.
         }
     }
 
-    private int getSize(Malloc malloc) {
+    private int getSize(Alloc alloc) {
         try {
-            return malloc.getSizeExpr().reduce().getValueAsInt();
+            return alloc.getAllocationSize().reduce().getValueAsInt();
         } catch (Exception e) {
-            final String error = String.format("Variable-sized malloc '%s' is not supported", malloc);
+            final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
             throw new MalformedProgramException(error);
         }
     }
@@ -90,8 +92,7 @@ public class MemoryAllocation implements ProgramProcessor {
             // The last case "heuristically checks" if Smack generated initialization or not:
             // if any field is statically initialized, then likely everything is initialized.
             final boolean isStaticallyInitialized = !isLitmus
-                    && memObj.isStaticallyAllocated()
-                    && memObj.getStaticallyInitializedFields().size() > 1;
+                    && memObj.isStaticallyAllocated();
             final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 

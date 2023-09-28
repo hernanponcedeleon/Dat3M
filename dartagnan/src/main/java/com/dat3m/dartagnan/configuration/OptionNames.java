@@ -14,7 +14,6 @@ public class OptionNames {
 
 	// Modeling Options
 	public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
-	public static final String ARCH_PRECISION = "modeling.precision";
 	public static final String RECURSION_BOUND = "modeling.recursionBound";
 
 	// Compilation Options
@@ -22,6 +21,7 @@ public class OptionNames {
 	public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 	
 	// Encoding Options
+	public static final String USE_INTEGERS = "encoding.integers";
 	public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
 	public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
 	public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";//TODO also influences RA
@@ -30,7 +30,7 @@ public class OptionNames {
 	public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
 	public static final String BREAK_SYMMETRY_BY_SYNC_DEGREE = "encoding.symmetry.orderBySyncDegree";
 	public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
-	
+
 	// Program Processing Options
 	public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
 	public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";

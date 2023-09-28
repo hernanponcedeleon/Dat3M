@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -21,10 +23,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
@@ -80,8 +79,13 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         Map<Register, Expression> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
+        final List<LoopAnalysis.LoopIterationInfo> loops = LoopAnalysis.onFunction(func).getLoopsOfFunction(func)
+                .stream().filter(info -> !info.isUnrolled())
+                .map(info -> info.iterations().get(0)).toList();
+
         final ConstantPropagator propagator = new ConstantPropagator();
         for (Event cur : func.getEvents()) {
+
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
                 // Merge inflow and mark the branch as alive (since it has inflow)
                 propagationMap = isTraversingDeadBranch ? inflowMap.get(cur) : join(propagationMap, inflowMap.get(cur));
@@ -89,6 +93,20 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             }
 
             if (!isTraversingDeadBranch) {
+                if (cur instanceof Label) {
+                    // If we enter a loop, we remove all registers in the propagationMap that
+                    // are touched by the loop body.
+                    final LoopAnalysis.LoopIterationInfo loop = loops.stream()
+                            .filter(l -> l.getIterationStart() == cur).findFirst().orElse(null);
+                    if (loop != null) {
+                        for (Event e : loop.computeBody()) {
+                            if (e instanceof RegWriter writer) {
+                                propagationMap.remove(writer.getResultRegister());
+                            }
+                        }
+                    }
+                }
+
                 propagator.propagationMap = propagationMap;
                 if (cur instanceof RegReader regReader) {
                     regReader.transformExpressions(propagator);
@@ -132,19 +150,20 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         // ---------- Remove dead code ----------
+        final Set<Event> toBeDeleted = new HashSet<>();
         for (Event e : func.getEvents()) {
-            if (reachableEvents.contains(e)) {
-                continue;
-            } else if (e instanceof Label && e.hasTag(Tag.NOOPT)) {
-                //FIXME: This check is just to avoid deleting loop-related labels (especially
+            if (reachableEvents.contains(e) || (e instanceof Label && e.hasTag(Tag.NOOPT))) {
+                //FIXME: The second check is just to avoid deleting loop-related labels (especially
                 // the loop end marker) because those are used to find unrolled loops.
                 // There should be better ways that do not retain such dead code: for example,
                 // we could move the loop end marker into the last non-dead iteration.
                 continue;
             }
-            if (!e.tryDelete()) {
-                logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
-            }
+            toBeDeleted.add(e);
+        }
+        final Set<Event> failedToDelete = IRHelper.bulkDelete(toBeDeleted);
+        for (Event e : failedToDelete) {
+            logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
         }
     }
 
@@ -251,7 +270,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         private Expression transform(Expression expression) {
-            Expression result = expression.visit(this);
+            Expression result = expression.accept(this);
             Verify.verify(result.getType().equals(expression.getType()), "Type mismatch in constant propagation.");
             return result;
         }

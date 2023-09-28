@@ -90,8 +90,8 @@ public class AtomicCmpXchg extends SingleAccessMemoryEvent implements RegWriter 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         super.transformExpressions(exprTransformer);
-        this.storeValue = storeValue.visit(exprTransformer);
-        this.expectedAddr = expectedAddr.visit(exprTransformer);
+        this.storeValue = storeValue.accept(exprTransformer);
+        this.expectedAddr = expectedAddr.accept(exprTransformer);
     }
 
     @Override

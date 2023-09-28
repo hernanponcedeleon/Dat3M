@@ -17,9 +17,9 @@ public class Register implements Expression {
     private final Function function;
     private final Type type;
 
-    public Register(String name, Function func, Type type) {
+    Register(String name, Function function, Type type) {
         this.name = checkNotNull(name);
-        this.function = func;
+        this.function = function;
         this.type = checkNotNull(type);
     }
 
@@ -35,6 +35,10 @@ public class Register implements Expression {
         this.cVar = name;
     }
 
+    public Thread getThread() {
+        return function instanceof Thread thread ? thread : null;
+    }
+
     public Function getFunction() {
         return function;
     }
@@ -46,7 +50,7 @@ public class Register implements Expression {
 
     @Override
     public String toString() {
-        return name;
+        return type + " " + name;
     }
 
     @Override
@@ -72,7 +76,7 @@ public class Register implements Expression {
     }
 
     @Override
-    public <T> T visit(ExpressionVisitor<T> visitor) {
+    public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
     }
 

@@ -22,7 +22,7 @@ public class BConst extends BExpr {
 	}
 
 	@Override
-	public <T> T visit(ExpressionVisitor<T> visitor) {
+	public <T> T accept(ExpressionVisitor<T> visitor) {
 		return visitor.visit(this);
 	}
 

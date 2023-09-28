@@ -46,6 +46,6 @@ public class AbortIf extends AbstractEvent implements RegReader {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.condition = condition.visit(exprTransformer);
+        this.condition = condition.accept(exprTransformer);
     }
 }

@@ -27,7 +27,6 @@ public final class Tag {
 
     // ---------- Internally used tags (not referenced in CAT) ----------
     public static final String EXCL             = "__EXCL";
-    public static final String ASSERTION        = "__ASS";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
     public static final String BOUND            = "__BOUND";
     // Marks jumps that somehow terminate a thread earlier than "normally"

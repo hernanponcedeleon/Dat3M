@@ -16,12 +16,14 @@ void *thread_1(void *unused)
 {
   r0_0 = atomic_add_return_relaxed(1,&x);
   r1_0 = atomic_read(&y);
+  return NULL;
 }
 
 void *thread_2(void *unused)
 {
   r0_1 = atomic_add_return_relaxed(1,&y);
   r1_1 = atomic_read(&x);
+  return NULL;
 }
 
 int main()

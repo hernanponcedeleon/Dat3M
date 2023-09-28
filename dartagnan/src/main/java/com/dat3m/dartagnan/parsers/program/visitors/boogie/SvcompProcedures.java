@@ -2,12 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.boogie;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.parsers.BoogieParser.Call_cmdContext;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-
-import java.math.BigInteger;
 
 public class SvcompProcedures {
 
@@ -48,7 +45,7 @@ public class SvcompProcedures {
     }
 
     private static void __VERIFIER_loop_bound(VisitorBoogie visitor, Call_cmdContext ctx) {
-        final int bound = ((IExpr) ctx.call_params().exprs().expr(0).accept(visitor)).reduce().getValueAsInt();
+        final Expression bound = (Expression) ctx.call_params().exprs().expr(0).accept(visitor);
         visitor.addEvent(EventFactory.Svcomp.newLoopBound(bound));
     }
 }

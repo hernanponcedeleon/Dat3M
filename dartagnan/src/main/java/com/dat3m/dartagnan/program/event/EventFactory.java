@@ -4,7 +4,9 @@ import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -25,16 +27,16 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.DirectValueFunctionCall;
-import com.dat3m.dartagnan.program.event.functions.DirectVoidFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
+import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -88,6 +90,10 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
+    public static Alloc newAlloc(Register register, Type allocType, Expression arraySize, boolean isHeapAlloc) {
+        return new Alloc(register, allocType, arraySize, isHeapAlloc);
+    }
+
     public static Load newLoad(Register register, Expression address) {
         return new Load(register, address);
     }
@@ -130,12 +136,20 @@ public class EventFactory {
         return new Init(base, offset, address);
     }
 
-    public static DirectValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
-        return new DirectValueFunctionCall(resultRegister, function, arguments);
+    public static ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
+        return new ValueFunctionCall(resultRegister, function.getFunctionType(), function, arguments);
     }
 
-    public static DirectVoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
-        return new DirectVoidFunctionCall(function, arguments);
+    public static ValueFunctionCall newValueFunctionCall(Register resultRegister, FunctionType funcType,
+                                                         Expression funcPtr, List<Expression> arguments) {
+        return new ValueFunctionCall(resultRegister, funcType, funcPtr, arguments);
+    }
+
+    public static VoidFunctionCall newVoidFunctionCall(Function function, List<Expression> arguments) {
+        return new VoidFunctionCall(function.getFunctionType(), function, arguments);
+    }
+    public static VoidFunctionCall newVoidFunctionCall(FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
+        return new VoidFunctionCall(funcType, funcPtr, arguments);
     }
 
     public static Return newFunctionReturn(Expression returnExpression) {
@@ -203,6 +217,10 @@ public class EventFactory {
 
     public static Assume newAssume(Expression expr) {
         return new Assume(expr);
+    }
+
+    public static Assert newAssert(Expression expr, String errorMessage) {
+        return new Assert(expr, errorMessage);
     }
 
     // ------------------------------------------ RMW events ------------------------------------------
@@ -397,18 +415,6 @@ public class EventFactory {
     }
 
     // =============================================================================================
-    // ========================================= Standard ==========================================
-    // =============================================================================================
-
-    public static class Std {
-        private Std() { }
-
-        public static Malloc newMalloc(Register resultReg, Expression sizeExpr) {
-            return new Malloc(resultReg, sizeExpr);
-        }
-    }
-
-    // =============================================================================================
     // ========================================== Svcomp ===========================================
     // =============================================================================================
 
@@ -436,7 +442,7 @@ public class EventFactory {
             return new SpinEnd();
         }
 
-        public static LoopBound newLoopBound(int bound) {
+        public static LoopBound newLoopBound(Expression bound) {
             return new LoopBound(bound);
         }
     }

@@ -72,7 +72,7 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.expr = expr.visit(exprTransformer);
+        this.expr = expr.accept(exprTransformer);
     }
 
     @Override

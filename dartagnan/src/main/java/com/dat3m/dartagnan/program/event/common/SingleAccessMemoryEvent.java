@@ -67,7 +67,7 @@ public abstract class SingleAccessMemoryEvent extends AbstractEvent implements M
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.address = address.visit(exprTransformer);
+        this.address = address.accept(exprTransformer);
     }
 }
 

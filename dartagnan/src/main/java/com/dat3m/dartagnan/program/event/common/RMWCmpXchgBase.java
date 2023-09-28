@@ -60,8 +60,8 @@ public abstract class RMWCmpXchgBase extends SingleAccessMemoryEvent implements 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         super.transformExpressions(exprTransformer);
-        this.expectedValue = expectedValue.visit(exprTransformer);
-        this.storeValue = storeValue.visit(exprTransformer);
+        this.expectedValue = expectedValue.accept(exprTransformer);
+        this.storeValue = storeValue.accept(exprTransformer);
     }
 
     @Override

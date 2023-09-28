@@ -52,7 +52,7 @@ public class Return extends AbstractEvent implements RegReader {
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         if (expression != null) {
-            this.expression = expression.visit(exprTransformer);
+            expression = expression.accept(exprTransformer);
         }
     }
 }

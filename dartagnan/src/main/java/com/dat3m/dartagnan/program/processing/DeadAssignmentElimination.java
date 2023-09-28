@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -16,7 +16,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.program.event.Tag.*;
+import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
+import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
 
 // This is just Dead Store Elimination, but the use of the term "Store" can be confusing in our setting 
 public class DeadAssignmentElimination implements FunctionProcessor {
@@ -68,7 +69,6 @@ public class DeadAssignmentElimination implements FunctionProcessor {
     }
 
     private boolean isSideEffectFree(Event event) {
-        return !event.hasTag(ASSERTION) &&
-                !event.hasTag(VISIBLE) && (event instanceof Local || event instanceof Malloc);
+        return !event.hasTag(VISIBLE) && (event instanceof Local || event instanceof Alloc);
     }
 }

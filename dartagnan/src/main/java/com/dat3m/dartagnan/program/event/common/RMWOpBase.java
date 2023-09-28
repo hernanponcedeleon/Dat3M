@@ -41,7 +41,7 @@ public abstract class RMWOpBase extends SingleAccessMemoryEvent {
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         super.transformExpressions(exprTransformer);
-        this.operand = operand.visit(exprTransformer);
+        this.operand = operand.accept(exprTransformer);
     }
 
     @Override

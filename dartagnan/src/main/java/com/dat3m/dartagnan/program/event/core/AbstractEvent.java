@@ -87,7 +87,12 @@ public abstract class AbstractEvent implements Event {
 
     @Override
     public void copyMetadataFrom(Event other, Class<? extends Metadata> metadataClass) {
-        other.setMetadata(other.getMetadata(metadataClass));
+        Metadata metadata = other.getMetadata(metadataClass);
+        if (metadata == null) {
+            this.metadataMap.remove(metadataClass);
+        } else {
+            this.setMetadata(metadata);
+        }
     }
 
     @Override
@@ -178,10 +183,6 @@ public abstract class AbstractEvent implements Event {
             user.getReferencedEvents().forEach(e -> e.removeUser(user));
         }
         this.detach();
-
-        for (Event user : currentUsers) {
-            user.forceDelete();
-        }
     }
 
     @Override

@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include <assert.h>
 
 /*
     The test shows thread-local storage + initialization.
@@ -18,8 +19,9 @@ void check(int value) {
 
 void *thread2(void *arg)
 {
-   data = (int)arg;
-   check(2);
+    data = (int)arg;
+    check(2);
+    return NULL;
 }
 
 void *thread1(void *arg)
@@ -27,10 +29,11 @@ void *thread1(void *arg)
     data = (int)arg;
 
     pthread_t t2;
-    pthread_create(&t2, NULL, thread2, 2);
+    pthread_create(&t2, NULL, thread2, (void*)2);
     pthread_join(t2, NULL);
 
     check(1);
+    return NULL;
 }
 
 int main()

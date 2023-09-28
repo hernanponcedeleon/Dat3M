@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class ExpressionFactory {
 
@@ -54,6 +56,29 @@ public final class ExpressionFactory {
 
     public Expression makeBinary(Expression leftOperand, BOpBin operator, Expression rightOperand) {
         return new BExprBin(booleanType, leftOperand, operator, rightOperand);
+    }
+
+    public Expression makeGeneralZero(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            Expression zero = makeGeneralZero(arrayType.getElementType());
+            List<Expression> zeroes = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                zeroes.add(zero);
+            }
+            return makeArray(arrayType.getElementType(), zeroes, true);
+        } else if (type instanceof AggregateType structType) {
+            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
+            for (Type fieldType : structType.getDirectFields()) {
+                zeroes.add(makeGeneralZero(fieldType));
+            }
+            return makeConstruct(zeroes);
+        } else if (type instanceof IntegerType intType) {
+            return makeZero(intType);
+        } else if (type == booleanType) {
+            return makeFalse();
+        } else {
+            throw new UnsupportedOperationException("Cannot create zero of type " + type);
+        }
     }
 
     public IValue makeZero(IntegerType type) {
@@ -193,5 +218,33 @@ public final class ExpressionFactory {
         Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
                 "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
         return new IExprBin((IntegerType) leftOperand.getType(), leftOperand, operator, rightOperand);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Aggregates
+
+    public Expression makeConstruct(List<Expression> arguments) {
+        final AggregateType type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
+        return new Construction(type, arguments);
+    }
+
+    public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
+        final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
+                types.getArrayType(elementType);
+        return new Construction(type, items);
+    }
+
+    public Expression makeExtract(int fieldIndex, Expression object) {
+        return new Extraction(fieldIndex, object);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Pointers
+
+    public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
+        //TODO getPointerType()
+        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+                "Applying offsets to non-pointer expression.");
+        return new GEPExpression(types.getArchType(), indexingType, base, offsets);
     }
 }

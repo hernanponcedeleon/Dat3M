@@ -19,6 +19,7 @@ void *thread_1(void *unused)
 	if (r3_0) {
 		WRITE_ONCE(y, 1);
 	}
+    return NULL;
 }
 
 void *thread_2(void *unused)
@@ -28,11 +29,13 @@ void *thread_2(void *unused)
 	if (r4_1) {
 		WRITE_ONCE(x, 1);
 	}
+    return NULL;
 }
 
 void *thread_3(void *unused)
 {
 	WRITE_ONCE(x, 2);
+    return NULL;
 }
 
 int main()

@@ -30,6 +30,10 @@ public class Memory {
         return address;
     }
 
+    public boolean deleteMemoryObject(MemoryObject obj) {
+        return objects.remove(obj);
+    }
+
     /**
      * Accesses all shared variables.
      * @return

@@ -26,7 +26,7 @@ public class TSOXchg extends RMWXchgBase {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.address = address.visit(exprTransformer);
+        this.address = address.accept(exprTransformer);
         // We deliberately do not update the "storeValue" because it must match with the target register.
     }
 

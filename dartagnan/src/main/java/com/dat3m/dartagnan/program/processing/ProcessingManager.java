@@ -74,19 +74,26 @@ public class ProcessingManager implements ProgramProcessor {
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-
+        final Intrinsics intrinsics = Intrinsics.newInstance();
+        final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
+                intrinsics.markIntrinsicsPass(),
+                GEPToAddition.newInstance(),
+                RegisterDecomposition.newInstance(),
                 StaticMemoryInitializer.newInstance(),
+                NaiveDevirtualisation.newInstance(),
+                Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                Inlining.fromConfig(config),
+                                intrinsics.earlyInliningPass(),
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),
                                 Simplifier.fromConfig(config)
                         ), Target.FUNCTIONS, true
                 ),
+                RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
@@ -95,19 +102,21 @@ public class ProcessingManager implements ProgramProcessor {
                         SimpleSpinLoopDetection.fromConfig(config),
                         Target.FUNCTIONS, false
                 ),
+                ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
-                                constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null,
+                                sccp,
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                                 RemoveDeadCondJumps.fromConfig(config)
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
-                IntrinsicsInlining.fromConfig(config),
+                intrinsics.lateInliningPass(),
+                RemoveUnusedMemory.newInstance(),
                 MemoryAllocation.newInstance(),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)

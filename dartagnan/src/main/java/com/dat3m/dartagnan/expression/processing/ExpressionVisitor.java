@@ -21,4 +21,7 @@ public interface ExpressionVisitor<T> {
     default T visit(MemoryObject address) { return null; }
     default T visit(Location location) { return null; }
     default T visit(Function function) { return null; }
+    default T visit(Construction construction) { return null; }
+    default T visit(Extraction extraction) { return null; }
+    default T visit(GEPExpression getElementPointer) { return null; }
 }

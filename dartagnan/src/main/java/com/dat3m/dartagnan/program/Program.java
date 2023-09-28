@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program;
 
-
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -13,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class Program {
 
-    public enum SourceLanguage {LITMUS, BOOGIE;}
+    public enum SourceLanguage { LITMUS, BOOGIE, LLVM }
 
     private String name;
     private AbstractAssert spec;
@@ -103,11 +102,20 @@ public class Program {
         func.setProgram(this);
     }
 
+    public boolean removeFunction(Function func) {
+        return functions.remove(func);
+    }
+
     public List<Thread> getThreads() {
         return threads;
     }
 
     public List<Function> getFunctions() { return functions; }
+
+    // Looks up a declared function by name.
+    public Optional<Function> getFunctionByName(String name) {
+        return functions.stream().filter(f -> f.getName().equals(name)).findFirst();
+    }
 
     public void addConstant(INonDet constant) {
         constants.add(constant);

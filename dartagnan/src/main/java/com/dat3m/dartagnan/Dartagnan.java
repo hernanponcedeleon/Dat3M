@@ -10,10 +10,10 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -42,7 +42,6 @@ import org.sosy_lab.java_smt.api.SolverException;
 import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
@@ -243,22 +242,25 @@ public class Dartagnan extends BaseOptions {
 
         StringBuilder summary = new StringBuilder();
 
-        if (p.getFormat().equals(SourceLanguage.BOOGIE)) {
+        if (p.getFormat() != SourceLanguage.LITMUS) {
             if (hasViolations) {
 
                 final SyntacticContextAnalysis synContext = newInstance(p);
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
-                    for(Event e : p.getThreadEvents(Local.class)) {
-                        if(e.hasTag(Tag.ASSERTION) && TRUE.equals(model.evaluate(encCtx.execution(e)))) {
+                    for(Assert ass: p.getThreadEvents(Assert.class)) {
+                        final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
+                                && FALSE.equals(model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
+                        if(isViolated) {
                             final String callStack = makeContextString(
-                                    synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
+                                    synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
                             summary
-                                    .append("\tE").append(e.getGlobalId())
+                                    .append("\tE").append(ass.getGlobalId())
                                     .append(":\t")
                                     .append(callStack.isEmpty() ? callStack : callStack + " -> ")
-                                    .append(getSourceLocationString(e))
+                                    .append(getSourceLocationString(ass))
+                                    .append(": ").append(ass.getErrorMessage())
                                     .append("\n");
                         }
                     }
@@ -284,7 +286,7 @@ public class Dartagnan extends BaseOptions {
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
                         .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
-                        .collect(Collectors.toList());
+                        .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     summary.append("======= CAT specification violation found =======\n");
                     // Computed by the model checker since it needs access to the WmmEncoder
@@ -327,7 +329,7 @@ public class Dartagnan extends BaseOptions {
                     final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                             .filter(Axiom::isFlagged)
                             .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
-                            .collect(Collectors.toList());
+                            .toList();
                     for (Axiom violatedAx : violatedCATSpecs) {
                         summary.append("Flag ")
                                 .append(Optional.ofNullable(violatedAx.getName()).orElse(violatedAx.getNameOrTerm()))

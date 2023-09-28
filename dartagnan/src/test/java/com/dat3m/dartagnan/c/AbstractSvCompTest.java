@@ -57,6 +57,16 @@ public abstract class AbstractSvCompTest {
         return Property::getDefault;
     }
 
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(Configuration::defaultConfiguration);
+    }
+
+    protected Provider<Result> getExpectedResultProvider() {
+        return Provider.fromSupplier(() -> readExpected(
+                filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml",
+                "unreach-call.prp"));
+    }
+
     // Provider rules
     protected final Provider<ShutdownManager> shutdownManagerProvider = Provider.fromSupplier(ShutdownManager::create);
     protected final Provider<Arch> targetProvider = () -> Arch.C11;
@@ -65,9 +75,9 @@ public abstract class AbstractSvCompTest {
     protected final Provider<Program> programProvider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Result> expectedResultProvider = Provider.fromSupplier(() ->
-            readExpected(filePathProvider.get().substring(0, filePathProvider.get().lastIndexOf("-")) + ".yml", "unreach-call.prp"));
-    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, () -> Configuration.defaultConfiguration());
+    protected final Provider<Result> expectedResultProvider = getExpectedResultProvider();
+    protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
+    protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configurationProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
     protected final Provider<ProverEnvironment> prover2Provider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
@@ -79,6 +89,7 @@ public abstract class AbstractSvCompTest {
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(shutdownManagerProvider)
             .around(shutdownOnError)
+            .around(configurationProvider)
             .around(filePathProvider)
             .around(boundProvider)
             .around(programProvider)

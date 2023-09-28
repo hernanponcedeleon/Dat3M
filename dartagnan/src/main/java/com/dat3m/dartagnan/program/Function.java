@@ -8,7 +8,10 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -23,6 +26,8 @@ public class Function implements Expression {
 
     protected FunctionType functionType;
     protected List<Register> parameterRegs;
+
+    protected Intrinsics.Info intrinsicInfo;
 
     protected Program program;
     protected Map<String, Register> registers = new HashMap<>();
@@ -73,6 +78,10 @@ public class Function implements Expression {
 
     public boolean hasBody() { return entry != null; }
     public boolean hasReturnValue() { return !(functionType.getReturnType() instanceof VoidType); }
+
+    public boolean isIntrinsic() { return !hasBody() && intrinsicInfo != null; }
+    public Intrinsics.Info getIntrinsicInfo() { return intrinsicInfo; }
+    public void setIntrinsicInfo(Intrinsics.Info info) { this.intrinsicInfo = info; }
 
     public Event getEntry() { return entry; }
     public Event getExit() { return exit; }
@@ -141,16 +150,41 @@ public class Function implements Expression {
         }
     }
 
+    public void validate() {
+        final var labelNames = new HashSet<String>();
+        for (Event ev : getEvents()) {
+            if (ev.getFunction() != this) {
+                final String error = String.format("Event %s belongs to function %s but was found in function %s",
+                        ev, ev.getFunction(), this);
+                throw new MalformedProgramException(error);
+            }
+            if (ev instanceof CondJump jump) {
+                if (this != jump.getLabel().getFunction()) {
+                    final String error = String.format("Jump %s targets label %s of a different function",
+                            jump, jump.getLabel());
+                    throw new MalformedProgramException(error);
+                }
+            }
+            if (ev instanceof Label label) {
+                if (!labelNames.add(label.getName())) {
+                    final String error = String.format("Multiple labels with name %s in function %s",
+                            label.getName(), this);
+                    throw new MalformedProgramException(error);
+                }
+            }
+        }
+    }
+
     @Override
     public String toString() {
         final String prefix = getFunctionType().getReturnType() + " " + getName() + "(";
-        final String suffix = ")";
+        final String suffix = getFunctionType().isVarArgs() ? ", ...)" : ")";
         return parameterRegs.stream().map(r -> r.getType() + " " + r.getName())
                 .collect(Collectors.joining(", ", prefix, suffix));
     }
 
     @Override
-    public <T> T visit(ExpressionVisitor<T> visitor) {
+    public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visit(this);
     }
 

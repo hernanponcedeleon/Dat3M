@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -25,11 +26,11 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
-import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -58,6 +59,11 @@ public final class EncodingContext {
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
     private boolean shouldMergeCFVars = true;
+
+    @Option(name = USE_INTEGERS,
+            description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
+            secure = true)
+    boolean useIntegers = false;
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
@@ -195,6 +201,16 @@ public final class EncodingContext {
 
     public BooleanFormula dependency(Event first, Event second) {
         return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
+    }
+
+    public Formula lastValue(MemoryObject base, int offset) {
+        checkArgument(0 <= offset && offset < base.size(), "array index out of bounds");
+        final String name = String.format("last_val_at_%s_%d", base, offset);
+        if (useIntegers) {
+            return formulaManager.getIntegerFormulaManager().makeVariable(name);
+        }
+        //TODO match this with the actual type.
+        return formulaManager.getBitvectorFormulaManager().makeVariable(64, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
@@ -340,6 +356,20 @@ public final class EncodingContext {
         return edge(relation).encode(first, second);
     }
 
+    public Formula makeLiteral(Type type, BigInteger value) {
+        if (type instanceof BooleanType) {
+            return booleanFormulaManager.makeBoolean(!value.equals(BigInteger.ZERO));
+        }
+        if (type instanceof IntegerType integerType) {
+            if (useIntegers || integerType.isMathematical()) {
+                return formulaManager.getIntegerFormulaManager().makeNumber(value);
+            }
+            int bitWidth = integerType.getBitWidth();
+            return formulaManager.getBitvectorFormulaManager().makeBitvector(bitWidth, value);
+        }
+        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
+    }
+
     private void initialize() {
         if (shouldMergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
@@ -385,7 +415,7 @@ public final class EncodingContext {
             return booleanFormulaManager.makeVariable(name);
         }
         if (type instanceof IntegerType integerType) {
-            if (integerType.isMathematical()) {
+            if (useIntegers || integerType.isMathematical()) {
                 return formulaManager.getIntegerFormulaManager().makeVariable(name);
             }
             int bitWidth = integerType.getBitWidth();

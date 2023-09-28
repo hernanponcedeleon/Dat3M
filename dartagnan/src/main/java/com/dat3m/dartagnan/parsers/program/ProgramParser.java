@@ -7,27 +7,28 @@ import org.antlr.v4.runtime.CharStreams;
 
 import java.io.*;
 
-import static com.dat3m.dartagnan.parsers.program.utils.Compilation.*;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.applyLlvmPasses;
+import static com.dat3m.dartagnan.parsers.program.utils.Compilation.compileWithClang;
 
 public class ProgramParser {
 
-    private static final String TYPE_LITMUS_AARCH64     = "AARCH64";
-    private static final String TYPE_LITMUS_PPC         = "PPC";
-    private static final String TYPE_LITMUS_RISCV       = "RISCV";
-    private static final String TYPE_LITMUS_X86         = "X86";
-    private static final String TYPE_LITMUS_PTX         = "PTX";
+    private static final String TYPE_LITMUS_AARCH64 = "AARCH64";
+    private static final String TYPE_LITMUS_PPC = "PPC";
+    private static final String TYPE_LITMUS_RISCV = "RISCV";
+    private static final String TYPE_LITMUS_X86 = "X86";
+    private static final String TYPE_LITMUS_PTX = "PTX";
     private static final String TYPE_LITMUS_VULKAN      = "VULKAN";
-    private static final String TYPE_LITMUS_LISA        = "LISA";
-    private static final String TYPE_LITMUS_C           = "C";
+    private static final String TYPE_LITMUS_LISA = "LISA";
+    private static final String TYPE_LITMUS_C = "C";
 
     public Program parse(File file) throws Exception {
-        if(needsSmack(file)) {
-            if(needsClang(file)) {
+        if (needsSmack(file)) {
+            if (needsClang(file)) {
                 file = compileWithClang(file, "");
             }
             file = applyLlvmPasses(file);
-            file = compileWithSmack(file, "");
-            return new ProgramParser().parse(file);    		
+            // file = compileWithSmack(file, "");
+            return new ProgramParser().parse(file);
         }
 
         Program program;
@@ -45,40 +46,44 @@ public class ProgramParser {
     }
 
     private boolean needsSmack(File f) {
-        return needsClang(f) || f.getPath().endsWith(".ll");
+        return needsClang(f);
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
-        	case "c":
-        	case "i":
-        	case "ll":
-				File parsedFile = path.isEmpty() ?
-						// This is for the case where the user fully typed the program instead of loading it
-						File.createTempFile("dat3m", ".c") :
-						// This is for the case where the user loaded the program
-						new File(path, "dat3m.c");
+            case "c", "i" -> {
+                File parsedFile = path.isEmpty() ?
+                        // This is for the case where the user fully typed the program instead of loading it
+                        File.createTempFile("dat3m", ".c") :
+                        // This is for the case where the user loaded the program
+                        new File(path, "dat3m.c");
                 try (FileWriter writer = new FileWriter(parsedFile)) {
                     writer.write(raw);
                 }
                 File compiledFile = null;
-                if(needsClang(parsedFile)) {
+                if (needsClang(parsedFile)) {
                     compiledFile = compileWithClang(parsedFile, cflags);
                 }
                 File optimisedFile = applyLlvmPasses(compiledFile != null ? compiledFile : parsedFile);
-	            File bplFile = compileWithSmack(optimisedFile, cflags);
-	            Program p = new ProgramParser().parse(bplFile);
+                //File bplFile = compileWithSmack(optimisedFile, cflags);
+                Program p = new ProgramParser().parse(optimisedFile);
                 parsedFile.delete();
-                if(compiledFile != null) {
+                if (compiledFile != null) {
                     compiledFile.delete();
                 }
                 optimisedFile.delete();
-                bplFile.delete();
-	            return p;
-            case "bpl":
+               // bplFile.delete();
+                return p;
+            }
+            case "ll" -> {
+                return new ParserLlvm().parse(CharStreams.fromString(raw));
+            }
+            case "bpl" -> {
                 return new ParserBoogie().parse(CharStreams.fromString(raw));
-            case "litmus":
+            }
+            case "litmus" -> {
                 return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
+            }
         }
         throw new ParsingException("Unknown input file type");
     }
@@ -87,6 +92,8 @@ public class ProgramParser {
         String name = file.getName();
         String format = name.substring(name.lastIndexOf(".") + 1);
         switch (format) {
+            case "ll":
+                return new ParserLlvm();
             case "bpl":
                 return new ParserBoogie();
             case "litmus":
@@ -95,20 +102,20 @@ public class ProgramParser {
         throw new ParsingException("Unknown input file type");
     }
 
-    private ParserInterface getConcreteLitmusParser(String programText){
-        if(programText.indexOf(TYPE_LITMUS_AARCH64) == 0){
+    private ParserInterface getConcreteLitmusParser(String programText) {
+        if (programText.indexOf(TYPE_LITMUS_AARCH64) == 0) {
             return new ParserLitmusAArch64();
-        } else if(programText.indexOf(TYPE_LITMUS_C) == 0){
+        } else if (programText.indexOf(TYPE_LITMUS_C) == 0) {
             return new ParserLitmusC();
-        } else if(programText.indexOf(TYPE_LITMUS_PPC) == 0){
+        } else if (programText.indexOf(TYPE_LITMUS_PPC) == 0) {
             return new ParserLitmusPPC();
-        } else if(programText.indexOf(TYPE_LITMUS_X86) == 0){
+        } else if (programText.indexOf(TYPE_LITMUS_X86) == 0) {
             return new ParserLitmusX86();
-        } else if(programText.indexOf(TYPE_LITMUS_LISA) == 0){
+        } else if (programText.indexOf(TYPE_LITMUS_LISA) == 0) {
             return new ParserLitmusLISA();
-        } else if(programText.indexOf(TYPE_LITMUS_RISCV) == 0){
+        } else if (programText.indexOf(TYPE_LITMUS_RISCV) == 0) {
             return new ParserLitmusRISCV();
-        } else if(programText.indexOf(TYPE_LITMUS_PTX) == 0) {
+        } else if (programText.indexOf(TYPE_LITMUS_PTX) == 0) {
             return new ParserLitmusPTX();
         } else if(programText.indexOf(TYPE_LITMUS_VULKAN) == 0) {
             return new ParserLitmusVulkan();
@@ -116,7 +123,7 @@ public class ProgramParser {
         throw new ParsingException("Unknown input file type");
     }
 
-    private String readFirstLine(File file) throws IOException{
+    private String readFirstLine(File file) throws IOException {
         String line;
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
             line = bufferedReader.readLine();

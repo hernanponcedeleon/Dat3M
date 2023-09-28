@@ -33,13 +33,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
+import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractCompilationTest {
-
-    private static final boolean DO_INITIALIZE_REGISTERS = true;
 
     private String path;
 
@@ -75,7 +74,10 @@ public abstract class AbstractCompilationTest {
     // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
     protected List<String> getCompilationBreakers() { return emptyList(); }
     protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder().setOption(INITIALIZE_REGISTERS, String.valueOf(DO_INITIALIZE_REGISTERS)).build());
+        return Provider.fromSupplier(() -> Configuration.builder()
+                .setOption(INITIALIZE_REGISTERS, "true")
+                .setOption(USE_INTEGERS, "true")
+                .build());
     }
     // ============================================================
 

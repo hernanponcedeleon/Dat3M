@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.utils;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.INonDet;
@@ -16,8 +17,6 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
@@ -30,9 +29,13 @@ import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.program.event.Tag.NOOPT;
 import static com.google.common.base.Preconditions.checkState;
 
 public class ProgramBuilder {
@@ -69,17 +72,25 @@ public class ProgramBuilder {
             final Label endOfThread = getEndOfThreadLabel(thread.getId());
             // The terminator should not get inserted somewhere beforehand.
             Verify.verify(endOfThread.getFunction() == null);
-            addChild(thread.getId(), endOfThread);
+            // Every event in litmus tests is non-optimisable
+            if (program.getFormat() == LITMUS) {
+                endOfThread.addTags(NOOPT);
+            }
+            thread.append(endOfThread);
         }
-        id2FunctionsMap.values().forEach(this::validateFunction);
+        processAfterParsing(program);
+        return program;
+    }
 
+    public static void processAfterParsing(Program program) {
+        program.getFunctions().forEach(Function::validate);
+        program.getThreads().forEach(Function::validate);
         IdReassignment.newInstance().run(program);
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
             if (func.hasBody()) {
                 func.getEvents().forEach(e -> e.setMetadata(new OriginalId(e.getGlobalId())));
             }
         }
-        return program;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -151,9 +162,9 @@ public class ProgramBuilder {
     }
 
     public Event addChild(int fid, Event child) {
-        if(program.getFormat().equals(LITMUS)) {
-            // Every event in litmus tests is non-optimisable
-            child.addTags(Tag.NOOPT);
+        // Every event in litmus tests is non-optimisable
+        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
+            child.addTags(NOOPT);
         }
         getFunctionOrError(fid).append(child);
         return child;
@@ -197,7 +208,7 @@ public class ProgramBuilder {
         initLocEqConst(leftName,getInitialValue(rightName));
     }
 
-    public void initLocEqConst(String locName, IConst iValue){
+    public void initLocEqConst(String locName, Expression iValue){
         getOrNewMemoryObject(locName).setInitialValue(0,iValue);
     }
 
@@ -216,7 +227,7 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
     }
 
-    private IConst getInitialValue(String name) {
+    private Expression getInitialValue(String name) {
         return getOrNewMemoryObject(name).getInitialValue(0);
     }
 
@@ -253,34 +264,6 @@ public class ProgramBuilder {
 
     public Label getEndOfThreadLabel(int tid) {
         return getOrCreateLabel(tid, "END_OF_T" + tid);
-    }
-
-    // ----------------------------------------------------------------------------------------------------------------
-    // Private utility
-
-    private void validateFunction(Function function) throws MalformedProgramException {
-        Set<String> labelNames = new HashSet<>();
-        for (Event ev : function.getEvents()) {
-            if (ev.getFunction() != function) {
-                final String error = String.format("Event %s belongs to function %s but was found in function %s",
-                        ev, ev.getFunction(), function);
-                throw new MalformedProgramException(error);
-            }
-            if (ev instanceof CondJump jump) {
-                if (jump.getFunction() != jump.getLabel().getFunction()) {
-                    final String error = String.format("Jump %s targets label %s of a different function",
-                            jump, jump.getLabel());
-                    throw new MalformedProgramException(error);
-                }
-            }
-            if (ev instanceof Label label) {
-                if (!labelNames.add(label.getName())) {
-                    final String error = String.format("Multiple labels with name %s in function %s",
-                            label.getName(), function);
-                    throw new MalformedProgramException(error);
-                }
-            }
-        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

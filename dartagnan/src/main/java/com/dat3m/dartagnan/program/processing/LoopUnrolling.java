@@ -112,7 +112,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
                 if (isLoop) {
                     // Bound annotation > Spin loop tag > default bound
-                    final int bound = curBoundAnnotation != null ? curBoundAnnotation.getBound()
+                    final int bound = curBoundAnnotation != null ? curBoundAnnotation.getConstantBound()
                             : label.hasTag(Tag.SPINLOOP) ? 1 : defaultBound;
                     loopBoundsMap.put(backjump.get(), bound);
                     curBoundAnnotation = null;

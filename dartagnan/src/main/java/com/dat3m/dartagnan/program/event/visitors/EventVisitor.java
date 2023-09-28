@@ -12,13 +12,13 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
-import com.dat3m.dartagnan.program.event.lang.std.Malloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 
@@ -30,6 +30,7 @@ public interface EventVisitor<T> {
 
     // ============================== Core-level events ==============================
     default T visitAssume(Assume e) { return visitEvent(e); }
+    default T visitAssert(Assert e) { return visitEvent(e); }
     default T visitCondJump(CondJump e) { return visitEvent(e); }
     default T visitExecutionStatus(ExecutionStatus e) { return visitEvent(e); }
     default T visitIfAsJump(IfAsJump e) { return visitCondJump(e); }
@@ -101,7 +102,7 @@ public interface EventVisitor<T> {
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
 
 	// ------------------ Std events ------------------
-	default T visitMalloc(Malloc e) { return visitEvent(e); }
+	default T visitAlloc(Alloc e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
     default T visitFenceWithId(FenceWithId e) { return visitEvent(e); }

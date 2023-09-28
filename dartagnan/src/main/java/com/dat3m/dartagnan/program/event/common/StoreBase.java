@@ -49,6 +49,6 @@ public abstract class StoreBase extends SingleAccessMemoryEvent {
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
         super.transformExpressions(exprTransformer);
-        this.value = value.visit(exprTransformer);
+        this.value = value.accept(exprTransformer);
     }
 }

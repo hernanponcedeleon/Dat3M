@@ -28,7 +28,7 @@ public class FenceWithId extends GenericVisibleEvent implements RegReader {
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.fenceID = fenceID.visit(exprTransformer);
+        this.fenceID = fenceID.accept(exprTransformer);
     }
 
     @Override

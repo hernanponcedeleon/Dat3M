@@ -75,8 +75,6 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
 
     protected Call_cmdContext atomicMode = null;
 
-    private int assertionCounter = 0;
-
     private int currentLine = -1;
     private String sourceCodeFile = "";
 
@@ -432,7 +430,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
             if (register != null) {
                 final Event child;
                 if (!ctx.getText().contains("$load.")) {
-                    final Expression simplified = value.visit(exprSimplifier);
+                    final Expression simplified = value.accept(exprSimplifier);
                     final Expression cast = expressions.makeCast(simplified, register.getType());
                     child = EventFactory.newLocal(register, cast);
                 } else {
@@ -474,7 +472,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         }
 
         final Expression cond = (Expression) ctx.proposition().expr().accept(this);
-        final Expression terminationCond = expressions.makeNot(cond).visit(exprSimplifier);
+        final Expression terminationCond = expressions.makeNot(cond).accept(exprSimplifier);
         final Label pairingLabel = pairLabels.get(currentLabel);
         if (pairingLabel != null) {
             // if there is a pairing label, we jump to that (this assume belongs to a conditional jump)
@@ -738,13 +736,10 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
     }
 
     protected void addAssertion(Expression expr) {
-        final Expression condition = expressions.makeBooleanCast(expr);
-        final Register ass = programBuilder.getOrNewRegister(currentFunction, "assert_" + assertionCounter, condition.getType());
-        assertionCounter++;
-        final Event terminator = EventFactory.newAbortIf(expressions.makeNot(ass).visit(exprSimplifier));
-        addEvent(EventFactory.newLocal(ass, condition)).addTags(Tag.ASSERTION);
+        final Expression condition = expressions.makeBooleanCast(expr).accept(exprSimplifier);
+        final Event terminator = EventFactory.newAbortIf(expressions.makeNot(condition).accept(exprSimplifier));
+        addEvent(EventFactory.newAssert(condition, "user assertion"));
         addEvent(terminator).addTags(Tag.EARLYTERMINATION);
-
     }
 
     // ========================================================================================
@@ -786,7 +781,7 @@ public class VisitorBoogie extends BoogieBaseVisitor<Object> {
         public Type getType() { return type; }
 
         @Override
-        public <T> T visit(ExpressionVisitor<T> visitor) {
+        public <T> T accept(ExpressionVisitor<T> visitor) {
             throw new ParsingException("Visiting ConstantSymbols should not happen.");
         }
     }

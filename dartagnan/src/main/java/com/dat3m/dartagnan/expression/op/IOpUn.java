@@ -9,8 +9,8 @@ public enum IOpUn {
     @Override
     public String toString() {
         return switch (this) {
-            case CAST_SIGNED -> "cast signed ";
-            case CAST_UNSIGNED -> "cast unsigned ";
+            case CAST_SIGNED -> "signed cast";
+            case CAST_UNSIGNED -> "unsigned cast";
             case CTLZ -> "ctlz ";
             case MINUS -> "-";
         };

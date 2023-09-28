@@ -10,6 +10,7 @@ void *thread_1(void *unused)
 {   
     // clear_pending_set_locked
     int r0 = atomic_fetch_add(2,&x) ;
+    return NULL;
 }
 
 void *thread_2(void *unused)
@@ -24,6 +25,7 @@ void *thread_2(void *unused)
     int r1 = atomic_cmpxchg_relaxed(&x,r0,42);
     // link node into the waitqueue
     WRITE_ONCE(z, 1);
+    return NULL;
 }
 
 void *thread_3(void *unused)
@@ -40,6 +42,7 @@ void *thread_3(void *unused)
     int r1 = atomic_cmpxchg_relaxed(&x,r0,24);
     // spinloop
     while(READ_ONCE(y) == 1 && (READ_ONCE(z) == 2)) {}
+    return NULL;
 }
 
 int main()

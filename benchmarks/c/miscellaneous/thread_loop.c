@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include <assert.h>
 #include <dat3m.h>
 
 /*
@@ -16,6 +17,7 @@ atomic_int data;
 void *worker(void *arg)
 {
    atomic_fetch_add(&data, 1);
+   return NULL;
 }
 
 int main()

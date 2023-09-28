@@ -35,6 +35,10 @@ public class MetadataMap {
         return null;
     }
 
+    public <T extends Metadata> boolean remove(Class<T> metadataClass) {
+       return metadataList.removeIf(m -> metadataClass.isAssignableFrom(m.getClass()));
+    }
+
     public List<Metadata> getAllMetadata() { return metadataList; }
 
 }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
@@ -8,14 +9,15 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -30,7 +32,7 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("miscellaneous/" + name + ".bpl"));
+        return Provider.fromSupplier(() -> getTestResourcePath("miscellaneous/" + name + ".ll"));
     }
 
     @Override
@@ -43,6 +45,18 @@ public class MiscellaneousTest extends AbstractCTest {
         return 10000;
     }
 
+    @Override
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(() -> {
+            ConfigurationBuilder builder = Configuration.builder();
+            builder.setOption(OptionNames.USE_INTEGERS, "true");
+            if (name.equals("recursion")) {
+                builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
+            }
+            return builder.build();
+        });
+    }
+
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
@@ -53,6 +67,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
                 {"nondet_loop", IMM, FAIL, 1},
+                {"recursion", IMM, UNKNOWN, 1},
+                {"recursion", IMM, PASS, 2},
                 {"thread_chaining", IMM, PASS, 1},
                 {"thread_inlining", IMM, PASS, 1},
                 {"thread_inlining_complex", IMM, PASS, 1},

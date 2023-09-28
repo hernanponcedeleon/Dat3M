@@ -207,13 +207,15 @@ public class ExecutionGraphVisualizer {
         }
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
-        return String.format("\"%s:T%s/E%s\\n%s%s\n%s\"",
+        final String nodeString = String.format("%s:T%s/E%s\\n%s%s\n%s",
                 e.getThread().getName(),
                 e.getThread().getId(),
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),
-                tag);
+                tag)
+                .replace("\"", "\\\""); // We need to escape quotes inside the string
+        return "\"" + nodeString + "\"";
     }
 
     private void appendEdge(EventData a, EventData b, String... options) {
