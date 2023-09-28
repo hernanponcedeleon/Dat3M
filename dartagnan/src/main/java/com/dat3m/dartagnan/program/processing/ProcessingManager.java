@@ -81,7 +81,6 @@ public class ProcessingManager implements ProgramProcessor {
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 RegisterDecomposition.newInstance(),
-                StaticMemoryInitializer.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(

@@ -104,12 +104,11 @@ public class SVCOMPRunner extends BaseOptions {
 
         int bound = witness.hasAttributed(UNROLLBOUND.toString()) ? parseInt(witness.getAttributed(UNROLLBOUND.toString())) : r.umin;
 
-        // First time we compiler with standard atomic header to catch compilation problems
-		compileWithClang(fileProgram, "");
-
-		String output = "UNKNOWN";
+        File file;
+        String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			compileWithClang(fileProgram, "");
+            file = compileWithClang(fileProgram, "");
+            file = applyLlvmPasses(file);    
 	        
 	        String llvmName = System.getenv().get("DAT3M_HOME") + "/output/" +
 	        		Files.getNameWithoutExtension(programPath) + "-opt.ll";

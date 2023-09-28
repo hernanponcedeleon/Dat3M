@@ -21,7 +21,7 @@ else
     fi
 
     cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
-    svcompflags="--method=assume --program.processing.constantPropagation=false --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
+    svcompflags="--method=assume --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
 
     export DAT3M_HOME=$(pwd)
     export DAT3M_OUTPUT=$DAT3M_HOME/output
