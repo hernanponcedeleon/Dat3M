@@ -50,7 +50,7 @@ public class ProgramParser {
                         File.createTempFile("dat3m", ".c") :
                         // This is for the case where the user loaded the program
                         new File(path, "dat3m.c");
-                try (FileWriter writer = new FileWriter(parsedFile)) {
+                try (FileWriter writer = new FileWriter(file)) {
                     writer.write(raw);
                 }
                 file = compileWithClang(file, cflags);
