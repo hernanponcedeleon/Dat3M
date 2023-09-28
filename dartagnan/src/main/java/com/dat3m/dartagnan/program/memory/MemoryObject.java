@@ -94,18 +94,12 @@ public class MemoryObject extends IConst {
 
     /**
      * Updates the initial value at a certain field of this array.
-     * Resizes this array if the index exceeds the bounds.
      *
      * @param offset Non-negative number of fields before the target.
      * @param value  New value to be read at the start of each execution.
      */
     public void appendInitialValue(int offset, Expression value) {
         checkArgument(offset >= 0, "array index out of bounds");
-        //The current implementation of Smack does not provide proper size information on static arrays.
-        //Instead, it indicates the size in the Boogie file by initializing each of the fields in a special procedure.
-        if (size <= offset) {
-            size = offset + 1;
-        }
         initialValues.put(offset, value);
     }
 
