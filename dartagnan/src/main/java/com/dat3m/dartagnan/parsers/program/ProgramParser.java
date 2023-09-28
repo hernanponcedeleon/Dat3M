@@ -22,12 +22,9 @@ public class ProgramParser {
     private static final String TYPE_LITMUS_C = "C";
 
     public Program parse(File file) throws Exception {
-        if (needsSmack(file)) {
-            if (needsClang(file)) {
-                file = compileWithClang(file, "");
-            }
+        if (needsClang(file)) {
+            file = compileWithClang(file, "");
             file = applyLlvmPasses(file);
-            // file = compileWithSmack(file, "");
             return new ProgramParser().parse(file);
         }
 
@@ -45,14 +42,10 @@ public class ProgramParser {
         return f.getPath().endsWith(".c") || f.getPath().endsWith(".i");
     }
 
-    private boolean needsSmack(File f) {
-        return needsClang(f);
-    }
-
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
         switch (format) {
             case "c", "i" -> {
-                File parsedFile = path.isEmpty() ?
+                File file = path.isEmpty() ?
                         // This is for the case where the user fully typed the program instead of loading it
                         File.createTempFile("dat3m", ".c") :
                         // This is for the case where the user loaded the program
@@ -60,19 +53,10 @@ public class ProgramParser {
                 try (FileWriter writer = new FileWriter(parsedFile)) {
                     writer.write(raw);
                 }
-                File compiledFile = null;
-                if (needsClang(parsedFile)) {
-                    compiledFile = compileWithClang(parsedFile, cflags);
-                }
-                File optimisedFile = applyLlvmPasses(compiledFile != null ? compiledFile : parsedFile);
-                //File bplFile = compileWithSmack(optimisedFile, cflags);
-                Program p = new ProgramParser().parse(optimisedFile);
-                parsedFile.delete();
-                if (compiledFile != null) {
-                    compiledFile.delete();
-                }
-                optimisedFile.delete();
-               // bplFile.delete();
+                file = compileWithClang(file, cflags);
+                file = applyLlvmPasses(file);
+                Program p = new ProgramParser().parse(file);
+                file.delete();
                 return p;
             }
             case "ll" -> {
