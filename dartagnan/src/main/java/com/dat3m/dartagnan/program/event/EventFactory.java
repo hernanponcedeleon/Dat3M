@@ -493,7 +493,7 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newISHSTBarrier() {
-                return newFence("DMB.ISHST");
+                return newFence("DSB.ISHST");
             }
 
         }
@@ -724,11 +724,11 @@ public class EventFactory {
         public static GenericVisibleEvent newAvDevice() {
             return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
         }
-    
+
         public static GenericVisibleEvent newVisDevice() {
             return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
         }
-    
+
     }
 
     // =============================================================================================
