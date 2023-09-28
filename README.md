@@ -44,7 +44,7 @@ At least the following compiler flag needs to be set, further can be added (only
 export CFLAGS="-I$DAT3M_HOME/include"
 ```
 
-If you are verifying C code, be sure both `clang` is in your `PATH`.
+If you are verifying C code, be sure `clang` is in your `PATH`.
 
 To build the tool run
 ```

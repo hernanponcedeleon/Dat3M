@@ -106,7 +106,7 @@ public class SVCOMPRunner extends BaseOptions {
 
         File file;
         String output = "UNKNOWN";
-		while(output.equals("UNKNOWN")) {
+        while(output.equals("UNKNOWN")) {
             file = compileWithClang(fileProgram, "");
             file = applyLlvmPasses(file);    
 	        
