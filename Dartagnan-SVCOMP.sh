@@ -20,13 +20,9 @@ else
         programpath=$2
     fi
 
-    cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
-    svcompflags="--method=assume --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
-
     export DAT3M_HOME=$(pwd)
     export DAT3M_OUTPUT=$DAT3M_HOME/output
-    export CFLAGS=$cflags
 
-    cmd="java -jar svcomp/target/svcomp.jar "$svcompflags" --svcomp.property="$propertypath" "$programpath" "$witness
+    cmd="java -jar svcomp/target/svcomp.jar --method=assume --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
     $cmd
 fi
