@@ -78,9 +78,6 @@ public class ProgramParser {
             case "ll" -> {
                 return new ParserLlvm().parse(CharStreams.fromString(raw));
             }
-            case "bpl" -> {
-                return new ParserBoogie().parse(CharStreams.fromString(raw));
-            }
             case "litmus" -> {
                 return getConcreteLitmusParser(raw.toUpperCase()).parse(CharStreams.fromString(raw));
             }
@@ -94,8 +91,6 @@ public class ProgramParser {
         switch (format) {
             case "ll":
                 return new ParserLlvm();
-            case "bpl":
-                return new ParserBoogie();
             case "litmus":
                 return getConcreteLitmusParser(readFirstLine(file).toUpperCase());
         }

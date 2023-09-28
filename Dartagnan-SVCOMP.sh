@@ -21,14 +21,11 @@ else
     fi
 
     cflags="-DSVCOMP -DCUSTOM_VERIFIER_ASSERT -fno-vectorize -fno-slp-vectorize"
-    smackflags="-q -t --no-memory-splitting"
     svcompflags="--method=assume --program.processing.constantPropagation=false --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat"
 
     export DAT3M_HOME=$(pwd)
     export DAT3M_OUTPUT=$DAT3M_HOME/output
-    export PATH=$PATH:$DAT3M_HOME/smack/bin
     export CFLAGS=$cflags
-    export SMACK_FLAGS=$smackflags
 
     cmd="java -jar svcomp/target/svcomp.jar "$svcompflags" --svcomp.property="$propertypath" "$programpath" "$witness
     $cmd

@@ -17,12 +17,6 @@ RUN apt-get update && \
     apt-get install -y automake && \
     apt-get install -y graphviz
 
-# Install SMACK
-RUN cd home && \
-    git clone https://github.com/smackers/smack.git && \
-    cd smack && \
-    env TEST_SMACK=0 INSTALL_Z3=0 INSTALL_CORRAL=0 bin/build.sh
-
 # Install Dat3M
 RUN cd home && \
     git clone --branch development https://github.com/hernanponcedeleon/Dat3M.git && \
@@ -30,18 +24,10 @@ RUN cd home && \
     chmod 755 Dartagnan-SVCOMP.sh && \
     mvn clean install -DskipTests
 
-# Build atomic-replace library
-RUN cd home/Dat3M/llvm-passes/atomic-replace/ \
-    && mkdir build && cd build                \
-    && cmake ..                               \
-    && make all install
-
 # symlink for clang
 RUN ln -s clang-12 /usr/bin/clang
 
 ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
-ENV SMACK_FLAGS="-q -t --no-memory-splitting"
-ENV ATOMIC_REPLACE_OPTS="-mem2reg -sroa -early-cse -indvars -loop-unroll -simplifycfg -gvn"
 ENV LD_LIBRARY_PATH=/usr/local/lib

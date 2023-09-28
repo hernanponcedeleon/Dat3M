@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.witness.WitnessGraph;
-import com.dat3m.svcomp.utils.BoogieSan;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import org.sosy_lab.common.configuration.Configuration;
@@ -63,11 +62,6 @@ public class SVCOMPRunner extends BaseOptions {
 	private int step = 1;
 
 	@Option(
-		name=SANITIZE,
-		description="Generates (also) a sanitised boogie file saved as /output/boogiesan.bpl.")
-	private boolean sanitize = false;
-
-	@Option(
 		name=VALIDATE,
 		description="Run Dartagnan as a violation witness validator. Argument is the path to the witness file.")
 	private String witnessPath;
@@ -115,14 +109,10 @@ public class SVCOMPRunner extends BaseOptions {
 
 		String output = "UNKNOWN";
 		while(output.equals("UNKNOWN")) {
-			compileWithSmack(fileProgram, "");
+			compileWithClang(fileProgram, "");
 	        
-	        String boogieName = System.getenv().get("DAT3M_HOME") + "/output/" +
-	        		Files.getNameWithoutExtension(programPath) + ".bpl";
-	        
-	        if(r.sanitize) {
-	        	BoogieSan.write(boogieName);
-	        }
+	        String llvmName = System.getenv().get("DAT3M_HOME") + "/output/" +
+	        		Files.getNameWithoutExtension(programPath) + "-opt.ll";
 	        
 	    	ArrayList<String> cmd = new ArrayList<>();
 	    	cmd.add("java");
@@ -130,7 +120,7 @@ public class SVCOMPRunner extends BaseOptions {
 	    	cmd.add("-DLOGNAME=" + Files.getNameWithoutExtension(programPath));
 	    	cmd.addAll(Arrays.asList("-jar", System.getenv().get("DAT3M_HOME") + "/dartagnan/target/dartagnan.jar"));
 			cmd.add(fileModel.toString());
-			cmd.add(boogieName);
+			cmd.add(llvmName);
 			cmd.add(String.format("--%s=%s", PROPERTY, r.property.asStringOption()));
 			cmd.add(String.format("--%s=%s", BOUND, bound));
 			cmd.add(String.format("--%s=%s", WITNESS_ORIGINAL_PROGRAM_PATH, programPath));
