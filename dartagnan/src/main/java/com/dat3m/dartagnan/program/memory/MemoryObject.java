@@ -27,7 +27,7 @@ public class MemoryObject extends IConst {
     //TODO
     // Right now we assume that either the whole object is atomic or it is not.
     // Generally, this is not necessarily true for structs, but right now we
-    // don't have a way of marking anything as atomic for bpl files. 
+    // only use this for litmus format where we do not have structs. 
     private boolean atomic = false;
 
     private final boolean isStatic;
