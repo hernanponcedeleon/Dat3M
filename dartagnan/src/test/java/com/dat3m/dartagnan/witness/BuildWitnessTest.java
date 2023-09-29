@@ -33,11 +33,11 @@ public class BuildWitnessTest {
     public void BuildWriteEncode() throws Exception {
 
         Configuration config = Configuration.builder().
-                setOption(WITNESS_ORIGINAL_PROGRAM_PATH, getTestResourcePath("witness/lazy01-for-witness.bpl")).
+                setOption(WITNESS_ORIGINAL_PROGRAM_PATH, getTestResourcePath("witness/lazy01-for-witness.ll")).
                 setOption(BOUND, "1").
                 build();
 
-        Program p = new ProgramParser().parse(new File(getTestResourcePath("witness/lazy01-for-witness.bpl")));
+        Program p = new ProgramParser().parse(new File(getTestResourcePath("witness/lazy01-for-witness.ll")));
         Wmm wmm = new ParserCat().parse(new File(getRootPath("cat/svcomp.cat")));
         VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
         try (SolverContext ctx = TestHelper.createContext();

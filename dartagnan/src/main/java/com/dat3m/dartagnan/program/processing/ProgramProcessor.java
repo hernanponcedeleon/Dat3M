@@ -21,7 +21,9 @@ public interface ProgramProcessor {
     }
 
     static ProgramProcessor fromFunctionProcessor(FunctionProcessor processor, Target type, boolean reassignIds) {
-        return program -> {
+        return processor == null ? 
+        null :
+        program -> {
             final Iterable<? extends Function> targets = switch (type) {
                 case THREADS -> program.getThreads();
                 case FUNCTIONS -> program.getFunctions();

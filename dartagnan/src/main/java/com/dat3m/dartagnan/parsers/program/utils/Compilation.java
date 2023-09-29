@@ -49,20 +49,6 @@ public class Compilation {
         return new File(outputFileName);
     }
 
-    public static File compileWithSmack(File file, String cflags) throws Exception {
-        final String outputFileName = getOutputName(file, ".bpl");
-
-        ArrayList<String> cmd = new ArrayList<>();
-        cmd.add("smack");
-        // Needed to handle more than one flag in SMACK_FLAGS
-        Collections.addAll(cmd, System.getenv().getOrDefault("SMACK_FLAGS", "").split(" "));
-        cmd.add("--clang-options=" + cflags);
-        cmd.addAll(asList("-bpl", outputFileName, file.getAbsolutePath()));
-
-        runCmd(cmd);
-        return new File(outputFileName);
-    }
-
     private static String getOutputName(File file, String postfix) {
         return getOutputDirectory() + "/" +
                 file.getName().substring(0, file.getName().lastIndexOf('.')) + postfix;

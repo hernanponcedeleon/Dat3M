@@ -24,7 +24,7 @@ import java.util.Map;
         """
     This makes Block 2 a basic block, that can be moved around as done by BranchReordering.
 
-    NOTE: LLVM and also SMACK already make sure that all blocks are "basic".
+    NOTE: LLVM already makes sure that all blocks are "basic".
     However, our parser "destroys" this structure during parsing.
  */
 public class ComplexBlockSplitting implements FunctionProcessor {

@@ -71,7 +71,7 @@ public abstract class ModelChecker {
         Program program = task.getProgram();
         ProcessingManager.fromConfig(config).run(program);
         // This is used to distinguish between Litmus tests (whose assertions are defined differently)
-        // and C/Boogie tests.
+        // and C tests.
         if(program.getFormat() != Program.SourceLanguage.LITMUS) {
             computeSpecificationFromProgramAssertions(program);
         }
@@ -120,7 +120,7 @@ public abstract class ModelChecker {
     }
 
     private static void computeSpecificationFromProgramAssertions(Program program) {
-        // We generate a program-spec from the user-placed assertions inside the C/Boogie-code.
+        // We generate a program-spec from the user-placed assertions inside the C code.
         // For litmus tests, this function should not be called.
         final List<Assert> assertions = program.getThreadEvents(Assert.class);
         AbstractAssert spec = new AssertTrue();
