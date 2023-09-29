@@ -19,7 +19,9 @@ import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
@@ -378,14 +380,18 @@ public class ThreadCreation implements ProgramProcessor {
         final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
                 EventFactory.Linux.newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
                 EventFactory.Atomic.newStore(address, storeValue, Tag.C11.MO_RELEASE);
-        return compiler.getCompilationResult(releaseStore);
+        List<Event> compilation = compiler.getCompilationResult(releaseStore);
+        compilation.stream().filter(e -> e instanceof Store).forEach(e -> e.addTags(Tag.THREAD_CREATE));
+        return compilation;
     }
 
     private List<Event> newAcquireLoad(Register resultRegister, Expression address) {
         final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
                 EventFactory.Linux.newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
                 EventFactory.Atomic.newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
-        return compiler.getCompilationResult(acquireLoad);
+        List<Event> compilation = compiler.getCompilationResult(acquireLoad);
+        compilation.stream().filter(e -> e instanceof Load).forEach(e -> e.addTags(Tag.THREAD_START));
+        return compilation;
     }
 
 
