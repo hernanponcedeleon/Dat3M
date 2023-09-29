@@ -89,7 +89,9 @@ public class MemoryAllocation implements ProgramProcessor {
         int nextThreadId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
                 .mapToInt(Function::getId).max().getAsInt() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
-            final Iterable<Integer> fieldsToInit = !isLitmus ?
+            final boolean isStaticallyInitialized = !isLitmus
+                    && memObj.isStaticallyAllocated();
+            final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
                     memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
 
             for(int i : fieldsToInit) {
