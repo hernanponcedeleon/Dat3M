@@ -21,9 +21,9 @@ import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class LKMMInterruptsTest extends AbstractCTest {
+public class VMMInterruptsTest extends AbstractCTest {
 
-    public LKMMInterruptsTest(String name, Arch target, Result expected) {
+    public VMMInterruptsTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
@@ -39,27 +39,26 @@ public class LKMMInterruptsTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/linux-kernel-interrupts.cat"))));
+        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/vmm.cat"))));
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"c_disable_v1-opt", LKMM, PASS},
-                {"c_disable_v2-opt", LKMM, PASS},
-                {"c_disable_v3-opt", LKMM, PASS},
-                {"lkmm_detour_disable_release-opt", LKMM, PASS},
-                {"lkmm_detour_disable-opt", LKMM, FAIL},
-                {"lkmm_detour-opt", LKMM, FAIL},
-                {"lkmm_oota-opt", LKMM, PASS},
-                // {"lkmm_weak_model-opt", LKMM, PASS},
-                {"lkmm_with_barrier_dec_barrier-opt", LKMM, PASS},
-                {"lkmm_with_barrier_dec_wmb-opt", LKMM, PASS},
-                {"lkmm_with_barrier_dec-opt", LKMM, FAIL},
-                {"lkmm_with_barrier-opt", LKMM, PASS},
-                {"lkmm_with_barrier_inc_split-opt", LKMM, FAIL},
-                {"lkmm_with_disable_enable_as_barrier-opt", LKMM, PASS},
-                {"lkmm_without_barrier-opt", LKMM, FAIL},
+                {"c_disable_v1-opt", C11, PASS},
+                {"c_disable_v2-opt", C11, PASS},
+                {"c_disable_v3-opt", C11, PASS},
+                {"c11_detour_disable_release-opt", C11, PASS},
+                {"c11_detour_disable-opt", C11, FAIL},
+                {"c11_detour-opt", C11, FAIL},
+                {"c11_oota-opt", C11, PASS},
+                {"c11_weak_model-opt", C11, PASS},
+                {"c11_with_barrier_dec_barrier-opt", C11, PASS},
+                {"c11_with_barrier_dec-opt", C11, FAIL},
+                {"c11_with_barrier-opt", C11, PASS},
+                {"c11_with_barrier_inc_split-opt", C11, FAIL},
+                {"c11_with_disable_enable_as_barrier-opt", C11, PASS},
+                {"c11_without_barrier-opt", C11, FAIL},
         });
     }
 
