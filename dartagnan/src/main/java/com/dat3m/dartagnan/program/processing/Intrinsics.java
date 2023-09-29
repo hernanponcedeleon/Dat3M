@@ -116,6 +116,11 @@ public class Intrinsics {
                 "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                 "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
                 false, false, true, false, Intrinsics::inlineNonDet),
+        // --------------------------- Interrupts ---------------------------
+        VERIFIER_MAKE_INTERRUPT_HANDLER("__VERIFIER_make_interrupt_handler", true, false, true, true, Intrinsics::inlineInterruptMarker),
+        VERIFIER_DISABLE_IRQ("__VERIFIER_disable_irq", false, false, true, true, Intrinsics::inlineDisableInterrupts),
+        VERIFIER_ENABLE_IRQ("__VERIFIER_enable_irq", false, false, true, true, Intrinsics::inlineEnableInterrupts),
+        VERIFIER_MAKE_CB("__VERIFIER_make_cb", false, false, true, true, Intrinsics::inlineCompilerBarrier),
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
@@ -366,6 +371,22 @@ public class Intrinsics {
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
+    }
+
+    private List<Event> inlineInterruptMarker(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newInterruptMarker());
+    }
+
+    private List<Event> inlineCompilerBarrier(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newCompilerBarrier());
+    }
+
+    private List<Event> inlineDisableInterrupts(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newDisableInterrupts());
+    }
+
+    private List<Event> inlineEnableInterrupts(FunctionCall ignored) {
+        return List.of(EventFactory.Interrupts.newEnableInterrupts());
     }
 
     // --------------------------------------------------------------------------------------------------------

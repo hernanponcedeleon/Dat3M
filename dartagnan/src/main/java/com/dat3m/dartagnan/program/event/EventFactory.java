@@ -448,6 +448,31 @@ public class EventFactory {
     }
 
     // =============================================================================================
+    // ======================================== Interrupts =========================================
+    // =============================================================================================
+
+    public static class Interrupts {
+        private Interrupts() {
+        }
+    
+        public static GenericVisibleEvent newInterruptMarker() {
+           return new GenericVisibleEvent(Tag.INTERRUPT_HANDLER);
+        }
+
+        public static GenericVisibleEvent newCompilerBarrier() {
+            return new GenericVisibleEvent(Tag.COMPILER_BARRIER);
+        }
+
+        public static GenericVisibleEvent newDisableInterrupts() {
+            return new GenericVisibleEvent(Tag.DISABLE_INTERRUPT);
+        }
+
+        public static GenericVisibleEvent newEnableInterrupts() {
+            return new GenericVisibleEvent(Tag.ENABLE_INTERRUPT);
+        }
+    }
+    
+    // =============================================================================================
     // ============================================ ARM ============================================
     // =============================================================================================
 

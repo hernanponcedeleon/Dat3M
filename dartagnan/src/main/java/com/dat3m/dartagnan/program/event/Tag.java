@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Store;
 
 import java.util.List;
 
@@ -25,6 +23,13 @@ public final class Tag {
     public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
     public static final String RMW              = "RMW";
 
+    public static final String INTERRUPT_HANDLER = "INTERRUPT_HANDLER";
+    public static final String DISABLE_INTERRUPT = "DISABLE_INTERRUPT";
+    public static final String ENABLE_INTERRUPT = "ENABLE_INTERRUPT";
+    public static final String COMPILER_BARRIER = "cb";
+    public static final String THREAD_CREATE = "THREAD_CREATE"; // A store that spawns a thread
+    public static final String THREAD_START = "THREAD_START"; // A load that starts the thread
+
     // ---------- Internally used tags (not referenced in CAT) ----------
     public static final String EXCL             = "__EXCL";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
@@ -36,7 +41,6 @@ public final class Tag {
     public static final String SPINLOOP         = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
-    public static final String STARTLOAD        = "__STARTLOAD";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
