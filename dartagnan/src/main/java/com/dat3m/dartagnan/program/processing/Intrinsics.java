@@ -121,6 +121,8 @@ public class Intrinsics {
         VERIFIER_DISABLE_IRQ("__VERIFIER_disable_irq", false, false, true, true, Intrinsics::inlineDisableInterrupts),
         VERIFIER_ENABLE_IRQ("__VERIFIER_enable_irq", false, false, true, true, Intrinsics::inlineEnableInterrupts),
         VERIFIER_MAKE_CB("__VERIFIER_make_cb", false, false, true, true, Intrinsics::inlineCompilerBarrier),
+        VERIFIER_HARMLESS_RACY_READ("__VERIFIER_racy_read", true, false, true, true, Intrinsics::inlineHarmelessRacyRead),
+        VERIFIER_HARMLESS_RACY_WRITE("__VERIFIER_racy_write", true, false, true, true, Intrinsics::inlineHarmelessRacyWrite),
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
@@ -387,6 +389,23 @@ public class Intrinsics {
 
     private List<Event> inlineEnableInterrupts(FunctionCall ignored) {
         return List.of(EventFactory.Interrupts.newEnableInterrupts());
+    }
+
+    private List<Event> inlineHarmelessRacyRead(FunctionCall call) {
+        checkArgument(call.getArguments().size() == 1,
+        "Expected 2 parameters for \"__VERIFIER_racy_read\", got %s.", call.getArguments().size());
+        assert call instanceof ValueFunctionCall && call.isDirectCall();
+        final Register resultReg = ((ValueFunctionCall) call).getResultRegister();
+        final Expression address = call.getArguments().get(0);
+        return List.of(EventFactory.newLoadWithMo(resultReg, address, Tag.HARMLESS_RACY));
+    }
+
+    private List<Event> inlineHarmelessRacyWrite(FunctionCall call) {
+        checkArgument(call.getArguments().size() == 2,
+        "Expected 2 parameters for \"__VERIFIER_racy_read\", got %s.", call.getArguments().size());
+        final Expression address = call.getArguments().get(0);
+        final Expression value = call.getArguments().get(1);
+        return List.of(EventFactory.newStoreWithMo(address, value, Tag.HARMLESS_RACY));
     }
 
     // --------------------------------------------------------------------------------------------------------

@@ -27,6 +27,7 @@ public final class Tag {
     public static final String DISABLE_INTERRUPT = "DISABLE_INTERRUPT";
     public static final String ENABLE_INTERRUPT = "ENABLE_INTERRUPT";
     public static final String COMPILER_BARRIER = "cb";
+    public static final String HARMLESS_RACY = "HARMLESS_RACY";
     public static final String THREAD_CREATE = "THREAD_CREATE"; // A store that spawns a thread
     public static final String THREAD_START = "THREAD_START"; // A load that starts the thread
 

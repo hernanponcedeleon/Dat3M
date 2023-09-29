@@ -9,6 +9,15 @@ extern void __VERIFIER_loop_begin(void);
 extern void __VERIFIER_spin_start(void);
 extern void __VERIFIER_spin_end(int);
 
+// Used for interrupt model
+extern void __VERIFIER_make_interrupt_handler(void);
+extern void __VERIFIER_disable_irq(void);
+extern void __VERIFIER_enable_irq(void);
+extern void __VERIFIER_make_cb(void);
+
+extern int __VERIFIER_racy_read(int*);
+extern void __VERIFIER_racy_write(int*, int);
+
 #define await_while(cond)                                                  \
     for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
         tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
