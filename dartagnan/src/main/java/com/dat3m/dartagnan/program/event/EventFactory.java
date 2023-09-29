@@ -456,19 +456,19 @@ public class EventFactory {
         }
     
         public static GenericVisibleEvent newInterruptMarker() {
-           return new GenericVisibleEvent(Tag.INTERRUPT_HANDLER);
+           return newFence(Tag.INTERRUPT_HANDLER);
         }
 
         public static GenericVisibleEvent newCompilerBarrier() {
-            return new GenericVisibleEvent(Tag.COMPILER_BARRIER);
+            return newFence(Tag.COMPILER_BARRIER);
         }
 
         public static GenericVisibleEvent newDisableInterrupts() {
-            return new GenericVisibleEvent(Tag.DISABLE_INTERRUPT);
+            return newFence(Tag.DISABLE_INTERRUPT);
         }
 
         public static GenericVisibleEvent newEnableInterrupts() {
-            return new GenericVisibleEvent(Tag.ENABLE_INTERRUPT);
+            return newFence(Tag.ENABLE_INTERRUPT);
         }
     }
     
