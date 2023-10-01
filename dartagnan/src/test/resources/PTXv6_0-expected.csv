@@ -49,3 +49,8 @@ litmus/PTX/Manual/Ticketlock-diff-gpu.litmus,1
 litmus/PTX/Manual/Ticketlock-acq2rlx-1.litmus,0
 litmus/PTX/Manual/Ticketlock-acq2rlx-2.litmus,1
 litmus/PTX/Manual/Ticketlock-rel2rlx.litmus,1
+litmus/PTX/Manual/MP-dlb,0
+litmus/PTX/Manual/MP-dlb-no-fence-1,1
+litmus/PTX/Manual/MP-dlb-no-fence-2,1
+litmus/PTX/Nvidia/SB+bar-dyn-reg-const,1
+litmus/PTX/Nvidia/SB+bar-sta-reg-const,0

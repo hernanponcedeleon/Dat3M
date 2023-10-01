@@ -108,11 +108,31 @@ storeRegister
 
 loadInstruction
     :   localConstant
+    |   localAdd
+    |   localSub
+    |   localMul
+    |   localDiv
     |   loadLocation
     ;
 
 localConstant
     :   load Period mo (Period scope)? register Comma constant
+    ;
+
+localAdd
+    :   Add register Comma register Comma constant
+    ;
+
+localSub
+    :   Sub register Comma register Comma constant
+    ;
+
+localMul
+    :   Mul register Comma register Comma constant
+    ;
+
+localDiv
+    :   Div register Comma register Comma constant
     ;
 
 loadLocation

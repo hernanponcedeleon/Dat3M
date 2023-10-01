@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -182,6 +183,42 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         IConst constant = (IConst) ctx.constant().accept(this);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
+    }
+
+    @Override
+    public Object visitLocalAdd(LitmusPTXParser.LocalAddContext ctx) {
+        Register rd = (Register) ctx.register().get(0).accept(this);
+        Register rs = (Register) ctx.register().get(1).accept(this);
+        IConst constant = (IConst) ctx.constant().accept(this);
+        Expression exp = expressions.makeADD(rd, constant);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalSub(LitmusPTXParser.LocalSubContext ctx) {
+        Register rd = (Register) ctx.register().get(0).accept(this);
+        Register rs = (Register) ctx.register().get(1).accept(this);
+        IConst constant = (IConst) ctx.constant().accept(this);
+        Expression exp = expressions.makeSUB(rd, constant);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalMul(LitmusPTXParser.LocalMulContext ctx) {
+        Register rd = (Register) ctx.register().get(0).accept(this);
+        Register rs = (Register) ctx.register().get(1).accept(this);
+        IConst constant = (IConst) ctx.constant().accept(this);
+        Expression exp = expressions.makeMUL(rd, constant);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalDiv(LitmusPTXParser.LocalDivContext ctx) {
+        Register rd = (Register) ctx.register().get(0).accept(this);
+        Register rs = (Register) ctx.register().get(1).accept(this);
+        IConst constant = (IConst) ctx.constant().accept(this);
+        Expression exp = expressions.makeDIV(rd, constant);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
     @Override
