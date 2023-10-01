@@ -166,6 +166,7 @@ barrier
 atomInstruction
     :   atomConstant
     |   atomRegister
+    |   atomCAS
     ;
 
 atomConstant
@@ -174,6 +175,10 @@ atomConstant
 
 atomRegister
     :   atom Period mo Period scope Period operation register Comma location Comma register
+    ;
+
+atomCAS
+    :   atom Period mo Period scope Period Cas register Comma location Comma constant Comma constant
     ;
 
 redInstruction
@@ -333,6 +338,8 @@ Div     :   'div';
 And     :   'and';
 Or      :   'or';
 Xor     :   'xor';
+
+Cas     :   'cas';
 
 Proxy       :   'proxy';
 Generic     :   'generic';
