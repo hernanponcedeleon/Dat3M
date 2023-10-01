@@ -1,4 +1,4 @@
-PTX MP-dlb
+PTX MP-dlb-no-fence-2
 "Adapted from Figure 7 in 
 GPU Concurrency: Weak Behaviours and Programming Assumptions
 https://dl.acm.org/doi/pdf/10.1145/2694344.2694391"
