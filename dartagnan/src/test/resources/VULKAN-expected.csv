@@ -81,3 +81,5 @@ litmus/VULKAN/Manual/MP-mesa.litmus,0
 litmus/VULKAN/Manual/MP-mesa-load-acq.litmus,0
 litmus/VULKAN/Manual/MP-mesa-fence-loop.litmus,0
 litmus/VULKAN/Manual/MP-mesa-optimized.litmus,1
+litmus/VULKAN/Manual/MP-avvis.litmus,0
+litmus/VULKAN/Manual/MP-no-avvis.litmus,1
