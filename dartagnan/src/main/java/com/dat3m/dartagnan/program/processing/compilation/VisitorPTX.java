@@ -38,8 +38,8 @@ public class VisitorPTX extends VisitorBase {
     // PTX CAS semantics from
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
     // atomic {
-    //   d = *a;
-    //   *a = (*a == b) ? c : *a
+    //   d = *a;                    <-- destination/result register
+    //   *a = (*a == b) ? c : *a    <-- we interpret this as a cmov
     // }
     @Override
     public List<Event> visitPtxAtomCAS(PTXAtomCAS e) {
@@ -48,7 +48,7 @@ public class VisitorPTX extends VisitorBase {
         Expression address = e.getAddress();
         Expression expected = e.getExpectedValue();
         Expression newValue = e.getStoreValue();
-        Expression storeValue = expressions.makeConditional(expressions.makeBinary(resultRegister, COpBin.EQ, expected),
+        Expression storeValue = expressions.makeConditional(expressions.makeEQ(resultRegister, expected),
                 newValue, resultRegister);
         Load load = newRMWLoadWithMo(resultRegister, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, storeValue, Tag.PTX.storeMO(mo));
