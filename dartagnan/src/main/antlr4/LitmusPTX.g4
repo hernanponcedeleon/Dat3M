@@ -331,9 +331,9 @@ Release :   'release';
 Acq_rel :   'acq_rel';
 Sc      :   'sc';
 
-Add    :   'plus';
-Sub    :   'minus';
-Mult    :   'mult';
+Add     :   'add';
+Sub     :   'sub';
+Mult    :   'mul';
 Div     :   'div';
 And     :   'and';
 Or      :   'or';
