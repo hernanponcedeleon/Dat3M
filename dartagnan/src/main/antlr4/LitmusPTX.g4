@@ -128,7 +128,7 @@ localSub
     ;
 
 localMul
-    :   Mult register Comma register Comma constant
+    :   Mul register Comma register Comma constant
     ;
 
 localDiv
@@ -167,6 +167,7 @@ atomInstruction
     :   atomConstant
     |   atomRegister
     |   atomCAS
+    |   atomExchange
     ;
 
 atomConstant
@@ -179,6 +180,10 @@ atomRegister
 
 atomCAS
     :   atom Period mo Period scope Period Cas register Comma location Comma constant Comma constant
+    ;
+
+atomExchange
+    :   atom Period mo Period scope Period Exch register Comma location Comma constant
     ;
 
 redInstruction
@@ -340,6 +345,7 @@ Or      :   'or';
 Xor     :   'xor';
 
 Cas     :   'cas';
+Exch    :   'exch';
 
 Proxy       :   'proxy';
 Generic     :   'generic';

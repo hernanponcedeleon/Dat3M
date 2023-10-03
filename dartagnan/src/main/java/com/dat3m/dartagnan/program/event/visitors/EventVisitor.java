@@ -102,6 +102,7 @@ public interface EventVisitor<T> {
 	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
 	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
 	default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }
+	default T visitPtxAtomExch(PTXAtomExch e) { return visitMemEvent(e); }
     default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
 }
