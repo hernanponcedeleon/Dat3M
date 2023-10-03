@@ -223,7 +223,7 @@ register
 operation locals [IOpBin op]
     :   Add {$op = IOpBin.ADD;}
     |   Sub {$op = IOpBin.SUB;}
-    |   Mult {$op = IOpBin.MUL;}
+    |   Mul {$op = IOpBin.MUL;}
     |   Div {$op = IOpBin.DIV;}
     |   And {$op = IOpBin.AND;}
     |   Or {$op = IOpBin.OR;}
@@ -333,7 +333,7 @@ Sc      :   'sc';
 
 Add     :   'add';
 Sub     :   'sub';
-Mult    :   'mul';
+Mul     :   'mul';
 Div     :   'div';
 And     :   'and';
 Or      :   'or';
