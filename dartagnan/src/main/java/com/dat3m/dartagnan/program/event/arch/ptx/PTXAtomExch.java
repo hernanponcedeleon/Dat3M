@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class PTXAtomExch extends RMWXchgBase {
 
-    public PTXAtomExch(Register register, Expression address, Expression storeValue, String mo) {
-        super(register, address, storeValue, mo);
+    public PTXAtomExch(Register register, Expression address, Expression value, String mo) {
+        super(register, address, value, mo);
     }
 
     protected PTXAtomExch(PTXAtomExch other) {
@@ -17,7 +17,7 @@ public class PTXAtomExch extends RMWXchgBase {
 
     @Override
     public String defaultString() {
-        return String.format("%s := atom_exch_%s(%s, %s)", resultRegister, mo, address, storeValue);
+        return String.format("%s := atom_exch_%s(%s, %s)", resultRegister, mo, storeValue, address);
     }
 
     @Override

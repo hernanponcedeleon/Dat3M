@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -57,6 +58,24 @@ public class VisitorPTX extends VisitorBase {
         return eventSequence(
                 load,
                 store);
+    }
+
+    // PTX Exch semantics
+    @Override
+    public List<Event> visitPtxAtomExch(PTXAtomExch e) {
+        Register resultRegister = e.getResultRegister();
+        String mo = e.getMo();
+        Expression address = e.getAddress();
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.PTX.storeMO(mo));
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
+        return eventSequence(
+                load,
+                store,
+                newLocal(resultRegister, dummy)
+        );
     }
 
     @Override
