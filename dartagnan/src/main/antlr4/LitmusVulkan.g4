@@ -156,7 +156,7 @@ label
     ;
 
 branchCond
-    :   cond register Comma register Comma Label
+    :   cond register Comma value Comma Label
     ;
 
 jump

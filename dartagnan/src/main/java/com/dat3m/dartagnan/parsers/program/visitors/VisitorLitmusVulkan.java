@@ -357,9 +357,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitBranchCond(LitmusVulkanParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register(0).getText(), archType);
-        Register r2 = programBuilder.getOrNewRegister(mainThread, ctx.register(1).getText(), archType);
-        Expression expr = expressions.makeBinary(r1, ctx.cond().op, r2);
+        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
+        Expression value = (Expression) ctx.value().accept(this);
+        Expression expr = expressions.makeBinary(r1, ctx.cond().op, value);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
