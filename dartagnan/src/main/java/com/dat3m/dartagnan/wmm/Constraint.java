@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.util.Collection;
@@ -23,14 +23,14 @@ public interface Constraint {
 
     default Map<Relation, RelationAnalysis.ExtendedDelta> computeIncrementalKnowledgeClosure(
             Relation origin,
-            Set<Tuple> disabled,
-            Set<Tuple> enabled,
+            EventGraph disabled,
+            EventGraph enabled,
             Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
             Context analysisContext) {
         return Map.of();
     }
 
-    default Map<Relation, Set<Tuple>> getEncodeTupleSets(VerificationTask task, Context analysisContext) {
+    default Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
         return Map.of();
     }
 
