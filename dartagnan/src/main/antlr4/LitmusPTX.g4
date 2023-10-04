@@ -183,7 +183,7 @@ atomCAS
     ;
 
 atomExchange
-    :   atom Period mo Period scope Period Exch register Comma location Comma constant
+    :   atom Period mo Period scope Period Exch register Comma location Comma value
     ;
 
 redInstruction

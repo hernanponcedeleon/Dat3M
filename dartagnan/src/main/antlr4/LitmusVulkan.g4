@@ -121,15 +121,15 @@ loadLocation
     ;
 
 rmwInstruction
-    :   rmwConstant
-    |   rmwConstantOp
+    :   rmwExch
+    |   rmwOp
     ;
 
-rmwConstant
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
+rmwExch
+    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma value
     ;
 
-rmwConstantOp
+rmwOp
     :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
     ;
 

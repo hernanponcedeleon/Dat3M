@@ -244,10 +244,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRmwConstant(LitmusVulkanParser.RmwConstantContext ctx) {
+    public Object visitRmwExch(LitmusVulkanParser.RmwExchContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        IConst constant = (IConst) ctx.constant().accept(this);
+        Expression value = (Expression) ctx.value().accept(this);
         Boolean atomic = true; // RMW is always atomic
         String mo = (ctx.mo() != null) ? ctx.mo().content : "";
         String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
@@ -255,7 +255,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String storageClass = ctx.storageClass().content;
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
-        VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, constant, mo, scope);
+        VulkanRMW rmw = EventFactory.Vulkan.newRMW(location, register, value, mo, scope);
         if (!avvis.isEmpty()) {
             rmw.addTags(avvis);
         }
@@ -264,7 +264,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRmwConstantOp(LitmusVulkanParser.RmwConstantOpContext ctx) {
+    public Object visitRmwOp(LitmusVulkanParser.RmwOpContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
