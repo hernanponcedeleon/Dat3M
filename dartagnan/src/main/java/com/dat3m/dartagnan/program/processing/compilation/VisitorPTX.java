@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -31,6 +33,30 @@ public class VisitorPTX extends VisitorBase {
                 store,
                 newLocal(resultRegister, dummy)
         );
+    }
+
+    // PTX CAS semantics from
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
+    // atomic {
+    //   d = *a;                    <-- destination/result register
+    //   *a = (*a == b) ? c : *a    <-- we interpret this as a cmov
+    // }
+    @Override
+    public List<Event> visitPtxAtomCAS(PTXAtomCAS e) {
+        Register resultRegister = e.getResultRegister();
+        String mo = e.getMo();
+        Expression address = e.getAddress();
+        Expression expected = e.getExpectedValue();
+        Expression newValue = e.getStoreValue();
+        Expression storeValue = expressions.makeConditional(expressions.makeEQ(resultRegister, expected),
+                newValue, resultRegister);
+        Load load = newRMWLoadWithMo(resultRegister, address, Tag.PTX.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address, storeValue, Tag.PTX.storeMO(mo));
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
+        return eventSequence(
+                load,
+                store);
     }
 
     @Override

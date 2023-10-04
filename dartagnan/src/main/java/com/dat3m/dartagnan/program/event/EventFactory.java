@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
@@ -695,6 +696,13 @@ public class EventFactory {
                                           IOpBin op, String mo, String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
             PTXAtomOp atom = new PTXAtomOp(register, address, op, value, mo);
+            atom.addTags(scope);
+            return atom;
+        }
+
+        public static PTXAtomCAS newAtomCAS(Expression address, Register register, Expression expected,
+                Expression value, String mo, String scope) {
+            PTXAtomCAS atom = new PTXAtomCAS(register, address, expected, value, mo);
             atom.addTags(scope);
             return atom;
         }
