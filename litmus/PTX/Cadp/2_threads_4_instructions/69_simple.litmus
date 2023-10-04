@@ -1,0 +1,17 @@
+PTX 69_simple
+"https://github.com/tyler-utah/AlloyForwardProgress/blob/master/artifact/cadp/2_threads_4_instructions/alloy_output/69/69_simple.txt"
+{
+Mem1=0;
+Mem0=0;
+P0:r0=0;
+P1:r1=0;
+}
+P0@cta 0,gpu 0               | P1@cta 0,gpu 0               ;
+LC00:                        | LC10:                        ;
+st.relaxed.gpu Mem1, 1       | ld.relaxed.gpu r1, Mem1      ;
+LC01:                        | beq r1, 0, LC11              ;
+ld.relaxed.gpu r0, Mem0      | goto LC10                    ;
+beq r0, 0, LC02              | LC11:                        ;
+goto LC01                    | st.relaxed.gpu Mem0, 1       ;
+LC02:                        | LC12:                        ;
+exists 0==0

@@ -1,0 +1,13 @@
+VULKAN 18_simple
+"https://github.com/tyler-utah/AlloyForwardProgress/blob/master/artifact/cadp/3_threads_3_instructions/alloy_output/18/18_simple.txt"
+{
+Mem0=0;
+P1:r0=0;
+}
+P0@sg 0,wg 0, qf 0                  | P1@sg 0,wg 0, qf 0                  | P2@sg 0,wg 0, qf 0                  ;
+LC00:                               | LC10:                               | LC20:                               ;
+st.atom.wg.sc0 Mem0, 1              | ld.atom.wg.sc0.semsc0 r0, Mem0      | st.atom.wg.sc0 Mem0, 1              ;
+LC01:                               | beq r0, 0, LC11                     | LC21:                               ;
+                                    | goto LC10                           |                                     ;
+                                    | LC11:                               |                                     ;
+exists 0==0
