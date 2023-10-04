@@ -30,4 +30,5 @@ RUN ln -s clang-12 /usr/bin/clang
 ENV DAT3M_HOME=/home/Dat3M
 ENV DAT3M_OUTPUT=$DAT3M_HOME/output
 ENV CFLAGS="-I$DAT3M_HOME/include"
+ENV OPTFLAGS="-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"
 ENV LD_LIBRARY_PATH=/usr/local/lib

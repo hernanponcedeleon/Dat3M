@@ -37,7 +37,7 @@ public class Compilation {
         final String outputFileName = getOutputName(file, "-opt.ll");
         ArrayList<String> cmd = new ArrayList<>();
         cmd.add("opt");
-        String replaceOptions = System.getenv().getOrDefault("ATOMIC_REPLACE_OPTS", "");
+        String replaceOptions = System.getenv().getOrDefault("OPTFLAGS", "");
         if (!replaceOptions.isEmpty()) {
             Collections.addAll(cmd, replaceOptions.split(" "));
         }
