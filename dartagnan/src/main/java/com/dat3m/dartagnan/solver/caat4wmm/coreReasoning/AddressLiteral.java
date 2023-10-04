@@ -30,7 +30,7 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
     }
 
     public AddressLiteral(Tuple e, boolean isNegative) {
-        this(e.getFirst(), e.getSecond(), isNegative);
+        this(e.first(), e.second(), isNegative);
     }
 
     @Override

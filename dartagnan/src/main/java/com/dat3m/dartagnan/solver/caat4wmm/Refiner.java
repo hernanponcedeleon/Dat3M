@@ -128,8 +128,8 @@ public class Refiner {
         } else if (literal instanceof RelLiteral lit) {
             Relation rel = encoder.getTask().getMemoryModel().getRelation(lit.getName());
             enc = encoder.edge(rel,
-                    perm.apply(lit.getData().getFirst()),
-                    perm.apply(lit.getData().getSecond()));
+                    perm.apply(lit.getData().first()),
+                    perm.apply(lit.getData().second()));
         } else {
             throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }

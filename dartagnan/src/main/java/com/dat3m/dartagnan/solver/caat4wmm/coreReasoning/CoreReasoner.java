@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.Fences;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,21 +58,20 @@ public class CoreReasoner {
                 Edge edge = edgeLit.getEdge();
                 Event e1 = domain.getObjectById(edge.getFirst()).getEvent();
                 Event e2 = domain.getObjectById(edge.getSecond()).getEvent();
-                Tuple tuple = new Tuple(e1, e2);
                 Relation rel = termMap.get(lit.getName());
 
-                if (lit.isPositive() && ra.getKnowledge(rel).containsMust(tuple)) {
+                if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
                     // Statically present edges
-                    addExecReason(tuple, coreReason);
-                } else if (lit.isNegative() && !ra.getKnowledge(rel).containsMay(tuple)) {
+                    addExecReason(e1, e2, coreReason);
+                } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
                     // Statically absent edges
                 } else {
                     String name = rel.getNameOrTerm();
                     if (name.equals(RF) || name.equals(CO)
                             || executionGraph.getCutRelations().contains(rel)) {
-                        coreReason.add(new RelLiteral(name, tuple, lit.isNegative()));
+                        coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
                     } else if (name.equals(LOC)) {
-                        coreReason.add(new AddressLiteral(tuple, lit.isNegative()));
+                        coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
                     } else if (rel.getDefinition() instanceof Fences) {
                         // This is a special case since "fencerel(F) = po;[F];po".
                         // We should do this transformation directly on the Wmm to avoid this special reasoning
@@ -88,7 +86,7 @@ public class CoreReasoner {
                             // TODO: Support negated literals
                             throw new UnsupportedOperationException(String.format("Negated literals of type %s are not supported.", rel));
                         }
-                        addExecReason(tuple, coreReason);
+                        addExecReason(e1, e2, coreReason);
                     }
                 }
             }
@@ -109,16 +107,13 @@ public class CoreReasoner {
             Event ev = execLit.getData();
             return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
-                    .anyMatch(e -> exec.isImplied(e.getData().getFirst(), ev)
-                            || exec.isImplied(e.getData().getSecond(), ev));
+                    .anyMatch(e -> exec.isImplied(e.getData().first(), ev)
+                            || exec.isImplied(e.getData().second(), ev));
 
         });
     }
 
-    private void addExecReason(Tuple edge, List<CoreLiteral> coreReasons) {
-        Event e1 = edge.getFirst();
-        Event e2 = edge.getSecond();
-
+    private void addExecReason(Event e1, Event e2, List<CoreLiteral> coreReasons) {
         if (e1.getGlobalId() > e2.getGlobalId()) {
             // Normalize edge direction
             Event temp = e1;
