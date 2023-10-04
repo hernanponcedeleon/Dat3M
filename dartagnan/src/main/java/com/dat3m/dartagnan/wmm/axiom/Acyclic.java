@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Options;
@@ -18,11 +19,10 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Sets.difference;
+
 
 @Options
 public class Acyclic extends Axiom {
@@ -37,6 +37,48 @@ public class Acyclic extends Axiom {
         super(rel, false, false);
     }
 
+    // Under-approximates the must-set of (rel+ ; rel).
+    // It is the smallest set that contains the binary composition of the must-set with itself with implied intermediates
+    // and is closed under that operation with the must-set.
+    // Basically, the clause {@code exec(x) and exec(z) implies before(x,z)} is obsolete,
+    // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
+    // NOTE: Assumes that the must-set of rel+ is acyclic.
+    private static EventGraph transitivelyDerivableMustEdges(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
+        EventGraph result = new EventGraph();
+        Map<Event, Set<Event>> map = new HashMap<>();
+        Map<Event, Set<Event>> mapInverse = new HashMap<>();
+        EventGraph current = k.getMustSet();
+        while (!current.isEmpty()) {
+            EventGraph next = new EventGraph();
+            current.apply((x, y) -> {
+                map.computeIfAbsent(x, e -> new HashSet<>()).add(y);
+                mapInverse.computeIfAbsent(y, e -> new HashSet<>()).add(x);
+            });
+            current.apply((x, y) -> {
+                boolean implied = exec.isImplied(y, x);
+                boolean implies = exec.isImplied(x, y);
+                for (Event z : map.getOrDefault(y, Set.of())) {
+                    if (!implies && !exec.isImplied(z, y) || exec.areMutuallyExclusive(x, z)) {
+                        continue;
+                    }
+                    if (result.add(x, z)) {
+                        next.add(x, z);
+                    }
+                }
+                for (Event w : mapInverse.getOrDefault(x, Set.of())) {
+                    if (!implied && !exec.isImplied(w, x) || exec.areMutuallyExclusive(w, y)) {
+                        continue;
+                    }
+                    if (result.add(w, y)) {
+                        next.add(w, y);
+                    }
+                }
+            });
+            current = next;
+        }
+        return result;
+    }
+
     @Override
     public String toString() {
         return (negated ? "~" : "") + "acyclic " + rel.getNameOrTerm();
@@ -49,54 +91,51 @@ public class Acyclic extends Axiom {
         long t0 = System.currentTimeMillis();
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         RelationAnalysis.Knowledge knowledge = knowledgeMap.get(rel);
-        Set<Tuple> newDisabled = new HashSet<>();
-        for (Tuple t : knowledge.getMaySet()) {
-            if (t.isLoop()) {
-                newDisabled.add(t);
+        EventGraph may = knowledge.getMaySet();
+        EventGraph must = knowledge.getMustSet();
+        EventGraph newDisabled = new EventGraph();
+        may.apply((e1, e2) -> {
+            if (Tuple.isLoop(e1, e2) || must.contains(e2, e1)) {
+                newDisabled.add(e1, e2);
             }
-        }
-        for (Tuple t : knowledge.getMustSet()) {
-            Tuple inverse = t.getInverse();
-            if (knowledge.containsMay(inverse)) {
-                newDisabled.add(inverse);
-            }
-        }
+        });
         Map<Event, List<Event>> mustOut = new HashMap<>();
-        for (Tuple t : knowledge.getMustSet()) {
-            if (!t.isLoop()) {
-                mustOut.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
+        must.apply((e1, e2) -> {
+            if (!Tuple.isLoop(e1, e2)) {
+                mustOut.computeIfAbsent(e1, x -> new ArrayList<>()).add(e2);
             }
-        }
-        for (Collection<Tuple> next = knowledge.getMustSet(); !next.isEmpty();) {
-            Collection<Tuple> current = next;
-            next = new ArrayList<>();
-            for (Tuple xy : current) {
-                if (xy.isLoop()) {
-                    continue;
-                }
-                Event x = xy.getFirst();
-                Event y = xy.getSecond();
-                boolean implied = exec.isImplied(x, y);
-                for (Event z : mustOut.getOrDefault(y, List.of())) {
-                    if ((implied || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
-                        Tuple zx = new Tuple(z, x);
-                        if (newDisabled.add(zx)) {
-                            next.add(new Tuple(x, z));
+        });
+        EventGraph current = knowledge.getMustSet();
+        while (true) {
+            EventGraph next = new EventGraph();
+            current.apply((x, y) -> {
+                if (Tuple.isLoop(x, y)) {
+                    boolean implied = exec.isImplied(x, y);
+                    for (Event z : mustOut.getOrDefault(y, List.of())) {
+                        if (!implied && !exec.isImplied(z, y) || exec.areMutuallyExclusive(x, z)) {
+                            continue;
+                        }
+                        if (newDisabled.add(z, x)) {
+                            next.add(x, z);
                         }
                     }
                 }
+            });
+            if (next.isEmpty()) {
+                break;
             }
+            current = next;
         }
         newDisabled.retainAll(knowledge.getMaySet());
-        logger.debug("disabled {} tuples in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(newDisabled, Set.of()));
+        logger.debug("disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(newDisabled, EventGraph.empty()));
     }
 
     @Override
     public Map<Relation, RelationAnalysis.ExtendedDelta> computeIncrementalKnowledgeClosure(
             Relation changed,
-            Set<Tuple> disabled,
-            Set<Tuple> enabled,
+            EventGraph disabled,
+            EventGraph enabled,
             Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
             Context analysisContext) {
         checkArgument(changed == rel,
@@ -104,144 +143,100 @@ public class Acyclic extends Axiom {
         long t0 = System.currentTimeMillis();
         ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
         RelationAnalysis.Knowledge knowledge = knowledgeMap.get(rel);
-        Set<Tuple> newDisabled = new HashSet<>();
-        for (Tuple t : enabled) {
-            Tuple inverse = t.getInverse();
-            if (knowledge.containsMay(inverse)) {
-                newDisabled.add(inverse);
+        EventGraph may = knowledge.getMaySet();
+        EventGraph newDisabled = new EventGraph();
+        enabled.apply((e1, e2) -> {
+            if (may.contains(e2, e1)) {
+                newDisabled.add(e2, e1);
             }
-        }
+        });
         Map<Event, List<Event>> mustIn = new HashMap<>();
         Map<Event, List<Event>> mustOut = new HashMap<>();
-        for (Tuple t : knowledge.getMustSet()) {
-            if (!t.isLoop()) {
-                mustIn.computeIfAbsent(t.getSecond(), x -> new ArrayList<>()).add(t.getFirst());
-                mustOut.computeIfAbsent(t.getFirst(), x -> new ArrayList<>()).add(t.getSecond());
+        knowledge.getMustSet().apply((e1, e2) -> {
+            if (!Tuple.isLoop(e1, e2)) {
+                mustIn.computeIfAbsent(e2, x -> new ArrayList<>()).add(e1);
+                mustOut.computeIfAbsent(e1, x -> new ArrayList<>()).add(e2);
             }
-        }
-        for (Collection<Tuple> next = enabled; !next.isEmpty();) {
-            Collection<Tuple> current = next;
-            next = new ArrayList<>();
-            for (Tuple xy : current) {
-                if (xy.isLoop()) {
-                    continue;
-                }
-                Event x = xy.getFirst();
-                Event y = xy.getSecond();
-                boolean implies = exec.isImplied(x, y);
-                boolean implied = exec.isImplied(y, x);
-                for (Event w : mustIn.getOrDefault(x, List.of())) {
-                    if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
-                        Tuple yw = new Tuple(y, w);
-                        if (newDisabled.add(yw)) {
-                            next.add(new Tuple(w, y));
+        });
+
+        EventGraph current = enabled;
+        while (true) {
+            EventGraph next = new EventGraph();
+            current.apply((x, y) -> {
+                if (!Tuple.isLoop(x, y)) {
+                    boolean implies = exec.isImplied(x, y);
+                    boolean implied = exec.isImplied(y, x);
+                    for (Event w : mustIn.getOrDefault(x, List.of())) {
+                        if (!implied && !exec.isImplied(w, x) || exec.areMutuallyExclusive(w, y)) {
+                            continue;
+                        }
+                        if (newDisabled.add(y, w)) {
+                            next.add(w, y);
+                        }
+                    }
+                    for (Event z : mustOut.getOrDefault(y, List.of())) {
+                        if (!implies && !exec.isImplied(z, y) || exec.areMutuallyExclusive(x, z)) {
+                            continue;
+                        }
+                        if (newDisabled.add(z, x)) {
+                            next.add(x, z);
                         }
                     }
                 }
-                for (Event z : mustOut.getOrDefault(y, List.of())) {
-                    if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
-                        Tuple zx = new Tuple(z, x);
-                        if (newDisabled.add(zx)) {
-                            next.add(new Tuple(x, z));
-                        }
-                    }
-                }
-            }
-        }
-        newDisabled.retainAll(knowledge.getMaySet());
-        logger.debug("Disabled {} tuples in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(newDisabled, Set.of()));
-    }
-
-    @Override
-    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
-        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
-        RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
-        RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-        return difference(getEncodeTupleSet(exec, ra), k.getMustSet());
-    }
-
-    public int getEncodeTupleSetSize(Context analysisContext) {
-        return getEncodeTupleSet(analysisContext).size();
-    }
-
-    private Set<Tuple> getEncodeTupleSet(ExecutionAnalysis exec, RelationAnalysis ra) {
-        logger.info("Computing encodeTupleSet for {}", this);
-        // ====== Construct [Event -> Successor] mapping ======
-        Map<Event, Collection<Event>> succMap = new HashMap<>();
-        final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-        for (Tuple t : k.getMaySet()) {
-            succMap.computeIfAbsent(t.getFirst(), key -> new ArrayList<>()).add(t.getSecond());
-        }
-
-        // ====== Compute SCCs ======
-        DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
-        final Set<Tuple> result = new HashSet<>();
-        for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
-            for (DependencyGraph<Event>.Node node1 : scc) {
-                for (DependencyGraph<Event>.Node node2 : scc) {
-                    Tuple t = new Tuple(node1.getContent(), node2.getContent());
-                    if (k.containsMay(t)) {
-                        result.add(t);
-                    }
-                }
-            }
-        }
-
-        logger.info("encodeTupleSet size: {}", result.size());
-        if (getMemoryModel().getConfig().isReduceAcyclicityEncoding()) {
-            Set<Tuple> obsolete = transitivelyDerivableMustTuples(exec, ra.getKnowledge(rel));
-            result.removeAll(obsolete);
-            logger.info("reduced encodeTupleSet size: {}", result.size());
-        }
-        return result;
-    }
-
-    // Under-approximates the must-set of (rel+ ; rel).
-    // It is the smallest set that contains the binary composition of the must-set with itself with implied intermediates
-    // and is closed under that operation with the must-set.
-    // Basically, the clause {@code exec(x) and exec(z) implies before(x,z)} is obsolete,
-    // if the clauses {@code exec(x) implies before(x,y)} and {@code exec(z) implies before(y,z)} exist.
-    // NOTE: Assumes that the must-set of rel+ is acyclic.
-    private static Set<Tuple> transitivelyDerivableMustTuples(ExecutionAnalysis exec, RelationAnalysis.Knowledge k) {
-        Set<Tuple> result = new HashSet<>();
-        Map<Event, List<Event>> map = new HashMap<>();
-        Map<Event, List<Event>> mapInverse = new HashMap<>();
-        Collection<Tuple> current = k.getMustSet();
-        while (!current.isEmpty()) {
-            List<Tuple> next = new ArrayList<>();
-            for (Tuple tuple : current) {
-                map.computeIfAbsent(tuple.getFirst(), x -> new ArrayList<>()).add(tuple.getSecond());
-                mapInverse.computeIfAbsent(tuple.getSecond(), x -> new ArrayList<>()).add(tuple.getFirst());
-            }
-            for (Tuple xy : current) {
-                Event x = xy.getFirst();
-                Event y = xy.getSecond();
-                boolean implied = exec.isImplied(y, x);
-                boolean implies = exec.isImplied(x, y);
-                for (Event z : map.getOrDefault(y, List.of())) {
-                    if ((implies || exec.isImplied(z, y)) && !exec.areMutuallyExclusive(x, z)) {
-                        Tuple xz = new Tuple(x, z);
-                        if (result.add(xz)) {
-                            next.add(xz);
-                        }
-                    }
-                }
-                for (Event w : mapInverse.getOrDefault(x, List.of())) {
-                    if ((implied || exec.isImplied(w, x)) && !exec.areMutuallyExclusive(w, y)) {
-                        Tuple wy = new Tuple(w, y);
-                        if (result.add(wy)) {
-                            next.add(wy);
-                        }
-                    }
-                }
+            });
+            if (next.isEmpty()) {
+                break;
             }
             current = next;
         }
+        newDisabled.retainAll(knowledge.getMaySet());
+        logger.debug("Disabled {} edges in {}ms", newDisabled.size(), System.currentTimeMillis() - t0);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(newDisabled, EventGraph.empty()));
+    }
+
+    @Override
+    protected EventGraph getEncodeGraph(Context analysisContext) {
+        ExecutionAnalysis exec = analysisContext.get(ExecutionAnalysis.class);
+        RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
+        RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+        return difference(getEncodeGraph(exec, ra), k.getMustSet());
+    }
+
+    public int getEncodeGraphSize(Context analysisContext) {
+        return getEncodeGraph(analysisContext).size();
+    }
+
+    private EventGraph getEncodeGraph(ExecutionAnalysis exec, RelationAnalysis ra) {
+        logger.info("Computing encodeGraph for {}", this);
+        // ====== Construct [Event -> Successor] mapping ======
+        EventGraph maySet = ra.getKnowledge(rel).getMaySet();
+        Map<Event, Set<Event>> succMap = maySet.getOutMap();
+
+        // ====== Compute SCCs ======
+        DependencyGraph<Event> depGraph = DependencyGraph.from(succMap.keySet(), succMap);
+        final EventGraph result = new EventGraph();
+        for (Set<DependencyGraph<Event>.Node> scc : depGraph.getSCCs()) {
+            for (DependencyGraph<Event>.Node node1 : scc) {
+                for (DependencyGraph<Event>.Node node2 : scc) {
+                    Event e1 = node1.getContent();
+                    Event e2 = node2.getContent();
+                    if (maySet.contains(e1, e2)) {
+                        result.add(e1, e2);
+                    }
+                }
+            }
+        }
+
+        logger.info("encodeGraph size: {}", result.size());
+        if (getMemoryModel().getConfig().isReduceAcyclicityEncoding()) {
+            EventGraph obsolete = transitivelyDerivableMustEdges(exec, ra.getKnowledge(rel));
+            result.removeAll(obsolete);
+            logger.info("reduced encodeGraph size: {}", result.size());
+        }
         return result;
     }
 
-    private void reduceWithMinSets(Set<Tuple> encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
+    private void reduceWithMinSets(EventGraph encodeSet, ExecutionAnalysis exec, RelationAnalysis ra) {
         /*
             ASSUMPTION: MinSet is acyclic!
             IDEA:
@@ -263,41 +258,41 @@ public class Acyclic extends Axiom {
         final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
 
         // (1) Approximate transitive closure of minSet (only gets computed when crossEdges are available)
-        List<Tuple> crossEdges = k.getMustSet().stream()
-                .filter(t -> t.isCrossThread() && !t.getFirst().hasTag(Tag.INIT))
-                .collect(Collectors.toList());
+        EventGraph crossEdges = k.getMustSet()
+                .filter((e1, e2) -> Tuple.isCrossThread(e1, e2) && !e1.hasTag(Tag.INIT));
+
         logger.debug("cross-edges: {}", crossEdges.size());
         Map<Event, Set<Event>> transMinSet = new HashMap<>();
-        for (Tuple t : k.getMustSet()) {
-            transMinSet.computeIfAbsent(t.getSecond(), x -> new HashSet<>()).add(t.getFirst());
-        }
-        final Function<Event, Collection<Tuple>> mustIn = k.getMustIn();
-        final Function<Event, Collection<Tuple>> mustOut = k.getMustOut();
-        for (Tuple crossEdge : crossEdges) {
-            Event e1 = crossEdge.getFirst();
-            Event e2 = crossEdge.getSecond();
+        k.getMustSet().apply((e1, e2) -> transMinSet.computeIfAbsent(e2, x -> new HashSet<>()).add(e1));
+        Map<Event, Set<Event>> mustIn = k.getMustSet().getInMap();
+        Map<Event, Set<Event>> mustOut = k.getMustSet().getOutMap();
+        crossEdges.apply((e1, e2) -> {
             List<Event> ingoing = new ArrayList<>();
             ingoing.add(e1); // ingoing events + self
-            mustIn.apply(e1).stream().map(Tuple::getFirst)
-                    .filter(e -> exec.isImplied(e, e1))
-                    .forEach(ingoing::add);
+            mustIn.getOrDefault(e1, Set.of()).forEach(e -> {
+                if (exec.isImplied(e, e1)) {
+                    ingoing.add(e);
+                }
+            });
             List<Event> outgoing = new ArrayList<>();
             outgoing.add(e2); // outgoing edges + self
-            mustOut.apply(e2).stream().map(Tuple::getSecond)
-                    .filter(e -> exec.isImplied(e, e2))
-                    .forEach(outgoing::add);
+            mustOut.getOrDefault(e2, Set.of()).forEach(e -> {
+                if (exec.isImplied(e, e2)) {
+                    outgoing.add(e);
+                }
+            });
             for (Event in : ingoing) {
                 for (Event out : outgoing) {
                     transMinSet.computeIfAbsent(out, x -> new HashSet<>()).add(in);
                 }
             }
-        }
+        });
 
         // (2) Approximate reduction of transitive must-set: red(must(r)+).
         // Note: We reduce the transitive closure which may have more edges
         // that can be used to perform reduction
         // Approximative must-transitive reduction of minSet:
-        Set<Tuple> reduct = new HashSet<>();
+        EventGraph reduct = new EventGraph();
         DependencyGraph<Event> depGraph = DependencyGraph.from(transMinSet.keySet(), e -> transMinSet.getOrDefault(e, Set.of()));
         for (DependencyGraph<Event>.Node start : depGraph.getNodes()) {
             Event e1 = start.getContent();
@@ -308,20 +303,20 @@ public class Acyclic extends Axiom {
                         .map(DependencyGraph.Node::getContent)
                         .noneMatch(e2 -> (exec.isImplied(e1, e2) || exec.isImplied(e3, e2)) &&
                                 transMinSet.getOrDefault(e3, Set.of()).contains(e2))) {
-                    reduct.add(new Tuple(e1, e3));
+                    reduct.add(e1, e3);
                 }
             }
         }
 
         // Remove (must(r)+ \ red(must(r)+)
-        encodeSet.removeIf(t -> transMinSet.getOrDefault(t.getSecond(), Set.of()).contains(t.getFirst()) && !reduct.contains(t));
+        encodeSet.removeIf((e1, e2) -> transMinSet.getOrDefault(e2, Set.of()).contains(e1) && !reduct.contains(e1, e2));
     }
 
     @Override
-	public List<BooleanFormula> consistent(EncodingContext context) {
+    public List<BooleanFormula> consistent(EncodingContext context) {
         ExecutionAnalysis exec = context.getAnalysisContext().get(ExecutionAnalysis.class);
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
-        Set<Tuple> toBeEncoded = getEncodeTupleSet(exec, ra);
+        EventGraph toBeEncoded = getEncodeGraph(exec, ra);
         return negated ?
                 inconsistentSAT(toBeEncoded, context) : // There is no IDL-based encoding for inconsistency
                 context.usesSATEncoding() ?
@@ -329,7 +324,7 @@ public class Acyclic extends Axiom {
                         consistentIDL(toBeEncoded, context);
     }
 
-    private List<BooleanFormula> inconsistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> inconsistentSAT(EventGraph toBeEncoded, EncodingContext context) {
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
         final Relation rel = this.rel;
@@ -337,51 +332,46 @@ public class Acyclic extends Axiom {
         List<BooleanFormula> eventsInCycle = new ArrayList<>();
         Map<Event, List<BooleanFormula>> inMap = new HashMap<>();
         Map<Event, List<BooleanFormula>> outMap = new HashMap<>();
-        for(Tuple t : toBeEncoded) {
-            BooleanFormula cycleVar = getSMTCycleVar(t, fmgr);
-            inMap.computeIfAbsent(t.getSecond(), k -> new ArrayList<>()).add(cycleVar);
-            outMap.computeIfAbsent(t.getFirst(), k -> new ArrayList<>()).add(cycleVar);
-        }
+        toBeEncoded.apply((e1, e2) -> {
+            BooleanFormula cycleVar = getSMTCycleVar(e1, e2, fmgr);
+            inMap.computeIfAbsent(e2, k -> new ArrayList<>()).add(cycleVar);
+            outMap.computeIfAbsent(e1, k -> new ArrayList<>()).add(cycleVar);
+        });
         // We use Boolean variables which guess the edges and nodes constituting the cycle.
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
-        for (Event e : toBeEncoded.stream().map(Tuple::getFirst).collect(Collectors.toSet())) {
+        for (Event e : toBeEncoded.getDomain()) {
             eventsInCycle.add(cycleVar(e, fmgr));
             // We ensure that for every event in the cycle, there should be at least one incoming
             // edge and at least one outgoing edge that are also in the cycle.
             enc.add(bmgr.implication(cycleVar(e, fmgr), bmgr.and(bmgr.or(inMap.get(e)), bmgr.or(outMap.get(e)))));
-            for (Tuple tuple : toBeEncoded) {
-                Event e1 = tuple.getFirst();
-                Event e2 = tuple.getSecond();
+            toBeEncoded.apply((e1, e2) ->
                 // If an edge is guessed to be in a cycle, the edge must belong to relation,
                 // and both events must also be guessed to be on the cycle.
-                enc.add(bmgr.implication(getSMTCycleVar(tuple, fmgr),
-                        bmgr.and(edge.encode(tuple), cycleVar(e1, fmgr), cycleVar(e2, fmgr))));
-            }
+                enc.add(bmgr.implication(getSMTCycleVar(e1, e2, fmgr),
+                        bmgr.and(edge.encode(e1, e2), cycleVar(e1, fmgr), cycleVar(e2, fmgr)))));
         }
         // A cycle exists if there is an event in the cycle.
         enc.add(bmgr.or(eventsInCycle));
         return enc;
     }
 
-    private List<BooleanFormula> consistentIDL(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> consistentIDL(EventGraph toBeEncoded, EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
         final Relation rel = this.rel;
         final String clockVarName = rel.getNameOrTerm();
-
         List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
-        for (Tuple tuple : toBeEncoded) {
-            enc.add(bmgr.implication(edge.encode(tuple),
+        toBeEncoded.apply((e1, e2) ->
+            enc.add(bmgr.implication(edge.encode(e1, e2),
                     imgr.lessThan(
-                            context.clockVariable(clockVarName, tuple.getFirst()),
-                            context.clockVariable(clockVarName, tuple.getSecond()))));
-        }
-
+                            context.clockVariable(clockVarName, e1),
+                            context.clockVariable(clockVarName,e2))))
+        );
         return enc;
     }
 
-    private List<BooleanFormula> consistentSAT(Set<Tuple> toBeEncoded, EncodingContext context) {
+    private List<BooleanFormula> consistentSAT(EventGraph toBeEncoded, EncodingContext context) {
         // We use a vertex-elimination graph based encoding.
         final FormulaManager fmgr = context.getFormulaManager();
         final BooleanFormulaManager bmgr = fmgr.getBooleanFormulaManager();
@@ -390,22 +380,20 @@ public class Acyclic extends Axiom {
         final Relation rel = this.rel;
 
         // Build original graph G
-        Map<Event, Set<Tuple>> inEdges = new HashMap<>();
-        Map<Event, Set<Tuple>> outEdges = new HashMap<>();
+        Map<Event, Set<Event>> inEdges = new HashMap<>();
+        Map<Event, Set<Event>> outEdges = new HashMap<>();
         Set<Event> nodes = new HashSet<>();
         Set<Event> selfloops = new HashSet<>();         // Special treatment for self-loops
-        for (final Tuple t : toBeEncoded) {
-            final Event e1 = t.getFirst();
-            final Event e2 = t.getSecond();
-            if (t.isLoop()) {
+        toBeEncoded.apply((e1, e2) -> {
+            if (Tuple.isLoop(e1, e2)) {
                 selfloops.add(e1);
             } else {
                 nodes.add(e1);
                 nodes.add(e2);
-                outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(t);
-                inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(t);
+                outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(e2);
+                inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(e2);
             }
-        }
+        });
 
         // Handle corner-cases where some node has no ingoing or outgoing edges
         for (Event node : nodes) {
@@ -414,8 +402,8 @@ public class Acyclic extends Axiom {
         }
 
         // Build vertex elimination graph G*, by iteratively modifying G
-        Map<Event, Set<Tuple>> vertEleInEdges = new HashMap<>();
-        Map<Event, Set<Tuple>> vertEleOutEdges = new HashMap<>();
+        Map<Event, Set<Event>> vertEleInEdges = new HashMap<>();
+        Map<Event, Set<Event>> vertEleOutEdges = new HashMap<>();
         for (Event e : nodes) {
             vertEleInEdges.put(e, new HashSet<>(inEdges.get(e)));
             vertEleOutEdges.put(e, new HashSet<>(outEdges.get(e)));
@@ -432,25 +420,22 @@ public class Acyclic extends Axiom {
 
             // Eliminate e
             nodes.remove(e);
-            final Set<Tuple> in = inEdges.remove(e);
-            final Set<Tuple> out = outEdges.remove(e);
-            in.forEach(t -> outEdges.get(t.getFirst()).remove(t));
-            out.forEach(t -> inEdges.get(t.getSecond()).remove(t));
+            final Set<Event> in = inEdges.remove(e);
+            final Set<Event> out = outEdges.remove(e);
+            in.forEach(x -> outEdges.get(x).remove(e));
+            out.forEach(x -> inEdges.get(x).remove(e));
             // Create new edges due to elimination of e
-            for (Tuple t1 : in) {
-                Event e1 = t1.getFirst();
-                for (Tuple t2 : out) {
-                    Event e2 = t2.getSecond();
+            for (Event e1 : in) {
+                for (Event e2 : out) {
                     if (e2 == e1 || exec.areMutuallyExclusive(e1, e2)) {
                         continue;
                     }
-                    Tuple t = new Tuple(e1, e2);
                     // Update next graph in the elimination sequence
-                    inEdges.get(e2).add(t);
-                    outEdges.get(e1).add(t);
+                    inEdges.get(e2).add(e1);
+                    outEdges.get(e1).add(e2);
                     // Update vertex elimination graph
-                    vertEleOutEdges.get(e1).add(t);
-                    vertEleInEdges.get(e2).add(t);
+                    vertEleOutEdges.get(e1).add(e2);
+                    vertEleInEdges.get(e2).add(e1);
                     // Store constructed triangle
                     triangles.add(new Event[]{e1, e, e2});
                 }
@@ -458,40 +443,36 @@ public class Acyclic extends Axiom {
         }
 
         // --- Create encoding ---
-        final Set<Tuple> minSet = ra.getKnowledge(rel).getMustSet();
+        final EventGraph minSet = ra.getKnowledge(rel).getMustSet();
         List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = context.edge(rel);
         // Basic lifting
-        for (Tuple t : toBeEncoded) {
-            BooleanFormula cond = minSet.contains(t) ? context.execution(t.getFirst(), t.getSecond()) : edge.encode(t);
-            enc.add(bmgr.implication(cond, getSMTCycleVar(t, fmgr)));
-        }
+        toBeEncoded.apply((e1, e2) -> {
+            BooleanFormula cond = minSet.contains(e1, e2) ? context.execution(e1, e2) : edge.encode(e1, e2);
+            enc.add(bmgr.implication(cond, getSMTCycleVar(e1, e2, fmgr)));
+        });
 
         // Encode triangle rules
         for (Event[] tri : triangles) {
-            Tuple t1 = new Tuple(tri[0], tri[1]);
-            Tuple t2 = new Tuple(tri[1], tri[2]);
-            Tuple t3 = new Tuple(tri[0], tri[2]);
-
-            BooleanFormula cond = minSet.contains(t3) ?
-                    context.execution(t3.getFirst(), t3.getSecond())
-                    : bmgr.and(getSMTCycleVar(t1, fmgr), getSMTCycleVar(t2, fmgr));
-
-            enc.add(bmgr.implication(cond, getSMTCycleVar(t3, fmgr)));
+            BooleanFormula cond = minSet.contains(tri[0], tri[2]) ?
+                    context.execution(tri[0], tri[2])
+                    : bmgr.and(getSMTCycleVar(tri[0], tri[1], fmgr), getSMTCycleVar(tri[1], tri[2], fmgr));
+            enc.add(bmgr.implication(cond, getSMTCycleVar(tri[0], tri[2], fmgr)));
         }
 
         //  --- Encode inconsistent assignments ---
         // Handle self-loops
         for (Event e : selfloops) {
-            enc.add(bmgr.not(edge.encode(new Tuple(e, e))));
+            enc.add(bmgr.not(edge.encode(e, e)));
         }
         // Handle remaining cycles
         for (int i = 0; i < varOrderings.size(); i++) {
-            Set<Tuple> out = vertEleOutEdges.get(varOrderings.get(i));
-            for (Tuple t : out) {
-                if (varOrderings.indexOf(t.getSecond()) > i && vertEleInEdges.get(t.getSecond()).contains(t)) {
-                    BooleanFormula cond = minSet.contains(t) ? bmgr.makeTrue() : getSMTCycleVar(t, fmgr);
-                    enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(t.getInverse(), fmgr))));
+            Event e1 = varOrderings.get(i);
+            Set<Event> out = vertEleOutEdges.get(e1);
+            for (Event e2: out) {
+                if (varOrderings.indexOf(e2) > i && vertEleInEdges.get(e2).contains(e1)) {
+                    BooleanFormula cond = minSet.contains(e1, e2) ? bmgr.makeTrue() : getSMTCycleVar(e1, e2, fmgr);
+                    enc.add(bmgr.implication(cond, bmgr.not(getSMTCycleVar(e2, e1, fmgr))));
                 }
             }
         }
@@ -503,7 +484,7 @@ public class Acyclic extends Axiom {
         return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d", m.escape(getNameOrTerm()), event.getGlobalId()));
     }
 
-    private BooleanFormula getSMTCycleVar(Tuple edge, FormulaManager m) {
-        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), edge.getFirst().getGlobalId(), edge.getSecond().getGlobalId()));
+    private BooleanFormula getSMTCycleVar(Event e1, Event e2, FormulaManager m) {
+        return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), e1.getGlobalId(), e2.getGlobalId()));
     }
 }

@@ -17,6 +17,6 @@ public class DirectAddressDependency extends Definition {
 
     @Override
     public EncodingContext.EdgeEncoder getEdgeVariableEncoder(EncodingContext c) {
-        return tuple -> c.dependency(tuple.getFirst(), tuple.getSecond());
+        return c::dependency;
     }
 }

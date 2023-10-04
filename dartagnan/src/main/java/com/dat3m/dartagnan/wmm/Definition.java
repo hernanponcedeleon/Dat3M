@@ -33,7 +33,7 @@ public abstract class Definition implements Constraint {
 
     public EncodingContext.EdgeEncoder getEdgeVariableEncoder(EncodingContext c) {
         String nameOrTerm = definedRelation.getNameOrTerm();
-        return tuple -> c.edgeVariable(nameOrTerm, tuple.getFirst(), tuple.getSecond());
+        return (e1, e2) -> c.edgeVariable(nameOrTerm, e1, e2);
     }
 
     public String getTerm() {

@@ -5,16 +5,12 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.*;
 
-/**
- *
- * @author Florian Furbach
- */
 public abstract class Axiom implements Constraint {
 
     protected final Relation rel;
@@ -64,11 +60,11 @@ public abstract class Axiom implements Constraint {
         return name != null ? name : toString();
     }
 
-    protected abstract Set<Tuple> getEncodeTupleSet(Context analysisContext);
+    protected abstract EventGraph getEncodeGraph(Context analysisContext);
 
     @Override
-    public Map<Relation, Set<Tuple>> getEncodeTupleSets(VerificationTask task, Context analysisContext) {
-        return Map.of(rel, getEncodeTupleSet(analysisContext));
+    public Map<Relation, EventGraph> getEncodeGraph(VerificationTask task, Context analysisContext) {
+        return Map.of(rel, getEncodeGraph(analysisContext));
     }
 
     @Override
