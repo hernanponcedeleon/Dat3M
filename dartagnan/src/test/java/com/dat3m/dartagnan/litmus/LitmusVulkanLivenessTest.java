@@ -13,6 +13,10 @@ import java.util.EnumSet;
 @RunWith(Parameterized.class)
 public class LitmusVulkanLivenessTest extends AbstractLitmusTest {
 
+    public LitmusVulkanLivenessTest(String path, Result expected) {
+        super(path, expected);
+    }
+
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
         return buildLitmusTests("litmus/VULKAN/", "VULKAN-Liveness");
@@ -23,7 +27,8 @@ public class LitmusVulkanLivenessTest extends AbstractLitmusTest {
         return () -> Arch.VULKAN;
     }
 
-    public LitmusVulkanLivenessTest(String path, Result expected) {
-        super(path, expected);
+    @Override
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
     }
 }
