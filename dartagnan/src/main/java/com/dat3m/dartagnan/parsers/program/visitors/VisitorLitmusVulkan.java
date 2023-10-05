@@ -248,7 +248,6 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
-        Boolean atomic = true; // RMW is always atomic
         String mo = (ctx.mo() != null) ? ctx.mo().content : "";
         String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
@@ -259,7 +258,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (!avvis.isEmpty()) {
             rmw.addTags(avvis);
         }
-        tagControl(rmw, atomic, mo, avvis, scope, storageClass, storageClassSemantics, avvisSemantics);
+        tagControl(rmw, true, mo, avvis, scope, storageClass, storageClassSemantics, avvisSemantics);
         return programBuilder.addChild(mainThread, rmw);
     }
 
@@ -268,7 +267,6 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
-        Boolean atomic = true; // RMW is always atomic
         String mo = (ctx.mo() != null) ? ctx.mo().content : "";
         String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
@@ -280,7 +278,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (!avvis.isEmpty()) {
             rmw.addTags(avvis);
         }
-        tagControl(rmw, atomic, mo, avvis, scope, storageClass, storageClassSemantics, avvisSemantics);
+        tagControl(rmw, true, mo, avvis, scope, storageClass, storageClassSemantics, avvisSemantics);
         return programBuilder.addChild(mainThread, rmw);
     }
 
