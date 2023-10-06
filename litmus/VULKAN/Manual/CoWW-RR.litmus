@@ -1,5 +1,5 @@
-Vulkan CoWW-weak
-"This tests shows coherence is not total for weak stores"
+Vulkan CoWW-RR
+"Non-atomic memory operations may be observed by one thread in a different order than they were written by another thread"
 {
 P1:r0 = 0;
 P1:r1 = 0;

@@ -21,11 +21,6 @@ SPIRV
 (*  Auxiliaries *)
 (*******************)
 
-// Explicitly add transitivity for coherence since the co in Vulkan is not total
-// and recompute fr based on the new co
-let co = co+
-let fr = rf^-1; co
-
 (* Tags *)
 let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
 
@@ -49,7 +44,8 @@ let inscope = (DV * DV) |
               (swg & ((DV | QF | WG) * (DV | QF | WG))) |
               (ssg & ((DV | QF | WG | SG) * (DV | QF | WG | SG)))
 
-let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id // mutually ordered atomics
+// mutually ordered atomics
+let mutordatom = (loc & vloc & inscope & (ATOM * ATOM)) \ id
 
 let avvisSem = ((SC0 | SC1) * (AVDEVICE | VISDEVICE))
                 | (SC0 * ((SEMAV | SEMVIS) & SEMSC0))
@@ -62,6 +58,11 @@ let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & (ATOM * ATOM)
+// From-read is defined based on scoped modification order
+// instead of coherence
+let fr = rf^-1; asmo
+let fre = fr & ext
+
 let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
 let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
 
@@ -143,7 +144,7 @@ acyclic (locord | rf | fr | asmo) as consistency-cycle
 empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 
 // rmw events are atomic
-empty rmw & (fre; coe) as atomic
+empty rmw & (fre; (asmo & ext)) as atomic
 
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete
