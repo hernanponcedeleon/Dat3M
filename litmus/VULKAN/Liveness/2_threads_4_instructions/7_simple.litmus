@@ -10,10 +10,12 @@ P0@sg 0,wg 0, qf 0                      | P1@sg 0,wg 0, qf 0                    
 LC00:                                   | LC10:                                   ;
 ld.atom.wg.sc0.semsc0 r0, Mem0          | st.atom.wg.sc0 Mem0, 1                  ;
 bne r0, 1, LC01                         | LC11:                                   ;
-goto LC00                               | rmw.atom.wg.sc0.semsc0 r2, Mem0, 0      ;
+goto LC02                               | rmw.atom.wg.sc0.semsc0 r2, Mem0, 0      ;
 LC01:                                   | bne r2, 1, LC12                         ;
 rmw.atom.wg.sc0.semsc0 r1, Mem0, 0      | goto LC10                               ;
-bne r1, 0, LC02                         | LC12:                                   ;
-goto LC00                               |                                         ;
+bne r1, 0, LC03                         | LC12:                                   ;
+goto LC02                               |                                         ;
 LC02:                                   |                                         ;
+goto LC00                               |                                         ;
+LC03:                                   |                                         ;
 exists 0==0

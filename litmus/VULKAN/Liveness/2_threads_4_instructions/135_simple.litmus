@@ -14,10 +14,12 @@ goto LC02                           |                                     ;
 LC01:                               |                                     ;
 ld.atom.wg.sc0.semsc0 r1, Mem0      |                                     ;
 bne r1, 0, LC02                     |                                     ;
-goto LC01                           |                                     ;
+goto LC03                           |                                     ;
 LC02:                               |                                     ;
 ld.atom.wg.sc0.semsc0 r2, Mem0      |                                     ;
-bne r2, 0, LC03                     |                                     ;
-goto LC01                           |                                     ;
+bne r2, 0, LC04                     |                                     ;
+goto LC03                           |                                     ;
 LC03:                               |                                     ;
+goto LC01                           |                                     ;
+LC04:                               |                                     ;
 exists 0==0
