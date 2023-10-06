@@ -21,6 +21,11 @@ SPIRV
 (*  Auxiliaries *)
 (*******************)
 
+// Explicitly add transitivity for coherence since the co in Vulkan is not total
+// and recompute fr based on the new co
+let co = co+
+let fr = rf^-1; co
+
 (* Tags *)
 let PRIV = (R | W) \ NONPRIV // PRIV is the complement of NONPRIV
 

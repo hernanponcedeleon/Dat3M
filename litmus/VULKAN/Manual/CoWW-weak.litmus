@@ -1,0 +1,12 @@
+Vulkan CoWW-weak
+"This tests shows coherence is not total for weak stores"
+{
+P1:r0 = 0;
+P1:r1 = 0;
+x=0;
+}
+ P0@sg 0, wg 0, qf 0 | P1@sg 0,wg 1, qf 0 ;
+ st.sc0 x, 1         | ld.sc0 r0, x       ;
+ st.sc0 x, 2         | ld.sc0 r1, x       ;
+exists
+(P1:r0 == 2 /\ P1:r1 == 1)
