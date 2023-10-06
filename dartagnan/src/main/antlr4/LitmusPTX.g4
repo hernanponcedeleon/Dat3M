@@ -160,7 +160,7 @@ fenceAlias
     ;
 
 barrier
-    :   Barrier Period CTA Period Sync barID
+    :   Barrier Period CTA Period Sync value
     ;
 
 atomInstruction
@@ -178,7 +178,7 @@ atomRegister
     ;
 
 atomCAS
-    :   atom Period mo Period scope Period Cas register Comma location Comma constant Comma constant
+    :   atom Period mo Period scope Period Cas register Comma location Comma value Comma value
     ;
 
 redInstruction
@@ -253,7 +253,7 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-barID
+value
     :   constant
     |   register
     ;
