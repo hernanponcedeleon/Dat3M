@@ -61,7 +61,7 @@ let asmo = co & ((ATOM | IW) * ATOM)
 // From-read is defined based on scoped modification order
 // instead of coherence. For reads that read-from init, they
 // from-read all writes at the same location.
-let fr = (rf^-1; asmo) | (([IW]; rf)^-1; co)
+let fr = (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
 let fre = fr & ext
 
 let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
