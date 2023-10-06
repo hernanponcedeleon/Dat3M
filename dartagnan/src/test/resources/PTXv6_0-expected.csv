@@ -57,4 +57,4 @@ litmus/PTX/Manual/LB-dlb-no-fence-1,1
 litmus/PTX/Manual/LB-dlb-no-fence-2,1
 litmus/PTX/Nvidia/SB+bar-dyn-reg-const,1
 litmus/PTX/Nvidia/SB+bar-sta-reg-const,0
-litmus/PTX/Manual/CoWW-weak.litmus,1
+litmus/PTX/Manual/CoWW-RR.litmus,1

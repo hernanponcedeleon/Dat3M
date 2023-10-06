@@ -45,7 +45,7 @@ public enum Arch implements OptionInterface {
 
     // used to check if the coherence is not guaranteed to be total in model
     public static boolean coIsTotal(Arch arch) {
-        Arch[] coNotTotal = {PTX, VULKAN};
+        Arch[] coNotTotal = {PTX};
         return !Arrays.asList(coNotTotal).contains(arch);
     }
 

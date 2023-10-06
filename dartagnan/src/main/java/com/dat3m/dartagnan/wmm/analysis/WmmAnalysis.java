@@ -56,7 +56,7 @@ public class WmmAnalysis {
     private WmmAnalysis(Wmm memoryModel, Arch arch, Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         checkWellformedness(memoryModel);
-        if (arch == Arch.PTX || arch == Arch.VULKAN) {
+        if (arch == Arch.PTX) {
             this.assumeLocalConsistency = false;
         }
     }
