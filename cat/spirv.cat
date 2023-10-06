@@ -57,7 +57,7 @@ let avvisinc = ((avvisSem | avvisSem^-1) \ id) |
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
-let asmo = co & (ATOM * ATOM)
+let asmo = co & ((ATOM | IW) * ATOM)
 // From-read is defined based on scoped modification order
 // instead of coherence
 let fr = rf^-1; asmo
