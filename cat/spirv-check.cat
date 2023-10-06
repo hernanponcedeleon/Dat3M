@@ -59,8 +59,9 @@ let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
 let asmo = co & ((ATOM | IW) * ATOM)
 // From-read is defined based on scoped modification order
-// instead of coherence
-let fr = rf^-1; asmo
+// instead of coherence. For reads that read-from init, they
+// from-read all writes at the same location.
+let fr = (rf^-1; asmo) | (([IW]; rf)^-1; co)
 let fre = fr & ext
 
 let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
