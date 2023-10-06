@@ -1,0 +1,27 @@
+PTX XF-Barrier-RA
+"Adapted from Figure 2 in 
+Portable Inter-workgroup Barrier Synchronisation for GPUs
+https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
+{
+f0=0;
+f1=0;
+f2=0;
+P0:r0=0;
+P1:r0=1;
+P2:r0=0;
+P3:r0=1;
+}
+ P0@cta 0,gpu 0        | P1@cta 0,gpu 0        | P2@cta 1,gpu 0        | P3@cta 1,gpu 0        ;
+ add r1, r0, 1         | add r1, r0, 1         | fence.sc.cta          | fence.sc.cta          ;
+ bge r1, 2, LC01       | bge r1, 2, LC11       | bne r0, 0, LC21       | bne r0, 0, LC31       ;
+ LC00:                 | LC10:                 | st.release.sys f1, 1  | st.release.sys f1, 1  ;
+ ld.acquire.sys r2, f1 | ld.acquire.sys r2, f2 | LC20:                 | LC30:                 ;
+ bne r2, 0, LC01       | bne r2, 0, LC11       | ld.acquire.sys r2, f1 | ld.acquire.sys r2, f1 ;
+ goto LC00             | goto LC10             | bne r2, 1, LC21       | bne r2, 1, LC31       ;
+ LC01:                 | LC11:                 | goto LC20             | goto LC30             ;
+ fence.sc.cta          | fence.sc.cta          | LC21:                 | LC31:                 ;
+ bge r1, 2, LC02       | bge r1, 2, LC12       | fence.sc.cta          | fence.sc.cta          ;
+ st.release.sys f1, 0  | st.release.sys f2, 0  |                       |                       ;
+ LC02:                 | LC12:                 |                       |                       ;
+exists
+(P1:r0 == 1 /\ P1:r1 == 0)
