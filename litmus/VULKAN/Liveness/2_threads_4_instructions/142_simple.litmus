@@ -10,11 +10,11 @@ P1:r3=0;
 P0@sg 0,wg 0, qf 0                      | P1@sg 0,wg 0, qf 0                      ;
 LC00:                                   | LC10:                                   ;
 rmw.atom.wg.sc0.semsc0 r0, Mem0, 0      | rmw.atom.wg.sc0.semsc0 r2, Mem0, 1      ;
-beq r0, 1, LC01                         | beq r2, 1, LC11                         ;
+bne r0, 1, LC01                         | bne r2, 1, LC11                         ;
 goto LC02                               | goto LC12                               ;
 LC01:                                   | LC11:                                   ;
 rmw.atom.wg.sc0.semsc0 r1, Mem0, 1      | rmw.atom.wg.sc0.semsc0 r3, Mem0, 0      ;
-beq r1, 1, LC02                         | beq r3, 1, LC12                         ;
+bne r1, 1, LC02                         | bne r3, 1, LC12                         ;
 goto LC00                               | goto LC10                               ;
 LC02:                                   | LC12:                                   ;
 exists 0==0

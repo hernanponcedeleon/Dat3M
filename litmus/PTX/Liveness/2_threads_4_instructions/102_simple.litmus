@@ -9,11 +9,11 @@ P1:r1=0;
 P0@cta 0,gpu 0               | P1@cta 0,gpu 0               ;
 LC00:                        | LC10:                        ;
 st.relaxed.gpu Mem1, 1       | ld.relaxed.gpu r0, Mem1      ;
-LC01:                        | beq r0, 0, LC11              ;
+LC01:                        | bne r0, 0, LC11              ;
 st.relaxed.gpu Mem0, 1       | goto LC10                    ;
 LC02:                        | LC11:                        ;
                              | ld.relaxed.gpu r1, Mem0      ;
-                             | beq r1, 0, LC12              ;
+                             | bne r1, 0, LC12              ;
                              | goto LC10                    ;
                              | LC12:                        ;
 exists 0==0

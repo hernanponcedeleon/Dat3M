@@ -8,7 +8,7 @@ P2:r1=0;
 P0@cta 0,gpu 0                         | P1@cta 0,gpu 0                         | P2@cta 0,gpu 0                         ;
 LC00:                                  | LC10:                                  | LC20:                                  ;
 st.relaxed.gpu Mem0, 1                 | ld.relaxed.gpu r0, Mem0                | atom.relaxed.gpu.exch r1, Mem0, 0      ;
-LC01:                                  | beq r0, 0, LC11                        | beq r1, 0, LC21                        ;
+LC01:                                  | bne r0, 0, LC11                        | bne r1, 0, LC21                        ;
                                        | goto LC10                              | goto LC20                              ;
                                        | LC11:                                  | LC21:                                  ;
                                        |                                        | st.relaxed.gpu Mem0, 1                 ;

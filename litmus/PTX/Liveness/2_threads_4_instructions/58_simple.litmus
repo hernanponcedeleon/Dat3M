@@ -9,13 +9,13 @@ P1:r2=0;
 P0@cta 0,gpu 0                         | P1@cta 0,gpu 0                         ;
 LC00:                                  | LC10:                                  ;
 atom.relaxed.gpu.exch r0, Mem0, 1      | atom.relaxed.gpu.exch r1, Mem0, 1      ;
-beq r0, 1, LC01                        | beq r1, 1, LC11                        ;
+bne r0, 1, LC01                        | bne r1, 1, LC11                        ;
 goto LC00                              | goto LC13                              ;
 LC01:                                  | LC11:                                  ;
                                        | st.relaxed.gpu Mem0, 0                 ;
                                        | LC12:                                  ;
                                        | atom.relaxed.gpu.exch r2, Mem0, 0      ;
-                                       | beq r2, 0, LC13                        ;
+                                       | bne r2, 0, LC13                        ;
                                        | goto LC10                              ;
                                        | LC13:                                  ;
 exists 0==0
