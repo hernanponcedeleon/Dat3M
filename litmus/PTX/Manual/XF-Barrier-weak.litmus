@@ -9,16 +9,14 @@ P1:r0=0;
 P2:r0=1;
 }
  P0@cta 0,gpu 0  | P1@cta 1,gpu 0  | P2@cta 1,gpu 0  ;
- add r1, r0, 1   | bar.cta.sync 1  | bar.cta.sync 1  ;
- bge r1, 2, LC01 | bne r0, 0, LC11 | bne r0, 0, LC21 ;
- LC00:           | st.weak f, 1    | st.weak f, 1    ;
- ld.weak r2, f   | LC10:           | LC20:           ;
- bne r2, 0, LC01 | ld.weak r2, f   | ld.weak r2, f   ;
- goto LC00       | bne r2, 1, LC11 | bne r2, 1, LC21 ;
- LC01:           | goto LC10       | goto LC20       ;
- bar.cta.sync 1  | LC11:           | LC21:           ;
- bge r1, 2, LC02 | bar.cta.sync 1  | bar.cta.sync 1  ;
- st.weak f, 0    |                 |                 ;
- LC02:           |                 |                 ;
+ LC00:           | bar.cta.sync 1  | bar.cta.sync 1  ;
+ ld.weak r2, f   | bne r0, 0, LC11 | bne r0, 0, LC21 ;
+ bne r2, 0, LC01 | st.weak f, 1    | st.weak f, 1    ;
+ goto LC00       | LC10:           | LC20:           ;
+ LC01:           | ld.weak r2, f   | ld.weak r2, f   ;
+ bar.cta.sync 1  | bne r2, 1, LC11 | bne r2, 1, LC21 ;
+ st.weak f, 0    | goto LC10       | goto LC20       ;
+                 | LC11:           | LC21:           ;
+                 | bar.cta.sync 1  | bar.cta.sync 1  ;
 exists
 (P0:r0 == P0:r0)
