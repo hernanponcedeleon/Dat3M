@@ -214,6 +214,42 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitLocalAdd(LitmusVulkanParser.LocalAddContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeADD(lhs, rhs);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalSub(LitmusVulkanParser.LocalSubContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeSUB(lhs, rhs);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalMul(LitmusVulkanParser.LocalMulContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeMUL(lhs, rhs);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalDiv(LitmusVulkanParser.LocalDivContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeDIV(lhs, rhs, true);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
     public Object visitLoadLocation(LitmusVulkanParser.LoadLocationContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());

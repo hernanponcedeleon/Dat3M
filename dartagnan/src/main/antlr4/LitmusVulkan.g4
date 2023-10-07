@@ -109,11 +109,31 @@ storeInstruction
 
 loadInstruction
     :   localValue
+    |   localAdd
+    |   localSub
+    |   localMul
+    |   localDiv
     |   loadLocation
     ;
 
 localValue
     :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma value
+    ;
+
+localAdd
+    :   Add register Comma value Comma value
+    ;
+
+localSub
+    :   Sub register Comma value Comma value
+    ;
+
+localMul
+    :   Mul register Comma value Comma value
+    ;
+
+localDiv
+    :   Div register Comma value Comma value
     ;
 
 loadLocation
@@ -309,9 +329,9 @@ Bgt             :   'bgt';
 Ble             :   'ble';
 Bge             :   'bge';
 
-Add             :   'plus';
-Sub             :   'minus';
-Mult            :   'mult';
+Add             :   'add';
+Sub             :   'sub';
+Mult            :   'mul';
 Div             :   'div';
 And             :   'and';
 Or              :   'or';
