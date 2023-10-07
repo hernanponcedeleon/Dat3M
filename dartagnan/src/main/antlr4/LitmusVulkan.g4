@@ -108,12 +108,12 @@ storeInstruction
     ;
 
 loadInstruction
-    :   localConstant
+    :   localValue
     |   loadLocation
     ;
 
-localConstant
-    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma constant
+localValue
+    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma value
     ;
 
 loadLocation
@@ -121,16 +121,16 @@ loadLocation
     ;
 
 rmwInstruction
-    :   rmwConstant
-    |   rmwConstantOp
+    :   rmwValue
+    |   rmwOp
     ;
 
-rmwConstant
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma constant
+rmwValue
+    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma value
     ;
 
-rmwConstantOp
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
+rmwOp
+    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma value
     ;
 
 fenceInstruction
@@ -156,7 +156,7 @@ label
     ;
 
 branchCond
-    :   cond register Comma register Comma Label
+    :   cond value Comma value Comma Label
     ;
 
 jump
