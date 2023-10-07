@@ -31,7 +31,9 @@ PTX
 (*******************)
 
 // Explicitly add transitivity for coherence since the co in PTX is not total
+// and recompute fr based on the new co
 let co = co+
+let fr = rf^-1; co
 
 (* Events *)
 let strong-write = W & (RLX | REL)
