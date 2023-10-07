@@ -179,7 +179,7 @@ atomRegister
     ;
 
 atomCAS
-    :   atom Period mo Period scope Period Cas register Comma location Comma constant Comma constant
+    :   atom Period mo Period scope Period Cas register Comma location Comma value Comma value
     ;
 
 atomExchange

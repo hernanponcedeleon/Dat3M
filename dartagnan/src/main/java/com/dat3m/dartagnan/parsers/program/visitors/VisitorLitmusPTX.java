@@ -280,8 +280,8 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitAtomCAS(LitmusPTXParser.AtomCASContext ctx) {
         Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        Register expected = programBuilder.getOrNewRegister(mainThread, ctx.constant().get(0).getText(), archType);
-        Register value = programBuilder.getOrNewRegister(mainThread, ctx.constant().get(1).getText(), archType);
+        Expression expected = (Expression) ctx.value(0).accept(this);
+        Expression value = (Expression) ctx.value(1).accept(this);
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
