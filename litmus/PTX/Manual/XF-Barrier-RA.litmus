@@ -3,7 +3,6 @@ PTX XF-Barrier-RA
 Portable Inter-workgroup Barrier Synchronisation for GPUs
 https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
 {
-f0=0;
 f1=0;
 f2=0;
 P0:r0=0;
