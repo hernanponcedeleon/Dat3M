@@ -142,19 +142,18 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         IConst constant = (IConst) ctx.constant().accept(this);
         String mo = ctx.mo().content;
-        String scope;
+        Store store = EventFactory.newStoreWithMo(object, constant, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
                 }
-                scope = Tag.PTX.SYS;
+                store.addTags(Tag.PTX.CON);
             }
-            case Tag.PTX.REL, Tag.PTX.RLX -> scope = ctx.scope().content;
+            case Tag.PTX.REL, Tag.PTX.RLX -> store.addTags(ctx.scope().content);
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
-        Store store = EventFactory.newStoreWithMo(object, constant, mo);
-        store.addTags(scope, ctx.store().storeProxy, Tag.PTX.CON);
+        store.addTags(ctx.store().storeProxy);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -163,19 +162,17 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Register register = (Register) ctx.register().accept(this);
         String mo = ctx.mo().content;
-        String scope;
+        Store store = EventFactory.newStoreWithMo(object, register, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
                 }
-                scope = Tag.PTX.SYS;
             }
-            case Tag.PTX.REL, Tag.PTX.RLX -> scope = ctx.scope().content;
+            case Tag.PTX.REL, Tag.PTX.RLX -> store.addTags(ctx.scope().content);
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
         }
-        Store store = EventFactory.newStoreWithMo(object, register, mo);
-        store.addTags(scope, ctx.store().storeProxy);
+        store.addTags(ctx.store().storeProxy);
         return programBuilder.addChild(mainThread, store);
     }
 
@@ -227,19 +224,17 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         String mo = ctx.mo().content;
-        String scope;
+        Load load = EventFactory.newLoadWithMo(register, location, mo);
         switch (mo) {
             case Tag.PTX.WEAK -> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak load instruction doesn't need scope: " + ctx.scope().content);
                 }
-                scope = Tag.PTX.SYS;
             }
-            case Tag.PTX.ACQ, Tag.PTX.RLX -> scope = ctx.scope().content;
+            case Tag.PTX.ACQ, Tag.PTX.RLX -> load.addTags(ctx.scope().content);
             default -> throw new ParsingException("Load instruction doesn't support mo: " + mo);
         }
-        Load load = EventFactory.newLoadWithMo(register, location, mo);
-        load.addTags(scope, ctx.load().loadProxy);
+        load.addTags(ctx.load().loadProxy);
         return programBuilder.addChild(mainThread, load);
     }
 
