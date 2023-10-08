@@ -3,7 +3,7 @@ PTX Proxy-SingleThread-rf-surW-surF-conF-conR
 "The generic memory is synchronize with surface cache by surface fence, then constant fence synchronize the data from generic memory to constant cache. Hence the cold is guaranteed to rf sust"
 {
 rd1 = 0;
-rd2 @ generic aliases rd1;
+rd2 @ constant aliases rd1;
 rd3 @ surface aliases rd1;
 P0:r0=0;
 }
