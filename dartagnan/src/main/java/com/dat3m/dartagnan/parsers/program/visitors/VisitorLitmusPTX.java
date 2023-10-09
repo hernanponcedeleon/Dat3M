@@ -148,7 +148,6 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
                 if (ctx.scope() != null) {
                     throw new ParsingException("Weak store instruction doesn't need scope: " + ctx.scope().content);
                 }
-                store.addTags(Tag.PTX.CON);
             }
             case Tag.PTX.REL, Tag.PTX.RLX -> store.addTags(ctx.scope().content);
             default -> throw new ParsingException("Store instruction doesn't support mo: " + mo);
