@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import com.google.common.collect.Comparators;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -24,8 +23,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,12 +42,11 @@ import java.util.Set;
  * Tracks when a register or address contains an address.
  * Unifies all global addresses into one element represented by {@code null}.
  * TODO also replace memcpy memset memcmp.  Currently treated as calls to unknown.
+ * TODO Thread-local variables were already created as MemoryObject and are not removed, yet.
  */
 public class MemToReg implements FunctionProcessor {
 
     private static final Logger logger = LogManager.getLogger(MemToReg.class);
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private static final Comparator<Event> eventComparator = Comparator.comparingInt(Event::getGlobalId);
 
     private MemToReg() {
     }
@@ -62,27 +58,39 @@ public class MemToReg implements FunctionProcessor {
     @Override
     public void run(Function function) {
         logger.trace("Processing function \"{}\".", function.getName());
+        final Matcher info = analyze(function);
+        promoteAll(function, info);
+    }
+
+    private Matcher analyze(Function function) {
         final var matcher = new Matcher();
-        final List<Event> events = function.getEvents();
-        assert Comparators.isInOrder(events, eventComparator);
-        // Initially, all locally-allocated addresses are potentially replaceable.
+        // Initially, all locally-allocated addresses are potentially promotable.
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
-            matcher.reachabilityGraph.put(allocation, new HashSet<>());
+            // Allocations will usually not have users.  Otherwise, their object is not promotable.
+            if (allocation.getUsers().isEmpty()) {
+                matcher.reachabilityGraph.put(allocation, new HashSet<>());
+            }
         }
         // This loop should terminate, since back jumps occur, only if changes were made.
+        final List<Event> events = function.getEvents();
         Label back;
-        for (int i = 0; i < events.size(); i = back == null ? i + 1 : Collections.binarySearch(events, back, eventComparator)) {
+        for (int i = 0; i < events.size(); i = back == null ? i + 1 : events.indexOf(back)) {
             back = events.get(i).accept(matcher);
         }
+        return matcher;
+    }
+
+    private void promoteAll(Function function, Matcher matcher) {
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
         // Replace every unmarked address.
         final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             if (matcher.reachabilityGraph.containsKey(allocation)) {
-                final List<Type> registers = getReplacingRegisters(allocation);
-                if (registers != null) {
-                    replacingRegisters.put(allocation, registers.stream().map(function::newRegister).toList());
-                    assert allocation.getUsers().isEmpty();
-                    allocation.tryDelete();
+                final List<Type> registerTypes = getPrimitiveReplacementTypes(allocation);
+                if (registerTypes != null) {
+                    replacingRegisters.put(allocation, registerTypes.stream().map(function::newRegister).toList());
+                    boolean deleted = allocation.tryDelete();
+                    assert deleted : "Allocation cannot be removed, probably because it has remaining users.";
                 }
             }
         }
@@ -120,7 +128,7 @@ public class MemToReg implements FunctionProcessor {
         }
     }
 
-    private List<Type> getReplacingRegisters(Alloc allocation) {
+    private List<Type> getPrimitiveReplacementTypes(Alloc allocation) {
         if (!(allocation.getArraySize() instanceof IValue sizeExpression)) {
             return null;
         }
@@ -160,8 +168,7 @@ public class MemToReg implements FunctionProcessor {
         private final Map<Object, AddressOffset> state = new HashMap<>();
         // Maps labels and jumps to symbolic state information.
         private final Map<Label, Map<Object, AddressOffset>> jumps = new HashMap<>();
-        // Since it is not allowed to get the address of a register, once an address is
-        // Join over all memory information.  Initialized to all empty.  Missing entries mean irreplaceable address.
+        // Join over all memory information.  Initialized to all empty.  Missing entries mean not promotable.
         private final Map<RegWriter, Set<RegWriter>> reachabilityGraph = new HashMap<>();
         // Collects candidates to be replaced.
         private final Map<MemoryEvent, AddressOffset> accesses = new HashMap<>();
@@ -174,7 +181,7 @@ public class MemToReg implements FunctionProcessor {
             if (dead) {
                 return null;
             }
-            // Publish all values passed as arguments.
+            // Publish all addresses used in this event.
             if (e instanceof RegReader reader) {
                 final var registers = new HashSet<Register>();
                 for (Register.Read read : reader.getRegisterReads()) {
