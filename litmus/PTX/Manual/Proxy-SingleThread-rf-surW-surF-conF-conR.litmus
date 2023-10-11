@@ -1,6 +1,7 @@
 PTX Proxy-SingleThread-rf-surW-surF-conF-conR
 "The rf over different non-generic proxies with both proxy fences in correct order are enough, the result will be guaranteed"
 "The generic memory is synchronize with surface cache by surface fence, then constant fence synchronize the data from generic memory to constant cache. Hence the cold is guaranteed to rf sust"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/CoWR.test"
 {
 rd1 = 0;
 rd2 @ generic aliases rd1;

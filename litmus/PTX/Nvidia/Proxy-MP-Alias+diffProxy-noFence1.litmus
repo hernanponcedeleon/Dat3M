@@ -1,5 +1,6 @@
 PTX Proxy-MP-Alias+diffProxy-noFence1
 "MP is not guaranteed because alias + different-proxy locations is not guaranteed to synchronized by default"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu_synonym.test"
 {
 x = 0;
 y @ generic aliases x;

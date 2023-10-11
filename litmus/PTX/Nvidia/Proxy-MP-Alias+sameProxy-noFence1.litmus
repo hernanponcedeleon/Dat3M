@@ -1,5 +1,6 @@
 PTX Proxy-MP-Alias+sameProxy-noFence1
 "MP is not guaranteed although they are with the same proxy because x and y are not synchrnoized"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu_synonym.test"
 {
 x = 0;
 y @ generic aliases x;

@@ -1,5 +1,6 @@
 PTX Proxy-MP-Alias+diffProxy-proxyFence
 "MP is not guaranteed because x and y are not synchronized, so the surface fence could only synchronize between x and c, y and s"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu_synonym.test"
 {
 x = 0;
 y @ generic aliases x;

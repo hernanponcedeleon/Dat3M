@@ -1,6 +1,7 @@
 PTX Proxy-MP-Alias+sameProxy-aliasFence1
 "MP is guaranteed because there is a aliasFence along the causality path from x to y"
 "Alias fence could be in either thread"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu_synonym.test"
 {
 x = 0;
 y @ generic aliases x;

@@ -1,6 +1,7 @@
 PTX Proxy-MP-gen-sur-surfaceFence1
 "MP among generic and surface operations, MP is guaranteed because surface fence is along the base causality path from weak st to suld."
 "Surface fence could be in either of the threads"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

@@ -1,5 +1,6 @@
 PTX Proxy-MP-sur-gen-no-proxyFence
 "MP among generic and surface operations, MP is not guaranteed because no surface fence"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

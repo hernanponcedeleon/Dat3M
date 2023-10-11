@@ -1,6 +1,7 @@
 PTX Proxy-MP-sur-tex-fenceCorrectThread
 "MP is guaranteed because proxyFences are in correct Threads"
 "Because the proxyFences are in the same thread their same-proxy instructions, the proxyFences' order is guaranteed to be same as their same-proxy r/w, so the MP is guaranteed"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

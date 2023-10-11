@@ -1,5 +1,6 @@
 PTX Proxy-SingleThread-rf-genW-surF-surR
 "The rf over different proxies with corresponding proxy fence, the result will be guaranteed"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/CoWR.test"
 {
 x = 0;
 t @ texture aliases x;

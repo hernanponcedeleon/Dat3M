@@ -1,5 +1,6 @@
 PTX Proxy-SingleThread-rf-surW-texF-texR
 "The rf over different non-generic proxies with single proxy fence is not enough, the result will not be guaranteed"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/CoWR.test"
 {
 x = 0;
 t @ texture aliases x;

@@ -1,5 +1,6 @@
 PTX Co-Total-3-threads-scope-diff
 "Release consistency of three locations"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/ISA2.test"
 {
 x = 0;
 flag1 = 0;

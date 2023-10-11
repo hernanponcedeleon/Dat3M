@@ -1,5 +1,6 @@
 PTX Atom-SB-ld
 "RMW store buffering load by non-RMW"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/SB_rmw_2.test"
 {
 P0:r1=0;
 P0:r2=0;
