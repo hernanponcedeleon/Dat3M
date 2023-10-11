@@ -48,6 +48,7 @@ litmus/PTX/Nvidia/Proxy-MP-sur-tex-surF-texF-correctOrder1.litmus,1
 litmus/PTX/Nvidia/Proxy-MP-sur-tex-surfaceFence.litmus,1
 litmus/PTX/Nvidia/Proxy-MP-sur-tex-surfaceFence1.litmus,1
 litmus/PTX/Nvidia/Proxy-MP-sur-tex-textureFence.litmus,1
+litmus/PTX/Nvidia/Proxy-MP-sur-tex-textureFence1.litmus,1
 litmus/PTX/Nvidia/Proxy-SingleThread-rf-genW-genR.litmus,1
 litmus/PTX/Nvidia/Proxy-SingleThread-rf-genW-surF-surR.litmus,1
 litmus/PTX/Nvidia/Proxy-SingleThread-rf-genW-surR.litmus,1
