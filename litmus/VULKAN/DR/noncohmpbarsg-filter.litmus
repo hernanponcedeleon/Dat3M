@@ -1,5 +1,6 @@
 Vulkan noncohmpbarsg
 "Tests subgroup-scope control barrier"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/noncohmpbarsg.test"
 {
 P1:r0=0;
 x=0;

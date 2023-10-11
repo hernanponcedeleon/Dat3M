@@ -2,6 +2,7 @@ Vulkan atomwrongsc
 "There's a WaR hazard between an atomic load and a non-atomic store."
 "This test exercises that using only semsc0 is sufficient to synchronize"
 "them, because the atomic also has semsc0 in its semantics."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/atomicsc.test"
 {
 P0:r0=0;
 P1:r1=0;

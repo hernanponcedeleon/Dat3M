@@ -2,6 +2,7 @@ Vulkan corr
 "CoRR litmus test. Coherence order for x is 1,2, and is "enforced" by the"
 "second invocation observing it. The first invocation can't see the stores"
 "out of order."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/corr.test"
 {
 P0: r0=0;
 P0: r1=0;

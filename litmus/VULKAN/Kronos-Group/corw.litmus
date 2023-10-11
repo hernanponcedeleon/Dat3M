@@ -2,6 +2,7 @@ Vulkan corw
 "CoRW litmus test. Coherence order for x is 1,2, and is enforced by the"
 "third invocation observing it. Invocation 0 reads x=2 before"
 "it writes x=1, which is forbidden."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/corw.test"
 {
 P0: r0=0;
 P2: r1=0;

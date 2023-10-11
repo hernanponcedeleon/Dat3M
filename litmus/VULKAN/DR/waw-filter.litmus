@@ -1,5 +1,6 @@
 VULKAN waw
 "WaW hazard between the first two threads. The third thread should see the write from the second thread."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/waw.test"
 {
 P1:r0=0;
 P2:r1=0;

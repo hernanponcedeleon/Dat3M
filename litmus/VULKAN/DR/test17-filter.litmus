@@ -1,5 +1,6 @@
 VULKAN test17
 "Passes because the atomic store is implicitly coherent"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/test17.test"
 {
 P1:r0=0;
 P1:r1=0;

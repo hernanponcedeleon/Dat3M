@@ -1,5 +1,6 @@
 Vulkan qfmpfail
 "Fails because it uses queuefamily scope but different queue families"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/qfmpfail.test"
 {
 P1:r0=0;
 P1:r1=0;

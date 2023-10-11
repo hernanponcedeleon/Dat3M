@@ -1,4 +1,5 @@
 Vulkan cbarinst
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/cbarinst.test"
 {
 x=0;
 }

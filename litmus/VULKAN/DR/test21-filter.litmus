@@ -1,5 +1,6 @@
 VULKAN test21
 "Fails because the scope of the av/vis ops aren't big enough"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/test21.test"
 {
 P1:r0=0;
 P1:r1=0;

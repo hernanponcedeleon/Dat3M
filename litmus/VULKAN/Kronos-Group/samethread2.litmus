@@ -1,5 +1,6 @@
 Vulkan samethread2
 "Stores to x in the first thread can't be coalesced"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/samethread2.test"
 {
 P0:r0=0;
 P1:r1=0;
