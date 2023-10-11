@@ -1,6 +1,7 @@
 litmus/PTX/Nvidia/Atom-SB-ld.litmus,1
 litmus/PTX/Nvidia/Atom-SB.litmus,1
 litmus/PTX/Nvidia/Co-Total-3-threads-scope-diff.litmus,1
+litmus/PTX/Nvidia/SB-cta.litmus,1
 litmus/PTX/Manual/SB+bar-dyn-reg-const.litmus,0
 litmus/PTX/Manual/SB+bar-sta-reg-const.litmus,1
 litmus/PTX/Manual/Atom-minus-location_.litmus,1

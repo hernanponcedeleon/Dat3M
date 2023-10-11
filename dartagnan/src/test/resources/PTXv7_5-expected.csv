@@ -59,6 +59,7 @@ litmus/PTX/Nvidia/Proxy-SingleThread-rf-surW-surxF-texF-texR.litmus,1
 litmus/PTX/Nvidia/Proxy-SingleThread-rf-surW-texF-surF-texR.litmus,1
 litmus/PTX/Nvidia/Proxy-SingleThread-rf-surW-texF-texR.litmus,1
 litmus/PTX/Nvidia/Proxy-SingleThread-rf-surW-texR-genR.litmus,1
+litmus/PTX/Nvidia/SB-cta.litmus,1
 litmus/PTX/Manual/SB+bar-dyn-reg-const.litmus,0
 litmus/PTX/Manual/SB+bar-sta-reg-const.litmus,1
 litmus/PTX/Manual/Atom-minus-location_.litmus,1
