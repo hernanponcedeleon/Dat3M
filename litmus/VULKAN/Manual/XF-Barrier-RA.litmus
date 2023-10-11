@@ -7,7 +7,6 @@ x=0;
 f=0;
 P0:r0=0;
 P1:r0=0;
-P2:r0=1;
 }
  P0@sg 0, wg 0, qf 0             | P1@sg 0, wg 1, qf 0             | P2@sg 0, wg 1, qf 0 ;
  st.av.dv.sc0 x, 1               | cbar.wg 1                       | cbar.wg 1           ;
