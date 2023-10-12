@@ -5,21 +5,14 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-
-/**
- *
- * @author Florian Furbach
- */
 public class Irreflexive extends Axiom {
 
     public Irreflexive(Relation rel, boolean negated, boolean flag) {
@@ -35,14 +28,14 @@ public class Irreflexive extends Axiom {
             Map<Relation, RelationAnalysis.Knowledge> knowledgeMap,
             Context analysisContext) {
         RelationAnalysis.Knowledge k = knowledgeMap.get(rel);
-        Set<Tuple> d = k.getMaySet().stream().filter(Tuple::isLoop).collect(toSet());
-        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, Set.of()));
+        EventGraph d = k.getMaySet().filter(Tuple::isLoop);
+        return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, EventGraph.empty()));
     }
 
     @Override
-    protected Set<Tuple> getEncodeTupleSet(Context analysisContext) {
+    protected EventGraph getEncodeGraph(Context analysisContext) {
         final RelationAnalysis ra = analysisContext.get(RelationAnalysis.class);
-        return ra.getKnowledge(rel).getMaySet().stream().filter(Tuple::isLoop).collect(toSet());
+        return ra.getKnowledge(rel).getMaySet().filter(Tuple::isLoop);
     }
 
     @Override
@@ -50,10 +43,9 @@ public class Irreflexive extends Axiom {
     	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = ctx.edge(rel);
-        for (Tuple tuple : getEncodeTupleSet(ctx.getAnalysisContext())) {
-            enc.add(edge.encode(tuple));
-        }
-        return negated ? List.of(bmgr.or(enc)) : enc.stream().map(bmgr::not).collect(toList());
+        getEncodeGraph(ctx.getAnalysisContext())
+                .apply((e1, e2) -> enc.add(edge.encode(e1, e2)));
+        return negated ? List.of(bmgr.or(enc)) : enc.stream().map(bmgr::not).toList();
     }
 
     @Override

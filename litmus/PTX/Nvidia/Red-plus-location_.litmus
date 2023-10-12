@@ -6,6 +6,6 @@ P1:r0=0;
 x=0;
 }
  P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
- red.acq_rel.sys.plus x, 1        | red.acq_rel.sys.plus x, 1  ;
+ red.acq_rel.sys.add x, 1         | red.acq_rel.sys.add x, 1  ;
 forall
 (x == 2)

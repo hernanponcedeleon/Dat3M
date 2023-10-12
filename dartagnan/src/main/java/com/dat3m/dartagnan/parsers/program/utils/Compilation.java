@@ -37,7 +37,7 @@ public class Compilation {
         final String outputFileName = getOutputName(file, "-opt.ll");
         ArrayList<String> cmd = new ArrayList<>();
         cmd.add("opt");
-        String replaceOptions = System.getenv().getOrDefault("ATOMIC_REPLACE_OPTS", "");
+        String replaceOptions = System.getenv().getOrDefault("OPTFLAGS", "");
         if (!replaceOptions.isEmpty()) {
             Collections.addAll(cmd, replaceOptions.split(" "));
         }
@@ -45,20 +45,6 @@ public class Compilation {
         cmd.add("-S");
         cmd.add("-o");
         cmd.add(outputFileName);
-        runCmd(cmd);
-        return new File(outputFileName);
-    }
-
-    public static File compileWithSmack(File file, String cflags) throws Exception {
-        final String outputFileName = getOutputName(file, ".bpl");
-
-        ArrayList<String> cmd = new ArrayList<>();
-        cmd.add("smack");
-        // Needed to handle more than one flag in SMACK_FLAGS
-        Collections.addAll(cmd, System.getenv().getOrDefault("SMACK_FLAGS", "").split(" "));
-        cmd.add("--clang-options=" + cflags);
-        cmd.addAll(asList("-bpl", outputFileName, file.getAbsolutePath()));
-
         runCmd(cmd);
         return new File(outputFileName);
     }

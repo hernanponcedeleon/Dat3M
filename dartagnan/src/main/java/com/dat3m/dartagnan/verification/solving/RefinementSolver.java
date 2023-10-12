@@ -649,8 +649,8 @@ public class RefinementSolver extends ModelChecker {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
                     if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getData(edgeLit.getData().getFirst()).get() == e1 &&
-                                model.getData(edgeLit.getData().getSecond()).get() == e2) {
+                        if (model.getData(edgeLit.getData().first()).get() == e1 &&
+                                model.getData(edgeLit.getData().second()).get() == e2) {
                             return true;
                         }
                     }

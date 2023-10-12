@@ -57,7 +57,13 @@ let avvisinc = ((avvisSem | avvisSem^-1) \ id) |
 let posctosem = ((SC0 * SEMSC0) | (SC1 * SEMSC1)) & po
 let posemtosc = ((SEMSC0 * SC0) | (SEMSC1 * SC1)) & po
 
-let asmo = co & (ATOM * ATOM)
+let asmo = co & ((ATOM | IW) * ATOM)
+// From-read is defined based on scoped modification order
+// instead of coherence. For reads that read-from init, they
+// from-read all writes at the same location.
+let fr = (rf^-1; asmo) | (([IW]; rf)^-1; ((loc;[W]) \ id))
+let fre = fr & ext
+
 let rs = [REL & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
 let hypors = [W & ATOM]; ((asmo \ (asmo; asmo+)); [RMW])*
 
@@ -68,7 +74,7 @@ let sw = inscope & (
     ([REL & ATOM]; rs; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |                           // atomic->fence
     ([REL & F]; posemtosc; [ATOM & W]; hypors; (rf & mutordatom); [ATOM & R]; posctosem; [ACQ & F]) |   // fence->fence
     // (stor[CBAR]) terms are redundant because scbarinst is an equivalence relation on scbarinst, but they make the sequence of instructions more clear.
-    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                               // fence->cbar->cbar->fence,
+    ([REL & F]; po?; [CBAR]; ((syncbar & inscope) \ id); [CBAR]; po?; [ACQ & F])                        // fence->cbar->cbar->fence,
 )
 
 let ithbsemsc0 = ( ssw |
@@ -139,7 +145,7 @@ acyclic (locord | rf | fr | asmo) as consistency-cycle
 empty (rf; ([R \ ATOM])) & (([W]; locord); ([W]; locord)+) as consistency-rf
 
 // rmw events are atomic
-empty rmw & (fre; coe) as atomic
+empty rmw & (fre; (asmo & ext)) as atomic
 
 let non-rmw-reads = (R \ RMW) * (R \ RMW)
 empty ((((locord | locord^-1) | mutordatom) \ non-rmw-reads) \ (loc \ id \ non-rmw-reads)) as locord-complete

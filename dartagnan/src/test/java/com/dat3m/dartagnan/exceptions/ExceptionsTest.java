@@ -70,11 +70,6 @@ public class ExceptionsTest {
     }
 
     @Test(expected = MalformedProgramException.class)
-    public void AtomicEndWithoutBegin() throws Exception {
-        new ProgramParser().parse(new File(getTestResourcePath("exceptions/AtomicEndWithoutBegin.bpl")));
-    }
-
-    @Test(expected = MalformedProgramException.class)
     public void IllegalJump() throws Exception {
         new ProgramParser().parse(new File(getTestResourcePath("exceptions/IllegalJump.litmus")));
     }

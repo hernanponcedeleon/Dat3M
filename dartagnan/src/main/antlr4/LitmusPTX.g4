@@ -108,11 +108,31 @@ storeRegister
 
 loadInstruction
     :   localConstant
+    |   localAdd
+    |   localSub
+    |   localMul
+    |   localDiv
     |   loadLocation
     ;
 
 localConstant
     :   load Period mo (Period scope)? register Comma constant
+    ;
+
+localAdd
+    :   Add register Comma register Comma constant
+    ;
+
+localSub
+    :   Sub register Comma register Comma constant
+    ;
+
+localMul
+    :   Mul register Comma register Comma constant
+    ;
+
+localDiv
+    :   Div register Comma register Comma constant
     ;
 
 loadLocation
@@ -140,12 +160,13 @@ fenceAlias
     ;
 
 barrier
-    :   Barrier Period CTA Period Sync barID
+    :   Barrier Period CTA Period Sync value
     ;
 
 atomInstruction
     :   atomConstant
     |   atomRegister
+    |   atomCAS
     ;
 
 atomConstant
@@ -154,6 +175,10 @@ atomConstant
 
 atomRegister
     :   atom Period mo Period scope Period operation register Comma location Comma register
+    ;
+
+atomCAS
+    :   atom Period mo Period scope Period Cas register Comma location Comma value Comma value
     ;
 
 redInstruction
@@ -198,7 +223,7 @@ register
 operation locals [IOpBin op]
     :   Add {$op = IOpBin.ADD;}
     |   Sub {$op = IOpBin.SUB;}
-    |   Mult {$op = IOpBin.MUL;}
+    |   Mul {$op = IOpBin.MUL;}
     |   Div {$op = IOpBin.DIV;}
     |   And {$op = IOpBin.AND;}
     |   Or {$op = IOpBin.OR;}
@@ -228,7 +253,7 @@ gpuID returns [int id]
     :   t = DigitSequence {$id = Integer.parseInt($t.text);}
     ;
 
-barID
+value
     :   constant
     |   register
     ;
@@ -306,13 +331,15 @@ Release :   'release';
 Acq_rel :   'acq_rel';
 Sc      :   'sc';
 
-Add    :   'plus';
-Sub    :   'minus';
-Mult    :   'mult';
+Add     :   'add';
+Sub     :   'sub';
+Mul     :   'mul';
 Div     :   'div';
 And     :   'and';
 Or      :   'or';
 Xor     :   'xor';
+
+Cas     :   'cas';
 
 Proxy       :   'proxy';
 Generic     :   'generic';

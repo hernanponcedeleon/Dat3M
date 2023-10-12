@@ -6,6 +6,6 @@ P1:r0=0;
 x=0;
 }
  P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
- atom.acq_rel.cta.plus r0, x, 1   | atom.acq_rel.cta.plus r0, x, 1  ;
+ atom.acq_rel.cta.add r0, x, 1    | atom.acq_rel.cta.add r0, x, 1  ;
 exists
 (x != 2)
