@@ -3,11 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -122,7 +118,7 @@ public class Intrinsics {
                 "llvm.ctlz", "llvm.ctpop"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
-        LLVM_STACK(List.of("llvm.stacksave", "llvm.stackrestore"), false, false, true, true, Intrinsics::inlineAsZero),
+        LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"), false, false, true, true, Intrinsics::inlineAsZero),
         LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
         // --------------------------- LKMM ---------------------------
@@ -192,7 +188,7 @@ public class Intrinsics {
 
         private boolean matches(String funcName) {
             boolean isPrefix = switch(this) {
-                case LLVM, LLVM_ASSUME, LLVM_STACK, LLVM_MEMCPY, LLVM_MEMSET -> true;
+                case LLVM, LLVM_ASSUME, LLVM_META, LLVM_MEMCPY, LLVM_MEMSET -> true;
                 default -> false;
             };
             BiPredicate<String, String> matchingFunction = isPrefix ? String::startsWith : String::equals;
