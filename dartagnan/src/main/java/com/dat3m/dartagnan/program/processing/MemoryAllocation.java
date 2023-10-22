@@ -53,12 +53,14 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private int getSize(Alloc alloc) {
+        int count;
         try {
-            return alloc.getAllocationSize().reduce().getValueAsInt();
+            count = alloc.getArraySize().reduce().getValueAsInt();
         } catch (Exception e) {
             final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
             throw new MalformedProgramException(error);
         }
+        return count * TypeFactory.getInstance().getMemorySizeInBytes(alloc.getAllocationType());
     }
 
     public void moveAndAlignMemoryObjects(Memory memory) {

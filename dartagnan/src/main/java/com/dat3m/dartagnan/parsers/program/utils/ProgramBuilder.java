@@ -38,7 +38,6 @@ import static com.google.common.base.Preconditions.checkState;
 public class ProgramBuilder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private static final FunctionType DEFAULT_THREAD_TYPE =
             types.getFunctionType(types.getVoidType(), List.of());
 
@@ -48,12 +47,14 @@ public class ProgramBuilder {
 
     private final Program program;
     private final EventFactory events;
+    private final ExpressionFactory expressions;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
         this.program = new Program(new Memory(), format);
         this.events = program.getEventFactory();
+        this.expressions = events.getExpressionFactory();
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -208,7 +209,7 @@ public class ProgramBuilder {
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
-        initLocEqConst(leftName,getInitialValue(rightName));
+        initLocEqConst(leftName, getInitialValue(rightName));
     }
 
     public void initLocEqConst(String locName, Expression iValue){
@@ -223,7 +224,7 @@ public class ProgramBuilder {
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, events.newLocal(reg,getInitialValue(locName)));
+        addChild(regThread, events.newLocal(reg, getInitialValue(locName)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
@@ -231,7 +232,7 @@ public class ProgramBuilder {
     }
 
     private Expression getInitialValue(String name) {
-        return getOrNewMemoryObject(name).getInitialValue(0);
+        return getOrNewMemoryObject(name).getInitialValue(0).orElseGet(() -> expressions.makeZero(types.getArchType()));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -308,7 +309,7 @@ public class ProgramBuilder {
         MemoryObject object = locations.computeIfAbsent(leftName,
                 k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setInitialValue(0, rightLocation.getInitialValueOrZero(0, expressions));
     }
 
     public void initVirLocEqLocAliasGen(String leftName, String rightName){
@@ -319,7 +320,7 @@ public class ProgramBuilder {
         MemoryObject object = locations.computeIfAbsent(leftName,
                 k->program.getMemory().allocateVirtual(1, true, true, rightLocation));
         object.setCVar(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setInitialValue(0, rightLocation.getInitialValueOrZero(0, expressions));
     }
 
     public void initVirLocEqLocAliasProxy(String leftName, String rightName){
@@ -330,7 +331,7 @@ public class ProgramBuilder {
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
         object.setCVar(leftName);
-        object.setInitialValue(0,rightLocation.getInitialValue(0));
+        object.setInitialValue(0, rightLocation.getInitialValueOrZero(0, expressions));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

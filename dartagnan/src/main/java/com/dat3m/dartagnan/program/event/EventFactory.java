@@ -47,15 +47,29 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 public class EventFactory {
 
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    protected final ExpressionFactory expressions;
 
-    protected EventFactory(EventFactory ignoreParent) { }
+    protected EventFactory(ExpressionFactory e) {
+        expressions = e;
+    }
+
+    protected EventFactory(EventFactory parent) {
+        expressions = parent.expressions;
+    }
 
     /**
      * Creates a new root factory.
+     * @param expressionFactory
+     * Builds expressions contained by events of the factory.
+     * @return
+     * A newly created instance.
      */
-    public static EventFactory newInstance() {
-        return new EventFactory(null);
+    public static EventFactory newInstance(ExpressionFactory expressionFactory) {
+        return new EventFactory(expressionFactory);
+    }
+
+    public ExpressionFactory getExpressionFactory() {
+        return expressions;
     }
 
     // =============================================================================================
@@ -137,7 +151,7 @@ public class EventFactory {
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
                 expressions.makeADD(base, expressions.makeValue(offset, base.getType()));
-        return new Init(base, offset, address);
+        return new Init(base, offset, address, expressions);
     }
 
     public ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
@@ -334,11 +348,11 @@ public class EventFactory {
         }
 
         public Lock newLock(String name, Expression address) {
-            return new Lock(name, address);
+            return new Lock(name, address, expressions.makeOne(TypeFactory.getInstance().getArchType()));
         }
 
         public Unlock newUnlock(String name, Expression address) {
-            return new Unlock(name, address);
+            return new Unlock(name, address, expressions.makeZero(TypeFactory.getInstance().getArchType()));
         }
     }
 
@@ -569,10 +583,11 @@ public class EventFactory {
         }
 
         public LKMMUnlock newUnlock(Expression address) {
-            return new LKMMUnlock(address);
+            return new LKMMUnlock(address, expressions.makeZero(TypeFactory.getInstance().getIntegerType(32)));
         }
 
         public GenericMemoryEvent newSrcuSync(Expression address) {
+            //TODO maybe a void type would be fine here
             GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, "synchronize_srcu");
             srcuSync.addTags(Tag.Linux.SRCU_SYNC);
             return srcuSync;

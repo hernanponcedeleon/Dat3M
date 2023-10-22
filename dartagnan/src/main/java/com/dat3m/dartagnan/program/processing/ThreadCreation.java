@@ -84,7 +84,7 @@ public class ThreadCreation implements ProgramProcessor {
 
         final TypeFactory types = TypeFactory.getInstance();
         final EventFactory eventFactory = program.getEventFactory();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         final IntegerType archType = types.getArchType();
 
         final Optional<Function> main = program.getFunctionByName("main");
@@ -173,8 +173,8 @@ public class ThreadCreation implements ProgramProcessor {
      */
     private void handlePthreadJoins(Thread thread, Map<IValue, Expression> tid2ComAddrMap) {
         final TypeFactory types = TypeFactory.getInstance();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final EventFactory eventFactory = thread.getProgram().getEventFactory();
+        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         int joinCounter = 0;
 
         for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
@@ -252,9 +252,9 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final TypeFactory types = TypeFactory.getInstance();
         final EventFactory eventFactory = function.getProgram().getEventFactory();
+        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
 
         // ------------------- Create new thread -------------------
         final ThreadStart start = eventFactory.newThreadStart(creator);
@@ -268,7 +268,7 @@ public class ThreadCreation implements ProgramProcessor {
         for (Register reg : function.getRegisters()) {
             registerReplacement.put(reg, thread.getOrNewRegister(reg.getName(), reg.getType()));
         }
-        final ExpressionVisitor<Expression> regSubstituter = new ExprTransformer() {
+        final ExpressionVisitor<Expression> regSubstituter = new ExprTransformer(expressions) {
             @Override
             public Expression visit(Register reg) {
                 return Preconditions.checkNotNull(registerReplacement.get(reg));
@@ -344,7 +344,7 @@ public class ThreadCreation implements ProgramProcessor {
         // ------------------- Create thread-local variables -------------------
         final Memory memory = function.getProgram().getMemory();
         final Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
-        final ExprTransformer transformer = new ExprTransformer() {
+        final ExprTransformer transformer = new ExprTransformer(expressions) {
             @Override
             public Expression visit(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
@@ -352,7 +352,7 @@ public class ThreadCreation implements ProgramProcessor {
                     final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
                     threadLocalCopy.setCVar(varName);
                     for (int i = 0; i < memObj.size(); i++) {
-                        threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
+                        threadLocalCopy.setInitialValue(i, memObj.getInitialValueOrZero(i, expressions));
                     }
                     global2ThreadLocal.put(memObj, threadLocalCopy);
                 }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.INonDet;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -38,7 +39,7 @@ public class Program {
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
-        this.eventFactory = EventFactory.newInstance();
+        this.eventFactory = EventFactory.newInstance(ExpressionFactory.newInstance());
     }
 
     public SourceLanguage getFormat() {

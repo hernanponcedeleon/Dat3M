@@ -24,7 +24,7 @@ public class GEPToAddition implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        final var transformer = new GEPToAdditionTransformer();
+        final var transformer = new GEPToAdditionTransformer(program.getEventFactory().getExpressionFactory());
         for (Function function : program.getFunctions()) {
             for (RegReader reader : function.getEvents(RegReader.class)) {
                 reader.transformExpressions(transformer);
@@ -33,7 +33,8 @@ public class GEPToAddition implements ProgramProcessor {
 
         for (MemoryObject memoryObject : program.getMemory().getObjects()) {
             for (int field : memoryObject.getStaticallyInitializedFields()) {
-                memoryObject.setInitialValue(field, memoryObject.getInitialValue(field).accept(transformer));
+                memoryObject.getInitialValue(field)
+                        .ifPresent(v -> memoryObject.setInitialValue(field, v.accept(transformer)));
             }
         }
     }
@@ -41,8 +42,11 @@ public class GEPToAddition implements ProgramProcessor {
     private static final class GEPToAdditionTransformer extends ExprTransformer {
 
         private final TypeFactory types = TypeFactory.getInstance();
-        private final ExpressionFactory expressions = ExpressionFactory.getInstance();
         private final IntegerType archType = types.getArchType();
+
+        private GEPToAdditionTransformer(ExpressionFactory expressions) {
+            super(expressions);
+        }
 
         @Override
         public Expression visit(GEPExpression getElementPointer) {

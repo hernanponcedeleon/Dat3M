@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
@@ -43,12 +44,12 @@ public class AnalysisTest {
     private static final Result MUST = Result.MUST;
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -56,14 +57,14 @@ public class AnalysisTest {
         Register r2 = b.getOrNewRegister(0, "r2");
         Label alt = b.getOrCreateLabel(0, "alt");
         b.addChild(0, events.newJump(new BNonDet(types.getBooleanType()), alt));
-        Local e0 = events.newLocal(r0, value(1));
+        Local e0 = events.newLocal(r0, expressions.makeValue(BigInteger.valueOf(1), types.getArchType()));
         b.addChild(0, e0);
         Local e1 = events.newLocal(r1, r0);
         b.addChild(0, e1);
         Label join = b.getOrCreateLabel(0,"join");
         b.addChild(0, events.newGoto(join));
         b.addChild(0, alt);
-        Local e2 = events.newLocal(r1, value(2));
+        Local e2 = events.newLocal(r1, expressions.makeValue(BigInteger.valueOf(2), types.getArchType()));
         b.addChild(0, e2);
         b.addChild(0, join);
         Local e3 = events.newLocal(r2, r0);
@@ -115,6 +116,7 @@ public class AnalysisTest {
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final Expression zero = expressions.makeZero(types.getArchType());
         final MemoryObject x = b.newMemoryObject("x", 2);
         final MemoryObject y = b.newMemoryObject("y", 1);
@@ -123,10 +125,12 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
-        b.addChild(0, events.newLocal(r0, mult(x, 1)));
+        b.addChild(0, events.newLocal(r0,
+                expressions.makeMUL(x, expressions.makeValue(BigInteger.valueOf(1), types.getArchType()))));
         Store e0 = events.newStore(r0, zero);
         b.addChild(0, e0);
-        Store e1 = events.newStore(plus(r0, 1), zero);
+        Store e1 = events.newStore(expressions.makeADD(r0,
+                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), zero);
         b.addChild(0, e1);
         Store e2 = events.newStore(x, zero);
         b.addChild(0, e2);
@@ -164,19 +168,22 @@ public class AnalysisTest {
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final MemoryObject x = b.newMemoryObject("x", 3);
         final Expression zero = expressions.makeZero(types.getArchType());
         x.setInitialValue(0, x);
 
         b.newThread(0);
-        Store e0 = events.newStore(plus(x, 1), zero);
+        Store e0 = events.newStore(expressions.makeADD(x,
+                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), zero);
         b.addChild(0, e0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e1 = events.newLoad(r0, x);
         b.addChild(0, e1);
         Store e2 = events.newStore(r0, zero);
         b.addChild(0, e2);
-        Store e3 = events.newStore(plus(r0, 1), r0);
+        Store e3 = events.newStore(expressions.makeADD(r0,
+                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), r0);
         b.addChild(0, e3);
 
         Program program = b.build();
@@ -210,6 +217,7 @@ public class AnalysisTest {
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final IntegerType type = types.getArchType();
         final Expression zero = expressions.makeZero(type);
         final MemoryObject x = b.newMemoryObject("x", 3);
@@ -223,15 +231,18 @@ public class AnalysisTest {
                 expressions.makeLT(r0, zero, true)), l0));
         Store e0 = events.newStore(x, zero);
         b.addChild(0, e0);
-        Store e1 = events.newStore(plus(x, 1), zero);
+        Store e1 = events.newStore(expressions.makeADD(x,
+                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), zero);
         b.addChild(0, e1);
-        Store e2 = events.newStore(plus(x, 2), zero);
+        Store e2 = events.newStore(expressions.makeADD(x,
+                expressions.makeValue(BigInteger.valueOf(2), types.getArchType())), zero);
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, events.newLocal(r1, zero));
         Store e3 = events.newStore(expressions.makeADD(
-                expressions.makeADD(x, mult(r0, 2)),
-                mult(r1, 4)),
+                expressions.makeADD(x,
+                        expressions.makeMUL(r0, expressions.makeValue(BigInteger.valueOf(2), types.getArchType()))),
+                        expressions.makeMUL(r1, expressions.makeValue(BigInteger.valueOf(4), types.getArchType()))),
                 zero);
         b.addChild(0, e3);
         b.addChild(0, l0);
@@ -267,6 +278,7 @@ public class AnalysisTest {
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final MemoryObject x = b.newMemoryObject("x", 3);
         final Expression zero = expressions.makeZero(types.getArchType());
         x.setInitialValue(0, x);
@@ -275,9 +287,11 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = events.newLoad(r0, x);
         b.addChild(0, e0);
-        Store e1 = events.newStore(x, plus(r0, 1));
+        Store e1 = events.newStore(x,
+                expressions.makeADD(r0, expressions.makeValue(BigInteger.valueOf(1), types.getArchType())));
         b.addChild(0, e1);
-        Store e2 = events.newStore(plus(x, 2), zero);
+        Store e2 = events.newStore(expressions.makeADD(x,
+                expressions.makeValue(BigInteger.valueOf(2), types.getArchType())), zero);
         b.addChild(0, e2);
         Store e3 = events.newStore(r0, zero);
         b.addChild(0, e3);
@@ -313,6 +327,7 @@ public class AnalysisTest {
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final MemoryObject x = b.newMemoryObject("x", 1);
         final MemoryObject y = b.newMemoryObject("y", 1);
         final MemoryObject z = b.newMemoryObject("z", 1);
@@ -320,7 +335,8 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, events.newLocal(r0, mult(x, 0)));
+        b.addChild(0, events.newLocal(r0,
+                expressions.makeMUL(x, expressions.makeValue(BigInteger.valueOf(0), types.getArchType()))));
         b.addChild(0, events.newLocal(r0, y));
         Store e0 = events.newStore(r0, zero);
         b.addChild(0, e0);
@@ -359,6 +375,7 @@ public class AnalysisTest {
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final MemoryObject x = b.newMemoryObject("x", 1);
         final MemoryObject y = b.newMemoryObject("y", 1);
         final MemoryObject z = b.newMemoryObject("z", 1);
@@ -369,7 +386,8 @@ public class AnalysisTest {
         b.addChild(0, events.newLocal(r0, y));
         Store e0 = events.newStore(r0, zero);
         b.addChild(0, e0);
-        b.addChild(0, events.newLocal(r0, mult(x, 0)));
+        b.addChild(0, events.newLocal(r0,
+                expressions.makeMUL(x, expressions.makeValue(BigInteger.valueOf(0), types.getArchType()))));
         Store e1 = events.newStore(x, zero);
         b.addChild(0, e1);
         Store e2 = events.newStore(y, zero);
@@ -390,18 +408,6 @@ public class AnalysisTest {
         assertAlias(expect[3], a, me0, me3);
         assertAlias(expect[4], a, me1, me3);
         assertAlias(expect[5], a, me2, me3);
-    }
-
-    private Expression value(long v) {
-        return expressions.makeValue(v, types.getArchType());
-    }
-
-    private Expression plus(Expression lhs, long rhs) {
-        return expressions.makeADD(lhs, value(rhs));
-    }
-
-    private Expression mult(Expression lhs, long rhs) {
-        return expressions.makeMUL(lhs, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {

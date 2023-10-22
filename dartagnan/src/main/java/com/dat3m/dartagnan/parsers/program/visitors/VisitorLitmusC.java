@@ -147,7 +147,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                             values.add(object);
                         } else {
                             object = programBuilder.getOrNewMemoryObject(varName);
-                            values.add(elCtx.Ast() == null ? object : object.getInitialValue(0));
+                            values.add(elCtx.Ast() == null ? object : object.getInitialValueOrZero(0, expressions));
                         }
                     }
                 }

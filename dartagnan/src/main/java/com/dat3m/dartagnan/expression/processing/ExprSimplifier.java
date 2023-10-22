@@ -13,6 +13,10 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.RSHIFT;
 
 public class ExprSimplifier extends ExprTransformer {
 
+    public ExprSimplifier(ExpressionFactory expressions) {
+        super(expressions);
+    }
+
     @Override
     public Expression visit(Atom atom) {
         Expression lhs = atom.getLHS().accept(this);

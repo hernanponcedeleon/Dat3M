@@ -142,7 +142,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     // Instruction list (the program itself)
     @Override
     public Object visitConstant(LitmusVulkanParser.ConstantContext ctx) {
-        return ExpressionFactory.getInstance().parseValue(ctx.getText(), archType);
+        return expressions.parseValue(ctx.getText(), archType);
     }
 
     @Override

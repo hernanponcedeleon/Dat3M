@@ -83,7 +83,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 .stream().filter(info -> !info.isUnrolled())
                 .map(info -> info.iterations().get(0)).toList();
 
-        final ConstantPropagator propagator = new ConstantPropagator();
+        final ConstantPropagator propagator = new ConstantPropagator(func.getProgram().getEventFactory().getExpressionFactory());
         for (Event cur : func.getEvents()) {
 
             if (cur instanceof Label && inflowMap.containsKey(cur)) {
@@ -185,6 +185,10 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
     private static class ConstantPropagator extends ExprTransformer {
 
         private Map<Register, Expression> propagationMap;
+
+        private ConstantPropagator(ExpressionFactory expressions) {
+            super(expressions);
+        }
 
         @Override
         public Expression visit(Register reg) {

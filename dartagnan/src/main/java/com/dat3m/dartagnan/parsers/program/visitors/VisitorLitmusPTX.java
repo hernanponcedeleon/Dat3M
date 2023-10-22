@@ -124,7 +124,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     // Instruction list (the program itself)
     @Override
     public Object visitConstant(LitmusPTXParser.ConstantContext ctx) {
-        return ExpressionFactory.getInstance().parseValue(ctx.getText(), archType);
+        return expressions.parseValue(ctx.getText(), archType);
     }
 
     @Override

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.event.lang;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -15,7 +14,6 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -60,26 +58,6 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     public boolean isSimpleAllocation() { return (arraySize instanceof IValue size && size.isOne()); }
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
-
-    public Expression getAllocationSize() {
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        final TypeFactory types = TypeFactory.getInstance();
-        final Expression allocationSize;
-        if (arraySize instanceof IValue value) {
-            allocationSize = expressions.makeValue(
-                    BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)).multiply(value.getValue()),
-                    types.getArchType()
-            );
-        } else {
-            allocationSize = expressions.makeMUL(
-                    expressions.makeValue(
-                            BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)),
-                            (IntegerType) arraySize.getType()),
-                    arraySize
-            );
-        }
-        return allocationSize;
-    }
 
     @Override
     public Set<Register.Read> getRegisterReads() {

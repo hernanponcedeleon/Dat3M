@@ -24,7 +24,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 public class ExceptionsTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Test(expected = MalformedProgramException.class)
     public void noThread() {
@@ -54,16 +53,19 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() {
+        final Program program = new Program(new Memory(), SourceLanguage.LITMUS);
+        final ExpressionFactory expressions = program.getEventFactory().getExpressionFactory();
         // Both arguments should have same precision
         Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
         Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
-        ExpressionFactory.getInstance().makeADD(a, b);
+        expressions.makeADD(a, b);
     }
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() {
         final var program = new Program(new Memory(), SourceLanguage.LITMUS);
         final EventFactory events = program.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         events.newJump(expressions.makeFalse(), null);
     }
 

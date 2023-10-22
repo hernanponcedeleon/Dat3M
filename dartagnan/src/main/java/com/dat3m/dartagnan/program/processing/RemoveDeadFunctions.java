@@ -47,7 +47,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         // (1) Find functions referenced by memory
         for (MemoryObject memoryObject : program.getMemory().getObjects()) {
             for (Integer field : memoryObject.getStaticallyInitializedFields()) {
-                memoryObject.getInitialValue(field).accept(functionCollector);
+                memoryObject.getInitialValue(field).ifPresent(v -> v.accept(functionCollector));
             }
         }
 

@@ -54,8 +54,10 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        final EventFactory events = program.getEventFactory();
+        final ExpressionFactory expressions = events.getExpressionFactory();
         final FunctionCollector functionCollector = new FunctionCollector();
-        final FunctionToAddressTransformer toAddressTransformer = new FunctionToAddressTransformer();
+        final FunctionToAddressTransformer toAddressTransformer = new FunctionToAddressTransformer(expressions);
 
         findAndTransformAddressTakenFunctionsInMemory(program.getMemory(), functionCollector, toAddressTransformer);
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
@@ -73,7 +75,11 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         for (MemoryObject memoryObject : memory.getObjects()) {
             for (Integer field : memoryObject.getStaticallyInitializedFields()) {
                 functionCollector.reset();
-                final Expression initValue = memoryObject.getInitialValue(field).accept(functionCollector);
+                final Expression initValue = memoryObject.getInitialValue(field).orElse(null);
+                if (initValue == null) {
+                    continue;
+                }
+                initValue.accept(functionCollector);
 
                 for (Function func : functionCollector.collectedFunctions) {
                     assignAddressToFunction(func, toAddressTransformer.func2AddressMap);
@@ -104,7 +110,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private boolean assignAddressToFunction(Function func, Map<Function, IValue> func2AddressMap) {
         final IntegerType ptrType = TypeFactory.getInstance().getArchType();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final ExpressionFactory expressions = func.getProgram().getEventFactory().getExpressionFactory();
         if (!func2AddressMap.containsKey(func)) {
             logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
             func2AddressMap.put(func, expressions.makeValue(nextAvailableFuncAddress, ptrType));
@@ -131,8 +137,8 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private void devirtualise(Function function, Map<Function, IValue> func2AddressMap) {
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final EventFactory eventFactory = function.getProgram().getEventFactory();
+        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
 
         int devirtCounter = 0;
         for (FunctionCall call : function.getEvents(FunctionCall.class)) {
@@ -262,6 +268,10 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     private static class FunctionToAddressTransformer extends ExprTransformer {
 
         private final Map<Function, IValue> func2AddressMap = new HashMap<>();
+
+        private FunctionToAddressTransformer(ExpressionFactory expressions) {
+            super(expressions);
+        }
 
         @Override
         public Expression visit(Function function) {

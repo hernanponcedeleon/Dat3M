@@ -10,8 +10,6 @@ import java.util.List;
 
 public final class ExpressionFactory {
 
-    private static final ExpressionFactory instance = new ExpressionFactory();
-
     private final TypeFactory types = TypeFactory.getInstance();
     private final BooleanType booleanType = types.getBooleanType();
     private final BConst falseConstant = new BConst(booleanType, false);
@@ -19,8 +17,8 @@ public final class ExpressionFactory {
 
     private ExpressionFactory() {}
 
-    public static ExpressionFactory getInstance() {
-        return instance;
+    public static ExpressionFactory newInstance() {
+        return new ExpressionFactory();
     }
 
     // -----------------------------------------------------------------------------------------------------------------

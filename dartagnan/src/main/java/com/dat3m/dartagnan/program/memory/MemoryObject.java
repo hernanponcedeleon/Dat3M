@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -40,11 +41,6 @@ public class MemoryObject extends IConst {
         this.size = size;
         this.isStatic = isStaticallyAllocated;
         this.isThreadLocal = false;
-
-        if (isStaticallyAllocated) {
-            // Static allocations are default-initialized
-            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
-        }
     }
 
     public String getCVar() { return cVar; }
@@ -76,9 +72,15 @@ public class MemoryObject extends IConst {
      * @param offset Non-negative number of fields before the target.
      * @return Readable value at the start of each execution.
      */
-    public Expression getInitialValue(int offset) {
-        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
+    public Expression getInitialValueOrZero(int offset, ExpressionFactory expressions) {
+        checkArrayBounds(offset);
+        final Expression value = initialValues.get(offset);
+        return value != null ? value : expressions.makeZero(TypeFactory.getInstance().getArchType());
+    }
+
+    public Optional<Expression> getInitialValue(int offset) {
+        checkArrayBounds(offset);
+        return Optional.ofNullable(initialValues.get(offset));
     }
 
     /**
@@ -88,7 +90,7 @@ public class MemoryObject extends IConst {
      * @param value  New value to be read at the start of each execution.
      */
     public void setInitialValue(int offset, Expression value) {
-        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        checkArrayBounds(offset);
         initialValues.put(offset, value);
     }
 
@@ -101,6 +103,10 @@ public class MemoryObject extends IConst {
     public void appendInitialValue(int offset, Expression value) {
         checkArgument(offset >= 0, "array index out of bounds");
         initialValues.put(offset, value);
+    }
+
+    private void checkArrayBounds(int offset) {
+        checkArgument(offset >= 0 && offset < size, "array index out of bounds");
     }
 
     public boolean isAtomic() {

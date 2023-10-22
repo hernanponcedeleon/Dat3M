@@ -192,8 +192,9 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private Event newBoundEvent(Function func, EventFactory eventFactory) {
+        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         final Event boundEvent = func instanceof Thread thread ? eventFactory.newGoto((Label) thread.getExit()) :
-                eventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
+                eventFactory.newAbortIf(expressions.makeTrue());
         boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
         return boundEvent;
     }

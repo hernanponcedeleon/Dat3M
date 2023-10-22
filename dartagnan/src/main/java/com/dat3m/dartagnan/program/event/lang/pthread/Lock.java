@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang.pthread;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.StoreBase;
 
@@ -12,8 +10,8 @@ public class Lock extends StoreBase {
 
     private final String name;
 
-    public Lock(String name, Expression address) {
-        super(address, ExpressionFactory.getInstance().makeOne(TypeFactory.getInstance().getArchType()), MO_SC);
+    public Lock(String name, Expression address, Expression value) {
+        super(address, value, MO_SC);
         this.name = name;
     }
 

@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -86,7 +85,7 @@ public class Inlining implements ProgramProcessor {
             exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(callTarget);
             final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
-                final AbortIf boundEvent = eventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue());
+                final AbortIf boundEvent = eventFactory.newAbortIf(eventFactory.getExpressionFactory().makeTrue());
                 boundEvent.copyAllMetadataFrom(call);
                 boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 call.replaceBy(boundEvent);
@@ -166,7 +165,7 @@ public class Inlining implements ProgramProcessor {
         }
 
         // Substitute registers in the copied body
-        var substitution = new ExprTransformer() {
+        var substitution = new ExprTransformer(eventFactory.getExpressionFactory()) {
             @Override
             public Expression visit(Register register) {
                 return checkNotNull(registerMap.get(register));

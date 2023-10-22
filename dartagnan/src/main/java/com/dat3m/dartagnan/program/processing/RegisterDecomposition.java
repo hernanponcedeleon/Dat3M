@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Construction;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Extraction;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.AggregateType;
@@ -33,7 +34,7 @@ public class RegisterDecomposition implements ProgramProcessor {
     @Override
     public void run(Program program) {
         final EventFactory eventFactory = program.getEventFactory();
-        final var transformer = new ExtractSubstitutor();
+        final var transformer = new ExtractSubstitutor(eventFactory.getExpressionFactory());
         for (Function function : program.getFunctions()) {
             //TODO assume that no constructor occurs anywhere other than as the root operation of a local
             for (RegWriter writer : function.getEvents(RegWriter.class)) {
@@ -67,6 +68,10 @@ public class RegisterDecomposition implements ProgramProcessor {
     private static final class ExtractSubstitutor extends ExprTransformer {
 
         private final Map<RegisterIndex, Register> map = new HashMap<>();
+
+        private ExtractSubstitutor(ExpressionFactory expressions) {
+            super(expressions);
+        }
 
         @Override
         public Expression visit(Extraction extraction) {

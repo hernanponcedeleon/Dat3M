@@ -9,10 +9,16 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     protected final TypeFactory types = TypeFactory.getInstance();
-    protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    protected final ExpressionFactory expressions;
+
+    protected ExprTransformer(ExpressionFactory expressions) {
+        this.expressions = checkNotNull(expressions);
+    }
 
     @Override
     public Expression visit(Atom atom) {

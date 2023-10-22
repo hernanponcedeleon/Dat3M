@@ -51,7 +51,7 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
         //final IValue isDynamic = (IValue) call.getArguments().get(3); // Meaning of this is unclear
 
         // TODO: We treat all pointers as unknown for now.
-        final ExpressionFactory exprs = ExpressionFactory.getInstance();
+        final ExpressionFactory exprs = eventFactory.getExpressionFactory();
         final BigInteger value = zeroIfUnknown.isOne() ? BigInteger.ZERO : BigInteger.ONE.negate();
         final Event constAssignment = eventFactory.newLocal(
                 call.getResultRegister(), exprs.makeValue(value, (IntegerType) call.getResultRegister().getType())

@@ -73,7 +73,7 @@ public class MemToReg implements FunctionProcessor {
 
     private void promoteAll(Function function, Matcher matcher) {
         final EventFactory eventFactory = function.getProgram().getEventFactory();
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         // Replace every unmarked address.
         final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
