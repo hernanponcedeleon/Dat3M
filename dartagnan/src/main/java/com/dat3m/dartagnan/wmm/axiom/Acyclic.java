@@ -8,8 +8,8 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Options;
@@ -391,7 +391,7 @@ public class Acyclic extends Axiom {
                 nodes.add(e1);
                 nodes.add(e2);
                 outEdges.computeIfAbsent(e1, key -> new HashSet<>()).add(e2);
-                inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(e2);
+                inEdges.computeIfAbsent(e2, key -> new HashSet<>()).add(e1);
             }
         });
 
