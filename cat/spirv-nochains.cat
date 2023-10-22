@@ -129,8 +129,6 @@ let locord = loc &
                 (       ([W];        (hb & avvisinc);  avdv; (hb);       visdv; (hb & avvisinc);  [R]))            // RaW (via device domain)
              )
 
-let w-locord = [W]; locord
-
 (***********************)
 (* Memory Model Axioms *)
 (***********************)
