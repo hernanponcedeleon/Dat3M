@@ -97,6 +97,7 @@ public class ProcessingManager implements ProgramProcessor {
                 LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
+                ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(
                         SimpleSpinLoopDetection.fromConfig(config),
                         Target.FUNCTIONS, false
@@ -116,6 +117,7 @@ public class ProcessingManager implements ProgramProcessor {
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
                 RemoveUnusedMemory.newInstance(),
+                ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.THREADS, true),
                 MemoryAllocation.newInstance(),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
