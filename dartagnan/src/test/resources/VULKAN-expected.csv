@@ -84,3 +84,6 @@ litmus/VULKAN/Manual/MP-mesa-optimized.litmus,1
 litmus/VULKAN/Manual/MP-avvis.litmus,0
 litmus/VULKAN/Manual/MP-no-avvis.litmus,1
 litmus/VULKAN/Manual/CoWW-RR.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,0
+litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-weak.litmus,1

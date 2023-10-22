@@ -58,3 +58,5 @@ litmus/PTX/Manual/LB-dlb-no-fence-2,1
 litmus/PTX/Nvidia/SB+bar-dyn-reg-const,0
 litmus/PTX/Nvidia/SB+bar-sta-reg-const,1
 litmus/PTX/Manual/CoWW-weak.litmus,1
+litmus/PTX/Manual/XF-Barrier-rlx.litmus,0
+litmus/PTX/Manual/XF-Barrier-weak.litmus,1
