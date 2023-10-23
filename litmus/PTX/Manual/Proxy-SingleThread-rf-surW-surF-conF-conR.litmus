@@ -4,7 +4,7 @@ PTX Proxy-SingleThread-rf-surW-surF-conF-conR
 "https://github.com/NVlabs/mixedproxy/blob/main/tests/CoWR.test"
 {
 rd1 = 0;
-rd2 @ generic aliases rd1;
+rd2 @ constant aliases rd1;
 rd3 @ surface aliases rd1;
 P0:r0=0;
 }
