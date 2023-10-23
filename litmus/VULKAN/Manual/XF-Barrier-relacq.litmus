@@ -1,4 +1,4 @@
-Vulkan XF-Barrier-RA
+Vulkan XF-Barrier-relacq
 "Adapted from Figure 2 in 
 Portable Inter-workgroup Barrier Synchronisation for GPUs
 https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
