@@ -81,7 +81,7 @@ let proxy-preserved-cause-base
                 | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
                 | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
                 | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)
-let cause = observation?; proxy-preserved-cause-base
+let cause = cause-base | (observation?; proxy-preserved-cause-base)
 
 (******************************)
 (*  PTX Memory Model Axioms   *)
