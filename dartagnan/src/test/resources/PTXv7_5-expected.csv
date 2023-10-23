@@ -124,4 +124,4 @@ litmus/PTX/Nvidia/SB+bar-dyn-reg-const.litmus,0
 litmus/PTX/Nvidia/SB+bar-sta-reg-const.litmus,1
 litmus/PTX/Manual/CoWW-weak.litmus,1
 litmus/PTX/Manual/XF-Barrier-rlx.litmus,0
-litmus/PTX/Manual/XF-Barrier-weak.litmus,1
+litmus/PTX/Manual/XF-Barrier-weak.litmus,0
