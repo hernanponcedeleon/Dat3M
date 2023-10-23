@@ -77,8 +77,6 @@ let proxy-preserved-cause-base
                 | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; [GEN])
                 | vloc & ([GEN]; cause-base; cause-base & proxy-fence-ops)
                 | vloc & (cause-base & (proxy-fence-ops^-1); cause-base; cause-base & proxy-fence-ops)
-                // The alloy model does not support the constant proxy below
-                | loc & ([M & CON]; cause-base; [F & CON]; cause-base; [M & CON])
                 | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; [GEN])
                 | loc & (cause-base & (proxy-fence-ops^-1); cause-base; [F & ALIAS]; cause-base; [GEN])
                 | loc & ([GEN]; cause-base; [F & ALIAS]; cause-base; cause-base & proxy-fence-ops)

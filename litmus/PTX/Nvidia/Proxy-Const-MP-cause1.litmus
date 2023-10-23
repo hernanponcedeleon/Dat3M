@@ -3,7 +3,7 @@ PTX Proxy-Const-MP-cause1
 "The constant fence along the base causality path from the weak st to the cold, hence rf is guaranteed"
 {
 rd1 = 0;
-rd2 @ generic aliases rd1;
+rd2 @ constant aliases rd1;
 rd4 = 0;
 P0:r0=0;
 }

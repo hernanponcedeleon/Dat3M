@@ -207,10 +207,46 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitLocalConstant(LitmusVulkanParser.LocalConstantContext ctx) {
+    public Object visitLocalValue(LitmusVulkanParser.LocalValueContext ctx) {
         Register register = (Register) ctx.register().accept(this);
-        IConst constant = (IConst) ctx.constant().accept(this);
-        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
+        Expression value = (Expression) ctx.value().accept(this);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(register, value));
+    }
+
+    @Override
+    public Object visitLocalAdd(LitmusVulkanParser.LocalAddContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeADD(lhs, rhs);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalSub(LitmusVulkanParser.LocalSubContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeSUB(lhs, rhs);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalMul(LitmusVulkanParser.LocalMulContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeMUL(lhs, rhs);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
+    }
+
+    @Override
+    public Object visitLocalDiv(LitmusVulkanParser.LocalDivContext ctx) {
+        Register rd = (Register) ctx.register().accept(this);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression exp = expressions.makeDIV(lhs, rhs, true);
+        return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
     @Override
@@ -244,7 +280,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRmwExch(LitmusVulkanParser.RmwExchContext ctx) {
+    public Object visitRmwValue(LitmusVulkanParser.RmwValueContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
@@ -266,7 +302,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     public Object visitRmwOp(LitmusVulkanParser.RmwOpContext ctx) {
         Register register = (Register) ctx.register().accept(this);
         MemoryObject location = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        IConst constant = (IConst) ctx.constant().accept(this);
+        Expression value = (Expression) ctx.value().accept(this);
         String mo = (ctx.mo() != null) ? ctx.mo().content : "";
         String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
@@ -274,7 +310,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         IOpBin op = ctx.operation().op;
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
-        VulkanRMWOp rmw = EventFactory.Vulkan.newRMWOp(location, register, constant, op, mo, scope);
+        VulkanRMWOp rmw = EventFactory.Vulkan.newRMWOp(location, register, value, op, mo, scope);
         if (!avvis.isEmpty()) {
             rmw.addTags(avvis);
         }
@@ -355,9 +391,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitBranchCond(LitmusVulkanParser.BranchCondContext ctx) {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
-        Register r1 = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        Expression value = (Expression) ctx.value().accept(this);
-        Expression expr = expressions.makeBinary(r1, ctx.cond().op, value);
+        Expression lhs = (Expression) ctx.value(0).accept(this);
+        Expression rhs = (Expression) ctx.value(1).accept(this);
+        Expression expr = expressions.makeBinary(lhs, ctx.cond().op, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

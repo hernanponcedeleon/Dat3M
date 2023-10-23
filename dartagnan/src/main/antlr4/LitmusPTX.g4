@@ -94,20 +94,11 @@ instruction
     ;
 
 storeInstruction
-    :   storeConstant
-    |   storeRegister
-    ;
-
-storeConstant
-    :   store Period mo (Period scope)? location Comma constant
-    ;
-
-storeRegister
-    :   store Period mo (Period scope)? location Comma register
+    :   store Period mo (Period scope)? location Comma value
     ;
 
 loadInstruction
-    :   localConstant
+    :   localValue
     |   localAdd
     |   localSub
     |   localMul
@@ -115,24 +106,24 @@ loadInstruction
     |   loadLocation
     ;
 
-localConstant
-    :   load Period mo (Period scope)? register Comma constant
+localValue
+    :   load Period mo (Period scope)? register Comma value
     ;
 
 localAdd
-    :   Add register Comma register Comma constant
+    :   Add register Comma value Comma value
     ;
 
 localSub
-    :   Sub register Comma register Comma constant
+    :   Sub register Comma value Comma value
     ;
 
 localMul
-    :   Mul register Comma register Comma constant
+    :   Mul register Comma value Comma value
     ;
 
 localDiv
-    :   Div register Comma register Comma constant
+    :   Div register Comma value Comma value
     ;
 
 loadLocation
@@ -164,18 +155,13 @@ barrier
     ;
 
 atomInstruction
-    :   atomConstant
-    |   atomRegister
+    :   atomOp
     |   atomCAS
     |   atomExchange
     ;
 
-atomConstant
-    :   atom Period mo Period scope Period operation register Comma location Comma constant
-    ;
-
-atomRegister
-    :   atom Period mo Period scope Period operation register Comma location Comma register
+atomOp
+    :   atom Period mo Period scope Period operation register Comma location Comma value
     ;
 
 atomCAS
@@ -187,20 +173,11 @@ atomExchange
     ;
 
 redInstruction
-    :   redConstant
-    |   redRegister
-    ;
-
-redConstant
-    :   red Period mo Period scope Period operation location Comma constant
-    ;
-
-redRegister
-    :   red Period mo Period scope Period operation location Comma register
+    :   red Period mo Period scope Period operation location Comma value
     ;
 
 branchCond
-    :   cond register Comma value Comma Label
+    :   cond value Comma value Comma Label
     ;
 
 jump

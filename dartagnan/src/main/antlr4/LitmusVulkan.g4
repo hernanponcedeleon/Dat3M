@@ -108,12 +108,32 @@ storeInstruction
     ;
 
 loadInstruction
-    :   localConstant
+    :   localValue
+    |   localAdd
+    |   localSub
+    |   localMul
+    |   localDiv
     |   loadLocation
     ;
 
-localConstant
-    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma constant
+localValue
+    :   Load atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma value
+    ;
+
+localAdd
+    :   Add register Comma value Comma value
+    ;
+
+localSub
+    :   Sub register Comma value Comma value
+    ;
+
+localMul
+    :   Mul register Comma value Comma value
+    ;
+
+localDiv
+    :   Div register Comma value Comma value
     ;
 
 loadLocation
@@ -121,16 +141,16 @@ loadLocation
     ;
 
 rmwInstruction
-    :   rmwExch
+    :   rmwValue
     |   rmwOp
     ;
 
-rmwExch
+rmwValue
     :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList register Comma location Comma value
     ;
 
 rmwOp
-    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma constant
+    :   RMW atomic mo? avvis? scope? storageClass storageClassSemanticList avvisSemanticList operation register Comma location Comma value
     ;
 
 fenceInstruction
@@ -156,7 +176,7 @@ label
     ;
 
 branchCond
-    :   cond register Comma value Comma Label
+    :   cond value Comma value Comma Label
     ;
 
 jump
@@ -309,9 +329,9 @@ Bgt             :   'bgt';
 Ble             :   'ble';
 Bge             :   'bge';
 
-Add             :   'plus';
-Sub             :   'minus';
-Mult            :   'mult';
+Add             :   'add';
+Sub             :   'sub';
+Mult            :   'mul';
 Div             :   'div';
 And             :   'and';
 Or              :   'or';
