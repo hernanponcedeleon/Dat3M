@@ -135,3 +135,6 @@ litmus/VULKAN/Manual/MP-mesa.litmus,1
 litmus/VULKAN/Manual/MP-mesa-load-acq.litmus,1
 litmus/VULKAN/Manual/MP-mesa-fence-loop.litmus,1
 litmus/VULKAN/Manual/MP-mesa-optimized.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-weak.litmus,1

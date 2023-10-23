@@ -1,0 +1,22 @@
+PTX XF-Barrier-relacq
+"Adapted from Figure 2 in 
+Portable Inter-workgroup Barrier Synchronisation for GPUs
+https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
+{
+x=0;
+f=0;
+P0:r0=0;
+P1:r0=0;
+}
+ P0@cta 0,gpu 0       | P1@cta 1,gpu 0       | P2@cta 1,gpu 0 ;
+ st.weak x, 1         | bar.cta.sync 1       | bar.cta.sync 1 ;
+ LC00:                | st.relaxed.gpu f, 1  | bar.cta.sync 2 ;
+ ld.relaxed.gpu r2, f | LC10:                |                ;
+ bne r2, 0, LC01      | ld.acquire.gpu r2, f |                ;
+ goto LC00            | bne r2, 1, LC11      |                ;
+ LC01:                | goto LC10            |                ;
+ bar.cta.sync 1       | LC11:                |                ;
+ st.release.gpu f, 0  | bar.cta.sync 2       |                ;
+                      | ld.weak r1, x        |                ;
+exists
+(P1:r2 != 1 /\ P1:r1 == 0)

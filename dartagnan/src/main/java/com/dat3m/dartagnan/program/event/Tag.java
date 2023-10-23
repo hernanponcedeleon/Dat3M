@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Store;
 
 import java.util.List;
 
