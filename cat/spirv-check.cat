@@ -195,7 +195,7 @@ let scbarinstIsPo = (syncbar & (po | po^-1))
 flag ~empty scbarinstIsPo as checkScbarinstIsPo
 
 // can't have two cbars where one comes first in po in one thread and second in po in another thread
-let scbarinstIsPo2 = (syncbar & (po; syncbar; po) & syncbar)
+let scbarinstIsPo2 = (po; syncbar; po) & syncbar
 flag ~empty scbarinstIsPo2 as checkScbarinstIsPo2
 
 // the same instance of a control barrier must have same scope, acq/rel, semantics
