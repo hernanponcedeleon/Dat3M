@@ -3,6 +3,7 @@ PTX XF-Barrier-relacq
 Portable Inter-workgroup Barrier Synchronisation for GPUs
 https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
 {
+x=0;
 f=0;
 P0:r0=0;
 P1:r0=0;
