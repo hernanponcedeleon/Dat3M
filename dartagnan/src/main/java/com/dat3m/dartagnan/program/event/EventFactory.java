@@ -48,13 +48,16 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 public class EventFactory {
 
     protected final ExpressionFactory expressions;
+    protected final TypeFactory types;
 
     protected EventFactory(ExpressionFactory e) {
         expressions = e;
+        types = e.getTypeFactory();
     }
 
     protected EventFactory(EventFactory parent) {
         expressions = parent.expressions;
+        types = parent.types;
     }
 
     /**
@@ -344,15 +347,15 @@ public class EventFactory {
 
         public InitLock newInitLock(String name, Expression address, Expression ignoreAttributes) {
             //TODO store attributes inside mutex object
-            return new InitLock(name, address, expressions.makeZero(TypeFactory.getInstance().getArchType()));
+            return new InitLock(name, address, expressions.makeZero(types.getArchType()));
         }
 
         public Lock newLock(String name, Expression address) {
-            return new Lock(name, address, expressions.makeOne(TypeFactory.getInstance().getArchType()));
+            return new Lock(name, address, expressions.makeOne(types.getArchType()));
         }
 
         public Unlock newUnlock(String name, Expression address) {
-            return new Unlock(name, address, expressions.makeZero(TypeFactory.getInstance().getArchType()));
+            return new Unlock(name, address, expressions.makeZero(types.getArchType()));
         }
     }
 
@@ -579,16 +582,16 @@ public class EventFactory {
         }
 
         public LKMMLock newLock(Expression address) {
-            return new LKMMLock(address);
+            return new LKMMLock(address, types.getIntegerType(32));
         }
 
         public LKMMUnlock newUnlock(Expression address) {
-            return new LKMMUnlock(address, expressions.makeZero(TypeFactory.getInstance().getIntegerType(32)));
+            return new LKMMUnlock(address, expressions.makeZero(types.getIntegerType(32)));
         }
 
         public GenericMemoryEvent newSrcuSync(Expression address) {
             //TODO maybe a void type would be fine here
-            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, "synchronize_srcu");
+            GenericMemoryEvent srcuSync = new GenericMemoryEvent(address, types.getIntegerType(32), "synchronize_srcu");
             srcuSync.addTags(Tag.Linux.SRCU_SYNC);
             return srcuSync;
         }

@@ -11,8 +11,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class TypeFactory {
 
-    private static final TypeFactory instance = new TypeFactory();
-
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType pointerDifferenceType;
@@ -24,9 +22,8 @@ public final class TypeFactory {
         pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
     }
 
-    //TODO make this part of the program.
-    public static TypeFactory getInstance() {
-        return instance;
+    public static TypeFactory newInstance() {
+        return new TypeFactory();
     }
 
     public BooleanType getBooleanType() {

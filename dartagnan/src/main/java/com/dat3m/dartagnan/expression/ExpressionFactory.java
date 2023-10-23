@@ -8,17 +8,29 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public final class ExpressionFactory {
 
-    private final TypeFactory types = TypeFactory.getInstance();
-    private final BooleanType booleanType = types.getBooleanType();
-    private final BConst falseConstant = new BConst(booleanType, false);
-    private final BConst trueConstant = new BConst(booleanType, true);
+    private final TypeFactory types;
+    private final BooleanType booleanType;
+    private final BConst falseConstant;
+    private final BConst trueConstant;
 
-    private ExpressionFactory() {}
+    private ExpressionFactory(TypeFactory typeFactory) {
+        types = checkNotNull(typeFactory);
+        booleanType = types.getBooleanType();
+        falseConstant = new BConst(booleanType, false);
+        trueConstant = new BConst(booleanType, true);
 
-    public static ExpressionFactory newInstance() {
-        return new ExpressionFactory();
+    }
+
+    public static ExpressionFactory newInstance(TypeFactory types) {
+        return new ExpressionFactory(types);
+    }
+
+    public TypeFactory getTypeFactory() {
+        return types;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -72,7 +84,7 @@ public final class ExpressionFactory {
             return makeConstruct(zeroes);
         } else if (type instanceof IntegerType intType) {
             return makeZero(intType);
-        } else if (type == booleanType) {
+        } else if (type instanceof BooleanType) {
             return makeFalse();
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);

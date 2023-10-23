@@ -1,10 +1,9 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -35,8 +34,8 @@ public class MemoryObject extends IConst {
 
     private final HashMap<Integer, Expression> initialValues = new HashMap<>();
 
-    MemoryObject(int index, int size, boolean isStaticallyAllocated) {
-        super(TypeFactory.getInstance().getArchType());
+    MemoryObject(int index, IntegerType addressType, int size, boolean isStaticallyAllocated) {
+        super(addressType);
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;
@@ -72,12 +71,6 @@ public class MemoryObject extends IConst {
      * @param offset Non-negative number of fields before the target.
      * @return Readable value at the start of each execution.
      */
-    public Expression getInitialValueOrZero(int offset, ExpressionFactory expressions) {
-        checkArrayBounds(offset);
-        final Expression value = initialValues.get(offset);
-        return value != null ? value : expressions.makeZero(TypeFactory.getInstance().getArchType());
-    }
-
     public Optional<Expression> getInitialValue(int offset) {
         checkArrayBounds(offset);
         return Optional.ofNullable(initialValues.get(offset));

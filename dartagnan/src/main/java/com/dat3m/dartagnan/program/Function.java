@@ -59,7 +59,8 @@ public class Function implements Expression {
 
     @Override
     public Type getType() {
-        return TypeFactory.getInstance().getArchType();
+        final TypeFactory types = program.getEventFactory().getExpressionFactory().getTypeFactory();
+        return types.getArchType();
     }
 
     public String getName() { return this.name; }

@@ -13,13 +13,11 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
  */
 public class Init extends Store {
 
-    private final ExpressionFactory expressions;
     private final MemoryObject base;
     private final int offset;
 
     public Init(MemoryObject b, int o, Expression address, ExpressionFactory expressionFactory) {
-        super(address, b.getInitialValueOrZero(o, expressionFactory));
-        expressions = expressionFactory;
+        super(address, b.getInitialValue(o).orElse(expressionFactory.makeZero(expressionFactory.getTypeFactory().getArchType())));
         base = b;
         offset = o;
         addTags(Tag.INIT);
@@ -49,16 +47,13 @@ public class Init extends Store {
      * @return Content of the location at the start of each execution.
      */
     public Expression getValue() {
-        return base.getInitialValueOrZero(offset, expressions);
+        return getMemValue();
     }
 
     @Override
     public String defaultString() {
         return String.format("%s[%d] := %s", base, offset, getValue());
     }
-
-    @Override
-    public Expression getMemValue() { return getValue(); }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {

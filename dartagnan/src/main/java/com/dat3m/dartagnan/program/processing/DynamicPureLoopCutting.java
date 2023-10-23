@@ -121,10 +121,11 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         final List<Event> sideEffects = iter.sideEffects;
 
         final List<Register> trackingRegs = new ArrayList<>();
-        final Type type = TypeFactory.getInstance().getBooleanType();
         Event insertionPoint = iterInfo.getIterationEnd();
         final EventFactory eventFactory = insertionPoint.getFunction().getProgram().getEventFactory();
         final ExpressionFactory expressionFactory = eventFactory.getExpressionFactory();
+        final TypeFactory typeFactory = expressionFactory.getTypeFactory();
+        final Type type = typeFactory.getBooleanType();
         for (int i = 0; i < sideEffects.size(); i++) {
             final Event sideEffect = sideEffects.get(i);
             final Register trackingReg = func.newRegister(String.format("Loop%s_%s_%s", loopNumber, iterNumber, i), type);

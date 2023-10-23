@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -41,8 +42,10 @@ public class MemoryAllocation implements ProgramProcessor {
 
     private void processAllocations(Program program) {
         final EventFactory eventFactory = program.getEventFactory();
+        final TypeFactory types = eventFactory.getExpressionFactory().getTypeFactory();
+        final IntegerType addressType = (IntegerType) types.getPointerType();
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc), false);
+            final MemoryObject allocatedObject = program.getMemory().allocate(addressType, getSize(alloc, types), false);
             final Local local = eventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);
@@ -52,7 +55,7 @@ public class MemoryAllocation implements ProgramProcessor {
         }
     }
 
-    private int getSize(Alloc alloc) {
+    private int getSize(Alloc alloc, TypeFactory types) {
         int count;
         try {
             count = alloc.getArraySize().reduce().getValueAsInt();
@@ -60,7 +63,7 @@ public class MemoryAllocation implements ProgramProcessor {
             final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
             throw new MalformedProgramException(error);
         }
-        return count * TypeFactory.getInstance().getMemorySizeInBytes(alloc.getAllocationType());
+        return count * types.getMemorySizeInBytes(alloc.getAllocationType());
     }
 
     public void moveAndAlignMemoryObjects(Memory memory) {
@@ -87,7 +90,7 @@ public class MemoryAllocation implements ProgramProcessor {
     private void createInitEvents(Program program) {
         final EventFactory eventFactory = program.getEventFactory();
         final boolean isLitmus = program.getFormat() == Program.SourceLanguage.LITMUS;
-        final TypeFactory types = TypeFactory.getInstance();
+        final TypeFactory types = eventFactory.getExpressionFactory().getTypeFactory();
         final FunctionType initThreadType = types.getFunctionType(types.getVoidType(), List.of());
 
         int nextThreadId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())

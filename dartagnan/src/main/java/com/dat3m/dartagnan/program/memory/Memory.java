@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.memory;
 
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
@@ -16,16 +17,16 @@ public class Memory {
      * @return
      * Points to the created location.
      */
-    public MemoryObject allocate(int size, boolean isStatic) {
+    public MemoryObject allocate(IntegerType addressType, int size, boolean isStatic) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        MemoryObject address = new MemoryObject(nextIndex++, size, isStatic);
+        MemoryObject address = new MemoryObject(nextIndex++, addressType, size, isStatic);
         objects.add(address);
         return address;
     }
 
-    public VirtualMemoryObject allocateVirtual(int size, boolean isStatic, boolean generic, VirtualMemoryObject alias) {
+    public VirtualMemoryObject allocateVirtual(IntegerType addressType, int size, boolean isStatic, boolean generic, VirtualMemoryObject alias) {
         Preconditions.checkArgument(size > 0, "Illegal malloc. Size must be positive");
-        VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, size, isStatic, generic, alias);
+        VirtualMemoryObject address = new VirtualMemoryObject(nextIndex++, addressType, size, isStatic, generic, alias);
         objects.add(address);
         return address;
     }

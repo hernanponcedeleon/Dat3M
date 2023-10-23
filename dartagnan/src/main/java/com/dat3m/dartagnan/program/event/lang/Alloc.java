@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -31,7 +30,6 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private boolean isHeapAllocation;
 
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation) {
-        Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getArchType());
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
         this.resultRegister = resultRegister;
         this.arraySize = arraySize;

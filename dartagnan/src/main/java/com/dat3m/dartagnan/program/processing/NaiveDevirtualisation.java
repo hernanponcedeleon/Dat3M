@@ -109,8 +109,9 @@ public class NaiveDevirtualisation implements ProgramProcessor {
     }
 
     private boolean assignAddressToFunction(Function func, Map<Function, IValue> func2AddressMap) {
-        final IntegerType ptrType = TypeFactory.getInstance().getArchType();
         final ExpressionFactory expressions = func.getProgram().getEventFactory().getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
+        final IntegerType ptrType = types.getArchType();
         if (!func2AddressMap.containsKey(func)) {
             logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
             func2AddressMap.put(func, expressions.makeValue(nextAvailableFuncAddress, ptrType));
@@ -207,7 +208,8 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             possibleTargets = func2AddressMap.keySet().stream()
                     .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
         } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            final TypeFactory types = TypeFactory.getInstance();
+            final TypeFactory types = call.getFunction().getProgram().getEventFactory().getExpressionFactory()
+                    .getTypeFactory();
             final Type ptrType = types.getPointerType();
             final Type threadType = types.getFunctionType(ptrType, List.of(ptrType));
             possibleTargets = func2AddressMap.keySet().stream()

@@ -31,15 +31,16 @@ import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 
 class VisitorBase<F extends EventFactory> implements EventVisitor<List<Event>> {
 
-    protected final TypeFactory types = TypeFactory.getInstance();
     protected final F eventFactory;
     protected final ExpressionFactory expressions;
+    protected final TypeFactory types;
 
     protected Function funcToBeCompiled;
 
     protected VisitorBase(F eventFactory) {
         this.eventFactory = eventFactory;
-        this.expressions = eventFactory.getExpressionFactory();
+        expressions = eventFactory.getExpressionFactory();
+        types = expressions.getTypeFactory();
     }
 
     protected Event newTerminator(Expression guard) {

@@ -37,10 +37,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class ProgramBuilder {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
-    private static final FunctionType DEFAULT_THREAD_TYPE =
-            types.getFunctionType(types.getVoidType(), List.of());
-
     private final Map<Integer, Function> id2FunctionsMap = new HashMap<>();
     private final Map<Integer, Map<String, Label>> fid2LabelsMap = new HashMap<>();
     private final Map<String, MemoryObject> locations = new HashMap<>();
@@ -48,6 +44,10 @@ public class ProgramBuilder {
     private final Program program;
     private final EventFactory events;
     private final ExpressionFactory expressions;
+    private final TypeFactory types;
+    private final IntegerType addressType;
+    private final FunctionType defaultThreadType;
+    private final Expression zero;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
@@ -55,6 +55,10 @@ public class ProgramBuilder {
         this.program = new Program(new Memory(), format);
         this.events = program.getEventFactory();
         this.expressions = events.getExpressionFactory();
+        this.types = expressions.getTypeFactory();
+        this.addressType = (IntegerType) types.getPointerType();
+        this.defaultThreadType = types.getFunctionType(types.getVoidType(), List.of());
+        this.zero = expressions.makeZero(types.getArchType());
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -125,7 +129,7 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
-        final Thread thread = new Thread(name, DEFAULT_THREAD_TYPE, List.of(), tid, events.newThreadStart(null));
+        final Thread thread = new Thread(name, defaultThreadType, List.of(), tid, events.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
         return thread;
@@ -182,7 +186,8 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewMemoryObject(String name) {
-        final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
+        final MemoryObject mem = locations.computeIfAbsent(name,
+                k -> program.getMemory().allocate(addressType, 1, true));
         mem.setCVar(name);
         return mem;
     }
@@ -190,7 +195,7 @@ public class ProgramBuilder {
     public MemoryObject newMemoryObject(String name, int size) {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
-        final MemoryObject mem = program.getMemory().allocate(size, true);
+        final MemoryObject mem = program.getMemory().allocate(addressType, size, true);
         mem.setCVar(name);
         locations.put(name, mem);
         return mem;
@@ -209,11 +214,11 @@ public class ProgramBuilder {
     }
 
     public void initLocEqLocVal(String leftName, String rightName){
-        initLocEqConst(leftName, getInitialValue(rightName));
+        initLocEqConst(leftName, getOrNewMemoryObject(rightName).getInitialValue(0).orElse(zero));
     }
 
     public void initLocEqConst(String locName, Expression iValue){
-        getOrNewMemoryObject(locName).setInitialValue(0,iValue);
+        getOrNewMemoryObject(locName).setInitialValue(0, iValue);
     }
 
     public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
@@ -224,15 +229,11 @@ public class ProgramBuilder {
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, events.newLocal(reg, getInitialValue(locName)));
+        addChild(regThread, events.newLocal(reg, getOrNewMemoryObject(locName).getInitialValue(0).orElse(zero)));
     }
 
     public void initRegEqConst(int regThread, String regName, IConst iValue){
         addChild(regThread, events.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
-    }
-
-    private Expression getInitialValue(String name) {
-        return getOrNewMemoryObject(name).getInitialValue(0).orElseGet(() -> expressions.makeZero(types.getArchType()));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -280,9 +281,9 @@ public class ProgramBuilder {
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
         ThreadStart threadEntry = events.newThreadStart(null);
         Thread scopedThread = switch (arch) {
-            case PTX -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
+            case PTX -> new Thread(name, defaultThreadType, List.of(), id, threadEntry,
                     ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());
-            case VULKAN -> new Thread(name, DEFAULT_THREAD_TYPE, List.of(), id, threadEntry,
+            case VULKAN -> new Thread(name, defaultThreadType, List.of(), id, threadEntry,
                     ScopeHierarchy.ScopeHierarchyForVulkan(scopeIds[0], scopeIds[1], scopeIds[2]), new HashSet<>());
             default -> throw new UnsupportedOperationException("Unsupported architecture: " + arch);
         };
@@ -295,8 +296,8 @@ public class ProgramBuilder {
     }
 
     public void initVirLocEqCon(String leftName, IConst iValue){
-        MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
+        final MemoryObject object = locations.computeIfAbsent(
+                leftName, k->program.getMemory().allocateVirtual(addressType, 1, true, true, null));
         object.setCVar(leftName);
         object.setInitialValue(0, iValue);
     }
@@ -307,9 +308,9 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(1, true, true, null));
+                k -> program.getMemory().allocateVirtual(addressType, 1, true, true, null));
         object.setCVar(leftName);
-        object.setInitialValue(0, rightLocation.getInitialValueOrZero(0, expressions));
+        object.setInitialValue(0, rightLocation.getInitialValue(0).orElse(zero));
     }
 
     public void initVirLocEqLocAliasGen(String leftName, String rightName){
@@ -318,9 +319,9 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(1, true, true, rightLocation));
+                k -> program.getMemory().allocateVirtual(addressType, 1, true, true, rightLocation));
         object.setCVar(leftName);
-        object.setInitialValue(0, rightLocation.getInitialValueOrZero(0, expressions));
+        object.setInitialValue(0, rightLocation.getInitialValue(0).orElse(zero));
     }
 
     public void initVirLocEqLocAliasProxy(String leftName, String rightName){
@@ -328,10 +329,10 @@ public class ProgramBuilder {
         if (rightLocation == null) {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
-        MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
+        MemoryObject object = locations.computeIfAbsent(leftName,
+                k -> program.getMemory().allocateVirtual(addressType, 1, true, false, rightLocation));
         object.setCVar(leftName);
-        object.setInitialValue(0, rightLocation.getInitialValueOrZero(0, expressions));
+        object.setInitialValue(0, rightLocation.getInitialValue(0).orElse(zero));
     }
 
     // ----------------------------------------------------------------------------------------------------------------

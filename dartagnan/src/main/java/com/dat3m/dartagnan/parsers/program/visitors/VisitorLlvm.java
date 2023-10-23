@@ -40,11 +40,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // Global context
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
-    private final TypeFactory types = TypeFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
-    private final IntegerType integerType = types.getArchType();
     private final EventFactory.Llvm eventFactory = program.getEventFactory().withLlvm();
     private final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+    private final TypeFactory types = expressions.getTypeFactory();
+    private final Type pointerType = types.getPointerType();
+    private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
     private final Map<String, Type> typeMap = new HashMap<>();
@@ -239,8 +239,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public void visitGlobalDeclaration(GlobalDefContext ctx) {
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
-        final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
-        final MemoryObject globalObject = program.getMemory().allocate(size, true);
+        final Type type = parseType(ctx.type());
+        final int size = types.getMemorySizeInBytes(type);
+        final MemoryObject globalObject = program.getMemory().allocate((IntegerType) pointerType, size, true);
         globalObject.setCVar(name);
         if (ctx.threadLocal() != null) {
             globalObject.setIsThreadLocal(true);

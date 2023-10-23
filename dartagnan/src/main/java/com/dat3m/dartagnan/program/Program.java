@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -39,7 +40,7 @@ public class Program {
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
-        this.eventFactory = EventFactory.newInstance(ExpressionFactory.newInstance());
+        this.eventFactory = EventFactory.newInstance(ExpressionFactory.newInstance(TypeFactory.newInstance()));
     }
 
     public SourceLanguage getFormat() {

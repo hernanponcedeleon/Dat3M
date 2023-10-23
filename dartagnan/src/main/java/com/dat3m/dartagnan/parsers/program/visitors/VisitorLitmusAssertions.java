@@ -85,6 +85,6 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
         checkState(base != null, "uninitialized location %s", name);
         TerminalNode offset = ctx.DigitSequence();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
-        return right && offset == null ? base : new Location(name, base, o);
+        return right && offset == null ? base : new Location(name, archType, base, o);
     }
 }

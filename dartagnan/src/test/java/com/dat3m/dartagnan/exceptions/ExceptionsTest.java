@@ -23,8 +23,6 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 
 public class ExceptionsTest {
 
-    private static final TypeFactory types = TypeFactory.getInstance();
-
     @Test(expected = MalformedProgramException.class)
     public void noThread() {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
@@ -34,8 +32,9 @@ public class ExceptionsTest {
 
     @Test(expected = MalformedProgramException.class)
     public void RegisterAlreadyExist() {
-        ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        Thread t = pb.newThread(0);
+        final ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        final TypeFactory types = pb.getTypeFactory();
+        final Thread t = pb.newThread(0);
         t.newRegister("r1", types.getIntegerType());
         // Adding same register a second time
         t.newRegister("r1", types.getIntegerType());
@@ -55,6 +54,7 @@ public class ExceptionsTest {
     public void diffPrecisionInt() {
         final Program program = new Program(new Memory(), SourceLanguage.LITMUS);
         final ExpressionFactory expressions = program.getEventFactory().getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         // Both arguments should have same precision
         Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
         Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));

@@ -41,7 +41,6 @@ public class GEPToAddition implements ProgramProcessor {
 
     private static final class GEPToAdditionTransformer extends ExprTransformer {
 
-        private final TypeFactory types = TypeFactory.getInstance();
         private final IntegerType archType = types.getArchType();
 
         private GEPToAdditionTransformer(ExpressionFactory expressions) {

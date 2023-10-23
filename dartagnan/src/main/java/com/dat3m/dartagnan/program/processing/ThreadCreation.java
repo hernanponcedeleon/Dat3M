@@ -82,9 +82,10 @@ public class ThreadCreation implements ProgramProcessor {
             return;
         }
 
-        final TypeFactory types = TypeFactory.getInstance();
         final EventFactory eventFactory = program.getEventFactory();
         final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
+        final IntegerType addressType = (IntegerType) types.getPointerType();
         final IntegerType archType = types.getArchType();
 
         final Optional<Function> main = program.getFunctionByName("main");
@@ -125,7 +126,7 @@ public class ThreadCreation implements ProgramProcessor {
 
                         final ThreadCreate createEvent = eventFactory.newThreadCreate(List.of(argument));
                         final IValue tidExpr = expressions.makeValue(nextTid, archType);
-                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
+                        final MemoryObject comAddress = program.getMemory().allocate(addressType, 1, true);
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
                         final List<Event> replacement = eventSequence(
@@ -172,9 +173,9 @@ public class ThreadCreation implements ProgramProcessor {
         Each candidate thread gets a switch-case which tries to synchronize with that thread.
      */
     private void handlePthreadJoins(Thread thread, Map<IValue, Expression> tid2ComAddrMap) {
-        final TypeFactory types = TypeFactory.getInstance();
         final EventFactory eventFactory = thread.getProgram().getEventFactory();
         final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         int joinCounter = 0;
 
         for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
@@ -252,9 +253,10 @@ public class ThreadCreation implements ProgramProcessor {
     }
 
     private Thread createThreadFromFunction(Function function, int tid, ThreadCreate creator, Expression comAddr) {
-        final TypeFactory types = TypeFactory.getInstance();
         final EventFactory eventFactory = function.getProgram().getEventFactory();
         final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
+        final IntegerType addressType = (IntegerType) types.getPointerType();
 
         // ------------------- Create new thread -------------------
         final ThreadStart start = eventFactory.newThreadStart(creator);
@@ -347,12 +349,13 @@ public class ThreadCreation implements ProgramProcessor {
         final ExprTransformer transformer = new ExprTransformer(expressions) {
             @Override
             public Expression visit(MemoryObject memObj) {
+                final Expression zero = expressions.makeZero(types.getArchType());
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
-                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
+                    final MemoryObject threadLocalCopy = memory.allocate(addressType, memObj.size(), true);
                     final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
                     threadLocalCopy.setCVar(varName);
                     for (int i = 0; i < memObj.size(); i++) {
-                        threadLocalCopy.setInitialValue(i, memObj.getInitialValueOrZero(i, expressions));
+                        threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i).orElse(zero));
                     }
                     global2ThreadLocal.put(memObj, threadLocalCopy);
                 }

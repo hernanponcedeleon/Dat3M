@@ -135,7 +135,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         }
         if(ctx.initArray() != null){
             if(size == null || ctx.initArray().arrayElement().size() == size){
-                List<Expression> values = new ArrayList<>();
+                final Expression zero = expressions.makeZero(archType);
+                final List<Expression> values = new ArrayList<>();
                 for(LitmusCParser.ArrayElementContext elCtx : ctx.initArray().arrayElement()){
                     if(elCtx.constant() != null){
                         values.add(expressions.parseValue(elCtx.constant().getText(), archType));
@@ -147,7 +148,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                             values.add(object);
                         } else {
                             object = programBuilder.getOrNewMemoryObject(varName);
-                            values.add(elCtx.Ast() == null ? object : object.getInitialValueOrZero(0, expressions));
+                            values.add(elCtx.Ast() == null ? object : object.getInitialValue(0).orElse(zero));
                         }
                     }
                 }

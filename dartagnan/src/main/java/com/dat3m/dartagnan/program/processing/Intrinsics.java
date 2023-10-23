@@ -49,10 +49,9 @@ public class Intrinsics {
 
     private final EventFactory eventFactory;
     private final ExpressionFactory expressions;
+    private final TypeFactory types;
 
     private enum AssertionType { USER, OVERFLOW, INVALIDDEREF }
-
-    private static final TypeFactory types = TypeFactory.getInstance();
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
@@ -64,6 +63,7 @@ public class Intrinsics {
         factory = f;
         eventFactory = e;
         expressions = e.getExpressionFactory();
+        types = expressions.getTypeFactory();
     }
 
     public static Factory fromConfig(Configuration config) throws InvalidConfigurationException {
@@ -310,6 +310,7 @@ public class Intrinsics {
     private static void declareNondetBool(Program program) {
         // used by VisitorLKMM
         if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
+            final TypeFactory types = program.getEventFactory().getExpressionFactory().getTypeFactory();
             final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
             //TODO this id will not be unique
             program.addFunction(new Function("__VERIFIER_nondet_bool", type, List.of(), 0, null));
@@ -878,7 +879,7 @@ public class Intrinsics {
         final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression totalSize = call.getArguments().get(0);
         return List.of(
-                eventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                eventFactory.newAlloc(resultRegister, types.getByteType(), totalSize, true)
         );
     }
 
@@ -888,7 +889,7 @@ public class Intrinsics {
         final Expression elementSize = call.getArguments().get(1);
         final Expression totalSize = expressions.makeMUL(elementCount, elementSize);
         return List.of(
-                eventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                eventFactory.newAlloc(resultRegister, types.getByteType(), totalSize, true)
         );
     }
 
@@ -1314,6 +1315,7 @@ public class Intrinsics {
     // Handles both std.memcpy and llvm.memcpy
     private List<Event> inlineMemCpy(FunctionCall call) {
         final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
         final Expression src = call.getArguments().get(1);
@@ -1349,6 +1351,7 @@ public class Intrinsics {
 
     private List<Event> inlineMemCmp(FunctionCall call) {
         final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final Function caller = call.getFunction();
         final Expression src1 = call.getArguments().get(0);
         final Expression src2 = call.getArguments().get(1);
@@ -1387,6 +1390,7 @@ public class Intrinsics {
     // Handles, std.memset, llvm.memset and __memset_chk (checked memset)
     private List<Event> inlineMemSet(FunctionCall call) {
         final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final Expression dest = call.getArguments().get(0);
         final Expression fillExpr = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);

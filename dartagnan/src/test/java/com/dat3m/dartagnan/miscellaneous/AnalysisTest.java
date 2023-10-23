@@ -43,13 +43,12 @@ public class AnalysisTest {
     private static final Result MAY = Result.MAY;
     private static final Result MUST = Result.MUST;
 
-    private static final TypeFactory types = TypeFactory.getInstance();
-
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
@@ -117,6 +116,7 @@ public class AnalysisTest {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final Expression zero = expressions.makeZero(types.getArchType());
         final MemoryObject x = b.newMemoryObject("x", 2);
         final MemoryObject y = b.newMemoryObject("y", 1);
@@ -169,6 +169,7 @@ public class AnalysisTest {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final MemoryObject x = b.newMemoryObject("x", 3);
         final Expression zero = expressions.makeZero(types.getArchType());
         x.setInitialValue(0, x);
@@ -218,6 +219,7 @@ public class AnalysisTest {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final IntegerType type = types.getArchType();
         final Expression zero = expressions.makeZero(type);
         final MemoryObject x = b.newMemoryObject("x", 3);
@@ -279,6 +281,7 @@ public class AnalysisTest {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final MemoryObject x = b.newMemoryObject("x", 3);
         final Expression zero = expressions.makeZero(types.getArchType());
         x.setInitialValue(0, x);
@@ -328,6 +331,7 @@ public class AnalysisTest {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final MemoryObject x = b.newMemoryObject("x", 1);
         final MemoryObject y = b.newMemoryObject("y", 1);
         final MemoryObject z = b.newMemoryObject("z", 1);
@@ -376,6 +380,7 @@ public class AnalysisTest {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         final EventFactory events = b.getEventFactory();
         final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = expressions.getTypeFactory();
         final MemoryObject x = b.newMemoryObject("x", 1);
         final MemoryObject y = b.newMemoryObject("y", 1);
         final MemoryObject z = b.newMemoryObject("z", 1);
