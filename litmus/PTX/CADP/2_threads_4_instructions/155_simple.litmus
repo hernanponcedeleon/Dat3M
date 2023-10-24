@@ -1,0 +1,20 @@
+PTX 155_simple
+"https://github.com/tyler-utah/AlloyForwardProgress/blob/master/artifact/cadp/2_threads_4_instructions/alloy_output/155/155_simple.txt"
+{
+Mem0=0;
+Mem1=0;
+P0:r0=0;
+P1:r1=0;
+P1:r2=0;
+}
+P0@cta 0,gpu 0                         | P1@cta 0,gpu 0                         ;
+LC00:                                  | LC10:                                  ;
+atom.relaxed.gpu.exch r0, Mem1, 1      | ld.relaxed.gpu r1, Mem0                ;
+bne r0, 0, LC01                        | bne r1, 0, LC11                        ;
+goto LC00                              | goto LC10                              ;
+LC01:                                  | LC11:                                  ;
+st.relaxed.gpu Mem0, 1                 | atom.relaxed.gpu.exch r2, Mem1, 0      ;
+LC02:                                  | bne r2, 1, LC12                        ;
+                                       | goto LC11                              ;
+                                       | LC12:                                  ;
+exists 0==0

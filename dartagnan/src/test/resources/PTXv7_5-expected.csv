@@ -120,6 +120,10 @@ litmus/PTX/Manual/MP-dlb-no-fence-2.litmus,1
 litmus/PTX/Manual/LB-dlb.litmus,0
 litmus/PTX/Manual/LB-dlb-no-fence-1.litmus,1
 litmus/PTX/Manual/LB-dlb-no-fence-2.litmus,1
+litmus/PTX/Manual/SL-cas-plus.litmus,0
+litmus/PTX/Manual/SL-cas-minus.litmus,1
+litmus/PTX/Manual/SL-future-plus.litmus,0
+litmus/PTX/Manual/SL-future-minus.litmus,1
 litmus/PTX/Nvidia/SB+bar-dyn-reg-const.litmus,0
 litmus/PTX/Nvidia/SB+bar-sta-reg-const.litmus,1
 litmus/PTX/Manual/CoWW-weak.litmus,1

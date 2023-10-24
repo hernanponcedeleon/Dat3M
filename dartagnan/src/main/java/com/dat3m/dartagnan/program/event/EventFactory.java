@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
@@ -703,6 +704,13 @@ public class EventFactory {
         public static PTXAtomCAS newAtomCAS(Expression address, Register register, Expression expected,
                 Expression value, String mo, String scope) {
             PTXAtomCAS atom = new PTXAtomCAS(register, address, expected, value, mo);
+            atom.addTags(scope);
+            return atom;
+        }
+
+        public static PTXAtomExch newAtomExch(Expression address, Register register,
+                                            Expression value, String mo, String scope) {
+            PTXAtomExch atom = new PTXAtomExch(register, address, value, mo);
             atom.addTags(scope);
             return atom;
         }
