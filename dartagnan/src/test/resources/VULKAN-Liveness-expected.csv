@@ -68,3 +68,6 @@ litmus/VULKAN/Liveness/3_threads_4_instructions/101_simple.litmus,1
 litmus/VULKAN/Liveness/3_threads_4_instructions/102_simple.litmus,1
 litmus/VULKAN/Liveness/3_threads_4_instructions/103_simple.litmus,1
 litmus/VULKAN/Liveness/3_threads_4_instructions/104_simple.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,1
+litmus/VULKAN/Manual/XF-Barrier-weak.litmus,0
