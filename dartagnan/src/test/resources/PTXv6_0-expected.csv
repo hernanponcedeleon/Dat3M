@@ -61,3 +61,7 @@ litmus/PTX/Manual/CoWW-weak.litmus,1
 litmus/PTX/Manual/XF-Barrier-relacq.litmus,0
 litmus/PTX/Manual/XF-Barrier-rlx.litmus,1
 litmus/PTX/Manual/XF-Barrier-weak.litmus,1
+litmus/PTX/Manual/SL-cas+plus.litmus,0
+litmus/PTX/Manual/SL-cas-minus.litmus,1
+litmus/PTX/Manual/SL-future+plus.litmus,0
+litmus/PTX/Manual/SL-future-minus.litmus,1
