@@ -158,10 +158,14 @@ litmus/RISCV/SB+popar+poarar+NEW.litmus
 litmus/RISCV/SB+popar+poarp+NEW.litmus
 litmus/RISCV/SB+popars+NEW.litmus
 litmus/RISCV/SB+porlps+NEW.litmus
+
+// The following tests have spinloops which are not side-effect-free (due to the use of Exch) and thus we cannot verify their liveness
 litmus/PTX/Liveness/2_threads_4_instructions/62_simple.litmus
 litmus/PTX/Liveness/2_threads_4_instructions/63_simple.litmus
 litmus/PTX/Liveness/2_threads_4_instructions/100_simple.litmus
 litmus/PTX/Liveness/2_threads_4_instructions/101_simple.litmus
+litmus/PTX/Liveness/2_threads_4_instructions/124_simple.litmus,1
+litmus/PTX/Liveness/2_threads_4_instructions/125_simple.litmus,1
 litmus/PTX/Liveness/2_threads_4_instructions/128_simple.litmus
 litmus/PTX/Liveness/2_threads_4_instructions/129_simple.litmus
 litmus/PTX/Liveness/2_threads_4_instructions/130_simple.litmus
