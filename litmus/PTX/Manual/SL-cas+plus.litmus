@@ -1,4 +1,4 @@
-PTX SL-cas+plus
+PTX SL-cas-plus
 "Adapted from Figure 9 in
 GPU Concurrency: Weak Behaviours and Programming Assumptions
 https://dl.acm.org/doi/pdf/10.1145/2694344.2694391"
