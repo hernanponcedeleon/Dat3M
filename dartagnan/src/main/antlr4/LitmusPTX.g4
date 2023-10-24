@@ -157,6 +157,7 @@ barrier
 atomInstruction
     :   atomOp
     |   atomCAS
+    |   atomExchange
     ;
 
 atomOp
@@ -165,6 +166,10 @@ atomOp
 
 atomCAS
     :   atom Period mo Period scope Period Cas register Comma location Comma value Comma value
+    ;
+
+atomExchange
+    :   atom Period mo Period scope Period Exch register Comma location Comma value
     ;
 
 redInstruction
@@ -317,6 +322,7 @@ Or      :   'or';
 Xor     :   'xor';
 
 Cas     :   'cas';
+Exch    :   'exch';
 
 Proxy       :   'proxy';
 Generic     :   'generic';

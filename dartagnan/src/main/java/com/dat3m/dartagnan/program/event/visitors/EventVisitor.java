@@ -95,13 +95,14 @@ public interface EventVisitor<T> {
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
 
 	// ------------------ Std events ------------------
-	default T visitAlloc(Alloc e) { return visitEvent(e); }
+    default T visitAlloc(Alloc e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
     default T visitFenceWithId(FenceWithId e) { return visitEvent(e); }
-	default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
-	default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
-	default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }
+    default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
+    default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
+    default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }
+    default T visitPtxAtomExch(PTXAtomExch e) { return visitMemEvent(e); }
     default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
 }

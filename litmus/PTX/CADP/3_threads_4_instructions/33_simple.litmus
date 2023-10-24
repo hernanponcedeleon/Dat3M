@@ -1,0 +1,20 @@
+PTX 33_simple
+"https://github.com/tyler-utah/AlloyForwardProgress/blob/master/artifact/cadp/3_threads_4_instructions/alloy_output/33/33_simple.txt"
+{
+Mem0=0;
+P0:r0=0;
+P1:r1=0;
+P1:r2=0;
+P2:r3=0;
+}
+P0@cta 0,gpu 0                         | P1@cta 0,gpu 0                         | P2@cta 0,gpu 0                         ;
+LC00:                                  | LC10:                                  | LC20:                                  ;
+atom.relaxed.gpu.exch r0, Mem0, 0      | atom.relaxed.gpu.exch r1, Mem0, 1      | atom.relaxed.gpu.exch r3, Mem0, 1      ;
+bne r0, 0, LC01                        | bne r1, 0, LC11                        | bne r3, 1, LC21                        ;
+goto LC00                              | goto LC12                              | goto LC20                              ;
+LC01:                                  | LC11:                                  | LC21:                                  ;
+                                       | atom.relaxed.gpu.exch r2, Mem0, 0      |                                        ;
+                                       | bne r2, 1, LC12                        |                                        ;
+                                       | goto LC10                              |                                        ;
+                                       | LC12:                                  |                                        ;
+exists 0==0

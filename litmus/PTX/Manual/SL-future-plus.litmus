@@ -1,0 +1,19 @@
+PTX SL-future-plus
+"Adapted from Figure 11 in
+GPU Concurrency: Weak Behaviours and Programming Assumptions
+https://dl.acm.org/doi/pdf/10.1145/2694344.2694391"
+{
+x=0;
+m=1;
+P0:r0=0;
+P0:r1=0;
+P1:r2=0;
+}
+ P0@cta 0,gpu 0                 | P1@cta 1,gpu 0                   ;
+ ld.weak r0, x                  | atom.relaxed.cta.cas r2, m, 0, 1 ;
+ fence.sc.gpu                   | bne r2, 0, LC00                  ;
+ atom.relaxed.cta.exch r1, m, 0 | fence.sc.gpu                     ;
+                                | st.weak x, 1                     ;
+                                | LC00:                            ;
+exists
+ (P0:r0 == 1 /\ P1:r2 == 0)

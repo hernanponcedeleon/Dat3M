@@ -1,0 +1,19 @@
+PTX 55_simple
+"https://github.com/tyler-utah/AlloyForwardProgress/blob/master/artifact/cadp/2_threads_3_instructions/alloy_output/55/55_simple.txt"
+{
+Mem0=0;
+P0:r0=0;
+P1:r1=0;
+P1:r2=0;
+}
+P0@cta 0,gpu 0                         | P1@cta 0,gpu 0                         ;
+LC00:                                  | LC10:                                  ;
+atom.relaxed.gpu.exch r0, Mem0, 1      | atom.relaxed.gpu.exch r1, Mem0, 0      ;
+bne r0, 0, LC01                        | bne r1, 0, LC11                        ;
+goto LC00                              | goto LC12                              ;
+LC01:                                  | LC11:                                  ;
+                                       | atom.relaxed.gpu.exch r2, Mem0, 0      ;
+                                       | bne r2, 0, LC12                        ;
+                                       | goto LC10                              ;
+                                       | LC12:                                  ;
+exists 0==0

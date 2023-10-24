@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
+import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -246,6 +247,21 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
             throw new ParsingException("Atom instruction doesn't support mo: " + mo);
         }
         PTXAtomCAS atom = EventFactory.PTX.newAtomCAS(object, register_destination, expected, value, mo, scope);
+        atom.addTags(ctx.atom().atomProxy);
+        return programBuilder.addChild(mainThread, atom);
+    }
+
+    @Override 
+    public Object visitAtomExchange(LitmusPTXParser.AtomExchangeContext ctx) {
+        Register register_destination = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
+        MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
+        Expression value = (Expression) ctx.value().accept(this);
+        String mo = ctx.mo().content;
+        String scope = ctx.scope().content;
+        if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
+            throw new ParsingException("Atom instruction doesn't support mo: " + mo);
+        }
+        PTXAtomExch atom = EventFactory.PTX.newAtomExch(object, register_destination, value, mo, scope);
         atom.addTags(ctx.atom().atomProxy);
         return programBuilder.addChild(mainThread, atom);
     }
