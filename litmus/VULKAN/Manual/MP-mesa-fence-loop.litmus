@@ -9,7 +9,7 @@ flag=0;
  LC00:                    | st.atom.dv.sc0 data, 1 ;
  ld.atom.dv.sc0 r1, flag  | membar.rel.dv.semsc0   ;
  membar.acq.dv.semsc0     | st.atom.dv.sc0 flag, 1 ;
- bne r1, r0, LC01         |                        ;
+ bne r1, 0, LC01          |                        ;
  goto LC00                |                        ;
  LC01:                    |                        ;
  ld.atom.dv.sc0 r2, data  |                        ;
