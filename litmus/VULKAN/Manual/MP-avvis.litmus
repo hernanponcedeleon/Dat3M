@@ -1,4 +1,4 @@
-Vulkan NO-avvis
+Vulkan MP-avvis
 "Av/Vis + Rel/Acq forbids the behavior"
 {
 P1:r0=0; P1:r1=0;

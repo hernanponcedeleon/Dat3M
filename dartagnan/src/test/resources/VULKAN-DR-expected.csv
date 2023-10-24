@@ -68,3 +68,15 @@ litmus/VULKAN/DR/test6-filter.litmus,1
 litmus/VULKAN/DR/test7-filter.litmus,0
 litmus/VULKAN/DR/test9-filter.litmus,1
 litmus/VULKAN/DR/waw-filter.litmus,1
+litmus/VULKAN/Manual/ticketlock-same-wg.litmus,1
+litmus/VULKAN/Manual/ticketlock-diff-wg.litmus,0
+litmus/VULKAN/Manual/ticketlock-acq2rlx-1.litmus,1
+litmus/VULKAN/Manual/ticketlock-acq2rlx-2.litmus,0
+litmus/VULKAN/Manual/ticketlock-rel2rlx.litmus,0
+litmus/VULKAN/Manual/MP-avvis.litmus,0
+litmus/VULKAN/Manual/MP-no-avvis.litmus,0
+litmus/VULKAN/Manual/MP-mesa.litmus,1
+litmus/VULKAN/Manual/MP-mesa-load-acq.litmus,1
+litmus/VULKAN/Manual/MP-mesa-fence-loop.litmus,1
+litmus/VULKAN/Manual/MP-mesa-optimized.litmus,1
+litmus/VULKAN/Manual/CoWW-RR.litmus,0
