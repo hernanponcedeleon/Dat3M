@@ -1,9 +1,14 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.Type;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public final class GEPExpression implements Expression {
 
@@ -12,7 +17,7 @@ public final class GEPExpression implements Expression {
     private final Expression base;
     private final List<Expression> offsets;
 
-    public GEPExpression(Type t, Type e, Expression b, List<Expression> o) {
+    GEPExpression(Type t, Type e, Expression b, List<Expression> o) {
         type = t;
         indexingType = e;
         base = b;
@@ -21,6 +26,25 @@ public final class GEPExpression implements Expression {
 
     public Type getIndexingType() {
         return indexingType;
+    }
+
+    public List<Type> getIndexingTypes() {
+        List<Type> result = new ArrayList<>();
+        result.add(indexingType);
+        Type t = indexingType;
+        for (Expression offset : offsets.subList(1, offsets.size())) {
+            if (t instanceof ArrayType array) {
+                t = array.getElementType();
+            } else {
+                checkState(t instanceof AggregateType struct &&
+                        offset instanceof IValue literal &&
+                        literal.getValueAsInt() >= 0 &&
+                        literal.getValueAsInt() < struct.getDirectFields().size());
+                t = ((AggregateType) t).getDirectFields().get(((IValue) offset).getValueAsInt());
+            }
+            result.add(t);
+        }
+        return result;
     }
 
     public Expression getBaseExpression() {
