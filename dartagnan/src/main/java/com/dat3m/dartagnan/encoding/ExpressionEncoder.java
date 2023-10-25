@@ -336,6 +336,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
+    public Formula visit(NullPointer constant) {
+        return context.useIntegers ? integerFormulaManager().makeNumber(0) :
+                bitvectorFormulaManager().makeBitvector(64, 0);
+    }
+
+    @Override
     public Formula visit(GEPExpression gep) {
         final TypeFactory types = TypeFactory.getInstance();
         final List<Expression> offsetExpressions = gep.getOffsetExpressions();

@@ -101,6 +101,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
+    public Expression visit(NullPointer constant) {
+        return constant;
+    }
+
+    @Override
     public Expression visit(GEPExpression getElementPointer) {
         Expression base = getElementPointer.getBaseExpression().accept(this);
         final var offsets = new ArrayList<Expression>();

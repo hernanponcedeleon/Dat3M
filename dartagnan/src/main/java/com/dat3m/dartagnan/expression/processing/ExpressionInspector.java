@@ -73,4 +73,5 @@ public interface ExpressionInspector extends ExpressionVisitor<Expression>{
     default Expression visit(Register reg) { return reg; }
     default Expression visit(MemoryObject address) { return address; }
     default Expression visit(Function function) { return function; }
+    default Expression visit(NullPointer constant) { return constant; }
 }

@@ -16,6 +16,7 @@ public final class ExpressionFactory {
     private final BooleanType booleanType = types.getBooleanType();
     private final BConst falseConstant = new BConst(booleanType, false);
     private final BConst trueConstant = new BConst(booleanType, true);
+    private final NullPointer nullPointer = new NullPointer(types.getPointerType());
 
     private ExpressionFactory() {}
 
@@ -72,6 +73,8 @@ public final class ExpressionFactory {
                 zeroes.add(makeGeneralZero(fieldType));
             }
             return makeConstruct(zeroes);
+        } else if (type instanceof PointerType) {
+            return makeNullPointer();
         } else if (type instanceof IntegerType intType) {
             return makeZero(intType);
         } else if (type == booleanType) {
@@ -240,6 +243,10 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Pointers
+
+    public NullPointer makeNullPointer() {
+        return nullPointer;
+    }
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
         //TODO getPointerType()
