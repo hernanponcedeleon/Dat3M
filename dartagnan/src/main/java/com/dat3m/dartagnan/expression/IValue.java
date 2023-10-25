@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;
 
+import static com.google.common.base.Preconditions.checkState;
+
 /**
  * Immutable constant integer values.
  */
@@ -22,7 +24,9 @@ public final class IValue extends IExpr {
     }
 
     public int getValueAsInt() {
-        return getValue().intValue();
+        int result = value.intValue();
+        checkState(BigInteger.valueOf(result).equals(value), "Integer bit length exceeded by %s", value);
+        return result;
     }
 
     public boolean isOne() { return value.equals(BigInteger.ONE); }
