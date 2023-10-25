@@ -35,6 +35,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private int currentThread;
     private int scope;
     private int ifId = 0;
+    private int whileId = 0;
     private Register returnRegister;
 
     public VisitorLitmusC(){
@@ -221,6 +222,26 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if(ctx.elseExpression() != null){
             ctx.elseExpression().accept(this);
         }
+        programBuilder.addChild(currentThread, endL);
+        return null;
+    }
+
+	@Override
+    public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
+        Expression expr = (Expression) ctx.re().accept(this);
+
+        whileId++;
+        Label headL = programBuilder.getOrCreateLabel(currentThread,"head_" + whileId);
+        Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + whileId);
+
+        programBuilder.addChild(currentThread, headL);
+        CondJump breakEvent = EventFactory.newJumpUnless(expr, endL);
+        programBuilder.addChild(currentThread, breakEvent);
+
+        for(LitmusCParser.ExpressionContext expressionContext : ctx.expression()) {
+            expressionContext.accept(this);
+        }
+
         programBuilder.addChild(currentThread, endL);
         return null;
     }

@@ -1,0 +1,22 @@
+C TSan
+
+{}
+
+P0 (atomic_int* x) {
+  int r0 = atomic_load_explicit(x, memory_order_relaxed);
+  int r1 = atomic_load_explicit(x, memory_order_relaxed);
+}
+
+P1 (atomic_int* x, int* y) {
+  *y = atomic_load_explicit(x, memory_order_relaxed);
+  while(atomic_compare_exchange_strong_explicit(x, y, *y, memory_order_relaxed, memory_order_relaxed) == 0) {}
+  atomic_store_explicit(x, 1, memory_order_relaxed);
+}
+
+P2 (atomic_int* x, int* a) {
+  *a = atomic_load_explicit(x, memory_order_relaxed);
+  while(atomic_compare_exchange_strong_explicit(x, a, *a, memory_order_relaxed, memory_order_relaxed) == 0) {}
+  atomic_store_explicit(x, 2, memory_order_relaxed);
+}
+
+exists (0:r0=2 /\ 0:r1=0)
