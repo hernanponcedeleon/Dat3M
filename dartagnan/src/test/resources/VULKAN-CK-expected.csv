@@ -103,6 +103,7 @@ litmus/VULKAN/Kronos-Group/releaseseq3.litmus,1
 litmus/VULKAN/Kronos-Group/releaseseq4.litmus,1
 litmus/VULKAN/Kronos-Group/samethread.litmus,1
 litmus/VULKAN/Kronos-Group/samethread2.litmus,1
+litmus/VULKAN/Kronos-Group/scnottransitive.litmus,1
 litmus/VULKAN/Kronos-Group/scopeaccum.litmus,1
 litmus/VULKAN/Kronos-Group/ssw0.litmus,1
 litmus/VULKAN/Kronos-Group/ssw1.litmus,1

@@ -1,5 +1,6 @@
 Vulkan noncohandatom
 "Mixing atomics and noncoherent/private load/store in the same thread"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/noncohandatom.test"
 {
 P0:r0=0;
 P0:r1=0;

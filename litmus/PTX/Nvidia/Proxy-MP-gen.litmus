@@ -1,5 +1,6 @@
 PTX Proxy-MP-gen
 "MP with generic operations"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

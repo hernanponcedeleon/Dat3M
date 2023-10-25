@@ -1,5 +1,6 @@
 VULKAN asmo
 "Test that threads 3 and 4 can't read updates to x in conflicting order"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/asmo.test"
 {
 P2:r0=0;
 P2:r1=0;

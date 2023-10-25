@@ -1,4 +1,5 @@
 Vulkan scopeaccum
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/scopeaccum.test"
 {
 P2:r0=0;
 x=0;

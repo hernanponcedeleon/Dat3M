@@ -1,5 +1,6 @@
 Vulkan privpo
 "Pass: private memory accesses still obey program-order"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/privpo.test"
 {
 P0:r0=0;
 P0:r1=0;

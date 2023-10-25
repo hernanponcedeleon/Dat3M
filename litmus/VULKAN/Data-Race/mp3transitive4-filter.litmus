@@ -6,6 +6,7 @@ Vulkan mptransitive4
 "Invocation 4 does a bulk vis op with workgroup scope"
 "The happens-before is sufficient even though it uses different"
 "storage class semantics."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/mp3transitive4.test"
 {
 P1:r0=0;
 P2:r1=0;

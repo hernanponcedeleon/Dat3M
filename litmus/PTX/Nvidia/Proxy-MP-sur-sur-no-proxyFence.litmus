@@ -1,5 +1,6 @@
 PTX Proxy-MP-sur-sur-no-proxyFence
 "MP is guaranteed because both rf are inside same proxy, so no surface fence needed"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

@@ -1,5 +1,6 @@
 VULKAN test12
 "Pass"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/test12.test"
 {
 P1:r0=0;
 a=0;

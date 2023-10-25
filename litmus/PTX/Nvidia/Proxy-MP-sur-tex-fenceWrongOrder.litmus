@@ -1,6 +1,7 @@
 PTX Proxy-MP-sur-tex-fenceWrongOrder
 "MP is not guaranteed because proxyFences are not in correct order"
 "The generic memory is synchronize with texture cache by texture fence at first, then surface fence synchronize the data from surface cache to generic memory. Hence the tld is not guaranteed to rf sust"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

@@ -1,5 +1,6 @@
 Vulkan noncohmpbar
 "coh on y does not make x available"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/noncohmpfail.test"
 {
 P1:r0=0;
 P1:r1=0;

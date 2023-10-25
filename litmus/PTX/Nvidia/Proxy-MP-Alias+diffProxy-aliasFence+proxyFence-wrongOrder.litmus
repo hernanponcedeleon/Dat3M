@@ -1,6 +1,7 @@
 PTX Proxy-MP-Alias+diffProxy-aliasFence+proxyFence-wrongOrder
 "MP is not guaranteed because the aliasFence and proxyFence are not in the correct order"
 "The surface cache is synchronized to generic memory after the alias-fence, so the y will not guaranteed to get the write from c (when the acquire-release pattern sync)"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_gpu_synonym.test"
 {
 x = 0;
 y @ generic aliases x;

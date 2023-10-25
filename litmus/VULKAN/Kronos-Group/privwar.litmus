@@ -1,5 +1,6 @@
 Vulkan privwar
 "Fail: private variables require SSW for write-after-read hazard"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/privwar.test"
 {
 P0:r0=0;
 P1:r1=0;

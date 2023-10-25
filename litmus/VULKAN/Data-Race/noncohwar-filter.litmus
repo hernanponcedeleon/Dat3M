@@ -1,5 +1,6 @@
 Vulkan noncohwar
 "Pass: write-after-read hazard for noncoherent nonprivate"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/noncohwar.test"
 {
 P0:r0=0;
 P1:r1=0;

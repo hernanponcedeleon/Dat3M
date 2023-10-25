@@ -1,5 +1,6 @@
 PTX Atom-SB
 "RMW store buffering"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/SB_rmw.test"
 {
 P0:r0=0;
 P1:r1=0;

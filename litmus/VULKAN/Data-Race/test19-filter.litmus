@@ -2,6 +2,7 @@ VULKAN test19
 "Passes because the atomic store is implicitly coherent."
 "NOTE: This test was more interesting as a negative test"
 "showing that the semav did not 'flush' the atomic write."
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/test19.test"
 {
 P1:r0=0;
 P1:r1=0;

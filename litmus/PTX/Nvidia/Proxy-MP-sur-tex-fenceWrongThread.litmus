@@ -1,6 +1,7 @@
 PTX Proxy-MP-sur-tex-fenceWrongThread
 "MP is not guaranteed because proxyFences are not in correct Threads"
 "Because the proxyFences are in different threads and not same with same-proxy instructions, the proxyFences' order is not guaranteed, so the MP is not guaranteed"
+"https://github.com/NVlabs/mixedproxy/blob/main/tests/MP_cta.test"
 {
 x = 0;
 t @ texture aliases x;

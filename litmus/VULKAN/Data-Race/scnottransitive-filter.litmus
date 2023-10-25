@@ -1,5 +1,6 @@
 Vulkan scnottransitive
 "Fails because the membars do not transitively order the store against the sw"
+"https://github.com/KhronosGroup/Vulkan-MemoryModel/blob/master/alloy/tests/scnottransitive.test"
 {
 P1:r0=0;
 P1:r1=0;
