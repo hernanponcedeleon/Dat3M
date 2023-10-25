@@ -38,6 +38,7 @@ threadArguments
 expression
     :   nre Semi
     |   ifExpression
+    |   whileExpression
     ;
 
 ifExpression
@@ -48,6 +49,11 @@ ifExpression
 elseExpression
     :   Else expression
     |   Else LBrace expression* RBrace
+    ;
+
+whileExpression
+    :   While LPar re RPar expression
+    |   While LPar re RPar LBrace expression* RBrace
     ;
 
 re locals [IOpBin op, String mo]
@@ -322,6 +328,10 @@ If
 
 Else
     :   'else'
+    ;
+
+While
+    :   'while'
     ;
 
 True
