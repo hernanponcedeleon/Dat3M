@@ -3,22 +3,24 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class IfExpr extends IExpr {
+public class IfExpr implements Expression {
 
+	private final Type type;
 	private final Expression guard;
 	private final Expression tbranch;
 	private final Expression fbranch;
 	
 	public IfExpr(Expression guard, Expression tbranch, Expression fbranch) {
-		super(checkIntegerType(tbranch));
 		checkArgument(guard.getType() instanceof BooleanType, "IfThenElse with non-boolean guard %s.", guard);
         checkArgument(tbranch.getType().equals(fbranch.getType()),
                 "IfThenElse with mismatching branches %s and %s.", tbranch, fbranch);
+		this.type = tbranch.getType();
 		this.guard =  guard;
 		this.tbranch = tbranch;
 		this.fbranch = fbranch;
@@ -51,6 +53,11 @@ public class IfExpr extends IExpr {
 
 	public Expression getFalseBranch() {
 		return fbranch;
+	}
+
+	@Override
+	public Type getType() {
+		return type;
 	}
 
 	@Override
