@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpUn;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -264,19 +264,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     }
                     //TODO If narrowing, constrain the value.
                     return inner;
-                } else {
-                    final int bitWidth = iUn.getType().getBitWidth();
-                    if (inner instanceof IntegerFormula number) {
-                        return bitvectorFormulaManager().makeBitvector(bitWidth, number);
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        int innerBitWidth = bitvectorFormulaManager().getLength(number);
-                        if (innerBitWidth < bitWidth) {
-                            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
-                        }
-                        return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
-                    }
                 }
+                return applyBitWidth(inner, iUn.getType().getBitWidth(), signed);
             }
             case CTLZ -> {
                 if (inner instanceof BitvectorFormula bv) {
@@ -344,10 +333,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visit(GEPExpression gep) {
         final TypeFactory types = TypeFactory.getInstance();
-        final List<Expression> offsetExpressions = gep.getOffsetExpressions();
-        final List<Type> indexingTypes = gep.getIndexingTypes();
+        final List<Expression> expressions = gep.getOffsetExpressions();
         final Formula base = gep.getBaseExpression().accept(this);
-        verify(indexingTypes.size() == offsetExpressions.size(), "Offset - Size mismatch for %s", gep);
         final boolean integer = base instanceof IntegerFormula;
         verify(integer || base instanceof BitvectorFormula, "%s cannot represent pointers", base);
         final IntegerFormulaManager integerFormulaManager = integer ? integerFormulaManager() : null;
@@ -355,42 +342,61 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         final List<IntegerFormula> integers = integer ? new ArrayList<>(List.of((IntegerFormula) base)) : null;
         final List<BitvectorFormula> bitvectors = new ArrayList<>();
         final int length = integer ? 0 : bitvectorFormulaManager.getLength((BitvectorFormula) base);
-        for (int i = 0; i < indexingTypes.size(); i++) {
-            final Expression offset = offsetExpressions.get(i);
-            final IValue value = offset instanceof IValue v ? v : null;
-            if (value != null && value.isZero()) {
+        final List<Integer> constants = expressions.stream()
+                .map(x -> x instanceof IValue v ? v.getValueAsInt() : 1)
+                .toList();
+        final List<Integer> byteCounts = types.getByteCounts(gep.getIndexingType(), constants);
+        for (int i = 0; i < expressions.size(); i++) {
+            final Expression offset = expressions.get(i);
+            final IValue constant = offset instanceof IValue v ? v : null;
+            if (constant != null && constant.isZero()) {
                 continue;
             }
-            // Encodes the subexpression only if it is neither 0 or 1
-            final Formula count = value != null && value.isOne() ? null : offset.accept(this);
-            final Type indexingType = i == 0 ? null : indexingTypes.get(i - 1);
-            verify(indexingType instanceof ArrayType || indexingType instanceof AggregateType,
-                    "Non-container type %s", indexingType);
-            verify(!(indexingType instanceof AggregateType) || value != null,
-                    "Non-constant index %s", offset);
-            if (indexingType instanceof ArrayType) {
-                final int elementSize = types.getMemorySizeInBytes(indexingTypes.get(i));
-                if (integer) {
-                    final IntegerFormula coefficient = integerFormulaManager.makeNumber(elementSize);
-                    integers.add(count == null ? coefficient :
-                            integerFormulaManager.multiply(coefficient, count instanceof IntegerFormula f ? f :
-                                    bitvectorFormulaManager().toIntegerFormula((BitvectorFormula) count, false)));
-                } else {
-                    final BitvectorFormula coefficient = bitvectorFormulaManager.makeBitvector(elementSize, length);
-                    bitvectors.add(count == null ? coefficient :
-                            bitvectorFormulaManager.multiply(coefficient, count instanceof BitvectorFormula f ? f :
-                                    bitvectorFormulaManager.makeBitvector(length, (IntegerFormula) count)));
-                }
+            // only encode offset expressions if not constant.
+            // byteCounts already contains constant offset values.
+            final Formula count = constant != null ? null : offset.accept(this);
+            final int byteCount = byteCounts.get(i);
+            if (integer) {
+                final IntegerFormula coefficient = integerFormulaManager.makeNumber(byteCount);
+                integers.add(count == null ? coefficient : integerFormulaManager.multiply(coefficient,
+                        count instanceof IntegerFormula f ? f :
+                                bitvectorFormulaManager().toIntegerFormula((BitvectorFormula) count, false)));
             } else {
-                final int o = types.getByteOffset(indexingType, List.of(0, value.getValue()));
-                if (integer) {
-                    integers.add(integerFormulaManager.makeNumber(o));
-                } else {
-                    bitvectors.add(bitvectorFormulaManager.makeBitvector(o, length));
-                }
+                final BitvectorFormula coefficient = bitvectorFormulaManager.makeBitvector(byteCount, length);
+                bitvectors.add(count == null ? coefficient : bitvectorFormulaManager.multiply(coefficient,
+                        count instanceof BitvectorFormula f ? f :
+                                bitvectorFormulaManager.makeBitvector(length, (IntegerFormula) count)));
             }
         }
         return integer ? integerFormulaManager.sum(integers) :
                 bitvectors.stream().reduce((BitvectorFormula) base, bitvectorFormulaManager::add);
+    }
+
+    @Override
+    public Formula visit(PointerCast cast) {
+        final Type targetType = cast.getType();
+        final Formula inner = cast.getInnerExpression().accept(this);
+        verify(targetType instanceof IntegerType || targetType instanceof PointerType, "Invalid type for %s", cast);
+        if (context.useIntegers || targetType instanceof IntegerType t && t.isMathematical()) {
+            return inner;
+        }
+        final int bitWith = targetType instanceof IntegerType t ? t.getBitWidth() : ((PointerType) targetType).getBitWidth();
+        return applyBitWidth(inner, bitWith, cast.isSigned());
+    }
+
+    private Formula applyBitWidth(Formula inner, int bitWidth, boolean signed) {
+        if (inner instanceof BooleanFormula) {
+            return inner;
+        }
+        if (inner instanceof IntegerFormula number) {
+            return bitvectorFormulaManager().makeBitvector(bitWidth, number);
+        }
+        verify(inner instanceof BitvectorFormula);
+        final var number = (BitvectorFormula) inner;
+        final int innerBitWidth = bitvectorFormulaManager().getLength(number);
+        if (innerBitWidth < bitWidth) {
+            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
+        }
+        return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
     }
 }

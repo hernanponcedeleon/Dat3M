@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.op.COpBin;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
@@ -360,6 +361,13 @@ public final class EncodingContext {
             int bitWidth = integerType.getBitWidth();
             return formulaManager.getBitvectorFormulaManager().makeBitvector(bitWidth, value);
         }
+        if (type instanceof PointerType pointerType) {
+            if (useIntegers) {
+                return formulaManager.getIntegerFormulaManager().makeNumber(value);
+            }
+            int bitWidth = pointerType.getBitWidth();
+            return formulaManager.getBitvectorFormulaManager().makeBitvector(bitWidth, value);
+        }
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
 
@@ -412,6 +420,13 @@ public final class EncodingContext {
                 return formulaManager.getIntegerFormulaManager().makeVariable(name);
             }
             int bitWidth = integerType.getBitWidth();
+            return formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
+        }
+        if (type instanceof PointerType pointerType) {
+            if (useIntegers) {
+                return formulaManager.getIntegerFormulaManager().makeVariable(name);
+            }
+            int bitWidth = pointerType.getBitWidth();
             return formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
         }
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
