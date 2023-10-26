@@ -228,20 +228,20 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
 
 	@Override
     public Object visitWhileExpression(LitmusCParser.WhileExpressionContext ctx) {
-        Expression expr = (Expression) ctx.re().accept(this);
-
         whileId++;
         Label headL = programBuilder.getOrCreateLabel(currentThread,"head_" + whileId);
         Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + whileId);
 
         programBuilder.addChild(currentThread, headL);
-        CondJump breakEvent = EventFactory.newJumpUnless(expr, endL);
-        programBuilder.addChild(currentThread, breakEvent);
+        Expression expr = (Expression) ctx.re().accept(this);
+
+        programBuilder.addChild(currentThread, EventFactory.newJumpUnless(expr, endL));
 
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression()) {
             expressionContext.accept(this);
         }
 
+        programBuilder.addChild(currentThread, EventFactory.newGoto(headL));
         programBuilder.addChild(currentThread, endL);
         return null;
     }
