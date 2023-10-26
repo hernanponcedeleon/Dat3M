@@ -178,7 +178,7 @@ public class ProgramBuilder {
 
     public MemoryObject getOrNewMemoryObject(String name) {
         final MemoryObject mem = locations.computeIfAbsent(name,
-                k -> program.getMemory().allocate(types.getByteType(), 1, true));
+                k -> program.getMemory().allocate(types.getArchType(), 1, true));
         mem.setCVar(name);
         return mem;
     }
@@ -186,7 +186,7 @@ public class ProgramBuilder {
     public MemoryObject newMemoryObject(String name, int size) {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
-        final MemoryObject mem = program.getMemory().allocate(types.getByteType(), size, true);
+        final MemoryObject mem = program.getMemory().allocate(types.getArchType(), size, true);
         mem.setCVar(name);
         locations.put(name, mem);
         return mem;

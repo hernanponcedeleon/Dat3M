@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
@@ -58,8 +59,8 @@ public class Function implements Expression {
     }
 
     @Override
-    public Type getType() {
-        return TypeFactory.getInstance().getArchType();
+    public PointerType getType() {
+        return TypeFactory.getInstance().getPointerType();
     }
 
     public String getName() { return this.name; }

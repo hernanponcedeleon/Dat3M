@@ -281,9 +281,6 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             for (final Expression offset : gep.getOffsetExpressions()) {
                 offsets.add(transform(offset));
             }
-            if (offsets.size() == 1 && offsets.get(0) instanceof IValue offsetValue && offsetValue.isZero()) {
-                return base;
-            }
             return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
         }
 

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -33,8 +34,10 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private boolean isHeapAllocation;
 
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation) {
-        Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getArchType());
-        Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
+        Preconditions.checkArgument(resultRegister.getType() instanceof PointerType,
+                "Non-pointer result of allocation: %s", resultRegister);
+        Preconditions.checkArgument(arraySize.getType() instanceof IntegerType,
+                "Non-integer allocation size: %s", arraySize);
         this.resultRegister = resultRegister;
         this.arraySize = arraySize;
         this.allocationType = allocType;

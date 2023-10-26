@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
@@ -23,7 +23,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends IExpr {
+public class MemoryObject implements Expression {
 
     private final int index;
     private final Type dataType;
@@ -43,7 +43,6 @@ public class MemoryObject extends IExpr {
     private final HashMap<Integer, Expression> initialValues = new HashMap<>();
 
     MemoryObject(int index, Type dataType, int size, boolean isStaticallyAllocated) {
-        super(TypeFactory.getInstance().getArchType());
         this.index = index;
         this.dataType = checkNotNull(dataType);
         this.size = size;
@@ -154,6 +153,11 @@ public class MemoryObject extends IExpr {
 
     public BigInteger getValue() {
         return address != null ? address : BigInteger.valueOf(index);
+    }
+
+    @Override
+    public PointerType getType() {
+        return TypeFactory.getInstance().getPointerType();
     }
 
     @Override

@@ -44,7 +44,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getArchType();
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
@@ -244,8 +243,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final String name = globalIdent(ctx.GlobalIdent());
         check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
         final Type type = parseType(ctx.type());
-        final int size = types.getMemorySizeInBytes(type);
-        final MemoryObject globalObject = program.getMemory().allocate(types.getByteType(), size, true);
+        final MemoryObject globalObject = program.getMemory().allocate(type, 1, true);
         globalObject.setCVar(name);
         if (ctx.threadLocal() != null) {
             globalObject.setIsThreadLocal(true);
@@ -278,7 +276,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 setInitialMemoryFromConstant(memObj, currentOffset, structElement);
                 currentOffset += types.getMemorySizeInBytes(structElement.getType());
             }
-        } else if (constant.getType() instanceof IntegerType) {
+        } else if (constant.getType() instanceof IntegerType || constant.getType() instanceof PointerType) {
             memObj.setInitialValue(offset, constant);
         } else {
             throw new UnsupportedOperationException("Unrecognized constant value: " + constant);
@@ -470,7 +468,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final var atomic = ctx.atomic != null;
         final Expression value = visitTypeValue(ctx.typeValue(0));
         final Expression address = visitTypeValue(ctx.typeValue(1));
-        check(address.getType().equals(pointerType), "Non-pointer type in %s.", ctx);
+        check(address.getType() instanceof PointerType, "Non-pointer type in %s.", ctx);
         final String mo = atomic ? parseMemoryOrder(ctx.atomicOrdering()) : "";
         final Event store = atomic ? Llvm.newStore(address, value, mo) : newStore(address, value);
         block.events.add(store);
@@ -490,7 +488,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitAllocaInst(AllocaInstContext ctx) {
         // see https://llvm.org/docs/LangRef.html#alloca-instruction
-        final Register register = getOrNewCurrentRegister(pointerType);
+        final Register register = getOrNewCurrentRegister(types.getPointerType());
         //final var inalloca = ctx.inAllocaTok != null;
         //final var swifterror = ctx.swiftError != null;
         final Type elementType = parseType(ctx.type());
@@ -792,8 +790,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        final Expression result = expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType,
+                "Unsupported type in %s.", target);
+        final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
 
@@ -812,7 +811,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeNullPointer();
     }
 
     @Override
@@ -1019,7 +1018,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private Expression checkPointerExpression(ParserRuleContext context) {
-        return checkExpression(pointerType, context);
+        return checkExpression(types.getPointerType(), context);
     }
 
     private Expression checkExpression(Type type, ParserRuleContext context) {
@@ -1032,8 +1031,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
-        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType,
+                "Non-integer type %s.", target);
+        return expressions.makeCast(operandExpression, targetType, signed);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -1047,7 +1047,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitPointerType(PointerTypeContext ctx) {
-        parsedType = pointerType;
+        parsedType = types.getPointerType();
         return null;
     }
 
@@ -1077,7 +1077,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitType(TypeContext ctx) {
         // translate opaque pointer types
         if (ctx.type() != null && ctx.params() == null || ctx.opaquePointerType() != null) {
-            parsedType = pointerType;
+            parsedType = types.getPointerType();
             return null;
         } else if (ctx.getText().equals("void")) {
             parsedType = types.getVoidType();
@@ -1290,7 +1290,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             throw new ParsingException(
                     String.format("Expected pointer type, instead of %s.", context.firstClassType().getText()));
         }
-        return pointerType;
+        return types.getPointerType();
     }
 
     private boolean parseBoolean(TerminalNode node) {

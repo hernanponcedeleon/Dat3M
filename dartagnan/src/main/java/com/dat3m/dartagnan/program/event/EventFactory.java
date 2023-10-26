@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -131,10 +132,22 @@ public class EventFactory {
     }
 
     public static Init newInit(MemoryObject base, int offset) {
+        final TypeFactory types = TypeFactory.getInstance();
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
-        final Expression address = offset == 0 ? base :
-                expressions.makeADD(base, expressions.makeValue(BigInteger.valueOf(offset), base.getType()));
+        final Expression address;
+        if (offset == 0) {
+            address = base;
+        } else {
+            final IntegerType offsetType = types.getArchType();
+            final List<Expression> offsets = types.getPrimitiveField(base.getDataType(), offset)
+                    .orElseThrow()
+                    .elementOffsets()
+                    .stream()
+                    .<Expression>map(i -> expressions.makeValue(BigInteger.valueOf(i), offsetType))
+                    .toList();
+            address = expressions.makeGetElementPointer(base.getDataType(), base, offsets);
+        }
         return new Init(base, offset, address);
     }
 

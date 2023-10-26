@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
@@ -14,12 +15,12 @@ import static com.google.common.base.Preconditions.checkState;
 
 public final class GEPExpression implements Expression {
 
-    private final Type type;
+    private final PointerType type;
     private final Type indexingType;
     private final Expression base;
     private final List<Expression> offsets;
 
-    GEPExpression(Type t, Type e, Expression b, List<Expression> o) {
+    GEPExpression(PointerType t, Type e, Expression b, List<Expression> o) {
         type = t;
         indexingType = e;
         base = b;
@@ -58,7 +59,7 @@ public final class GEPExpression implements Expression {
     }
 
     @Override
-    public Type getType() {
+    public PointerType getType() {
         return type;
     }
 

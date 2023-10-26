@@ -1,22 +1,32 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.GEPExpression;
+import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /*
@@ -41,8 +51,16 @@ public class MemoryAllocation implements ProgramProcessor {
 
     private void processAllocations(Program program) {
         final IntegerType byteType = TypeFactory.getInstance().getByteType();
-        for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(byteType, getSize(alloc), false);
+        final var gepInspector = new GEPInspector();
+        for (final RegReader event : program.getThreadEvents(RegReader.class)) {
+            event.transformExpressions(gepInspector);
+        }
+        gepInspector.pointerTypeCandidates.values().removeIf(set -> set.size() > 1);
+        for (final Alloc alloc : program.getThreadEvents(Alloc.class)) {
+            final Set<Type> candidate = gepInspector.pointerTypeCandidates.get(alloc.getResultRegister());
+            final Type type = candidate == null ? byteType : candidate.iterator().next();
+            final int count =  getSize(alloc) / TypeFactory.getInstance().getMemorySizeInBytes(type);
+            final MemoryObject allocatedObject = program.getMemory().allocate(type, count, false);
             final Local local = EventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);
@@ -107,6 +125,19 @@ public class MemoryAllocation implements ProgramProcessor {
                 thread.setProgram(program);
                 thread.append(EventFactory.newLabel("END_OF_T" + thread.getId()));
             }
+        }
+    }
+
+    private static final class GEPInspector implements ExpressionInspector {
+
+        private final Map<Register, Set<Type>> pointerTypeCandidates = new HashMap<>();
+
+        @Override
+        public Expression visit(GEPExpression gep) {
+            if (gep.getBaseExpression() instanceof Register pointerRegister) {
+                pointerTypeCandidates.computeIfAbsent(pointerRegister, k -> new HashSet<>()).add(gep.getIndexingType());
+            }
+            return ExpressionInspector.super.visit(gep);
         }
     }
 }

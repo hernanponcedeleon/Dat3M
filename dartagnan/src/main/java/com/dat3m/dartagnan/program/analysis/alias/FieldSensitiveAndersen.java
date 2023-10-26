@@ -2,13 +2,17 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
@@ -17,8 +21,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.*;
-import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -30,12 +33,9 @@ import static java.util.stream.IntStream.range;
  * The edges of the inclusion graph are labeled with sets of offset-alignment pairs.
  * Expressions with well-defined behavior have the form `base [+ constant * register]* + constant`.
  * Bases are either {@link Register variables} or {@link MemoryObject direct references to structures}.
- * Non-conforming expressions are probed for bases, which contribute in the most general manner:
- * Any structure that occurs
- * <p>
- * Structures, that never occurs in any expression, are considered unreachable.
- *
- * @author xeren
+ * Non-conforming expressions are probed for bases, which abide to the following rule:
+ * Any object that taints the non-conforming expression can be accessed at any offset.
+ * All other objects will be considered inaccessible from the expression.
  */
 public class FieldSensitiveAndersen implements AliasAnalysis {
 
@@ -59,7 +59,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
     }
 
     private FieldSensitiveAndersen(Program program) {
-        Preconditions.checkArgument(program.isCompiled(), "The program must be compiled first.");
+        checkArgument(program.isCompiled(), "The program must be compiled first.");
         List<MemoryCoreEvent> memEvents = program.getThreadEvents(MemoryCoreEvent.class);
         for (MemoryCoreEvent e : memEvents) {
             processLocs(e);
@@ -97,7 +97,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         if (e instanceof Load load) {
             Register result = load.getResultRegister();
             for (Offset<Register> r : collector.register()) {
-                loads.computeIfAbsent(r.base, k -> new LinkedList<>()).add(new Offset<>(result, r.offset, r.alignment));
+                loads.computeIfAbsent(r.base, k -> new LinkedList<>())
+                        .add(new Offset<>(result, r.offset, r.alignment));
             }
             for (Location f : collector.address()) {
                 addEdge(f, result, 0, 0);
@@ -105,7 +106,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         } else if (e instanceof Store store) {
             Collector value = new Collector(store.getMemValue());
             for (Offset<Register> r : collector.register()) {
-                stores.computeIfAbsent(r.base, k -> new LinkedList<>()).add(new Offset<>(value, r.offset, r.alignment));
+                stores.computeIfAbsent(r.base, k -> new LinkedList<>())
+                        .add(new Offset<>(value, r.offset, r.alignment));
             }
             for (Location l : collector.address()) {
                 for (Offset<Register> r : value.register()) {
@@ -117,7 +119,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             // Special MemoryEvents that produce no values (e.g. SRCU) will just get skipped
         }
     }
-
 
     protected void processRegs(Event e) {
         if (!(e instanceof Local || e instanceof ThreadArgument)) {
@@ -143,7 +144,6 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         Set<Location> addresses = getAddresses(variable);
         //if variable is a register, there may be loads using it in their address
         for (Offset<Register> load : loads.getOrDefault(variable, List.of())) {
-            //if load.offset is not null, the operation accesses variable + load.offset
             for (Location f : fields(addresses, load.offset, load.alignment)) {
                 if (addEdge(f, load.base, 0, 0)) {
                     variables.add(f);
@@ -187,8 +187,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             for (int i = 0; i < div(l.base.getSizeInBytes(), alignment); i++) {
                 int mapped = l.offset + offset + i * alignment;
                 if (0 <= mapped && mapped < l.base.getSizeInBytes()) {
-                    Location loc = new Location(l.base, mapped);
-                    result.add(loc);
+                    result.add(new Location(l.base, mapped));
                 }
             }
         }
@@ -200,15 +199,20 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         return q == 0 ? 1 : p / q + (p % q == 0 ? 0 : 1);
     }
 
+    //Invariant: address == null || register == null
     private record Result(MemoryObject address, Register register, BigInteger offset, int alignment) {}
 
     private static final class Collector implements ExpressionVisitor<Result> {
 
-        final HashSet<MemoryObject> address = new HashSet<>();
-        final HashSet<Register> register = new HashSet<>();
+        final Set<MemoryObject> address;
+        final Set<Register> register;
         Result result;
 
         Collector(Expression x) {
+            var memoryObjects = new MemoryObject.Collector();
+            x.accept(memoryObjects);
+            address = memoryObjects.getCollection();
+            register = x.getRegs();
             result = x.accept(this);
         }
 
@@ -231,65 +235,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IExprBin x) {
-            Result l = x.getLHS().accept(this);
-            Result r = x.getRHS().accept(this);
-            if (l == null || r == null || x.getOp() == RSHIFT) {
-                return null;
-            }
-            if (l.address == null && l.register == null && l.alignment == 0 && r.address == null && r.register == null && r.alignment ==
-                    0) {
-                return new Result(null, null, x.getOp().combine(l.offset, r.offset), 0);
-            }
-            if (x.getOp() == MUL) {
-                if (l.address != null || r.address != null) {
-                    return null;
-                }
-                return new Result(null,
-                        null,
-                        l.offset.multiply(r.offset),
-                        min(min(l.alignment, l.register) * r.offset.intValue(), min(r.alignment, r.register) * l.offset.intValue()));
-            }
-            if (x.getOp() == ADD) {
-                if (l.address != null && r.address != null) {
-                    return null;
-                }
-                MemoryObject base = l.address != null ? l.address : r.address;
-                BigInteger offset = l.offset.add(r.offset);
-                if (base != null) {
-                    return new Result(base, null, offset, min(min(l.alignment, l.register), min(r.alignment, r.register)));
-                }
-                if (l.register != null) {
-                    return new Result(null, l.register, offset, min(l.alignment, min(r.alignment, r.register)));
-                }
-                return new Result(null, r.register, offset, min(l.alignment, r.alignment));
-            }
-            return null;
-        }
-
-        @Override
-        public Result visit(IExprUn x) {
-            Result i = x.getInner().accept(this);
-            return i == null ? null : x.getOp() != MINUS ? i :
-                    new Result(null, null, i.offset.negate(), i.alignment == 0 ? 1 : i.alignment);
-        }
-
-        @Override
-        public Result visit(IfExpr x) {
-            x.getTrueBranch().accept(this);
-            x.getFalseBranch().accept(this);
-            return null;
-        }
-
-        @Override
         public Result visit(MemoryObject a) {
-            address.add(a);
             return new Result(a, null, BigInteger.ZERO, 0);
         }
 
         @Override
         public Result visit(Register r) {
-            register.add(r);
             return new Result(null, r, BigInteger.ZERO, 0);
         }
 
@@ -299,16 +250,61 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
+        public Result visit(GEPExpression gep) {
+            final TypeFactory types = TypeFactory.getInstance();
+            final Result base = gep.getBaseExpression().accept(this);
+            Type type = gep.getIndexingType();
+            final List<Expression> offsetExpressions = gep.getOffsetExpressions();
+            for (Expression offset : offsetExpressions) {
+                offset.accept(this);
+            }
+            if (base == null) {
+                return null;
+            }
+            int offset = 0;
+            int alignment = base.alignment;
+            if (offsetExpressions.get(0) instanceof IValue offsetLiteral) {
+                offset += types.getMemorySizeInBytes(type) * offsetLiteral.getValueAsInt();
+            } else {
+                alignment = types.getMemorySizeInBytes(type);
+            }
+            for (final Expression offsetExpression : offsetExpressions.subList(1, offsetExpressions.size())) {
+                verify(type instanceof AggregateType || type instanceof ArrayType, "Non-container type %s", type);
+                if (type instanceof AggregateType struct) {
+                    verify(offsetExpression instanceof IValue,
+                            "Non-constant field member expression: %s", gep);
+                    int offsetValue = ((IValue) offsetExpression).getValueAsInt();
+                    List<Type> fields = struct.getDirectFields();
+                    verify(offsetValue >= 0 && offsetValue < fields.size(),
+                            "Field member overflow: %s", gep);
+                    for (Type field : fields.subList(0, offsetValue)) {
+                        offset += types.getMemorySizeInBytes(field);
+                    }
+                    type = fields.get(offsetValue);
+                } else {
+                    type = ((ArrayType) type).getElementType();
+                    int elementSize = TypeFactory.getInstance().getMemorySizeInBytes(type);
+                    if (offsetExpression instanceof IValue offsetLiteral) {
+                        int offsetValue = offsetLiteral.getValueAsInt();
+                        offset += elementSize * offsetValue;
+                    } else {
+                        alignment = Math.max(Math.max(1, alignment), elementSize);
+                    }
+                }
+            }
+            return new Result(base.address, base.register, base.offset.add(BigInteger.valueOf(offset)), alignment);
+        }
+
+        @Override
+        public Result visit(PointerCast cast) {
+            final Result inner = cast.getInnerExpression().accept(this);
+            return cast.getType() instanceof IntegerType target && !target.isMathematical() &&
+                    target.getBitWidth() < TypeFactory.getInstance().getPointerType().getBitWidth() ? null : inner;
+        }
+
+        @Override
         public String toString() {
             return (result != null ? result : Sets.union(register, address)).toString();
-        }
-
-        private static int min(int a, int b) {
-            return a == 0 || b != 0 && b < a ? b : a;
-        }
-
-        private int min(int a, Object b) {
-            return b == null || a != 0 ? a : 1;
         }
     }
 
