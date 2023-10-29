@@ -30,6 +30,8 @@ litmus/PTX/CADP/2_threads_4_instructions/102_simple.litmus,1
 litmus/PTX/CADP/2_threads_4_instructions/103_simple.litmus,1
 litmus/PTX/CADP/2_threads_4_instructions/120_simple.litmus,1
 litmus/PTX/CADP/2_threads_4_instructions/121_simple.litmus,1
+litmus/PTX/CADP/2_threads_4_instructions/124_simple.litmus,1
+litmus/PTX/CADP/2_threads_4_instructions/125_simple.litmus,1
 litmus/PTX/CADP/2_threads_4_instructions/126_simple.litmus,1
 litmus/PTX/CADP/2_threads_4_instructions/127_simple.litmus,1
 litmus/PTX/CADP/2_threads_4_instructions/136_simple.litmus,1
