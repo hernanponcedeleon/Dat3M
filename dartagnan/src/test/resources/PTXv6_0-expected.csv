@@ -74,3 +74,5 @@ litmus/PTX/Manual/SL-cas-plus.litmus,0
 litmus/PTX/Manual/SL-cas-minus.litmus,1
 litmus/PTX/Manual/SL-future-plus.litmus,0
 litmus/PTX/Manual/SL-future-minus.litmus,1
+litmus/PTX/Manual/Coherence.litmus,0
+litmus/PTX/Manual/Coherence-weak.litmus,1

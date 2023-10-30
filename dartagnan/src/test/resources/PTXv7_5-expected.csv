@@ -196,3 +196,5 @@ litmus/PTX/Manual/SL-future-minus.litmus,1
 litmus/PTX/Manual/XF-Barrier-relacq.litmus,0
 litmus/PTX/Manual/XF-Barrier-rlx.litmus,1
 litmus/PTX/Manual/XF-Barrier-weak.litmus,1
+litmus/PTX/Manual/Coherence.litmus,0
+litmus/PTX/Manual/Coherence-weak.litmus,1
