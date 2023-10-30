@@ -1,5 +1,5 @@
 PTX Coherence
-"Test that threads 3 and 4 can't read updates to x in conflicting order"
+"Test if P2 and P3 can read updates to x in conflicting order"
 {
 x=0;
 P2:r0=0; P2:r1=0;
