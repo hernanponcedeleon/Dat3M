@@ -83,3 +83,4 @@ litmus/VULKAN/Manual/MP-mesa-optimized.litmus,1
 litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,1
 litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,0
 litmus/VULKAN/Manual/XF-Barrier-weak.litmus,0
+litmus/VULKAN/Kronos-Group/asmo-weak.litmus,0
