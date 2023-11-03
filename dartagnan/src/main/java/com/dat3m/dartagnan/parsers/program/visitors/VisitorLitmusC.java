@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
 import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
@@ -194,7 +195,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                         }
                     }
                 }
-                Register register = programBuilder.getOrNewRegister(scope, name, archType);
+                final Register register = programBuilder.getOrNewRegister(scope, name, object.getType());
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
                 id++;
             }
@@ -384,7 +385,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeBinary(v1, ctx.opArith().op, v2);
+        Expression result = v1.getType() instanceof IntegerType ?
+                expressions.makeBinary(v1, ctx.opArith().op, v2) :
+                expressions.makeGetElementPointer(archType, v1, List.of(v2));
         return assignToReturnRegister(register, result);
     }
 
@@ -554,14 +557,14 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
             return programBuilder.getOrNewRegister(scope, ctx.getText(), archType);
         }
         MemoryObject object = programBuilder.newMemoryObject(ctx.getText(), 1);
-        Register register = programBuilder.getOrNewRegister(scope, null, archType);
+        Register register = programBuilder.getOrNewRegister(scope, null, object.getDataType());
         programBuilder.addChild(currentThread, EventFactory.newLoadWithMo(register, object, C11.NONATOMIC));
         return register;
     }
 
     private Expression getAddress(LitmusCParser.ReContext ctx){
         Expression address = (Expression)ctx.accept(this);
-        if(address.getType() instanceof IntegerType){
+        if (address.getType() instanceof IntegerType || address.getType() instanceof PointerType) {
            return address;
         }
         throw new ParsingException("Invalid syntax near " + ctx.getText());
