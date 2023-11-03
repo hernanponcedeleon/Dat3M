@@ -16,16 +16,16 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Checkout badges branch dedicated to storing badges only
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         ref: badges
         path: badges
         
     - name: Set up the Java JDK
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'adopt'
