@@ -540,12 +540,14 @@ public class WmmEncoder implements Encoder {
                     // Coherence is not total for some architectures
                     if (Arch.coIsTotal(program.getArch())) {
                         enc.add(bmgr.equivalence(pairingCond, bmgr.or(coF, coB)));
+                    } else {
+                        enc.add(bmgr.implication(bmgr.or(coF, coB), pairingCond));
                     }
                     if (idl) {
-                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z) ? bmgr.makeTrue() :
-                                imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));
-                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue() :
-                                imgr.lessThan(context.memoryOrderClock(z), context.memoryOrderClock(x))));
+                        enc.add(bmgr.implication(coF, x.hasTag(INIT) || transCo.contains(x, z) ? bmgr.makeTrue()
+                                : imgr.lessThan(context.memoryOrderClock(x), context.memoryOrderClock(z))));
+                        enc.add(bmgr.implication(coB, z.hasTag(INIT) || transCo.contains(z, x) ? bmgr.makeTrue()
+                                : imgr.lessThan(context.memoryOrderClock(z), context.memoryOrderClock(x))));
                     } else {
                         enc.add(bmgr.or(bmgr.not(coF), bmgr.not(coB)));
                         if (!mustSet.contains(x, z) && !mustSet.contains(z, x)) {
