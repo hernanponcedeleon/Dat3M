@@ -989,15 +989,21 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitVirtualLocation(Relation rel) {
             EventGraph must = new EventGraph();
+            EventGraph may = new EventGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
             for (MemoryCoreEvent e1 : events) {
                 for (MemoryCoreEvent e2 : events) {
-                    if (alias.mayAlias(e1, e2) && sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
-                        must.add(e1, e2);
+                    if (sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
+                        if (alias.mustAlias(e1, e2)) {
+                            must.add(e1, e2);
+                        }
+                        if (alias.mayAlias(e1, e2)) {
+                            may.add(e1, e2);
+                        }
                     }
                 }
             }
-            return new Knowledge(must, new EventGraph(must));
+            return new Knowledge(must, may);
         }
 
         @Override
