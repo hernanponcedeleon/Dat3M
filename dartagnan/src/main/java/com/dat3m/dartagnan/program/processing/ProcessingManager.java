@@ -108,6 +108,7 @@ public class ProcessingManager implements ProgramProcessor {
                 dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
+                                ResolveLLVMObjectSizeCalls.fromConfig(config),
                                 sccp,
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                                 RemoveDeadCondJumps.fromConfig(config)

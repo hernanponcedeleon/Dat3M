@@ -1,12 +1,10 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.google.common.collect.Lists;
 import org.sosy_lab.common.configuration.Configuration;
@@ -111,19 +109,13 @@ public class BranchReordering implements FunctionProcessor {
                 if (e.equals(exit)) {
                     break;
                 }
-                if (isAlwaysBranching(e)) {
+                if (IRHelper.isAlwaysBranching(e)) {
                     curBranch = new MovableBranch();
                     curBranch.id = id++;
                     branches.add(curBranch);
                 }
                 e = e.getSuccessor();
             }
-        }
-
-        private boolean isAlwaysBranching(Event e) {
-            return e instanceof Return
-                    || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue()
-                    || e instanceof CondJump jump && jump.isGoto();
         }
 
         private List<MovableBranch> computeReordering(final List<MovableBranch> movables) {
