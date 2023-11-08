@@ -76,6 +76,8 @@ litmus/VULKAN/Manual/ticketlock-diff-wg.litmus,0
 litmus/VULKAN/Manual/ticketlock-acq2rlx-1.litmus,1
 litmus/VULKAN/Manual/ticketlock-acq2rlx-2.litmus,0
 litmus/VULKAN/Manual/ticketlock-rel2rlx.litmus,0
+litmus/VULKAN/Manual/SB-2-wg.litmus,1
+litmus/VULKAN/Manual/SB-2-dv.litmus,0
 litmus/VULKAN/Manual/MP-mesa.litmus,1
 litmus/VULKAN/Manual/MP-mesa-load-acq.litmus,1
 litmus/VULKAN/Manual/MP-mesa-fence-loop.litmus,1
