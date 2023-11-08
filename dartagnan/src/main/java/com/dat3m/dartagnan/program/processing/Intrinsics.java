@@ -776,6 +776,9 @@ public class Intrinsics {
         //FIXME: Handle memset_chk correctly. For now, we ignore the bound check parameter because that one is
         // usually provided by llvm.objectsize which we cannot resolve for now. Since we usually assume UB-freedom,
         // the check can be ignored for the most part.
+        if (call.getCalledFunction().getName().equals("__memset_chk")) {
+            logger.warn("Treating call to \"__memset_chk\" as call to \"memset\": skipping bound checks.");
+        }
 
         if (!(countExpr instanceof IValue countValue)) {
             final String error = "Cannot handle memset with dynamic count argument: " + call;
