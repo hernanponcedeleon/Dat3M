@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
@@ -9,6 +11,7 @@ import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.FenceGraph;
+import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -17,20 +20,25 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.Fences;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
+import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
 
-// The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver
+// The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver.
 public class CoreReasoner {
+
+    public enum SymmetricLearning { NONE, LINEAR, QUADRATIC, FULL }
 
     private final ExecutionGraph executionGraph;
     private final ExecutionAnalysis exec;
     private final RelationAnalysis ra;
     private final Map<String, Relation> termMap = new HashMap<>();
+
+    private final ThreadSymmetry symm;
+    private final List<Function<Event, Event>> symmPermutations;
+    private final SymmetricLearning learningOption;
 
     public CoreReasoner(VerificationTask task, Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
@@ -39,72 +47,80 @@ public class CoreReasoner {
         for (Relation r : task.getMemoryModel().getRelations()) {
             termMap.put(r.getNameOrTerm(), r);
         }
+
+        this.learningOption = REFINEMENT_SYMMETRIC_LEARNING;
+        symm = analysisContext.requires(ThreadSymmetry.class);
+        symmPermutations = computeSymmetryPermutations();
     }
 
+    // Returns the (reduced) core reason of a base reason. If symmetry reasoning is enabled,
+    // this can return multiple core reasons corresponding to symmetric versions of the base reason.
+    public Set<Conjunction<CoreLiteral>> toCoreReasons(Conjunction<CAATLiteral> baseReason) {
+        final EventDomain domain = executionGraph.getDomain();
+        final Set<Conjunction<CoreLiteral>> symmetricReasons = new HashSet<>();
 
-    public Conjunction<CoreLiteral> toCoreReason(Conjunction<CAATLiteral> baseReason) {
-
-        EventDomain domain = executionGraph.getDomain();
-
-        List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
-        for (CAATLiteral lit : baseReason.getLiterals()) {
-            if (lit instanceof ElementLiteral elLit) {
-                Event e = domain.getObjectById(elLit.getElement().getId()).getEvent();
-                // We only have static tags, so all of them reduce to execution literals
-                coreReason.add(new ExecLiteral(e, lit.isNegative()));
-            } else {
-
-                EdgeLiteral edgeLit = (EdgeLiteral) lit;
-                Edge edge = edgeLit.getEdge();
-                Event e1 = domain.getObjectById(edge.getFirst()).getEvent();
-                Event e2 = domain.getObjectById(edge.getSecond()).getEvent();
-                Relation rel = termMap.get(lit.getName());
-
-                if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
-                    // Statically present edges
-                    addExecReason(e1, e2, coreReason);
-                } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
-                    // Statically absent edges
+        //TODO: A specialized algorithm that computes the orbit under permutation may be better,
+        // since most violations involve only few threads and hence the orbit is far smaller than the full
+        // set of permutations.
+        for (Function<Event, Event> perm : symmPermutations) {
+            List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
+            for (CAATLiteral lit : baseReason.getLiterals()) {
+                if (lit instanceof ElementLiteral elLit) {
+                    final Event e = perm.apply(domain.getObjectById(elLit.getElement().getId()).getEvent());
+                    // We only have static tags, so all of them reduce to execution literals
+                    coreReason.add(new ExecLiteral(e, lit.isNegative()));
                 } else {
-                    String name = rel.getNameOrTerm();
-                    if (name.equals(RF) || name.equals(CO)
-                            || executionGraph.getCutRelations().contains(rel)) {
-                        coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
-                    } else if (name.equals(LOC)) {
-                        coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
-                    } else if (rel.getDefinition() instanceof Fences) {
-                        // This is a special case since "fencerel(F) = po;[F];po".
-                        // We should do this transformation directly on the Wmm to avoid this special reasoning
-                        if (lit.isNegative()) {
-                            throw new UnsupportedOperationException(String.format("FenceRel %s is not allowed on the rhs of differences.", rel));
-                        }
-                        addFenceReason(rel, edge, coreReason);
-                    } else {
-                        //TODO: Right now, we assume many relations like Data, Ctrl and Addr to be
-                        // static.
-                        if (lit.isNegative()) {
-                            // TODO: Support negated literals
-                            throw new UnsupportedOperationException(String.format("Negated literals of type %s are not supported.", rel));
-                        }
+                    final EdgeLiteral edgeLit = (EdgeLiteral) lit;
+                    final Edge edge = edgeLit.getEdge();
+                    final Event e1 = perm.apply(domain.getObjectById(edge.getFirst()).getEvent());
+                    final Event e2 = perm.apply(domain.getObjectById(edge.getSecond()).getEvent());
+                    final Relation rel = termMap.get(lit.getName());
+
+                    if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
+                        // Statically present edges
                         addExecReason(e1, e2, coreReason);
+                    } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
+                        // Statically absent edges
+                    } else {
+                        final String name = rel.getNameOrTerm();
+                        if (name.equals(RF) || name.equals(CO)
+                                || executionGraph.getCutRelations().contains(rel)) {
+                            coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
+                        } else if (name.equals(LOC)) {
+                            coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
+                        } else if (rel.getDefinition() instanceof Fences) {
+                            // This is a special case since "fencerel(F) = po;[F];po".
+                            // We should do this transformation directly on the Wmm to avoid this special reasoning
+                            if (lit.isNegative()) {
+                                throw new UnsupportedOperationException(String.format("FenceRel %s is not allowed on the rhs of differences.", rel));
+                            }
+                            addFenceReason(rel, edge, coreReason);
+                        } else {
+                            // FIXME: Right now, we assume many relations like data, ctrl and addr to be static.
+                            //  In order to fix this, we would need to cut/eagerly encode the dependency relations.
+                            if (lit.isNegative()) {
+                                // TODO: Support negated literals (ideally via lazy/on-demand cutting)
+                                throw new UnsupportedOperationException(String.format("Negated literals of type %s are not supported.", rel));
+                            }
+                            addExecReason(e1, e2, coreReason);
+                        }
                     }
                 }
             }
+            minimize(coreReason);
+            symmetricReasons.add(new Conjunction<>(coreReason));
         }
 
-        minimize(coreReason);
-        return new Conjunction<>(coreReason);
+        return symmetricReasons;
     }
 
+
     private void minimize(List<CoreLiteral> reason) {
-        //TODO: Make sure that his is correct for exclusive events
-        // Their execution variable can only be removed if it is contained in some
-        // RelLiteral but not if it gets cf-implied!
         reason.removeIf( lit -> {
             if (!(lit instanceof ExecLiteral execLit) || lit.isNegative()) {
                 return false;
             }
-            Event ev = execLit.getData();
+            final Event ev = execLit.getData();
             return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
                     .anyMatch(e -> exec.isImplied(e.getData().first(), ev)
@@ -145,5 +161,51 @@ public class CoreReasoner {
         if (!exec.isImplied(f.getEvent(), e2.getEvent())) {
             coreReasons.add(new ExecLiteral(e2.getEvent()));
         }
+    }
+
+    // =============================================================================================
+    // ======================================== Symmetry ===========================================
+    // =============================================================================================
+
+    // Computes a list of permutations between events of symmetric threads.
+    // Depending on the <learningOption>, the set of computed permutations differs.
+    // In particular, for the option NONE, only the identity permutation will be returned.
+    private List<Function<Event, Event>> computeSymmetryPermutations() {
+        final Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
+        final List<Function<Event, Event>> perms = new ArrayList<>();
+        perms.add(Function.identity());
+
+        for (EquivalenceClass<Thread> c : symmClasses) {
+            final List<Thread> threads = new ArrayList<>(c);
+            threads.sort(Comparator.comparingInt(Thread::getId));
+
+            switch (learningOption) {
+                case NONE:
+                    break;
+                case LINEAR:
+                    for (int i = 0; i < threads.size(); i++) {
+                        final int j = (i + 1) % threads.size();
+                        perms.add(symm.createEventTransposition(threads.get(i), threads.get(j)));
+                    }
+                    break;
+                case QUADRATIC:
+                    for (int i = 0; i < threads.size(); i++) {
+                        for (int j = i + 1; j < threads.size(); j++) {
+                            perms.add(symm.createEventTransposition(threads.get(i), threads.get(j)));
+                        }
+                    }
+                    break;
+                case FULL:
+                    final List<Function<Event, Event>> allPerms = symm.createAllEventPermutations(c);
+                    allPerms.remove(Function.identity()); // We avoid adding multiple identities
+                    perms.addAll(allPerms);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Symmetry learning option: "
+                            + learningOption + " is not recognized.");
+            }
+        }
+
+        return perms;
     }
 }
