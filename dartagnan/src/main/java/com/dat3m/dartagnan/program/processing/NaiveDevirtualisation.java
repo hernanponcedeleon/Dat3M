@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.IValue;
@@ -144,8 +143,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                 }
 
                 if (possibleTargets.isEmpty()) {
-                    final String error = String.format("Cannot resolve dynamic call \"%s\", no matching functions found.", call);
-                    throw new MalformedProgramException(error);
+                    logger.warn("Cannot resolve dynamic call \"{}\", no matching functions found.", call);
                 }
 
                 logger.trace("Devirtualizing call \"{}\" with possible targets: {}", call, possibleTargets);
@@ -162,8 +160,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                     caseJumps.add(caseJump);
                 }
 
-                // FIXME: This should be an "assert(false)"
-                final Event noMatch = EventFactory.newAbortIf(expressions.makeTrue());
+                final Event noMatch = EventFactory.newAssert(expressions.makeFalse(), "Invalid function pointer");
                 final Label endLabel = EventFactory.newLabel(String.format("__Ldevirt_end#%s", devirtCounter));
 
                 final List<Event> callReplacement = new ArrayList<>();
