@@ -59,7 +59,7 @@ public class LogThreadStatistics implements ProgramProcessor {
         output.append("\n======== Program statistics ========").append("\n");
         output.append("#Threads: ").append(numNonInitThreads).append("\n")
                 .append("#Events: ").append(totalEventCount).append("\n")
-                .append("\tAnnotations: ").append(annotationCount).append("\n")
+                .append("\t#Annotations: ").append(annotationCount).append("\n")
                 .append("\t#Stores: ").append(storeCount).append("\n")
                 .append("\t#Loads: ").append(loadCount).append("\n")
                 .append("\t#Inits: ").append(initCount).append("\n")
