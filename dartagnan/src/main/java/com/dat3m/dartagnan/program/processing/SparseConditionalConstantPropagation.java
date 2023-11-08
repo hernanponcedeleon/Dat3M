@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -13,7 +14,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
@@ -122,28 +122,23 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                     propagationMap.remove(rw.getResultRegister());
                 }
 
-                if (cur instanceof AbortIf abort && abort.getCondition() instanceof BConst bConst && bConst.getValue()) {
-                    isTraversingDeadBranch = true;
-                    propagationMap.clear();
-                    continue;
-                }
-
                 if (cur instanceof CondJump jump) {
-                    final Label target = jump.getLabel();
-                    if (jump.isGoto()) {
-                        // The successor event is going to be dead (unless it is a label with other inflow).
-                        isTraversingDeadBranch = true;
-                        propagationMap.clear();
-                    }
-                    if (!jump.isDead()) {
+                    if (jump.isDead()) {
+                        // We consider dead jumps as not-reachable, so they get deleted.
+                        reachableEvents.remove(jump);
+                    } else {
                         // Join current map with label-associated map
+                        final Label target = jump.getLabel();
                         final Map<Register, Expression> finalPropagationMap = propagationMap;
                         inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
                                 : join(v, finalPropagationMap));
-                    } else {
-                        // We consider dead jumps as not-reachable, so they get deleted.
-                        reachableEvents.remove(jump);
                     }
+                }
+
+                if (IRHelper.isAlwaysBranching(cur)) {
+                    // The current instruction is branching, so there is no direct flow to the next event
+                    isTraversingDeadBranch = true;
+                    propagationMap.clear();
                 }
             }
 
@@ -234,6 +229,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             Expression rhs = transform(iBin.getRHS());
             if (lhs instanceof IValue left && rhs instanceof IValue right) {
                 return expressions.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
+            } else if ((iBin.getOp() == IOpBin.ADD || iBin.getOp() == IOpBin.SUB) && rhs instanceof IValue right && right.isZero()) {
+                return lhs;
             } else {
                 return expressions.makeBinary(lhs, iBin.getOp(), rhs);
             }
