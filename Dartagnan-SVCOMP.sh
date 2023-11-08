@@ -22,6 +22,8 @@ else
 
     export DAT3M_HOME=$(pwd)
     export DAT3M_OUTPUT=$DAT3M_HOME/output
+    export CFLAGS="-fgnu89-inline"
+    export OPTFLAGS="-mem2reg -sroa -early-cse -indvars -loop-unroll -fix-irreducible -loop-simplify -simplifycfg -gvn"
 
     cmd="java -jar svcomp/target/svcomp.jar --method=assume --program.processing.constantPropagation=false --encoding.integers=true --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
     $cmd
