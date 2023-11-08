@@ -69,7 +69,7 @@ public class WMMSolver {
             curTime = System.currentTimeMillis();
             List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
-                coreReasons.add(reasoner.toCoreReason(baseReason));
+                coreReasons.addAll(reasoner.toCoreReasons(baseReason));
             }
             stats.numComputedCoreReasons = coreReasons.size();
             result.coreReasons = new DNF<>(coreReasons);

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan;
 
-import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -35,14 +35,14 @@ public class GlobalSettings {
     */
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES = false;
 
-    public static final Refiner.SymmetryLearning REFINEMENT_SYMMETRY_LEARNING = Refiner.SymmetryLearning.FULL;
+    public static final CoreReasoner.SymmetricLearning REFINEMENT_SYMMETRIC_LEARNING = CoreReasoner.SymmetricLearning.FULL;
 
     // --------------------
 
     public static void LogGlobalSettings() {
         // Refinement settings
         logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
-        logger.info("REFINEMENT_SYMMETRY_LEARNING: " + REFINEMENT_SYMMETRY_LEARNING.name());
+        logger.info("REFINEMENT_SYMMETRIC_LEARNING: " + REFINEMENT_SYMMETRIC_LEARNING.name());
     }
 
     public static String getOrCreateOutputDirectory() throws IOException {

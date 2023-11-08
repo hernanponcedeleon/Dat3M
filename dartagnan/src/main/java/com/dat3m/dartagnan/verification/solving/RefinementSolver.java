@@ -214,7 +214,7 @@ public class RefinementSolver extends ModelChecker {
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
-        final Refiner refiner = new Refiner(analysisContext);
+        final Refiner refiner = new Refiner();
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -564,7 +564,7 @@ public class RefinementSolver extends ModelChecker {
                 .append("   -- Refining time(ms): ").append(totalRefiningTime).append("\n")
                 .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
                 .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
-        if (statList.size() > 0) {
+        if (!statList.isEmpty()) {
             message.append("   -- Min model size (#events): ").append(minModelSize).append("\n")
                     .append("   -- Average model size (#events): ").append(totalModelSize / statList.size())
                     .append("\n")
