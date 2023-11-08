@@ -1,0 +1,11 @@
+PTX MP-3-transitive
+"Adapted from Figure 6 of paper: Heterogeneous-race-free Memory Models"
+{
+x=0; y=0; z=0;
+P1:r0=0; P2:r1=0; P2:r2=0;
+}
+ P0@cta 0,gpu 0         | P1@cta 0,gpu 0         | P2@cta 1,gpu 0         ;
+ st.weak x, 1           | ld.acquire.cta r0, y   | ld.acquire.gpu r1, z   ;
+ st.release.cta y, 1    | st.release.gpu z, 1    | ld.weak r2, x          ;
+~exists
+(P1:r0 == 1 /\ P2:r1 == 1 /\ P2:r2 != 1)
