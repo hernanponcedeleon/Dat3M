@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +30,7 @@ public class LogThreadStatistics implements ProgramProcessor {
         int loadCount = 0;
         int initCount = 0;
         int otherVisibleCount = 0;
+        int annotationCount = 0;
         for (Thread thread : threads) {
             for (Event e : thread.getEvents()) {
                 totalEventCount++;
@@ -41,6 +42,8 @@ public class LogThreadStatistics implements ProgramProcessor {
                     loadCount++;
                 } else if (e instanceof GenericVisibleEvent) {
                     otherVisibleCount++;
+                } else if (e instanceof CodeAnnotation) {
+                    annotationCount++;
                 }
             }
         }
@@ -56,6 +59,7 @@ public class LogThreadStatistics implements ProgramProcessor {
         output.append("\n======== Program statistics ========").append("\n");
         output.append("#Threads: ").append(numNonInitThreads).append("\n")
                 .append("#Events: ").append(totalEventCount).append("\n")
+                .append("\tAnnotations: ").append(annotationCount).append("\n")
                 .append("\t#Stores: ").append(storeCount).append("\n")
                 .append("\t#Loads: ").append(loadCount).append("\n")
                 .append("\t#Inits: ").append(initCount).append("\n")
