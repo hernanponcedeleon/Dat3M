@@ -119,6 +119,7 @@ public class Intrinsics {
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
         LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"), false, false, true, true, Intrinsics::inlineAsZero),
+        LLVM_OBJECTSIZE("llvm.objectsize", false, false, true, false, null),
         LLVM_EXPECT("llvm.expect", false, false, true, true, Intrinsics::inlineLLVMExpect),
         LLVM_MEMCPY("llvm.memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         LLVM_MEMSET("llvm.memset", true, false, true, false, Intrinsics::inlineMemSet),
@@ -135,7 +136,7 @@ public class Intrinsics {
         LKMM_FENCE("__LKMM_FENCE", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
         // --------------------------- Misc ---------------------------
         STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
-        STD_MEMSET("memset", true, false, true, false, Intrinsics::inlineMemSet),
+        STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
@@ -189,7 +190,7 @@ public class Intrinsics {
 
         private boolean matches(String funcName) {
             boolean isPrefix = switch(this) {
-                case LLVM, LLVM_ASSUME, LLVM_META, LLVM_MEMCPY, LLVM_MEMSET, LLVM_EXPECT -> true;
+                case LLVM, LLVM_ASSUME, LLVM_META, LLVM_MEMCPY, LLVM_MEMSET, LLVM_EXPECT, LLVM_OBJECTSIZE -> true;
                 default -> false;
             };
             BiPredicate<String, String> matchingFunction = isPrefix ? String::startsWith : String::equals;
@@ -764,12 +765,20 @@ public class Intrinsics {
         return replacement;
     }
 
-    // Handles both std.memset and llvm.memset
+    // Handles, std.memset, llvm.memset and __memset_chk (checked memset)
     private List<Event> inlineMemSet(FunctionCall call) {
         final Expression dest = call.getArguments().get(0);
         final Expression fillExpr = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memset has an extra argument
+        // final Expression boundExpr = call.getArguments.get(3) // __memset_chk has an extra argument
+
+        //FIXME: Handle memset_chk correctly. For now, we ignore the bound check parameter because that one is
+        // usually provided by llvm.objectsize which we cannot resolve for now. Since we usually assume UB-freedom,
+        // the check can be ignored for the most part.
+        if (call.getCalledFunction().getName().equals("__memset_chk")) {
+            logger.warn("Treating call to \"__memset_chk\" as call to \"memset\": skipping bound checks.");
+        }
 
         if (!(countExpr instanceof IValue countValue)) {
             final String error = "Cannot handle memset with dynamic count argument: " + call;

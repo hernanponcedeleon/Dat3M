@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
+import com.dat3m.dartagnan.program.event.functions.Return;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,5 +23,15 @@ public class IRHelper {
             }
         }
         return nonDeleted;
+    }
+
+    /*
+        Returns true if the syntactic successor of <e> (e.getSuccessor()) is not (generally) a semantic successor,
+        because <e> always jumps/branches/terminates etc.
+     */
+    public static boolean isAlwaysBranching(Event e) {
+        return e instanceof Return
+                || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue()
+                || e instanceof CondJump jump && jump.isGoto();
     }
 }
