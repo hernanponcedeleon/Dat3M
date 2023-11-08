@@ -26,8 +26,8 @@ public class IRHelper {
     }
 
     /*
-        Returns true if the syntactic successor of <e> is not (generally) a semantic successor, because
-        <e> always jumps/branches/terminates etc.
+        Returns true if the syntactic successor of <e> (e.getSuccessor()) is not (generally) a semantic successor,
+        because <e> always jumps/branches/terminates etc.
      */
     public static boolean isAlwaysBranching(Event e) {
         return e instanceof Return
