@@ -145,6 +145,8 @@ litmus/VULKAN/Kronos-Group/test6.litmus,1
 litmus/VULKAN/Kronos-Group/test9.litmus,1
 litmus/VULKAN/Kronos-Group/waw.litmus,1
 litmus/VULKAN/Manual/CoWW-RR.litmus,1
+litmus/VULKAN/Manual/SB-2-wg.litmus,1
+litmus/VULKAN/Manual/SB-2-dv.litmus,1
 litmus/VULKAN/Manual/MP-avvis.litmus,1
 litmus/VULKAN/Manual/MP-mesa.litmus,1
 litmus/VULKAN/Manual/MP-mesa-fence-loop.litmus,1
