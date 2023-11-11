@@ -47,7 +47,7 @@ public class BuildWitnessTest {
             WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res);
             config.inject(witnessBuilder);
             WitnessGraph graph = witnessBuilder.build();
-            File witnessFile = new File(getOutputDirectory() + "/lazy01-for-witness.graphml");
+            File witnessFile = new File(getOutputDirectory() + "/witness.graphml");
             // The file should not exist
             assertFalse(witnessFile.exists());
             // Write to file
