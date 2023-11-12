@@ -202,7 +202,6 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-cvc4</artifactId>
                     <version>${cvc4.version}</version>
-                    <type>jar</type>
                     <classifier>CVC4</classifier>
                 </dependency>
                 <dependency>
@@ -232,7 +231,6 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-cvc5</artifactId>
                     <version>${cvc5.version}</version>
-                    <type>jar</type>
                     <classifier>cvc5</classifier>
                 </dependency>
                 <dependency>
@@ -276,7 +274,6 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-solver-opensmt</artifactId>
                     <version>${opensmt.version}</version>
-                    <type>jar</type>
                     <classifier>opensmt</classifier>
                 </dependency>
                 <dependency>
@@ -299,7 +296,6 @@
                     <groupId>org.sosy-lab</groupId>
                     <artifactId>javasmt-yices2</artifactId>
                     <version>${yices2-api.version}</version>
-                    <type>jar</type>
                 </dependency>
                 <dependency>
                     <groupId>org.sosy-lab</groupId>
