@@ -33,7 +33,6 @@ topLevelEntity:
 	| moduleAsm
 	| typeDef
 	| comdatDef
-	| globalDecl
 	| globalDef
 	| indirectSymbolDef
 	| funcDecl
@@ -53,14 +52,9 @@ comdatDef:
 		| 'nodeduplicate'
 		| 'samesize'
 	);
-globalDecl:
-	GlobalIdent '=' externalLinkage preemption? visibility? dllStorageClass? threadLocal?
-		unnamedAddr? addrSpace? externallyInitialized? immutable type (
-		',' globalField
-	)* (',' metadataAttachment)* funcAttribute*;
 globalDef:
-	GlobalIdent '=' internalLinkage? preemption? visibility? dllStorageClass? threadLocal?
-		unnamedAddr? addrSpace? externallyInitialized? immutable type constant (
+	GlobalIdent '=' (externalLinkage | internalLinkage)? preemption? visibility? dllStorageClass? threadLocal?
+		unnamedAddr? addrSpace? externallyInitialized? immutable type constant? (
 		',' globalField
 	)* (',' metadataAttachment)* funcAttribute*;
 

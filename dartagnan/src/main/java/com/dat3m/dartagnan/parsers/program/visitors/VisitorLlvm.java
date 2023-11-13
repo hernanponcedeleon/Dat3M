@@ -73,9 +73,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCompilationUnit(CompilationUnitContext ctx) {
-        // Create the metadata mapping beforehand, so that instructions can get all attachments
+        // Create the metadata mapping beforehand, so that instructions can get all attachments.
+        // Also parse all type definitions.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() != null) {
+                entity.accept(this);
+            }
+            if (entity.typeDef() != null) {
                 entity.accept(this);
             }
         }
@@ -88,12 +92,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             if (entity.funcDef() != null) {
                 visitFuncHeader(entity.funcDef().funcHeader());
             }
-            // FIXME: Declare global variables
+            if (entity.globalDef() != null) {
+                visitGlobalDeclaration(entity.globalDef());
+            }
         }
+
+        // Parse global definitions after declarations.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
-            //FIXME: We need to parse the declaration of globals (similar to func headers) first
-            // because the initializer may refer to other globals.
-            if (entity.globalDecl() != null || entity.globalDef() != null || entity.typeDef() != null) {
+            if (entity.globalDef() != null) {
                 entity.accept(this);
             }
         }
@@ -101,7 +107,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // Parse definitions
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.metadataDef() == null &&
-                    entity.globalDecl() == null &&
                     entity.globalDef() == null &&
                     entity.typeDef() == null &&
                     entity.funcDecl() == null) {
@@ -164,7 +169,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         for (final BasicBlockContext basicBlockContext : ctx.funcBody().basicBlock()) {
             block = getBlock(basicBlockContext.LabelIdent());
             final List<Metadata> blockHeaderMetadata;
-            if (basicBlockContext.instruction().size() > 0) {
+            if (!basicBlockContext.instruction().isEmpty()) {
                 blockHeaderMetadata = parseMetadataAttachment(basicBlockContext.instruction(0).metadataAttachment());
             } else {
                 blockHeaderMetadata = parseMetadataAttachment(basicBlockContext.terminator().metadataAttachment());
@@ -232,31 +237,32 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return getBlock(labelName);
     }
 
-    @Override
-    public Expression visitGlobalDecl(GlobalDeclContext ctx) {
-        checkSupport(false, "Declared but undefined constants are not supported", ctx);
-        // FIXME: See <visitGlobalDef> on how to handle this
-        return null;
-    }
-
-    @Override
-    public Expression visitGlobalDef(GlobalDefContext ctx) {
+    public void visitGlobalDeclaration(GlobalDefContext ctx) {
         final String name = globalIdent(ctx.GlobalIdent());
-        check(!constantMap.containsKey(name), "Redefined constant in %s.", ctx);
-        final Type type = parseType(ctx.type());
-        final int size = types.getMemorySizeInBytes(type);
+        check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
+        final int size = types.getMemorySizeInBytes(parseType(ctx.type()));
         final MemoryObject globalObject = program.getMemory().allocate(size, true);
         globalObject.setCVar(name);
         if (ctx.threadLocal() != null) {
             globalObject.setIsThreadLocal(true);
         }
-
-        //TODO: Merge GlobalDef/GlobalDecl in the LLVM grammar into one single rule with an optional "constant".
-        // If no constant is provided, we can generate a nondeterministic value
-        final Expression value = checkExpression(type, ctx.constant());
-        setInitialMemoryFromConstant(globalObject, 0, value);
         // TODO: mark the global as constant, if possible.
         constantMap.put(name, globalObject);
+    }
+
+    @Override
+    public Expression visitGlobalDef(GlobalDefContext ctx) {
+        final String name = globalIdent(ctx.GlobalIdent());
+        final MemoryObject globalObject = (MemoryObject) constantMap.get(name);
+        final Type type = parseType(ctx.type());
+        final boolean isExternal = ctx.externalLinkage() != null;
+        final boolean hasInitializer = ctx.constant() != null;
+
+        check (!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
+        check (isExternal || hasInitializer, "Global without initializer; %s", ctx);
+
+        final Expression value = hasInitializer ? checkExpression(type, ctx.constant()) : makeNonDetOfType(type);
+        setInitialMemoryFromConstant(globalObject, 0, value);
         return null;
     }
 
@@ -295,7 +301,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private List<Metadata> parseMetadataAttachment(List<MetadataAttachmentContext> metadataAttachmentContexts) {
-        if (metadataAttachmentContexts.size() == 0) {
+        if (metadataAttachmentContexts.isEmpty()) {
             return List.of();
         }
 
@@ -1270,6 +1276,32 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helpers
+
+    public Expression makeNonDetOfType(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            final List<Expression> entries = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                entries.add(makeNonDetOfType(arrayType.getElementType()));
+            }
+            return expressions.makeArray(arrayType.getElementType(), entries, true);
+        } else if (type instanceof AggregateType structType) {
+            final List<Expression> elements = new ArrayList<>(structType.getDirectFields().size());
+            for (Type fieldType : structType.getDirectFields()) {
+                elements.add(makeNonDetOfType(fieldType));
+            }
+            return expressions.makeConstruct(elements);
+        } else if (type instanceof IntegerType intType) {
+            final INonDet value = new INonDet(program.getConstants().size(), intType, true);
+            value.setMin(intType.getMinimumValue(true));
+            value.setMax(intType.getMaximumValue(true));
+            program.addConstant(value);
+            return value;
+        } else if (type instanceof BooleanType) {
+            return new BNonDet(types.getBooleanType());
+        } else {
+            throw new UnsupportedOperationException("Cannot create non-deterministic value of type " + type);
+        }
+    }
 
     private void check(boolean condition, String message, ParserRuleContext context) {
         if (!condition) {
