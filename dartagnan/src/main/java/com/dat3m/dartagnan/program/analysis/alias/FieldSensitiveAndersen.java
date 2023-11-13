@@ -320,12 +320,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 }
                 return new Result(null, null, l.offset.multiply(r.offset), min(min(l.alignment,l.register)*r.offset.intValue(), min(r.alignment,r.register)*l.offset.intValue()));
             }
-            if(x.getOp() == ADD) {
+            if(x.getOp() == ADD || x.getOp() == SUB) {
                 if(l.address!=null && r.address!=null) {
                     return null;
                 }
                 MemoryObject base = l.address!=null ? l.address : r.address;
-                BigInteger offset = l.offset.add(r.offset);
+                BigInteger offset = x.getOp() == ADD ? l.offset.add(r.offset) : l.offset.subtract(r.offset);
                 if(base!=null) {
                     return new Result(base,null,offset,min(min(l.alignment,l.register), min(r.alignment,r.register)));
                 }
