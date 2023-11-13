@@ -868,9 +868,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitPoisonConst(PoisonConstContext ctx) {
         // It is correct to replace a poison value with an undef value or any value of the type.
-        BooleanType booleanType = types.getBooleanType();
-        var nondeterministicExpression = new BNonDet(booleanType);
-        return expressions.makeCast(nondeterministicExpression, expectedType);
+        return makeNonDetOfType(expectedType);
     }
 
     @Override
