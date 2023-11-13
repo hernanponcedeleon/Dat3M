@@ -144,6 +144,7 @@ public class Intrinsics {
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
+        STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         ;
 
         private final List<String> variants;
