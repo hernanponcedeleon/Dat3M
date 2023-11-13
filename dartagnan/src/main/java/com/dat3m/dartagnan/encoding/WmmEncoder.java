@@ -606,10 +606,11 @@ public class WmmEncoder implements Encoder {
                 for (Event z : allFenceSC.subList(i + 1, allFenceSC.size())) {
                     String scope1 = Tag.getScopeTag(x, program.getArch());
                     String scope2 = Tag.getScopeTag(z, program.getArch());
-                    if (!scope1.equals(scope2) || scope1.isEmpty()) {
+                    if (scope1.isEmpty() || scope2.isEmpty()) {
                         continue;
                     }
-                    if (!x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()), scope1)) {
+                    if (!x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()), scope1) ||
+                            !z.getThread().getScopeHierarchy().sameAtHigherScope((x.getThread().getScopeHierarchy()), scope2)) {
                         continue;
                     }
                     boolean forwardPossible = maySet.contains(x, z);

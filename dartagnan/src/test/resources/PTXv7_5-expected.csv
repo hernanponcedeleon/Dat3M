@@ -179,6 +179,7 @@ litmus/PTX/Manual/SB+sc-gpu.litmus,1
 litmus/PTX/Manual/SB+sc-gpu-multiFence.litmus,1
 litmus/PTX/Manual/SB+sc-gpu-multiFence-TotalOrder.litmus,1
 litmus/PTX/Manual/SB+sc-sys.litmus,1
+litmus/PTX/Manual/SB+sc-sys-gpu.litmus,1
 litmus/PTX/Manual/SB-weak.litmus,1
 litmus/PTX/Manual/Ticketlock-same-gpu.litmus,0
 litmus/PTX/Manual/Ticketlock-diff-gpu.litmus,1
