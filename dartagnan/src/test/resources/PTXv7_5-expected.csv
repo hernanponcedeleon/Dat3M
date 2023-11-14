@@ -152,7 +152,7 @@ litmus/PTX/Manual/LB+NoThinAir-location_.litmus,1
 litmus/PTX/Manual/LB+NoThinAir-register.litmus,1
 litmus/PTX/Manual/MP-3-transitive.litmus,1
 litmus/PTX/Manual/MP-cta.litmus,1
-litmus/PTX/Manual/MP-cta1.litmus,1
+litmus/PTX/Manual/MP-cta-gpu.litmus,1
 litmus/PTX/Manual/MP-gpu.litmus,1
 litmus/PTX/Manual/MP-relaxed.litmus,1
 litmus/PTX/Manual/MP-sys.litmus,1

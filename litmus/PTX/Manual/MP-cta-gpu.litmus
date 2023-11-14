@@ -1,4 +1,4 @@
-PTX MP-cta1
+PTX MP-cta-gpu
 "Message passing, sync because release/acquire operations are morally strong"
 {
 x=0;
