@@ -29,6 +29,8 @@ import static java.lang.Integer.parseInt;
 @Options
 public class SVCOMPRunner extends BaseOptions {
 
+    private static final Logger logger = LogManager.getLogger(SVCOMPRunner.class);
+
     private Property property;
     
     @Option(
@@ -96,6 +98,7 @@ public class SVCOMPRunner extends BaseOptions {
         config.recursiveInject(r);
 
         if(r.property == null) {
+            logger.warn("Unrecognized property");
             System.out.println("UNKNOWN");
             return;
         }
