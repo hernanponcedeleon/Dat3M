@@ -42,7 +42,9 @@ public class SVCOMPRunner extends BaseOptions {
 		} else if(p.contains("unreach-call")) {
 			property = Property.PROGRAM_SPEC;
 		} else {
-			throw new IllegalArgumentException("Unrecognized property " + p);
+            // To comply with SVCOMP qualification rules, we should return UNKNOWN
+            // instead of throwing an exception for unhandled properties
+            property = null;
 		}
 	}
 
@@ -92,6 +94,11 @@ public class SVCOMPRunner extends BaseOptions {
 		Configuration config = Configuration.fromCmdLineArguments(argKeyword);
 		SVCOMPRunner r = new SVCOMPRunner();
 		config.recursiveInject(r);
+
+        if(r.property == null) {
+            System.out.println("UNKNOWN");
+            return;
+        }
 
         WitnessGraph witness = new WitnessGraph(); 
         if(r.witnessPath != null) {
