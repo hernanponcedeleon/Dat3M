@@ -609,8 +609,8 @@ public class WmmEncoder implements Encoder {
                     if (scope1.isEmpty() || scope2.isEmpty()) {
                         continue;
                     }
-                    if (!x.getThread().getScopeHierarchy().sameAtHigherScope((z.getThread().getScopeHierarchy()), scope1) ||
-                            !z.getThread().getScopeHierarchy().sameAtHigherScope((x.getThread().getScopeHierarchy()), scope2)) {
+                    if (!x.getThread().getScopeHierarchy().canSyncAtScope((z.getThread().getScopeHierarchy()), scope1) ||
+                            !z.getThread().getScopeHierarchy().canSyncAtScope((x.getThread().getScopeHierarchy()), scope2)) {
                         continue;
                     }
                     boolean forwardPossible = maySet.contains(x, z);
