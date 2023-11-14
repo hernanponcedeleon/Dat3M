@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.event.Tag;
 
 import java.util.ArrayList;
@@ -40,27 +39,27 @@ public class ScopeHierarchy{
         return scopeIds.getOrDefault(scope, -1);
     }
 
-    // For each scope S higher than flag, we check both events are in the same scope S
-    public boolean sameAtHigherScope(ScopeHierarchy thread, String flag) {
-        if (!this.getClass().equals(thread.getClass()) || !this.getScopes().contains(flag)) {
+    // For any scope higher than the given one, we check both threads have the same scope id.
+    public boolean canSyncAtScope(ScopeHierarchy other, String scope) {
+        if (!this.getScopes().contains(scope)) {
             return false;
         }
 
         ArrayList<String> scopes = this.getScopes();
-        int validIndex = scopes.indexOf(flag);
+        int validIndex = scopes.indexOf(scope);
         // scopes(0) is highest in hierarchy
         // i = 0 is global, every thread will always have the same id, so start from i = 1
         for (int i = 1; i <= validIndex; i++) {
-            if (!sameAtSingleScope(thread, scopes.get(i))) {
+            if (!atSameScopeId(other, scopes.get(i))) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean sameAtSingleScope(ScopeHierarchy thread, String scope) {
+    private boolean atSameScopeId(ScopeHierarchy other, String scope) {
         int thisId = this.getScopeId(scope);
-        int threadId = thread.getScopeId(scope);
-        return (thisId == threadId && thisId != -1);
+        int otherId = other.getScopeId(scope);
+        return (thisId == otherId && thisId != -1);
     }
 }
