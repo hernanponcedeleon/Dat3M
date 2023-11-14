@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -28,6 +29,12 @@ public class GEPToAddition implements ProgramProcessor {
         for (Function function : program.getFunctions()) {
             for (RegReader reader : function.getEvents(RegReader.class)) {
                 reader.transformExpressions(transformer);
+            }
+        }
+
+        for (MemoryObject memoryObject : program.getMemory().getObjects()) {
+            for (int field : memoryObject.getStaticallyInitializedFields()) {
+                memoryObject.setInitialValue(field, memoryObject.getInitialValue(field).accept(transformer));
             }
         }
     }
