@@ -123,6 +123,9 @@ public class PropertyEncoder implements Encoder {
         if (properties.contains(DATARACEFREEDOM)) {
             trackableViolationEncodings.add(encodeDataRaces());
         }
+        if (properties.contains(NOSINTOVERFLOW)) {
+            trackableViolationEncodings.add(encodeOverflows());
+        }
         if (properties.contains(CAT_SPEC)) {
             trackableViolationEncodings.addAll(encodeCATSpecificationViolations());
         }
@@ -372,6 +375,26 @@ public class PropertyEncoder implements Encoder {
             }
         }
         return new TrackableFormula(bmgr.not(DATARACEFREEDOM.getSMTVariable(ctx)), hasRace);
+    }
+
+    // ======================================================================
+    // ======================================================================
+    // ============================ Overflows ===============================
+    // ======================================================================
+    // ======================================================================
+
+    public TrackableFormula encodeOverflows() {
+        logger.info("Encoding overflows");
+
+        final EncodingContext ctx = this.context;
+        final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        final Program program = this.program;
+
+        BooleanFormula overflow = bmgr.makeFalse();
+        for (Event e : program.getThreadEventsWithAllTags(Tag.SVCOMP.SVCOMPOVERFLOW)) {
+            overflow = bmgr.or(overflow, ctx.execution(e));
+        }
+        return new TrackableFormula(bmgr.not(NOSINTOVERFLOW.getSMTVariable(ctx)), overflow);
     }
 
     // ======================================================================

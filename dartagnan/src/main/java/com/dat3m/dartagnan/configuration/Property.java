@@ -14,8 +14,8 @@ public enum Property implements OptionInterface {
     PROGRAM_SPEC,        // Litmus queries OR assertion safety in C-code
     LIVENESS,            // Liveness property
     CAT_SPEC,            // CAT-spec defined via flagged axioms in .cat file (~bug specification)
-    DATARACEFREEDOM;     // Special option for data-race detection in SVCOMP only
-
+    DATARACEFREEDOM,     // Special option for data-race detection in SVCOMP only
+    NOSINTOVERFLOW;      // Special option for signed integer overflow detection in SVCOMP only
 
     public enum Type {
         SAFETY,
@@ -31,6 +31,8 @@ public enum Property implements OptionInterface {
                 return "Program specification";
             case DATARACEFREEDOM:
                 return "Data-race freedom (SVCOMP only)";
+            case NOSINTOVERFLOW:
+                return "No signed integer overflow (SVCOMP only)";
             case LIVENESS:
                 return "Liveness";
             case CAT_SPEC:
@@ -71,7 +73,7 @@ public enum Property implements OptionInterface {
 
     // Used to decide the order shown by the selector in the UI
     public static Property[] orderedValues() {
-        Property[] order = {PROGRAM_SPEC, LIVENESS, CAT_SPEC, DATARACEFREEDOM};
+        Property[] order = {PROGRAM_SPEC, LIVENESS, CAT_SPEC, DATARACEFREEDOM, NOSINTOVERFLOW};
         // Be sure no element is missing
         assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
         return order;
