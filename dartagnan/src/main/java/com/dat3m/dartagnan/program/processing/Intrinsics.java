@@ -362,7 +362,6 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "user assertion");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -371,7 +370,6 @@ public class Intrinsics {
     }
 
     private List<Event> integerOverflow(FunctionCall call) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "integer overflow");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -523,41 +521,39 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLLVMSAddWithOverflow(ValueFunctionCall call) {
-        final Register resultReg = call.getResultRegister();
-        final List<Expression> arguments = call.getArguments();
-        final Expression x = arguments.get(0);
-        final Expression y = arguments.get(1);
-
-        assert x.getType() == y.getType();
-        assert (x.getType() instanceof IntegerType);
-        
-        final IntegerType iType = (IntegerType) x.getType();
-        final Expression sum = expressions.makeADD(x, y);
-        final Expression flag = expressions.makeCast(expressions.makeGTE(sum, expressions.makeValue(iType.getMaximumValue(true), iType), true), TypeFactory.getInstance().getIntegerType(1));
-
-        return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(sum, flag)))
-        );
-
+        return inlineLLVMSOpWithOverflow(call, IOpBin.ADD);
     }
 
     private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.SUB);
+    }
+
+    private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IOpBin op) {
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
         final Expression x = arguments.get(0);
         final Expression y = arguments.get(1);
-
         assert x.getType() == y.getType();
-        assert (x.getType() instanceof IntegerType);
-        
+
         final IntegerType iType = (IntegerType) x.getType();
-        final Expression sum = expressions.makeSUB(x, y);
-        final Expression flag = expressions.makeCast(expressions.makeGTE(sum, expressions.makeValue(iType.getMinimumValue(true), iType), true), TypeFactory.getInstance().getIntegerType(1));
+        final Expression sum = expressions.makeBinary(x, op, y);
+        final Expression flag = expressions.makeCast(
+                expressions.makeNot(checkIfValueInRangeOfType(sum, iType, true)),
+                types.getIntegerType(1)
+        );
 
         return List.of(
                 EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(sum, flag)))
         );
+    }
 
+    private Expression checkIfValueInRangeOfType(Expression value, IntegerType integerType, boolean signed) {
+        final Expression minValue = expressions.makeValue(integerType.getMinimumValue(signed), integerType);
+        final Expression maxValue = expressions.makeValue(integerType.getMaximumValue(signed), integerType);
+        return expressions.makeAnd(
+                expressions.makeLTE(minValue, value, true),
+                expressions.makeLTE(value, maxValue, true)
+        );
     }
 
     private List<Event> inlineLLVMSaturatedAdd(ValueFunctionCall call) {
