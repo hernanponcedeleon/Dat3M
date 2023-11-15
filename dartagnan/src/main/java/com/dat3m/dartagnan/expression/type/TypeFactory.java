@@ -15,8 +15,9 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
+    private final IntegerType pointerType = new IntegerType(64, true);
     private final IntegerType pointerDifferenceType;
-    private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
+    private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL, false);
 
     private final Normalizer typeNormalizer = new Normalizer();
 
@@ -35,8 +36,8 @@ public final class TypeFactory {
 
     public VoidType getVoidType() { return voidType; }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public IntegerType getPointerType() {
+        return pointerType;
     }
 
     public IntegerType getIntegerType() {
@@ -45,7 +46,7 @@ public final class TypeFactory {
 
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
-        return typeNormalizer.normalize(new IntegerType(bitWidth));
+        return typeNormalizer.normalize(new IntegerType(bitWidth, false));
     }
 
     public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes) {

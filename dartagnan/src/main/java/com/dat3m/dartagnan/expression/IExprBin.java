@@ -17,7 +17,10 @@ public class IExprBin extends IExpr {
 
     public IExprBin(IntegerType type, Expression lhs, IOpBin op, Expression rhs) {
         super(type);
-    	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
+    	Preconditions.checkArgument(lhs.getType().equals(rhs.getType()) ||
+                        op.equals(IOpBin.ADD) &&
+                                lhs.getType() instanceof IntegerType leftType && leftType.isPointer() &&
+                                rhs.getType() instanceof IntegerType rightType && !rightType.isPointer(),
                 "The types of %s and %s do not match.", lhs, rhs);
         this.lhs = lhs;
         this.rhs = rhs;

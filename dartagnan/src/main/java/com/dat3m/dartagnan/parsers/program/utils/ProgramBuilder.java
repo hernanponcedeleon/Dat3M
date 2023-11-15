@@ -215,7 +215,7 @@ public class ProgramBuilder {
     public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
         MemoryObject object = getOrNewMemoryObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, EventFactory.newLocal(reg, object));
+        addChild(regThread, EventFactory.newLocal(reg, expressions.makeCast(object, type)));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {

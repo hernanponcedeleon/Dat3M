@@ -35,7 +35,7 @@ public class MemoryObject extends IConst {
     private final HashMap<Integer, Expression> initialValues = new HashMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated) {
-        super(TypeFactory.getInstance().getArchType());
+        super(TypeFactory.getInstance().getPointerType());
         this.index = index;
         this.size = size;
         this.isStatic = isStaticallyAllocated;

@@ -9,13 +9,19 @@ public final class IntegerType implements Type {
     final static int MATHEMATICAL = -1;
 
     private final int bitWidth;
+    private final boolean isPointer;
 
-    IntegerType(int bitWidth) {
+    IntegerType(int bitWidth, boolean isPointer) {
         this.bitWidth = bitWidth;
+        this.isPointer = isPointer;
     }
 
     public boolean isMathematical() {
         return bitWidth == MATHEMATICAL;
+    }
+
+    public boolean isPointer() {
+        return isPointer;
     }
 
     public int getBitWidth() {
@@ -59,16 +65,16 @@ public final class IntegerType implements Type {
         if (obj == this) {
             return true;
         }
-        return obj instanceof IntegerType other && other.bitWidth == this.bitWidth;
+        return obj instanceof IntegerType other && isPointer == other.isPointer && bitWidth == other.bitWidth;
     }
 
     @Override
     public int hashCode() {
-        return 31 * bitWidth;
+        return (isPointer ? 1 : 0) + 31 * bitWidth;
     }
 
     @Override
     public String toString() {
-        return isMathematical() ? "int" : "bv" + bitWidth;
+        return isPointer ? "ptr" : isMathematical() ? "int" : "bv" + bitWidth;
     }
 }

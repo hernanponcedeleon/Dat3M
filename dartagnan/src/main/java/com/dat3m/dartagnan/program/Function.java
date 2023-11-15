@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.IExpr;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -17,7 +17,7 @@ import com.google.common.base.Preconditions;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Function implements Expression {
+public class Function extends IExpr {
 
     protected String name;
     protected Event entry; // Can be null for intrinsics
@@ -34,6 +34,7 @@ public class Function implements Expression {
     protected int dummyCount = 0;
 
     public Function(String name, FunctionType type, List<String> parameterNames, int id, Event entry) {
+        super(TypeFactory.getInstance().getPointerType());
         Preconditions.checkArgument(type.getParameterTypes().size() == parameterNames.size());
         Preconditions.checkArgument(entry == null || entry.getPredecessor() == null,
                 "The entry event of a function is not allowed to have predecessors.");
@@ -55,11 +56,6 @@ public class Function implements Expression {
             exit = cur;
             cur = cur.getSuccessor();
         }
-    }
-
-    @Override
-    public Type getType() {
-        return TypeFactory.getInstance().getArchType();
     }
 
     public String getName() { return this.name; }

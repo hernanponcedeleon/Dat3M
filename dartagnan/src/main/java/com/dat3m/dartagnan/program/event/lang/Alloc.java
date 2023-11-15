@@ -33,8 +33,8 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private boolean isHeapAllocation;
 
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation) {
-        Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getArchType());
-        Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
+        Preconditions.checkArgument(resultRegister.getType() instanceof IntegerType t && t.isPointer());
+        Preconditions.checkArgument(arraySize.getType() instanceof IntegerType t && !t.isPointer());
         this.resultRegister = resultRegister;
         this.arraySize = arraySize;
         this.allocationType = allocType;

@@ -98,11 +98,15 @@ public final class ExpressionFactory {
     }
 
     public Expression makeCast(Expression expression, Type type) {
+        return makeCast(expression, type, false);
+    }
+
+    public Expression makeCast(Expression expression, Type type, boolean signed) {
         if (type instanceof BooleanType) {
             return makeBooleanCast(expression);
         }
         if (type instanceof IntegerType integerType) {
-            return makeIntegerCast(expression, integerType, false);
+            return makeIntegerCast(expression, integerType, signed);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s.", expression, type));
     }
@@ -242,9 +246,8 @@ public final class ExpressionFactory {
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        //TODO getPointerType()
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+        Preconditions.checkArgument(base.getType() instanceof IntegerType t && t.isPointer(),
                 "Applying offsets to non-pointer expression.");
-        return new GEPExpression(types.getArchType(), indexingType, base, offsets);
+        return new GEPExpression(base.getType(), indexingType, base, offsets);
     }
 }

@@ -44,7 +44,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
     private final TypeFactory types = TypeFactory.getInstance();
     private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    private final Type pointerType = types.getPointerType();
+    private final IntegerType pointerType = types.getPointerType();
     private final IntegerType integerType = types.getArchType();
     private final Map<String, Expression> constantMap = new HashMap<>();
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
@@ -818,7 +818,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((IntegerType) pointerType);
+        return expressions.makeZero(pointerType);
     }
 
     @Override

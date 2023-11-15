@@ -194,7 +194,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
                         }
                     }
                 }
-                Register register = programBuilder.getOrNewRegister(scope, name, archType);
+                Register register = programBuilder.getOrNewRegister(scope, name, object.getType());
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
                 id++;
             }
@@ -499,15 +499,18 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitNreRegDeclaration(LitmusCParser.NreRegDeclarationContext ctx){
         Register register = programBuilder.getRegister(scope, ctx.varName().getText());
-        if(register == null){
-            register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), archType);
-            if(ctx.re() != null){
-                returnRegister = register;
-                ctx.re().accept(this);
-            }
-            return null;
+        if (register != null) {
+            throw new ParsingException("Register " + ctx.varName().getText() + " is already initialised");
         }
-        throw new ParsingException("Register " + ctx.varName().getText() + " is already initialised");
+        // More types are possible
+        final IntegerType type = ctx.typeSpecifier().Ast().isEmpty() ? archType :
+                programBuilder.getTypeFactory().getPointerType();
+        register = programBuilder.getOrNewRegister(scope, ctx.varName().getText(), type);
+        if (ctx.re() != null) {
+            returnRegister = register;
+            ctx.re().accept(this);
+        }
+        return null;
     }
 
     @Override

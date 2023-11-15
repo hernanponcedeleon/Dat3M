@@ -121,7 +121,7 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
-        b.addChild(0, newLocal(r0, mult(x, 1)));
+        b.addChild(0, newLocal(r0, mult(expressions.makeIntegerCast(x, types.getArchType(), false), 1)));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
         Store e1 = newStore(plus(r0, 1));
@@ -309,8 +309,8 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, mult(x, 0)));
-        b.addChild(0, newLocal(r0, y));
+        b.addChild(0, newLocal(r0, mult(expressions.makeCast(x, types.getArchType(), false), 0)));
+        b.addChild(0, newLocal(r0, expressions.makeCast(y, types.getArchType(), false)));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
         Store e1 = newStore(x);
@@ -353,10 +353,10 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, y));
+        b.addChild(0, newLocal(r0, expressions.makeCast(y, types.getArchType(), false)));
         Store e0 = newStore(r0);
         b.addChild(0, e0);
-        b.addChild(0, newLocal(r0, mult(x, 0)));
+        b.addChild(0, newLocal(r0, mult(expressions.makeCast(x, types.getArchType(), false), 0)));
         Store e1 = newStore(x);
         b.addChild(0, e1);
         Store e2 = newStore(y);

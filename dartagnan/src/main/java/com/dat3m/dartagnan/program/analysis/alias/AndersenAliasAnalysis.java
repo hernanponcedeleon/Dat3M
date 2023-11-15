@@ -3,6 +3,10 @@ package com.dat3m.dartagnan.program.analysis.alias;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IConst;
 import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.IExprUn;
+import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -37,6 +41,7 @@ import static com.dat3m.dartagnan.expression.op.IOpBin.ADD;
  */
 public class AndersenAliasAnalysis implements AliasAnalysis {
 
+    private final IntegerType pointerType = TypeFactory.getInstance().getPointerType();
     ///When a pointer set gains new content, it is added to this queue
     private final Queue<Object> variables = new ArrayDeque<>();
     ///Super set of all pointer sets in this analysis
@@ -150,11 +155,11 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
 
     private void processRegs(Local e) {
         Register register = e.getResultRegister();
-        Expression expr = e.getExpr();
+        Expression expr = ignoreCasts(e.getExpr());
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IExprBin iBin && iBin.getLHS() instanceof Register) {
+        } else if (expr instanceof IExprBin iBin && ignoreCasts(iBin.getLHS()) instanceof Register) {
             addAllAddresses(register, maxAddressSet);
             variables.add(register);
         } else if (expr instanceof MemoryObject mem) {
@@ -179,7 +184,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                                 // Add location to variables if edge is new.
                                 variables.add(address);
                             }
-                        } else if (e instanceof Store store && store.getMemValue() instanceof Register register) {
+                        } else if (e instanceof Store store && ignoreCasts(store.getMemValue()) instanceof Register register) {
                             // *variable = register
                             // Add edge from register to location
                             if (addEdge(register, address)) {
@@ -200,7 +205,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
     }
 
     private void processResults(Local e) {
-        Expression exp = e.getExpr();
+        Expression exp = ignoreCasts(e.getExpr());
         Register reg = e.getResultRegister();
         if (exp instanceof MemoryObject mem) {
             addTarget(reg, new Location(mem, 0));
@@ -209,9 +214,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!(exp instanceof IExprBin iBin)) {
             return;
         }
-        Expression base = iBin.getLHS();
+        Expression base = ignoreCasts(iBin.getLHS());
         if (base instanceof MemoryObject mem) {
-            Expression rhs = iBin.getRHS();
+            Expression rhs = ignoreCasts(iBin.getRHS());
             //FIXME Address extends IConst
             if (rhs instanceof IConst ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
@@ -318,6 +323,14 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         public String toString() {
             return String.format("%s[%d]", base, offset);
         }
+    }
+
+    private Expression ignoreCasts(Expression expression) {
+        return expression instanceof IExprUn unary &&
+                (unary.getOp() == IOpUn.CAST_SIGNED || unary.getOp() == IOpUn.CAST_UNSIGNED) &&
+                (unary.getType().isMathematical() ||
+                        !pointerType.isMathematical() && unary.getType().getBitWidth() >= pointerType.getBitWidth()) ?
+                ignoreCasts(unary.getInner()) : expression;
     }
 
     private boolean addEdge(Object v1, Object v2) {
