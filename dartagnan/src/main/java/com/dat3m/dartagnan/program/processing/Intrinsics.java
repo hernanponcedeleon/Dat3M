@@ -115,6 +115,7 @@ public class Intrinsics {
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
+                "llvm.sadd.with.overflow", "llvm.ssub.with.overflow",
                 "llvm.ctlz", "llvm.ctpop"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
@@ -145,6 +146,8 @@ public class Intrinsics {
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- UBSAN ---------------------------
+        UBSAN_ADD_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow"), false, false, false, true, Intrinsics::integerOverflow),
         ;
 
         private final List<String> variants;
@@ -367,6 +370,15 @@ public class Intrinsics {
         return List.of(assertion, abort);
     }
 
+    private List<Event> integerOverflow(FunctionCall call) {
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final Expression condition = expressions.makeFalse();
+        final Event assertion = EventFactory.newAssert(condition, "integer overflow");
+        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        abort.addTags(Tag.EARLYTERMINATION);
+        return List.of(assertion, abort);
+    }
+
     // --------------------------------------------------------------------------------------------------------
     // LLVM intrinsics
 
@@ -381,6 +393,10 @@ public class Intrinsics {
             return inlineLLVMCtpop(valueCall);
         } else if (name.contains("add.sat")) {
             return inlineLLVMSaturatedAdd(valueCall);
+        } else if (name.contains("sadd.with.overflow")) {
+            return inlineLLVMSAddWithOverflow(valueCall);
+        } else if (name.contains("ssub.with.overflow")) {
+            return inlineLLVMSSubWithOverflow(valueCall);
         } else if (name.contains("sub.sat")) {
             return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
@@ -504,6 +520,44 @@ public class Intrinsics {
                     EventFactory.newLocal(resultReg, expressions.makeConditional(noUnderflow, expressions.makeSUB(x, y), zero))
             );
         }
+    }
+
+    private List<Event> inlineLLVMSAddWithOverflow(ValueFunctionCall call) {
+        final Register resultReg = call.getResultRegister();
+        final List<Expression> arguments = call.getArguments();
+        final Expression x = arguments.get(0);
+        final Expression y = arguments.get(1);
+
+        assert x.getType() == y.getType();
+        assert (x.getType() instanceof IntegerType);
+        
+        final IntegerType iType = (IntegerType) x.getType();
+        final Expression sum = expressions.makeADD(x, y);
+        final Expression flag = expressions.makeCast(expressions.makeGTE(sum, expressions.makeValue(iType.getMaximumValue(true), iType), true), TypeFactory.getInstance().getIntegerType(1));
+
+        return List.of(
+                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(sum, flag)))
+        );
+
+    }
+
+    private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
+        final Register resultReg = call.getResultRegister();
+        final List<Expression> arguments = call.getArguments();
+        final Expression x = arguments.get(0);
+        final Expression y = arguments.get(1);
+
+        assert x.getType() == y.getType();
+        assert (x.getType() instanceof IntegerType);
+        
+        final IntegerType iType = (IntegerType) x.getType();
+        final Expression sum = expressions.makeSUB(x, y);
+        final Expression flag = expressions.makeCast(expressions.makeGTE(sum, expressions.makeValue(iType.getMinimumValue(true), iType), true), TypeFactory.getInstance().getIntegerType(1));
+
+        return List.of(
+                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(sum, flag)))
+        );
+
     }
 
     private List<Event> inlineLLVMSaturatedAdd(ValueFunctionCall call) {
