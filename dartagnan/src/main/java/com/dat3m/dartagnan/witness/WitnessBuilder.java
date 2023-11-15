@@ -175,8 +175,10 @@ public class WitnessBuilder {
             switch(p) {
                 case PROGRAM_SPEC:
                     ltl += "CHECK( init(main()), LTL(G ! call(reach_error())))";
+                    break;
                 case NOSINTOVERFLOW:
                     ltl += "CHECK( init(main()), LTL(G ! overflow))";
+                    break;
             }
         }
         return ltl;
