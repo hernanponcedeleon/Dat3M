@@ -41,6 +41,8 @@ public class SVCOMPRunner extends BaseOptions {
 			property = Property.DATARACEFREEDOM;
 		} else if(p.contains("unreach-call")) {
 			property = Property.PROGRAM_SPEC;
+		} else if(p.contains("no-overflow")) {
+			property = Property.NOSINTOVERFLOW;
 		} else {
 			throw new IllegalArgumentException("Unrecognized property " + p);
 		}

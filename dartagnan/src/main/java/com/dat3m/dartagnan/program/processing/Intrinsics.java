@@ -375,7 +375,7 @@ public class Intrinsics {
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "integer overflow");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION);
+        abort.addTags(Tag.EARLYTERMINATION, Tag.SVCOMP.SVCOMPOVERFLOW);
         return List.of(assertion, abort);
     }
 
