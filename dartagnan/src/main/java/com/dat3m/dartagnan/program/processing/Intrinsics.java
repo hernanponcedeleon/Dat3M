@@ -147,8 +147,11 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- UBSAN ---------------------------
-        UBSAN_ADD_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow"), false, false, false, true, Intrinsics::integerOverflow),
-        ;
+        UBSAN_ADD_OVERFLOW(
+                List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", "__ubsan_handle_divrem_overflow",
+                        "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
+                false, false, false, true, Intrinsics::integerOverflow),
+                ;
 
         private final List<String> variants;
         private final boolean writesMemory;
