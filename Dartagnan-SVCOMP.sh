@@ -31,6 +31,6 @@ else
         export CFLAGS="-fgnu89-inline"
     fi
     
-    cmd="java -jar svcomp/target/svcomp.jar --method=assume --program.processing.constantPropagation=false --encoding.integers=true --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
+    cmd="java -jar svcomp/target/svcomp.jar --method=assume --encoding.integers=true --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
     $cmd
 fi
