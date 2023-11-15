@@ -4,11 +4,14 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.RMWCmpXchgBase;
+import com.dat3m.dartagnan.program.event.core.utils.MultiRegWriter;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
-// FIXME: This instruction writes to two registers, which we cannot express right now.
-public class LlvmCmpXchg extends RMWCmpXchgBase {
+import java.util.List;
+
+// FIXME: This event implements both RegWriter (due to inheritance) and MultiRegWriter, however, the former should not be used.
+public class LlvmCmpXchg extends RMWCmpXchgBase implements MultiRegWriter {
 
     private Register cmpRegister;
 
@@ -36,21 +39,18 @@ public class LlvmCmpXchg extends RMWCmpXchgBase {
         throw new UnsupportedOperationException("getResultRegister() not supported for " + this);
     }
 
-    public Register getStructRegister(int idx) {
-        return switch (idx) {
-            case 0 -> resultRegister;
-            case 1 -> cmpRegister;
-            default ->
-                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
-        };
+    @Override
+    public List<Register> getResultRegisters() {
+        return List.of(resultRegister, cmpRegister);
     }
 
-    public void setStructRegister(int idx, Register newRegister) {
-        switch (idx) {
+    @Override
+    public void setResultRegister(int index, Register newRegister) {
+        switch (index) {
             case 0 -> resultRegister = newRegister;
             case 1 -> cmpRegister = newRegister;
             default ->
-                    throw new UnsupportedOperationException("Cannot access structure with id " + idx + " in " + getClass().getName());
+                    throw new UnsupportedOperationException("Cannot access register with id " + index + " in " + getClass().getName());
         }
     }
 

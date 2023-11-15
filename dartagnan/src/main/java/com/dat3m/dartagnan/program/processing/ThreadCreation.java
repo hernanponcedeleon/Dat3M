@@ -22,13 +22,13 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.program.event.core.utils.MultiRegWriter;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
@@ -288,9 +288,12 @@ public class ThreadCreation implements ProgramProcessor {
             if (copy instanceof RegReader reader) {
                 reader.transformExpressions(regSubstituter);
             }
-            if (copy instanceof LlvmCmpXchg xchg) {
-                xchg.setStructRegister(0, registerReplacement.get(xchg.getStructRegister(0)));
-                xchg.setStructRegister(1, registerReplacement.get(xchg.getStructRegister(1)));
+            if (copy instanceof MultiRegWriter multiRegWriter) {
+                final List<Register> newRegs = multiRegWriter.getResultRegisters()
+                        .stream().map(registerReplacement::get).toList();
+                for (int i = 0; i < newRegs.size(); i++) {
+                    multiRegWriter.setResultRegister(i, newRegs.get(i));
+                }
             } else if (copy instanceof RegWriter regWriter) {
                 regWriter.setResultRegister(registerReplacement.get(regWriter.getResultRegister()));
             }

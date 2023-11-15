@@ -13,13 +13,13 @@ import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.utils.MultiRegWriter;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -176,7 +176,7 @@ public class Inlining implements ProgramProcessor {
             if (event instanceof RegReader reader) {
                 reader.transformExpressions(substitution);
             }
-            if (event instanceof RegWriter writer && !(writer instanceof LlvmCmpXchg) && !returnEvents.contains(event)) {
+            if (event instanceof RegWriter writer && !(writer instanceof MultiRegWriter) && !returnEvents.contains(event)) {
                 Register oldRegister = writer.getResultRegister();
                 Register newRegister = registerMap.get(oldRegister);
                 assert newRegister != null || writer.getResultRegister() == oldRegister;
@@ -184,15 +184,12 @@ public class Inlining implements ProgramProcessor {
                     writer.setResultRegister(newRegister);
                 }
             }
-            if (event instanceof LlvmCmpXchg cmpXchg) {
-                Register oldResultRegister = cmpXchg.getStructRegister(0);
-                Register newResultRegister = registerMap.get(oldResultRegister);
-                assert newResultRegister != null;
-                cmpXchg.setStructRegister(0, newResultRegister);
-                Register oldExpectationRegister = cmpXchg.getStructRegister(1);
-                Register newExpectationRegister = registerMap.get(oldExpectationRegister);
-                assert newExpectationRegister != null;
-                cmpXchg.setStructRegister(1, newExpectationRegister);
+            if (event instanceof MultiRegWriter multiWriter) {
+                final List<Register> newRegs = multiWriter.getResultRegisters().stream().map(registerMap::get).toList();
+                for (int i = 0; i < newRegs.size(); i++) {
+                    assert newRegs.get(i) != null;
+                    multiWriter.setResultRegister(i, newRegs.get(i));
+                }
             }
         }
 

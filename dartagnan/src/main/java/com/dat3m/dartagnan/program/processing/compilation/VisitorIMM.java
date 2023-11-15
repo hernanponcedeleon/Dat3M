@@ -212,8 +212,8 @@ class VisitorIMM extends VisitorBase {
 
     @Override
     public List<Event> visitLlvmCmpXchg(LlvmCmpXchg e) {
-        Register oldValueRegister = e.getStructRegister(0);
-        Register resultRegister = e.getStructRegister(1);
+        Register oldValueRegister = e.getResultRegisters().get(0);
+        Register resultRegister = e.getResultRegisters().get(1);
         verify(resultRegister.getType() instanceof BooleanType);
 
         Expression address = e.getAddress();
