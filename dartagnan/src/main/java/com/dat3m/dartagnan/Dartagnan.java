@@ -217,12 +217,15 @@ public class Dartagnan extends BaseOptions {
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
-        if (modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
+        if (modelChecker.hasModel() && (properties.stream().anyMatch(p -> p.generatesSvcompWitness()))) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult());
+                //  We can only write witnesses if the path to the original C file was given.
                 if (w.canBeBuilt()) {
-                    //  We can only write witnesses if the path to the original C file was given.
-                    w.build().write();
+                    // TODO we might eventually need to pass only the property that was falsified.
+                    // For now this is not a problem because for SVCOMP we verify single properties,
+                    // but this might change if we support memsafety
+                    w.build(properties).write();
                 }
             } catch (InvalidConfigurationException e) {
                 logger.warn(e.getMessage());

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness;
 
+import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.BConst;
 import com.dat3m.dartagnan.program.Program;
@@ -71,7 +72,7 @@ public class WitnessBuilder {
 		return b;
 	}
 
-	public WitnessGraph build() {
+	public WitnessGraph build(EnumSet<Property> properties) {
 		for(Thread t : context.getTask().getProgram().getThreads()) {
 			for(Event e : t.getEntry().getSuccessors()) {
 				eventThreadMap.put(e, t.getId() - 1);
@@ -83,7 +84,7 @@ public class WitnessBuilder {
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
-		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
+		graph.addAttribute(SPECIFICATION.toString(), toLtlString(properties));
 		graph.addAttribute(PROGRAMFILE.toString(), originalProgramFilePath);
 		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(originalProgramFilePath)));
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");
@@ -167,6 +168,19 @@ public class WitnessBuilder {
 		graph.getNode("N" + nextNode).addAttribute("violation", "true");
 		return graph;
 	}
+
+    private String toLtlString(EnumSet<Property> properties) {
+        String ltl = "";
+        for(Property p : properties) {
+            switch(p) {
+                case PROGRAM_SPEC:
+                    ltl += "CHECK( init(main()), LTL(G ! call(reach_error())))";
+                case NOSINTOVERFLOW:
+                    ltl += "CHECK( init(main()), LTL(G ! overflow))";
+            }
+        }
+        return ltl;
+    }
 
 	private List<Event> getSCExecutionOrder(Model model) {
 		// TODO: we recently added many cline to many events and this might affect the witness generation.

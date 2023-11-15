@@ -18,6 +18,7 @@ import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
+import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
@@ -46,7 +47,7 @@ public class BuildWitnessTest {
             Result res = modelChecker.getResult();
             WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res);
             config.inject(witnessBuilder);
-            WitnessGraph graph = witnessBuilder.build();
+            WitnessGraph graph = witnessBuilder.build(EnumSet.of(Property.PROGRAM_SPEC));
             File witnessFile = new File(getOutputDirectory() + "/witness.graphml");
             // The file should not exist
             assertFalse(witnessFile.exists());

@@ -65,6 +65,16 @@ public enum Property implements OptionInterface {
                 .makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
     }
 
+    public boolean generatesSvcompWitness() {
+        switch(this) {
+            case PROGRAM_SPEC:
+            case NOSINTOVERFLOW:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     // ------------------------- Static -------------------------
 
     public static EnumSet<Property> getDefault() {
