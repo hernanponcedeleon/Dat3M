@@ -15,7 +15,8 @@ public enum Property implements OptionInterface {
     LIVENESS,            // Liveness property
     CAT_SPEC,            // CAT-spec defined via flagged axioms in .cat file (~bug specification)
     DATARACEFREEDOM,     // Special option for data-race detection in SVCOMP only
-    NOSINTOVERFLOW;      // Special option for signed integer overflow detection in SVCOMP only
+    NOSINTOVERFLOW,      // Special option for signed integer overflow detection in SVCOMP only
+    VALIDDEREF;           // Special option for invalid dereference detection in SVCOMP only
 
     public enum Type {
         SAFETY,
@@ -33,6 +34,8 @@ public enum Property implements OptionInterface {
                 return "Data-race freedom (SVCOMP only)";
             case NOSINTOVERFLOW:
                 return "No signed integer overflow (SVCOMP only)";
+            case VALIDDEREF:
+                return "Valid dereference (SVCOMP only)";
             case LIVENESS:
                 return "Liveness";
             case CAT_SPEC:
@@ -69,6 +72,7 @@ public enum Property implements OptionInterface {
         switch(this) {
             case PROGRAM_SPEC:
             case NOSINTOVERFLOW:
+            case VALIDDEREF:
                 return true;
             default:
                 return false;
@@ -83,7 +87,7 @@ public enum Property implements OptionInterface {
 
     // Used to decide the order shown by the selector in the UI
     public static Property[] orderedValues() {
-        Property[] order = {PROGRAM_SPEC, LIVENESS, CAT_SPEC, DATARACEFREEDOM, NOSINTOVERFLOW};
+        Property[] order = {PROGRAM_SPEC, LIVENESS, CAT_SPEC, DATARACEFREEDOM, NOSINTOVERFLOW, VALIDDEREF};
         // Be sure no element is missing
         assert (Arrays.asList(order).containsAll(Arrays.asList(values())));
         return order;

@@ -126,6 +126,9 @@ public class PropertyEncoder implements Encoder {
         if (properties.contains(NOSINTOVERFLOW)) {
             trackableViolationEncodings.add(encodeOverflows());
         }
+        if (properties.contains(VALIDDEREF)) {
+            trackableViolationEncodings.add(encodeMemSafety());
+        }
         if (properties.contains(CAT_SPEC)) {
             trackableViolationEncodings.addAll(encodeCATSpecificationViolations());
         }
@@ -395,6 +398,26 @@ public class PropertyEncoder implements Encoder {
             overflow = bmgr.or(overflow, ctx.execution(e));
         }
         return new TrackableFormula(bmgr.not(NOSINTOVERFLOW.getSMTVariable(ctx)), overflow);
+    }
+
+    // ======================================================================
+    // ======================================================================
+    // ========================== Memory Safety =============================
+    // ======================================================================
+    // ======================================================================
+
+    public TrackableFormula encodeMemSafety() {
+        logger.info("Encoding memory safety (valid-deref)");
+
+        final EncodingContext ctx = this.context;
+        final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        final Program program = this.program;
+
+        BooleanFormula valid_deref = bmgr.makeFalse();
+        for (Event e : program.getThreadEventsWithAllTags(Tag.SVCOMP.SVCOMPMEMSAFETY)) {
+            valid_deref = bmgr.or(valid_deref, ctx.execution(e));
+        }
+        return new TrackableFormula(bmgr.not(VALIDDEREF.getSMTVariable(ctx)), valid_deref);
     }
 
     // ======================================================================

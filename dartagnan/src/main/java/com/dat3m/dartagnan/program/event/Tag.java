@@ -225,8 +225,9 @@ public final class Tag {
     public static final class SVCOMP {
         private SVCOMP() { }
 
-        public static final String SVCOMPATOMIC   = "__A-SVCOMP";
-        public static final String SVCOMPOVERFLOW = "__O-SVCOMP";
+        public static final String SVCOMPATOMIC    = "__A-SVCOMP";
+        public static final String SVCOMPOVERFLOW  = "__O-SVCOMP";
+        public static final String SVCOMPMEMSAFETY = "__MS-SVCOMP";
     }
 
     // =============================================================================================

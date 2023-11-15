@@ -151,8 +151,11 @@ public class Intrinsics {
                 List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", "__ubsan_handle_divrem_overflow",
                         "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
                 false, false, false, true, Intrinsics::integerOverflow),
-                ;
-
+        UBSAN_TYPE_MISSMATCH(
+                    List.of("__ubsan_handle_type_mismatch_v1"),
+                    false, false, false, true, Intrinsics::memSafety),
+                    ;
+    
         private final List<String> variants;
         private final boolean writesMemory;
         private final boolean readsMemory;
@@ -371,12 +374,19 @@ public class Intrinsics {
         abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
     }
-
     private List<Event> integerOverflow(FunctionCall call) {
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "integer overflow");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EARLYTERMINATION, Tag.SVCOMP.SVCOMPOVERFLOW);
+        return List.of(assertion, abort);
+    }
+
+    private List<Event> memSafety(FunctionCall call) {
+        final Expression condition = expressions.makeFalse();
+        final Event assertion = EventFactory.newAssert(condition, "invalid dereference");
+        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        abort.addTags(Tag.EARLYTERMINATION, Tag.SVCOMP.SVCOMPMEMSAFETY);
         return List.of(assertion, abort);
     }
 

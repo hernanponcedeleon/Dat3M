@@ -27,6 +27,8 @@ else
 
     if [[ $propertypath == *"no-overflow.prp"* ]]; then
         export CFLAGS="-fgnu89-inline -fsanitize=signed-integer-overflow"
+    elif [[ $propertypath == *"valid-memsafety.prp"* ]]; then
+        export CFLAGS="-fgnu89-inline -fsanitize=null"
     else
         export CFLAGS="-fgnu89-inline"
     fi
