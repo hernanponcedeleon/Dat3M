@@ -250,8 +250,14 @@ public class Dartagnan extends BaseOptions {
 
                 final SyntacticContextAnalysis synContext = newInstance(p);
                 printWarningIfThreadStartFailed(p, encCtx, prover);
-                if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
-                    summary.append("===== Program specification violation found =====\n");
+                if ((props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx))))
+                        ||
+                        (props.contains(NOSINTOVERFLOW)
+                                && FALSE.equals(model.evaluate(NOSINTOVERFLOW.getSMTVariable(encCtx))))
+                        ||
+                        (props.contains(VALIDDEREF)
+                                && FALSE.equals(model.evaluate(VALIDDEREF.getSMTVariable(encCtx))))) {
+                    summary.append("===== Safety violation found =====\n");
                     for(Assert ass: p.getThreadEvents(Assert.class)) {
                         final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
                                 && FALSE.equals(model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
