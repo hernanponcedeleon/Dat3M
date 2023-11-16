@@ -94,6 +94,7 @@ public class Intrinsics {
         // --------------------------- pthread mutex ---------------------------
         P_THREAD_MUTEX_INIT("pthread_mutex_init", true, false, true, true, Intrinsics::inlinePthreadMutexInit),
         P_THREAD_MUTEX_LOCK("pthread_mutex_lock", true, true, false, true, Intrinsics::inlinePthreadMutexLock),
+        P_THREAD_MUTEX_TRYLOCK("pthread_mutex_trylock", true, true, true, true, Intrinsics::inlinePthreadMutexTryLock),
         P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, false, true, true, Intrinsics::inlinePthreadMutexUnlock),
         P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, false, true, true, Intrinsics::inlinePthreadMutexDestroy),
         // --------------------------- SVCOMP ---------------------------
@@ -140,6 +141,7 @@ public class Intrinsics {
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
+        STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
         STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
@@ -347,6 +349,23 @@ public class Intrinsics {
         return List.of(EventFactory.Pthread.newLock(lockName, lockAddress));
     }
 
+    private List<Event> inlinePthreadMutexTryLock(FunctionCall call) {
+        checkArgument(call.getArguments().size() == 1, "Wrong parameter list for \"%s\"", call);
+        checkArgument(call instanceof ValueFunctionCall, "No support for discarding \"%s\"", call);
+        final Register register = ((ValueFunctionCall) call).getResultRegister();
+        checkArgument(register.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
+        final var error = new INonDet(constantId++, (IntegerType) register.getType(), true);
+        call.getFunction().getProgram().addConstant(error);
+        final Label label = EventFactory.newLabel("__VERIFIER_trylock_join");
+        final Expression lockAddress = call.getArguments().get(0);
+        final String lockName = lockAddress.toString();
+        return List.of(
+                EventFactory.newLocal(register, error),
+                EventFactory.newJump(expressions.makeBooleanCast(error), label),
+                EventFactory.Pthread.newLock(lockName, lockAddress),
+                label);
+    }
+
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
         checkArgument(call.getArguments().size() == 1);
         final Expression lockAddress = call.getArguments().get(0);
@@ -363,6 +382,18 @@ public class Intrinsics {
                 valueCall.getResultRegister(),
                 TypeFactory.getInstance().getByteType(),
                 valueCall.getArguments().get(0),
+                true
+        ));
+    }
+
+    private List<Event> inlineCalloc(FunctionCall call) {
+        checkArgument(call.getArguments().size() == 2, "Unsupported signature for %s", call);
+        checkArgument(call instanceof ValueFunctionCall, "No support for discarded result of %s", call);
+        final ValueFunctionCall valueCall = (ValueFunctionCall) call;
+        return List.of(EventFactory.newAlloc(
+                valueCall.getResultRegister(),
+                TypeFactory.getInstance().getByteType(),
+                expressions.makeMUL(valueCall.getArguments().get(0), valueCall.getArguments().get(1)),
                 true
         ));
     }
