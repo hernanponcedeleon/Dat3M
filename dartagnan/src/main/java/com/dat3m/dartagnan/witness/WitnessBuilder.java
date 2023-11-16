@@ -179,6 +179,9 @@ public class WitnessBuilder {
                 case NOSINTOVERFLOW:
                     ltl += "CHECK( init(main()), LTL(G ! overflow))";
                     break;
+                case VALIDDEREF:
+                    ltl += "CHECK( init(main()), LTL(G valid-deref))";
+                    break;
             }
         }
         return ltl;
