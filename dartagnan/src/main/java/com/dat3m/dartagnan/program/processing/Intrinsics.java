@@ -120,6 +120,18 @@ public class Intrinsics {
                 "pthread_mutexattr_gettype",
                 "pthread_mutexattr_getpolicy_np"),
                 false, true, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- pthread read/write lock ---------------------------
+        P_THREAD_RWLOCK_INIT("pthread_rwlock_init", true, false, true, true, Intrinsics::inlinePthreadRwlockInit),
+        P_THREAD_RWLOCK_DESTROY("pthread_rwlock_destroy", true, true, true, true, Intrinsics::inlinePthreadRwlockDestroy),
+        P_THREAD_RWLOCK_WRLOCK("pthread_rwlock_wrlock", true, true, false, true, Intrinsics::inlinePthreadRwlockWrlock),
+        P_THREAD_RWLOCK_TRYWRLOCK("pthread_rwlock_trywrlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryWrlock),
+        P_THREAD_RWLOCK_RDLOCK("pthread_rwlock_rdlock", true, true, false, true, Intrinsics::inlinePthreadRwlockRdlock),
+        P_THREAD_RWLOCK_TRYRDLOCK("pthread_rwlock_tryrdlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryRdlock),
+        P_THREAD_RWLOCK_UNLOCK("pthread_rwlock_unlock", true, false, true, true, Intrinsics::inlinePthreadRwlockUnlock),
+        P_THREAD_RWLOCKATTR_INIT("pthread_rwlockattr_init", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_RWLOCKATTR_SET("pthread_rwlockattr_setpshared", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_RWLOCKATTR_GET("pthread_rwlockattr_getpshared", true, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- SVCOMP ---------------------------
         VERIFIER_ATOMIC_BEGIN("__VERIFIER_atomic_begin", false, false, true, true, Intrinsics::inlineAtomicBegin),
         VERIFIER_ATOMIC_END("__VERIFIER_atomic_end", false, false, true, true, Intrinsics::inlineAtomicEnd),
@@ -494,6 +506,113 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
         return List.of(EventFactory.Pthread.newUnlock(lockName, lockAddress));
+    }
+
+    private List<Event> inlinePthreadRwlockInit(FunctionCall call) {
+        checkValueAndArguments(2, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Expression lock = call.getArguments().get(0);
+        //final Expression attributes = call.getArguments().get(1);
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.newStore(lock, expressions.makeZero(types.getArchType()))
+        );
+    }
+
+    private List<Event> inlinePthreadRwlockDestroy(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        return List.of(EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+    }
+
+    private List<Event> inlinePthreadRwlockWrlock(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Expression lock = call.getArguments().get(0);
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression one = expressions.makeOne(types.getArchType());
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.Atomic.newExchange(dummy, lock, one, Tag.C11.MO_ACQUIRE),
+                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)));
+    }
+
+    private List<Event> inlinePthreadRwlockTryWrlock(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Expression lock = call.getArguments().get(0);
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
+        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression one = expressions.makeOne(types.getArchType());
+        final Label label = EventFactory.newLabel("__VERIFIER_pthread_rwlock_trywrlock_end");
+        return List.of(
+                EventFactory.newLocal(result, error),
+                EventFactory.newJump(expressions.makeNEQ(error, expressions.makeGeneralZero(result.getType())), label),
+                EventFactory.Atomic.newExchange(dummy, lock, one, Tag.C11.MO_ACQUIRE),
+                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)),
+                label);
+    }
+
+    private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Expression lock = call.getArguments().get(0);
+        final var increment = new INonDet(constantId++, types.getArchType(), true);
+        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression one = expressions.makeOne(types.getArchType());
+        final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
+        final Expression firstReader = expressions.makeEQ(dummy, zero);
+        final Expression properIncrement = expressions.makeConditional(firstReader, two, one);
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                // increment shared counter only if not locked by writer.
+                EventFactory.Atomic.newFADD(dummy, lock, increment, Tag.C11.MO_ACQUIRE),
+                EventFactory.newAbortIf(expressions.makeEQ(increment, zero)),
+                EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)));
+    }
+
+    private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Expression lock = call.getArguments().get(0);
+        final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
+        final var increment = new INonDet(constantId++, types.getArchType(), true);
+        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression one = expressions.makeOne(types.getArchType());
+        final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
+        final Expression writeLocked = expressions.makeEQ(dummy, one);
+        final Expression firstReader = expressions.makeEQ(dummy, zero);
+        final Expression properIncrement = expressions.makeConditional(writeLocked, zero,
+                expressions.makeConditional(firstReader, two, one));
+        final Expression success = expressions.makeGeneralZero(result.getType());
+        return List.of(
+                EventFactory.newLocal(result, error),
+                // increment shared counter only if not locked by writer.
+                EventFactory.Atomic.newFADD(dummy, lock, increment, Tag.C11.MO_ACQUIRE),
+                EventFactory.newAssume(expressions.makeNEQ(writeLocked, expressions.makeEQ(error, success))),
+                EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)));
+    }
+
+    private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Expression lock = call.getArguments().get(0);
+        final var decrement = new INonDet(constantId++, types.getArchType(), true);
+        call.getFunction().getProgram().addConstant(decrement);
+        final Expression minusTwo = expressions.makeValue(BigInteger.valueOf(-2), types.getArchType());
+        final Expression minusOne = expressions.makeValue(BigInteger.valueOf(-1), types.getArchType());
+        final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
+        final Expression lastReader = expressions.makeEQ(dummy, two);
+        final Expression properDecrement = expressions.makeConditional(lastReader, minusTwo, minusOne);
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.Atomic.newFADD(dummy, lock, decrement, Tag.C11.MO_RELEASE),
+                EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)));
     }
 
     private List<Event> inlineMalloc(FunctionCall call) {
