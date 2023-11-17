@@ -175,6 +175,10 @@ public class Intrinsics {
         STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
+        STD_STRCPY("strcpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, false, false)),
+        STD_STPCPY("stpcpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, true, false)),
+        STD_STRNCPY("strncpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, false, true)),
+        STD_STPNCPY("stpncpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, true, true)),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
@@ -1145,6 +1149,36 @@ public class Intrinsics {
         }
 
         return replacement;
+    }
+
+    private List<Event> inlineStrcpy(FunctionCall call, boolean returnEnd, boolean numberProvided) {
+        checkValueAndArguments(numberProvided ? 3 : 2, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register offset = call.getFunction().newRegister(types.getArchType());
+        final Register dummy = call.getFunction().newRegister(types.getByteType());
+        final Expression destination = call.getArguments().get(0);
+        final Expression source = call.getArguments().get(1);
+        final Expression number = numberProvided ? call.getArguments().get(2) : null;
+        final Expression numberCheck = numberProvided ? expressions.makeEQ(offset, number) : expressions.makeFalse();
+        // This implementation is a simple byte-by-byte copy loop.
+        final Label loop = EventFactory.newLabel("__VERIFIER_strcpy_loop");
+        final Label end = EventFactory.newLabel("__VERIFIER_strcpy_end");
+        return List.of(
+                EventFactory.newLocal(offset, expressions.makeZero(types.getArchType())),
+                loop,
+                // If bound is reached, break
+                EventFactory.newJump(numberCheck, end),
+                // Copy one byte
+                EventFactory.newLoad(dummy, expressions.makeADD(source, offset)),
+                EventFactory.newStore(expressions.makeADD(destination, offset), dummy),
+                // Break on '\0'
+                EventFactory.newJump(expressions.makeEQ(dummy, expressions.makeZero(types.getByteType())), end),
+                // Increase offset
+                EventFactory.newLocal(offset, expressions.makeADD(offset, expressions.makeOne(types.getArchType()))),
+                // Continue
+                EventFactory.newGoto(loop),
+                end,
+                EventFactory.newLocal(result, returnEnd ? expressions.makeADD(destination, offset) : destination));
     }
 
     private void checkValueAndArguments(int expectedArgumentCount, FunctionCall call) {
