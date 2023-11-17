@@ -91,6 +91,15 @@ public class Intrinsics {
         P_THREAD_EXIT("pthread_exit", false, false, false, false, null),
         P_THREAD_JOIN(List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""), false, true, false, false, null),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- pthread condition variable ---------------------------
+        P_THREAD_COND_INIT("pthread_cond_init", true, true, true, true, Intrinsics::inlinePthreadCondInit),
+        P_THREAD_COND_DESTROY("pthread_cond_destroy", true, false, true, true, Intrinsics::inlinePthreadCondDestroy),
+        P_THREAD_COND_SIGNAL("pthread_cond_signal", true, false, true, true, Intrinsics::inlinePthreadCondSignal),
+        P_THREAD_COND_BROADCAST("pthread_cond_broadcast", true, false, true, true, Intrinsics::inlinePthreadCondBroadcast),
+        P_THREAD_COND_WAIT("pthread_cond_wait", false, true, false, true, Intrinsics::inlinePthreadCondWait),
+        P_THREAD_COND_TIMEDWAIT("pthread_cond_timedwait", false, false, true, true, Intrinsics::inlinePthreadCondTimedwait),
+        P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- pthread mutex ---------------------------
         P_THREAD_MUTEX_INIT("pthread_mutex_init", true, false, true, true, Intrinsics::inlinePthreadMutexInit),
         P_THREAD_MUTEX_LOCK("pthread_mutex_lock", true, true, false, true, Intrinsics::inlinePthreadMutexLock),
@@ -326,6 +335,92 @@ public class Intrinsics {
 
     private List<Event> inlineAtomicEnd(FunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newEndAtomic(checkNotNull(currentAtomicBegin)));
+    }
+
+    private List<Event> inlinePthreadCondInit(FunctionCall call) {
+        checkValueAndArguments(2, call);
+        final Expression address = call.getArguments().get(0);
+        //final Expression attributes = call.getArguments().get(1);
+        final Expression initializedState = expressions.makeZero(types.getArchType());
+        return List.of(EventFactory.newStore(address, initializedState));
+    }
+
+    private List<Event> inlinePthreadCondDestroy(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Expression address = call.getArguments().get(0);
+        final Expression finalizedState = expressions.makeZero(types.getArchType());
+        return List.of(EventFactory.newStore(address, finalizedState));
+    }
+
+    private List<Event> inlinePthreadCondSignal(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Expression address = call.getArguments().get(0);
+        final Expression one = expressions.makeOne(types.getArchType());
+        return List.of(
+                // Relaxed, since this operation is to be guarded by a mutex.
+                EventFactory.Atomic.newStore(address, one, Tag.C11.MO_RELAXED));
+    }
+
+    private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Expression address = call.getArguments().get(0);
+        final var threadCount = new INonDet(constantId++, types.getArchType(), true);
+        threadCount.setMin(BigInteger.ZERO);
+        call.getFunction().getProgram().addConstant(threadCount);
+        return List.of(
+                // Relaxed, since this operation is to be guarded by a mutex.
+                EventFactory.Atomic.newStore(address, threadCount, Tag.C11.MO_RELAXED));
+    }
+
+    private List<Event> inlinePthreadCondWait(FunctionCall call) {
+        checkValueAndArguments(2, call);
+        final Expression address = call.getArguments().get(0);
+        final Expression lock = call.getArguments().get(1);
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
+        return List.of(
+                // Allow other threads to access the condition variable.
+                EventFactory.Pthread.newUnlock(lock.toString(), lock),
+                // Wait for signal or broadcast.
+                EventFactory.Atomic.newFADD(dummy, address, minusOne, Tag.C11.MO_RELAXED),
+                EventFactory.newAbortIf(expressions.makeGT(dummy, zero, true)),
+                // Wait for all waiters to be notified of a broadcast.  If signal, wait for itself.
+                // Subsequent waits cannot be notified by the same broadcast event.
+                EventFactory.Atomic.newLoad(dummy, address, Tag.C11.MO_RELAXED),
+                EventFactory.newAbortIf(expressions.makeEQ(dummy, zero)),
+                // Re-lock.
+                EventFactory.Pthread.newLock(lock.toString(), lock));
+    }
+
+    private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
+        checkValueAndArguments(3, call);
+        final Expression address = call.getArguments().get(0);
+        final Expression lock = call.getArguments().get(1);
+        //final Expression timespec = call.getArguments().get(2);
+        final Register register = ((ValueFunctionCall) call).getResultRegister();
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Label label = EventFactory.newLabel("__VERIFIER_pthread_cond_timedwait_end");
+        final var error = new INonDet(constantId++, (IntegerType) register.getType(), true);
+        final Expression zero = expressions.makeZero((IntegerType) register.getType());
+        final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
+        return List.of(
+                // Allow other threads to access the condition variable.
+                EventFactory.Pthread.newUnlock(lock.toString(), lock),
+                // Decide success
+                //TODO proper error code: ETIMEDOUT
+                EventFactory.newJump(expressions.makeNEQ(error, zero), label),
+                // Wait for signal or broadcast.
+                EventFactory.Atomic.newFADD(dummy, address, minusOne, Tag.C11.MO_RELAXED),
+                EventFactory.newAbortIf(expressions.makeGT(dummy, zero, true)),
+                // Wait for all waiters to be notified of a broadcast.  If signal, wait for itself.
+                // Subsequent waits cannot be notified by the same broadcast event.
+                EventFactory.Atomic.newLoad(dummy, address, Tag.C11.MO_RELAXED),
+                EventFactory.newAbortIf(expressions.makeEQ(dummy, zero)),
+                // Join branches
+                label,
+                // Re-lock.
+                EventFactory.Pthread.newLock(lock.toString(), lock));
     }
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
@@ -905,4 +1000,8 @@ public class Intrinsics {
         return replacement;
     }
 
+    private void checkValueAndArguments(int expectedArgumentCount, FunctionCall call) {
+        checkArgument(call.getArguments().size() == expectedArgumentCount && call instanceof ValueFunctionCall,
+                "Wrong function type at %s", call);
+    }
 }
