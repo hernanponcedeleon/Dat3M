@@ -597,10 +597,18 @@ public class Intrinsics {
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
+        final var replacement = new INonDet(constantId++, types.getArchType(), true);
+        call.getFunction().getProgram().addConstant(replacement);
+        final Expression locked = expressions.makeNEQ(dummy, zero);
+        final Expression properReplacement = expressions.makeConditional(locked, dummy, one);
         return List.of(
                 EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.Atomic.newExchange(dummy, lock, one, Tag.C11.MO_ACQUIRE),
-                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)));
+                // Try to lock
+                EventFactory.Atomic.newExchange(dummy, lock, replacement, Tag.C11.MO_ACQUIRE),
+                // Store one (write-locked) only if successful, else leave unchanged
+                EventFactory.newAssume(expressions.makeEQ(replacement, properReplacement)),
+                // Deadlock if violation occurs in another thread
+                EventFactory.newAbortIf(locked));
     }
 
     private List<Event> inlinePthreadRwlockTryWrlock(FunctionCall call) {
@@ -609,14 +617,20 @@ public class Intrinsics {
         final Expression lock = call.getArguments().get(0);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
+        call.getFunction().getProgram().addConstant(error);
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
+        //TODO this implementation can fail spontaneously
         final Label label = EventFactory.newLabel("__VERIFIER_pthread_rwlock_trywrlock_end");
         return List.of(
                 EventFactory.newLocal(result, error),
+                // Decide whether this operation succeeds
                 EventFactory.newJump(expressions.makeNEQ(error, expressions.makeGeneralZero(result.getType())), label),
+                // Lock
                 EventFactory.Atomic.newExchange(dummy, lock, one, Tag.C11.MO_ACQUIRE),
-                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)),
+                // Guaranteed success in this branch
+                EventFactory.newAssume(expressions.makeEQ(dummy, zero)),
+                // Join paths
                 label);
     }
 
@@ -626,6 +640,7 @@ public class Intrinsics {
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression lock = call.getArguments().get(0);
         final var increment = new INonDet(constantId++, types.getArchType(), true);
+        call.getFunction().getProgram().addConstant(increment);
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
         final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
@@ -633,9 +648,13 @@ public class Intrinsics {
         final Expression properIncrement = expressions.makeConditional(firstReader, two, one);
         return List.of(
                 EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                // increment shared counter only if not locked by writer.
+                // Increment shared counter only if not locked by writer.
                 EventFactory.Atomic.newFADD(dummy, lock, increment, Tag.C11.MO_ACQUIRE),
+                // Deadlock if a violation occurred in another thread.  In this case, lock value was not changed
                 EventFactory.newAbortIf(expressions.makeEQ(increment, zero)),
+                // On success, lock cannot have been write-locked.
+                EventFactory.newAssume(expressions.makeNEQ(dummy, one)),
+                // On success, incremented by two, if first reader, else one.
                 EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)));
     }
 
@@ -645,7 +664,9 @@ public class Intrinsics {
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression lock = call.getArguments().get(0);
         final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
+        call.getFunction().getProgram().addConstant(error);
         final var increment = new INonDet(constantId++, types.getArchType(), true);
+        call.getFunction().getProgram().addConstant(increment);
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
         final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
