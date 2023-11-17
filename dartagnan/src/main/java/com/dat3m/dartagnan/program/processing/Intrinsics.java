@@ -102,10 +102,24 @@ public class Intrinsics {
         P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- pthread mutex ---------------------------
         P_THREAD_MUTEX_INIT("pthread_mutex_init", true, false, true, true, Intrinsics::inlinePthreadMutexInit),
+        P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, false, true, true, Intrinsics::inlinePthreadMutexDestroy),
         P_THREAD_MUTEX_LOCK("pthread_mutex_lock", true, true, false, true, Intrinsics::inlinePthreadMutexLock),
         P_THREAD_MUTEX_TRYLOCK("pthread_mutex_trylock", true, true, true, true, Intrinsics::inlinePthreadMutexTryLock),
         P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, false, true, true, Intrinsics::inlinePthreadMutexUnlock),
-        P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, false, true, true, Intrinsics::inlinePthreadMutexDestroy),
+        P_THREAD_MUTEXATTR_INIT("pthread_mutexattr_init", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_MUTEXATTR_DESTROY("pthread_mutexattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_MUTEXATTR_SET(List.of(
+                "pthread_mutexattr_setprioceiling",
+                "pthread_mutexattr_setprotocol",
+                "pthread_mutexattr_settype",
+                "pthread_mutexattr_setpolicy_np"),
+                true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_MUTEXATTR_GET(List.of(
+                "pthread_mutexattr_getprioceiling",
+                "pthread_mutexattr_getprotocol",
+                "pthread_mutexattr_gettype",
+                "pthread_mutexattr_getpolicy_np"),
+                false, true, true, true, Intrinsics::inlineAsZero),
         // --------------------------- SVCOMP ---------------------------
         VERIFIER_ATOMIC_BEGIN("__VERIFIER_atomic_begin", false, false, true, true, Intrinsics::inlineAtomicBegin),
         VERIFIER_ATOMIC_END("__VERIFIER_atomic_end", false, false, true, true, Intrinsics::inlineAtomicEnd),
