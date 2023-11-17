@@ -353,47 +353,59 @@ public class Intrinsics {
 
     private List<Event> inlinePthreadCondInit(FunctionCall call) {
         checkValueAndArguments(2, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Expression address = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         final Expression initializedState = expressions.makeZero(types.getArchType());
-        return List.of(EventFactory.newStore(address, initializedState));
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.newStore(address, initializedState));
     }
 
     private List<Event> inlinePthreadCondDestroy(FunctionCall call) {
         checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Expression address = call.getArguments().get(0);
         final Expression finalizedState = expressions.makeZero(types.getArchType());
-        return List.of(EventFactory.newStore(address, finalizedState));
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.newStore(address, finalizedState));
     }
 
     private List<Event> inlinePthreadCondSignal(FunctionCall call) {
         checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Expression address = call.getArguments().get(0);
         final Expression one = expressions.makeOne(types.getArchType());
         return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Relaxed, since this operation is to be guarded by a mutex.
                 EventFactory.Atomic.newStore(address, one, Tag.C11.MO_RELAXED));
     }
 
     private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
         checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Expression address = call.getArguments().get(0);
         final var threadCount = new INonDet(constantId++, types.getArchType(), true);
         threadCount.setMin(BigInteger.ZERO);
         call.getFunction().getProgram().addConstant(threadCount);
         return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Relaxed, since this operation is to be guarded by a mutex.
                 EventFactory.Atomic.newStore(address, threadCount, Tag.C11.MO_RELAXED));
     }
 
     private List<Event> inlinePthreadCondWait(FunctionCall call) {
         checkValueAndArguments(2, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Expression address = call.getArguments().get(0);
         final Expression lock = call.getArguments().get(1);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lock.toString(), lock),
                 // Wait for signal or broadcast.
@@ -412,19 +424,19 @@ public class Intrinsics {
         final Expression address = call.getArguments().get(0);
         final Expression lock = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        final Register register = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Label label = EventFactory.newLabel("__VERIFIER_pthread_cond_timedwait_end");
-        final var error = new INonDet(constantId++, (IntegerType) register.getType(), true);
+        final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
         call.getFunction().getProgram().addConstant(error);
-        final Expression zero = expressions.makeZero((IntegerType) register.getType());
+        final Expression zero = expressions.makeGeneralZero(result.getType());
         final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lock.toString(), lock),
                 // Decide success
                 //TODO proper error code: ETIMEDOUT
-                EventFactory.newLocal(register, error),
+                EventFactory.newLocal(result, error),
                 EventFactory.newJump(expressions.makeNEQ(error, zero), label),
                 // Wait for signal or broadcast.
                 EventFactory.Atomic.newFADD(dummy, address, minusOne, Tag.C11.MO_RELAXED),
