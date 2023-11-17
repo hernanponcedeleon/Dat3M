@@ -402,6 +402,7 @@ public class Intrinsics {
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Label label = EventFactory.newLabel("__VERIFIER_pthread_cond_timedwait_end");
         final var error = new INonDet(constantId++, (IntegerType) register.getType(), true);
+        call.getFunction().getProgram().addConstant(error);
         final Expression zero = expressions.makeZero((IntegerType) register.getType());
         final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
@@ -409,6 +410,7 @@ public class Intrinsics {
                 EventFactory.Pthread.newUnlock(lock.toString(), lock),
                 // Decide success
                 //TODO proper error code: ETIMEDOUT
+                EventFactory.newLocal(register, error),
                 EventFactory.newJump(expressions.makeNEQ(error, zero), label),
                 // Wait for signal or broadcast.
                 EventFactory.Atomic.newFADD(dummy, address, minusOne, Tag.C11.MO_RELAXED),
