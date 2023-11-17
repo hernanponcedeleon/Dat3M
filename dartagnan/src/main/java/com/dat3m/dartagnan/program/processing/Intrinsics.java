@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -257,15 +259,19 @@ public class Intrinsics {
     private void markIntrinsics(Program program) {
         declareNondetBool(program);
 
+        final var missingSymbols = new TreeSet<String>();
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
                 final String funcName = func.getName();
-                final Info intrinsicsInfo = Arrays.stream(Info.values())
+                Arrays.stream(Info.values())
                         .filter(info -> info.matches(funcName))
                         .findFirst()
-                        .orElseThrow(() -> new UnsupportedOperationException("Unknown intrinsic function " + funcName));
-                func.setIntrinsicInfo(intrinsicsInfo);
+                        .ifPresentOrElse(func::setIntrinsicInfo, () -> missingSymbols.add(funcName));
             }
+        }
+        if (!missingSymbols.isEmpty()) {
+            throw new UnsupportedOperationException(
+                    missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")));
         }
     }
 
