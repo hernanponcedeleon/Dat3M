@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
@@ -102,6 +103,11 @@ public class Intrinsics {
         P_THREAD_COND_TIMEDWAIT("pthread_cond_timedwait", false, false, true, true, Intrinsics::inlinePthreadCondTimedwait),
         P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- pthread key ---------------------------
+        P_THREAD_KEY_CREATE("pthread_key_create", false, false, true, false, Intrinsics::inlinePthreadKeyCreate),
+        P_THREAD_KEY_DELETE("pthread_key_delete", false, false, true, false, Intrinsics::inlinePthreadKeyDelete),
+        P_THREAD_GET_SPECIFIC("pthread_getspecific", false, true, true, false, Intrinsics::inlinePthreadGetSpecific),
+        P_THREAD_SET_SPECIFIC("pthread_setspecific", true, false, true, false, Intrinsics::inlinePthreadSetSpecific),
         // --------------------------- pthread mutex ---------------------------
         P_THREAD_MUTEX_INIT("pthread_mutex_init", true, false, true, true, Intrinsics::inlinePthreadMutexInit),
         P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, false, true, true, Intrinsics::inlinePthreadMutexDestroy),
@@ -123,13 +129,13 @@ public class Intrinsics {
                 "pthread_mutexattr_getpolicy_np"),
                 false, true, true, true, Intrinsics::inlineAsZero),
         // --------------------------- pthread read/write lock ---------------------------
-        P_THREAD_RWLOCK_INIT("pthread_rwlock_init", true, false, true, true, Intrinsics::inlinePthreadRwlockInit),
-        P_THREAD_RWLOCK_DESTROY("pthread_rwlock_destroy", true, true, true, true, Intrinsics::inlinePthreadRwlockDestroy),
-        P_THREAD_RWLOCK_WRLOCK("pthread_rwlock_wrlock", true, true, false, true, Intrinsics::inlinePthreadRwlockWrlock),
-        P_THREAD_RWLOCK_TRYWRLOCK("pthread_rwlock_trywrlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryWrlock),
-        P_THREAD_RWLOCK_RDLOCK("pthread_rwlock_rdlock", true, true, false, true, Intrinsics::inlinePthreadRwlockRdlock),
-        P_THREAD_RWLOCK_TRYRDLOCK("pthread_rwlock_tryrdlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryRdlock),
-        P_THREAD_RWLOCK_UNLOCK("pthread_rwlock_unlock", true, false, true, true, Intrinsics::inlinePthreadRwlockUnlock),
+        P_THREAD_RWLOCK_INIT("pthread_rwlock_init", true, false, true, false, Intrinsics::inlinePthreadRwlockInit),
+        P_THREAD_RWLOCK_DESTROY("pthread_rwlock_destroy", true, true, true, false, Intrinsics::inlinePthreadRwlockDestroy),
+        P_THREAD_RWLOCK_WRLOCK("pthread_rwlock_wrlock", true, true, false, false, Intrinsics::inlinePthreadRwlockWrlock),
+        P_THREAD_RWLOCK_TRYWRLOCK("pthread_rwlock_trywrlock", true, true, true, false, Intrinsics::inlinePthreadRwlockTryWrlock),
+        P_THREAD_RWLOCK_RDLOCK("pthread_rwlock_rdlock", true, true, false, false, Intrinsics::inlinePthreadRwlockRdlock),
+        P_THREAD_RWLOCK_TRYRDLOCK("pthread_rwlock_tryrdlock", true, true, true, false, Intrinsics::inlinePthreadRwlockTryRdlock),
+        P_THREAD_RWLOCK_UNLOCK("pthread_rwlock_unlock", true, false, true, false, Intrinsics::inlinePthreadRwlockUnlock),
         P_THREAD_RWLOCKATTR_INIT("pthread_rwlockattr_init", true, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_RWLOCKATTR_SET("pthread_rwlockattr_setpshared", true, false, true, true, Intrinsics::inlineAsZero),
@@ -471,6 +477,55 @@ public class Intrinsics {
                 label,
                 // Re-lock.
                 EventFactory.Pthread.newLock(lock.toString(), lock));
+    }
+
+    private List<Event> inlinePthreadKeyCreate(FunctionCall call) {
+        checkValueAndArguments(2, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Expression key = call.getArguments().get(0);
+        final Expression destructor = call.getArguments().get(1);
+        final Program program = call.getFunction().getProgram();
+        final int threadCount = program.getThreads().size();
+        final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
+        final MemoryObject object = program.getMemory().allocate((threadCount + 1) * pointerBytes, false);
+        final BigInteger destructorOffsetValue = BigInteger.valueOf((long) threadCount * pointerBytes);
+        final Expression destructorOffset = expressions.makeValue(destructorOffsetValue, types.getArchType());
+        //TODO call destructor at each thread's normal exit
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.newStore(key, object),
+                EventFactory.newStore(expressions.makeADD(object, destructorOffset), destructor));
+    }
+
+    private List<Event> inlinePthreadKeyDelete(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        //final Expression key = call.getArguments().get(0);
+        //final int threadID = call.getThread().getId();
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+    }
+
+    private List<Event> inlinePthreadGetSpecific(FunctionCall call) {
+        checkValueAndArguments(1, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Expression key = call.getArguments().get(0);
+        final int threadID = call.getThread().getId();
+        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
+        return List.of(
+                EventFactory.newLoad(result, expressions.makeADD(key, offset)));
+    }
+
+    private List<Event> inlinePthreadSetSpecific(FunctionCall call) {
+        checkValueAndArguments(2, call);
+        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Expression key = call.getArguments().get(0);
+        final Expression value = call.getArguments().get(1);
+        final int threadID = call.getThread().getId();
+        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.newStore(expressions.makeADD(key, offset), value));
     }
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
