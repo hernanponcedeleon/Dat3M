@@ -100,7 +100,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // Parse global definitions after declarations.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.globalDef() != null) {
-                entity.accept(this);
+                visitGlobalDef(entity.globalDef());
             }
         }
 
@@ -364,16 +364,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCallInst(CallInstContext ctx) {
-        if (ctx.inlineAsm() != null) {
-            // FIXME: We ignore all inline assembly.
-            return null;
-        }
-        final Expression callTarget = checkPointerExpression(ctx.value());
-        if (callTarget == null) {
-            //FIXME ignores metadata functions, but also undeclared functions
-            return null;
-        }
-        //checkSupport(callTarget instanceof Function, "Indirect call in %s.", ctx);
+        // see https://llvm.org/docs/LangRef.html#call-instruction
         final Type type = parseType(ctx.type());
         // Calls can either list the full function type or just the return type.
         final Type returnType = type instanceof FunctionType funcType ? funcType.getReturnType() : type;
@@ -389,16 +380,28 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             arguments.add(checkExpression(argumentType, argument.value()));
         }
 
-        final FunctionType funcType;
-        if (type instanceof FunctionType) {
-            funcType = (FunctionType) type;
-        } else {
-            // Build FunctionType from return type and argument types
-            funcType = types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
-        }
-
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
+
+        if (ctx.inlineAsm() != null) {
+            // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
+            //FIXME ignore side effects of inline assembly
+            if (resultRegister != null) {
+                block.events.add(newLocal(resultRegister, makeNonDetOfType(returnType)));
+            }
+            return resultRegister;
+        }
+
+        final Expression callTarget = checkPointerExpression(ctx.value());
+        if (callTarget == null) {
+            //FIXME ignores metadata functions, but also undeclared functions
+            return null;
+        }
+
+        // Build FunctionType from return type and argument types
+        final FunctionType funcType = type instanceof FunctionType t ? t :
+                types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
+
         final Event call = currentRegisterName == null ?
                 newVoidFunctionCall(funcType, callTarget, arguments) :
                 newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
