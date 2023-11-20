@@ -372,8 +372,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondInit(FunctionCall call) {
-        checkValueAndArguments(2, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(2, call);
         final Expression address = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         final Expression initializedState = expressions.makeZero(types.getArchType());
@@ -383,8 +382,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondDestroy(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Expression address = call.getArguments().get(0);
         final Expression finalizedState = expressions.makeZero(types.getArchType());
         return List.of(
@@ -393,8 +391,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondSignal(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Expression address = call.getArguments().get(0);
         final Expression one = expressions.makeOne(types.getArchType());
         return List.of(
@@ -404,8 +401,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Expression address = call.getArguments().get(0);
         final var threadCount = new INonDet(constantId++, types.getArchType(), true);
         threadCount.setMin(BigInteger.ZERO);
@@ -417,8 +413,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondWait(FunctionCall call) {
-        checkValueAndArguments(2, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(2, call);
         final Expression address = call.getArguments().get(0);
         final Expression lock = call.getArguments().get(1);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
@@ -440,11 +435,10 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
-        checkValueAndArguments(3, call);
+        final Register result = checkValueAndArguments(3, call);
         final Expression address = call.getArguments().get(0);
         final Expression lock = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Label label = EventFactory.newLabel("__VERIFIER_pthread_cond_timedwait_end");
         final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
@@ -472,8 +466,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadKeyCreate(FunctionCall call) {
-        checkValueAndArguments(2, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(2, call);
         final Expression key = call.getArguments().get(0);
         final Expression destructor = call.getArguments().get(1);
         final Program program = call.getFunction().getProgram();
@@ -490,8 +483,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadKeyDelete(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         //final Expression key = call.getArguments().get(0);
         //final int threadID = call.getThread().getId();
         return List.of(
@@ -499,8 +491,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadGetSpecific(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Expression key = call.getArguments().get(0);
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
@@ -509,8 +500,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadSetSpecific(FunctionCall call) {
-        checkValueAndArguments(2, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(2, call);
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
         final int threadID = call.getThread().getId();
@@ -521,30 +511,32 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
-        checkArgument(call.getArguments().size() == 2);
+        final Register result = checkValueAndArguments(2, call);
         final Expression lockAddress = call.getArguments().get(0);
         final Expression attributes = call.getArguments().get(1);
         final String lockName = lockAddress.toString();
-        return List.of(EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes));
+        return List.of(
+                EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes),
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
     }
 
     private List<Event> inlinePthreadMutexDestroy(FunctionCall call) {
-        checkArgument(call.getArguments().size() == 1);
-        final Register reg = ((ValueFunctionCall) call).getResultRegister();
-        return List.of(EventFactory.newLocal(reg, expressions.makeZero((IntegerType) reg.getType())));
+        final Register result = checkValueAndArguments(1, call);
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
     }
 
     private List<Event> inlinePthreadMutexLock(FunctionCall call) {
-        checkArgument(call.getArguments().size() == 1);
+        final Register result = checkValueAndArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
-        return List.of(EventFactory.Pthread.newLock(lockName, lockAddress));
+        return List.of(
+                EventFactory.Pthread.newLock(lockName, lockAddress),
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
     }
 
     private List<Event> inlinePthreadMutexTryLock(FunctionCall call) {
-        checkArgument(call.getArguments().size() == 1, "Wrong parameter list for \"%s\"", call);
-        checkArgument(call instanceof ValueFunctionCall, "No support for discarding \"%s\"", call);
-        final Register register = ((ValueFunctionCall) call).getResultRegister();
+        final Register register = checkValueAndArguments(1, call);
         checkArgument(register.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
         final var error = new INonDet(constantId++, (IntegerType) register.getType(), true);
         call.getFunction().getProgram().addConstant(error);
@@ -559,15 +551,16 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
-        checkArgument(call.getArguments().size() == 1);
+        final Register result = checkValueAndArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
-        return List.of(EventFactory.Pthread.newUnlock(lockName, lockAddress));
+        return List.of(
+                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
+                EventFactory.Pthread.newUnlock(lockName, lockAddress));
     }
 
     private List<Event> inlinePthreadRwlockInit(FunctionCall call) {
-        checkValueAndArguments(2, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(2, call);
         final Expression lock = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         return List.of(
@@ -577,14 +570,12 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadRwlockDestroy(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         return List.of(EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
     }
 
     private List<Event> inlinePthreadRwlockWrlock(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Expression lock = call.getArguments().get(0);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression zero = expressions.makeZero(types.getArchType());
@@ -604,8 +595,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadRwlockTryWrlock(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Expression lock = call.getArguments().get(0);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
@@ -627,8 +617,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression lock = call.getArguments().get(0);
         final var increment = new INonDet(constantId++, types.getArchType(), true);
@@ -651,8 +640,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression lock = call.getArguments().get(0);
         final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
@@ -676,8 +664,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {
-        checkValueAndArguments(1, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(1, call);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression lock = call.getArguments().get(0);
         final var decrement = new INonDet(constantId++, types.getArchType(), true);
@@ -1172,8 +1159,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineStrcpy(FunctionCall call, boolean returnEnd, boolean numberProvided) {
-        checkValueAndArguments(numberProvided ? 3 : 2, call);
-        final Register result = ((ValueFunctionCall) call).getResultRegister();
+        final Register result = checkValueAndArguments(numberProvided ? 3 : 2, call);
         final Register offset = call.getFunction().newRegister(types.getArchType());
         final Register dummy = call.getFunction().newRegister(types.getByteType());
         final Expression destination = call.getArguments().get(0);
@@ -1201,8 +1187,9 @@ public class Intrinsics {
                 EventFactory.newLocal(result, returnEnd ? expressions.makeADD(destination, offset) : destination));
     }
 
-    private void checkValueAndArguments(int expectedArgumentCount, FunctionCall call) {
+    private Register checkValueAndArguments(int expectedArgumentCount, FunctionCall call) {
         checkArgument(call.getArguments().size() == expectedArgumentCount && call instanceof ValueFunctionCall,
                 "Wrong function type at %s", call);
+        return ((ValueFunctionCall) call).getResultRegister();
     }
 }
