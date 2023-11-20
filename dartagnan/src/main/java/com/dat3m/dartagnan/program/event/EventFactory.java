@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -317,8 +318,9 @@ public class EventFactory {
         private Pthread() {
         }
 
-        public static InitLock newInitLock(String name, Expression address, Expression value) {
-            return new InitLock(name, address, value);
+        public static InitLock newInitLock(String name, Expression address, Expression ignoreAttributes) {
+            //TODO store attributes inside mutex object
+            return new InitLock(name, address, expressions.makeZero(TypeFactory.getInstance().getArchType()));
         }
 
         public static Lock newLock(String name, Expression address) {

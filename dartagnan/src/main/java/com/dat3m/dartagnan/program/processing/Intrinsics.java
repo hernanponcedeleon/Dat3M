@@ -523,9 +523,9 @@ public class Intrinsics {
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
         checkArgument(call.getArguments().size() == 2);
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression lockValue = call.getArguments().get(1);
+        final Expression attributes = call.getArguments().get(1);
         final String lockName = lockAddress.toString();
-        return List.of(EventFactory.Pthread.newInitLock(lockName, lockAddress, lockValue));
+        return List.of(EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes));
     }
 
     private List<Event> inlinePthreadMutexDestroy(FunctionCall call) {
