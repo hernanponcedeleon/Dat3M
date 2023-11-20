@@ -186,35 +186,34 @@ public final class Tag {
 
         // NOTE: The order below needs to be in sync with /include/lkmm.h 
         public static String intToMo(int i) {
-            switch (i) {
-                case 0:     return MO_RELAXED;
-                case 1:     return MO_ONCE;
-                case 2:     return MO_ACQUIRE;
-                case 3:     return MO_RELEASE;
-                case 4:     return MO_MB;
-                case 5:     return MO_WMB;
-                case 6:     return MO_RMB;
-                case 7:     return RCU_LOCK;
-                case 8:     return RCU_UNLOCK;
-                case 9:     return RCU_SYNC;
-                case 10:    return BEFORE_ATOMIC;
-                case 11:    return AFTER_ATOMIC;
-                case 12:    return AFTER_SPINLOCK;
-                case 13:    return BARRIER;
-                default:
-                    throw new UnsupportedOperationException("The memory order is not recognized");
-            }
+            return switch (i) {
+                case 0 -> MO_RELAXED;
+                case 1 -> MO_ONCE;
+                case 2 -> MO_ACQUIRE;
+                case 3 -> MO_RELEASE;
+                case 4 -> MO_MB;
+                case 5 -> MO_WMB;
+                case 6 -> MO_RMB;
+                case 7 -> RCU_LOCK;
+                case 8 -> RCU_UNLOCK;
+                case 9 -> RCU_SYNC;
+                case 10 -> BEFORE_ATOMIC;
+                case 11 -> AFTER_ATOMIC;
+                case 12 -> AFTER_SPINLOCK;
+                case 13 -> BARRIER;
+                case 14 -> AFTER_UNLOCK_LOCK;
+                default -> throw new UnsupportedOperationException("The memory order is not recognized");
+            };
         }
 
         public static String toText(String mo) {
-            switch (mo) {
-                case MO_RELAXED: return "_relaxed";
-                case MO_ACQUIRE: return "_acquire";
-                case MO_RELEASE: return "_release";
-                case MO_MB:      return "";
-                default:
-                    throw new IllegalArgumentException("Unrecognised memory order " + mo);
-            }
+            return switch (mo) {
+                case MO_RELAXED -> "_relaxed";
+                case MO_ACQUIRE -> "_acquire";
+                case MO_RELEASE -> "_release";
+                case MO_MB -> "";
+                default -> throw new IllegalArgumentException("Unrecognised memory order " + mo);
+            };
         }
     }
 
