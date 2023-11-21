@@ -23,6 +23,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 
@@ -337,9 +338,13 @@ public class ExecutionModel {
             }
 
             if (data.isRead() || data.isWrite()) {
-                String valueString = String.valueOf(model.evaluate(encodingContext.value((MemoryEvent) e)));
+                Formula valueFormula = encodingContext.value((MemoryCoreEvent)e);
+                assert valueFormula != null;
+                String valueString = String.valueOf(model.evaluate(valueFormula));
                 BigInteger value = switch(valueString) {
-                    case "false" -> BigInteger.ZERO;
+                    // NULL case can happen if the solver optimized away a variable.
+                    // This should only happen if the value is irrelevant, so we will just pick 0.
+                    case "false", "null" -> BigInteger.ZERO;
                     case "true" -> BigInteger.ONE;
                     default -> new BigInteger(valueString);
                 };
