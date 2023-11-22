@@ -23,7 +23,7 @@ public class INonDet extends IExpr {
     }
 
     public String getName() {
-        return Integer.toString(id);
+        return "nondet_int#" + id;
     }
 
     public boolean isSigned() {
