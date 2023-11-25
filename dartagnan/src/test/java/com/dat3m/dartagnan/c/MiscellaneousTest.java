@@ -74,7 +74,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"thread_inlining_complex", IMM, PASS, 1},
                 {"thread_inlining_complex_2", IMM, PASS, 1},
                 {"thread_local", IMM, PASS, 1},
-                {"thread_loop", IMM, FAIL, 1}
+                {"thread_loop", IMM, FAIL, 1},
+                {"thread_id", IMM, PASS, 1}
         });
     }
 
