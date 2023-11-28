@@ -172,6 +172,10 @@ flag ~empty nonprivIsRW as checkNonprivIsRW
 let atomicIsNonpriv = ([ATOM] \ [NONPRIV])
 flag ~empty atomicIsNonpriv as checkAtomicIsNonpriv
 
+// Private operations are not scoped
+let privIsScoped = ([PRIV] & [DV | QF | WG | SG])
+flag ~empty privIsScoped as checkPrivIsScoped
+
 // Atomic operations implicitly have availability/visibility operations
 let atomicIsAv = ([W & ATOM] \ [AV])
 flag ~empty atomicIsAv as checkAtomicIsAv
