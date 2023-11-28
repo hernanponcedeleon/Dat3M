@@ -151,7 +151,12 @@ fenceAlias
     ;
 
 barrier
-    :   Barrier Period CTA Period Sync value
+    :   Barrier Period CTA Period barrierMode value
+    ;
+
+barrierMode
+    :   Sync
+    |   Arrive
     ;
 
 atomInstruction
@@ -301,6 +306,7 @@ Fence   :   'fence';
 Barrier :   'bar';
 
 Sync    :   'sync';
+Arrive  :   'arrive';
 
 CTA     :   'cta';
 GPU     :   'gpu';

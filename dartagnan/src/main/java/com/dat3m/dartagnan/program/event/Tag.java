@@ -285,6 +285,8 @@ public final class Tag {
         public static final String CON = "CON"; // CONSTANT
         // Virtual memory
         public static final String ALIAS = "ALIAS";
+        // Barrier Mode
+        public static final String ARRIVE = "__ARRIVE";
 
         public static String loadMO(String mo) {
             return switch (mo) {

@@ -961,7 +961,9 @@ public class RelationAnalysis {
             List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
             for (FenceWithId e1 : fenceEvents) {
                 for (FenceWithId e2 : fenceEvents) {
-                    if(exec.areMutuallyExclusive(e1, e2)) {
+                    // “A bar.sync or bar.red or bar.arrive operation synchronizes with a bar.sync
+                    // or bar.red operation executed on the same barrier.”
+                    if(exec.areMutuallyExclusive(e1, e2) || e2.hasTag(PTX.ARRIVE)) {
                         continue;
                     }
                     may.add(e1, e2);
