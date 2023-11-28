@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.visualization.Graphviz;
+import com.dat3m.dartagnan.verification.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -31,21 +32,15 @@ public interface AliasAnalysis {
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    static AliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+    static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
-        logger.info("Selected alias analysis: " + c.method);
-        AliasAnalysis a;
+        logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
-        switch (c.method) {
-            case FIELD_SENSITIVE:
-                a = FieldSensitiveAndersen.fromConfig(program, config);
-                break;
-            case FIELD_INSENSITIVE:
-                a = AndersenAliasAnalysis.fromConfig(program, config);
-                break;
-            default:
-                throw new UnsupportedOperationException("Alias method not recognized");
-        }
+        AliasAnalysis a = switch (c.method) {
+            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, config);
+            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, config);
+            case FULL -> InclusionBasedPointerAnalysis.fromConfig(program, analysisContext, config);
+        };
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
         if (Arch.supportsVirtualAddressing(program.getArch())) {
             a = VirtualAliasAnalysis.wrap(a);

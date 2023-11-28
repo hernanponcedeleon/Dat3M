@@ -231,7 +231,7 @@ public class ProgramEncoder implements Encoder {
         for(Map.Entry<Register,Dependency.State> e : dep.finalWriters().entrySet()) {
             final Formula value = context.encodeFinalExpression(e.getKey());
             final Dependency.State state = e.getValue();
-            final List<Event> writers = state.may;
+            final List<RegWriter> writers = state.may;
             if(initializeRegisters && !state.initialized) {
                 List<BooleanFormula> clause = new ArrayList<>();
                 clause.add(context.equalZero(value));
@@ -241,9 +241,9 @@ public class ProgramEncoder implements Encoder {
                 enc.add(bmgr.or(clause));
             }
             for(int i = 0; i < writers.size(); i++) {
-                final Event writer = writers.get(i);
+                final RegWriter writer = writers.get(i);
                 List<BooleanFormula> clause = new ArrayList<>();
-                clause.add(context.equal(value, context.result((RegWriter) writer)));
+                clause.add(context.equal(value, context.result(writer)));
                 clause.add(bmgr.not(context.execution(writer)));
                 for(Event w : writers.subList(i + 1, writers.size())) {
                     if(!exec.areMutuallyExclusive(writer, w)) {
