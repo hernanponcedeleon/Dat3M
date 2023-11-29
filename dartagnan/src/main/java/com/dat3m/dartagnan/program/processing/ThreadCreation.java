@@ -117,8 +117,8 @@ public class ThreadCreation implements ProgramProcessor {
                     continue;
                 }
                 final List<Expression> arguments = call.getArguments();
-                switch (call.getCalledFunction().getName()) {
-                    case "pthread_create" -> {
+                switch (call.getCalledFunction().getIntrinsicInfo()) {
+                    case P_THREAD_CREATE -> {
                         assert arguments.size() == 4;
                         final Expression pidResultAddress = arguments.get(0);
                         //final Expression attributes = arguments.get(1);
@@ -150,10 +150,10 @@ public class ThreadCreation implements ProgramProcessor {
 
                         nextTid++;
                     }
-                    case "get_my_tid" -> {
+                    case P_THREAD_SELF -> {
                         final Register resultRegister = getResultRegister(call);
                         assert resultRegister.getType() instanceof IntegerType;
-                        assert arguments.size() == 0;
+                        assert arguments.isEmpty();
                         final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(thread.getId()),
                                 (IntegerType) resultRegister.getType());
                         final Local tidAssignment = newLocal(resultRegister, tidExpr);
