@@ -69,7 +69,6 @@ litmus/VULKAN/Data-Race/test7-filter.litmus,1
 litmus/VULKAN/Data-Race/test9-filter.litmus,1
 litmus/VULKAN/Data-Race/waw-filter.litmus,1
 litmus/VULKAN/Kronos-Group/asmo.litmus,1
-litmus/VULKAN/Kronos-Group/asmo-weak.litmus,1
 litmus/VULKAN/Kronos-Group/atomicsc.litmus,1
 litmus/VULKAN/Kronos-Group/atomwrongsc.litmus,1
 litmus/VULKAN/Kronos-Group/cbarinst.litmus,1
@@ -144,6 +143,7 @@ litmus/VULKAN/Kronos-Group/test5.litmus,1
 litmus/VULKAN/Kronos-Group/test6.litmus,1
 litmus/VULKAN/Kronos-Group/test9.litmus,1
 litmus/VULKAN/Kronos-Group/waw.litmus,1
+litmus/VULKAN/Manual/asmo-weak.litmus,1
 litmus/VULKAN/Manual/CoWW-RR.litmus,1
 litmus/VULKAN/Manual/SB-2-wg.litmus,1
 litmus/VULKAN/Manual/SB-2-dv.litmus,1

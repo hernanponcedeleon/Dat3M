@@ -423,11 +423,6 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
             e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
 
-        // add nonpriv tag to all M with scope
-        if (!scope.isEmpty() && (e instanceof MemoryEvent)) {
-            e.addTags(Tag.Vulkan.NON_PRIVATE);
-        }
-
         // Atomics implicitly have AV/VIS ops, hence they are implicitly nonpriv
         if (atomic && e instanceof Store) {
             e.addTags(Tag.Vulkan.AVAILABLE);
