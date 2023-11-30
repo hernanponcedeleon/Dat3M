@@ -311,6 +311,9 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitBarrier(LitmusPTXParser.BarrierContext ctx) {
         Expression fenceId = (Expression) ctx.value().accept(this);
         Event fence = EventFactory.newFenceWithId(ctx.getText().toLowerCase(), fenceId);
+        if(ctx.barrierMode().Arrive() != null) {
+            fence.addTags(Tag.PTX.ARRIVE);
+        }
         return programBuilder.addChild(mainThread, fence);
     }
 

@@ -79,3 +79,8 @@ litmus/PTX/Manual/SL-future-plus.litmus,0
 litmus/PTX/Manual/SL-future-minus.litmus,1
 litmus/PTX/Manual/Coherence.litmus,0
 litmus/PTX/Manual/Coherence-weak.litmus,1
+litmus/PTX/Manual/PC-bar-sync-arrive.litmus,1
+litmus/PTX/Manual/PC-bar-sync-sync-1.litmus,1
+litmus/PTX/Manual/PC-bar-sync-sync-2.litmus,1
+litmus/PTX/Manual/PC-bar-sync-sync-3.litmus,1
+litmus/PTX/Manual/PC-bar-sync-sync-4.litmus,1
