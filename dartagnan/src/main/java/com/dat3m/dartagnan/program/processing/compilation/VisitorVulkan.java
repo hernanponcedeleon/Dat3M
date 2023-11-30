@@ -66,6 +66,15 @@ public class VisitorVulkan extends VisitorBase {
             if (source.hasTag(Tag.Vulkan.SEM_VISIBLE)) {
                 target.addTags(Tag.Vulkan.SEM_VISIBLE);
             }
+            // If a RMW is a release, we do not propagate semscX to the read
+            if (!(source.hasTag(Tag.Vulkan.ACQUIRE) || source.hasTag(Tag.Vulkan.ACQ_REL))) {
+                if (target.hasTag(Tag.Vulkan.SEMSC0)) {
+                    target.removeTags(Tag.Vulkan.SEMSC0);
+                }
+                if (target.hasTag(Tag.Vulkan.SEMSC1)) {
+                    target.removeTags(Tag.Vulkan.SEMSC1);
+                }
+            }
         } else if (target instanceof Store) {
             // Atomic stores are always available
             if (source.hasTag(Tag.Vulkan.ATOM)) {
@@ -73,6 +82,15 @@ public class VisitorVulkan extends VisitorBase {
             }
             if (source.hasTag(Tag.Vulkan.SEM_AVAILABLE)) {
                 target.addTags(Tag.Vulkan.SEM_AVAILABLE);
+            }
+            // If a RMW is a acquire, we do not propagate semscX to the write
+            if (!(source.hasTag(Tag.Vulkan.RELEASE) || source.hasTag(Tag.Vulkan.ACQ_REL))) {
+                if (target.hasTag(Tag.Vulkan.SEMSC0)) {
+                    target.removeTags(Tag.Vulkan.SEMSC0);
+                }
+                if (target.hasTag(Tag.Vulkan.SEMSC1)) {
+                    target.removeTags(Tag.Vulkan.SEMSC1);
+                }
             }
         }
     }

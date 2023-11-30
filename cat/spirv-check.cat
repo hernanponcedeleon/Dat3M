@@ -193,6 +193,10 @@ let acqIsSem = ([ACQ] \ [SEMSC0 | SEMSC1])
 flag ~empty acqIsSem as checkAcqIsSem
 let relIsSem = ([REL] \ [SEMSC0 | SEMSC1])
 flag ~empty relIsSem as checkRelIsSem
+let semcs0IsAcqRel = ([SEMSC0] \ [ACQ | REL])
+flag ~empty semcs0IsAcqRel as checkSemcs0IsAcqRel
+let semcs1IsAcqRel = ([SEMSC1] \ [ACQ | REL])
+flag ~empty semcs1IsAcqRel as checkSemcs1IsAcqRel
 
 // no pair of the same control barrier instance can be in the same thread
 let scbarinstIsPo = (syncbar & (po | po^-1))
