@@ -1,3 +1,6 @@
+#ifndef __LKMM_H_
+#define __LKMM_H_
+
 #include <stdint.h>
 
 typedef enum memory_order {
@@ -15,6 +18,7 @@ typedef enum memory_order {
   after_atomic,
   after_spinlock,
   barrier,
+  after_unlock_lock,
 } memory_order;
 
 typedef enum operation {
@@ -24,11 +28,11 @@ typedef enum operation {
   op_or,
 } operation;
 
-extern int __LKMM_LOAD(void*, memory_order);
-extern void __LKMM_STORE(void*, int, memory_order);
+extern void *__LKMM_LOAD(void*, memory_order);
+extern void __LKMM_STORE(void*, void*, memory_order);
 extern void __LKMM_FENCE(int);
-extern int __LKMM_XCHG(int*, int, memory_order);
-extern int __LKMM_CMPXCHG(int*, int, int, memory_order, memory_order);
+extern void *__LKMM_XCHG(void*, void*, memory_order);
+extern void *__LKMM_CMPXCHG(void*, void*, void*, memory_order, memory_order);
 extern void __LKMM_ATOMIC_OP(int*, int, operation);
 extern int __LKMM_ATOMIC_FETCH_OP(int*, int, memory_order, operation);
 extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
@@ -38,8 +42,8 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
  ******************************************************************************/
 
 /* ONCE */
-#define READ_ONCE(x)     __LKMM_LOAD(&x, memory_order_once)
-#define WRITE_ONCE(x, v) __LKMM_STORE(&x, v, memory_order_once)
+#define READ_ONCE(x)     (typeof(x))(size_t)__LKMM_LOAD(&x, memory_order_once)
+#define WRITE_ONCE(x, v) __LKMM_STORE(&x, (void*)(size_t)(v), memory_order_once)
 
 /* Fences */
 
@@ -54,18 +58,19 @@ extern int __LKMM_ATOMIC_OP_RETURN(int*, int, memory_order, operation);
 #define smp_mb__after_unlock_lock() __LKMM_FENCE(after_unlock_lock)
 
 /* Acquire/Release and friends */
-#define smp_load_acquire(p)      __LKMM_LOAD(p, memory_order_acquire)
-#define smp_store_release(p, v)  __LKMM_STORE(p, v, memory_order_release)
+#define smp_load_acquire(p)      (typeof(*p))(size_t)__LKMM_LOAD(p, memory_order_acquire)
+#define smp_store_release(p, v)  __LKMM_STORE(p, (void*)(size_t)v, memory_order_release)
 #define rcu_dereference(p)       READ_ONCE(p)
 #define rcu_assign_pointer(p, v) smp_store_release(&(p), v)
-#define smp_store_mb(x, v)                    \
-do {                                \
-    WRITE_ONCE(x, v);    \
-    smp_mb();                        \
+#define smp_store_mb(x, v)  \
+do {                        \
+    WRITE_ONCE(x, v);       \
+    smp_mb();               \
 } while (0)
 
 /* Exchange */
-#define xchg(p, v)                      __LKMM_XCHG(p, v, mb);
+#define __xchg(p, v, mo)                (typeof(v))(size_t)__LKMM_XCHG(p, (void*)(size_t)(v), mo)
+#define xchg(p, v)                      __xchg(p, v, mb)
 #define xchg_relaxed(p, v)              __LKMM_XCHG(p, v, memory_order_relaxed)
 #define xchg_release(p, v)              __LKMM_XCHG(p, v, memory_order_release)
 #define xchg_acquire(p, v)              __LKMM_XCHG(p, v, memory_order_acquire)
@@ -75,15 +80,26 @@ do {                                \
 #define xchg_long_release(p, v)         __LKMM_XCHG(p, v, memory_order_release)
 #define xchg_long_acquire(p, v)         __LKMM_XCHG(p, v, memory_order_acquire)
 
-#define cmpxchg(p, o, n)                __LKMM_CMPXCHG(p, o, n, mb, mb)
-#define cmpxchg_relaxed(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
-#define cmpxchg_acquire(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
-#define cmpxchg_release(p, o, n)        __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
+#define __cmpxchg(p, o, n, mo)          (typeof(o))(size_t)__LKMM_CMPXCHG(p, (void*)(size_t)(o), (void*)(size_t)(n), mo, mo)
+#define cmpxchg(p, o, n)                __cmpxchg(p, o, n, mb)
+#define cmpxchg_relaxed(p, o, n)        __cmpxchg(p, o, n, memory_order_relaxed)
+#define cmpxchg_acquire(p, o, n)        __cmpxchg(p, o, n, memory_order_acquire)
+#define cmpxchg_release(p, o, n)        __cmpxchg(p, o, n, memory_order_release)
 
 #define cmpxchg_long(p, o, n)           __LKMM_CMPXCHG(p, o, n, mb, mb)
 #define cmpxchg_long_relaxed(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_relaxed, memory_order_relaxed)
 #define cmpxchg_long_acquire(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_acquire, memory_order_acquire)
 #define cmpxchg_long_release(p, o, n)   __LKMM_CMPXCHG(p, o, n, memory_order_release, memory_order_release)
+
+#define try_cmpxchg(p, pold, n)  ({         \
+    typeof(*pold) __o = *pold;              \
+    typeof(*p) __old = cmpxchg(p, __o, n);  \
+    bool __success = (__old == n);          \
+    if (!__success) {                       \
+        *pold = __old;                      \
+    }                                       \
+    __success;                              \
+})
 
 /*******************************************************************************
  **                            ATOMIC OPERATIONS
@@ -281,3 +297,5 @@ extern int __LKMM_SPIN_UNLOCK(spinlock_t*);
 
 #define spin_lock(l)      __LKMM_SPIN_LOCK(l)
 #define spin_unlock(l)    __LKMM_SPIN_UNLOCK(l)
+
+#endif /* __LKMM_H_ */
