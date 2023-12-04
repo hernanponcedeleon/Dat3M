@@ -372,101 +372,115 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadCondInit(FunctionCall call) {
-        final Register result = checkValueAndArguments(2, call);
-        final Expression address = call.getArguments().get(0);
+        //see https://linux.die.net/man/3/pthread_cond_init
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression condAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
         final Expression initializedState = expressions.makeZero(types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.newStore(address, initializedState));
+                EventFactory.newStore(condAddress, initializedState),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadCondDestroy(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        final Expression address = call.getArguments().get(0);
+        //see https://linux.die.net/man/3/pthread_cond_destroy
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression condAddress = call.getArguments().get(0);
         final Expression finalizedState = expressions.makeZero(types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.newStore(address, finalizedState));
+                EventFactory.newStore(condAddress, finalizedState),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadCondSignal(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        final Expression address = call.getArguments().get(0);
-        final Expression one = expressions.makeOne(types.getArchType());
+        //see https://linux.die.net/man/3/pthread_cond_signal
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression condAddress = call.getArguments().get(0);
+        final Expression wakeCount = expressions.makeOne(types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Relaxed, since this operation is to be guarded by a mutex.
-                EventFactory.Atomic.newStore(address, one, Tag.C11.MO_RELAXED));
+                EventFactory.Atomic.newStore(condAddress, wakeCount, Tag.C11.MO_RELAXED),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        final Expression address = call.getArguments().get(0);
-        final var threadCount = new INonDet(constantId++, types.getArchType(), true);
-        threadCount.setMin(BigInteger.ZERO);
-        call.getFunction().getProgram().addConstant(threadCount);
+        //see https://linux.die.net/man/3/pthread_cond_broadcast
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression condAddress = call.getArguments().get(0);
+        final var wakeCount = new INonDet(constantId++, types.getArchType(), true);
+        wakeCount.setMin(BigInteger.ZERO);
+        call.getFunction().getProgram().addConstant(wakeCount);
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Relaxed, since this operation is to be guarded by a mutex.
-                EventFactory.Atomic.newStore(address, threadCount, Tag.C11.MO_RELAXED));
+                EventFactory.Atomic.newStore(condAddress, wakeCount, Tag.C11.MO_RELAXED),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadCondWait(FunctionCall call) {
-        final Register result = checkValueAndArguments(2, call);
-        final Expression address = call.getArguments().get(0);
-        final Expression lock = call.getArguments().get(1);
+        //see https://linux.die.net/man/3/pthread_cond_wait
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression condAddress = call.getArguments().get(0);
+        final Expression lockAddress = call.getArguments().get(1);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Allow other threads to access the condition variable.
-                EventFactory.Pthread.newUnlock(lock.toString(), lock),
+                EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
                 // Wait for signal or broadcast.
-                EventFactory.Atomic.newFADD(dummy, address, minusOne, Tag.C11.MO_RELAXED),
+                EventFactory.Atomic.newFADD(dummy, condAddress, minusOne, Tag.C11.MO_RELAXED),
                 EventFactory.newAbortIf(expressions.makeGT(dummy, zero, true)),
                 // Wait for all waiters to be notified of a broadcast.  If signal, wait for itself.
                 // Subsequent waits cannot be notified by the same broadcast event.
-                EventFactory.Atomic.newLoad(dummy, address, Tag.C11.MO_RELAXED),
-                EventFactory.newAbortIf(expressions.makeEQ(dummy, zero)),
+                EventFactory.Atomic.newLoad(dummy, condAddress, Tag.C11.MO_RELAXED),
+                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)),
                 // Re-lock.
-                EventFactory.Pthread.newLock(lock.toString(), lock));
+                EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
-        final Register result = checkValueAndArguments(3, call);
-        final Expression address = call.getArguments().get(0);
-        final Expression lock = call.getArguments().get(1);
+        //see https://linux.die.net/man/3/pthread_cond_timedwait
+        final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
+        final Expression condAddress = call.getArguments().get(0);
+        final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Label label = EventFactory.newLabel("__VERIFIER_pthread_cond_timedwait_end");
-        final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
-        call.getFunction().getProgram().addConstant(error);
-        final Expression zero = expressions.makeGeneralZero(result.getType());
+        final var errorValue = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
+        call.getFunction().getProgram().addConstant(errorValue);
+        final Expression success = expressions.makeGeneralZero(errorRegister.getType());
+        final Expression zero = expressions.makeZero(types.getArchType());
         final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
                 // Allow other threads to access the condition variable.
-                EventFactory.Pthread.newUnlock(lock.toString(), lock),
+                EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
                 // Decide success
-                //TODO proper error code: ETIMEDOUT
-                EventFactory.newLocal(result, error),
-                EventFactory.newJump(expressions.makeNEQ(error, zero), label),
+                EventFactory.newJump(expressions.makeNEQ(errorValue, success), label),
                 // Wait for signal or broadcast.
-                EventFactory.Atomic.newFADD(dummy, address, minusOne, Tag.C11.MO_RELAXED),
+                EventFactory.Atomic.newFADD(dummy, condAddress, minusOne, Tag.C11.MO_RELAXED),
                 EventFactory.newAbortIf(expressions.makeGT(dummy, zero, true)),
                 // Wait for all waiters to be notified of a broadcast.  If signal, wait for itself.
                 // Subsequent waits cannot be notified by the same broadcast event.
-                EventFactory.Atomic.newLoad(dummy, address, Tag.C11.MO_RELAXED),
-                EventFactory.newAbortIf(expressions.makeEQ(dummy, zero)),
+                EventFactory.Atomic.newLoad(dummy, condAddress, Tag.C11.MO_RELAXED),
+                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)),
                 // Join branches
                 label,
                 // Re-lock.
-                EventFactory.Pthread.newLock(lock.toString(), lock));
+                EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
+                //TODO proper error code: ETIMEDOUT
+                EventFactory.newLocal(errorRegister, errorValue)
+        );
     }
 
     private List<Event> inlinePthreadKeyCreate(FunctionCall call) {
-        final Register result = checkValueAndArguments(2, call);
+        //see https://linux.die.net/man/3/pthread_key_create
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression key = call.getArguments().get(0);
         final Expression destructor = call.getArguments().get(1);
         final Program program = call.getFunction().getProgram();
@@ -477,106 +491,134 @@ public class Intrinsics {
         final Expression destructorOffset = expressions.makeValue(destructorOffsetValue, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 EventFactory.newStore(key, object),
-                EventFactory.newStore(expressions.makeADD(object, destructorOffset), destructor));
+                EventFactory.newStore(expressions.makeADD(object, destructorOffset), destructor),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadKeyDelete(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_key_delete
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         //final Expression key = call.getArguments().get(0);
         //final int threadID = call.getThread().getId();
+        //TODO the destructor should no longer be called by pthread_exit
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadGetSpecific(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_getspecific
+        final Register result = getResultRegisterAndCheckArguments(1, call);
         final Expression key = call.getArguments().get(0);
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeADD(key, offset)));
+                EventFactory.newLoad(result, expressions.makeADD(key, offset))
+        );
     }
 
     private List<Event> inlinePthreadSetSpecific(FunctionCall call) {
-        final Register result = checkValueAndArguments(2, call);
+        //see https://linux.die.net/man/3/pthread_setspecific
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.newStore(expressions.makeADD(key, offset), value));
+                EventFactory.newStore(expressions.makeADD(key, offset), value),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
-        final Register result = checkValueAndArguments(2, call);
+        //see https://linux.die.net/man/3/pthread_mutex_init
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression lockAddress = call.getArguments().get(0);
         final Expression attributes = call.getArguments().get(1);
         final String lockName = lockAddress.toString();
         return List.of(
                 EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes),
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadMutexDestroy(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_mutex_destroy
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        //TODO store a value such that later uses of the lock fail
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadMutexLock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_mutex_lock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
         return List.of(
                 EventFactory.Pthread.newLock(lockName, lockAddress),
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadMutexTryLock(FunctionCall call) {
-        final Register register = checkValueAndArguments(1, call);
-        checkArgument(register.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        final var error = new INonDet(constantId++, (IntegerType) register.getType(), true);
-        call.getFunction().getProgram().addConstant(error);
-        final Label label = EventFactory.newLabel("__VERIFIER_trylock_join");
+        //see https://linux.die.net/man/3/pthread_mutex_trylock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
+        final Register oldValueRegister = call.getFunction().newRegister(types.getBooleanType());
+        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final String lockName = lockAddress.toString();
+        final Expression locked = expressions.makeTrue();
+        final Expression unlocked = expressions.makeFalse();
+        final Expression fail = expressions.makeNot(successRegister);
         return List.of(
-                EventFactory.newLocal(register, error),
-                EventFactory.newJump(expressions.makeBooleanCast(error), label),
-                EventFactory.Pthread.newLock(lockName, lockAddress),
-                label);
+                EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE),
+                EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
+        );
     }
 
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_mutex_unlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.Pthread.newUnlock(lockName, lockAddress));
+                EventFactory.Pthread.newUnlock(lockName, lockAddress),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadRwlockInit(FunctionCall call) {
-        final Register result = checkValueAndArguments(2, call);
-        final Expression lock = call.getArguments().get(0);
+        //see https://linux.die.net/man/3/pthread_rwlock_init
+        final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression lockAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
+        final Expression unlocked = expressions.makeZero(types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.newStore(lock, expressions.makeZero(types.getArchType()))
+                EventFactory.newStore(lockAddress, unlocked),
+                assignSuccess(errorRegister)
         );
     }
 
     private List<Event> inlinePthreadRwlockDestroy(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        return List.of(EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())));
+        //see https://linux.die.net/man/3/pthread_rwlock_destroy
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        //TODO store a value such that later uses of the lock fail
+        //final Expression lock = call.getArguments().get(0);
+        //final Expression finalizedValue = expressions.makeZero(types.getArchType());
+        return List.of(
+                //EventFactory.newStore(lock, finalizedValue)
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadRwlockWrlock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        final Expression lock = call.getArguments().get(0);
+        //see https://linux.die.net/man/3/pthread_rwlock_wrlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression lockAddress = call.getArguments().get(0);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
@@ -585,88 +627,84 @@ public class Intrinsics {
         final Expression locked = expressions.makeNEQ(dummy, zero);
         final Expression properReplacement = expressions.makeConditional(locked, dummy, one);
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Try to lock
-                EventFactory.Atomic.newExchange(dummy, lock, replacement, Tag.C11.MO_ACQUIRE),
+                EventFactory.Atomic.newExchange(dummy, lockAddress, replacement, Tag.C11.MO_ACQUIRE),
                 // Store one (write-locked) only if successful, else leave unchanged
                 EventFactory.newAssume(expressions.makeEQ(replacement, properReplacement)),
                 // Deadlock if violation occurs in another thread
-                EventFactory.newAbortIf(locked));
+                EventFactory.newAbortIf(locked),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadRwlockTryWrlock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        final Expression lock = call.getArguments().get(0);
+        //see https://linux.die.net/man/3/pthread_rwlock_trywrlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression lockAddress = call.getArguments().get(0);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
+        final var error = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
         call.getFunction().getProgram().addConstant(error);
         final Expression zero = expressions.makeZero(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
+        final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         //TODO this implementation can fail spontaneously
         final Label label = EventFactory.newLabel("__VERIFIER_pthread_rwlock_trywrlock_end");
         return List.of(
-                EventFactory.newLocal(result, error),
                 // Decide whether this operation succeeds
-                EventFactory.newJump(expressions.makeNEQ(error, expressions.makeGeneralZero(result.getType())), label),
+                EventFactory.newJump(expressions.makeNEQ(error, success), label),
                 // Lock
-                EventFactory.Atomic.newExchange(dummy, lock, one, Tag.C11.MO_ACQUIRE),
+                EventFactory.Atomic.newExchange(dummy, lockAddress, one, Tag.C11.MO_ACQUIRE),
                 // Guaranteed success in this branch
                 EventFactory.newAssume(expressions.makeEQ(dummy, zero)),
                 // Join paths
-                label);
+                label,
+                EventFactory.newLocal(errorRegister, error)
+        );
     }
 
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_rwlock_rdlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final Expression lock = call.getArguments().get(0);
+        final Expression lockAddress = call.getArguments().get(0);
         final var increment = new INonDet(constantId++, types.getArchType(), true);
         call.getFunction().getProgram().addConstant(increment);
-        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression unlocked = expressions.makeZero(types.getArchType());
+        final Expression wrLocked = expressions.makeOne(types.getArchType());
         final Expression one = expressions.makeOne(types.getArchType());
         final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
-        final Expression firstReader = expressions.makeEQ(dummy, zero);
+        final Expression firstReader = expressions.makeEQ(dummy, unlocked);
         final Expression properIncrement = expressions.makeConditional(firstReader, two, one);
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
                 // Increment shared counter only if not locked by writer.
-                EventFactory.Atomic.newFADD(dummy, lock, increment, Tag.C11.MO_ACQUIRE),
+                EventFactory.Atomic.newFADD(dummy, lockAddress, increment, Tag.C11.MO_ACQUIRE),
                 // Deadlock if a violation occurred in another thread.  In this case, lock value was not changed
-                EventFactory.newAbortIf(expressions.makeEQ(increment, zero)),
+                EventFactory.newAbortIf(expressions.makeEQ(increment, unlocked)),
                 // On success, lock cannot have been write-locked.
-                EventFactory.newAssume(expressions.makeNEQ(dummy, one)),
+                EventFactory.newAssume(expressions.makeNEQ(dummy, wrLocked)),
                 // On success, incremented by two, if first reader, else one.
-                EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)));
+                EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final Expression lock = call.getArguments().get(0);
-        final var error = new INonDet(constantId++, (IntegerType) result.getType(), true);
-        call.getFunction().getProgram().addConstant(error);
-        final var increment = new INonDet(constantId++, types.getArchType(), true);
-        call.getFunction().getProgram().addConstant(increment);
-        final Expression zero = expressions.makeZero(types.getArchType());
-        final Expression one = expressions.makeOne(types.getArchType());
-        final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
-        final Expression writeLocked = expressions.makeEQ(dummy, one);
-        final Expression firstReader = expressions.makeEQ(dummy, zero);
-        final Expression properIncrement = expressions.makeConditional(writeLocked, zero,
-                expressions.makeConditional(firstReader, two, one));
-        final Expression success = expressions.makeGeneralZero(result.getType());
+        //see https://linux.die.net/man/3/pthread_rwlock_tryrdlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression lockAddress = call.getArguments().get(0);
+        final Expression unlocked = expressions.makeZero(types.getArchType());
+        final Expression locked = expressions.makeOne(types.getArchType());
         return List.of(
-                EventFactory.newLocal(result, error),
                 // increment shared counter only if not locked by writer.
-                EventFactory.Atomic.newFADD(dummy, lock, increment, Tag.C11.MO_ACQUIRE),
-                EventFactory.newAssume(expressions.makeNEQ(writeLocked, expressions.makeEQ(error, success))),
-                EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)));
+                EventFactory.Atomic.newCompareExchange(errorRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE)
+        );
     }
 
     private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {
-        final Register result = checkValueAndArguments(1, call);
+        //see https://linux.die.net/man/3/pthread_rwlock_unlock
+        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final Expression lock = call.getArguments().get(0);
+        final Expression lockAddress = call.getArguments().get(0);
         final var decrement = new INonDet(constantId++, types.getArchType(), true);
         call.getFunction().getProgram().addConstant(decrement);
         final Expression minusTwo = expressions.makeValue(BigInteger.valueOf(-2), types.getArchType());
@@ -674,10 +712,13 @@ public class Intrinsics {
         final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
         final Expression lastReader = expressions.makeEQ(dummy, two);
         final Expression properDecrement = expressions.makeConditional(lastReader, minusTwo, minusOne);
+        //TODO does not recognize whether the calling thread is allowed to unlock
         return List.of(
-                EventFactory.newLocal(result, expressions.makeGeneralZero(result.getType())),
-                EventFactory.Atomic.newFADD(dummy, lock, decrement, Tag.C11.MO_RELEASE),
-                EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)));
+                // decreases the lock value by 1, if not the last reader, or else 2.
+                EventFactory.Atomic.newFADD(dummy, lockAddress, decrement, Tag.C11.MO_RELEASE),
+                EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)),
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlineMalloc(FunctionCall call) {
@@ -1159,7 +1200,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineStrcpy(FunctionCall call, boolean returnEnd, boolean numberProvided) {
-        final Register result = checkValueAndArguments(numberProvided ? 3 : 2, call);
+        final Register result = getResultRegisterAndCheckArguments(numberProvided ? 3 : 2, call);
         final Register offset = call.getFunction().newRegister(types.getArchType());
         final Register dummy = call.getFunction().newRegister(types.getByteType());
         final Expression destination = call.getArguments().get(0);
@@ -1187,9 +1228,21 @@ public class Intrinsics {
                 EventFactory.newLocal(result, returnEnd ? expressions.makeADD(destination, offset) : destination));
     }
 
-    private Register checkValueAndArguments(int expectedArgumentCount, FunctionCall call) {
-        checkArgument(call.getArguments().size() == expectedArgumentCount && call instanceof ValueFunctionCall,
-                "Wrong function type at %s", call);
+    private Event assignSuccess(Register errorRegister) {
+        return EventFactory.newLocal(errorRegister, expressions.makeGeneralZero(errorRegister.getType()));
+    }
+
+    private Register getResultRegisterAndCheckArguments(int expectedArgumentCount, FunctionCall call) {
+        checkArguments(expectedArgumentCount, call);
+        return getResultRegister(call);
+    }
+
+    private void checkArguments(int expectedArgumentCount, FunctionCall call) {
+        checkArgument(call.getArguments().size() == expectedArgumentCount, "Wrong function type at %s", call);
+    }
+
+    private Register getResultRegister(FunctionCall call) {
+        checkArgument(call instanceof ValueFunctionCall, "Unexpected value discard at intrinsic \"%s\"", call);
         return ((ValueFunctionCall) call).getResultRegister();
     }
 }

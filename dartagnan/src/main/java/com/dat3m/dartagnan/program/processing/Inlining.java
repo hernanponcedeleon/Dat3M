@@ -129,6 +129,7 @@ public class Inlining implements ProgramProcessor {
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
         final List<Expression> arguments = call.getArguments();
+        //TODO add support for __VA_INIT
         verify(callTarget.isVarArgs ? arguments.size() >= callTarget.parameters.size() :
                 arguments.size() == callTarget.parameters.size(), "Parameter mismatch at %s", call);
         // All registers have to be replaced

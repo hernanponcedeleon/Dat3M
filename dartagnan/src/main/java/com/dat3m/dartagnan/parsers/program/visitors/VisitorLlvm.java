@@ -385,6 +385,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
         if (ctx.inlineAsm() != null) {
             // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
+            //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
                 block.events.add(newLocal(resultRegister, makeNonDetOfType(returnType)));
