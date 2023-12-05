@@ -376,7 +376,7 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression condAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
-        final Expression initializedState = expressions.makeZero(types.getArchType());
+        final Expression initializedState = expressions.makeTrue();
         return List.of(
                 EventFactory.newStore(condAddress, initializedState),
                 assignSuccess(errorRegister)
@@ -387,7 +387,7 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_cond_destroy
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression condAddress = call.getArguments().get(0);
-        final Expression finalizedState = expressions.makeZero(types.getArchType());
+        final Expression finalizedState = expressions.makeFalse();
         return List.of(
                 EventFactory.newStore(condAddress, finalizedState),
                 assignSuccess(errorRegister)
@@ -396,48 +396,28 @@ public class Intrinsics {
 
     private List<Event> inlinePthreadCondSignal(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_signal
+        // Because of spurious wake-ups, there is no need to do anything here.
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Expression condAddress = call.getArguments().get(0);
-        final Expression wakeCount = expressions.makeOne(types.getArchType());
+        //final Expression condAddress = call.getArguments().get(0);
         return List.of(
-                // Relaxed, since this operation is to be guarded by a mutex.
-                EventFactory.Atomic.newStore(condAddress, wakeCount, Tag.C11.MO_RELAXED),
                 assignSuccess(errorRegister)
         );
     }
 
     private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_broadcast
-        final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Expression condAddress = call.getArguments().get(0);
-        final var wakeCount = new INonDet(constantId++, types.getArchType(), true);
-        wakeCount.setMin(BigInteger.ZERO);
-        call.getFunction().getProgram().addConstant(wakeCount);
-        return List.of(
-                // Relaxed, since this operation is to be guarded by a mutex.
-                EventFactory.Atomic.newStore(condAddress, wakeCount, Tag.C11.MO_RELAXED),
-                assignSuccess(errorRegister)
-        );
+        return inlinePthreadCondSignal(call);
     }
 
     private List<Event> inlinePthreadCondWait(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_wait
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
-        final Expression condAddress = call.getArguments().get(0);
+        //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final Expression zero = expressions.makeZero(types.getArchType());
-        final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
-                // Wait for signal or broadcast.
-                EventFactory.Atomic.newFADD(dummy, condAddress, minusOne, Tag.C11.MO_RELAXED),
-                EventFactory.newAbortIf(expressions.makeGT(dummy, zero, true)),
-                // Wait for all waiters to be notified of a broadcast.  If signal, wait for itself.
-                // Subsequent waits cannot be notified by the same broadcast event.
-                EventFactory.Atomic.newLoad(dummy, condAddress, Tag.C11.MO_RELAXED),
-                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)),
+                // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
                 EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
                 assignSuccess(errorRegister)
@@ -447,30 +427,16 @@ public class Intrinsics {
     private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_timedwait
         final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
-        final Expression condAddress = call.getArguments().get(0);
+        //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final Label label = EventFactory.newLabel("__VERIFIER_pthread_cond_timedwait_end");
         final var errorValue = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
+        errorValue.setMin(BigInteger.ZERO);
         call.getFunction().getProgram().addConstant(errorValue);
-        final Expression success = expressions.makeGeneralZero(errorRegister.getType());
-        final Expression zero = expressions.makeZero(types.getArchType());
-        final Expression minusOne = expressions.makeValue(BigInteger.ONE.negate(), types.getArchType());
         return List.of(
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
-                // Decide success
-                EventFactory.newJump(expressions.makeNEQ(errorValue, success), label),
-                // Wait for signal or broadcast.
-                EventFactory.Atomic.newFADD(dummy, condAddress, minusOne, Tag.C11.MO_RELAXED),
-                EventFactory.newAbortIf(expressions.makeGT(dummy, zero, true)),
-                // Wait for all waiters to be notified of a broadcast.  If signal, wait for itself.
-                // Subsequent waits cannot be notified by the same broadcast event.
-                EventFactory.Atomic.newLoad(dummy, condAddress, Tag.C11.MO_RELAXED),
-                EventFactory.newAbortIf(expressions.makeNEQ(dummy, zero)),
-                // Join branches
-                label,
+                // This thread would sleep here.  Explicit or spurious signals may wake it.
                 // Re-lock.
                 EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
                 //TODO proper error code: ETIMEDOUT
