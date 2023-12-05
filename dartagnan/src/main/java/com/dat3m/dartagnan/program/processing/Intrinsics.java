@@ -477,23 +477,27 @@ public class Intrinsics {
     private List<Event> inlinePthreadGetSpecific(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_getspecific
         final Register result = getResultRegisterAndCheckArguments(1, call);
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression key = call.getArguments().get(0);
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeADD(key, offset))
+                EventFactory.newLoad(dummy, key),
+                EventFactory.newLoad(result, expressions.makeADD(dummy, offset))
         );
     }
 
     private List<Event> inlinePthreadSetSpecific(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_setspecific
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
+        final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
         return List.of(
-                EventFactory.newStore(expressions.makeADD(key, offset), value),
+                EventFactory.newLoad(dummy, key),
+                EventFactory.newStore(expressions.makeADD(dummy, offset), value),
                 assignSuccess(errorRegister)
         );
     }
