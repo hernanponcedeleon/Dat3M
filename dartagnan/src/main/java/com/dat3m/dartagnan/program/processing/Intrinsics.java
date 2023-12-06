@@ -94,6 +94,12 @@ public class Intrinsics {
         P_THREAD_JOIN(List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""), false, true, false, false, null),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
+        P_THREAD_ATTR_INIT("pthread_attr_init", true, true, true, true, Intrinsics::inlinePthreadAttr),
+        P_THREAD_ATTR_DESTROY("pthread_attr_destroy", true, true, true, true, Intrinsics::inlinePthreadAttr),
+        P_THREAD_ATTR_GET(P_THREAD_ATTR.stream().map(a -> "pthread_attr_get" + a).toList(),
+                true, true, true, true, Intrinsics::inlinePthreadAttr),
+        P_THREAD_ATTR_SET(P_THREAD_ATTR.stream().map(a -> "pthread_attr_set" + a).toList(),
+                true, true, true, true, Intrinsics::inlinePthreadAttr),
         // --------------------------- pthread condition variable ---------------------------
         P_THREAD_COND_INIT("pthread_cond_init", true, true, true, true, Intrinsics::inlinePthreadCondInit),
         P_THREAD_COND_DESTROY("pthread_cond_destroy", true, false, true, true, Intrinsics::inlinePthreadCondDestroy),
@@ -101,33 +107,25 @@ public class Intrinsics {
         P_THREAD_COND_BROADCAST("pthread_cond_broadcast", true, false, true, true, Intrinsics::inlinePthreadCondBroadcast),
         P_THREAD_COND_WAIT("pthread_cond_wait", false, true, false, true, Intrinsics::inlinePthreadCondWait),
         P_THREAD_COND_TIMEDWAIT("pthread_cond_timedwait", false, false, true, true, Intrinsics::inlinePthreadCondTimedwait),
-        P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
+        P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
         // --------------------------- pthread key ---------------------------
         P_THREAD_KEY_CREATE("pthread_key_create", false, false, true, false, Intrinsics::inlinePthreadKeyCreate),
         P_THREAD_KEY_DELETE("pthread_key_delete", false, false, true, false, Intrinsics::inlinePthreadKeyDelete),
         P_THREAD_GET_SPECIFIC("pthread_getspecific", false, true, true, false, Intrinsics::inlinePthreadGetSpecific),
         P_THREAD_SET_SPECIFIC("pthread_setspecific", true, false, true, false, Intrinsics::inlinePthreadSetSpecific),
         // --------------------------- pthread mutex ---------------------------
-        P_THREAD_MUTEX_INIT("pthread_mutex_init", true, false, true, true, Intrinsics::inlinePthreadMutexInit),
-        P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, false, true, true, Intrinsics::inlinePthreadMutexDestroy),
+        P_THREAD_MUTEX_INIT("pthread_mutex_init", true, true, true, true, Intrinsics::inlinePthreadMutexInit),
+        P_THREAD_MUTEX_DESTROY("pthread_mutex_destroy", true, true, true, true, Intrinsics::inlinePthreadMutexDestroy),
         P_THREAD_MUTEX_LOCK("pthread_mutex_lock", true, true, false, true, Intrinsics::inlinePthreadMutexLock),
         P_THREAD_MUTEX_TRYLOCK("pthread_mutex_trylock", true, true, true, true, Intrinsics::inlinePthreadMutexTryLock),
-        P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, false, true, true, Intrinsics::inlinePthreadMutexUnlock),
-        P_THREAD_MUTEXATTR_INIT("pthread_mutexattr_init", true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_MUTEXATTR_DESTROY("pthread_mutexattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_MUTEXATTR_SET(List.of(
-                "pthread_mutexattr_setprioceiling",
-                "pthread_mutexattr_setprotocol",
-                "pthread_mutexattr_settype",
-                "pthread_mutexattr_setpolicy_np"),
-                true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_MUTEXATTR_GET(List.of(
-                "pthread_mutexattr_getprioceiling",
-                "pthread_mutexattr_getprotocol",
-                "pthread_mutexattr_gettype",
-                "pthread_mutexattr_getpolicy_np"),
-                false, true, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, true, true, true, Intrinsics::inlinePthreadMutexUnlock),
+        P_THREAD_MUTEXATTR_INIT("pthread_mutexattr_init", true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
+        P_THREAD_MUTEXATTR_DESTROY("pthread_mutexattr_destroy", true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
+        P_THREAD_MUTEXATTR_SET(P_THREAD_MUTEXATTR.stream().map(a -> "pthread_mutexattr_get" + a).toList(),
+                true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
+        P_THREAD_MUTEXATTR_GET(P_THREAD_MUTEXATTR.stream().map(a -> "pthread_mutexattr_set" + a).toList(),
+                true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         // --------------------------- pthread read/write lock ---------------------------
         P_THREAD_RWLOCK_INIT("pthread_rwlock_init", true, false, true, true, Intrinsics::inlinePthreadRwlockInit),
         P_THREAD_RWLOCK_DESTROY("pthread_rwlock_destroy", true, true, true, true, Intrinsics::inlinePthreadRwlockDestroy),
@@ -136,10 +134,10 @@ public class Intrinsics {
         P_THREAD_RWLOCK_RDLOCK("pthread_rwlock_rdlock", true, true, false, true, Intrinsics::inlinePthreadRwlockRdlock),
         P_THREAD_RWLOCK_TRYRDLOCK("pthread_rwlock_tryrdlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryRdlock),
         P_THREAD_RWLOCK_UNLOCK("pthread_rwlock_unlock", true, false, true, true, Intrinsics::inlinePthreadRwlockUnlock),
-        P_THREAD_RWLOCKATTR_INIT("pthread_rwlockattr_init", true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_RWLOCKATTR_SET("pthread_rwlockattr_setpshared", true, false, true, true, Intrinsics::inlineAsZero),
-        P_THREAD_RWLOCKATTR_GET("pthread_rwlockattr_getpshared", true, false, true, true, Intrinsics::inlineAsZero),
+        P_THREAD_RWLOCKATTR_INIT("pthread_rwlockattr_init", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
+        P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
+        P_THREAD_RWLOCKATTR_SET("pthread_rwlockattr_setpshared", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
+        P_THREAD_RWLOCKATTR_GET("pthread_rwlockattr_getpshared", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
         // --------------------------- SVCOMP ---------------------------
         VERIFIER_ATOMIC_BEGIN("__VERIFIER_atomic_begin", false, false, true, true, Intrinsics::inlineAtomicBegin),
         VERIFIER_ATOMIC_END("__VERIFIER_atomic_end", false, false, true, true, Intrinsics::inlineAtomicEnd),
@@ -366,6 +364,46 @@ public class Intrinsics {
         return List.of(EventFactory.Svcomp.newEndAtomic(checkNotNull(currentAtomicBegin)));
     }
 
+    private static final List<String> P_THREAD_ATTR = List.of(
+            "stack", // no field itself, but describes simultaneous getters and setters for stackaddr and stacksize
+            "stackaddr",
+            "stacksize",
+            "guardsize",
+            "detachstate", // either PTHREAD_CREATE_DETACHED, or defaults to PTHREAD_CREATE_JOINABLE
+            "inheritsched", // either PTHREAD_EXPLICIT_SCHED, or defaults to PTHREAD_INHERIT_SCHED
+            "schedparam", // struct sched_param
+            "schedpolicy", // either SCHED_FIFO, SCHED_RR, or SCHED_OTHER
+            "scope" // either PTHREAD_SCOPE_SYSTEM, or PTHREAD_SCOPE_PROCESS
+    );
+
+    private List<Event> inlinePthreadAttr(FunctionCall call) {
+        final String suffix = call.getCalledFunction().getName().substring("pthread_attr_".length());
+        final int expectedArguments = switch (suffix) {
+            case "init", "destroy" -> 1;
+            case "getstack", "setstack" -> 3;
+            default -> 2;
+        };
+        final Register errorRegister = getResultRegisterAndCheckArguments(expectedArguments, call);
+        final Expression attrAddress = call.getArguments().get(0);
+        final boolean initial = suffix.equals("init");
+        if (initial || suffix.equals("destroy")) {
+            final Expression flag = expressions.makeValue(initial);
+            return List.of(
+                    EventFactory.newStore(attrAddress, flag),
+                    assignSuccess(errorRegister)
+            );
+        }
+        final boolean getter = suffix.startsWith("get");
+        checkArgument(getter || suffix.startsWith("set"), "Unrecognized intrinsics \"%s\"", call);
+        checkArgument(P_THREAD_ATTR.contains(suffix.substring(3)));
+        //final Register oldValue = call.getFunction().newRegister(types.getBooleanType());
+        //final Expression value = call.getArguments().get(1);
+        return List.of(
+                //EventFactory.newLoad(oldValue, attrAddress),
+                assignSuccess(errorRegister)
+        );
+    }
+
     private List<Event> inlinePthreadCondInit(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_init
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
@@ -439,6 +477,19 @@ public class Intrinsics {
         );
     }
 
+    private List<Event> inlinePthreadCondAttr(FunctionCall call) {
+        final String suffix = call.getCalledFunction().getName().substring("pthread_condattr_".length());
+        final boolean init = suffix.equals("init");
+        final boolean destroy = suffix.equals("destroy");
+        final Register errorRegister = getResultRegisterAndCheckArguments(init || destroy ? 1 : 2, call);
+        final Expression attrAddress = call.getArguments().get(0);
+        checkUnknownIntrinsic(init || destroy, call);
+        return List.of(
+                EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                assignSuccess(errorRegister)
+        );
+    }
+
     private List<Event> inlinePthreadKeyCreate(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_key_create
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
@@ -493,6 +544,13 @@ public class Intrinsics {
                 assignSuccess(errorRegister)
         );
     }
+
+    private static final List<String> P_THREAD_MUTEXATTR = List.of(
+            "prioceiling",
+            "protocol",
+            "type",
+            "policy_np"
+    );
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_init
@@ -553,6 +611,30 @@ public class Intrinsics {
                 assignSuccess(errorRegister)
         );
     }
+
+    private List<Event> inlinePthreadMutexAttr(FunctionCall call) {
+        final String suffix = call.getCalledFunction().getName().substring("pthread_mutexattr_".length());
+        final boolean init = suffix.equals("init");
+        final boolean destroy = suffix.equals("destroy");
+        final Register errorRegister = getResultRegisterAndCheckArguments(init || destroy ? 1 : 2, call);
+        final Expression attrAddress = call.getArguments().get(0);
+        if (init || destroy) {
+            return List.of(
+                    EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                    assignSuccess(errorRegister)
+            );
+        }
+        final boolean get = suffix.startsWith("get");
+        checkUnknownIntrinsic(get || suffix.startsWith("set"), call);
+        checkUnknownIntrinsic(P_THREAD_MUTEXATTR.contains(suffix.substring(3)), call);
+        return List.of(
+                assignSuccess(errorRegister)
+        );
+    }
+
+    private static final List<String> P_THREAD_RWLOCK_ATTR = List.of(
+            "pshared"
+    );
 
     private List<Event> inlinePthreadRwlockInit(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_init
@@ -705,6 +787,26 @@ public class Intrinsics {
 
     private IValue getRwlockWriteLockedValue() {
         return expressions.makeOne(getRwlockDatatype());
+    }
+
+    private List<Event> inlinePthreadRwlockAttr(FunctionCall call) {
+        final String suffix = call.getCalledFunction().getName().substring("pthread_rwlockattr_".length());
+        final boolean init = suffix.equals("init");
+        final boolean destroy = suffix.equals("destroy");
+        final Register errorRegister = getResultRegisterAndCheckArguments(init || destroy ? 1 : 2, call);
+        final Expression attrAddress = call.getArguments().get(0);
+        if (init || destroy) {
+            return List.of(
+                    EventFactory.newStore(attrAddress, expressions.makeValue(init)),
+                    assignSuccess(errorRegister)
+            );
+        }
+        final boolean get = suffix.startsWith("get");
+        checkUnknownIntrinsic(get || suffix.startsWith("set"), call);
+        checkUnknownIntrinsic(P_THREAD_RWLOCK_ATTR.contains(suffix.substring(3)), call);
+        return List.of(
+                assignSuccess(errorRegister)
+        );
     }
 
     private List<Event> inlineMalloc(FunctionCall call) {
@@ -1189,6 +1291,10 @@ public class Intrinsics {
 
     private void checkArguments(int expectedArgumentCount, FunctionCall call) {
         checkArgument(call.getArguments().size() == expectedArgumentCount, "Wrong function type at %s", call);
+    }
+
+    private void checkUnknownIntrinsic(boolean condition, FunctionCall call) {
+        checkArgument(condition, "Unknown intrinsic \"%s\"", call);
     }
 
     private Register getResultRegister(FunctionCall call) {
