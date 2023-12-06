@@ -15,7 +15,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.UnsignedInteger;
 import com.google.common.primitives.UnsignedLong;
@@ -450,13 +449,16 @@ public class Intrinsics {
         final Expression key = call.getArguments().get(0);
         final Expression destructor = call.getArguments().get(1);
         final Program program = call.getFunction().getProgram();
-        final int threadCount = program.getThreads().size();
+        final long threadCount = program.getThreads().size();
         final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
-        final MemoryObject object = program.getMemory().allocate((threadCount + 1) * pointerBytes, false);
-        final BigInteger destructorOffsetValue = BigInteger.valueOf((long) threadCount * pointerBytes);
+        final Register object = call.getFunction().newRegister(types.getArchType());
+        final BigInteger sizeValue = BigInteger.valueOf((threadCount + 1) * pointerBytes);
+        final Expression size = expressions.makeValue(sizeValue, types.getArchType());
+        final BigInteger destructorOffsetValue = BigInteger.valueOf(threadCount * pointerBytes);
         final Expression destructorOffset = expressions.makeValue(destructorOffsetValue, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
+                EventFactory.newAlloc(object, types.getArchType(), size, false),
                 EventFactory.newStore(key, object),
                 EventFactory.newStore(expressions.makeADD(object, destructorOffset), destructor),
                 assignSuccess(errorRegister)
