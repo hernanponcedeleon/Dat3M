@@ -116,7 +116,7 @@ public class Intrinsics {
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
-                "llvm.sadd.with.overflow", "llvm.ssub.with.overflow",
+                "llvm.sadd.with.overflow", "llvm.ssub.with.overflow", "llvm.smul.with.overflow",
                 "llvm.ctlz", "llvm.ctpop"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
@@ -148,7 +148,7 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- UBSAN ---------------------------
-        UBSAN_ADD_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow"), false, false, false, true, Intrinsics::integerOverflow),
+        UBSAN_ADD_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", "__ubsan_handle_mul_overflow"), false, false, false, true, Intrinsics::integerOverflow),
         ;
 
         private final List<String> variants;
@@ -397,6 +397,8 @@ public class Intrinsics {
             return inlineLLVMSAddWithOverflow(valueCall);
         } else if (name.contains("ssub.with.overflow")) {
             return inlineLLVMSSubWithOverflow(valueCall);
+        } else if (name.contains("smul.with.overflow")) {
+            return inlineLLVMSMulWithOverflow(valueCall);
         } else if (name.contains("sub.sat")) {
             return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
@@ -564,6 +566,10 @@ public class Intrinsics {
 
     private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
         return inlineLLVMSOpWithOverflow(call, IOpBin.SUB);
+    }
+
+    private List<Event> inlineLLVMSMulWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.MUL);
     }
 
     private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IOpBin op) {
