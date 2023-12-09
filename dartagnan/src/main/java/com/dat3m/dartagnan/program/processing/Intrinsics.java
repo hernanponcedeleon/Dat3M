@@ -148,7 +148,13 @@ public class Intrinsics {
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
         // --------------------------- UBSAN ---------------------------
-        UBSAN_ADD_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", "__ubsan_handle_mul_overflow"), false, false, false, true, Intrinsics::integerOverflow),
+        UBSAN_OVERFLOW(
+                List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", "__ubsan_handle_divrem_overflow",
+                        "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
+                false, false, false, true, Intrinsics::integerOverflow),        
+        UBSAN_TYPE_MISSMATCH(
+            List.of("__ubsan_handle_type_mismatch_v1"),
+            false, false, false, true, Intrinsics::nullDereference),
         ;
 
         private final List<String> variants;
@@ -379,6 +385,15 @@ public class Intrinsics {
         abort.addTags(Tag.EARLYTERMINATION, Tag.OVERFLOW);
         return List.of(assertion, abort);
     }
+
+    private List<Event> nullDereference(FunctionCall call) {
+        final Expression condition = expressions.makeFalse();
+        final Event assertion = EventFactory.newAssert(condition, "invalid dereference");
+        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        abort.addTags(Tag.EARLYTERMINATION, Tag.NULLDEREF);
+        return List.of(assertion, abort);
+    }
+
     // --------------------------------------------------------------------------------------------------------
     // LLVM intrinsics
 
