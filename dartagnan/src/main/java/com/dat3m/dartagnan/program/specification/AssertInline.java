@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.specification;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
@@ -20,8 +21,10 @@ public class AssertInline extends AbstractAssert {
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
         final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-        return bmgr.implication(ctx.execution(assertion),
-                ctx.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion));
+        return (ctx.encodeUserAssertions() || assertion.hasTag(Tag.OVERFLOW) || assertion.hasTag(Tag.NULLDEREF))
+                ? bmgr.implication(ctx.execution(assertion),
+                        ctx.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion))
+                : bmgr.makeTrue();
     }
 
     @Override
