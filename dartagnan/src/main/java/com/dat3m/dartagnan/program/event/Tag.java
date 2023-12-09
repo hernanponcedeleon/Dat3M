@@ -36,6 +36,7 @@ public final class Tag {
     public static final String NOOPT            = "__NOOPT";
     public static final String STARTLOAD        = "__STARTLOAD";
     public static final String OVERFLOW         = "__OVERFLOW";
+    public static final String NULLDEREF        = "__NULLDEREF";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
