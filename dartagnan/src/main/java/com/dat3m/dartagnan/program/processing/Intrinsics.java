@@ -116,6 +116,7 @@ public class Intrinsics {
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
+                "llvm.sadd.with.overflow", "llvm.ssub.with.overflow",
                 "llvm.ctlz", "llvm.ctpop"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
@@ -146,6 +147,8 @@ public class Intrinsics {
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- UBSAN ---------------------------
+        UBSAN_ADD_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow"), false, false, false, true, Intrinsics::integerOverflow),
         ;
 
         private final List<String> variants;
@@ -368,6 +371,14 @@ public class Intrinsics {
         return List.of(assertion, abort);
     }
 
+    private List<Event> integerOverflow(FunctionCall call) {
+        ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final Expression condition = expressions.makeFalse();
+        final Event assertion = EventFactory.newAssert(condition, "integer overflow");
+        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
+        abort.addTags(Tag.EARLYTERMINATION, Tag.OVERFLOW);
+        return List.of(assertion, abort);
+    }
     // --------------------------------------------------------------------------------------------------------
     // LLVM intrinsics
 
@@ -382,6 +393,10 @@ public class Intrinsics {
             return inlineLLVMCtpop(valueCall);
         } else if (name.contains("add.sat")) {
             return inlineLLVMSaturatedAdd(valueCall);
+        } else if (name.contains("sadd.with.overflow")) {
+            return inlineLLVMSAddWithOverflow(valueCall);
+        } else if (name.contains("ssub.with.overflow")) {
+            return inlineLLVMSSubWithOverflow(valueCall);
         } else if (name.contains("sub.sat")) {
             return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
@@ -540,6 +555,42 @@ public class Intrinsics {
         return List.of(
                 EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
                 EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeADD(x, y), resultReg))
+        );
+    }
+
+    private List<Event> inlineLLVMSAddWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.ADD);
+    }
+
+    private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.SUB);
+    }
+
+    private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IOpBin op) {
+        final Register resultReg = call.getResultRegister();
+        final List<Expression> arguments = call.getArguments();
+        final Expression x = arguments.get(0);
+        final Expression y = arguments.get(1);
+        assert x.getType() == y.getType();
+
+        final IntegerType iType = (IntegerType) x.getType();
+        final Expression sum = expressions.makeBinary(x, op, y);
+        final Expression flag = expressions.makeCast(
+                expressions.makeNot(checkIfValueInRangeOfType(sum, iType, true)),
+                types.getIntegerType(1)
+        );
+
+        return List.of(
+                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(sum, flag)))
+        );
+    }
+
+    private Expression checkIfValueInRangeOfType(Expression value, IntegerType integerType, boolean signed) {
+        final Expression minValue = expressions.makeValue(integerType.getMinimumValue(signed), integerType);
+        final Expression maxValue = expressions.makeValue(integerType.getMaximumValue(signed), integerType);
+        return expressions.makeAnd(
+                expressions.makeLTE(minValue, value, true),
+                expressions.makeLTE(value, maxValue, true)
         );
     }
 
