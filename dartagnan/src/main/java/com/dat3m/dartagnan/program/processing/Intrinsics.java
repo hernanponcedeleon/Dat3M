@@ -590,7 +590,8 @@ public class Intrinsics {
         assert x.getType() == y.getType();
 
         final IntegerType iType = (IntegerType) x.getType();
-        final Expression sum = expressions.makeBinary(x, op, y);
+        final Expression result = expressions.makeBinary(x, op, y);
+        final Expression rangeCheck = checkIfValueInRangeOfType(result, iType, true);
 
         // From LLVM's language manual:
         // "An operation overflows if, for any values of its operands A and B and for any N larger than
@@ -600,10 +601,9 @@ public class Intrinsics {
         final int width = iType.getBitWidth();
         final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
         final Expression yExt = expressions.makeCast(y, types.getIntegerType(width + 1), true);
-        final Expression sumExt = expressions.makeCast(sum, types.getIntegerType(width + 1), true);
-        final Expression bvCheck = expressions.makeEQ(expressions.makeBinary(xExt, op, yExt), sumExt);
+        final Expression resultExt = expressions.makeCast(result, types.getIntegerType(width + 1), true);
+        final Expression bvCheck = expressions.makeEQ(expressions.makeBinary(xExt, op, yExt), resultExt);
 
-        final Expression rangeCheck = checkIfValueInRangeOfType(sum, iType, true);
         final Expression flag = expressions.makeCast(
                 expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
                 types.getIntegerType(1)
