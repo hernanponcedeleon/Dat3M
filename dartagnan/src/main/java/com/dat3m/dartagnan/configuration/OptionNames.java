@@ -39,7 +39,8 @@ public class OptionNames {
     public static final String DEAD_ASSIGNMENT_ELIMINATION = "program.processing.dce";
     public static final String DYNAMIC_PURE_LOOP_CUTTING = "program.processing.dplc";
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
-	
+    public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
+
     // Program Property Options
     public static final String ALIAS_METHOD = "program.analysis.alias";
     public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
