@@ -405,7 +405,7 @@ public class Intrinsics {
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "integer overflow");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION, Tag.OVERFLOW);
+        abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
     }
 
@@ -416,7 +416,7 @@ public class Intrinsics {
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "invalid dereference");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION, Tag.NULLDEREF);
+        abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
     }
 
