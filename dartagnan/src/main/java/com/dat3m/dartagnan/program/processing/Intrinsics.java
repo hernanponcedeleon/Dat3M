@@ -24,12 +24,19 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 
 /**
  * Manages a collection of all functions that the verifier can define itself,
@@ -37,9 +44,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Also defines the semantics of most intrinsics,
  * except some thread-library primitives, which are instead defined in {@link ThreadCreation}.
  */
+@Options
 public class Intrinsics {
 
     private static final Logger logger = LogManager.getLogger(Intrinsics.class);
+
+    @Option(name = REMOVE_ASSERTION_OF_TYPE,
+            description = "Remove assertions of type [user, overflow, invalidderef].",
+            toUppercase=true,
+            secure = true)
+    private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
+
+    private enum AssertionType { USER, OVERFLOW, INVALIDDEREF }
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -55,6 +71,12 @@ public class Intrinsics {
 
     public static Intrinsics newInstance() {
         return new Intrinsics();
+    }
+    
+    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
+        Intrinsics instance = newInstance();
+        config.inject(instance);
+        return instance;
     }
 
     public ProgramProcessor markIntrinsicsPass() {
@@ -366,6 +388,9 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call) {
+        if(notToInline.contains(AssertionType.USER)) {
+            return List.of();
+        }
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "user assertion");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -374,6 +399,9 @@ public class Intrinsics {
     }
 
     private List<Event> integerOverflow(FunctionCall call) {
+        if(notToInline.contains(AssertionType.OVERFLOW)) {
+            return List.of();
+        }
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "integer overflow");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -382,6 +410,9 @@ public class Intrinsics {
     }
 
     private List<Event> nullDereference(FunctionCall call) {
+        if(notToInline.contains(AssertionType.INVALIDDEREF)) {
+            return List.of();
+        }
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "invalid dereference");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -610,7 +641,7 @@ public class Intrinsics {
         );
 
         return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(sum, flag)))
+                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(result, flag)))
         );
     }
 
