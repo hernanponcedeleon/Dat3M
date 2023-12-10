@@ -594,8 +594,21 @@ public class Intrinsics {
 
         final IntegerType iType = (IntegerType) x.getType();
         final Expression sum = expressions.makeBinary(x, op, y);
+
+        // From LLVM's language manual:
+        // "An operation overflows if, for any values of its operands A and B and for any N larger than
+        // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where 
+        // ext is sext for signed overflow and zext for unsigned overflow, and op is the 
+        // underlying arithmetic operation.""
+        final int width = iType.getBitWidth();
+        final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
+        final Expression yExt = expressions.makeCast(y, types.getIntegerType(width + 1), true);
+        final Expression sumExt = expressions.makeCast(sum, types.getIntegerType(width + 1), true);
+        final Expression bvCheck = expressions.makeEQ(expressions.makeBinary(xExt, op, yExt), sumExt);
+
+        final Expression rangeCheck = checkIfValueInRangeOfType(sum, iType, true);
         final Expression flag = expressions.makeCast(
-                expressions.makeNot(checkIfValueInRangeOfType(sum, iType, true)),
+                expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
                 types.getIntegerType(1)
         );
 
