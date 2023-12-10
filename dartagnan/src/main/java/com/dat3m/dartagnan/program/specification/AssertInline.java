@@ -21,10 +21,8 @@ public class AssertInline extends AbstractAssert {
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
         final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-        return (ctx.encodeUserAssertions() || assertion.hasTag(Tag.OVERFLOW) || assertion.hasTag(Tag.NULLDEREF))
-                ? bmgr.implication(ctx.execution(assertion),
-                        ctx.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion))
-                : bmgr.makeTrue();
+        return bmgr.implication(ctx.execution(assertion),
+                ctx.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion));
     }
 
     @Override

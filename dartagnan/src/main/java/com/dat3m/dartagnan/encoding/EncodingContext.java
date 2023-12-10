@@ -65,11 +65,6 @@ public final class EncodingContext {
             secure = true)
     boolean useIntegers = false;
 
-    @Option(name = ENCODE_USER_ASSERTION,
-            description = "Encode user assertions.",
-            secure = true)
-    boolean encodeUserAssertions = true;
-
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<Event, Formula> addresses = new HashMap<>();
@@ -105,10 +100,6 @@ public final class EncodingContext {
 
     public boolean usesSATEncoding() {
         return useSATEncoding;
-    }
-
-    public boolean encodeUserAssertions() {
-        return encodeUserAssertions;
     }
 
     public VerificationTask getTask() {
