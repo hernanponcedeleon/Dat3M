@@ -228,7 +228,6 @@ public class Intrinsics {
     }
 
     private void declareNondetBool(Program program) {
-        final TypeFactory types = TypeFactory.getInstance();
         // used by VisitorLKMM
         if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
             final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
@@ -367,7 +366,6 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAssert(FunctionCall call) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "user assertion");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -376,7 +374,6 @@ public class Intrinsics {
     }
 
     private List<Event> integerOverflow(FunctionCall call) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         final Expression condition = expressions.makeFalse();
         final Event assertion = EventFactory.newAssert(condition, "integer overflow");
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
@@ -725,8 +722,6 @@ public class Intrinsics {
     }
 
     private List<Event> inlineNonDet(FunctionCall call) {
-        TypeFactory types = TypeFactory.getInstance();
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         assert call.isDirectCall() && call instanceof ValueFunctionCall;
         Register register = ((ValueFunctionCall) call).getResultRegister();
         String name = call.getCalledFunction().getName();
