@@ -446,19 +446,19 @@ public class Intrinsics {
     private List<Event> inlinePthreadKeyCreate(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_key_create
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
-        final Expression key = call.getArguments().get(0);
+        final Expression keyAddress = call.getArguments().get(0);
         final Expression destructor = call.getArguments().get(1);
         final Program program = call.getFunction().getProgram();
         final long threadCount = program.getThreads().size();
         final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
-        final Register object = call.getFunction().newRegister(types.getArchType());
+        final Register storageAddressRegister = call.getFunction().newRegister(types.getArchType());
         final Expression size = expressions.makeValue((threadCount + 1) * pointerBytes, types.getArchType());
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
-                EventFactory.newAlloc(object, types.getArchType(), size, false),
-                EventFactory.newStore(key, object),
-                EventFactory.newStore(expressions.makeADD(object, destructorOffset), destructor),
+                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
+                EventFactory.newStore(keyAddress, storageAddressRegister),
+                EventFactory.newStore(expressions.makeADD(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -563,9 +563,8 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression lockAddress = call.getArguments().get(0);
         //final Expression attributes = call.getArguments().get(1);
-        final Expression unlocked = expressions.makeZero(types.getArchType());
         return List.of(
-                EventFactory.newStore(lockAddress, unlocked),
+                EventFactory.newStore(lockAddress, getRwlockUnlockedValue()),
                 assignSuccess(errorRegister)
         );
     }
@@ -586,20 +585,11 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_rwlock_wrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
-        final Expression zero = expressions.makeZero(types.getArchType());
-        final Expression one = expressions.makeOne(types.getArchType());
-        final var replacement = new INonDet(constantId++, types.getArchType(), true);
-        call.getFunction().getProgram().addConstant(replacement);
-        final Expression locked = expressions.makeNEQ(dummy, zero);
-        final Expression properReplacement = expressions.makeConditional(locked, dummy, one);
+        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         return List.of(
-                // Try to lock
-                EventFactory.Atomic.newExchange(dummy, lockAddress, replacement, Tag.C11.MO_ACQUIRE),
-                // Store one (write-locked) only if successful, else leave unchanged
-                EventFactory.newAssume(expressions.makeEQ(replacement, properReplacement)),
+                newRwlockTryWrlock(call, successRegister, lockAddress),
                 // Deadlock if violation occurs in another thread
-                EventFactory.newAbortIf(locked),
+                EventFactory.newAbortIf(expressions.makeNot(successRegister)),
                 assignSuccess(errorRegister)
         );
     }
@@ -608,49 +598,44 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_rwlock_trywrlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final var error = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
         call.getFunction().getProgram().addConstant(error);
-        final Expression zero = expressions.makeZero(types.getArchType());
-        final Expression one = expressions.makeOne(types.getArchType());
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
-        //TODO this implementation can fail spontaneously
-        final Label label = EventFactory.newLabel("__VERIFIER_pthread_rwlock_trywrlock_end");
         return List.of(
-                // Decide whether this operation succeeds
-                EventFactory.newJump(expressions.makeNEQ(error, success), label),
-                // Lock
-                EventFactory.Atomic.newExchange(dummy, lockAddress, one, Tag.C11.MO_ACQUIRE),
+                newRwlockTryWrlock(call, successRegister, lockAddress),
                 // Guaranteed success in this branch
-                EventFactory.newAssume(expressions.makeEQ(dummy, zero)),
-                // Join paths
-                label,
+                EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
                 EventFactory.newLocal(errorRegister, error)
+        );
+    }
+
+    private Event newRwlockTryWrlock(FunctionCall call, Register successRegister, Expression lockAddress) {
+        return EventFactory.Llvm.newCompareExchange(
+                call.getFunction().newRegister(getRwlockDatatype()),
+                successRegister,
+                lockAddress,
+                getRwlockUnlockedValue(),
+                getRwlockWriteLockedValue(),
+                Tag.C11.MO_ACQUIRE
         );
     }
 
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_rdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final var increment = new INonDet(constantId++, types.getArchType(), true);
+        final var increment = new INonDet(constantId++, getRwlockDatatype(), true);
         call.getFunction().getProgram().addConstant(increment);
-        final Expression unlocked = expressions.makeZero(types.getArchType());
-        final Expression wrLocked = expressions.makeOne(types.getArchType());
-        final Expression one = expressions.makeOne(types.getArchType());
-        final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
-        final Expression firstReader = expressions.makeEQ(dummy, unlocked);
-        final Expression properIncrement = expressions.makeConditional(firstReader, two, one);
+        final Expression isWriteLocked = expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue());
         return List.of(
                 // Increment shared counter only if not locked by writer.
-                EventFactory.Atomic.newFADD(dummy, lockAddress, increment, Tag.C11.MO_ACQUIRE),
+                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, increment, IOpBin.ADD, Tag.C11.MO_ACQUIRE),
+                // On success, incremented by two, if first reader, else one.  TODO On failure, do not store.
+                EventFactory.newAssume(expressions.makeEQ(increment, getRwlockReadIncrement(oldValueRegister))),
                 // Deadlock if a violation occurred in another thread.  In this case, lock value was not changed
-                EventFactory.newAbortIf(expressions.makeEQ(increment, unlocked)),
-                // On success, lock cannot have been write-locked.
-                EventFactory.newAssume(expressions.makeNEQ(dummy, wrLocked)),
-                // On success, incremented by two, if first reader, else one.
-                EventFactory.newAssume(expressions.makeEQ(increment, properIncrement)),
+                EventFactory.newAbortIf(isWriteLocked),
                 assignSuccess(errorRegister)
         );
     }
@@ -658,34 +643,69 @@ public class Intrinsics {
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_tryrdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression unlocked = expressions.makeZero(types.getArchType());
-        final Expression locked = expressions.makeOne(types.getArchType());
+        final var increment = new INonDet(constantId++, getRwlockDatatype(), true);
+        call.getFunction().getProgram().addConstant(increment);
+        final var error = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
+        call.getFunction().getProgram().addConstant(error);
+        final Expression isWriteLocked = expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue());
+        final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         return List.of(
-                // increment shared counter only if not locked by writer.
-                EventFactory.Atomic.newCompareExchange(errorRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE)
+                // Increment shared counter only if not locked by writer.
+                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, increment, IOpBin.ADD, Tag.C11.MO_ACQUIRE),
+                // On success, incremented by two, if first reader, else one.  TODO On failure, do not store.
+                EventFactory.newAssume(expressions.makeEQ(increment, getRwlockReadIncrement(oldValueRegister))),
+                // Indicate success with zero.
+                EventFactory.newAssume(expressions.makeEQ(isWriteLocked, expressions.makeNEQ(error, success))),
+                EventFactory.newLocal(errorRegister, error)
+        );
+    }
+
+    private Expression getRwlockReadIncrement(Register oldValueRegister) {
+        return expressions.makeConditional(
+                expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()),
+                expressions.makeZero(getRwlockDatatype()),
+                expressions.makeConditional(
+                        expressions.makeEQ(oldValueRegister, getRwlockUnlockedValue()),
+                        expressions.makeValue(BigInteger.TWO, getRwlockDatatype()),
+                        expressions.makeOne(getRwlockDatatype())
+                )
         );
     }
 
     private List<Event> inlinePthreadRwlockUnlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_unlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
+        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final var decrement = new INonDet(constantId++, types.getArchType(), true);
+        final var decrement = new INonDet(constantId++, getRwlockDatatype(), true);
         call.getFunction().getProgram().addConstant(decrement);
-        final Expression minusTwo = expressions.makeValue(-2, types.getArchType());
-        final Expression minusOne = expressions.makeValue(-1, types.getArchType());
-        final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
-        final Expression lastReader = expressions.makeEQ(dummy, two);
-        final Expression properDecrement = expressions.makeConditional(lastReader, minusTwo, minusOne);
+        final Expression one = expressions.makeOne(getRwlockDatatype());
+        final Expression two = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
+        final Expression lastReader = expressions.makeEQ(oldValueRegister, two);
+        final Expression properDecrement = expressions.makeConditional(lastReader, two, one);
         //TODO does not recognize whether the calling thread is allowed to unlock
         return List.of(
                 // decreases the lock value by 1, if not the last reader, or else 2.
-                EventFactory.Atomic.newFADD(dummy, lockAddress, decrement, Tag.C11.MO_RELEASE),
+                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, decrement, IOpBin.SUB, Tag.C11.MO_RELEASE),
                 EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)),
                 assignSuccess(errorRegister)
         );
+    }
+
+    private IntegerType getRwlockDatatype() {
+        return types.getArchType();
+    }
+
+    private IValue getRwlockUnlockedValue() {
+        //FIXME this assumes that the lock is initialized with pthread_rwlock_init,
+        // but some programs may explicitly initialize it with other platform-dependent values.
+        return expressions.makeZero(getRwlockDatatype());
+    }
+
+    private IValue getRwlockWriteLockedValue() {
+        return expressions.makeOne(getRwlockDatatype());
     }
 
     private List<Event> inlineMalloc(FunctionCall call) {
