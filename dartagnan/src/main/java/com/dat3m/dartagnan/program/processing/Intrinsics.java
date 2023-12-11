@@ -395,17 +395,17 @@ public class Intrinsics {
 
     private List<Event> inlinePthreadCondSignal(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_signal
+        return inlinePthreadCondBroadcast(call);
+    }
+
+    private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
+        //see https://linux.die.net/man/3/pthread_cond_broadcast
         // Because of spurious wake-ups, there is no need to do anything here.
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         //final Expression condAddress = call.getArguments().get(0);
         return List.of(
                 assignSuccess(errorRegister)
         );
-    }
-
-    private List<Event> inlinePthreadCondBroadcast(FunctionCall call) {
-        //see https://linux.die.net/man/3/pthread_cond_broadcast
-        return inlinePthreadCondSignal(call);
     }
 
     private List<Event> inlinePthreadCondWait(FunctionCall call) {
@@ -479,27 +479,23 @@ public class Intrinsics {
     private List<Event> inlinePthreadGetSpecific(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_getspecific
         final Register result = getResultRegisterAndCheckArguments(1, call);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression key = call.getArguments().get(0);
         final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
+        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(dummy, key),
-                EventFactory.newLoad(result, expressions.makeADD(dummy, offset))
+                EventFactory.newLoad(result, expressions.makeADD(key, offset))
         );
     }
 
     private List<Event> inlinePthreadSetSpecific(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_setspecific
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
-        final Register dummy = call.getFunction().newRegister(types.getArchType());
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
         final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), types.getArchType());
+        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(dummy, key),
-                EventFactory.newStore(expressions.makeADD(dummy, offset), value),
+                EventFactory.newStore(expressions.makeADD(key, offset), value),
                 assignSuccess(errorRegister)
         );
     }
@@ -540,11 +536,12 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        final Register oldValueRegister = call.getFunction().newRegister(types.getBooleanType());
+        // We currently use archType in InitLock, Lock and Unlock.
+        final Register oldValueRegister = call.getFunction().newRegister(types.getArchType());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression locked = expressions.makeTrue();
-        final Expression unlocked = expressions.makeFalse();
+        final Expression locked = expressions.makeOne(types.getArchType());
+        final Expression unlocked = expressions.makeZero(types.getArchType());
         final Expression fail = expressions.makeNot(successRegister);
         return List.of(
                 EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE),
