@@ -93,6 +93,10 @@ public final class ExpressionFactory {
         return makeValue(new BigInteger(text), type);
     }
 
+    public IValue makeValue(long value, IntegerType type) {
+        return makeValue(BigInteger.valueOf(value), type);
+    }
+
     public IValue makeValue(BigInteger value, IntegerType type) {
         return new IValue(value, type);
     }

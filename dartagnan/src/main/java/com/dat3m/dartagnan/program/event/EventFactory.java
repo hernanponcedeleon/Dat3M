@@ -43,7 +43,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -135,7 +134,7 @@ public class EventFactory {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
-                expressions.makeADD(base, expressions.makeValue(BigInteger.valueOf(offset), base.getType()));
+                expressions.makeADD(base, expressions.makeValue(offset, base.getType()));
         return new Init(base, offset, address);
     }
 

@@ -452,10 +452,8 @@ public class Intrinsics {
         final long threadCount = program.getThreads().size();
         final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
         final Register object = call.getFunction().newRegister(types.getArchType());
-        final BigInteger sizeValue = BigInteger.valueOf((threadCount + 1) * pointerBytes);
-        final Expression size = expressions.makeValue(sizeValue, types.getArchType());
-        final BigInteger destructorOffsetValue = BigInteger.valueOf(threadCount * pointerBytes);
-        final Expression destructorOffset = expressions.makeValue(destructorOffsetValue, types.getArchType());
+        final Expression size = expressions.makeValue((threadCount + 1) * pointerBytes, types.getArchType());
+        final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
                 EventFactory.newAlloc(object, types.getArchType(), size, false),
@@ -481,7 +479,7 @@ public class Intrinsics {
         final Register result = getResultRegisterAndCheckArguments(1, call);
         final Expression key = call.getArguments().get(0);
         final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), (IntegerType) key.getType());
+        final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
                 EventFactory.newLoad(result, expressions.makeADD(key, offset))
         );
@@ -493,7 +491,7 @@ public class Intrinsics {
         final Expression key = call.getArguments().get(0);
         final Expression value = call.getArguments().get(1);
         final int threadID = call.getThread().getId();
-        final Expression offset = expressions.makeValue(BigInteger.valueOf(threadID), (IntegerType) key.getType());
+        final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
                 EventFactory.newStore(expressions.makeADD(key, offset), value),
                 assignSuccess(errorRegister)
@@ -676,8 +674,8 @@ public class Intrinsics {
         final Expression lockAddress = call.getArguments().get(0);
         final var decrement = new INonDet(constantId++, types.getArchType(), true);
         call.getFunction().getProgram().addConstant(decrement);
-        final Expression minusTwo = expressions.makeValue(BigInteger.valueOf(-2), types.getArchType());
-        final Expression minusOne = expressions.makeValue(BigInteger.valueOf(-1), types.getArchType());
+        final Expression minusTwo = expressions.makeValue(-2, types.getArchType());
+        final Expression minusOne = expressions.makeValue(-1, types.getArchType());
         final Expression two = expressions.makeValue(BigInteger.TWO, types.getArchType());
         final Expression lastReader = expressions.makeEQ(dummy, two);
         final Expression properDecrement = expressions.makeConditional(lastReader, minusTwo, minusOne);
@@ -1068,7 +1066,7 @@ public class Intrinsics {
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
         for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(BigInteger.valueOf(i), types.getArchType());
+            final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression srcAddr = expressions.makeADD(src, offset);
             final Expression destAddr = expressions.makeADD(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
@@ -1103,7 +1101,7 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>(4 * count + 1);
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
         for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(BigInteger.valueOf(i), types.getArchType());
+            final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression src1Addr = expressions.makeADD(src1, offset);
             final Expression src2Addr = expressions.makeADD(src2, offset);
             //FIXME: This method should properly load byte chunks and compare them (unsigned).
@@ -1152,10 +1150,10 @@ public class Intrinsics {
         final int fill = fillValue.getValueAsInt();
         assert fill == 0;
 
-        final Expression zero = expressions.makeValue(BigInteger.valueOf(fill), types.getByteType());
+        final Expression zero = expressions.makeValue(fill, types.getByteType());
         final List<Event> replacement = new ArrayList<>( count + 1);
         for (int i = 0; i < count; i++) {
-            final Expression offset = expressions.makeValue(BigInteger.valueOf(i), types.getArchType());
+            final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeADD(dest, offset);
 
             replacement.add(EventFactory.newStore(destAddr, zero));
