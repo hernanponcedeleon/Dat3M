@@ -182,10 +182,6 @@ public class Intrinsics {
         STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
-        // STD_STRCPY("strcpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, false, false)),
-        // STD_STPCPY("stpcpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, true, false)),
-        // STD_STRNCPY("strncpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, false, true)),
-        // STD_STPNCPY("stpncpy", true, true, true, true, (i, c) -> i.inlineStrcpy(c, true, true)),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
@@ -712,28 +708,21 @@ public class Intrinsics {
     }
 
     private List<Event> inlineMalloc(FunctionCall call) {
-        if (call.getArguments().size() != 1) {
-            throw new UnsupportedOperationException(String.format("Unsupported signature for %s.", call));
-        }
-        final ValueFunctionCall valueCall = (ValueFunctionCall) call;
-        return List.of(EventFactory.newAlloc(
-                valueCall.getResultRegister(),
-                TypeFactory.getInstance().getByteType(),
-                valueCall.getArguments().get(0),
-                true
-        ));
+        final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
+        final Expression totalSize = call.getArguments().get(0);
+        return List.of(
+                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+        );
     }
 
     private List<Event> inlineCalloc(FunctionCall call) {
-        checkArgument(call.getArguments().size() == 2, "Unsupported signature for %s", call);
-        checkArgument(call instanceof ValueFunctionCall, "No support for discarded result of %s", call);
-        final ValueFunctionCall valueCall = (ValueFunctionCall) call;
-        return List.of(EventFactory.newAlloc(
-                valueCall.getResultRegister(),
-                TypeFactory.getInstance().getByteType(),
-                expressions.makeMUL(valueCall.getArguments().get(0), valueCall.getArguments().get(1)),
-                true
-        ));
+        final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression elementCount = call.getArguments().get(0);
+        final Expression elementSize = call.getArguments().get(1);
+        final Expression totalSize = expressions.makeMUL(elementCount, elementSize);
+        return List.of(
+                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+        );
     }
 
     private List<Event> inlineAssert(FunctionCall call) {
@@ -1187,35 +1176,6 @@ public class Intrinsics {
         }
 
         return replacement;
-    }
-
-    private List<Event> inlineStrcpy(FunctionCall call, boolean returnEnd, boolean numberProvided) {
-        final Register result = getResultRegisterAndCheckArguments(numberProvided ? 3 : 2, call);
-        final Register offset = call.getFunction().newRegister(types.getArchType());
-        final Register dummy = call.getFunction().newRegister(types.getByteType());
-        final Expression destination = call.getArguments().get(0);
-        final Expression source = call.getArguments().get(1);
-        final Expression number = numberProvided ? call.getArguments().get(2) : null;
-        final Expression numberCheck = numberProvided ? expressions.makeEQ(offset, number) : expressions.makeFalse();
-        // This implementation is a simple byte-by-byte copy loop.
-        final Label loop = EventFactory.newLabel("__VERIFIER_strcpy_loop");
-        final Label end = EventFactory.newLabel("__VERIFIER_strcpy_end");
-        return List.of(
-                EventFactory.newLocal(offset, expressions.makeZero(types.getArchType())),
-                loop,
-                // If bound is reached, break
-                EventFactory.newJump(numberCheck, end),
-                // Copy one byte
-                EventFactory.newLoad(dummy, expressions.makeADD(source, offset)),
-                EventFactory.newStore(expressions.makeADD(destination, offset), dummy),
-                // Break on '\0'
-                EventFactory.newJump(expressions.makeEQ(dummy, expressions.makeZero(types.getByteType())), end),
-                // Increase offset
-                EventFactory.newLocal(offset, expressions.makeADD(offset, expressions.makeOne(types.getArchType()))),
-                // Continue
-                EventFactory.newGoto(loop),
-                end,
-                EventFactory.newLocal(result, returnEnd ? expressions.makeADD(destination, offset) : destination));
     }
 
     private Event assignSuccess(Register errorRegister) {
