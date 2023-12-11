@@ -174,7 +174,7 @@ public class Intrinsics {
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
                 false, false, false, true, Intrinsics::integerOverflow),
         UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
-                false, false, false, true, Intrinsics::nullDereference),
+                false, false, false, true, Intrinsics::invalidDereference),
         ;
 
         private final List<String> variants;
@@ -409,7 +409,7 @@ public class Intrinsics {
         return List.of(assertion, abort);
     }
 
-    private List<Event> nullDereference(FunctionCall call) {
+    private List<Event> invalidDereference(FunctionCall call) {
         if(notToInline.contains(AssertionType.INVALIDDEREF)) {
             return List.of();
         }
