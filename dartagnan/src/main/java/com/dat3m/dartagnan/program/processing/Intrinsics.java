@@ -128,7 +128,7 @@ public class Intrinsics {
         VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineSpinStart),
         VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineSpinEnd),
         VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
-        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineAssert),
+        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineUserAssert),
         VERIFIER_NONDET(List.of("__VERIFIER_nondet_bool",
                 "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -164,7 +164,7 @@ public class Intrinsics {
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
-        STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineAssert),
+        STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
@@ -172,9 +172,9 @@ public class Intrinsics {
         // --------------------------- UBSAN ---------------------------
         UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
                 "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
-                false, false, false, true, Intrinsics::integerOverflow),
+                false, false, false, true, Intrinsics::inlineIntegerOverflow),
         UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
-                false, false, false, true, Intrinsics::invalidDereference),
+                false, false, false, true, Intrinsics::inlineInvalidDereference),
         ;
 
         private final List<String> variants;
@@ -387,37 +387,27 @@ public class Intrinsics {
         ));
     }
 
-    private List<Event> inlineAssert(FunctionCall call) {
-        if(notToInline.contains(AssertionType.USER)) {
+    private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
+        if(notToInline.contains(skip)) {
             return List.of();
         }
         final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, "user assertion");
+        final Event assertion = EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
     }
 
-    private List<Event> integerOverflow(FunctionCall call) {
-        if(notToInline.contains(AssertionType.OVERFLOW)) {
-            return List.of();
-        }
-        final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, "integer overflow");
-        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION);
-        return List.of(assertion, abort);
+    private List<Event> inlineUserAssert(FunctionCall call) {
+        return inlineAssert(call, AssertionType.USER, "user assertion");
     }
 
-    private List<Event> invalidDereference(FunctionCall call) {
-        if(notToInline.contains(AssertionType.INVALIDDEREF)) {
-            return List.of();
-        }
-        final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, "invalid dereference");
-        final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
-        abort.addTags(Tag.EARLYTERMINATION);
-        return List.of(assertion, abort);
+    private List<Event> inlineIntegerOverflow(FunctionCall call) {
+        return inlineAssert(call, AssertionType.OVERFLOW, "integer overflow");
+    }
+
+    private List<Event> inlineInvalidDereference(FunctionCall call) {
+        return inlineAssert(call, AssertionType.INVALIDDEREF, "invalid dereference");
     }
 
     // --------------------------------------------------------------------------------------------------------
