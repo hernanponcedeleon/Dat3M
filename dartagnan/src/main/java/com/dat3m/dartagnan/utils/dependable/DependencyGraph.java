@@ -149,11 +149,10 @@ public class DependencyGraph<T> {
                 stack.push(v);
                 v.isOnStack = true;
                 index++;
-            } else if (lastVisited != null) {
-                // Recursion in progress (we returned from a deeper recursion level)
-                v.lowlink = Math.min(v.lowlink, lastVisited.lowlink);
             } else {
-                assert false;
+                // Recursion in progress (we returned from a deeper recursion level)
+                assert (lastVisited != null);
+                v.lowlink = Math.min(v.lowlink, lastVisited.lowlink);
             }
 
             boolean recursionDone = true;
