@@ -94,6 +94,7 @@ public class Intrinsics {
         P_THREAD_JOIN(List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""), false, true, false, false, null),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
+        P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
         P_THREAD_ATTR_INIT("pthread_attr_init", true, true, true, true, Intrinsics::inlinePthreadAttr),
         P_THREAD_ATTR_DESTROY("pthread_attr_destroy", true, true, true, true, Intrinsics::inlinePthreadAttr),
         P_THREAD_ATTR_GET(P_THREAD_ATTR.stream().map(a -> "pthread_attr_get" + a).toList(),
@@ -362,6 +363,15 @@ public class Intrinsics {
 
     private List<Event> inlineAtomicEnd(FunctionCall ignored) {
         return List.of(EventFactory.Svcomp.newEndAtomic(checkNotNull(currentAtomicBegin)));
+    }
+
+    private List<Event> inlinePthreadEqual(FunctionCall call) {
+        final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Expression leftId = call.getArguments().get(0);
+        final Expression rightId = call.getArguments().get(1);
+        return List.of(
+                EventFactory.newLocal(resultRegister, expressions.makeEQ(leftId, rightId))
+        );
     }
 
     private static final List<String> P_THREAD_ATTR = List.of(
