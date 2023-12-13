@@ -67,6 +67,7 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
                 {"nondet_loop", IMM, FAIL, 1},
+                {"pthread", IMM, PASS, 1},
                 {"recursion", IMM, UNKNOWN, 1},
                 {"recursion", IMM, PASS, 2},
                 {"thread_chaining", IMM, PASS, 1},
