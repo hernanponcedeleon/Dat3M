@@ -110,7 +110,7 @@ define ptr @thread_join(ptr noundef %0) #0 !dbg !194 {
   call void @llvm.dbg.declare(metadata ptr %3, metadata !199, metadata !DIExpression()), !dbg !200
   call void @llvm.dbg.declare(metadata ptr %4, metadata !201, metadata !DIExpression()), !dbg !202
   %5 = load ptr, ptr %2, align 8, !dbg !203
-  %6 = call i32 @"\01_pthread_join"(ptr noundef %5, ptr noundef %3), !dbg !204
+  %6 = call i32 @pthread_join(ptr noundef %5, ptr noundef %3), !dbg !204
   store i32 %6, ptr %4, align 4, !dbg !202
   %7 = load i32, ptr %4, align 4, !dbg !205
   %8 = icmp eq i32 %7, 0, !dbg !205
@@ -135,7 +135,7 @@ define ptr @thread_join(ptr noundef %0) #0 !dbg !194 {
   ret ptr %17, !dbg !207
 }
 
-declare i32 @"\01_pthread_join"(ptr noundef, ptr noundef) #2
+declare i32 @pthread_join(ptr noundef, ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @mutex_init(ptr noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3, i32 noundef %4) #0 !dbg !208 {
@@ -375,7 +375,7 @@ define void @mutex_init(ptr noundef %0, i32 noundef %1, i32 noundef %2, i32 noun
   br label %128, !dbg !269
 
 128:                                              ; preds = %127, %126
-  %129 = call i32 @"\01_pthread_mutexattr_destroy"(ptr noundef %13), !dbg !270
+  %129 = call i32 @pthread_mutexattr_destroy(ptr noundef %13), !dbg !270
   store i32 %129, ptr %11, align 4, !dbg !271
   %130 = load i32, ptr %11, align 4, !dbg !272
   %131 = icmp eq i32 %130, 0, !dbg !272
@@ -419,7 +419,7 @@ declare i32 @pthread_mutexattr_getprioceiling(ptr noundef, ptr noundef) #2
 
 declare i32 @pthread_mutex_init(ptr noundef, ptr noundef) #2
 
-declare i32 @"\01_pthread_mutexattr_destroy"(ptr noundef) #2
+declare i32 @pthread_mutexattr_destroy(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @mutex_destroy(ptr noundef %0) #0 !dbg !274 {
@@ -663,7 +663,7 @@ define void @cond_init(ptr noundef %0) #0 !dbg !350 {
 
 15:                                               ; preds = %14, %13
   %16 = load ptr, ptr %2, align 8, !dbg !370
-  %17 = call i32 @"\01_pthread_cond_init"(ptr noundef %16, ptr noundef %4), !dbg !371
+  %17 = call i32 @pthread_cond_init(ptr noundef %16, ptr noundef %4), !dbg !371
   store i32 %17, ptr %3, align 4, !dbg !372
   %18 = load i32, ptr %3, align 4, !dbg !373
   %19 = icmp eq i32 %18, 0, !dbg !373
@@ -710,7 +710,7 @@ define void @cond_init(ptr noundef %0) #0 !dbg !350 {
 
 declare i32 @pthread_condattr_init(ptr noundef) #2
 
-declare i32 @"\01_pthread_cond_init"(ptr noundef, ptr noundef) #2
+declare i32 @pthread_cond_init(ptr noundef, ptr noundef) #2
 
 declare i32 @pthread_condattr_destroy(ptr noundef) #2
 
@@ -828,12 +828,12 @@ define void @cond_wait(ptr noundef %0, ptr noundef %1) #0 !dbg !405 {
   call void @llvm.dbg.declare(metadata ptr %5, metadata !412, metadata !DIExpression()), !dbg !413
   %6 = load ptr, ptr %3, align 8, !dbg !414
   %7 = load ptr, ptr %4, align 8, !dbg !415
-  %8 = call i32 @"\01_pthread_cond_wait"(ptr noundef %6, ptr noundef %7), !dbg !416
+  %8 = call i32 @pthread_cond_wait(ptr noundef %6, ptr noundef %7), !dbg !416
   store i32 %8, ptr %5, align 4, !dbg !413
   ret void, !dbg !417
 }
 
-declare i32 @"\01_pthread_cond_wait"(ptr noundef, ptr noundef) #2
+declare i32 @pthread_cond_wait(ptr noundef, ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @cond_timedwait(ptr noundef %0, ptr noundef %1, i64 noundef %2) #0 !dbg !418 {
@@ -853,12 +853,12 @@ define void @cond_timedwait(ptr noundef %0, ptr noundef %1, i64 noundef %2) #0 !
   call void @llvm.dbg.declare(metadata ptr %8, metadata !438, metadata !DIExpression()), !dbg !439
   %10 = load ptr, ptr %4, align 8, !dbg !440
   %11 = load ptr, ptr %5, align 8, !dbg !441
-  %12 = call i32 @"\01_pthread_cond_timedwait"(ptr noundef %10, ptr noundef %11, ptr noundef %7), !dbg !442
+  %12 = call i32 @pthread_cond_timedwait(ptr noundef %10, ptr noundef %11, ptr noundef %7), !dbg !442
   store i32 %12, ptr %8, align 4, !dbg !439
   ret void, !dbg !443
 }
 
-declare i32 @"\01_pthread_cond_timedwait"(ptr noundef, ptr noundef, ptr noundef) #2
+declare i32 @pthread_cond_timedwait(ptr noundef, ptr noundef, ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define ptr @cond_worker(ptr noundef %0) #0 !dbg !444 {
@@ -1044,7 +1044,7 @@ define void @rwlock_init(ptr noundef %0, i32 noundef %1) #0 !dbg !511 {
 
 41:                                               ; preds = %40, %39
   %42 = load ptr, ptr %3, align 8, !dbg !555
-  %43 = call i32 @"\01_pthread_rwlock_init"(ptr noundef %42, ptr noundef %7), !dbg !556
+  %43 = call i32 @pthread_rwlock_init(ptr noundef %42, ptr noundef %7), !dbg !556
   store i32 %43, ptr %5, align 4, !dbg !557
   %44 = load i32, ptr %5, align 4, !dbg !558
   %45 = icmp eq i32 %44, 0, !dbg !558
@@ -1095,7 +1095,7 @@ declare i32 @pthread_rwlockattr_setpshared(ptr noundef, i32 noundef) #2
 
 declare i32 @pthread_rwlockattr_getpshared(ptr noundef, ptr noundef) #2
 
-declare i32 @"\01_pthread_rwlock_init"(ptr noundef, ptr noundef) #2
+declare i32 @pthread_rwlock_init(ptr noundef, ptr noundef) #2
 
 declare i32 @pthread_rwlockattr_destroy(ptr noundef) #2
 
@@ -1107,7 +1107,7 @@ define void @rwlock_destroy(ptr noundef %0) #0 !dbg !563 {
   call void @llvm.dbg.declare(metadata ptr %2, metadata !566, metadata !DIExpression()), !dbg !567
   call void @llvm.dbg.declare(metadata ptr %3, metadata !568, metadata !DIExpression()), !dbg !569
   %4 = load ptr, ptr %2, align 8, !dbg !570
-  %5 = call i32 @"\01_pthread_rwlock_destroy"(ptr noundef %4), !dbg !571
+  %5 = call i32 @pthread_rwlock_destroy(ptr noundef %4), !dbg !571
   store i32 %5, ptr %3, align 4, !dbg !569
   %6 = load i32, ptr %3, align 4, !dbg !572
   %7 = icmp eq i32 %6, 0, !dbg !572
@@ -1131,7 +1131,7 @@ define void @rwlock_destroy(ptr noundef %0) #0 !dbg !563 {
   ret void, !dbg !573
 }
 
-declare i32 @"\01_pthread_rwlock_destroy"(ptr noundef) #2
+declare i32 @pthread_rwlock_destroy(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @rwlock_wrlock(ptr noundef %0) #0 !dbg !574 {
@@ -1141,7 +1141,7 @@ define void @rwlock_wrlock(ptr noundef %0) #0 !dbg !574 {
   call void @llvm.dbg.declare(metadata ptr %2, metadata !575, metadata !DIExpression()), !dbg !576
   call void @llvm.dbg.declare(metadata ptr %3, metadata !577, metadata !DIExpression()), !dbg !578
   %4 = load ptr, ptr %2, align 8, !dbg !579
-  %5 = call i32 @"\01_pthread_rwlock_wrlock"(ptr noundef %4), !dbg !580
+  %5 = call i32 @pthread_rwlock_wrlock(ptr noundef %4), !dbg !580
   store i32 %5, ptr %3, align 4, !dbg !578
   %6 = load i32, ptr %3, align 4, !dbg !581
   %7 = icmp eq i32 %6, 0, !dbg !581
@@ -1165,7 +1165,7 @@ define void @rwlock_wrlock(ptr noundef %0) #0 !dbg !574 {
   ret void, !dbg !582
 }
 
-declare i32 @"\01_pthread_rwlock_wrlock"(ptr noundef) #2
+declare i32 @pthread_rwlock_wrlock(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define zeroext i1 @rwlock_trywrlock(ptr noundef %0) #0 !dbg !583 {
@@ -1175,14 +1175,14 @@ define zeroext i1 @rwlock_trywrlock(ptr noundef %0) #0 !dbg !583 {
   call void @llvm.dbg.declare(metadata ptr %2, metadata !586, metadata !DIExpression()), !dbg !587
   call void @llvm.dbg.declare(metadata ptr %3, metadata !588, metadata !DIExpression()), !dbg !589
   %4 = load ptr, ptr %2, align 8, !dbg !590
-  %5 = call i32 @"\01_pthread_rwlock_trywrlock"(ptr noundef %4), !dbg !591
+  %5 = call i32 @pthread_rwlock_trywrlock(ptr noundef %4), !dbg !591
   store i32 %5, ptr %3, align 4, !dbg !589
   %6 = load i32, ptr %3, align 4, !dbg !592
   %7 = icmp eq i32 %6, 0, !dbg !593
   ret i1 %7, !dbg !594
 }
 
-declare i32 @"\01_pthread_rwlock_trywrlock"(ptr noundef) #2
+declare i32 @pthread_rwlock_trywrlock(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @rwlock_rdlock(ptr noundef %0) #0 !dbg !595 {
@@ -1192,7 +1192,7 @@ define void @rwlock_rdlock(ptr noundef %0) #0 !dbg !595 {
   call void @llvm.dbg.declare(metadata ptr %2, metadata !596, metadata !DIExpression()), !dbg !597
   call void @llvm.dbg.declare(metadata ptr %3, metadata !598, metadata !DIExpression()), !dbg !599
   %4 = load ptr, ptr %2, align 8, !dbg !600
-  %5 = call i32 @"\01_pthread_rwlock_rdlock"(ptr noundef %4), !dbg !601
+  %5 = call i32 @pthread_rwlock_rdlock(ptr noundef %4), !dbg !601
   store i32 %5, ptr %3, align 4, !dbg !599
   %6 = load i32, ptr %3, align 4, !dbg !602
   %7 = icmp eq i32 %6, 0, !dbg !602
@@ -1216,7 +1216,7 @@ define void @rwlock_rdlock(ptr noundef %0) #0 !dbg !595 {
   ret void, !dbg !603
 }
 
-declare i32 @"\01_pthread_rwlock_rdlock"(ptr noundef) #2
+declare i32 @pthread_rwlock_rdlock(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define zeroext i1 @rwlock_tryrdlock(ptr noundef %0) #0 !dbg !604 {
@@ -1226,14 +1226,14 @@ define zeroext i1 @rwlock_tryrdlock(ptr noundef %0) #0 !dbg !604 {
   call void @llvm.dbg.declare(metadata ptr %2, metadata !605, metadata !DIExpression()), !dbg !606
   call void @llvm.dbg.declare(metadata ptr %3, metadata !607, metadata !DIExpression()), !dbg !608
   %4 = load ptr, ptr %2, align 8, !dbg !609
-  %5 = call i32 @"\01_pthread_rwlock_tryrdlock"(ptr noundef %4), !dbg !610
+  %5 = call i32 @pthread_rwlock_tryrdlock(ptr noundef %4), !dbg !610
   store i32 %5, ptr %3, align 4, !dbg !608
   %6 = load i32, ptr %3, align 4, !dbg !611
   %7 = icmp eq i32 %6, 0, !dbg !612
   ret i1 %7, !dbg !613
 }
 
-declare i32 @"\01_pthread_rwlock_tryrdlock"(ptr noundef) #2
+declare i32 @pthread_rwlock_tryrdlock(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @rwlock_unlock(ptr noundef %0) #0 !dbg !614 {
@@ -1243,7 +1243,7 @@ define void @rwlock_unlock(ptr noundef %0) #0 !dbg !614 {
   call void @llvm.dbg.declare(metadata ptr %2, metadata !615, metadata !DIExpression()), !dbg !616
   call void @llvm.dbg.declare(metadata ptr %3, metadata !617, metadata !DIExpression()), !dbg !618
   %4 = load ptr, ptr %2, align 8, !dbg !619
-  %5 = call i32 @"\01_pthread_rwlock_unlock"(ptr noundef %4), !dbg !620
+  %5 = call i32 @pthread_rwlock_unlock(ptr noundef %4), !dbg !620
   store i32 %5, ptr %3, align 4, !dbg !618
   %6 = load i32, ptr %3, align 4, !dbg !621
   %7 = icmp eq i32 %6, 0, !dbg !621
@@ -1267,7 +1267,7 @@ define void @rwlock_unlock(ptr noundef %0) #0 !dbg !614 {
   ret void, !dbg !622
 }
 
-declare i32 @"\01_pthread_rwlock_unlock"(ptr noundef) #2
+declare i32 @pthread_rwlock_unlock(ptr noundef) #2
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define void @rwlock_test() #0 !dbg !623 {
