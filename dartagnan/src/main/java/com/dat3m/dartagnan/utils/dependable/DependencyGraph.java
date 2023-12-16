@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.function.Function;
 
 public class DependencyGraph<T> {
+
     //TODO: Maybe add a way to enable Identity-based hashmaps
     private final Map<T, Node> nodeMap;
     private List<Node> nodeList;
@@ -80,12 +81,12 @@ public class DependencyGraph<T> {
     }
 
     private void initializeNodes() {
-        Queue<Node> workingQueue = new ArrayDeque<>(nodeMap.values());
+        final Queue<Node> workingQueue = new ArrayDeque<>(nodeMap.values());
         while (!workingQueue.isEmpty()) {
-            Node node = workingQueue.remove();
+            final Node node = workingQueue.remove();
             for (T dependency : dependencyMap.apply(node.content)) {
-                boolean isNew = !nodeMap.containsKey(dependency);
-                Node depNode = getNodeInternal(dependency);
+                final boolean isNew = !nodeMap.containsKey(dependency);
+                final Node depNode = getNodeInternal(dependency);
                 node.dependencies.add(depNode);
                 depNode.dependents.add(node);
                 if (isNew) {
@@ -105,9 +106,11 @@ public class DependencyGraph<T> {
         topIndex = -1;
         stack.clear();
 
+        final Deque<StackFrame> recursionStack = new ArrayDeque<>();
         for (Node node : nodeMap.values()) {
             if (!node.wasVisited()) {
-                strongConnect(node);
+                recursionStack.push(new StackFrame(node, node.getDependents().iterator()));
+                strongConnect(recursionStack);
             }
         }
 
@@ -118,7 +121,7 @@ public class DependencyGraph<T> {
 
         // Create sorted list of all nodes
         // and sort their dependencies/dependents as well
-        Comparator<Node> cmp = Comparator.comparingInt(Node::getTopologicalIndex);
+        final Comparator<Node> cmp = Comparator.comparingInt(Node::getTopologicalIndex);
         nodeList = ImmutableList.sortedCopyOf(cmp, nodeMap.values());
         for (Node node : nodeList){
             node.getDependencies().sort(cmp);
@@ -126,39 +129,78 @@ public class DependencyGraph<T> {
         }
 
         Collections.reverse(sccs);
-
     }
 
-    private void strongConnect(Node v) {
-        v.index = index;
-        v.lowlink = index;
-        stack.push(v);
-        v.isOnStack = true;
-        index++;
+    /*
+        A non-recursive implementation of the recursive DFS-based algorithm
+        found at the bottom of this class.
+     */
+    private void strongConnect(Deque<StackFrame> recursionStack) {
+        Node lastVisited = null;
+        while (!recursionStack.isEmpty()) {
+            final StackFrame frame = recursionStack.getLast();
+            final Node v = frame.node;
+            final Iterator<Node> successorsToProcess = frame.iterator;
 
-        for (Node w : v.getDependents()) {
-            if (!w.wasVisited()) {
-                strongConnect(w);
-                v.lowlink = Math.min(v.lowlink, w.lowlink);
+            if (!v.wasVisited()) {
+                // Start of recursion
+                v.index = index;
+                v.lowlink = index;
+                stack.push(v);
+                v.isOnStack = true;
+                index++;
+            } else {
+                // Recursion in progress (we returned from a deeper recursion level)
+                assert (lastVisited != null);
+                v.lowlink = Math.min(v.lowlink, lastVisited.lowlink);
             }
-            else if (w.isOnStack) {
-                v.lowlink = Math.min(v.lowlink, w.index);
+
+            boolean recursionDone = true;
+            while (successorsToProcess.hasNext()) {
+                final Node w = successorsToProcess.next();
+                if (!w.wasVisited()) {
+                    // Prepare for recursive call
+                    recursionStack.addLast(new StackFrame(w, w.getDependents().iterator()));
+                    recursionDone = false;
+                    break;
+                } else if (w.isOnStack) {
+                    v.lowlink = Math.min(v.lowlink, w.index);
+                }
             }
+
+            if (!recursionDone) {
+                // Recurse deeper
+                continue;
+            }
+
+            if (v.lowlink == v.index) {
+                final Set<Node> scc = new HashSet<>();
+                sccs.add(scc);
+                v.topologicalIndex = ++topIndex;
+                Node w;
+                do {
+                    w = stack.pop();
+                    w.isOnStack = false;
+                    scc.add(w);
+                    w.scc = scc;
+                    w.topologicalIndex = v.getTopologicalIndex();
+                } while (w != v);
+            }
+
+            // Recursion done
+            recursionStack.removeLast();
+            lastVisited = v;
         }
+    }
 
+    // Used to implement DFS recursion-free
+    private class StackFrame {
+        private final Node node;
+        private final Iterator<Node> iterator;
 
-        if (v.lowlink == v.index) {
-            Set<Node> scc = new HashSet<>();
-            sccs.add(scc);
-            v.topologicalIndex = ++topIndex;
-            Node w;
-            do {
-                w = stack.pop();
-                w.isOnStack = false;
-                scc.add(w);
-                w.scc = scc;
-                w.topologicalIndex = v.getTopologicalIndex();
-            } while (w != v);
+        public StackFrame(Node node, Iterator<Node> iterator) {
+            this.node = node;
+            this.iterator = iterator;
         }
     }
 
@@ -186,22 +228,11 @@ public class DependencyGraph<T> {
         }
 
         public T getContent() { return content; }
+        public int getTopologicalIndex() { return topologicalIndex; }
 
-        public List<Node> getDependents() {
-            return dependents;
-        }
-
-        public List<Node> getDependencies() {
-            return dependencies;
-        }
-
-        public Set<Node> getSCC() {
-            return scc;
-        }
-
-        public int getTopologicalIndex() {
-            return topologicalIndex;
-        }
+        public List<Node> getDependents() { return dependents; }
+        public List<Node> getDependencies() { return dependencies; }
+        public Set<Node> getSCC() { return scc; }
 
         @Override
         public int hashCode() {
@@ -216,7 +247,7 @@ public class DependencyGraph<T> {
             } else if (obj == null || obj.getClass() != getClass()) {
                 return false;
             }
-            Node node = (Node)obj;
+            final Node node = (Node)obj;
             return node.content.equals(this.content);
         }
 
@@ -225,4 +256,42 @@ public class DependencyGraph<T> {
             return content.toString();
         }
     }
+
+    // -------------------------------------------------------------------
+    // -------- Original (recursive) strongConnect implementation --------
+    // -------------------------------------------------------------------
+    /*
+    private void strongConnect(Node v) {
+        v.index = index;
+        v.lowlink = index;
+        stack.push(v);
+        v.isOnStack = true;
+        index++;
+
+        for (Node w : v.getDependents()) {
+            if (!w.wasVisited()) {
+                strongConnect(w);
+                v.lowlink = Math.min(v.lowlink, w.lowlink);
+            } else if (w.isOnStack) {
+                v.lowlink = Math.min(v.lowlink, w.index);
+            }
+        }
+
+
+        if (v.lowlink == v.index) {
+            Set<Node> scc = new HashSet<>();
+            sccs.add(scc);
+            v.topologicalIndex = ++topIndex;
+            Node w;
+            do {
+                w = stack.pop();
+                w.isOnStack = false;
+                scc.add(w);
+                w.scc = scc;
+                w.topologicalIndex = v.getTopologicalIndex();
+            } while (w != v);
+        }
+    }
+    */
+    // -------------------------------------------------------------------
 }
