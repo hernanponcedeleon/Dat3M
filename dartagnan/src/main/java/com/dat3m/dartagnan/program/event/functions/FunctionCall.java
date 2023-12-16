@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public abstract class FunctionCall extends AbstractEvent implements RegReader {
 
     protected FunctionType funcType;
-    protected Expression callTarget; // TODO: Generalize to function pointer expressions
+    protected Expression callTarget;
     protected List<Expression> arguments;
 
     protected FunctionCall(FunctionType funcType, Expression funcPtr, List<Expression> arguments) {
@@ -54,6 +54,13 @@ public abstract class FunctionCall extends AbstractEvent implements RegReader {
     public Expression getCallTarget() { return callTarget; }
     public List<Expression> getArguments() { return arguments; }
 
+    public void setArgument(int index, Expression argument) {
+        arguments.set(index, argument);
+    }
+
+    @Override
+    public abstract FunctionCall getCopy();
+
     @Override
     public Set<Register.Read> getRegisterReads() {
         final Set<Register.Read> regReads = new HashSet<>();
@@ -70,5 +77,4 @@ public abstract class FunctionCall extends AbstractEvent implements RegReader {
         callTarget = callTarget.accept(exprTransformer);
         arguments.replaceAll(expression -> expression.accept(exprTransformer));
     }
-
 }
