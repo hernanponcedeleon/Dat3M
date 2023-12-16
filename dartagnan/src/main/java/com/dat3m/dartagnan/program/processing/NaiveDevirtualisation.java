@@ -64,7 +64,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
 
         for (Function func : Iterables.concat(program.getThreads(), program.getFunctions())) {
-            devirtualiseNew(func, toAddressTransformer.func2AddressMap);
+            devirtualise(func, toAddressTransformer.func2AddressMap);
         }
     }
 
@@ -136,73 +136,11 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
         int devirtCounter = 0;
         for (FunctionCall call : function.getEvents(FunctionCall.class)) {
-            if (!call.isDirectCall() || call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-                final List<Function> possibleTargets = func2AddressMap.keySet().stream()
-                        .filter(f -> f.getFunctionType() == call.getCallType()).collect(Collectors.toList());
-
-                // FIXME: Here we remove the calling function itself so as to avoid trivial recursion.
-                //  However, indirect/mutual recursion is not prevented by this!
-                if (possibleTargets.removeIf(f -> f == function)) {
-                    logger.warn("Found potentially recursive dynamic call \"{}\". " +
-                            "Dartagnan (unsoundly) assumes the recursive call cannot happen.", call);
-                }
-
-                if (possibleTargets.isEmpty()) {
-                    logger.warn("Cannot resolve dynamic call \"{}\", no matching functions found.", call);
-                }
-
-                logger.trace("Devirtualizing call \"{}\" with possible targets: {}", call, possibleTargets);
-
-                final List<Label> caseLabels = new ArrayList<>(possibleTargets.size());
-                final List<CondJump> caseJumps = new ArrayList<>(possibleTargets.size());
-                final Expression funcPtr = call.getCallTarget();
-                // Construct call table
-                for (Function possibleTarget : possibleTargets) {
-                    final IValue targetAddress = func2AddressMap.get(possibleTarget);
-                    final Label caseLabel = EventFactory.newLabel(String.format("__Ldevirt_%s#%s", targetAddress.getValue(), devirtCounter));
-                    final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
-                    caseLabels.add(caseLabel);
-                    caseJumps.add(caseJump);
-                }
-
-                final Event noMatch = EventFactory.newAssert(expressions.makeFalse(), "Invalid function pointer");
-                final Label endLabel = EventFactory.newLabel(String.format("__Ldevirt_end#%s", devirtCounter));
-
-                final List<Event> callReplacement = new ArrayList<>();
-                callReplacement.add(EventFactory.newStringAnnotation("=== Devirtualized call ==="));
-                callReplacement.addAll(caseJumps);
-                callReplacement.add(noMatch);
-                for (int i = 0; i < caseLabels.size(); i++) {
-                    callReplacement.add(caseLabels.get(i));
-                    if (call instanceof ValueFunctionCall valueCall) {
-                        callReplacement.add(EventFactory.newValueFunctionCall(valueCall.getResultRegister(),
-                                possibleTargets.get(i), call.getArguments()));
-                    } else {
-                        callReplacement.add(EventFactory.newVoidFunctionCall(possibleTargets.get(i), call.getArguments()));
-                    }
-                    callReplacement.add(EventFactory.newGoto(endLabel));
-                }
-                callReplacement.add(endLabel);
-                callReplacement.add(EventFactory.newStringAnnotation("=== End of devirtualized call ==="));
-
-                call.replaceBy(callReplacement);
-                callReplacement.forEach(e -> e.copyAllMetadataFrom(call));
-
-                devirtCounter++;
-            }
-        }
-    }
-
-    private void devirtualiseNew(Function function, Map<Function, IValue> func2AddressMap) {
-        final ExpressionFactory expressions = ExpressionFactory.getInstance();
-
-        int devirtCounter = 0;
-        for (FunctionCall call : function.getEvents(FunctionCall.class)) {
             if (!needsDevirtualization(call)) {
                 continue;
             }
-            final List<Function> possibleTargets = getPossibleTargets(call, func2AddressMap);
 
+            final List<Function> possibleTargets = getPossibleTargets(call, func2AddressMap);
             // FIXME: Here we remove the calling function itself so as to avoid trivial recursion.
             //  However, indirect/mutual recursion is not prevented by this!
             if (possibleTargets.removeIf(f -> f == function)) {
