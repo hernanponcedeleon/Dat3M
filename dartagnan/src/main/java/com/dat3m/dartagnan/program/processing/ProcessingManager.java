@@ -74,13 +74,12 @@ public class ProcessingManager implements ProgramProcessor {
 
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        final Intrinsics intrinsics = Intrinsics.newInstance();
+        final Intrinsics intrinsics = Intrinsics.fromConfig(config);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
-                RegisterDecomposition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(
@@ -92,6 +91,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 Simplifier.fromConfig(config)
                         ), Target.FUNCTIONS, true
                 ),
+                RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),

@@ -24,12 +24,19 @@ import org.apache.logging.log4j.Logger;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 
 /**
  * Manages a collection of all functions that the verifier can define itself,
@@ -37,9 +44,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Also defines the semantics of most intrinsics,
  * except some thread-library primitives, which are instead defined in {@link ThreadCreation}.
  */
+@Options
 public class Intrinsics {
 
     private static final Logger logger = LogManager.getLogger(Intrinsics.class);
+
+    @Option(name = REMOVE_ASSERTION_OF_TYPE,
+            description = "Remove assertions of type [user, overflow, invalidderef].",
+            toUppercase=true,
+            secure = true)
+    private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
+
+    private enum AssertionType { USER, OVERFLOW, INVALIDDEREF }
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -55,6 +71,12 @@ public class Intrinsics {
 
     public static Intrinsics newInstance() {
         return new Intrinsics();
+    }
+    
+    public static Intrinsics fromConfig(Configuration config) throws InvalidConfigurationException {
+        Intrinsics instance = newInstance();
+        config.inject(instance);
+        return instance;
     }
 
     public ProgramProcessor markIntrinsicsPass() {
@@ -106,7 +128,7 @@ public class Intrinsics {
         VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineSpinStart),
         VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineSpinEnd),
         VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
-        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineAssert),
+        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineUserAssert),
         VERIFIER_NONDET(List.of("__VERIFIER_nondet_bool",
                 "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -116,6 +138,7 @@ public class Intrinsics {
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
+                "llvm.sadd.with.overflow", "llvm.ssub.with.overflow", "llvm.smul.with.overflow",
                 "llvm.ctlz", "llvm.ctpop"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
@@ -141,11 +164,17 @@ public class Intrinsics {
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
         STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
-        STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineAssert),
+        STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
         STD_IO(List.of("puts", "putchar", "printf"), false, false, true, true, Intrinsics::inlineAsZero),
         STD_SLEEP("sleep", false, false, true, true, Intrinsics::inlineAsZero),
+        // --------------------------- UBSAN ---------------------------
+        UBSAN_OVERFLOW(List.of("__ubsan_handle_add_overflow", "__ubsan_handle_sub_overflow", 
+                "__ubsan_handle_divrem_overflow", "__ubsan_handle_mul_overflow", "__ubsan_handle_negate_overflow"),
+                false, false, false, true, Intrinsics::inlineIntegerOverflow),
+        UBSAN_TYPE_MISSMATCH(List.of("__ubsan_handle_type_mismatch_v1"), 
+                false, false, false, true, Intrinsics::inlineInvalidDereference),
         ;
 
         private final List<String> variants;
@@ -221,7 +250,6 @@ public class Intrinsics {
     }
 
     private void declareNondetBool(Program program) {
-        final TypeFactory types = TypeFactory.getInstance();
         // used by VisitorLKMM
         if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
             final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
@@ -359,13 +387,27 @@ public class Intrinsics {
         ));
     }
 
-    private List<Event> inlineAssert(FunctionCall call) {
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private List<Event> inlineAssert(FunctionCall call, AssertionType skip, String errorMsg) {
+        if(notToInline.contains(skip)) {
+            return List.of();
+        }
         final Expression condition = expressions.makeFalse();
-        final Event assertion = EventFactory.newAssert(condition, "user assertion");
+        final Event assertion = EventFactory.newAssert(condition, errorMsg);
         final Event abort = EventFactory.newAbortIf(expressions.makeTrue());
         abort.addTags(Tag.EARLYTERMINATION);
         return List.of(assertion, abort);
+    }
+
+    private List<Event> inlineUserAssert(FunctionCall call) {
+        return inlineAssert(call, AssertionType.USER, "user assertion");
+    }
+
+    private List<Event> inlineIntegerOverflow(FunctionCall call) {
+        return inlineAssert(call, AssertionType.OVERFLOW, "integer overflow");
+    }
+
+    private List<Event> inlineInvalidDereference(FunctionCall call) {
+        return inlineAssert(call, AssertionType.INVALIDDEREF, "invalid dereference");
     }
 
     // --------------------------------------------------------------------------------------------------------
@@ -382,6 +424,12 @@ public class Intrinsics {
             return inlineLLVMCtpop(valueCall);
         } else if (name.contains("add.sat")) {
             return inlineLLVMSaturatedAdd(valueCall);
+        } else if (name.contains("sadd.with.overflow")) {
+            return inlineLLVMSAddWithOverflow(valueCall);
+        } else if (name.contains("ssub.with.overflow")) {
+            return inlineLLVMSSubWithOverflow(valueCall);
+        } else if (name.contains("smul.with.overflow")) {
+            return inlineLLVMSMulWithOverflow(valueCall);
         } else if (name.contains("sub.sat")) {
             return inlineLLVMSaturatedSub(valueCall);
         } else if (name.startsWith("llvm.smax") || name.startsWith("llvm.smin")
@@ -543,6 +591,65 @@ public class Intrinsics {
         );
     }
 
+    private List<Event> inlineLLVMSAddWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.ADD);
+    }
+
+    private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.SUB);
+    }
+
+    private List<Event> inlineLLVMSMulWithOverflow(ValueFunctionCall call) {
+        return inlineLLVMSOpWithOverflow(call, IOpBin.MUL);
+    }
+
+    private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IOpBin op) {
+        final Register resultReg = call.getResultRegister();
+        final List<Expression> arguments = call.getArguments();
+        final Expression x = arguments.get(0);
+        final Expression y = arguments.get(1);
+        assert x.getType() == y.getType();
+
+        // The flag expression defined below has the form A & B. 
+        // A is only relevant for integer encoding, B is only relevant for BV encoding.  
+        // Here we do not yet know yet which encoding will be used and thus use both A & B.   
+        // This probably has no noticeable impact on performance.
+
+        // Check for integer encoding
+        final IntegerType iType = (IntegerType) x.getType();
+        final Expression result = expressions.makeBinary(x, op, y);
+        final Expression rangeCheck = checkIfValueInRangeOfType(result, iType, true);
+
+        // Check for BV encoding. From LLVM's language manual:
+        // "An operation overflows if, for any values of its operands A and B and for any N larger than
+        // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where 
+        // ext is sext for signed overflow and zext for unsigned overflow, and op is the 
+        // underlying arithmetic operation.""
+        final int width = iType.getBitWidth();
+        final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
+        final Expression yExt = expressions.makeCast(y, types.getIntegerType(width + 1), true);
+        final Expression resultExt = expressions.makeCast(result, types.getIntegerType(width + 1), true);
+        final Expression bvCheck = expressions.makeEQ(expressions.makeBinary(xExt, op, yExt), resultExt);
+
+        final Expression flag = expressions.makeCast(
+                expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
+                types.getIntegerType(1)
+        );
+
+        return List.of(
+                EventFactory.newLocal(resultReg, expressions.makeConstruct(List.of(result, flag)))
+        );
+    }
+
+    private Expression checkIfValueInRangeOfType(Expression value, IntegerType integerType, boolean signed) {
+        final Expression minValue = expressions.makeValue(integerType.getMinimumValue(signed), integerType);
+        final Expression maxValue = expressions.makeValue(integerType.getMaximumValue(signed), integerType);
+        return expressions.makeAnd(
+                expressions.makeLTE(minValue, value, true),
+                expressions.makeLTE(value, maxValue, true)
+        );
+    }
+
     // --------------------------------------------------------------------------------------------------------
     // LKMM intrinsics
 
@@ -642,8 +749,6 @@ public class Intrinsics {
     }
 
     private List<Event> inlineNonDet(FunctionCall call) {
-        TypeFactory types = TypeFactory.getInstance();
-        ExpressionFactory expressions = ExpressionFactory.getInstance();
         assert call.isDirectCall() && call instanceof ValueFunctionCall;
         Register register = ((ValueFunctionCall) call).getResultRegister();
         String name = call.getCalledFunction().getName();
