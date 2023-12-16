@@ -610,11 +610,17 @@ public class Intrinsics {
         final Expression y = arguments.get(1);
         assert x.getType() == y.getType();
 
+        // The flag expression defined below has the form A & B. 
+        // A is only relevant for integer encoding, B is only relevant for BV encoding.  
+        // Here we do not yet know yet which encoding will be used and thus use both A & B.   
+        // This probably has no noticeable impact on performance.
+
+        // Check for integer encoding
         final IntegerType iType = (IntegerType) x.getType();
         final Expression result = expressions.makeBinary(x, op, y);
         final Expression rangeCheck = checkIfValueInRangeOfType(result, iType, true);
 
-        // From LLVM's language manual:
+        // Check for BV encoding. From LLVM's language manual:
         // "An operation overflows if, for any values of its operands A and B and for any N larger than
         // the operands’ width, ext(A op B) to iN is not equal to (ext(A) to iN) op (ext(B) to iN) where 
         // ext is sext for signed overflow and zext for unsigned overflow, and op is the 
