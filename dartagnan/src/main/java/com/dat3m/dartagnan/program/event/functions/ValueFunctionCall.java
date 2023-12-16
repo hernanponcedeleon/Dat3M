@@ -36,11 +36,8 @@ public class ValueFunctionCall extends FunctionCall implements RegWriter {
 
     @Override
     protected String defaultString() {
-        if (isDirectCall()) {
-            return String.format("%s <- call %s(%s)", resultRegister, ((Function)callTarget).getName(), super.argumentsToString());
-        } else {
-            return String.format("%s <- call %s(%s)", resultRegister, callTarget, super.argumentsToString());
-        }
+        final Object target = isDirectCall() ? ((Function)callTarget).getName() : callTarget;
+        return String.format("%s <- call %s(%s)", resultRegister, target, super.argumentsToString());
     }
 
     @Override
