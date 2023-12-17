@@ -17,9 +17,9 @@ import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
-import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -207,10 +207,16 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                     .filter(f -> f.getFunctionType() == threadType).collect(Collectors.toList());
         } else {
             possibleTargets = List.of();
-            assert false;
+            throwInternalError(call);
         }
 
         return possibleTargets;
+    }
+
+    private FunctionCall devirtualiseCall(FunctionCall virtCall, Function devirtCallTarget) {
+        final FunctionCall devirtCall = virtCall.getCopy();
+        setFunctionPointer(devirtCall, devirtCallTarget);
+        return devirtCall;
     }
 
     private Expression getFunctionPointer(FunctionCall call) {
@@ -219,25 +225,23 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
             return call.getArguments().get(2);
         }
-        assert false;
+        throwInternalError(call);
         return null;
     }
 
-    private FunctionCall devirtualiseCall(FunctionCall virtCall, Function devirtCallTarget) {
-        if (!virtCall.isDirectCall()) {
-            if (virtCall instanceof ValueFunctionCall valueCall) {
-                return EventFactory.newValueFunctionCall(valueCall.getResultRegister(), devirtCallTarget,
-                        virtCall.getArguments());
-            } else {
-                return EventFactory.newVoidFunctionCall(devirtCallTarget, virtCall.getArguments());
-            }
-        } else if (virtCall.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
-            final FunctionCall devirtCall = virtCall.getCopy();
-            devirtCall.setArgument(2, devirtCallTarget);
-            return devirtCall;
+    private void setFunctionPointer(FunctionCall call, Expression functionPtr) {
+        if (!call.isDirectCall()) {
+            call.setCallTarget(functionPtr);
+        } else if (call.getCalledFunction().getIntrinsicInfo() == Intrinsics.Info.P_THREAD_CREATE) {
+            call.setArgument(2, functionPtr);
+        } else {
+            throwInternalError(call);
         }
-        assert false;
-        return null;
+    }
+
+    @SuppressWarnings("all")
+    private void throwInternalError(FunctionCall virtCall) {
+        Verify.verify(false, "Encountered unexpected virtual function call: " + virtCall);
     }
 
 

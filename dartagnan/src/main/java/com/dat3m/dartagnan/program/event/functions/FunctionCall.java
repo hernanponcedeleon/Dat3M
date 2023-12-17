@@ -58,6 +58,14 @@ public abstract class FunctionCall extends AbstractEvent implements RegReader {
         arguments.set(index, argument);
     }
 
+    public void setCallTarget(Expression callTarget) {
+        if (callTarget instanceof Function func) {
+            Preconditions.checkArgument(func.getFunctionType() == funcType,
+                    "Call target %s has mismatching function type: expected %s", callTarget, funcType);
+        }
+        this.callTarget = callTarget;
+    }
+
     @Override
     public abstract FunctionCall getCopy();
 
