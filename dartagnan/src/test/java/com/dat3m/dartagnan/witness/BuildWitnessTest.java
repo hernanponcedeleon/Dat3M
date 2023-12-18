@@ -44,7 +44,7 @@ public class BuildWitnessTest {
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             IncrementalSolver modelChecker = IncrementalSolver.run(ctx, prover, task);
             Result res = modelChecker.getResult();
-            WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res);
+            WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res, "user assertion");
             config.inject(witnessBuilder);
             WitnessGraph graph = witnessBuilder.build();
             File witnessFile = new File(getOutputDirectory() + "/witness.graphml");

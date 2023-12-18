@@ -44,6 +44,7 @@ public class WitnessBuilder {
 	private final EncodingContext context;
 	private final ProverEnvironment prover;
 	private final String type;
+    private final String ltlProperty;
 
     // =========================== Configurables ===========================
 
@@ -59,14 +60,15 @@ public class WitnessBuilder {
 
 	private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 
-	private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r) {
+	private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r, String ltl) {
 		context = checkNotNull(c);
 		prover = checkNotNull(p);
 		type = r.equals(FAIL) ? "violation" : "correctness";
+        ltlProperty = ltl;
 	}
 
-	public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result) throws InvalidConfigurationException {
-		WitnessBuilder b = new WitnessBuilder(context, prover, result);
+	public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result, String ltlProperty) throws InvalidConfigurationException {
+		WitnessBuilder b = new WitnessBuilder(context, prover, result, ltlProperty);
 		context.getTask().getConfig().inject(b);
 		return b;
 	}
@@ -83,7 +85,7 @@ public class WitnessBuilder {
 		graph.addAttribute(WITNESSTYPE.toString(), type + "_witness");
 		graph.addAttribute(SOURCECODELANG.toString(), "C");
 		graph.addAttribute(PRODUCER.toString(), "Dartagnan");
-		graph.addAttribute(SPECIFICATION.toString(), "CHECK( init(main()), LTL(G ! call(reach_error())))");
+		graph.addAttribute(SPECIFICATION.toString(), ltlProperty);
 		graph.addAttribute(PROGRAMFILE.toString(), originalProgramFilePath);
 		graph.addAttribute(PROGRAMHASH.toString(), getFileSHA256(new File(originalProgramFilePath)));
 		graph.addAttribute(ARCHITECTURE.toString(), "32bit");

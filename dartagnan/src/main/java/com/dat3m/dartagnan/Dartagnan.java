@@ -195,12 +195,13 @@ public class Dartagnan extends BaseOptions {
                 }
 
                 long endTime = System.currentTimeMillis();
-                System.out.print(generateResultSummary(task, prover, modelChecker));
+                String summary = generateResultSummary(task, prover, modelChecker);
+                System.out.print(summary);
                 System.out.println("Total verification time(ms): " + (endTime - startTime));
 
                 if (!o.runValidator()) {
                     // We only generate witnesses if we are not validating one.
-                    generateWitnessIfAble(task, prover, modelChecker);
+                    generateWitnessIfAble(task, prover, modelChecker, summary);
                 }
             }
         } catch (InterruptedException e) {
@@ -214,12 +215,13 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) {
+    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
             try {
-                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult());
+                String ltlProperty = getLtlPropertyFromSummary(summary);
+                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult(), ltlProperty);
                 if (w.canBeBuilt()) {
                     //  We can only write witnesses if the path to the original C file was given.
                     w.build().write();
@@ -228,6 +230,19 @@ public class Dartagnan extends BaseOptions {
                 logger.warn(e.getMessage());
             }
         }
+    }
+
+    private static String getLtlPropertyFromSummary(String summary) {
+        if(summary.contains("integer overflow")) {
+            return "CHECK( init(main()), LTL(G ! overflow))";
+        }
+        if(summary.contains("invalid dereference")) {
+            return "CHECK( init(main()), LTL(G valid-deref))";
+        }
+        if(summary.contains("user assertion")) {
+            return "CHECK( init(main()), LTL(G ! call(reach_error())))";
+        }
+        throw new UnsupportedOperationException("Violation found for unsupported property");
     }
 
     public static String generateResultSummary(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) throws SolverException {
