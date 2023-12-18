@@ -45,6 +45,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_
  * if the input program does not already provide a definition.
  * Also defines the semantics of most intrinsics,
  * except some thread-library primitives, which are instead defined in {@link ThreadCreation}.
+ * TODO due to name mangling schemes, some library calls we treat as intrinsics may have
  */
 @Options
 public class Intrinsics {
@@ -124,12 +125,15 @@ public class Intrinsics {
         P_THREAD_ATTR_SET(P_THREAD_ATTR.stream().map(a -> "pthread_attr_set" + a).toList(),
                 true, true, true, true, Intrinsics::inlinePthreadAttr),
         // --------------------------- pthread condition variable ---------------------------
-        P_THREAD_COND_INIT("pthread_cond_init", true, true, true, true, Intrinsics::inlinePthreadCondInit),
+        P_THREAD_COND_INIT(List.of("pthread_cond_init", "\"\\01_pthread_cond_init\""),
+                true, true, true, true, Intrinsics::inlinePthreadCondInit),
         P_THREAD_COND_DESTROY("pthread_cond_destroy", true, false, true, true, Intrinsics::inlinePthreadCondDestroy),
         P_THREAD_COND_SIGNAL("pthread_cond_signal", true, false, true, true, Intrinsics::inlinePthreadCondSignal),
         P_THREAD_COND_BROADCAST("pthread_cond_broadcast", true, false, true, true, Intrinsics::inlinePthreadCondBroadcast),
-        P_THREAD_COND_WAIT("pthread_cond_wait", false, true, false, true, Intrinsics::inlinePthreadCondWait),
-        P_THREAD_COND_TIMEDWAIT("pthread_cond_timedwait", false, false, true, true, Intrinsics::inlinePthreadCondTimedwait),
+        P_THREAD_COND_WAIT(List.of("pthread_cond_wait", "\"\\01_pthread_cond_wait\""),
+                false, true, false, true, Intrinsics::inlinePthreadCondWait),
+        P_THREAD_COND_TIMEDWAIT(List.of("pthread_cond_timedwait", "\"\\01_pthread_cond_timedwait\""),
+                false, false, true, true, Intrinsics::inlinePthreadCondTimedwait),
         P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
         P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
         // --------------------------- pthread key ---------------------------
@@ -144,19 +148,27 @@ public class Intrinsics {
         P_THREAD_MUTEX_TRYLOCK("pthread_mutex_trylock", true, true, true, true, Intrinsics::inlinePthreadMutexTryLock),
         P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, true, true, true, Intrinsics::inlinePthreadMutexUnlock),
         P_THREAD_MUTEXATTR_INIT("pthread_mutexattr_init", true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
-        P_THREAD_MUTEXATTR_DESTROY("pthread_mutexattr_destroy", true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
+        P_THREAD_MUTEXATTR_DESTROY(List.of("pthread_mutexattr_destroy", "\"\\01_pthread_mutexattr_destroy\""),
+                true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         P_THREAD_MUTEXATTR_SET(P_THREAD_MUTEXATTR.stream().map(a -> "pthread_mutexattr_get" + a).toList(),
                 true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         P_THREAD_MUTEXATTR_GET(P_THREAD_MUTEXATTR.stream().map(a -> "pthread_mutexattr_set" + a).toList(),
                 true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         // --------------------------- pthread read/write lock ---------------------------
-        P_THREAD_RWLOCK_INIT("pthread_rwlock_init", true, false, true, true, Intrinsics::inlinePthreadRwlockInit),
-        P_THREAD_RWLOCK_DESTROY("pthread_rwlock_destroy", true, true, true, true, Intrinsics::inlinePthreadRwlockDestroy),
-        P_THREAD_RWLOCK_WRLOCK("pthread_rwlock_wrlock", true, true, false, true, Intrinsics::inlinePthreadRwlockWrlock),
-        P_THREAD_RWLOCK_TRYWRLOCK("pthread_rwlock_trywrlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryWrlock),
-        P_THREAD_RWLOCK_RDLOCK("pthread_rwlock_rdlock", true, true, false, true, Intrinsics::inlinePthreadRwlockRdlock),
-        P_THREAD_RWLOCK_TRYRDLOCK("pthread_rwlock_tryrdlock", true, true, true, true, Intrinsics::inlinePthreadRwlockTryRdlock),
-        P_THREAD_RWLOCK_UNLOCK("pthread_rwlock_unlock", true, false, true, true, Intrinsics::inlinePthreadRwlockUnlock),
+        P_THREAD_RWLOCK_INIT(List.of("pthread_rwlock_init", "\"\\01_pthread_rwlock_init\""),
+                true, false, true, true, Intrinsics::inlinePthreadRwlockInit),
+        P_THREAD_RWLOCK_DESTROY(List.of("pthread_rwlock_destroy", "\"\\01_pthread_rwlock_destroy\""),
+                true, true, true, true, Intrinsics::inlinePthreadRwlockDestroy),
+        P_THREAD_RWLOCK_WRLOCK(List.of("pthread_rwlock_wrlock", "\"\\01_pthread_rwlock_wrlock\""),
+                true, true, false, true, Intrinsics::inlinePthreadRwlockWrlock),
+        P_THREAD_RWLOCK_TRYWRLOCK(List.of("pthread_rwlock_trywrlock", "\"\\01_pthread_rwlock_trywrlock\""),
+                true, true, true, true, Intrinsics::inlinePthreadRwlockTryWrlock),
+        P_THREAD_RWLOCK_RDLOCK(List.of("pthread_rwlock_rdlock", "\"\\01_pthread_rwlock_rdlock\""),
+                true, true, false, true, Intrinsics::inlinePthreadRwlockRdlock),
+        P_THREAD_RWLOCK_TRYRDLOCK(List.of("pthread_rwlock_tryrdlock", "\"\\01_pthread_rwlock_tryrdlock\""),
+                true, true, true, true, Intrinsics::inlinePthreadRwlockTryRdlock),
+        P_THREAD_RWLOCK_UNLOCK(List.of("pthread_rwlock_unlock", "\"\\01_pthread_rwlock_unlock\""),
+                true, false, true, true, Intrinsics::inlinePthreadRwlockUnlock),
         P_THREAD_RWLOCKATTR_INIT("pthread_rwlockattr_init", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
         P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
         P_THREAD_RWLOCKATTR_SET("pthread_rwlockattr_setpshared", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
@@ -397,8 +409,9 @@ public class Intrinsics {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression leftId = call.getArguments().get(0);
         final Expression rightId = call.getArguments().get(1);
+        final Expression equation = expressions.makeEQ(leftId, rightId);
         return List.of(
-                EventFactory.newLocal(resultRegister, expressions.makeEQ(leftId, rightId))
+                EventFactory.newLocal(resultRegister, expressions.makeCast(equation, resultRegister.getType()))
         );
     }
 

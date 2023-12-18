@@ -1,8 +1,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <stdbool.h>
-//TODO #include <dat3m.h>
-void __VERIFIER_loop_bound(int);
+#include <dat3m.h>
 
 // Test basic support for the pthread library.
 // Library symbols can be recognized by the `pthread_` prefix.
@@ -202,20 +201,28 @@ int phase = 0;
 
 void* cond_worker(void* message)
 {
-    for (bool idle = true; idle; )
+    bool idle = true;
     {
         mutex_lock(&cond_mutex);
+        ++phase;
         cond_wait(&cond, &cond_mutex);
-        idle = phase < 1;
-        mutex_unlock(&cond_mutex);
-    }
-    for (bool idle = true; idle; )
-    {
-        mutex_lock(&cond_mutex);
-        cond_timedwait(&cond, &cond_mutex, 10L);
+        ++phase;
         idle = phase < 2;
         mutex_unlock(&cond_mutex);
     }
+    if (idle)
+        return ((char*) message) + 1;
+    idle = true;
+    {
+        mutex_lock(&cond_mutex);
+        ++phase;
+        cond_timedwait(&cond, &cond_mutex, 10L);
+        ++phase;
+        idle = phase > 6;
+        mutex_unlock(&cond_mutex);
+    }
+    if (idle)
+        return ((char*) message) + 2;
     return message;
 }
 
@@ -326,7 +333,7 @@ void rwlock_test()
     }
 
     {
-        __VERIFIER_loop_bound(test_depth);
+        __VERIFIER_loop_bound(test_depth + 1);
         for (int i = 0; i < test_depth; i++)
         {
             bool success = rwlock_tryrdlock(&lock);
@@ -338,7 +345,7 @@ void rwlock_test()
             assert(!success);
         }
 
-        __VERIFIER_loop_bound(test_depth);
+        __VERIFIER_loop_bound(test_depth + 1);
         for (int i = 0; i < test_depth; i++) {
             rwlock_unlock(&lock);
         }
