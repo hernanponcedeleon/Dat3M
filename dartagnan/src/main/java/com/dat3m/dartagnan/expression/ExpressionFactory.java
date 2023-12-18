@@ -97,14 +97,18 @@ public final class ExpressionFactory {
         return new IValue(value, type);
     }
 
-    public Expression makeCast(Expression expression, Type type) {
+    public Expression makeCast(Expression expression, Type type, boolean signed) {
         if (type instanceof BooleanType) {
             return makeBooleanCast(expression);
         }
         if (type instanceof IntegerType integerType) {
-            return makeIntegerCast(expression, integerType, false);
+            return makeIntegerCast(expression, integerType, signed);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s.", expression, type));
+    }
+
+    public Expression makeCast(Expression expression, Type type) {
+        return makeCast(expression, type, false);
     }
 
     public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
