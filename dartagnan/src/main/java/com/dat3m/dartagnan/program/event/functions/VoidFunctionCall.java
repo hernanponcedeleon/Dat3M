@@ -21,11 +21,8 @@ public class VoidFunctionCall extends FunctionCall {
 
     @Override
     protected String defaultString() {
-        if (isDirectCall()) {
-            return String.format("call %s(%s)", ((Function)callTarget).getName(), super.argumentsToString());
-        } else {
-            return String.format("call %s(%s)", callTarget, super.argumentsToString());
-        }
+        final Object target = isDirectCall() ? ((Function)callTarget).getName() : callTarget;
+        return String.format("call %s(%s)", target, super.argumentsToString());
     }
 
     @Override
