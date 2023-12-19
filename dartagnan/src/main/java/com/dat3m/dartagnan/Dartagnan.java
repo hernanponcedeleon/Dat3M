@@ -220,8 +220,7 @@ public class Dartagnan extends BaseOptions {
         final EnumSet<Property> properties = task.getProperty();
         if (modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
             try {
-                String ltlProperty = getLtlPropertyFromSummary(summary);
-                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult(), ltlProperty);
+                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult(), summary);
                 if (w.canBeBuilt()) {
                     //  We can only write witnesses if the path to the original C file was given.
                     w.build().write();
@@ -230,19 +229,6 @@ public class Dartagnan extends BaseOptions {
                 logger.warn(e.getMessage());
             }
         }
-    }
-
-    private static String getLtlPropertyFromSummary(String summary) {
-        if(summary.contains("integer overflow")) {
-            return "CHECK( init(main()), LTL(G ! overflow))";
-        }
-        if(summary.contains("invalid dereference")) {
-            return "CHECK( init(main()), LTL(G valid-deref))";
-        }
-        if(summary.contains("user assertion")) {
-            return "CHECK( init(main()), LTL(G ! call(reach_error())))";
-        }
-        throw new UnsupportedOperationException("Violation found for unsupported property");
     }
 
     public static String generateResultSummary(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) throws SolverException {

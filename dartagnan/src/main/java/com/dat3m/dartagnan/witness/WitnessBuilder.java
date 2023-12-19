@@ -62,11 +62,11 @@ public class WitnessBuilder {
 
     private final Map<Event, Integer> eventThreadMap = new HashMap<>();
 
-    private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r, String ltl) {
+    private WitnessBuilder(EncodingContext c, ProverEnvironment p, Result r, String summary) {
         context = checkNotNull(c);
         prover = checkNotNull(p);
         type = r.equals(FAIL) ? "violation" : "correctness";
-        ltlProperty = ltl;
+        ltlProperty = getLtlPropertyFromSummary(summary);
     }
 
     public static WitnessBuilder of(EncodingContext context, ProverEnvironment prover, Result result,
@@ -74,6 +74,19 @@ public class WitnessBuilder {
         WitnessBuilder b = new WitnessBuilder(context, prover, result, ltlProperty);
         context.getTask().getConfig().inject(b);
         return b;
+    }
+
+    private static String getLtlPropertyFromSummary(String summary) {
+        if(summary.contains("integer overflow")) {
+            return "CHECK( init(main()), LTL(G ! overflow))";
+        }
+        if(summary.contains("invalid dereference")) {
+            return "CHECK( init(main()), LTL(G valid-deref))";
+        }
+        if(summary.contains("user assertion")) {
+            return "CHECK( init(main()), LTL(G ! call(reach_error())))";
+        }
+        throw new UnsupportedOperationException("Violation found for unsupported property");
     }
 
     public WitnessGraph build() {
