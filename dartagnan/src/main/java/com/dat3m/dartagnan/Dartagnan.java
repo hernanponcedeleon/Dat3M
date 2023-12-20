@@ -218,7 +218,7 @@ public class Dartagnan extends BaseOptions {
     private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
-        if (modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
+        if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult(), summary);
                 if (w.canBeBuilt()) {
