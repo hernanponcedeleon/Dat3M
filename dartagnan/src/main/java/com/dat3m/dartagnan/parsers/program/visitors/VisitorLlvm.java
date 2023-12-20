@@ -1365,15 +1365,42 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private static String globalIdent(TerminalNode node) {
+        //see https://llvm.org/docs/LangRef.html#identifiers
+        // Names can be quoted, to allow escaping and other characters than .
+        // This should not bother us after parsing: @fun and @"fun" should be identical.
         final String ident = node.getText();
         assert ident.startsWith("@");
-        return ident.substring(1).replace(".loop", ".\\loop");
+        final String unescapedIdent = unescape(ident.substring(1));
+        // LLVM prepends \01 to a global, if subsequent name mangling should be disabled.
+        // Clang produces this flag, when a C declaration contains an explicit __asm alias.
+        // We ignore this flag.
+        final String trimmedIdent = unescapedIdent.startsWith("\1") ? unescapedIdent.substring(1) : unescapedIdent;
+        return trimmedIdent.replace(".loop", ".\\loop");
     }
 
     private static String localIdent(TerminalNode node) {
         final String ident = node.getText();
         assert ident.startsWith("%");
-        return ident.substring(1).replace(".loop", ".\\loop");
+        return unescape(ident.substring(1)).replace(".loop", ".\\loop");
+    }
+
+    private static String unescape(String original) {
+        final boolean quoted = original.startsWith("\"");
+        assert quoted == (original.endsWith("\""));
+        final String unquoted = quoted ? original.substring(1, original.length() - 1) : original;
+        int escape = unquoted.indexOf('\\');
+        if (escape == -1) {
+            return unquoted;
+        }
+        final StringBuilder sb = new StringBuilder(unquoted.length());
+        int progress = 0;
+        do {
+            sb.append(unquoted, progress, escape);
+            progress = escape + 3;
+            sb.append((char) Integer.parseInt(unquoted.substring(escape + 1, progress), 16));
+            escape = unquoted.indexOf('\\', progress);
+        } while (escape != -1);
+        return sb.append(unquoted, progress, unquoted.length()).toString();
     }
 
     private Register getOrNewRegister(String name, Type type) {

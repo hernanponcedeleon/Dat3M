@@ -114,7 +114,7 @@ public class Intrinsics {
         // --------------------------- pthread threading ---------------------------
         P_THREAD_CREATE("pthread_create", true, false, true, false, null),
         P_THREAD_EXIT("pthread_exit", false, false, false, false, null),
-        P_THREAD_JOIN(List.of("pthread_join", "__pthread_join", "\"\\01_pthread_join\""), false, true, false, false, null),
+        P_THREAD_JOIN(List.of("pthread_join", "_pthread_join", "__pthread_join"), false, true, false, false, null),
         P_THREAD_BARRIER_WAIT("pthread_barrier_wait", false, false, true, true, Intrinsics::inlineAsZero),
         P_THREAD_SELF(List.of("pthread_self", "__VERIFIER_tid"), false, false, true, false, null),
         P_THREAD_EQUAL("pthread_equal", false, false, true, false, Intrinsics::inlinePthreadEqual),
@@ -125,14 +125,14 @@ public class Intrinsics {
         P_THREAD_ATTR_SET(P_THREAD_ATTR.stream().map(a -> "pthread_attr_set" + a).toList(),
                 true, true, true, true, Intrinsics::inlinePthreadAttr),
         // --------------------------- pthread condition variable ---------------------------
-        P_THREAD_COND_INIT(List.of("pthread_cond_init", "\"\\01_pthread_cond_init\""),
+        P_THREAD_COND_INIT(List.of("pthread_cond_init", "_pthread_cond_init"),
                 true, true, true, true, Intrinsics::inlinePthreadCondInit),
         P_THREAD_COND_DESTROY("pthread_cond_destroy", true, false, true, true, Intrinsics::inlinePthreadCondDestroy),
         P_THREAD_COND_SIGNAL("pthread_cond_signal", true, false, true, true, Intrinsics::inlinePthreadCondSignal),
         P_THREAD_COND_BROADCAST("pthread_cond_broadcast", true, false, true, true, Intrinsics::inlinePthreadCondBroadcast),
-        P_THREAD_COND_WAIT(List.of("pthread_cond_wait", "\"\\01_pthread_cond_wait\""),
+        P_THREAD_COND_WAIT(List.of("pthread_cond_wait", "_pthread_cond_wait"),
                 false, true, false, true, Intrinsics::inlinePthreadCondWait),
-        P_THREAD_COND_TIMEDWAIT(List.of("pthread_cond_timedwait", "\"\\01_pthread_cond_timedwait\""),
+        P_THREAD_COND_TIMEDWAIT(List.of("pthread_cond_timedwait", "_pthread_cond_timedwait"),
                 false, false, true, true, Intrinsics::inlinePthreadCondTimedwait),
         P_THREAD_CONDATTR_INIT("pthread_condattr_init", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
         P_THREAD_CONDATTR_DESTROY("pthread_condattr_destroy", true, true, true, true, Intrinsics::inlinePthreadCondAttr),
@@ -148,26 +148,26 @@ public class Intrinsics {
         P_THREAD_MUTEX_TRYLOCK("pthread_mutex_trylock", true, true, true, true, Intrinsics::inlinePthreadMutexTryLock),
         P_THREAD_MUTEX_UNLOCK("pthread_mutex_unlock", true, true, true, true, Intrinsics::inlinePthreadMutexUnlock),
         P_THREAD_MUTEXATTR_INIT("pthread_mutexattr_init", true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
-        P_THREAD_MUTEXATTR_DESTROY(List.of("pthread_mutexattr_destroy", "\"\\01_pthread_mutexattr_destroy\""),
+        P_THREAD_MUTEXATTR_DESTROY(List.of("pthread_mutexattr_destroy", "_pthread_mutexattr_destroy"),
                 true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         P_THREAD_MUTEXATTR_SET(P_THREAD_MUTEXATTR.stream().map(a -> "pthread_mutexattr_get" + a).toList(),
                 true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         P_THREAD_MUTEXATTR_GET(P_THREAD_MUTEXATTR.stream().map(a -> "pthread_mutexattr_set" + a).toList(),
                 true, true, true, true, Intrinsics::inlinePthreadMutexAttr),
         // --------------------------- pthread read/write lock ---------------------------
-        P_THREAD_RWLOCK_INIT(List.of("pthread_rwlock_init", "\"\\01_pthread_rwlock_init\""),
+        P_THREAD_RWLOCK_INIT(List.of("pthread_rwlock_init", "_pthread_rwlock_init"),
                 true, false, true, true, Intrinsics::inlinePthreadRwlockInit),
-        P_THREAD_RWLOCK_DESTROY(List.of("pthread_rwlock_destroy", "\"\\01_pthread_rwlock_destroy\""),
+        P_THREAD_RWLOCK_DESTROY(List.of("pthread_rwlock_destroy", "_pthread_rwlock_destroy"),
                 true, true, true, true, Intrinsics::inlinePthreadRwlockDestroy),
-        P_THREAD_RWLOCK_WRLOCK(List.of("pthread_rwlock_wrlock", "\"\\01_pthread_rwlock_wrlock\""),
+        P_THREAD_RWLOCK_WRLOCK(List.of("pthread_rwlock_wrlock", "_pthread_rwlock_wrlock"),
                 true, true, false, true, Intrinsics::inlinePthreadRwlockWrlock),
-        P_THREAD_RWLOCK_TRYWRLOCK(List.of("pthread_rwlock_trywrlock", "\"\\01_pthread_rwlock_trywrlock\""),
+        P_THREAD_RWLOCK_TRYWRLOCK(List.of("pthread_rwlock_trywrlock", "_pthread_rwlock_trywrlock"),
                 true, true, true, true, Intrinsics::inlinePthreadRwlockTryWrlock),
-        P_THREAD_RWLOCK_RDLOCK(List.of("pthread_rwlock_rdlock", "\"\\01_pthread_rwlock_rdlock\""),
+        P_THREAD_RWLOCK_RDLOCK(List.of("pthread_rwlock_rdlock", "_pthread_rwlock_rdlock"),
                 true, true, false, true, Intrinsics::inlinePthreadRwlockRdlock),
-        P_THREAD_RWLOCK_TRYRDLOCK(List.of("pthread_rwlock_tryrdlock", "\"\\01_pthread_rwlock_tryrdlock\""),
+        P_THREAD_RWLOCK_TRYRDLOCK(List.of("pthread_rwlock_tryrdlock", "_pthread_rwlock_tryrdlock"),
                 true, true, true, true, Intrinsics::inlinePthreadRwlockTryRdlock),
-        P_THREAD_RWLOCK_UNLOCK(List.of("pthread_rwlock_unlock", "\"\\01_pthread_rwlock_unlock\""),
+        P_THREAD_RWLOCK_UNLOCK(List.of("pthread_rwlock_unlock", "_pthread_rwlock_unlock"),
                 true, false, true, true, Intrinsics::inlinePthreadRwlockUnlock),
         P_THREAD_RWLOCKATTR_INIT("pthread_rwlockattr_init", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
         P_THREAD_RWLOCKATTR_DESTROY("pthread_rwlockattr_destroy", true, false, true, true, Intrinsics::inlinePthreadRwlockAttr),
@@ -664,7 +664,11 @@ public class Intrinsics {
     }
 
     private List<Event> inlinePthreadMutexAttr(FunctionCall call) {
-        final String suffix = call.getCalledFunction().getName().substring("pthread_mutexattr_".length());
+        //see https://linux.die.net/man/3/pthread_mutexattr_init
+        final String functionName = call.getCalledFunction().getName();
+        // MacOS systems prepend 'pthread_mutexattr_destroy' with _.
+        final int prefixLength = functionName.startsWith("_") ? 1 : 0;
+        final String suffix = functionName.substring(prefixLength + "pthread_mutexattr_".length());
         final boolean init = suffix.equals("init");
         final boolean destroy = suffix.equals("destroy");
         final Register errorRegister = getResultRegisterAndCheckArguments(init || destroy ? 1 : 2, call);
