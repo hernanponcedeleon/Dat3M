@@ -289,7 +289,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
             throw new ParsingException("Fence instruction doesn't support mo: " + mo);
         }
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
-        fence.addTags(mo, scope);
+        fence.addTags(mo, scope, Tag.PTX.GEN);
         return programBuilder.addChild(mainThread, fence);
     }
 
