@@ -759,6 +759,7 @@ public class Intrinsics {
     private List<Event> inlinePthreadRwlockRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_rdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
         final var expected = new INonDet(constantId++, getRwlockDatatype(), true);
@@ -767,7 +768,9 @@ public class Intrinsics {
                 // Expect any other value than write-locked.
                 EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
-                newRwlockTryRdlock(call, successRegister, lockAddress, expected),
+                newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expected),
+                // Fail only if write-locked.
+                EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Deadlock if a violation occurred in another thread.
                 EventFactory.newAbortIf(expressions.makeNot(successRegister)),
                 assignSuccess(errorRegister)
@@ -777,6 +780,7 @@ public class Intrinsics {
     private List<Event> inlinePthreadRwlockTryRdlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_rwlock_tryrdlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
         final var expected = new INonDet(constantId++, getRwlockDatatype(), true);
@@ -788,16 +792,18 @@ public class Intrinsics {
                 // Expect any other value than write-locked.
                 EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
                 // Increment shared counter only if not locked by writer.
-                newRwlockTryRdlock(call, successRegister, lockAddress, expected),
+                newRwlockTryRdlock(call, oldValueRegister, successRegister, lockAddress, expected),
+                // Fail only if write-locked.
+                EventFactory.newAssume(expressions.makeOr(successRegister, expressions.makeEQ(oldValueRegister, getRwlockWriteLockedValue()))),
                 // Indicate success with zero.
                 EventFactory.newAssume(expressions.makeEQ(successRegister, expressions.makeEQ(error, success))),
                 EventFactory.newLocal(errorRegister, error)
         );
     }
 
-    private Event newRwlockTryRdlock(FunctionCall call, Register successRegister, Expression lockAddress, Expression expected) {
+    private Event newRwlockTryRdlock(FunctionCall call, Register oldValueRegister, Register successRegister, Expression lockAddress, Expression expected) {
         return EventFactory.Llvm.newCompareExchange(
-                call.getFunction().newRegister(getRwlockDatatype()),
+                oldValueRegister,
                 successRegister,
                 lockAddress,
                 expected,
