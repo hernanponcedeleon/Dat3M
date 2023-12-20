@@ -33,6 +33,7 @@ litmus/PTX/Manual/MP-cta-gpu.litmus,1
 litmus/PTX/Manual/MP-gpu.litmus,1
 litmus/PTX/Manual/MP-relaxed.litmus,1
 litmus/PTX/Manual/MP-sys.litmus,1
+litmus/PTX/Manual/MP-sys-fence.litmus,1
 litmus/PTX/Manual/Proxy-Alias-AliasFence.litmus,1
 litmus/PTX/Manual/Proxy-Const-ConstFence.litmus,1
 litmus/PTX/Manual/Proxy-Const-MP-cause-different-cta.litmus,1
