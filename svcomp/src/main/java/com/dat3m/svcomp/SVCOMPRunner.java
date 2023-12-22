@@ -171,7 +171,7 @@ public class SVCOMPRunner extends BaseOptions {
     private static List<String> filterOptions(Configuration config) {
     	
         // BOUND is computed based on umin and the information from the witness
-        List<String> skip = Arrays.asList(PROPERTYPATH, UMIN, UMAX, STEP, SANITIZE, BOUND);
+        List<String> skip = Arrays.asList(PROPERTYPATH, UMIN, UMAX, STEP, BOUND);
     	
         return Arrays.stream(config.asPropertiesString().split("\n")).
             filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).
