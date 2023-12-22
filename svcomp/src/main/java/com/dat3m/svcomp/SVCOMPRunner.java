@@ -43,12 +43,10 @@ public class SVCOMPRunner extends BaseOptions {
         //TODO process the property file instead of assuming its contents based of its name
         if(p.contains("no-data-race")) {
             property = Property.DATARACEFREEDOM;
-        } else if(p.contains("unreach-call")) {
+        } else if(p.contains("unreach-call") || p.contains("no-overflow") || p.contains("valid-memsafety")) {
             property = Property.PROGRAM_SPEC;
         } else {
-            // To comply with SVCOMP qualification rules, we should return UNKNOWN
-            // instead of throwing an exception for unhandled properties
-            property = null;
+            throw new IllegalArgumentException("Unrecognized property " + p);
         }
     }
 
@@ -173,7 +171,7 @@ public class SVCOMPRunner extends BaseOptions {
     private static List<String> filterOptions(Configuration config) {
     	
         // BOUND is computed based on umin and the information from the witness
-        List<String> skip = Arrays.asList(PROPERTYPATH, UMIN, UMAX, STEP, SANITIZE, BOUND);
+        List<String> skip = Arrays.asList(PROPERTYPATH, UMIN, UMAX, STEP, BOUND);
     	
         return Arrays.stream(config.asPropertiesString().split("\n")).
             filter(p -> skip.stream().noneMatch(s -> s.equals(p.split(" = ")[0]))).

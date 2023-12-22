@@ -195,12 +195,13 @@ public class Dartagnan extends BaseOptions {
                 }
 
                 long endTime = System.currentTimeMillis();
-                System.out.print(generateResultSummary(task, prover, modelChecker));
+                String summary = generateResultSummary(task, prover, modelChecker);
+                System.out.print(summary);
                 System.out.println("Total verification time(ms): " + (endTime - startTime));
 
                 if (!o.runValidator()) {
                     // We only generate witnesses if we are not validating one.
-                    generateWitnessIfAble(task, prover, modelChecker);
+                    generateWitnessIfAble(task, prover, modelChecker, summary);
                 }
             }
         } catch (InterruptedException e) {
@@ -214,12 +215,12 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) {
+    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
-        if (modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
+        if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
             try {
-                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult());
+                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult(), summary);
                 if (w.canBeBuilt()) {
                     //  We can only write witnesses if the path to the original C file was given.
                     w.build().write();

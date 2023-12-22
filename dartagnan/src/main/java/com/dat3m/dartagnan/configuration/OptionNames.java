@@ -65,9 +65,6 @@ public class OptionNames {
     public static final String UMIN = "svcomp.umin";
     public static final String UMAX = "svcomp.umax";
     public static final String STEP = "svcomp.step";
-    public static final String SANITIZE = "svcomp.sanitize";
-    public static final String OPTIMIZATION = "svcomp.optimization";
-    public static final String INTEGER_ENCODING = "svcomp.integerEncoding";
 
     // Debugging Options
     public static final String PRINT_PROGRAM_BEFORE_PROCESSING = "printer.beforeProcessing";
