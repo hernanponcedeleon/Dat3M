@@ -49,7 +49,9 @@ public class MiscellaneousTest extends AbstractCTest {
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
-            builder.setOption(OptionNames.USE_INTEGERS, "true");
+            if (!name.equals("pthread")) {
+                builder.setOption(OptionNames.USE_INTEGERS, "true");
+            }
             if (name.equals("recursion")) {
                 builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
             }
