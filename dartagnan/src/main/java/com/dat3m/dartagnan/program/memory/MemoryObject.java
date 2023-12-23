@@ -55,7 +55,7 @@ public class MemoryObject extends IConst {
 
     // Should only be called for statically allocated objects.
     public Set<Integer> getStaticallyInitializedFields() {
-        checkState(this.isStaticallyAllocated());
+        checkState(this.isStaticallyAllocated(), "Unexpected dynamic object %s", this);
         return initialValues.keySet();
     }
 

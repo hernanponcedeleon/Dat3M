@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
@@ -392,7 +391,7 @@ public class AnalysisTest {
     }
 
     private Expression value(long v) {
-        return expressions.makeValue(BigInteger.valueOf(v), types.getArchType());
+        return expressions.makeValue(v, types.getArchType());
     }
 
     private Expression plus(Expression lhs, long rhs) {

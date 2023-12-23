@@ -100,7 +100,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         // Parse global definitions after declarations.
         for (final TopLevelEntityContext entity : ctx.topLevelEntity()) {
             if (entity.globalDef() != null) {
-                entity.accept(this);
+                visitGlobalDef(entity.globalDef());
             }
         }
 
@@ -364,16 +364,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitCallInst(CallInstContext ctx) {
-        if (ctx.inlineAsm() != null) {
-            // FIXME: We ignore all inline assembly.
-            return null;
-        }
-        final Expression callTarget = checkPointerExpression(ctx.value());
-        if (callTarget == null) {
-            //FIXME ignores metadata functions, but also undeclared functions
-            return null;
-        }
-        //checkSupport(callTarget instanceof Function, "Indirect call in %s.", ctx);
+        // see https://llvm.org/docs/LangRef.html#call-instruction
         final Type type = parseType(ctx.type());
         // Calls can either list the full function type or just the return type.
         final Type returnType = type instanceof FunctionType funcType ? funcType.getReturnType() : type;
@@ -389,16 +380,29 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             arguments.add(checkExpression(argumentType, argument.value()));
         }
 
-        final FunctionType funcType;
-        if (type instanceof FunctionType) {
-            funcType = (FunctionType) type;
-        } else {
-            // Build FunctionType from return type and argument types
-            funcType = types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
-        }
-
         final Register resultRegister = currentRegisterName == null ? null :
                 getOrNewRegister(currentRegisterName, returnType);
+
+        if (ctx.inlineAsm() != null) {
+            // see https://llvm.org/docs/LangRef.html#inline-assembler-expressions
+            //TODO add support form inline assembly
+            //FIXME ignore side effects of inline assembly
+            if (resultRegister != null) {
+                block.events.add(newLocal(resultRegister, makeNonDetOfType(returnType)));
+            }
+            return resultRegister;
+        }
+
+        final Expression callTarget = checkPointerExpression(ctx.value());
+        if (callTarget == null) {
+            //FIXME ignores metadata functions, but also undeclared functions
+            return null;
+        }
+
+        // Build FunctionType from return type and argument types
+        final FunctionType funcType = type instanceof FunctionType t ? t :
+                types.getFunctionType(returnType, Lists.transform(arguments, Expression::getType));
+
         final Event call = currentRegisterName == null ?
                 newVoidFunctionCall(funcType, callTarget, arguments) :
                 newValueFunctionCall(resultRegister, funcType, callTarget, arguments);
@@ -1361,15 +1365,42 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     }
 
     private static String globalIdent(TerminalNode node) {
+        //see https://llvm.org/docs/LangRef.html#identifiers
+        // Names can be quoted, to allow escaping and other characters than .
+        // This should not bother us after parsing: @fun and @"fun" should be identical.
         final String ident = node.getText();
         assert ident.startsWith("@");
-        return ident.substring(1).replace(".loop", ".\\loop");
+        final String unescapedIdent = unescape(ident.substring(1));
+        // LLVM prepends \01 to a global, if subsequent name mangling should be disabled.
+        // Clang produces this flag, when a C declaration contains an explicit __asm alias.
+        // We ignore this flag.
+        final String trimmedIdent = unescapedIdent.startsWith("\1") ? unescapedIdent.substring(1) : unescapedIdent;
+        return trimmedIdent.replace(".loop", ".\\loop");
     }
 
     private static String localIdent(TerminalNode node) {
         final String ident = node.getText();
         assert ident.startsWith("%");
-        return ident.substring(1).replace(".loop", ".\\loop");
+        return unescape(ident.substring(1)).replace(".loop", ".\\loop");
+    }
+
+    private static String unescape(String original) {
+        final boolean quoted = original.startsWith("\"");
+        assert quoted == (original.endsWith("\""));
+        final String unquoted = quoted ? original.substring(1, original.length() - 1) : original;
+        int escape = unquoted.indexOf('\\');
+        if (escape == -1) {
+            return unquoted;
+        }
+        final StringBuilder sb = new StringBuilder(unquoted.length());
+        int progress = 0;
+        do {
+            sb.append(unquoted, progress, escape);
+            progress = escape + 3;
+            sb.append((char) Integer.parseInt(unquoted.substring(escape + 1, progress), 16));
+            escape = unquoted.indexOf('\\', progress);
+        } while (escape != -1);
+        return sb.append(unquoted, progress, unquoted.length()).toString();
     }
 
     private Register getOrNewRegister(String name, Type type) {

@@ -41,7 +41,6 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.math.BigInteger;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.THREAD_CREATE_ALWAYS_SUCCEEDS;
@@ -129,7 +128,7 @@ public class ThreadCreation implements ProgramProcessor {
                         assert resultRegister.getType() instanceof IntegerType;
 
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
-                        final IValue tidExpr = expressions.makeValue(BigInteger.valueOf(nextTid), archType);
+                        final IValue tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
@@ -154,7 +153,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final Register resultRegister = getResultRegister(call);
                         assert resultRegister.getType() instanceof IntegerType;
                         assert arguments.isEmpty();
-                        final Expression tidExpr = expressions.makeValue(BigInteger.valueOf(thread.getId()),
+                        final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());
                         final Local tidAssignment = newLocal(resultRegister, tidExpr);
                         tidAssignment.copyAllMetadataFrom(call);

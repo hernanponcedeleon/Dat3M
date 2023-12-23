@@ -24,7 +24,6 @@ import com.google.common.collect.Iterables;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -108,7 +107,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         if (!func2AddressMap.containsKey(func)) {
             logger.debug("Assigned address \"{}\" to function \"{}\"", nextAvailableFuncAddress, func);
-            func2AddressMap.put(func, expressions.makeValue(BigInteger.valueOf(nextAvailableFuncAddress), ptrType));
+            func2AddressMap.put(func, expressions.makeValue(nextAvailableFuncAddress, ptrType));
             nextAvailableFuncAddress += 8;
             return true;
         }

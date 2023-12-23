@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
@@ -42,7 +43,6 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -134,7 +134,7 @@ public class EventFactory {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
-                expressions.makeADD(base, expressions.makeValue(BigInteger.valueOf(offset), base.getType()));
+                expressions.makeADD(base, expressions.makeValue(offset, base.getType()));
         return new Init(base, offset, address);
     }
 
@@ -317,8 +317,9 @@ public class EventFactory {
         private Pthread() {
         }
 
-        public static InitLock newInitLock(String name, Expression address, Expression value) {
-            return new InitLock(name, address, value);
+        public static InitLock newInitLock(String name, Expression address, Expression ignoreAttributes) {
+            //TODO store attributes inside mutex object
+            return new InitLock(name, address, expressions.makeZero(TypeFactory.getInstance().getArchType()));
         }
 
         public static Lock newLock(String name, Expression address) {

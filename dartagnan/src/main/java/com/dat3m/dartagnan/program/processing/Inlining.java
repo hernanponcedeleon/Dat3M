@@ -31,6 +31,7 @@ import java.util.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.RECURSION_BOUND;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Verify.verify;
 
 @Options
 public class Inlining implements ProgramProcessor {
@@ -56,7 +57,8 @@ public class Inlining implements ProgramProcessor {
                     function.getName(),
                     function.getParameterRegisters(),
                     function.getEvents(),
-                    List.copyOf(function.getRegisters())));
+                    List.copyOf(function.getRegisters()),
+                    function.getFunctionType().isVarArgs()));
         }
         for (final Function function : program.getFunctions()) {
             inlineAllCalls(function, snapshots);
@@ -66,7 +68,8 @@ public class Inlining implements ProgramProcessor {
         }
     }
 
-    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers) {}
+    private record Snapshot(String name, List<Register> parameters, List<Event> events, List<Register> registers,
+            boolean isVarArgs) {}
 
     private boolean canInline(FunctionCall call) {
         return call.isDirectCall() && call.getCalledFunction().hasBody();
@@ -126,7 +129,9 @@ public class Inlining implements ProgramProcessor {
         var replacementMap = new HashMap<Event, Event>();
         var registerMap = new HashMap<Register, Register>();
         final List<Expression> arguments = call.getArguments();
-        assert arguments.size() == callTarget.parameters.size();
+        //TODO add support for __VA_INIT
+        verify(callTarget.isVarArgs ? arguments.size() >= callTarget.parameters.size() :
+                arguments.size() == callTarget.parameters.size(), "Parameter mismatch at %s", call);
         // All registers have to be replaced
         for (final Register register : callTarget.registers) {
             final String newName = scope + ":" + register.getName();
@@ -134,7 +139,7 @@ public class Inlining implements ProgramProcessor {
         }
         var parameterAssignments = new ArrayList<Event>();
         var returnEvents = new HashSet<Event>();
-        for (int j = 0; j < arguments.size(); j++) {
+        for (int j = 0; j < callTarget.parameters.size(); j++) {
             Register register = registerMap.get(callTarget.parameters.get(j));
             parameterAssignments.add(newLocal(register, arguments.get(j)));
         }
