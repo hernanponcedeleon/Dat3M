@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import org.sosy_lab.java_smt.api.*;
 
 import java.io.FileWriter;
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
@@ -78,12 +79,9 @@ public class WitnessGraph extends ElemWithAttributes {
 		BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
 		FormulaManager fmgr = context.getFormulaManager();
 		List<BooleanFormula> enc = new ArrayList<>();
-		List<Event> previous = new ArrayList<>();
+		List<MemoryEvent> previous = new ArrayList<>();
 		for (Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
-			List<Event> events = program.getThreadEvents(MemoryEvent.class).stream()
-					.filter(e -> e.hasMetadata(SourceLocation.class))
-					.filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline())
-					.collect(Collectors.toList());
+			List<MemoryEvent> events = getEventsFromEdge(program, edge);
 			if (!previous.isEmpty() && !events.isEmpty()) {
 				enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()
 						.map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
@@ -112,6 +110,45 @@ public class WitnessGraph extends ElemWithAttributes {
 		}
 		return bmgr.and(enc);
 	}
+
+    private List<MemoryEvent> getEventsFromEdge(Program program, Edge edge) {
+        Stream<MemoryEvent> res = Stream.empty();
+        if (edge.hasAttributed(EVENTID.toString())) {
+            res = program.getThreadEvents(MemoryEvent.class).stream()
+                    .filter(e -> e.getGlobalId() == Integer.parseInt(edge.getAttributed(EVENTID.toString())));
+            assert (res.count() == 1);
+        } else if (edge.hasCline()) {
+            res = program.getThreadEvents(MemoryEvent.class).stream()
+                    .filter(e -> e.hasMetadata(SourceLocation.class))
+                    .filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline());
+        }
+        return res.collect(Collectors.toList());
+    }
+
+    private <T1 extends Event, T2 extends Event> EventGraph getHbKnowledge(Program program, Class<T1> c1, Class<T2> c2) {
+        EventGraph k = new EventGraph();
+        MemoryEvent current = null;
+        MemoryEvent last = null;
+        List<MemoryEvent> currents;
+        for (Edge e : getEdges()) {
+            currents = getEventsFromEdge(program, e);
+            current = currents.size() == 1 ? currents.get(0) : null;
+            if (current != null && last != null && c1.isInstance(last) && c2.isInstance(current)
+                    && !last.getThread().equals(current.getThread())) {
+                k.add(last, current);
+            }
+            last = current;
+        }
+        return k;
+    }
+
+    public EventGraph getReadFromKnowledge(Program program) {
+        return getHbKnowledge(program, Store.class, Load.class);
+    }
+
+    public EventGraph getCoherenceKnowledge(Program program) {
+        return getHbKnowledge(program, Store.class, Store.class);
+    }
 
 	private static BooleanFormula equalsParsedValue(Formula operand, String value, FormulaManager formulaManager) {
 		if (operand instanceof BooleanFormula bool) {
