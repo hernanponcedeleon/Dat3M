@@ -119,7 +119,6 @@ public class WitnessGraph extends ElemWithAttributes {
         if (edge.hasAttributed(EVENTID.toString())) {
             res = program.getThreadEvents(MemoryEvent.class).stream()
                     .filter(e -> e.getGlobalId() == Integer.parseInt(edge.getAttributed(EVENTID.toString())));
-            assert (res.count() == 1);
         } else if (edge.hasCline()) {
             res = program.getThreadEvents(MemoryEvent.class).stream()
                     .filter(e -> e.hasMetadata(SourceLocation.class))
