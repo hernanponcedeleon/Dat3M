@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.witness;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
@@ -79,9 +79,9 @@ public class WitnessGraph extends ElemWithAttributes {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         FormulaManager fmgr = context.getFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
-        List<MemoryEvent> previous = new ArrayList<>();
+        List<MemoryCoreEvent> previous = new ArrayList<>();
         for (Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
-            List<MemoryEvent> events = getEventsFromEdge(program, edge);
+            List<MemoryCoreEvent> events = getEventsFromEdge(program, edge);
             if (!previous.isEmpty() && !events.isEmpty()) {
                 enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()
                         .map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
@@ -118,33 +118,32 @@ public class WitnessGraph extends ElemWithAttributes {
         return hasAttributed(PRODUCER.toString()) && getAttributed(PRODUCER.toString()).equals("Dartagnan");
     }
 
-    private List<MemoryEvent> getEventsFromEdge(Program program, Edge edge) {
-        Stream<MemoryEvent> res = Stream.empty();
+    private List<MemoryCoreEvent> getEventsFromEdge(Program program, Edge edge) {
+        Stream<MemoryCoreEvent> res = Stream.empty();
         if (edge.hasAttributed(EVENTID.toString())) {
-            res = program.getThreadEvents(MemoryEvent.class).stream()
+            res = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.getGlobalId() == Integer.parseInt(edge.getAttributed(EVENTID.toString())));
         } else if (edge.hasCline()) {
-            res = program.getThreadEvents(MemoryEvent.class).stream()
+            res = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasMetadata(SourceLocation.class))
                     .filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline());
         }
         return res.collect(Collectors.toList());
     }
 
-    private <T1 extends Event, T2 extends Event> EventGraph getHbKnowledge(Program program, Class<T1> c1,
-            Class<T2> c2) {
-        // We only have hb knowledge for conflicting events
-        assert(c1 == Store.class || c2 == Store.class);
+    public EventGraph getReadFromKnowledge(Program program, AliasAnalysis alias) {
         EventGraph k = new EventGraph();
-        MemoryEvent current = null;
-        MemoryEvent last = null;
-        List<MemoryEvent> currents;
+        MemoryCoreEvent current = null;
+        MemoryCoreEvent last = null;
+        List<MemoryCoreEvent> currents;
         for (Edge e : getEdges()) {
             currents = getEventsFromEdge(program, e);
             current = currents.size() == 1 ? currents.get(0) : null;
-            // If a graph edge implies a hb-relation, inter-thread communication guarantees same address
-            if (graphEdgeImpliesHbEdge() && current != null && last != null && c1.isInstance(last) && c2.isInstance(current)
-                    && !last.getThread().equals(current.getThread())) {
+            // If a graph edge implies a hb-relation, inter-thread communication guarantees
+            // same address and thus rf
+            if (last != null && current != null && last instanceof Store && current instanceof Load
+                    && ((graphEdgeImpliesHbEdge() && !last.getThread().equals(current.getThread()))
+                            || alias.mustAlias(last, current))) {
                 k.add(last, current);
             }
             last = current;
@@ -152,12 +151,35 @@ public class WitnessGraph extends ElemWithAttributes {
         return k;
     }
 
-    public EventGraph getReadFromKnowledge(Program program) {
-        return getHbKnowledge(program, Store.class, Load.class);
-    }
-
-    public EventGraph getCoherenceKnowledge(Program program) {
-        return getHbKnowledge(program, Store.class, Store.class);
+    public EventGraph getCoherenceKnowledge(Program program, AliasAnalysis alias) {
+        EventGraph k = new EventGraph();
+        MemoryCoreEvent current = null;
+        List<MemoryCoreEvent> currents;
+        // The last store which we precisely identified
+        MemoryCoreEvent last = null;
+        List<MemoryCoreEvent> lasts = new ArrayList<>();
+        for (Edge e : getEdges()) {
+            currents = getEventsFromEdge(program, e);
+            current = currents.size() == 1 ? currents.get(0) : null;
+            if(current == null || !(current instanceof Store)) {
+                // No need to clear last
+                continue;
+            }
+            // If a graph edge implies a hb-relation, inter-thread communication guarantees same address and thus co
+            if (last != null && last instanceof Store && graphEdgeImpliesHbEdge()
+                    && !last.getThread().equals(current.getThread())) {
+                k.add(last, current);
+            }
+            // Previous stores to the same address are guaranteed to be in co
+            for (MemoryCoreEvent s : lasts) {
+                if (alias.mustAlias(s, current)) {
+                    k.add(s, current);
+                }
+            }
+            lasts.add(current);
+            last = current;
+        }
+        return k;
     }
 
     private static BooleanFormula equalsParsedValue(Formula operand, String value, FormulaManager formulaManager) {

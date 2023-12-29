@@ -744,7 +744,7 @@ public class RelationAnalysis {
 
             // Must-co from violation witness
             if(witness != null) {
-                must.addAll(witness.getCoherenceKnowledge(program));
+                must.addAll(witness.getCoherenceKnowledge(program, alias));
             }
 
             logger.debug("Initial may set size for memory order: {}", may.size());
@@ -864,7 +864,7 @@ public class RelationAnalysis {
 
             // Must-rf from violation witness
             if(witness != null) {
-                EventGraph g = witness.getReadFromKnowledge(program);
+                EventGraph g = witness.getReadFromKnowledge(program, alias);
                 must.addAll(g);
                 for(Event r : g.getRange()) {
                     may.removeIf((e1, e2) -> e2 == r);
