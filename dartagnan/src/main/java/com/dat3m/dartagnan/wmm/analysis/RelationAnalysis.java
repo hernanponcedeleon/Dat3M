@@ -864,7 +864,11 @@ public class RelationAnalysis {
 
             // Must-rf from violation witness
             if(witness != null) {
-                must.addAll(witness.getReadFromKnowledge(program));
+                EventGraph g = witness.getReadFromKnowledge(program);
+                must.addAll(g);
+                for(Event r : g.getRange()) {
+                    may.removeIf((e1, e2) -> e2 == r);
+                }
             }
 
             logger.debug("Initial may set size for read-from: {}", may.size());
