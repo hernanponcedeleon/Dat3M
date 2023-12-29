@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
+import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 
 public class WitnessGraph extends ElemWithAttributes {
 
@@ -114,6 +114,10 @@ public class WitnessGraph extends ElemWithAttributes {
         return bmgr.and(enc);
     }
 
+    private boolean graphEdgeImpliesHbEdge() {
+        return hasAttributed(PRODUCER.toString()) && getAttributed(PRODUCER.toString()).equals("Dartagnan");
+    }
+
     private List<MemoryEvent> getEventsFromEdge(Program program, Edge edge) {
         Stream<MemoryEvent> res = Stream.empty();
         if (edge.hasAttributed(EVENTID.toString())) {
@@ -129,6 +133,8 @@ public class WitnessGraph extends ElemWithAttributes {
 
     private <T1 extends Event, T2 extends Event> EventGraph getHbKnowledge(Program program, Class<T1> c1,
             Class<T2> c2) {
+        // We only have hb knowledge for conflicting events
+        assert(c1 == Store.class || c2 == Store.class);
         EventGraph k = new EventGraph();
         MemoryEvent current = null;
         MemoryEvent last = null;
@@ -136,7 +142,8 @@ public class WitnessGraph extends ElemWithAttributes {
         for (Edge e : getEdges()) {
             currents = getEventsFromEdge(program, e);
             current = currents.size() == 1 ? currents.get(0) : null;
-            if (current != null && last != null && c1.isInstance(last) && c2.isInstance(current)
+            // If a graph edge implies a hb-relation, inter-thread communication guarantees same address
+            if (graphEdgeImpliesHbEdge() && current != null && last != null && c1.isInstance(last) && c2.isInstance(current)
                     && !last.getThread().equals(current.getThread())) {
                 k.add(last, current);
             }
