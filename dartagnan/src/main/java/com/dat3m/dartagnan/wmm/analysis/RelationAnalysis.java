@@ -743,7 +743,7 @@ public class RelationAnalysis {
             }
 
             // Must-co from violation witness
-            if(witness != null) {
+            if(!witness.isEmpty()) {
                 must.addAll(witness.getCoherenceKnowledge(program, alias));
             }
 
@@ -863,7 +863,7 @@ public class RelationAnalysis {
             }
 
             // Must-rf from violation witness
-            if(witness != null) {
+            if(!witness.isEmpty()) {
                 EventGraph g = witness.getReadFromKnowledge(program, alias);
                 must.addAll(g);
                 for(Event r : g.getRange()) {

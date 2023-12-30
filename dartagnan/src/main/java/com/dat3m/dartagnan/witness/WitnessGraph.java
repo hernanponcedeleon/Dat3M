@@ -29,6 +29,10 @@ public class WitnessGraph extends ElemWithAttributes {
     // The order in which we add / traverse edges is important, thus a List
     private final List<Edge> edges = new ArrayList<>();
 
+    public boolean isEmpty() {
+        return edges.isEmpty();
+    }
+
     public void addNode(String id) {
         nodes.add(new Node(id));
     }
