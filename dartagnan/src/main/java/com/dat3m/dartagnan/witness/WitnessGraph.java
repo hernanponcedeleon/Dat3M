@@ -13,13 +13,11 @@ import org.sosy_lab.java_smt.api.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
 import static com.dat3m.dartagnan.witness.NodeAttributes.*;
 
@@ -108,7 +106,6 @@ public class WitnessGraph extends ElemWithAttributes {
     public BooleanFormula encode(EncodingContext context) {
         Program program = context.getTask().getProgram();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        FormulaManager fmgr = context.getFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
         List<MemoryCoreEvent> previous = new ArrayList<>();
         for (Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
@@ -118,29 +115,7 @@ public class WitnessGraph extends ElemWithAttributes {
                         .map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
                         .toArray(BooleanFormula[]::new)));
             }
-            if (!events.isEmpty()) {
-                previous = events;
-            }
-            // FIXME: The reliance on "globalId" for matching is very fragile (see comment
-            // in WitnessBuilder)
-            if (edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(LOADEDVALUE.toString())) {
-                int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-                Optional<Load> load = program.getThreadEvents(Load.class).stream().filter(e -> e.getGlobalId() == id)
-                        .findFirst();
-                if (load.isPresent()) {
-                    String loadedValue = edge.getAttributed(LOADEDVALUE.toString());
-                    enc.add(equalsParsedValue(context.result(load.get()), loadedValue, fmgr));
-                }
-            }
-            if (edge.hasAttributed(EVENTID.toString()) && edge.hasAttributed(STOREDVALUE.toString())) {
-                int id = Integer.parseInt(edge.getAttributed(EVENTID.toString()));
-                Optional<Store> store = program.getThreadEvents(Store.class).stream().filter(e -> e.getGlobalId() == id)
-                        .findFirst();
-                if (store.isPresent()) {
-                    String storedValue = edge.getAttributed(STOREDVALUE.toString());
-                    enc.add(equalsParsedValue(context.value(store.get()), storedValue, fmgr));
-                }
-            }
+            previous = events;
         }
         return bmgr.and(enc);
     }
@@ -151,10 +126,7 @@ public class WitnessGraph extends ElemWithAttributes {
 
     private List<MemoryCoreEvent> getEventsFromEdge(Program program, Edge edge) {
         Stream<MemoryCoreEvent> res = Stream.empty();
-        if (edge.hasAttributed(EVENTID.toString())) {
-            res = program.getThreadEvents(MemoryCoreEvent.class).stream()
-                    .filter(e -> e.getGlobalId() == Integer.parseInt(edge.getAttributed(EVENTID.toString())));
-        } else if (edge.hasCline()) {
+        if (edge.hasCline()) {
             res = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasMetadata(SourceLocation.class))
                     .filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline());
@@ -212,28 +184,6 @@ public class WitnessGraph extends ElemWithAttributes {
             last = current;
         }
         return k;
-    }
-
-    private static BooleanFormula equalsParsedValue(Formula operand, String value, FormulaManager formulaManager) {
-        if (operand instanceof BooleanFormula bool) {
-            return switch (value) {
-                case "false", "0" -> formulaManager.getBooleanFormulaManager().not(bool);
-                default -> bool;
-            };
-        }
-        BigInteger integerValue = switch (value) {
-            case "false" -> BigInteger.ZERO;
-            case "true" -> BigInteger.ONE;
-            default -> new BigInteger(value);
-        };
-        if (operand instanceof NumeralFormula.IntegerFormula integer) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return imgr.equal(integer, imgr.makeNumber(integerValue));
-        }
-        assert operand instanceof BitvectorFormula;
-        BitvectorFormula bitvector = (BitvectorFormula) operand;
-        BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
-        return bvmgr.equal(bitvector, bvmgr.makeBitvector(bvmgr.getLength(bitvector), integerValue));
     }
 
     public void write() {
