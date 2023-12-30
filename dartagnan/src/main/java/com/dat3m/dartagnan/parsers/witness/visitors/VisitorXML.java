@@ -9,12 +9,14 @@ import com.dat3m.dartagnan.witness.Node;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.witness.NodeAttributes.*;
 
 import java.util.stream.Collectors;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> {
 	
 	private final WitnessGraph graph = new WitnessGraph();
+    private String lastAddedNodeId;
 	
 	@Override
 	public WitnessGraph visitDocument(XMLParser.DocumentContext ctx) {
@@ -33,24 +35,21 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> {
 					String key = ctx.attribute(0).STRING().getText();
 					key = key.substring(1, key.length()-1);
 					String value = ctx.content().getText();
-					if(key.equals(PROGRAMFILE.toString())) {
-						graph.addAttribute(key, value);	
-					}
-					if(key.equals(PRODUCER.toString())) {
-						graph.addAttribute(key, value);	
-					}
-					if(key.equals(UNROLLBOUND.toString())) {
+					if(key.equals(PROGRAMFILE.toString()) || key.equals(PRODUCER.toString()) || key.equals(UNROLLBOUND.toString())) {
 						graph.addAttribute(key, value);	
 					}
 					if(key.equals(WITNESSTYPE.toString()) && !value.equals("violation_witness")) {
 						throw new ParsingException("Dartagnan can only validate violation witnesses");	
 					}
+					if(key.equals(ENTRY.toString()) || key.equals(VIOLATION.toString())) {
+						graph.getNode(lastAddedNodeId).addAttribute(key, value);	
+					}
 				}
 			}
 			if(ctx.Name(0).getText().equals("node")) {
 				String name = ctx.attribute(0).STRING().toString();
-				name = name.substring(1, name.length()-1);
-				graph.addNode(name);
+				lastAddedNodeId = name.substring(1, name.length()-1);
+				graph.addNode(lastAddedNodeId);
 			}
 			if(ctx.Name(0).getText().equals("edge")) {
 				int idx = ctx.attribute().stream().map(a -> a.Name().toString()).collect(Collectors.toList()).indexOf("source");

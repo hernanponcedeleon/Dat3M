@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.witness.NodeAttributes.*;
 
 public class WitnessGraph extends ElemWithAttributes {
 
@@ -40,6 +41,16 @@ public class WitnessGraph extends ElemWithAttributes {
         return nodes.stream().filter(n -> n.getId().equals(id)).findFirst().get();
     }
 
+    public Node getEntryNode() {
+        assert(nodes.stream().anyMatch(n -> n.hasAttributed(ENTRY.toString())));
+        return nodes.stream().filter(n -> n.hasAttributed(ENTRY.toString())).findFirst().get();
+    }
+
+    public Node getViolationNode() {
+        assert(nodes.stream().anyMatch(n -> n.hasAttributed(VIOLATION.toString())));
+        return nodes.stream().filter(n -> n.hasAttributed(VIOLATION.toString())).findAny().get();
+    }
+
     public void addEdge(Edge e) {
         nodes.add(e.getSource());
         nodes.add(e.getTarget());
@@ -52,6 +63,22 @@ public class WitnessGraph extends ElemWithAttributes {
 
     public List<Edge> getEdges() {
         return edges;
+    }
+
+    public List<Edge> getPathToViolation() {
+        List<Edge> ret = new ArrayList<>();
+        Node cur = getViolationNode();
+        while(cur != getEntryNode()) {
+            for(Edge e : getEdges()) {
+                if(e.getTarget().equals(cur)) {
+                    ret.add(e);
+                    cur = e.getSource();
+                    break;
+                }
+            }
+        }
+        Collections.reverse(ret);
+        return ret;
     }
 
     public String getProgram() {
@@ -136,7 +163,7 @@ public class WitnessGraph extends ElemWithAttributes {
         MemoryCoreEvent current = null;
         MemoryCoreEvent last = null;
         List<MemoryCoreEvent> currents;
-        for (Edge e : getEdges()) {
+        for (Edge e : getPathToViolation()) {
             currents = getEventsFromEdge(program, e);
             current = currents.size() == 1 ? currents.get(0) : null;
             // If a graph edge implies a hb-relation, inter-thread communication guarantees
@@ -155,14 +182,13 @@ public class WitnessGraph extends ElemWithAttributes {
         EventGraph k = new EventGraph();
         MemoryCoreEvent current = null;
         List<MemoryCoreEvent> currents;
-        // The last store which we precisely identified
         MemoryCoreEvent last = null;
         List<MemoryCoreEvent> lasts = new ArrayList<>();
-        for (Edge e : getEdges()) {
+        for (Edge e : getPathToViolation()) {
             currents = getEventsFromEdge(program, e);
             current = currents.size() == 1 ? currents.get(0) : null;
             if(current == null || !(current instanceof Store)) {
-                // No need to clear last
+                last = null;
                 continue;
             }
             // If a graph edge implies a hb-relation, inter-thread communication guarantees same address and thus co
