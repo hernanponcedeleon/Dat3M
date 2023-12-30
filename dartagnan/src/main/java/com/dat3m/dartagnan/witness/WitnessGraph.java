@@ -167,7 +167,7 @@ public class WitnessGraph extends ElemWithAttributes {
             currents = getEventsFromEdge(program, e);
             current = currents.size() == 1 ? currents.get(0) : null;
             // If a graph edge implies a hb-relation, inter-thread communication guarantees
-            // same address and thus rf
+            // same address and thus rf.
             if (last != null && current != null && last instanceof Store && current instanceof Load
                     && ((graphEdgeImpliesHbEdge() && !last.getThread().equals(current.getThread()))
                             || alias.mustAlias(last, current))) {
@@ -191,14 +191,16 @@ public class WitnessGraph extends ElemWithAttributes {
                 last = null;
                 continue;
             }
-            // If a graph edge implies a hb-relation, inter-thread communication guarantees same address and thus co
+            // If a graph edge implies a hb-relation, inter-thread communication guarantees same address and thus co.
             if (last != null && last instanceof Store && graphEdgeImpliesHbEdge()
                     && !last.getThread().equals(current.getThread())) {
                 k.add(last, current);
             }
-            // Previous stores to the same address are guaranteed to be in co
+            // Previous stores to the same address are guaranteed to be in co.
+            // Some tools create two edges for the same store (e.g. CPAChecker for pthread_create)
+            // We avoid adding self loops.
             for (MemoryCoreEvent s : lasts) {
-                if (alias.mustAlias(s, current)) {
+                if (alias.mustAlias(s, current) && s != current) {
                     k.add(s, current);
                 }
             }
