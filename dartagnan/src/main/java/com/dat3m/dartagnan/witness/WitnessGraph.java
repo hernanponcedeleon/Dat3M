@@ -14,8 +14,6 @@ import org.sosy_lab.java_smt.api.*;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
@@ -71,14 +69,13 @@ public class WitnessGraph extends ElemWithAttributes {
         List<Edge> ret = new ArrayList<>();
         Node cur = getViolationNode();
         while(cur != getEntryNode()) {
-            for(Edge e : getEdges()) {
-                if(e.getTarget().equals(cur)) {
-                    ret.add(e);
-                    cur = e.getSource();
-                    break;
-                }
-            }
+            // Local variables in lambdas have to be final, thus the copy
+            final Node copy = cur;
+            Edge nextEdge = getEdges().stream().filter(e -> e.getTarget().equals(copy)).findAny().get();
+            ret.add(nextEdge);
+            cur = nextEdge.getSource();
         }
+        // Return path from entry to violation
         Collections.reverse(ret);
         return ret;
     }
@@ -103,6 +100,15 @@ public class WitnessGraph extends ElemWithAttributes {
         return str.toString();
     }
 
+    private List<MemoryCoreEvent> getEventsFromEdge(Program program, Edge edge) {
+        return edge.hasCline() ?
+            program.getThreadEvents(MemoryCoreEvent.class).stream()
+                .filter(e -> e.hasMetadata(SourceLocation.class))
+                .filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline())
+                .toList() :
+            Collections.emptyList();
+    }
+
     public BooleanFormula encode(EncodingContext context) {
         Program program = context.getTask().getProgram();
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -122,16 +128,6 @@ public class WitnessGraph extends ElemWithAttributes {
 
     private boolean graphEdgeImpliesHbEdge() {
         return hasAttributed(PRODUCER.toString()) && getAttributed(PRODUCER.toString()).equals("Dartagnan");
-    }
-
-    private List<MemoryCoreEvent> getEventsFromEdge(Program program, Edge edge) {
-        Stream<MemoryCoreEvent> res = Stream.empty();
-        if (edge.hasCline()) {
-            res = program.getThreadEvents(MemoryCoreEvent.class).stream()
-                    .filter(e -> e.hasMetadata(SourceLocation.class))
-                    .filter(e -> e.getMetadata(SourceLocation.class).lineNumber() == edge.getCline());
-        }
-        return res.collect(Collectors.toList());
     }
 
     public EventGraph getReadFromKnowledge(Program program, AliasAnalysis alias) {
