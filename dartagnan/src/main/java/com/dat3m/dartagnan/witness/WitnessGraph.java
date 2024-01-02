@@ -38,17 +38,15 @@ public class WitnessGraph extends ElemWithAttributes {
     }
 
     public Node getNode(String id) {
-        return nodes.stream().filter(n -> n.getId().equals(id)).findFirst().get();
+        return nodes.stream().filter(n -> n.getId().equals(id)).findFirst().orElseThrow(() -> new RuntimeException("Witness graph does not contain node with id " + id));
     }
 
     public Node getEntryNode() {
-        assert(nodes.stream().anyMatch(n -> n.hasAttributed(ENTRY.toString())));
-        return nodes.stream().filter(n -> n.hasAttributed(ENTRY.toString())).findFirst().get();
+        return nodes.stream().filter(n -> n.hasAttributed(ENTRY.toString())).findFirst().orElseThrow(() -> new RuntimeException("Witness graph does not contain entry node"));
     }
 
     public Node getViolationNode() {
-        assert(nodes.stream().anyMatch(n -> n.hasAttributed(VIOLATION.toString())));
-        return nodes.stream().filter(n -> n.hasAttributed(VIOLATION.toString())).findAny().get();
+        return nodes.stream().filter(n -> n.hasAttributed(VIOLATION.toString())).findAny().orElseThrow(() -> new RuntimeException("Witness graph does not contain violation node"));
     }
 
     public void addEdge(Edge e) {
@@ -117,6 +115,8 @@ public class WitnessGraph extends ElemWithAttributes {
         for (Edge edge : edges.stream().filter(Edge::hasCline).toList()) {
             List<MemoryCoreEvent> events = getEventsFromEdge(program, edge);
             if (!previous.isEmpty() && !events.isEmpty()) {
+                // This generates hb-constraints between events that might not be in the may-set.
+                // However, this is required to obtain the desired ordering constraint between non-neighboring events.
                 enc.add(bmgr.or(Lists.cartesianProduct(previous, events).stream()
                         .map(p -> context.edgeVariable("hb", p.get(0), p.get(1)))
                         .toArray(BooleanFormula[]::new)));
