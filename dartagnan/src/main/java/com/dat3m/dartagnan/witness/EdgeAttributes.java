@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.witness;
 
 public enum EdgeAttributes {
 
-	CREATETHREAD, THREADID, ENTERFUNCTION, STARTLINE,
-	// Dartagnan specific attributes
-	EVENTID, LOADEDVALUE, STOREDVALUE;
+	CREATETHREAD, THREADID, ENTERFUNCTION, STARTLINE;
 
 	@Override
 	public String toString() {
@@ -17,12 +15,6 @@ public enum EdgeAttributes {
 			return "enterFunction";
 		case STARTLINE:
 			return "startline";
-		case EVENTID:
-			return "event-id";
-		case LOADEDVALUE:
-			return "loaded-value";
-		case STOREDVALUE:
-			return "stored-value";
 		default:
 			throw new UnsupportedOperationException(this + " cannot be converted to String");
 		}

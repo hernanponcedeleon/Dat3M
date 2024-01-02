@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.witness.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -421,6 +422,7 @@ public class RelationAnalysis {
 
     private final class Initializer implements Definition.Visitor<Knowledge> {
         final Program program = task.getProgram();
+        final WitnessGraph witness = task.getWitness();
         final Knowledge defaultKnowledge;
 
         Initializer() {
@@ -739,6 +741,12 @@ public class RelationAnalysis {
                     }
                 });
             }
+
+            // Must-co from violation witness
+            if(!witness.isEmpty()) {
+                must.addAll(witness.getCoherenceKnowledge(program, alias));
+            }
+
             logger.debug("Initial may set size for memory order: {}", may.size());
             return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
         }
@@ -853,6 +861,16 @@ public class RelationAnalysis {
                 }
                 logger.debug("Atomic block optimization eliminated {} reads", sizeBefore - may.size());
             }
+
+            // Must-rf from violation witness
+            if(!witness.isEmpty()) {
+                EventGraph g = witness.getReadFromKnowledge(program, alias);
+                must.addAll(g);
+                for(Event r : g.getRange()) {
+                    may.removeIf((e1, e2) -> e2 == r);
+                }
+            }
+
             logger.debug("Initial may set size for read-from: {}", may.size());
             return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
         }
