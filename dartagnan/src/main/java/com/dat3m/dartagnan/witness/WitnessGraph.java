@@ -152,32 +152,23 @@ public class WitnessGraph extends ElemWithAttributes {
 
     public EventGraph getCoherenceKnowledge(Program program, AliasAnalysis alias) {
         EventGraph k = new EventGraph();
-        MemoryCoreEvent current = null;
-        List<MemoryCoreEvent> currents;
-        MemoryCoreEvent last = null;
-        List<MemoryCoreEvent> lasts = new ArrayList<>();
-        for (Edge e : getPathToViolation()) {
-            currents = getEventsFromEdge(program, e);
-            current = currents.size() == 1 ? currents.get(0) : null;
-            if(current == null || !(current instanceof Store)) {
-                last = null;
-                continue;
-            }
-            // If a graph edge implies a hb-relation, inter-thread communication guarantees same address and thus co.
-            if (last != null && last instanceof Store && graphEdgeImpliesHbEdge()
-                    && !last.getThread().equals(current.getThread())) {
-                k.add(last, current);
-            }
-            // Previous stores to the same address are guaranteed to be in co.
+        final List<Store> writes = getPathToViolation().stream()
+            .filter(e -> getEventsFromEdge(program, e).size() == 1 && getEventsFromEdge(program, e).get(0) instanceof Store)
+            .map(e -> (Store) getEventsFromEdge(program, e).get(0)).toList();
+        
+        for (int i = 0; i < writes.size() - 1; i++) {
+            final Store w1 = writes.get(i);
+            // Add co-edges to all later same-address writes.
             // Some tools create two edges for the same store (e.g. CPAChecker for pthread_create)
             // We avoid adding self loops.
-            for (MemoryCoreEvent s : lasts) {
-                if (alias.mustAlias(s, current) && s != current) {
-                    k.add(s, current);
-                }
+            writes.subList(i + 1, writes.size()).stream()
+                .filter(w2 -> alias.mustAlias(w1, w2) && w1 != w2)
+                .forEach(w2 -> k.add(w1, w2));
+            // Special case for cross-thread edges.
+            final Store immSucc = writes.get(i+1);
+            if(graphEdgeImpliesHbEdge() && !w1.getThread().equals(immSucc.getThread())) {
+                k.add(w1, immSucc);
             }
-            lasts.add(current);
-            last = current;
         }
         return k;
     }
