@@ -9,15 +9,18 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.collect.Lists;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
-import static com.dat3m.dartagnan.witness.NodeAttributes.*;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
+import static com.dat3m.dartagnan.witness.NodeAttributes.ENTRY;
+import static com.dat3m.dartagnan.witness.NodeAttributes.VIOLATION;
 
 public class WitnessGraph extends ElemWithAttributes {
 
@@ -140,9 +143,9 @@ public class WitnessGraph extends ElemWithAttributes {
             current = currents.size() == 1 ? currents.get(0) : null;
             // If a graph edge implies a hb-relation, inter-thread communication guarantees
             // same address and thus rf.
-            if (last != null && current != null && last instanceof Store && current instanceof Load
+            if (last instanceof Store && current instanceof Load
                     && ((graphEdgeImpliesHbEdge() && !last.getThread().equals(current.getThread()))
-                            || alias.mustAlias(last, current))) {
+                    || alias.mustAlias(last, current))) {
                 k.add(last, current);
             }
             last = current;

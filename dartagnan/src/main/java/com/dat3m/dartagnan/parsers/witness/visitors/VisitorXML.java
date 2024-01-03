@@ -9,10 +9,8 @@ import com.dat3m.dartagnan.witness.ElemWithAttributes;
 import com.dat3m.dartagnan.witness.Node;
 import com.dat3m.dartagnan.witness.WitnessGraph;
 
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
-import static com.dat3m.dartagnan.witness.NodeAttributes.*;
-
-import java.util.stream.Collectors;
+import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.witness.GraphAttributes.WITNESSTYPE;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> {
 
@@ -30,38 +28,45 @@ public class VisitorXML extends XMLParserBaseVisitor<Object> {
 
     @Override
     public Object visitElement(XMLParser.ElementContext ctx) {
-        if (ctx.Name(0).getText().equals("data")) {
-            String key = ctx.attribute(0).STRING().getText();
-            key = key.substring(1, key.length() - 1);
-            String value = ctx.content().getText();
-            if (key.equals(WITNESSTYPE.toString()) && !value.equals("violation_witness")) {
-                throw new ParsingException("Dartagnan can only validate violation witnesses");
+        final String elementType = ctx.Name(0).getText();
+        return switch (elementType) {
+            case "data" -> {
+                final String key = getAttributeString(ctx, 0);
+                final String value = ctx.content().getText();
+                if (key.equals(WITNESSTYPE.toString()) && !value.equals("violation_witness")) {
+                    throw new ParsingException("Dartagnan can only validate violation witnesses");
+                }
+                current.addAttribute(key, value);
+                yield null;
             }
-            current.addAttribute(key, value);
-            return null;
-        } else if (ctx.Name(0).getText().equals("node")) {
-            String name = ctx.attribute(0).STRING().toString();
-            name = name.substring(1, name.length() - 1);
-            graph.addNode(name);
-            current = graph.getNode(name);
-            visitChildren(ctx);
-            current = graph;
-            return null;
-        } else if (ctx.Name(0).getText().equals("edge")) {
-            Edge edge = new Edge(getNode(ctx, "source"), getNode(ctx, "target"));
-            graph.addEdge(edge);
-            current = edge;
-            visitChildren(ctx);
-            current = graph;
-            return null;
-        }
-        return visitChildren(ctx);
+            case "node" -> {
+                final String name = getAttributeString(ctx, 0);
+                graph.addNode(name);
+                current = graph.getNode(name);
+                visitChildren(ctx);
+                current = graph;
+                yield null;
+            }
+            case "edge" -> {
+                final Edge edge = new Edge(getNode(ctx, "source"), getNode(ctx, "target"));
+                graph.addEdge(edge);
+                current = edge;
+                visitChildren(ctx);
+                current = graph;
+                yield null;
+            }
+            default -> visitChildren(ctx);
+        };
     }
 
     private Node getNode(ElementContext ctx, String vertex) {
-        int idx = ctx.attribute().stream().map(a -> a.Name().toString()).collect(Collectors.toList()).indexOf(vertex);
-        String name = ctx.attribute(idx).STRING().toString();
-        name = name.substring(1, name.length() - 1);
+        final int idx = ctx.attribute().stream().map(a -> a.Name().toString()).toList().indexOf(vertex);
+        final String name = getAttributeString(ctx, idx);
         return graph.hasNode(name) ? graph.getNode(name) : new Node(name);
+    }
+
+    private String getAttributeString(ElementContext ctx, int index) {
+        final String attributeStr = ctx.attribute(index).STRING().toString();
+        return attributeStr.substring(1, attributeStr.length() - 1);
     }
 }
