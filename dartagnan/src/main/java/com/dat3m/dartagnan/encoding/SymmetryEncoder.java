@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.encoding;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -144,8 +144,9 @@ public class SymmetryEncoder implements Encoder {
 
     private List<Tuple> computeThreadTuples(EventGraph maySet, EquivalenceClass<Thread> symmClass, Thread thread) {
         List<Tuple> tuples = new ArrayList<>();
+        List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
         maySet.apply((a, b) -> {
-            if (!a.hasTag(Tag.C11.PTHREAD) && !b.hasTag(Tag.C11.PTHREAD)
+            if (!spawned.contains(a) && !spawned.contains(b)
                     && a.getThread() == thread && symmClass.contains(b.getThread())) {
                 tuples.add(new Tuple(a, b));
             }
