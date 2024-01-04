@@ -90,7 +90,7 @@ public class WitnessBuilder {
     public WitnessGraph build() {
         for (Thread t : context.getTask().getProgram().getThreads()) {
             for (Event e : t.getEntry().getSuccessors()) {
-                eventThreadMap.put(e, t.getId() - 1);
+                eventThreadMap.put(e, t.getId());
             }
         }
 
