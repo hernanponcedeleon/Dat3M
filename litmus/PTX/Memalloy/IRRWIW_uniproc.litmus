@@ -12,8 +12,8 @@ x=0;
 }
  P0@cta 0,gpu 0           | P1@cta 1,gpu 0           | P2@cta 1,gpu 0           | P3@cta 1,gpu 0           ;
  ld.weak r0, 1            | ld.weak r0, x            | ld.weak r0, 2            | ld.weak r2, 3            ;
- st.weak x, r0            | fence.acq_rel.cta        | st.weak x, r0            | ld.weak r0, x            ;
-                          | ld.weak r2, x            |                          | fence.acq_rel.gpu        ;
+ st.weak x, r0            | fence.sc.cta             | st.weak x, r0            | ld.weak r0, x            ;
+                          | ld.weak r2, x            |                          | fence.sc.gpu             ;
                           |                          |                          | st.weak x, r2            ;
 exists
 (P1:r0 == 1 /\ P1:r2 == 0 /\ P3:r0 == 2 /\ x == 1)
