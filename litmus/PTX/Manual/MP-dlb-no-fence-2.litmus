@@ -8,10 +8,10 @@ d=0;
 P1:r3=0;
 }
  P0@cta 0,gpu 0      | P1@cta 1,gpu 0       ;
- st.relaxed.gpu d, 1 | ld.weak r0, t        ;
+ st.weak d, 1        | ld.weak r0, t        ;
  fence.sc.gpu        | beq r0, r3, LC00     ;
  ld.weak r2, t       |                      ;
- add r2, r2, 1       | ld.relaxed.gpu r1, d ;
+ add r2, r2, 1       | ld.weak r1, d        ;
  st.weak t, r2       | LC00:                ;
 exists
 (P1:r0 == 1 /\ P1:r1 == 0)

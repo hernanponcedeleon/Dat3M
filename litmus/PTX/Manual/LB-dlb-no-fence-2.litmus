@@ -8,8 +8,8 @@ h=0;
 P1:r3=0;
 }
  P0@cta 0,gpu 0                   | P1@cta 1,gpu 0                   ;
- atom.relaxed.gpu.cas r0, h, 0, 1 | ld.relaxed.gpu r1, t             ;
+ atom.relaxed.gpu.cas r0, h, 0, 1 | ld.weak r1, t                    ;
  fence.sc.gpu                     |                                  ;
- st.relaxed.gpu t, 1              | atom.relaxed.gpu.cas r3, h, 0, 1 ;
+ st.weak t, 1                     | atom.relaxed.gpu.cas r3, h, 0, 1 ;
 exists
  (P0:r0 == 1 /\ P1:r1 == 1)
