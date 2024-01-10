@@ -207,3 +207,9 @@ litmus/PTX/Manual/PC-bar-sync-sync-1.litmus,1
 litmus/PTX/Manual/PC-bar-sync-sync-2.litmus,1
 litmus/PTX/Manual/PC-bar-sync-sync-3.litmus,1
 litmus/PTX/Manual/PC-bar-sync-sync-4.litmus,1
+litmus/PTX/Memalloy/IRIW_gl_cta.litmus,1
+litmus/PTX/Memalloy/IRIW_uniproc.litmus,1
+litmus/PTX/Memalloy/IRRWIW_uniproc.litmus,1
+litmus/PTX/Memalloy/IRWIW_gl_cta.litmus,1
+litmus/PTX/Memalloy/RWC_uniproc.litmus,1
+litmus/PTX/Memalloy/WRR+2W.litmus,1
