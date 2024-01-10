@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.google.common.base.Preconditions;
 
@@ -60,5 +64,21 @@ public class Thread extends Function {
     @Override
     public String toString() {
         return String.format("T%d:%s", id, name);
+    }
+
+    public List<MemoryCoreEvent> getSpawningEvents() {
+        final ThreadStart start = getEntry();
+        if (!start.isSpawned()) {
+            return List.of();
+        }
+        
+        Event cur = start;
+        while (!(cur instanceof Load startLoad)) { cur = cur.getSuccessor(); }
+        cur = start.getCreator();
+        while (!(cur instanceof Store startStore)) { cur = cur.getSuccessor(); }
+        
+        assert startStore.getAddress().equals(startLoad.getAddress());
+        
+        return List.of(startLoad, startStore);
     }
 }

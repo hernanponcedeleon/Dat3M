@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -29,8 +30,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
-import static com.dat3m.dartagnan.program.event.Tag.C11.PTHREAD;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
 import static com.dat3m.dartagnan.witness.GraphAttributes.*;
@@ -91,7 +90,7 @@ public class WitnessBuilder {
     public WitnessGraph build() {
         for (Thread t : context.getTask().getProgram().getThreads()) {
             for (Event e : t.getEntry().getSuccessors()) {
-                eventThreadMap.put(e, t.getId() - 1);
+                eventThreadMap.put(e, t.getId());
             }
         }
 
@@ -131,8 +130,19 @@ public class WitnessBuilder {
             return graph;
         }
 
+        Program program = context.getTask().getProgram();
+
+        // Compute stores related to thread spawning
+        List<MemoryCoreEvent> creates = new ArrayList<>();
+        for (Thread thread : program.getThreads()) {
+            List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
+            if(spawned.size() == 2) {
+                creates.add(spawned.get(1));
+            }
+        }
+
         try (Model model = prover.getModel()) {
-            List<Event> execution = reOrderBasedOnAtomicity(context.getTask().getProgram(), getSCExecutionOrder(model));
+            List<Event> execution = reOrderBasedOnAtomicity(program, getSCExecutionOrder(model));
 
             for (int i = 0; i < execution.size(); i++) {
                 Event e = execution.get(i);
@@ -148,9 +158,7 @@ public class WitnessBuilder {
                 edge.addAttribute(THREADID.toString(), valueOf(eventThreadMap.get(e)));
                 edge.addAttribute(STARTLINE.toString(), valueOf(cLine));
 
-                // End is also WRITE and PTHREAD, but it does not have
-                // CLines and thus won't create an edge (as expected)
-                if (e.hasTag(WRITE) && e.hasTag(PTHREAD)) {
+                if (creates.contains(e)) {
                     edge.addAttribute(CREATETHREAD.toString(), valueOf(threads));
                     threads++;
                 }

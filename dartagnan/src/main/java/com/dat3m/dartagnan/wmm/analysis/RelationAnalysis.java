@@ -768,22 +768,14 @@ public class RelationAnalysis {
 
             // Here we add must-rf edges between loads/stores that synchronize threads.
             for (Thread thread : program.getThreads()) {
-                final ThreadStart start = thread.getEntry();
-                if (!start.isSpawned()) {
-                    continue;
-                }
-
-                // Must-rf edge for thread spawning
-                Event cur = start;
-                while (!(cur instanceof Load startLoad)) { cur = cur.getSuccessor(); }
-                cur = start.getCreator();
-                while (!(cur instanceof Store startStore)) { cur = cur.getSuccessor(); }
-
-                assert startStore.getAddress().equals(startLoad.getAddress());
-
-                must.add(startStore, startLoad);
-                if (eq.isImplied(startLoad, startStore)) {
-                    may.removeIf((e1, e2) -> e2 == startLoad && e1 != startStore);
+                List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
+                if(spawned.size() == 2) {
+                    MemoryCoreEvent startLoad = spawned.get(0);
+                    MemoryCoreEvent startStore = spawned.get(1);
+                    must.add(startStore, startLoad);
+                    if (eq.isImplied(startLoad, startStore)) {
+                        may.removeIf((e1, e2) -> e2 == startLoad && e1 != startStore);
+                    }
                 }
             }
 
