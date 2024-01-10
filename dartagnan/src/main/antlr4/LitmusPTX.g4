@@ -107,7 +107,7 @@ loadInstruction
     ;
 
 localValue
-    :   load Period mo (Period scope)? register Comma value
+    :   load register Comma value
     ;
 
 localAdd
