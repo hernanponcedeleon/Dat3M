@@ -23,7 +23,6 @@ class ParserLitmusLISA implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusLISA visitor = new VisitorLitmusLISA();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }

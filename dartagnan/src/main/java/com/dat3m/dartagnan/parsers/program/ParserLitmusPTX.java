@@ -23,7 +23,6 @@ class ParserLitmusPTX implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPTX visitor = new VisitorLitmusPTX();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }

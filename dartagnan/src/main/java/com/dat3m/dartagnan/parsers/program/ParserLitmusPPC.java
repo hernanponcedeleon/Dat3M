@@ -23,7 +23,6 @@ class ParserLitmusPPC implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusPPC visitor = new VisitorLitmusPPC();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }

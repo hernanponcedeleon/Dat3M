@@ -21,9 +21,8 @@ class ParserLitmusC implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusC visitor = new VisitorLitmusC();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
         // C programs can be compiled to different targets,
         // thus we don't set the architectures.
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }

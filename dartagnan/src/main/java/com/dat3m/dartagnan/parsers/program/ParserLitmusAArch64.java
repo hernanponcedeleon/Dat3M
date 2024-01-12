@@ -23,7 +23,6 @@ class ParserLitmusAArch64 implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusAArch64 visitor = new VisitorLitmusAArch64();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }
