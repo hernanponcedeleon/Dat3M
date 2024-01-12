@@ -87,18 +87,9 @@ public class Dartagnan extends BaseOptions {
         GlobalSettings.configure(config);
         LogGlobalSettings();
 
-        if (Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
-            throw new IllegalArgumentException("Input program not given or format not recognized");
-        }
-        // get() is guaranteed to succeed
-        File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get());
+        File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().orElseThrow(() -> new IllegalArgumentException("Input program not given or format not recognized")));
         logger.info("Program path: " + fileProgram);
-
-        if (Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
-            throw new IllegalArgumentException("CAT model not given or format not recognized");
-        }
-        // get() is guaranteed to succeed
-        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
+        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: " + fileModel);
 
         Wmm mcm = new ParserCat().parse(fileModel);
