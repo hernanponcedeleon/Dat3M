@@ -23,7 +23,6 @@ class ParserLitmusX86 implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusX86 visitor = new VisitorLitmusX86();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }

@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class Program {
 
-    public enum SourceLanguage { LITMUS, LLVM }
+    public enum SourceLanguage { LITMUS, LLVM, SPV }
 
     private String name;
     private AbstractAssert spec;

@@ -23,7 +23,6 @@ class ParserLitmusVulkan implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.main();
         VisitorLitmusVulkan visitor = new VisitorLitmusVulkan();
 
-        Program program = (Program) parserEntryPoint.accept(visitor);
-        return program;
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }
