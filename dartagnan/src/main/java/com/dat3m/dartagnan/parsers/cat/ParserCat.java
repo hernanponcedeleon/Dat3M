@@ -2,12 +2,9 @@ package com.dat3m.dartagnan.parsers.cat;
 
 import com.dat3m.dartagnan.parsers.CatLexer;
 import com.dat3m.dartagnan.parsers.CatParser;
-import com.dat3m.dartagnan.exception.ParserErrorListener;
+import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.wmm.Wmm;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,10 +24,13 @@ public class ParserCat {
 
     private Wmm parse(CharStream charStream){
         CatLexer lexer = new CatLexer(charStream);
+        lexer.addErrorListener(new AbortErrorListener());
+        lexer.addErrorListener(new DiagnosticErrorListener(true));
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
         CatParser parser = new CatParser(tokenStream);
-        parser.addErrorListener(new ParserErrorListener());
+        parser.addErrorListener(new AbortErrorListener());
+        parser.addErrorListener(new DiagnosticErrorListener(true));
         ParserRuleContext parserEntryPoint = parser.mcm();
         return (Wmm) parserEntryPoint.accept(new VisitorBase());
     }

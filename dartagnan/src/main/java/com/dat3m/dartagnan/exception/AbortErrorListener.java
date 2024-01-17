@@ -4,8 +4,9 @@ import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
-public class ParserErrorListener extends ConsoleErrorListener {
+public class AbortErrorListener extends ConsoleErrorListener {
 
+    @Override
     public void syntaxError(
             Recognizer<?, ?> recognizer,
             Object offendingSymbol,
