@@ -19,12 +19,12 @@ public class OptionNames {
     // Compilation Options
     public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
     public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
-	
+
     // Encoding Options
     public static final String USE_INTEGERS = "encoding.integers";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
-    public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";//TODO also influences RA
+    public static final String LOCALLY_CONSISTENT = "encoding.locallyConsistent";// TODO also influences RA
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
     public static final String INITIALIZE_REGISTERS = "encoding.initializeRegisters";
     public static final String BREAK_SYMMETRY_ON = "encoding.symmetry.breakOn";
@@ -42,6 +42,9 @@ public class OptionNames {
 
     // Program Property Options
     public static final String ALIAS_METHOD = "program.analysis.alias";
+    public static final String ALIAS_GRAPHVIZ = "program.analysis.generateAliasGraph";
+    public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";
+    public static final String ALIAS_GRAPHVIZ_SHOW_ALL = "program.analysis.generateAliasGraph.showAllEvents";
     public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
     public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 
@@ -52,7 +55,7 @@ public class OptionNames {
 
     // Refinement Options
     public static final String BASELINE = "refinement.baseline";
-	
+
     // SMT solver Options
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
 
