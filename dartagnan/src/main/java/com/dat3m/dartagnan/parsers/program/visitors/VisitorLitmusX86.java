@@ -17,7 +17,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.misc.Interval;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.MFENCE;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.MFENCE;
 
 public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 

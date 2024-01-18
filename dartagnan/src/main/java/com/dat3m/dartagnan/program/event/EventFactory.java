@@ -43,7 +43,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 public class EventFactory {
 

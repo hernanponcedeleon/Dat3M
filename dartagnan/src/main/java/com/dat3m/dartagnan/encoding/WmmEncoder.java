@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.program.event.Tag.*;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Verify.verify;
 import static java.lang.Boolean.TRUE;

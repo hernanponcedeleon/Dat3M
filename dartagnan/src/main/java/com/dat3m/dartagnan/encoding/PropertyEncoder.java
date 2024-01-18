@@ -14,10 +14,10 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 public class PropertyEncoder implements Encoder {
 

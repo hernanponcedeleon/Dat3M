@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.wmm.relation;
+package com.dat3m.dartagnan.wmm;
 
 import com.google.common.collect.ImmutableSet;
 
