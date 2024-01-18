@@ -3,10 +3,10 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.HashSet;
 import java.util.Objects;

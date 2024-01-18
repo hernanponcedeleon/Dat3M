@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.event.core;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
 public class RMWStoreExclusive extends Store {

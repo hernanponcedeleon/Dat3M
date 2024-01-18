@@ -1,7 +1,5 @@
-package com.dat3m.dartagnan.program.event.visitors;
+package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;

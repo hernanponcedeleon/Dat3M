@@ -2,11 +2,7 @@ package com.dat3m.dartagnan.program.event.core.threading;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.AbstractEvent;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.event.*;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
