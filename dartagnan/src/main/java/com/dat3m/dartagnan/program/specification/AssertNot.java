@@ -1,29 +1,28 @@
 package com.dat3m.dartagnan.program.specification;
 
-import java.util.List;
-
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.base.Preconditions;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+
+import java.util.List;
 
 public class AssertNot extends AbstractAssert {
 
     private final AbstractAssert child;
 
-    public AssertNot(AbstractAssert child){
-    	Preconditions.checkNotNull(child, "Empty assertion clause in " + this.getClass().getName());
+    public AssertNot(AbstractAssert child) {
+        Preconditions.checkNotNull(child, "Empty assertion clause in " + this.getClass().getName());
         this.child = child;
     }
 
-    AbstractAssert getChild(){
+    AbstractAssert getChild() {
         return child;
     }
 
     @Override
     public BooleanFormula encode(EncodingContext ctx) {
-    	return ctx.getBooleanFormulaManager().not(child.encode(ctx));
+        return ctx.getBooleanFormulaManager().not(child.encode(ctx));
     }
 
     @Override
@@ -32,7 +31,7 @@ public class AssertNot extends AbstractAssert {
     }
 
     @Override
-	public List<Register> getRegs() {
-		return child.getRegs();
-	}
+    public List<Register> getRegs() {
+        return child.getRegs();
+    }
 }
