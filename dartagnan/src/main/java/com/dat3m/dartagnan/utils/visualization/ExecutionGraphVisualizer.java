@@ -20,7 +20,6 @@ import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -76,7 +75,7 @@ public class ExecutionGraphVisualizer {
                 }
             }
         }
-        graphviz.begin(graphName);
+        graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
         addReadFrom(model);
@@ -238,12 +237,7 @@ public class ExecutionGraphVisualizer {
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
-            // Convert .dot file to pdf
-            Process p = new ProcessBuilder()
-                    .directory(new File(directoryName))
-                    .command("dot", "-Tpng", fileNameBase + ".dot", "-o", fileNameBase + ".png")
-                    .start();
-            p.waitFor(1000, TimeUnit.MILLISECONDS);
+            Graphviz.convert(fileVio);
         } catch (Exception e) {
             logger.error(e);
         }
