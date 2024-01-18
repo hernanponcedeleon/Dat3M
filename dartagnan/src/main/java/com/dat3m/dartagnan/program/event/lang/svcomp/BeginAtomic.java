@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.lang.svcomp;
 
+import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 public class BeginAtomic extends AbstractEvent {

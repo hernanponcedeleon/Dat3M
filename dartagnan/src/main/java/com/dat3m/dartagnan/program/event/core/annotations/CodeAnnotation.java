@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core.annotations;
 
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 /*

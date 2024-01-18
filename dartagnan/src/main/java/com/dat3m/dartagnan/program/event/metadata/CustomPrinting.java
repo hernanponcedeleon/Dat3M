@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.metadata;
 
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 
 import java.util.Optional;
 

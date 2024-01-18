@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 

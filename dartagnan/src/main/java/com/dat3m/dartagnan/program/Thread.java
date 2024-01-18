@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
