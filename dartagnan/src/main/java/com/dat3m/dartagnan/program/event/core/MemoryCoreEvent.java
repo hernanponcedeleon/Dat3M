@@ -5,14 +5,13 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
-import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public interface MemoryCoreEvent extends MemoryEvent, RegReader {
+public interface MemoryCoreEvent extends MemoryEvent {
 
     Expression getAddress();
     void setAddress(Expression address);
