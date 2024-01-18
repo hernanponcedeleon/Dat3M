@@ -11,7 +11,7 @@ import java.util.List;
     By assigning a distinct tag to instances of this event, one can model abstract memory events like SRCU and hazard pointers.
     In that sense, a GenericMemoryEvent is similar to a Fence that carries an actual address.
  */
-public class GenericMemoryEvent extends AbstractMemoryCoreEvent implements MemoryCoreEvent {
+public class GenericMemoryEvent extends AbstractMemoryCoreEvent {
 
     // This is a name for printing only.
     private final String displayName;

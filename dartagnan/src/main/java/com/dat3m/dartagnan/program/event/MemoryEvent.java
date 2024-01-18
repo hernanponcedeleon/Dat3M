@@ -6,7 +6,7 @@ import java.util.Set;
 
 import static com.dat3m.dartagnan.program.Register.*;
 
-public interface MemoryEvent extends Event, RegReader {
+public interface MemoryEvent extends RegReader {
 
     List<MemoryAccess> getMemoryAccesses();
 

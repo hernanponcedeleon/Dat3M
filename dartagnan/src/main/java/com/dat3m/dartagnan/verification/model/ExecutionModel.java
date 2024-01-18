@@ -47,7 +47,6 @@ public class ExecutionModel {
 
     // ============= Model specific  =============
     private Model model;
-    private FormulaManager formulaManager;
     private Filter eventFilter;
     private boolean extractCoherences;
 
