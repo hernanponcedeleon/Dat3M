@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.Model;
 
 import java.math.BigInteger;
@@ -222,7 +221,6 @@ public class ExecutionModel {
         // their capacity in previous iterations and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
-        formulaManager = encodingContext.getFormulaManager();
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
