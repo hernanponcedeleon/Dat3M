@@ -3,9 +3,9 @@ package com.dat3m.dartagnan.program.event.common;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.google.common.base.Preconditions;
 
 import java.util.List;

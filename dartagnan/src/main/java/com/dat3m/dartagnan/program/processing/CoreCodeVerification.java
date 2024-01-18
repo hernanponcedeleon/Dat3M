@@ -2,11 +2,9 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;

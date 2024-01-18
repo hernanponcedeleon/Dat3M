@@ -5,10 +5,10 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
-import org.sosy_lab.java_smt.api.*;
+import com.dat3m.dartagnan.program.event.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
 
 import java.math.BigInteger;
 import java.util.Map;

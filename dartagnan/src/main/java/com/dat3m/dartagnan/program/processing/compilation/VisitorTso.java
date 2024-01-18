@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.*;

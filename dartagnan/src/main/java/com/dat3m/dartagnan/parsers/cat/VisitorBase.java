@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
 class VisitorBase extends CatBaseVisitor<Object> {
 

@@ -31,7 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 public class ExecutionGraph {
 

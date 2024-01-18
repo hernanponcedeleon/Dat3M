@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +19,7 @@ import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 

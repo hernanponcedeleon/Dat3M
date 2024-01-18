@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 // The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver.
 public class CoreReasoner {

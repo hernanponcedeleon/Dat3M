@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

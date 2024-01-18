@@ -7,15 +7,17 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.relation.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -23,7 +25,10 @@ import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -32,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
 
 public class PropertyEncoder implements Encoder {
 

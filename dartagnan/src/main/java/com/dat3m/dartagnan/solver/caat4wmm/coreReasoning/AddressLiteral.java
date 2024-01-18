@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.logic.AbstractLiteral;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 

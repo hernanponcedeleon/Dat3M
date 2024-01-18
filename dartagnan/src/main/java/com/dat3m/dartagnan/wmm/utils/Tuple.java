@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.wmm.utils;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 
 public record Tuple(Event first, Event second) implements Comparable<Tuple> {
 

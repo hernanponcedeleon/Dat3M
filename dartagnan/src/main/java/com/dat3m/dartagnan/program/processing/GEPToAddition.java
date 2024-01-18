@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.List;

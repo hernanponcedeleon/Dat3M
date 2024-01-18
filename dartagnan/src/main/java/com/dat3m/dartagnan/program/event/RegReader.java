@@ -1,9 +1,8 @@
-package com.dat3m.dartagnan.program.event.core.utils;
+package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
 
 import java.util.Set;
 

@@ -4,8 +4,8 @@ package com.dat3m.dartagnan.program.event.functions;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;

@@ -21,7 +21,7 @@ import org.antlr.v4.runtime.misc.Interval;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 public class VisitorLitmusPPC extends LitmusPPCBaseVisitor<Object> {
 

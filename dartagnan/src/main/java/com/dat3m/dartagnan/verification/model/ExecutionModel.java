@@ -4,11 +4,9 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -31,8 +29,8 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /*

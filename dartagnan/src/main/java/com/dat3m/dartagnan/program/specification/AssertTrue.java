@@ -1,12 +1,11 @@
 package com.dat3m.dartagnan.program.specification;
 
-import java.util.Collections;
-import java.util.List;
-
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.program.Register;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
-import com.dat3m.dartagnan.program.Register;
+import java.util.Collections;
+import java.util.List;
 
 public class AssertTrue extends AbstractAssert {
 
@@ -16,12 +15,12 @@ public class AssertTrue extends AbstractAssert {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "true";
     }
 
     @Override
-	public List<Register> getRegs() {
-		return Collections.emptyList();
-	}
+    public List<Register> getRegs() {
+        return Collections.emptyList();
+    }
 }

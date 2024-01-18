@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.event.lang.llvm;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.RMWCmpXchgBase;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 // FIXME: This instruction writes to two registers, which we cannot express right now.

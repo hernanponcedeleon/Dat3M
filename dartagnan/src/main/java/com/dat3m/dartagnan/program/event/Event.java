@@ -1,13 +1,11 @@
-package com.dat3m.dartagnan.program.event.core;
+package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.encoding.Encoder;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 

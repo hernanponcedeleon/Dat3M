@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.Sets;
