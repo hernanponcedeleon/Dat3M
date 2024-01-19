@@ -801,7 +801,7 @@ public class Intrinsics {
                 successRegister,
                 lockAddress,
                 expected,
-                expressions.makeConditional(
+                expressions.makeITE(
                         expressions.makeEQ(expected, getRwlockUnlockedValue()),
                         expressions.makeValue(BigInteger.TWO, getRwlockDatatype()),
                         expressions.makeADD(expected, expressions.makeOne(getRwlockDatatype()))
@@ -820,7 +820,7 @@ public class Intrinsics {
         final Expression one = expressions.makeOne(getRwlockDatatype());
         final Expression two = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
         final Expression lastReader = expressions.makeEQ(oldValueRegister, two);
-        final Expression properDecrement = expressions.makeConditional(lastReader, two, one);
+        final Expression properDecrement = expressions.makeITE(lastReader, two, one);
         //TODO does not recognize whether the calling thread is allowed to unlock
         return List.of(
                 // decreases the lock value by 1, if not the last reader, or else 2.
@@ -985,7 +985,7 @@ public class Intrinsics {
             final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
 
             replacement.add(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(testBit, increment, resultReg))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(testBit, increment, resultReg))
             );
         }
 
@@ -1001,7 +1001,7 @@ public class Intrinsics {
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
         final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
         final Expression isLess = expressions.makeLT(left, right, signed);
-        final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
+        final Expression result = expressions.makeITE(isLess, isMax ? right : left, isMax ? left : right);
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
     }
 
@@ -1038,14 +1038,14 @@ public class Intrinsics {
             );
 
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeSUB(x, y), resultReg))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(leftIsNegative, min, max)),
+                    EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeSUB(x, y), resultReg))
             );
         } else {
             final Expression noUnderflow = expressions.makeGT(x, y, false);
             final Expression zero = expressions.makeZero(type);
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(noUnderflow, expressions.makeSUB(x, y), zero))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(noUnderflow, expressions.makeSUB(x, y), zero))
             );
         }
     }
@@ -1081,8 +1081,8 @@ public class Intrinsics {
         );
 
         return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
-                EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeADD(x, y), resultReg))
+                EventFactory.newLocal(resultReg, expressions.makeITE(leftIsNegative, min, max)),
+                EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeADD(x, y), resultReg))
         );
     }
 

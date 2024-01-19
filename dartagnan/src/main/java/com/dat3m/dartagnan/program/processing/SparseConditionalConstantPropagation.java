@@ -264,7 +264,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
             if (guard instanceof BoolLiteral constant && !constant.getValue() && trueBranch.getRegs().isEmpty()) {
                 return falseBranch;
             }
-            return expressions.makeConditional(guard, trueBranch, falseBranch);
+            return expressions.makeITE(guard, trueBranch, falseBranch);
         }
 
         private Expression transform(Expression expression) {

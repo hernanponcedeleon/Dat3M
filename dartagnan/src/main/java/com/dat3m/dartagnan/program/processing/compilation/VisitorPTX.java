@@ -48,7 +48,7 @@ public class VisitorPTX extends VisitorBase {
         Expression address = e.getAddress();
         Expression expected = e.getExpectedValue();
         Expression newValue = e.getStoreValue();
-        Expression storeValue = expressions.makeConditional(expressions.makeEQ(resultRegister, expected),
+        Expression storeValue = expressions.makeITE(expressions.makeEQ(resultRegister, expected),
                 newValue, resultRegister);
         Load load = newRMWLoadWithMo(resultRegister, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address, storeValue, Tag.PTX.storeMO(mo));

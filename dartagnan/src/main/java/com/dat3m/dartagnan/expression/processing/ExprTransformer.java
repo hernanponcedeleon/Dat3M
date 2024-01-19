@@ -56,7 +56,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visit(ITEExpr iteExpr) {
-        return expressions.makeConditional(
+        return expressions.makeITE(
                 iteExpr.getGuard().accept(this),
                 iteExpr.getTrueBranch().accept(this),
                 iteExpr.getFalseBranch().accept(this));

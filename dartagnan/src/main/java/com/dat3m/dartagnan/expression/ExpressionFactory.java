@@ -115,7 +115,7 @@ public final class ExpressionFactory {
         return makeCast(expression, type, false);
     }
 
-    public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
+    public Expression makeITE(Expression condition, Expression ifTrue, Expression ifFalse) {
         return new ITEExpr(condition, ifTrue, ifFalse);
     }
 
@@ -167,7 +167,7 @@ public final class ExpressionFactory {
 
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
         if (operand.getType() instanceof BooleanType) {
-            return makeConditional(operand, makeOne(targetType), makeZero(targetType));
+            return makeITE(operand, makeOne(targetType), makeZero(targetType));
         }
         return makeUnary(signed ? IntUnaryOp.CAST_SIGNED : IntUnaryOp.CAST_UNSIGNED, operand, targetType);
     }

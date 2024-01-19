@@ -636,7 +636,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 xorExpr = left;
             } else {
                 //FIXME: This is only valid on "xor 1" applied to "i1" operators, but is unsound for any other bit-width.
-                xorExpr = expressions.makeConditional(
+                xorExpr = expressions.makeITE(
                         expressions.makeEQ(left, expressions.makeGeneralZero(left.getType())),
                         expressions.makeOne((IntegerType) left.getType()),
                         expressions.makeZero((IntegerType) left.getType())
@@ -709,7 +709,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression trueValue = visitTypeValue(ctx.typeValue(1));
         final Expression falseValue = visitTypeValue(ctx.typeValue(2));
         final Expression cast = expressions.makeBooleanCast(guard);
-        return assignToRegister(expressions.makeConditional(cast, trueValue, falseValue));
+        return assignToRegister(expressions.makeITE(cast, trueValue, falseValue));
     }
 
     @Override
@@ -1024,7 +1024,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression trueValue = visitTypeConst(ctx.typeConst(1));
         final Expression falseValue = visitTypeConst(ctx.typeConst(2));
         final Expression cast = expressions.makeBooleanCast(guard);
-        return expressions.makeConditional(cast, trueValue, falseValue);
+        return expressions.makeITE(cast, trueValue, falseValue);
     }
 
     @Override

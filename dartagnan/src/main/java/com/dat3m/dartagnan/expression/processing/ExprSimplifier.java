@@ -198,7 +198,7 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeNot(cond);
         }
 
-        return expressions.makeConditional(cond, t, f);
+        return expressions.makeITE(cond, t, f);
     }
 
 
