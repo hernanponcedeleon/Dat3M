@@ -269,15 +269,20 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          * Tries to match an expression as a constant address.
          */
         Constant(Expression x) {
+            if (x instanceof MemoryObject mem) {
+                location = new Location(mem, 0);
+                failed = false;
+                return;
+            }
             if (x instanceof IntLiteral) {
-                location = x instanceof MemoryObject mem ? new Location(mem, 0) : null;
+                location = null;
                 failed = false;
                 return;
             }
             if (x instanceof IntBinaryExpr iBin && iBin.getOp() == ADD) {
                 Expression lhs = iBin.getLHS();
                 Expression rhs = iBin.getRHS();
-                if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic && !(rhs instanceof MemoryObject)) {
+                if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic) {
                     location = new Location(mem, ic.getValueAsInt());
                     failed = false;
                     return;
