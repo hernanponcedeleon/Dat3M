@@ -1,44 +1,38 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.op.BOpBin;
+import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
-public class BExprBin extends BExpr {
+public class BoolUnaryExpr extends BoolExpr {
 
-    private final Expression b1;
-    private final Expression b2;
-    private final BOpBin op;
+    private final Expression b;
+    private final BoolUnaryOp op;
 
-    public BExprBin(BooleanType type, Expression b1, BOpBin op, Expression b2) {
+    BoolUnaryExpr(BooleanType type, BoolUnaryOp op, Expression b) {
         super(type);
-        this.b1 = b1;
-        this.b2 = b2;
+        this.b = b;
         this.op = op;
     }
 
-    public Expression getLHS() {
-    	return b1;
+    public BoolUnaryOp getOp() {
+        return op;
     }
-    
-    public Expression getRHS() {
-    	return b2;
-    }
-    
-    public BOpBin getOp() {
-    	return op;
+
+    public Expression getInner() {
+        return b;
     }
 
     @Override
     public ImmutableSet<Register> getRegs() {
-        return new ImmutableSet.Builder<Register>().addAll(b1.getRegs()).addAll(b2.getRegs()).build();
+        return b.getRegs();
     }
 
     @Override
     public String toString() {
-        return "(" + b1 + " " + op + " " + b2 + ")";
+        return "(" + op + " " + b + ")";
     }
 
     @Override
@@ -48,7 +42,7 @@ public class BExprBin extends BExpr {
 
     @Override
     public int hashCode() {
-        return b1.hashCode() + b2.hashCode() + op.hashCode();
+        return op.hashCode() ^ b.hashCode();
     }
 
     @Override
@@ -58,7 +52,7 @@ public class BExprBin extends BExpr {
         } else if (obj == null || obj.getClass() != getClass()) {
             return false;
         }
-        BExprBin expr = (BExprBin) obj;
-        return expr.op == op && expr.b1.equals(b1) && expr.b2.equals(b2);
+        BoolUnaryExpr expr = (BoolUnaryExpr) obj;
+        return expr.op == op && expr.b.equals(b);
     }
 }

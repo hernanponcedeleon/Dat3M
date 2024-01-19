@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusX86BaseVisitor;
@@ -62,14 +62,14 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusX86Parser.VariableDeclaratorLocationContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initLocEqConst(ctx.location().getText(), value);
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusX86Parser.VariableDeclaratorRegisterContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
         return null;
     }
@@ -115,7 +115,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitLoadValueToRegister(LitmusX86Parser.LoadValueToRegisterContext ctx) {
         Register register = programBuilder.getOrNewRegister(mainThread, ctx.register().getText(), archType);
-        IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(register, constant));
     }
 
@@ -129,7 +129,7 @@ public class VisitorLitmusX86 extends LitmusX86BaseVisitor<Object> {
     @Override
     public Object visitStoreValueToLocation(LitmusX86Parser.StoreValueToLocationContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
-        IValue constant = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral constant = expressions.parseValue(ctx.constant().getText(), archType);
         return programBuilder.addChild(mainThread, EventFactory.newStore(object, constant));
     }
 

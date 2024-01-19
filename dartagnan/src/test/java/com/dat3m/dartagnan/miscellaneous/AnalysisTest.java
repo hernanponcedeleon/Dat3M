@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.miscellaneous;
 
 import com.dat3m.dartagnan.configuration.Alias;
-import com.dat3m.dartagnan.expression.BNonDet;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.NonDetBool;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -54,7 +54,7 @@ public class AnalysisTest {
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
         Label alt = b.getOrCreateLabel(0, "alt");
-        b.addChild(0, newJump(new BNonDet(types.getBooleanType()), alt));
+        b.addChild(0, newJump(new NonDetBool(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);

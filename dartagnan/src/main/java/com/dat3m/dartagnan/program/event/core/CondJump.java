@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
@@ -35,11 +35,11 @@ public class CondJump extends AbstractEvent implements RegReader, EventUser {
     }
 
     public boolean isGoto() {
-        return guard instanceof BConst constant && constant.getValue();
+        return guard instanceof BoolLiteral constant && constant.getValue();
     }
 
     public boolean isDead() {
-        return guard instanceof BConst constant && !constant.getValue();
+        return guard instanceof BoolLiteral constant && !constant.getValue();
     }
 
     public Label getLabel() {

@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -120,7 +120,7 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private List<Type> getPrimitiveReplacementTypes(Alloc allocation) {
-        if (!(allocation.getArraySize() instanceof IValue sizeExpression)) {
+        if (!(allocation.getArraySize() instanceof IntLiteral sizeExpression)) {
             return null;
         }
         final int size = sizeExpression.getValueAsInt();
@@ -329,9 +329,9 @@ public class MemToReg implements FunctionProcessor {
         private RegisterOffset matchGEP(Expression expression) {
             int sum = 0;
             while (!(expression instanceof Register register)) {
-                if (!(expression instanceof IExprBin bin) ||
-                        bin.getOp() != IOpBin.ADD ||
-                        !(bin.getRHS() instanceof IValue offset)) {
+                if (!(expression instanceof IntBinaryExpr bin) ||
+                        bin.getOp() != IntBinaryOp.ADD ||
+                        !(bin.getRHS() instanceof IntLiteral offset)) {
                     return null;
                 }
                 sum += offset.getValueAsInt();

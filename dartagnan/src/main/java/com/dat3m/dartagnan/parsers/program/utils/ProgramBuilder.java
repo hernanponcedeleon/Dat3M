@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.IntConst;
+import com.dat3m.dartagnan.expression.NonDetInt;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -189,8 +189,8 @@ public class ProgramBuilder {
         return mem;
     }
 
-    public INonDet newConstant(IntegerType type, boolean signed) {
-        var constant = new INonDet(program.getConstants().size(), type, signed);
+    public NonDetInt newConstant(IntegerType type, boolean signed) {
+        var constant = new NonDetInt(program.getConstants().size(), type, signed);
         program.addConstant(constant);
         return constant;
     }
@@ -220,7 +220,7 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
-    public void initRegEqConst(int regThread, String regName, IConst iValue){
+    public void initRegEqConst(int regThread, String regName, IntConst iValue){
         addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
     }
 
@@ -287,7 +287,7 @@ public class ProgramBuilder {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
-    public void initVirLocEqCon(String leftName, IConst iValue){
+    public void initVirLocEqCon(String leftName, IntConst iValue){
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);

@@ -5,14 +5,11 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;
 
-/**
- * Immutable constant integer values.
- */
-public final class IValue extends IConst {
+public final class IntLiteral extends IntConst {
 
     private final BigInteger value;
 
-    public IValue(BigInteger value, IntegerType type) {
+    IntLiteral(BigInteger value, IntegerType type) {
         super(type);
         this.value = value;
     }
@@ -37,7 +34,7 @@ public final class IValue extends IConst {
 
     @Override
     public boolean equals(Object o) {
-        return this == o || o instanceof IValue val && getType().equals(val.getType()) && value.equals(val.value);
+        return this == o || o instanceof IntLiteral val && getType().equals(val.getType()) && value.equals(val.value);
     }
 
     @Override

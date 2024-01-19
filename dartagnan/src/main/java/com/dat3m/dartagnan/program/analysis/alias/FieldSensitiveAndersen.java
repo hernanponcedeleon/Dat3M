@@ -21,8 +21,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.*;
-import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
+import static com.dat3m.dartagnan.expression.op.IntBinaryOp.*;
+import static com.dat3m.dartagnan.expression.op.IntUnaryOp.MINUS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
@@ -306,7 +306,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IExprBin x) {
+        public Result visit(IntBinaryExpr x) {
             Result l = x.getLHS().accept(this);
             Result r = x.getRHS().accept(this);
             if (l == null || r == null || x.getOp() == RSHIFT) {
@@ -347,14 +347,14 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IExprUn x) {
+        public Result visit(IntUnaryExpr x) {
             Result i = x.getInner().accept(this);
             return i == null ? null : x.getOp() != MINUS ? i :
                     new Result(null, null, i.offset.negate(), i.alignment == 0 ? 1 : i.alignment);
         }
 
         @Override
-        public Result visit(IfExpr x) {
+        public Result visit(ITEExpr x) {
             x.getTrueBranch().accept(this);
             x.getFalseBranch().accept(this);
             return null;
@@ -373,7 +373,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IValue v) {
+        public Result visit(IntLiteral v) {
             return new Result(null, null, v.getValue(), 0);
         }
 

@@ -3,7 +3,7 @@ grammar LitmusAssertions;
 import BaseLexer;
 
 @header{
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.CmpOp;
 }
 
 assertionFilter

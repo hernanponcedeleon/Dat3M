@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusLISAParser;
@@ -54,14 +54,14 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
 
     @Override
     public Object visitVariableDeclaratorLocation(LitmusLISAParser.VariableDeclaratorLocationContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initLocEqConst(ctx.location().getText(), value);
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusLISAParser.VariableDeclaratorRegisterContext ctx) {
-        IValue value = expressions.parseValue(ctx.constant().getText(), archType);
+        IntLiteral value = expressions.parseValue(ctx.constant().getText(), archType);
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(), value);
         return null;
     }

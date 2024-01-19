@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
@@ -31,7 +31,7 @@ public class IRHelper {
      */
     public static boolean isAlwaysBranching(Event e) {
         return e instanceof Return
-                || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue()
+                || e instanceof AbortIf abort && abort.getCondition() instanceof BoolLiteral b && b.getValue()
                 || e instanceof CondJump jump && jump.isGoto();
     }
 }

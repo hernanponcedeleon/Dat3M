@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.NonDetInt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -78,7 +78,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
-        for (INonDet constant : context.getTask().getProgram().getConstants()) {
+        for (NonDetInt constant : context.getTask().getProgram().getConstants()) {
             Formula formula = context.encodeFinalExpression(constant);
             if (formula instanceof BitvectorFormula bitvector) {
                 boolean signed = constant.isSigned();

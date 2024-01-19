@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.program.event.arch.ptx;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.RMWOpBase;
 
 public class PTXRedOp extends RMWOpBase {
 
-    public PTXRedOp(Expression address, Expression value, IOpBin op, String mo) {
+    public PTXRedOp(Expression address, Expression value, IntBinaryOp op, String mo) {
         super(address, op, value, mo);
     }
 

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.expression.op;
 
-public enum IOpUn {
+public enum IntUnaryOp {
     CAST_SIGNED,
     CAST_UNSIGNED,
     CTLZ,

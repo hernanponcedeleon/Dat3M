@@ -1,61 +1,44 @@
 package com.dat3m.dartagnan.expression.op;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
 
-public enum IOpBin {
+public enum IntBinaryOp {
     ADD, SUB, MUL, DIV, UDIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM;
-	
-	public static List<IOpBin> BWOps = Arrays.asList(UDIV, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM); 
-	
+
     @Override
     public String toString() {
-        switch(this){
-            case ADD:
-                return "+";
-            case SUB:
-                return "-";
-            case MUL:
-                return "*";
-            case DIV:
-                return "/";
-            case MOD:
-                return "%";
-            case AND:
-                return "&";
-            case OR:
-                return "|";
-            case XOR:
-                return "^";
-            case LSHIFT:
-                return "<<";
-            case RSHIFT:
-                return ">>>";
-            case ARSHIFT:
-                return ">>";
-            default:
-            	return super.toString();        	
-        }
+        return switch (this) {
+            case ADD -> "+";
+            case SUB -> "-";
+            case MUL -> "*";
+            case DIV -> "/";
+            case MOD -> "%";
+            case AND -> "&";
+            case OR -> "|";
+            case XOR -> "^";
+            case LSHIFT -> "<<";
+            case RSHIFT -> ">>>";
+            case ARSHIFT -> ">>";
+            default -> super.toString();
+        };
     }
 
-    public String getName(){
+    public String getName() {
         return this.name().toLowerCase();
     }
 
-    public static IOpBin intToOp(int i) {
-        switch(i) {
-            case 0: return ADD;
-            case 1: return SUB;
-            case 2: return AND;
-            case 3: return OR;
-            default:
-                throw new UnsupportedOperationException("The binary operator is not recognized");
-        }
+    public static IntBinaryOp intToOp(int i) {
+        return switch (i) {
+            case 0 -> ADD;
+            case 1 -> SUB;
+            case 2 -> AND;
+            case 3 -> OR;
+            default -> throw new UnsupportedOperationException("The binary operator is not recognized");
+        };
     }
 
-    public BigInteger combine(BigInteger a, BigInteger b){
-        switch(this){
+    public BigInteger combine(BigInteger a, BigInteger b) {
+        switch (this) {
             case ADD:
                 return a.add(b);
             case SUB:
@@ -87,6 +70,6 @@ public enum IOpBin {
             case ARSHIFT:
                 return a.shiftRight(b.intValue());
         }
-        throw new UnsupportedOperationException("Illegal operator " + this + " in IOpBin");
+        throw new UnsupportedOperationException("Illegal operator " + this + " in IntBinaryOp");
     }
 }

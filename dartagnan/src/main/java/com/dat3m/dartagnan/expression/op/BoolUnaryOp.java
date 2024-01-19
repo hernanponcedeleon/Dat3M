@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.expression.op;
 
-public enum BOpUn {
+public enum BoolUnaryOp {
     NOT;
 
     @Override
