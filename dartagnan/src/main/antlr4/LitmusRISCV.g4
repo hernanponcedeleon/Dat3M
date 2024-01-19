@@ -192,13 +192,13 @@ offset
     :   DigitSequence
     ;
 
-cond returns [COpBin op]
-    :   Beq {$op = COpBin.EQ;}
-    |   Bne {$op = COpBin.NEQ;}
-    |   Bge {$op = COpBin.GTE;}
-    |   Ble {$op = COpBin.LTE;}
-    |   Bgt {$op = COpBin.GT;}
-    |   Blt {$op = COpBin.LT;}
+cond returns [CmpOp op]
+    :   Beq {$op = CmpOp.EQ;}
+    |   Bne {$op = CmpOp.NEQ;}
+    |   Bge {$op = CmpOp.GTE;}
+    |   Ble {$op = CmpOp.LTE;}
+    |   Bgt {$op = CmpOp.GT;}
+    |   Blt {$op = CmpOp.LT;}
     ;
 
 assertionValue

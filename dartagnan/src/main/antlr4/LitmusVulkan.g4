@@ -253,23 +253,23 @@ avvisSemanticList
     :   (avvisSemantic)*
     ;
 
-operation locals [IOpBin op]
-    :   Period Add {$op = IOpBin.ADD;}
-    |   Period Sub {$op = IOpBin.SUB;}
-    |   Period Mul {$op = IOpBin.MUL;}
-    |   Period Div {$op = IOpBin.DIV;}
-    |   Period And {$op = IOpBin.AND;}
-    |   Period Or {$op = IOpBin.OR;}
-    |   Period Xor {$op = IOpBin.XOR;}
+operation locals [IntBinaryOp op]
+    :   Period Add {$op = IntBinaryOp.ADD;}
+    |   Period Sub {$op = IntBinaryOp.SUB;}
+    |   Period Mul {$op = IntBinaryOp.MUL;}
+    |   Period Div {$op = IntBinaryOp.DIV;}
+    |   Period And {$op = IntBinaryOp.AND;}
+    |   Period Or {$op = IntBinaryOp.OR;}
+    |   Period Xor {$op = IntBinaryOp.XOR;}
     ;
 
-cond returns [COpBin op]
-    :   Beq {$op = COpBin.EQ;}
-    |   Bne {$op = COpBin.NEQ;}
-    |   Bge {$op = COpBin.GTE;}
-    |   Ble {$op = COpBin.LTE;}
-    |   Bgt {$op = COpBin.GT;}
-    |   Blt {$op = COpBin.LT;}
+cond returns [CmpOp op]
+    :   Beq {$op = CmpOp.EQ;}
+    |   Bne {$op = CmpOp.NEQ;}
+    |   Bge {$op = CmpOp.GTE;}
+    |   Ble {$op = CmpOp.LTE;}
+    |   Bgt {$op = CmpOp.GT;}
+    |   Blt {$op = CmpOp.LT;}
     ;
 
 Locations
