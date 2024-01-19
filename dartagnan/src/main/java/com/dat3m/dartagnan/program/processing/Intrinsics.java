@@ -377,20 +377,20 @@ public class Intrinsics {
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {
-        return List.of(eventFactory.getSvcomp().newLoopBegin());
+        return List.of(eventFactory.withSvcomp().newLoopBegin());
     }
 
     private List<Event> inlineLoopBound(FunctionCall call) {
         final Expression boundExpression = call.getArguments().get(0);
-        return List.of(eventFactory.getSvcomp().newLoopBound(boundExpression));
+        return List.of(eventFactory.withSvcomp().newLoopBound(boundExpression));
     }
 
     private List<Event> inlineSpinStart(FunctionCall ignored) {
-        return List.of(eventFactory.getSvcomp().newSpinStart());
+        return List.of(eventFactory.withSvcomp().newSpinStart());
     }
 
     private List<Event> inlineSpinEnd(FunctionCall ignored) {
-        return List.of(eventFactory.getSvcomp().newSpinEnd());
+        return List.of(eventFactory.withSvcomp().newSpinEnd());
     }
 
     private List<Event> inlineAssume(FunctionCall call) {
@@ -399,11 +399,11 @@ public class Intrinsics {
     }
 
     private List<Event> inlineAtomicBegin(FunctionCall ignored) {
-        return List.of(currentAtomicBegin = eventFactory.getSvcomp().newBeginAtomic());
+        return List.of(currentAtomicBegin = eventFactory.withSvcomp().newBeginAtomic());
     }
 
     private List<Event> inlineAtomicEnd(FunctionCall ignored) {
-        return List.of(eventFactory.getSvcomp().newEndAtomic(checkNotNull(currentAtomicBegin)));
+        return List.of(eventFactory.withSvcomp().newEndAtomic(checkNotNull(currentAtomicBegin)));
     }
 
     private List<Event> inlinePthreadEqual(FunctionCall call) {

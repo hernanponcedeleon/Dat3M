@@ -462,7 +462,7 @@ public class EventFactory {
     // ========================================== Svcomp ===========================================
     // =============================================================================================
 
-    public Svcomp getSvcomp() {
+    public Svcomp withSvcomp() {
         return new Svcomp(this);
     }
 

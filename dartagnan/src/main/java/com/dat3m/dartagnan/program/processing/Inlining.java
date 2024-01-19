@@ -110,9 +110,9 @@ public class Inlining implements ProgramProcessor {
         call.insertAfter(returnMarker);
         //  --- SVCOMP-specific code ---
         if (callTarget.name.startsWith("__VERIFIER_atomic")) {
-            final BeginAtomic beginAtomic = eventFactory.getSvcomp().newBeginAtomic();
+            final BeginAtomic beginAtomic = eventFactory.withSvcomp().newBeginAtomic();
             call.getPredecessor().insertAfter(beginAtomic);
-            call.insertAfter(eventFactory.getSvcomp().newEndAtomic(beginAtomic));
+            call.insertAfter(eventFactory.withSvcomp().newEndAtomic(beginAtomic));
         }
         // -----------------------------
         // Calls with result will write the return value to this register.
