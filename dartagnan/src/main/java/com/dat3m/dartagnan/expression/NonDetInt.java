@@ -51,7 +51,7 @@ public class NonDetInt extends IntExpr {
     }
 
     @Override
-    public IntConst reduce() {
+    public IntLiteral reduce() {
         if (min.equals(max)) {
             return new IntLiteral(min, getType());
         }

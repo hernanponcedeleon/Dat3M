@@ -45,11 +45,11 @@ public class IntUnaryExpr extends IntExpr {
     }
 
     @Override
-    public IntConst reduce() {
+    public IntLiteral reduce() {
         if (!(b.getType() instanceof IntegerType innerType)) {
             throw new IllegalStateException(String.format("Non-integer operand %s.", b));
         }
-        IntConst inner = b.reduce();
+        IntLiteral inner = b.reduce();
         verify(inner.getType().equals(innerType),
                 "Reduced to wrong type %s instead of %s.", inner.getType(), innerType);
         BigInteger value = inner.getValue();

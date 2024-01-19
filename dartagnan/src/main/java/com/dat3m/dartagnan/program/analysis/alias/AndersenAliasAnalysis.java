@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.IntConst;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -212,8 +212,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Expression base = iBin.getLHS();
         if (base instanceof MemoryObject mem) {
             Expression rhs = iBin.getRHS();
-            //FIXME Address extends IntConst
-            if (rhs instanceof IntConst ic) {
+            //FIXME Address extends IntLiteral
+            if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
                 addTargetArray(reg, (MemoryObject) base);
@@ -226,8 +226,8 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
             Expression rhs = ((IntBinaryExpr) exp).getRHS();
-            //FIXME Address extends IntConst
-            if (rhs instanceof IntConst ic) {
+            //FIXME Address extends IntLiteral
+            if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
                 if (o < target.base.size()) {
                     addTarget(reg, new Location(target.base, o));
@@ -269,7 +269,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
          * Tries to match an expression as a constant address.
          */
         Constant(Expression x) {
-            if (x instanceof IntConst) {
+            if (x instanceof IntLiteral) {
                 location = x instanceof MemoryObject mem ? new Location(mem, 0) : null;
                 failed = false;
                 return;
@@ -277,7 +277,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
             if (x instanceof IntBinaryExpr iBin && iBin.getOp() == ADD) {
                 Expression lhs = iBin.getLHS();
                 Expression rhs = iBin.getRHS();
-                if (lhs instanceof MemoryObject mem && rhs instanceof IntConst ic && !(rhs instanceof MemoryObject)) {
+                if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic && !(rhs instanceof MemoryObject)) {
                     location = new Location(mem, ic.getValueAsInt());
                     failed = false;
                     return;

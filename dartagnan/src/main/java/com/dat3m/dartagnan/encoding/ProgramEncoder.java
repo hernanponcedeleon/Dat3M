@@ -156,7 +156,7 @@ public class ProgramEncoder implements Encoder {
         // For all objects, their 'final' value fetched here represents their constant value.
         final var addrExprs = new ArrayList<BooleanFormula>();
         for (final MemoryObject object : memory.getObjects()) {
-            final BigInteger addressInteger = object.getValue();
+            final BigInteger addressInteger = object.getAddress();
             final Formula addressVariable = context.encodeFinalExpression(object);
             if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
                 final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();

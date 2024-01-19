@@ -308,10 +308,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(MemoryObject address) {
-        BigInteger value = address.getValue();
-        Type type = address.getType();
-        return context.makeLiteral(type, value);
+    public Formula visit(MemoryObject memObj) {
+        return context.makeLiteral(memObj.getType(), memObj.getAddress());
     }
 
     @Override

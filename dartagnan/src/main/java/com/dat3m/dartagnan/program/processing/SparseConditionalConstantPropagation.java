@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
@@ -67,8 +68,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
     @Override
     public void run(Function func) {
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
-                ? (expr -> expr instanceof IntConst || expr instanceof BoolLiteral || expr instanceof Register)
-                : (expr -> expr instanceof IntConst || expr instanceof BoolLiteral);
+                ? (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
+                : (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral);
 
         Set<Event> reachableEvents = new HashSet<>();
         Map<Label, Map<Register, Expression>> inflowMap = new HashMap<>();

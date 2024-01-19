@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;
 
-public final class IntLiteral extends IntConst {
+public final class IntLiteral extends IntExpr {
 
     private final BigInteger value;
 
@@ -14,9 +14,17 @@ public final class IntLiteral extends IntConst {
         this.value = value;
     }
 
-    @Override
     public BigInteger getValue() {
         return value;
+    }
+
+    public int getValueAsInt() {
+        return value.intValueExact();
+    }
+
+    @Override
+    public IntLiteral reduce() {
+        return this;
     }
 
     public boolean isOne() { return value.equals(BigInteger.ONE); }

@@ -33,18 +33,18 @@ public class ExprSimplifier extends ExprTransformer {
                     return expressions.makeFalse();
             }
         }
-        if (lhs instanceof IntConst lc && rhs instanceof  IntConst rc) {
+        if (lhs instanceof IntLiteral lc && rhs instanceof  IntLiteral rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
         // Due to constant propagation, and the lack of a proper type system
         // we can end up with comparisons like "False == 1"
-        if (lhs instanceof BoolLiteral lc && rhs instanceof IntConst rc) {
+        if (lhs instanceof BoolLiteral lc && rhs instanceof IntLiteral rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
-        if (lhs instanceof IntConst lc && rhs instanceof BoolLiteral rc) {
+        if (lhs instanceof IntLiteral lc && rhs instanceof BoolLiteral rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
         }
-        if (lhs.getType() instanceof BooleanType && rhs instanceof IntConst rc) {
+        if (lhs.getType() instanceof BooleanType && rhs instanceof IntLiteral rc) {
             // Simplify "cond == 1" to just "cond"
             // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
             if (atom.getOp() == CmpOp.EQ && rc.getValue().intValue() == 1) {
@@ -109,10 +109,10 @@ public class ExprSimplifier extends ExprTransformer {
                     return expressions.makeZero(iBin.getType());
             }
         }
-        if (! (lhs instanceof IntConst || rhs instanceof IntConst)) {
+        if (! (lhs instanceof IntLiteral || rhs instanceof IntLiteral)) {
             return expressions.makeBinary(lhs, op, rhs);
-        } else if (lhs instanceof IntConst && rhs instanceof IntConst) {
-            // If we reduce MemoryObject as a normal IntConst, we loose the fact that it is a Memory Object
+        } else if (lhs instanceof IntLiteral && rhs instanceof IntLiteral) {
+            // If we reduce MemoryObject as a normal IntLiteral, we loose the fact that it is a Memory Object
             // We cannot call reduce for RSHIFT (lack of implementation)
             if(!(lhs instanceof MemoryObject) && op != RSHIFT) {
                 return expressions.makeBinary(lhs, op, rhs).reduce();
@@ -123,7 +123,7 @@ public class ExprSimplifier extends ExprTransformer {
             }
         }
 
-        if (lhs instanceof IntConst lc) {
+        if (lhs instanceof IntLiteral lc) {
             BigInteger val = lc.getValue();
             switch (op) {
                 case MUL:
@@ -141,7 +141,7 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeBinary(lhs, op, rhs);
         }
 
-        IntConst rc = (IntConst)rhs;
+        IntLiteral rc = (IntLiteral)rhs;
         BigInteger val = rc.getValue();
         switch (op) {
             case MUL:
@@ -157,10 +157,10 @@ public class ExprSimplifier extends ExprTransformer {
                 if(val.equals(BigInteger.ZERO)) {
                     return lhs;
                 }
-                // Rule for associativity (rhs is IntConst) since we cannot reduce MemoryObjects
+                // Rule for associativity (rhs is IntLiteral) since we cannot reduce MemoryObjects
                 // Either op can be +/-, but this does not affect correctness
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
-                if(lhs instanceof IntBinaryExpr lhsBin && lhsBin.getRHS() instanceof IntConst && lhsBin.getOp() != RSHIFT) {
+                if(lhs instanceof IntBinaryExpr lhsBin && lhsBin.getRHS() instanceof IntLiteral && lhsBin.getOp() != RSHIFT) {
                     Expression newLHS = lhsBin.getLHS();
                     Expression newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);
@@ -190,11 +190,11 @@ public class ExprSimplifier extends ExprTransformer {
 
         // Simplifies "ITE(cond, 1, 0)" to "cond" and "ITE(cond, 0, 1) to "!cond"
         // TODO: It is not clear if this gives performance improvements or not
-        if (t instanceof IntConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
-                && f instanceof IntConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
+        if (t instanceof IntLiteral tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
+                && f instanceof IntLiteral fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
             return cond;
-        } else if (t instanceof IntConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
-                && f instanceof IntConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
+        } else if (t instanceof IntLiteral tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
+                && f instanceof IntLiteral fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
             return expressions.makeNot(cond);
         }
 

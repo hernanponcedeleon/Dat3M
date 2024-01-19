@@ -35,7 +35,7 @@ public class IntBinaryExpr extends IntExpr {
     }
 
     @Override
-    public IntConst reduce() {
+    public IntLiteral reduce() {
         BigInteger v1 = lhs.reduce().getValue();
         BigInteger v2 = rhs.reduce().getValue();
         return new IntLiteral(op.combine(v1, v2), getType());
