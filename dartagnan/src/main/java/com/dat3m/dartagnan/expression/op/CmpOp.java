@@ -50,19 +50,4 @@ public enum CmpOp {
         };
     }
 
-    public boolean combine(boolean a, BigInteger b){
-        return switch (this) {
-            case EQ -> ((b.compareTo(BigInteger.ONE) == 0) == a);
-            case NEQ -> ((b.compareTo(BigInteger.ONE) == 0) != a);
-            default -> throw new UnsupportedOperationException("Illegal operator " + this + " in CmpOp");
-        };
-    }
-
-    public boolean combine(BigInteger a, boolean b){
-        return switch (this) {
-            case EQ -> ((a.compareTo(BigInteger.ONE) == 0) == b);
-            case NEQ -> ((a.compareTo(BigInteger.ONE) == 0) != b);
-            default -> throw new UnsupportedOperationException("Illegal operator " + this + " in CmpOp");
-        };
-    }
 }

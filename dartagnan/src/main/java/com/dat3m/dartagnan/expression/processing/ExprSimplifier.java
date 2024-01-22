@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
-import com.dat3m.dartagnan.expression.op.CmpOp;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
-import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
@@ -18,38 +16,13 @@ public class ExprSimplifier extends ExprTransformer {
         Expression lhs = atom.getLHS().accept(this);
         Expression rhs = atom.getRHS().accept(this);
         if (lhs.equals(rhs)) {
-            switch(atom.getOp()) {
-                case EQ:
-                case LTE:
-                case ULTE:
-                case GTE:
-                case UGTE:
-                    return expressions.makeTrue();
-                case NEQ:
-                case LT:
-                case ULT:
-                case GT:
-                case UGT:
-                    return expressions.makeFalse();
-            }
+            return switch (atom.getOp()) {
+                case EQ, LTE, ULTE, GTE, UGTE -> expressions.makeTrue();
+                case NEQ, LT, ULT, GT, UGT -> expressions.makeFalse();
+            };
         }
-        if (lhs instanceof IntLiteral lc && rhs instanceof  IntLiteral rc) {
+        if (lhs instanceof IntLiteral lc && rhs instanceof IntLiteral rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
-        }
-        // Due to constant propagation, and the lack of a proper type system
-        // we can end up with comparisons like "False == 1"
-        if (lhs instanceof BoolLiteral lc && rhs instanceof IntLiteral rc) {
-            return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
-        }
-        if (lhs instanceof IntLiteral lc && rhs instanceof BoolLiteral rc) {
-            return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
-        }
-        if (lhs.getType() instanceof BooleanType && rhs instanceof IntLiteral rc) {
-            // Simplify "cond == 1" to just "cond"
-            // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
-            if (atom.getOp() == CmpOp.EQ && rc.getValue().intValue() == 1) {
-                return lhs;
-            }
         }
         return expressions.makeBinary(lhs, atom.getOp(), rhs);
     }
