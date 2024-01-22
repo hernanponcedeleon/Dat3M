@@ -6,8 +6,8 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import java.math.BigInteger;
 import java.util.Optional;
 
-// TODO why is INonDet not a IConst?
-public class INonDet extends IExpr {
+// TODO why is NonDetInt not a IntConst?
+public class NonDetInt extends IntExpr {
 
     private final int id;
     private final boolean signed;
@@ -16,7 +16,7 @@ public class INonDet extends IExpr {
     private String sourceName;
 
     // Should only be accessed from Program
-    public INonDet(int id, IntegerType type, boolean signed) {
+    public NonDetInt(int id, IntegerType type, boolean signed) {
         super(type);
         this.id = id;
         this.signed = signed;
@@ -51,9 +51,9 @@ public class INonDet extends IExpr {
     }
 
     @Override
-    public IConst reduce() {
+    public IntLiteral reduce() {
         if (min.equals(max)) {
-            return new IValue(min, getType());
+            return new IntLiteral(min, getType());
         }
         return super.reduce();
     }

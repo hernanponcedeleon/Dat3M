@@ -207,23 +207,23 @@ register
     :   Register
     ;
 
-operation locals [IOpBin op]
-    :   Add {$op = IOpBin.ADD;}
-    |   Sub {$op = IOpBin.SUB;}
-    |   Mul {$op = IOpBin.MUL;}
-    |   Div {$op = IOpBin.DIV;}
-    |   And {$op = IOpBin.AND;}
-    |   Or {$op = IOpBin.OR;}
-    |   Xor {$op = IOpBin.XOR;}
+operation locals [IntBinaryOp op]
+    :   Add {$op = IntBinaryOp.ADD;}
+    |   Sub {$op = IntBinaryOp.SUB;}
+    |   Mul {$op = IntBinaryOp.MUL;}
+    |   Div {$op = IntBinaryOp.DIV;}
+    |   And {$op = IntBinaryOp.AND;}
+    |   Or {$op = IntBinaryOp.OR;}
+    |   Xor {$op = IntBinaryOp.XOR;}
     ;
 
-cond returns [COpBin op]
-    :   Beq {$op = COpBin.EQ;}
-    |   Bne {$op = COpBin.NEQ;}
-    |   Bge {$op = COpBin.GTE;}
-    |   Ble {$op = COpBin.LTE;}
-    |   Bgt {$op = COpBin.GT;}
-    |   Blt {$op = COpBin.LT;}
+cond returns [CmpOp op]
+    :   Beq {$op = CmpOp.EQ;}
+    |   Bne {$op = CmpOp.NEQ;}
+    |   Bge {$op = CmpOp.GTE;}
+    |   Ble {$op = CmpOp.LTE;}
+    |   Bgt {$op = CmpOp.GT;}
+    |   Blt {$op = CmpOp.LT;}
     ;
 
 assertionValue

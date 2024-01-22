@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.witness;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -188,7 +188,7 @@ public class WitnessBuilder {
         Map<Integer, List<Event>> map = new HashMap<>();
         for (Event e : execEvents) {
             // TODO improve this: these events correspond to return statements
-            if (e instanceof Store store && store.getMemValue() instanceof BConst bVal && !bVal.getValue()) {
+            if (e instanceof Store store && store.getMemValue() instanceof BoolLiteral bVal && !bVal.getValue()) {
                 continue;
             }
             BigInteger var = model.evaluate(context.clockVariable("hb", e));

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -102,7 +102,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private boolean assignAddressToFunction(Function func, Map<Function, IValue> func2AddressMap) {
+    private boolean assignAddressToFunction(Function func, Map<Function, IntLiteral> func2AddressMap) {
         final IntegerType ptrType = TypeFactory.getInstance().getArchType();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         if (!func2AddressMap.containsKey(func)) {
@@ -130,7 +130,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         }
     }
 
-    private void devirtualise(Function function, Map<Function, IValue> func2AddressMap) {
+    private void devirtualise(Function function, Map<Function, IntLiteral> func2AddressMap) {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
         int devirtCounter = 0;
@@ -158,7 +158,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             final Expression funcPtr = getFunctionPointer(call);
             // Construct call table
             for (Function possibleTarget : possibleTargets) {
-                final IValue targetAddress = func2AddressMap.get(possibleTarget);
+                final IntLiteral targetAddress = func2AddressMap.get(possibleTarget);
                 final Label caseLabel = EventFactory.newLabel(String.format("__Ldevirt_%s#%s", targetAddress.getValue(), devirtCounter));
                 final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
                 caseLabels.add(caseLabel);
@@ -193,7 +193,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
                 && !(call.getArguments().get(2) instanceof Function));
     }
 
-    private List<Function> getPossibleTargets(FunctionCall call, Map<Function, IValue> func2AddressMap) {
+    private List<Function> getPossibleTargets(FunctionCall call, Map<Function, IntLiteral> func2AddressMap) {
         final List<Function> possibleTargets;
         if (!call.isDirectCall()) {
             possibleTargets = func2AddressMap.keySet().stream()
@@ -259,7 +259,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
     private static class FunctionToAddressTransformer extends ExprTransformer {
 
-        private final Map<Function, IValue> func2AddressMap = new HashMap<>();
+        private final Map<Function, IntLiteral> func2AddressMap = new HashMap<>();
 
         @Override
         public Expression visit(Function function) {

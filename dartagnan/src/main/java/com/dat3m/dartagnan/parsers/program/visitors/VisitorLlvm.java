@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -626,17 +626,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
         final Expression xorExpr;
-        if ((right instanceof IValue iValue && iValue.getType().isMathematical()
-            && (iValue.isZero() || iValue.isOne()))) {
+        if ((right instanceof IntLiteral intLiteral && intLiteral.getType().isMathematical()
+            && (intLiteral.isZero() || intLiteral.isOne()))) {
             // NOTE: If we parse the program with mathematical integers, we try to eliminate "xor 1" expressions.
             // The reason is that "xor 1" is used to implement boolean negations, i.e., even if the C source program
             // has no bitwise operators, "xor 1" is frequently added by the compiler.
             // Not eliminating this operator frequently results in theory-mixing that the SMT-backend cannot handle.
-            if (iValue.isZero()) {
+            if (intLiteral.isZero()) {
                 xorExpr = left;
             } else {
                 //FIXME: This is only valid on "xor 1" applied to "i1" operators, but is unsound for any other bit-width.
-                xorExpr = expressions.makeConditional(
+                xorExpr = expressions.makeITE(
                         expressions.makeEQ(left, expressions.makeGeneralZero(left.getType())),
                         expressions.makeOne((IntegerType) left.getType()),
                         expressions.makeZero((IntegerType) left.getType())
@@ -709,7 +709,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression trueValue = visitTypeValue(ctx.typeValue(1));
         final Expression falseValue = visitTypeValue(ctx.typeValue(2));
         final Expression cast = expressions.makeBooleanCast(guard);
-        return assignToRegister(expressions.makeConditional(cast, trueValue, falseValue));
+        return assignToRegister(expressions.makeITE(cast, trueValue, falseValue));
     }
 
     @Override
@@ -747,12 +747,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         if (operator.equals("xchg")) {
             event = Llvm.newExchange(register, address, operand, mo);
         } else {
-            final IOpBin op = switch (operator) {
-                case "add" -> IOpBin.ADD;
-                case "sub" -> IOpBin.SUB;
-                case "and" -> IOpBin.AND;
-                case "or" -> IOpBin.OR;
-                case "xor" -> IOpBin.XOR;
+            final IntBinaryOp op = switch (operator) {
+                case "add" -> IntBinaryOp.ADD;
+                case "sub" -> IntBinaryOp.SUB;
+                case "and" -> IntBinaryOp.AND;
+                case "or" -> IntBinaryOp.OR;
+                case "xor" -> IntBinaryOp.XOR;
                 //TODO nand, min, umin, max, umax, uinc_wrap, udec_wrap, fadd, fsub, fmax, fmin
                 default -> throw new UnsupportedOperationException(String.format("Unknown atomic operand %s.", ctx.getText()));
             };
@@ -1024,7 +1024,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression trueValue = visitTypeConst(ctx.typeConst(1));
         final Expression falseValue = visitTypeConst(ctx.typeConst(2));
         final Expression cast = expressions.makeBooleanCast(guard);
-        return expressions.makeConditional(cast, trueValue, falseValue);
+        return expressions.makeITE(cast, trueValue, falseValue);
     }
 
     @Override
@@ -1301,13 +1301,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             }
             return expressions.makeConstruct(elements);
         } else if (type instanceof IntegerType intType) {
-            final INonDet value = new INonDet(program.getConstants().size(), intType, true);
+            final NonDetInt value = new NonDetInt(program.getConstants().size(), intType, true);
             value.setMin(intType.getMinimumValue(true));
             value.setMax(intType.getMaximumValue(true));
             program.addConstant(value);
             return value;
         } else if (type instanceof BooleanType) {
-            return new BNonDet(types.getBooleanType());
+            return new NonDetBool(types.getBooleanType());
         } else {
             throw new UnsupportedOperationException("Cannot create non-deterministic value of type " + type);
         }
@@ -1435,7 +1435,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         @Override
         default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
         @Override
-        default IConst reduce() { throw new UnsupportedOperationException(); }
+        default IntLiteral reduce() { throw new UnsupportedOperationException(); }
     }
 
     private static final MdNode MD_NULL = new MdNode() {

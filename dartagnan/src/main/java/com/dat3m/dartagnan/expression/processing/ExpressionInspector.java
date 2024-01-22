@@ -17,33 +17,33 @@ public interface ExpressionInspector extends ExpressionVisitor<Expression>{
         return atom;
     }
 
-    default Expression visit(BExprBin bBin) {
+    default Expression visit(BoolBinaryExpr bBin) {
         bBin.getLHS().accept(this);
         bBin.getRHS().accept(this);
         return bBin;
     }
 
-    default Expression visit(BExprUn bUn) {
+    default Expression visit(BoolUnaryExpr bUn) {
         bUn.getInner().accept(this);
         return bUn;
     }
 
-    default Expression visit(IExprBin iBin) {
+    default Expression visit(IntBinaryExpr iBin) {
         iBin.getLHS().accept(this);
         iBin.getRHS().accept(this);
         return iBin;
     }
 
-    default Expression visit(IExprUn iUn) {
+    default Expression visit(IntUnaryExpr iUn) {
         iUn.getInner().accept(this);
         return iUn;
     }
 
-    default Expression visit(IfExpr ifExpr) {
-        ifExpr.getGuard().accept(this);
-        ifExpr.getFalseBranch().accept(this);
-        ifExpr.getTrueBranch().accept(this);
-        return ifExpr;
+    default Expression visit(ITEExpr iteExpr) {
+        iteExpr.getGuard().accept(this);
+        iteExpr.getFalseBranch().accept(this);
+        iteExpr.getTrueBranch().accept(this);
+        return iteExpr;
     }
 
     default Expression visit(Construction construction) {
@@ -66,10 +66,10 @@ public interface ExpressionInspector extends ExpressionVisitor<Expression>{
         return location;
     }
 
-    default Expression visit(BConst bConst) { return bConst;  }
-    default Expression visit(BNonDet bNonDet) { return bNonDet; }
-    default Expression visit(IValue iValue) { return iValue; }
-    default Expression visit(INonDet iNonDet) { return iNonDet; }
+    default Expression visit(BoolLiteral boolLiteral) { return boolLiteral;  }
+    default Expression visit(NonDetBool nonDetBool) { return nonDetBool; }
+    default Expression visit(IntLiteral intLiteral) { return intLiteral; }
+    default Expression visit(NonDetInt iNonDet) { return iNonDet; }
     default Expression visit(Register reg) { return reg; }
     default Expression visit(MemoryObject address) { return address; }
     default Expression visit(Function function) { return function; }

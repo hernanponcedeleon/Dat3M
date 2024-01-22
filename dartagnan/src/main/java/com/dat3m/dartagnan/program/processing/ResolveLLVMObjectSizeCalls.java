@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
@@ -45,9 +45,9 @@ public class ResolveLLVMObjectSizeCalls implements FunctionProcessor {
 
     private void resolveObjectSizeCall(ValueFunctionCall call) {
         //final Expression ptr = call.getArguments().get(0);
-        final IValue zeroIfUnknown = (IValue)call.getArguments().get(1); // else -1 if unknown
-        //final IValue nullIsUnknown = (IValue)call.getArguments().get(2);
-        //final IValue isDynamic = (IValue) call.getArguments().get(3); // Meaning of this is unclear
+        final IntLiteral zeroIfUnknown = (IntLiteral)call.getArguments().get(1); // else -1 if unknown
+        //final IntLiteral nullIsUnknown = (IntLiteral)call.getArguments().get(2);
+        //final IntLiteral isDynamic = (IntLiteral) call.getArguments().get(3); // Meaning of this is unclear
 
         // TODO: We treat all pointers as unknown for now.
         final ExpressionFactory exprs = ExpressionFactory.getInstance();

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -189,7 +189,7 @@ public class Function implements Expression {
     }
 
     @Override
-    public IConst reduce() {
+    public IntLiteral reduce() {
         throw new UnsupportedOperationException("Cannot reduce functions");
     }
 

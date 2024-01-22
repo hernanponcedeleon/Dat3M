@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.common;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryAccess;
@@ -16,10 +16,10 @@ import static com.dat3m.dartagnan.program.event.Tag.*;
 @NoInterface
 public abstract class RMWOpBase extends SingleAccessMemoryEvent {
 
-    protected IOpBin operator;
+    protected IntBinaryOp operator;
     protected Expression operand;
 
-    protected RMWOpBase(Expression address, IOpBin operator, Expression operand, String mo) {
+    protected RMWOpBase(Expression address, IntBinaryOp operator, Expression operand, String mo) {
         super(address, operand.getType(), mo);
         this.operator = operator;
         this.operand = operand;
@@ -35,8 +35,8 @@ public abstract class RMWOpBase extends SingleAccessMemoryEvent {
     public Expression getOperand() { return operand; }
     public void setOperand(Expression operand) { this.operand = operand; }
 
-    public IOpBin getOperator() { return this.operator; }
-    public void setOperator(IOpBin operator)  { this.operator = operator; }
+    public IntBinaryOp getOperator() { return this.operator; }
+    public void setOperator(IntBinaryOp operator)  { this.operator = operator; }
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {

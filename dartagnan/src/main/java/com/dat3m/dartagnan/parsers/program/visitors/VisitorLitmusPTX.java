@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusPTXBaseVisitor;
@@ -67,14 +67,14 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(LitmusPTXParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initVirLocEqCon(ctx.location().getText(),
-                (IConst) ctx.constant().accept(this));
+                (IntLiteral) ctx.constant().accept(this));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusPTXParser.VariableDeclaratorRegisterContext ctx) {
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(),
-                (IConst) ctx.constant().accept(this));
+                (IntLiteral) ctx.constant().accept(this));
         return null;
     }
 
@@ -226,7 +226,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register register_destination = (Register) ctx.register().accept(this);
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
-        IOpBin op = ctx.operation().op;
+        IntBinaryOp op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
@@ -272,7 +272,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
     public Object visitRedInstruction(LitmusPTXParser.RedInstructionContext ctx) {
         MemoryObject object = programBuilder.getOrNewMemoryObject(ctx.location().getText());
         Expression value = (Expression) ctx.value().accept(this);
-        IOpBin op = ctx.operation().op;
+        IntBinaryOp op = ctx.operation().op;
         String mo = ctx.mo().content;
         String scope = ctx.scope().content;
         if (!(mo.equals(Tag.PTX.ACQ) || mo.equals(Tag.PTX.REL) || mo.equals(Tag.PTX.ACQ_REL) || mo.equals(Tag.PTX.RLX))) {
