@@ -50,8 +50,6 @@ public enum CmpOp {
         };
     }
 
-    // Due to constant propagation, and the lack of a proper type system
-    // we can end up with comparisons like "False == 1", thus the following two methods
     public boolean combine(boolean a, BigInteger b){
         return switch (this) {
             case EQ -> ((b.compareTo(BigInteger.ONE) == 0) == a);

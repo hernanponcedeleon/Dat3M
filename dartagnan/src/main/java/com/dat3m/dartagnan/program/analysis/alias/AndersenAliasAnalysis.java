@@ -212,7 +212,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         Expression base = iBin.getLHS();
         if (base instanceof MemoryObject mem) {
             Expression rhs = iBin.getRHS();
-            //FIXME Address extends IntLiteral
             if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
@@ -226,7 +225,6 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
             Expression rhs = ((IntBinaryExpr) exp).getRHS();
-            //FIXME Address extends IntLiteral
             if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
                 if (o < target.base.size()) {
@@ -253,7 +251,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 addresses = ImmutableSet.of(addressConstant.location);
             }
         }
-        if (addresses.size() == 0) {
+        if (addresses.isEmpty()) {
             addresses = maxAddressSet;
         }
         eventAddressSpaceMap.put(e, ImmutableSet.copyOf(addresses));
