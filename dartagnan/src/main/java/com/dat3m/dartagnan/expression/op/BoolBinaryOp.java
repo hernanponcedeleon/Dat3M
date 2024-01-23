@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.expression.op;
 
-public enum BoolBinaryOp {
+import com.dat3m.dartagnan.expression.ExpressionKind;
+
+public enum BoolBinaryOp implements ExpressionKind {
     AND, OR;
 
     @Override

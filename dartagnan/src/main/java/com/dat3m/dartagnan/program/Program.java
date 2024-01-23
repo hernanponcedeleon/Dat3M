@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.NonDetInt;
+import com.dat3m.dartagnan.expression.integers.NonDetInt;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;

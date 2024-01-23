@@ -1,5 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.Atom;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
@@ -98,7 +105,7 @@ public final class ExpressionFactory {
     }
 
     public IntLiteral makeValue(BigInteger value, IntegerType type) {
-        return new IntLiteral(value, type);
+        return new IntLiteral(type, value);
     }
 
     public Expression makeCast(Expression expression, Type type, boolean signed) {
@@ -154,7 +161,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression leftOperand, CmpOp operator, Expression rightOperand) {
-        return new Atom(types.getBooleanType(), leftOperand, operator, rightOperand);
+        return new Atom(types.getBooleanType(), operator, leftOperand, rightOperand);
     }
 
     public Expression makeNEG(Expression operand, IntegerType targetType) {
@@ -225,7 +232,7 @@ public final class ExpressionFactory {
     public Expression makeBinary(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
         Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
                 "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
-        return new IntBinaryExpr((IntegerType) leftOperand.getType(), leftOperand, operator, rightOperand);
+        return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

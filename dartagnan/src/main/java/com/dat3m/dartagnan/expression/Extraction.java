@@ -1,9 +1,12 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.Type;
+
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -41,6 +44,16 @@ public final class Extraction implements Expression {
     @Override
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public List<Expression> getOperands() {
+        return List.of(getObject());
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return Kind.EXTRACT;
     }
 
     @Override

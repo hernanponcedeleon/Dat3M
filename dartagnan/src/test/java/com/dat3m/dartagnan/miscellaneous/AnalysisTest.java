@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.miscellaneous;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.NonDetBool;
+import com.dat3m.dartagnan.expression.booleans.NonDetBool;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;

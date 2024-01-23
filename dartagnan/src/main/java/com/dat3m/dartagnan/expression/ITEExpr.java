@@ -1,56 +1,57 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.base.ExpressionBase;
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.program.Register;
-import com.google.common.collect.ImmutableSet;
+import com.dat3m.dartagnan.expression.type.Type;
+
+import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class ITEExpr extends IntExpr {
+public class ITEExpr extends ExpressionBase<Type> {
 
-    private final Expression guard;
-    private final Expression tbranch;
-    private final Expression fbranch;
+    private final Expression condition;
+    private final Expression trueCase;
+    private final Expression falseCase;
 
-    ITEExpr(Expression guard, Expression tbranch, Expression fbranch) {
-        super(checkIntegerType(tbranch));
-        checkArgument(guard.getType() instanceof BooleanType, "IfThenElse with non-boolean guard %s.", guard);
-        checkArgument(tbranch.getType().equals(fbranch.getType()),
-                "IfThenElse with mismatching branches %s and %s.", tbranch, fbranch);
-        this.guard = guard;
-        this.tbranch = tbranch;
-        this.fbranch = fbranch;
-    }
-
-    private static IntegerType checkIntegerType(Expression tbranch) {
-        if (tbranch.getType() instanceof IntegerType integerType) {
-            return integerType;
-        }
-        throw new IllegalArgumentException(String.format("IfThenElse with non-integer branch %s.", tbranch));
-    }
-
-    @Override
-    public ImmutableSet<Register> getRegs() {
-        return new ImmutableSet.Builder<Register>().addAll(guard.getRegs()).addAll(tbranch.getRegs()).addAll(fbranch.getRegs()).build();
+    ITEExpr(Expression condition, Expression trueCase, Expression falseCase) {
+        super(trueCase.getType());
+        checkArgument(condition.getType() instanceof BooleanType,
+                "ITE with non-boolean condition %s.", condition);
+        checkArgument(trueCase.getType().equals(falseCase.getType()),
+                "ITE with mismatching cases %s and %s.", trueCase, falseCase);
+        this.condition = condition;
+        this.trueCase = trueCase;
+        this.falseCase = falseCase;
     }
 
     @Override
     public String toString() {
-        return "(if " + guard + " then " + tbranch + " else " + fbranch + ")";
+        return String.format("ITE(%s, %s, %s)", condition, trueCase, falseCase);
     }
 
-    public Expression getGuard() {
-        return guard;
+    public Expression getCondition() {
+        return condition;
     }
 
-    public Expression getTrueBranch() {
-        return tbranch;
+    public Expression getTrueCase() {
+        return trueCase;
     }
 
-    public Expression getFalseBranch() {
-        return fbranch;
+    public Expression getFalseCase() {
+        return falseCase;
+    }
+
+    @Override
+    public List<Expression> getOperands() {
+        return List.of(condition, trueCase, falseCase);
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return Kind.ITE;
     }
 
     @Override
@@ -60,7 +61,7 @@ public class ITEExpr extends IntExpr {
 
     @Override
     public int hashCode() {
-        return guard.hashCode() ^ tbranch.hashCode() + fbranch.hashCode();
+        return condition.hashCode() ^ trueCase.hashCode() + falseCase.hashCode();
     }
 
     @Override
@@ -71,6 +72,6 @@ public class ITEExpr extends IntExpr {
             return false;
         }
         ITEExpr expr = (ITEExpr) obj;
-        return expr.guard.equals(guard) && expr.fbranch.equals(fbranch) && expr.tbranch.equals(tbranch);
+        return expr.condition.equals(condition) && expr.falseCase.equals(falseCase) && expr.trueCase.equals(trueCase);
     }
 }

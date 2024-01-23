@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;

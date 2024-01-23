@@ -1,6 +1,14 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ITEExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.Atom;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
@@ -194,57 +202,57 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
         @Override
         public Expression visit(Atom atom) {
-            Expression lhs = transform(atom.getLHS());
-            Expression rhs = transform(atom.getRHS());
+            Expression lhs = transform(atom.getLeft());
+            Expression rhs = transform(atom.getRight());
             if (lhs instanceof IntLiteral left && rhs instanceof IntLiteral right) {
-                return expressions.makeValue(atom.getOp().combine(left.getValue(), right.getValue()));
+                return expressions.makeValue(atom.getKind().combine(left.getValue(), right.getValue()));
             } else {
-                return expressions.makeBinary(lhs, atom.getOp(), rhs);
+                return expressions.makeBinary(lhs, atom.getKind(), rhs);
             }
         }
 
         @Override
         public Expression visit(BoolBinaryExpr bBin) {
-            Expression lhs = transform(bBin.getLHS());
-            Expression rhs = transform(bBin.getRHS());
+            Expression lhs = transform(bBin.getLeft());
+            Expression rhs = transform(bBin.getRight());
             if (lhs instanceof BoolLiteral left && rhs instanceof BoolLiteral right) {
-                return expressions.makeValue(bBin.getOp().combine(left.getValue(), right.getValue()));
+                return expressions.makeValue(bBin.getKind().combine(left.getValue(), right.getValue()));
             } else {
-                return expressions.makeBinary(lhs, bBin.getOp(), rhs);
+                return expressions.makeBinary(lhs, bBin.getKind(), rhs);
             }
         }
 
         @Override
         public Expression visit(BoolUnaryExpr bUn) {
-            Expression inner = transform(bUn.getInner());
+            Expression inner = transform(bUn.getOperand());
             if (inner instanceof BoolLiteral bc) {
-                return expressions.makeValue(bUn.getOp().combine(bc.getValue()));
+                return expressions.makeValue(bUn.getKind().combine(bc.getValue()));
             } else {
-                return expressions.makeUnary(bUn.getOp(), inner);
+                return expressions.makeUnary(bUn.getKind(), inner);
             }
         }
 
         @Override
         public Expression visit(IntBinaryExpr iBin) {
-            Expression lhs = transform(iBin.getLHS());
-            Expression rhs = transform(iBin.getRHS());
+            Expression lhs = transform(iBin.getLeft());
+            Expression rhs = transform(iBin.getRight());
             if (lhs instanceof IntLiteral left && rhs instanceof IntLiteral right) {
-                return expressions.makeValue(iBin.getOp().combine(left.getValue(), right.getValue()), left.getType());
-            } else if ((iBin.getOp() == IntBinaryOp.ADD || iBin.getOp() == IntBinaryOp.SUB) && rhs instanceof IntLiteral right && right.isZero()) {
+                return expressions.makeValue(iBin.getKind().combine(left.getValue(), right.getValue()), left.getType());
+            } else if ((iBin.getKind() == IntBinaryOp.ADD || iBin.getKind() == IntBinaryOp.SUB) && rhs instanceof IntLiteral right && right.isZero()) {
                 return lhs;
             } else {
-                return expressions.makeBinary(lhs, iBin.getOp(), rhs);
+                return expressions.makeBinary(lhs, iBin.getKind(), rhs);
             }
         }
 
         @Override
         public Expression visit(IntUnaryExpr iUn) {
-            Expression inner = transform(iUn.getInner());
+            Expression inner = transform(iUn.getOperand());
             Expression result;
-            if ((iUn.getOp() == CAST_SIGNED || iUn.getOp() == CAST_UNSIGNED) && iUn.getType() == inner.getType()) {
+            if ((iUn.getKind() == CAST_SIGNED || iUn.getKind() == CAST_UNSIGNED) && iUn.getType() == inner.getType()) {
                 result = inner;
             } else {
-                result = expressions.makeUnary(iUn.getOp(), inner, iUn.getType());
+                result = expressions.makeUnary(iUn.getKind(), inner, iUn.getType());
             }
             if (inner instanceof IntLiteral) {
                 return result.reduce();
@@ -254,9 +262,9 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
         @Override
         public Expression visit(ITEExpr iteExpr) {
-            Expression guard = transform(iteExpr.getGuard());
-            Expression trueBranch = transform(iteExpr.getTrueBranch());
-            Expression falseBranch = transform(iteExpr.getFalseBranch());
+            Expression guard = transform(iteExpr.getCondition());
+            Expression trueBranch = transform(iteExpr.getTrueCase());
+            Expression falseBranch = transform(iteExpr.getFalseCase());
             // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
             if (guard instanceof BoolLiteral constant && constant.getValue() && falseBranch.getRegs().isEmpty()) {
                 return trueBranch;

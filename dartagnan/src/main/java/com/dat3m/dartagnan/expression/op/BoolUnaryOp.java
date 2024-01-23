@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.expression.op;
 
-public enum BoolUnaryOp {
+import com.dat3m.dartagnan.expression.ExpressionKind;
+
+public enum BoolUnaryOp implements ExpressionKind {
     NOT;
 
     @Override

@@ -1,6 +1,14 @@
 package com.dat3m.dartagnan.expression.processing;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ITEExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.Atom;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -13,29 +21,29 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(Atom atom) {
-        Expression lhs = atom.getLHS().accept(this);
-        Expression rhs = atom.getRHS().accept(this);
+        Expression lhs = atom.getLeft().accept(this);
+        Expression rhs = atom.getRight().accept(this);
         if (lhs.equals(rhs)) {
-            return switch (atom.getOp()) {
+            return switch (atom.getKind()) {
                 case EQ, LTE, ULTE, GTE, UGTE -> expressions.makeTrue();
                 case NEQ, LT, ULT, GT, UGT -> expressions.makeFalse();
             };
         }
         if (lhs instanceof IntLiteral lc && rhs instanceof IntLiteral rc) {
-            return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
+            return expressions.makeValue(atom.getKind().combine(lc.getValue(), rc.getValue()));
         }
-        return expressions.makeBinary(lhs, atom.getOp(), rhs);
+        return expressions.makeBinary(lhs, atom.getKind(), rhs);
     }
 
     @Override
     public Expression visit(BoolBinaryExpr bBin) {
-        Expression l = bBin.getLHS().accept(this);
-        Expression r = bBin.getRHS().accept(this);
+        Expression l = bBin.getLeft().accept(this);
+        Expression r = bBin.getRight().accept(this);
         Expression left = l instanceof BoolLiteral || !(r instanceof BoolLiteral) ? l : r;
         Expression right = left == l ? r : l;
         if (left instanceof BoolLiteral constant) {
             boolean value = constant.getValue();
-            boolean neutralValue = switch (bBin.getOp()) {
+            boolean neutralValue = switch (bBin.getKind()) {
                 case OR -> false;
                 case AND -> true;
             };
@@ -47,32 +55,32 @@ public class ExprSimplifier extends ExprTransformer {
                 return left;
             }
         }
-        return expressions.makeBinary(left, bBin.getOp(), right);
+        return expressions.makeBinary(left, bBin.getKind(), right);
     }
 
     @Override
     public Expression visit(BoolUnaryExpr bUn) {
-        Expression inner = bUn.getInner().accept(this);
-        assert bUn.getOp() == BoolUnaryOp.NOT;
+        Expression inner = bUn.getOperand().accept(this);
+        assert bUn.getKind() == BoolUnaryOp.NOT;
         if (inner instanceof BoolLiteral constant) {
             return expressions.makeValue(!constant.getValue());
         }
-        if (inner instanceof BoolUnaryExpr innerUnary && innerUnary.getOp() == BoolUnaryOp.NOT) {
-            return innerUnary.getInner();
+        if (inner instanceof BoolUnaryExpr innerUnary && innerUnary.getKind() == BoolUnaryOp.NOT) {
+            return innerUnary.getOperand();
         }
 
         if (inner instanceof Atom atom) {
             // Move negations into the atoms COp
-            return expressions.makeBinary(atom.getLHS(), atom.getOp().inverted(), atom.getRHS());
+            return expressions.makeBinary(atom.getLeft(), atom.getKind().inverted(), atom.getRight());
         }
-        return expressions.makeUnary(bUn.getOp(), inner);
+        return expressions.makeUnary(bUn.getKind(), inner);
     }
 
     @Override
     public Expression visit(IntBinaryExpr iBin) {
-        Expression lhs = iBin.getLHS().accept(this);
-        Expression rhs = iBin.getRHS().accept(this);
-        IntBinaryOp op = iBin.getOp();
+        Expression lhs = iBin.getLeft().accept(this);
+        Expression rhs = iBin.getRight().accept(this);
+        IntBinaryOp op = iBin.getKind();
         if (lhs.equals(rhs)) {
             switch(op) {
                 case AND:
@@ -133,9 +141,9 @@ public class ExprSimplifier extends ExprTransformer {
                 // Rule for associativity (rhs is IntLiteral) since we cannot reduce MemoryObjects
                 // Either op can be +/-, but this does not affect correctness
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
-                if(lhs instanceof IntBinaryExpr lhsBin && lhsBin.getRHS() instanceof IntLiteral && lhsBin.getOp() != RSHIFT) {
-                    Expression newLHS = lhsBin.getLHS();
-                    Expression newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
+                if(lhs instanceof IntBinaryExpr lhsBin && lhsBin.getRight() instanceof IntLiteral && lhsBin.getKind() != RSHIFT) {
+                    Expression newLHS = lhsBin.getLeft();
+                    Expression newRHS = expressions.makeBinary(lhsBin.getRight(), lhsBin.getKind(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);
                 }
 
@@ -151,9 +159,9 @@ public class ExprSimplifier extends ExprTransformer {
 
     @Override
     public Expression visit(ITEExpr iteExpr) {
-        Expression cond = iteExpr.getGuard().accept(this);
-        Expression t = iteExpr.getTrueBranch().accept(this);
-        Expression f = iteExpr.getFalseBranch().accept(this);
+        Expression cond = iteExpr.getCondition().accept(this);
+        Expression t = iteExpr.getTrueCase().accept(this);
+        Expression f = iteExpr.getFalseCase().accept(this);
 
         if (cond instanceof BoolLiteral constantGuard) {
             return constantGuard.getValue() ? t : f;

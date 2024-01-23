@@ -1,10 +1,10 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.expression.integers;
 
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
 import com.dat3m.dartagnan.expression.op.IntUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.program.Register;
-import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 
@@ -12,51 +12,33 @@ import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_SIGNED;
 import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_UNSIGNED;
 import static com.google.common.base.Verify.verify;
 
-public class IntUnaryExpr extends IntExpr {
+public class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {
 
-    private final Expression b;
-    private final IntUnaryOp op;
-
-    IntUnaryExpr(IntUnaryOp op, Expression b, IntegerType t) {
-        super(t);
-        this.b = b;
-        this.op = op;
-    }
-
-    public IntUnaryOp getOp() {
-        return op;
-    }
-
-    public Expression getInner() {
-        return b;
-    }
-
-    @Override
-    public ImmutableSet<Register> getRegs() {
-        return b.getRegs();
+    public IntUnaryExpr(IntUnaryOp operator, Expression operand, IntegerType t) {
+        super(t, operator, operand);
     }
 
     @Override
     public String toString() {
-        if (op == CAST_SIGNED || op == CAST_UNSIGNED) {
-            return String.format("(%s %s to %s)", b, op, getType());
+        if (kind == CAST_SIGNED || kind == CAST_UNSIGNED) {
+            return String.format("(%s %s to %s)", operand, kind, getType());
         }
-        return "(" + op + b + ")";
+        return super.toString();
     }
 
     @Override
     public IntLiteral reduce() {
-        if (!(b.getType() instanceof IntegerType innerType)) {
-            throw new IllegalStateException(String.format("Non-integer operand %s.", b));
+        if (!(operand.getType() instanceof IntegerType innerType)) {
+            throw new IllegalStateException(String.format("Non-integer operand %s.", operand));
         }
-        IntLiteral inner = b.reduce();
+        IntLiteral inner = operand.reduce();
         verify(inner.getType().equals(innerType),
                 "Reduced to wrong type %s instead of %s.", inner.getType(), innerType);
         BigInteger value = inner.getValue();
         IntegerType targetType = getType();
-        switch (op) {
+        switch (kind) {
             case CAST_SIGNED, CAST_UNSIGNED -> {
-                boolean signed = op.equals(CAST_SIGNED);
+                boolean signed = kind.equals(CAST_SIGNED);
                 boolean truncate = !targetType.isMathematical() &&
                         (innerType.isMathematical() || targetType.getBitWidth() < innerType.getBitWidth());
                 if (truncate) {
@@ -64,17 +46,17 @@ public class IntUnaryExpr extends IntExpr {
                     for (int i = targetType.getBitWidth(); i < value.bitLength(); i++) {
                         v = v.clearBit(i);
                     }
-                    return new IntLiteral(v, targetType);
+                    return new IntLiteral(targetType, v);
                 }
                 if (!innerType.isMathematical()) {
                     verify(innerType.canContain(value), "");
                     BigInteger result = innerType.applySign(value, signed);
-                    return new IntLiteral(result, targetType);
+                    return new IntLiteral(targetType, result);
                 }
-                return new IntLiteral(value, targetType);
+                return new IntLiteral(targetType, value);
             }
             case MINUS -> {
-                return new IntLiteral(value.negate(), targetType);
+                return new IntLiteral(targetType, value.negate());
             }
             case CTLZ -> {
                 if (innerType.isMathematical()) {
@@ -82,12 +64,12 @@ public class IntUnaryExpr extends IntExpr {
                             String.format("Counting leading zeroes in mathematical integer %s.", inner));
                 }
                 if (value.signum() == -1) {
-                    return new IntLiteral(BigInteger.ZERO, targetType);
+                    return new IntLiteral(targetType, BigInteger.ZERO);
                 }
                 int bitWidth = innerType.getBitWidth();
                 int length = value.bitLength();
                 verify(length <= bitWidth, "Value %s returned by %s not in range of type %s.", value);
-                return new IntLiteral(BigInteger.valueOf(bitWidth - length), targetType);
+                return new IntLiteral(targetType, BigInteger.valueOf(bitWidth - length));
             }
             default -> throw new UnsupportedOperationException("Reduce not supported for " + this);
         }
@@ -99,18 +81,10 @@ public class IntUnaryExpr extends IntExpr {
     }
 
     @Override
-    public int hashCode() {
-        return op.hashCode() ^ b.hashCode();
-    }
-
-    @Override
     public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj == null || obj.getClass() != getClass()) {
-            return false;
-        }
-        IntUnaryExpr expr = (IntUnaryExpr) obj;
-        return expr.op == op && expr.b.equals(b);
+        return (obj == this || obj instanceof IntUnaryExpr expr
+                && type.equals(expr.type)
+                && kind.equals(expr.kind)
+                && operand.equals(expr.operand));
     }
 }

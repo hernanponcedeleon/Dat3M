@@ -1,6 +1,12 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ITEExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.NonDetBool;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.op.IntUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -62,9 +68,9 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(Atom atom) {
-        Formula lhs = encode(atom.getLHS());
-        Formula rhs = encode(atom.getRHS());
-        return context.encodeComparison(atom.getOp(), lhs, rhs);
+        Formula lhs = encode(atom.getLeft());
+        Formula rhs = encode(atom.getRight());
+        return context.encodeComparison(atom.getKind(), lhs, rhs);
     }
 
     @Override
@@ -74,20 +80,17 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(BoolBinaryExpr bBin) {
-        BooleanFormula lhs = encodeAsBoolean(bBin.getLHS());
-        BooleanFormula rhs = encodeAsBoolean(bBin.getRHS());
-        switch (bBin.getOp()) {
-            case AND:
-                return booleanFormulaManager.and(lhs, rhs);
-            case OR:
-                return booleanFormulaManager.or(lhs, rhs);
-        }
-        throw new UnsupportedOperationException("Encoding not supported for BoolBinaryOp " + bBin.getOp());
+        BooleanFormula lhs = encodeAsBoolean(bBin.getLeft());
+        BooleanFormula rhs = encodeAsBoolean(bBin.getRight());
+        return switch (bBin.getKind()) {
+            case AND -> booleanFormulaManager.and(lhs, rhs);
+            case OR -> booleanFormulaManager.or(lhs, rhs);
+        };
     }
 
     @Override
     public Formula visit(BoolUnaryExpr bUn) {
-        BooleanFormula inner = encodeAsBoolean(bUn.getInner());
+        BooleanFormula inner = encodeAsBoolean(bUn.getOperand());
         return booleanFormulaManager.not(inner);
     }
 
@@ -106,12 +109,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visit(IntBinaryExpr iBin) {
-        Formula lhs = encode(iBin.getLHS());
-        Formula rhs = encode(iBin.getRHS());
+        Formula lhs = encode(iBin.getLeft());
+        Formula rhs = encode(iBin.getRight());
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
             BitvectorFormulaManager bitvectorFormulaManager;
             IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-            switch (iBin.getOp()) {
+            switch (iBin.getKind()) {
                 case ADD:
                     return integerFormulaManager.add(i1, i2);
                 case SUB:
@@ -176,11 +179,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                             integerFormulaManager.lessThan(i1, zero));
                     return booleanFormulaManager.ifThenElse(cond, integerFormulaManager.subtract(modulo, i2), modulo);
                 default:
-                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getOp() + " not supported on integer formulas.");
+                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on integer formulas.");
             }
         } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            switch (iBin.getOp()) {
+            switch (iBin.getKind()) {
                 case ADD:
                     return bitvectorFormulaManager.add(bv1, bv2);
                 case SUB:
@@ -218,17 +221,17 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case ARSHIFT:
                     return bitvectorFormulaManager.shiftRight(bv1, bv2, true);
                 default:
-                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getOp() + " not supported on bitvector formulas.");
+                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on bitvector formulas.");
             }
         } else {
-            throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
+            throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on formulas of mismatching type.");
         }
     }
 
     @Override
     public Formula visit(IntUnaryExpr iUn) {
-        Formula inner = encode(iUn.getInner());
-        switch (iUn.getOp()) {
+        Formula inner = encode(iUn.getOperand());
+        switch (iUn.getKind()) {
             case MINUS -> {
                 if (inner instanceof IntegerFormula number) {
                     return integerFormulaManager().negate(number);
@@ -238,7 +241,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 }
             }
             case CAST_SIGNED, CAST_UNSIGNED -> {
-                boolean signed = iUn.getOp().equals(IntUnaryOp.CAST_SIGNED);
+                boolean signed = iUn.getKind().equals(IntUnaryOp.CAST_SIGNED);
                 if (inner instanceof BooleanFormula bool) {
                     return bool;
                 }
@@ -280,14 +283,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
         }
         throw new UnsupportedOperationException(
-                String.format("Encoding of (%s) %s %s not supported.", iUn.getType(), iUn.getOp(), inner));
+                String.format("Encoding of (%s) %s %s not supported.", iUn.getType(), iUn.getKind(), inner));
     }
 
     @Override
     public Formula visit(ITEExpr iteExpr) {
-        BooleanFormula guard = encodeAsBoolean(iteExpr.getGuard());
-        Formula tBranch = encode(iteExpr.getTrueBranch());
-        Formula fBranch = encode(iteExpr.getFalseBranch());
+        BooleanFormula guard = encodeAsBoolean(iteExpr.getCondition());
+        Formula tBranch = encode(iteExpr.getTrueCase());
+        Formula fBranch = encode(iteExpr.getFalseCase());
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
     }
 

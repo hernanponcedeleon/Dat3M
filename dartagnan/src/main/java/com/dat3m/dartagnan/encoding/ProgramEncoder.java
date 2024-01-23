@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.NonDetInt;
+import com.dat3m.dartagnan.expression.integers.NonDetInt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;

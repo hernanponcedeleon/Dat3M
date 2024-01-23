@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
@@ -10,17 +13,16 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Register implements Expression {
+public class Register extends LeafExpressionBase<Type, Kind> {
 
     private final String name;
     private String cVar;
     private final Function function;
-    private final Type type;
 
     Register(String name, Function function, Type type) {
+        super(type);
         this.name = checkNotNull(name);
         this.function = function;
-        this.type = checkNotNull(type);
     }
 
     public String getName() {
@@ -44,9 +46,7 @@ public class Register implements Expression {
     }
 
     @Override
-    public Type getType() {
-        return type;
-    }
+    public ExpressionKind getKind() { return Kind.REGISTER; }
 
     @Override
     public String toString() {

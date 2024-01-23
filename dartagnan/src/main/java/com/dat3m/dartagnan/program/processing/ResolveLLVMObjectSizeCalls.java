@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;

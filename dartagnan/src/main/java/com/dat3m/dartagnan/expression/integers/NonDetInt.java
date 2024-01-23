@@ -1,5 +1,8 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.expression.integers;
 
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
@@ -7,7 +10,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 // TODO why is NonDetInt not a IntConst?
-public class NonDetInt extends IntExpr {
+public class NonDetInt extends LeafExpressionBase<IntegerType, Kind> {
 
     private final int id;
     private final boolean signed;
@@ -51,9 +54,12 @@ public class NonDetInt extends IntExpr {
     }
 
     @Override
+    public ExpressionKind getKind() { return Kind.NONDET; }
+
+    @Override
     public IntLiteral reduce() {
         if (min.equals(max)) {
-            return new IntLiteral(min, getType());
+            return new IntLiteral(getType(), min);
         }
         return super.reduce();
     }

@@ -1,8 +1,15 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Construction;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.booleans.NonDetBool;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.NonDetInt;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -1436,6 +1443,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
         @Override
         default IntLiteral reduce() { throw new UnsupportedOperationException(); }
+        @Override
+        default List<Expression> getOperands() { return List.of(); }
+        @Override
+        default ExpressionKind getKind() { return Kind.OTHER; }
     }
 
     private static final MdNode MD_NULL = new MdNode() {

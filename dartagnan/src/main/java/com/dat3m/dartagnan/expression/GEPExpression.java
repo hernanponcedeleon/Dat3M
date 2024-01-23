@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class GEPExpression implements Expression {
@@ -34,6 +36,19 @@ public final class GEPExpression implements Expression {
     @Override
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public List<Expression> getOperands() {
+        final List<Expression> ops = new ArrayList<>(offsets.size() + 1);
+        ops.add(base);
+        ops.addAll(offsets);
+        return ops;
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return Kind.GEP;
     }
 
     @Override

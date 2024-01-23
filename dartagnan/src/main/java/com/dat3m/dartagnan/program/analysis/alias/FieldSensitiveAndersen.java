@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ITEExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -307,16 +311,16 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
         @Override
         public Result visit(IntBinaryExpr x) {
-            Result l = x.getLHS().accept(this);
-            Result r = x.getRHS().accept(this);
-            if (l == null || r == null || x.getOp() == RSHIFT) {
+            Result l = x.getLeft().accept(this);
+            Result r = x.getRight().accept(this);
+            if (l == null || r == null || x.getKind() == RSHIFT) {
                 return null;
             }
             if (l.address == null && l.register == null && l.alignment == 0 && r.address == null &&
                     r.register == null && r.alignment == 0) {
-                return new Result(null, null, x.getOp().combine(l.offset, r.offset), 0);
+                return new Result(null, null, x.getKind().combine(l.offset, r.offset), 0);
             }
-            if (x.getOp() == MUL) {
+            if (x.getKind() == MUL) {
                 if (l.address != null || r.address != null) {
                     return null;
                 }
@@ -326,12 +330,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                         min(min(l.alignment, l.register) * r.offset.intValue(),
                                 min(r.alignment, r.register) * l.offset.intValue()));
             }
-            if (x.getOp() == ADD || x.getOp() == SUB) {
+            if (x.getKind() == ADD || x.getKind() == SUB) {
                 if (l.address != null && r.address != null) {
                     return null;
                 }
                 MemoryObject base = l.address != null ? l.address : r.address;
-                BigInteger offset = x.getOp() == ADD ? l.offset.add(r.offset) : l.offset.subtract(r.offset);
+                BigInteger offset = x.getKind() == ADD ? l.offset.add(r.offset) : l.offset.subtract(r.offset);
                 if (base != null) {
                     return new Result(base,
                             null,
@@ -348,15 +352,15 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
         @Override
         public Result visit(IntUnaryExpr x) {
-            Result i = x.getInner().accept(this);
-            return i == null ? null : x.getOp() != MINUS ? i :
+            Result i = x.getOperand().accept(this);
+            return i == null ? null : x.getKind() != MINUS ? i :
                     new Result(null, null, i.offset.negate(), i.alignment == 0 ? 1 : i.alignment);
         }
 
         @Override
         public Result visit(ITEExpr x) {
-            x.getTrueBranch().accept(this);
-            x.getFalseBranch().accept(this);
+            x.getTrueCase().accept(this);
+            x.getFalseCase().accept(this);
             return null;
         }
 

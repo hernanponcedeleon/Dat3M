@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.expression.op;
 
+import com.dat3m.dartagnan.expression.ExpressionKind;
+
 import java.math.BigInteger;
 
-public enum CmpOp {
+public enum CmpOp implements ExpressionKind {
     EQ, NEQ, GTE, LTE, GT, LT, UGTE, ULTE, UGT, ULT;
 
     @Override

@@ -1,6 +1,14 @@
 package com.dat3m.dartagnan.expression.processing;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Construction;
+import com.dat3m.dartagnan.expression.Extraction;
+import com.dat3m.dartagnan.expression.GEPExpression;
+import com.dat3m.dartagnan.expression.ITEExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.NonDetBool;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;

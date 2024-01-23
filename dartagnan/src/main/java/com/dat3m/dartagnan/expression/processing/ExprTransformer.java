@@ -1,6 +1,11 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.NonDetBool;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -16,7 +21,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visit(Atom atom) {
-        return expressions.makeBinary(atom.getLHS().accept(this), atom.getOp(), atom.getRHS().accept(this));
+        return expressions.makeBinary(atom.getLeft().accept(this), atom.getKind(), atom.getRight().accept(this));
     }
 
     @Override
@@ -26,12 +31,12 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visit(BoolBinaryExpr bBin) {
-        return expressions.makeBinary(bBin.getLHS().accept(this), bBin.getOp(), bBin.getRHS().accept(this));
+        return expressions.makeBinary(bBin.getLeft().accept(this), bBin.getKind(), bBin.getRight().accept(this));
     }
 
     @Override
     public Expression visit(BoolUnaryExpr bUn) {
-        return expressions.makeUnary(bUn.getOp(), bUn.getInner().accept(this));
+        return expressions.makeUnary(bUn.getKind(), bUn.getOperand().accept(this));
     }
 
     @Override
@@ -46,20 +51,20 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visit(IntBinaryExpr iBin) {
-        return expressions.makeBinary(iBin.getLHS().accept(this), iBin.getOp(), iBin.getRHS().accept(this));
+        return expressions.makeBinary(iBin.getLeft().accept(this), iBin.getKind(), iBin.getRight().accept(this));
     }
 
     @Override
     public Expression visit(IntUnaryExpr iUn) {
-        return expressions.makeUnary(iUn.getOp(), iUn.getInner().accept(this), iUn.getType());
+        return expressions.makeUnary(iUn.getKind(), iUn.getOperand().accept(this), iUn.getType());
     }
 
     @Override
     public Expression visit(ITEExpr iteExpr) {
         return expressions.makeITE(
-                iteExpr.getGuard().accept(this),
-                iteExpr.getTrueBranch().accept(this),
-                iteExpr.getFalseBranch().accept(this));
+                iteExpr.getCondition().accept(this),
+                iteExpr.getTrueCase().accept(this),
+                iteExpr.getFalseCase().accept(this));
     }
 
     @Override

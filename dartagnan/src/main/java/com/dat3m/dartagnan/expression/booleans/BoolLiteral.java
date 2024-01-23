@@ -1,24 +1,25 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.expression.booleans;
 
+import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 
-public final class BoolLiteral extends BoolExpr {
+public final class BoolLiteral extends LiteralExpressionBase<BooleanType> {
 
     private final boolean value;
 
-    BoolLiteral(BooleanType type, boolean value) {
+    public BoolLiteral(BooleanType type, boolean value) {
         super(type);
         this.value = value;
+    }
+
+    public boolean getValue() {
+        return value;
     }
 
     @Override
     public String toString() {
         return value ? "True" : "False";
-    }
-
-    public boolean getValue() {
-        return value;
     }
 
     @Override
@@ -33,11 +34,6 @@ public final class BoolLiteral extends BoolExpr {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        } else if (obj == null || obj.getClass() != getClass()) {
-            return false;
-        }
-        return ((BoolLiteral) obj).value == value;
+        return (obj instanceof BoolLiteral lit && lit.value == this.value);
     }
 }

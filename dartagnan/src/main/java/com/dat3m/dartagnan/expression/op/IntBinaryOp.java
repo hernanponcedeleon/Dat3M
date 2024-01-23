@@ -1,8 +1,10 @@
 package com.dat3m.dartagnan.expression.op;
 
+import com.dat3m.dartagnan.expression.ExpressionKind;
+
 import java.math.BigInteger;
 
-public enum IntBinaryOp {
+public enum IntBinaryOp implements ExpressionKind {
     ADD, SUB, MUL, DIV, UDIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM;
 
     @Override

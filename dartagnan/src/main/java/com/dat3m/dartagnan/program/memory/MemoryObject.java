@@ -2,8 +2,11 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IntExpr;
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
@@ -16,7 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends IntExpr {
+public class MemoryObject extends LeafExpressionBase<IntegerType, Kind> {
 
     private final int index;
     private final int size;
@@ -116,6 +119,11 @@ public class MemoryObject extends IntExpr {
         }
 
         return index == ((MemoryObject) obj).index;
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return Kind.MEMORY_ADDR;
     }
 
     @Override

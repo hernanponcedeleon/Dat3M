@@ -1,6 +1,8 @@
 package com.dat3m.dartagnan.expression.op;
 
-public enum IntUnaryOp {
+import com.dat3m.dartagnan.expression.ExpressionKind;
+
+public enum IntUnaryOp implements ExpressionKind {
     CAST_SIGNED,
     CAST_UNSIGNED,
     CTLZ,

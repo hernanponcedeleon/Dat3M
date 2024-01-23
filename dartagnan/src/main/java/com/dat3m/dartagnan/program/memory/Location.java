@@ -1,20 +1,22 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.IntExpr;
+import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
-public class Location extends IntExpr {
+public class Location extends UnaryExpressionBase<IntegerType, Kind> {
 
     private final String name;
     private final MemoryObject base;
     private final int offset;
 
-    public Location(String name, MemoryObject b, int o) {
-        super(TypeFactory.getInstance().getArchType());
+    public Location(String name, MemoryObject base, int offset) {
+        super(TypeFactory.getInstance().getArchType(), Kind.MEMORY_ADDR, base);
         this.name = name;
-        base = b;
-        offset = o;
+        this.base = base;
+        this.offset = offset;
     }
 
     public String getName() {

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
@@ -37,6 +38,16 @@ public final class Construction implements Expression {
     @Override
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public List<Expression> getOperands() {
+        return getArguments();
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return Kind.CONSTRUCT;
     }
 
     @Override
