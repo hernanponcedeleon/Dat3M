@@ -54,7 +54,7 @@ public class VisitorPTX extends VisitorBase<EventFactory.PTX> {
         Expression expected = e.getExpectedValue();
         Expression newValue = e.getStoreValue();
         Expression isExpectedValue = expressions.makeEQ(resultRegister, expected);
-        Expression storeValue = expressions.makeConditional(isExpectedValue, newValue, resultRegister);
+        Expression storeValue = expressions.makeITE(isExpectedValue, newValue, resultRegister);
         Load load = eventFactory.newRMWLoadWithMo(resultRegister, address, Tag.PTX.loadMO(mo));
         RMWStore store = eventFactory.newRMWStoreWithMo(load, address, storeValue, Tag.PTX.storeMO(mo));
         this.propagateTags(e, load);

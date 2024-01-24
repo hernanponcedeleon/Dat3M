@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.op.IntUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
@@ -68,12 +68,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(BConst bConst) {
-        return booleanFormulaManager.makeBoolean(bConst.getValue());
+    public Formula visit(BoolLiteral boolLiteral) {
+        return booleanFormulaManager.makeBoolean(boolLiteral.getValue());
     }
 
     @Override
-    public Formula visit(BExprBin bBin) {
+    public Formula visit(BoolBinaryExpr bBin) {
         BooleanFormula lhs = encodeAsBoolean(bBin.getLHS());
         BooleanFormula rhs = encodeAsBoolean(bBin.getRHS());
         switch (bBin.getOp()) {
@@ -82,30 +82,30 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             case OR:
                 return booleanFormulaManager.or(lhs, rhs);
         }
-        throw new UnsupportedOperationException("Encoding not supported for BOpBin " + bBin.getOp());
+        throw new UnsupportedOperationException("Encoding not supported for BoolBinaryOp " + bBin.getOp());
     }
 
     @Override
-    public Formula visit(BExprUn bUn) {
+    public Formula visit(BoolUnaryExpr bUn) {
         BooleanFormula inner = encodeAsBoolean(bUn.getInner());
         return booleanFormulaManager.not(inner);
     }
 
     @Override
-    public Formula visit(BNonDet bNonDet) {
-        return booleanFormulaManager.makeVariable(Integer.toString(bNonDet.hashCode()));
+    public Formula visit(NonDetBool nonDetBool) {
+        return booleanFormulaManager.makeVariable(Integer.toString(nonDetBool.hashCode()));
     }
 
     @Override
-    public Formula visit(IValue iValue) {
+    public Formula visit(IntLiteral intLiteral) {
         
-        BigInteger value = iValue.getValue();
-        Type type = iValue.getType();
+        BigInteger value = intLiteral.getValue();
+        Type type = intLiteral.getType();
         return context.makeLiteral(type, value);
     }
 
     @Override
-    public Formula visit(IExprBin iBin) {
+    public Formula visit(IntBinaryExpr iBin) {
         Formula lhs = encode(iBin.getLHS());
         Formula rhs = encode(iBin.getRHS());
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
@@ -176,7 +176,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                             integerFormulaManager.lessThan(i1, zero));
                     return booleanFormulaManager.ifThenElse(cond, integerFormulaManager.subtract(modulo, i2), modulo);
                 default:
-                    throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on integer formulas.");
+                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getOp() + " not supported on integer formulas.");
             }
         } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
             BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
@@ -218,15 +218,15 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case ARSHIFT:
                     return bitvectorFormulaManager.shiftRight(bv1, bv2, true);
                 default:
-                    throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on bitvector formulas.");
+                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getOp() + " not supported on bitvector formulas.");
             }
         } else {
-            throw new UnsupportedOperationException("Encoding of IOpBin operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
+            throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getOp() + " not supported on formulas of mismatching type.");
         }
     }
 
     @Override
-    public Formula visit(IExprUn iUn) {
+    public Formula visit(IntUnaryExpr iUn) {
         Formula inner = encode(iUn.getInner());
         switch (iUn.getOp()) {
             case MINUS -> {
@@ -238,7 +238,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 }
             }
             case CAST_SIGNED, CAST_UNSIGNED -> {
-                boolean signed = iUn.getOp().equals(IOpUn.CAST_SIGNED);
+                boolean signed = iUn.getOp().equals(IntUnaryOp.CAST_SIGNED);
                 if (inner instanceof BooleanFormula bool) {
                     return bool;
                 }
@@ -284,15 +284,15 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IfExpr ifExpr) {
-        BooleanFormula guard = encodeAsBoolean(ifExpr.getGuard());
-        Formula tBranch = encode(ifExpr.getTrueBranch());
-        Formula fBranch = encode(ifExpr.getFalseBranch());
+    public Formula visit(ITEExpr iteExpr) {
+        BooleanFormula guard = encodeAsBoolean(iteExpr.getGuard());
+        Formula tBranch = encode(iteExpr.getTrueBranch());
+        Formula fBranch = encode(iteExpr.getFalseBranch());
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
     }
 
     @Override
-    public Formula visit(INonDet iNonDet) {
+    public Formula visit(NonDetInt iNonDet) {
         String name = iNonDet.getName();
         Type type = iNonDet.getType();
         return context.makeVariable(name, type);
@@ -308,10 +308,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(MemoryObject address) {
-        BigInteger value = address.getValue();
-        Type type = address.getType();
-        return context.makeLiteral(type, value);
+    public Formula visit(MemoryObject memObj) {
+        return context.makeLiteral(memObj.getType(), memObj.getAddress());
     }
 
     @Override

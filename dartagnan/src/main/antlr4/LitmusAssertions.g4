@@ -3,7 +3,7 @@ grammar LitmusAssertions;
 import BaseLexer;
 
 @header{
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.CmpOp;
 }
 
 assertionFilter
@@ -48,13 +48,13 @@ assertionListExpectation
     :   AssertionListExpectationTest Colon AssertionNot? AssertionExists Semi
     ;
 
-assertionCompare returns [COpBin op]
-    :   (Equals | EqualsEquals) {$op = COpBin.EQ;}
-    |   NotEquals               {$op = COpBin.NEQ;}
-    |   GreaterEquals           {$op = COpBin.GTE;}
-    |   LessEquals              {$op = COpBin.LTE;}
-    |   Less                    {$op = COpBin.LT;}
-    |   Greater                 {$op = COpBin.GT;}
+assertionCompare returns [CmpOp op]
+    :   (Equals | EqualsEquals) {$op = CmpOp.EQ;}
+    |   NotEquals               {$op = CmpOp.NEQ;}
+    |   GreaterEquals           {$op = CmpOp.GTE;}
+    |   LessEquals              {$op = CmpOp.LTE;}
+    |   Less                    {$op = CmpOp.LT;}
+    |   Greater                 {$op = CmpOp.GT;}
     ;
 
 threadId returns [int id]

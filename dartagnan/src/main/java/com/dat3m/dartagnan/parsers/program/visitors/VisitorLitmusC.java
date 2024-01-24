@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
@@ -73,7 +73,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
         if (ctx.initConstantValue() != null) {
-            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
+            IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
             programBuilder.initLocEqConst(ctx.varName().getText(), value);
         }
         return null;
@@ -84,7 +84,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (ctx.initConstantValue() != null) {
             // FIXME: We visit declarators before threads, so we need to create threads early
             programBuilder.getOrNewThread(ctx.threadId().id);
-            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
+            IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
             programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
         }
         return null;
@@ -437,7 +437,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Expression visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IValue result = expressions.parseValue(ctx.getText(), archType);
+        IntLiteral result = expressions.parseValue(ctx.getText(), archType);
         return assignToReturnRegister(register, result);
     }
 

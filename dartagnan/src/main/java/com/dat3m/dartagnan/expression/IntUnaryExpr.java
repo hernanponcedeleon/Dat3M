@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.op.IntUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -8,22 +8,22 @@ import com.google.common.collect.ImmutableSet;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_SIGNED;
-import static com.dat3m.dartagnan.expression.op.IOpUn.CAST_UNSIGNED;
+import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_SIGNED;
+import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_UNSIGNED;
 import static com.google.common.base.Verify.verify;
 
-public class IExprUn extends IExpr {
+public class IntUnaryExpr extends IntExpr {
 
     private final Expression b;
-    private final IOpUn op;
+    private final IntUnaryOp op;
 
-    public IExprUn(IOpUn op, Expression b, IntegerType t) {
+    IntUnaryExpr(IntUnaryOp op, Expression b, IntegerType t) {
         super(t);
         this.b = b;
         this.op = op;
     }
 
-    public IOpUn getOp() {
+    public IntUnaryOp getOp() {
         return op;
     }
 
@@ -45,11 +45,11 @@ public class IExprUn extends IExpr {
     }
 
     @Override
-    public IConst reduce() {
+    public IntLiteral reduce() {
         if (!(b.getType() instanceof IntegerType innerType)) {
             throw new IllegalStateException(String.format("Non-integer operand %s.", b));
         }
-        IConst inner = b.reduce();
+        IntLiteral inner = b.reduce();
         verify(inner.getType().equals(innerType),
                 "Reduced to wrong type %s instead of %s.", inner.getType(), innerType);
         BigInteger value = inner.getValue();
@@ -64,17 +64,17 @@ public class IExprUn extends IExpr {
                     for (int i = targetType.getBitWidth(); i < value.bitLength(); i++) {
                         v = v.clearBit(i);
                     }
-                    return new IValue(v, targetType);
+                    return new IntLiteral(v, targetType);
                 }
                 if (!innerType.isMathematical()) {
                     verify(innerType.canContain(value), "");
                     BigInteger result = innerType.applySign(value, signed);
-                    return new IValue(result, targetType);
+                    return new IntLiteral(result, targetType);
                 }
-                return new IValue(value, targetType);
+                return new IntLiteral(value, targetType);
             }
             case MINUS -> {
-                return new IValue(value.negate(), targetType);
+                return new IntLiteral(value.negate(), targetType);
             }
             case CTLZ -> {
                 if (innerType.isMathematical()) {
@@ -82,12 +82,12 @@ public class IExprUn extends IExpr {
                             String.format("Counting leading zeroes in mathematical integer %s.", inner));
                 }
                 if (value.signum() == -1) {
-                    return new IValue(BigInteger.ZERO, targetType);
+                    return new IntLiteral(BigInteger.ZERO, targetType);
                 }
                 int bitWidth = innerType.getBitWidth();
                 int length = value.bitLength();
                 verify(length <= bitWidth, "Value %s returned by %s not in range of type %s.", value);
-                return new IValue(BigInteger.valueOf(bitWidth - length), targetType);
+                return new IntLiteral(BigInteger.valueOf(bitWidth - length), targetType);
             }
             default -> throw new UnsupportedOperationException("Reduce not supported for " + this);
         }
@@ -110,7 +110,7 @@ public class IExprUn extends IExpr {
         } else if (obj == null || obj.getClass() != getClass()) {
             return false;
         }
-        IExprUn expr = (IExprUn) obj;
+        IntUnaryExpr expr = (IntUnaryExpr) obj;
         return expr.op == op && expr.b.equals(b);
     }
 }

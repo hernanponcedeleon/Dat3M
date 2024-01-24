@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IntExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
@@ -16,10 +16,10 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends IConst {
+public class MemoryObject extends IntExpr {
 
     private final int index;
-    private int size;
+    private final int size;
     BigInteger address;
     private String cVar;
     private boolean isThreadLocal;
@@ -87,17 +87,6 @@ public class MemoryObject extends IConst {
         initialValues.put(offset, value);
     }
 
-    /**
-     * Updates the initial value at a certain field of this array.
-     *
-     * @param offset Non-negative number of fields before the target.
-     * @param value  New value to be read at the start of each execution.
-     */
-    public void appendInitialValue(int offset, Expression value) {
-        checkArgument(offset >= 0, "array index out of bounds");
-        initialValues.put(offset, value);
-    }
-
     private void checkArrayBounds(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
     }
@@ -107,11 +96,6 @@ public class MemoryObject extends IConst {
     }
     public void markAsAtomic() {
         this.atomic = true;
-    }
-
-    @Override
-    public BigInteger getValue() {
-        return address != null ? address : BigInteger.valueOf(index);
     }
 
     @Override

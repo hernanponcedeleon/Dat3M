@@ -8,15 +8,15 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 public interface ExpressionVisitor<T> {
     default T visit(Atom atom) { return null; }
-    default T visit(BConst bConst) { return null; }
-    default T visit(BExprBin bBin) { return null; }
-    default T visit(BExprUn bUn) { return null; }
-    default T visit(BNonDet bNonDet) { return null; }
-    default T visit(IValue iValue) { return null; }
-    default T visit(IExprBin iBin) { return null; }
-    default T visit(IExprUn iUn) { return null; }
-    default T visit(IfExpr ifExpr) { return null; }
-    default T visit(INonDet iNonDet) { return null; }
+    default T visit(BoolLiteral boolLiteral) { return null; }
+    default T visit(BoolBinaryExpr bBin) { return null; }
+    default T visit(BoolUnaryExpr bUn) { return null; }
+    default T visit(NonDetBool nonDetBool) { return null; }
+    default T visit(IntLiteral intLiteral) { return null; }
+    default T visit(IntBinaryExpr iBin) { return null; }
+    default T visit(IntUnaryExpr iUn) { return null; }
+    default T visit(ITEExpr iteExpr) { return null; }
+    default T visit(NonDetInt iNonDet) { return null; }
     default T visit(Register reg) { return null; }
     default T visit(MemoryObject address) { return null; }
     default T visit(Location location) { return null; }

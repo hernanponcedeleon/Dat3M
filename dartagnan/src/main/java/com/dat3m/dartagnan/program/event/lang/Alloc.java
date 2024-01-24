@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.event.lang;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -54,7 +54,7 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public Expression getArraySize() { return arraySize; }
     public boolean isHeapAllocation() { return isHeapAllocation; }
 
-    public boolean isSimpleAllocation() { return (arraySize instanceof IValue size && size.isOne()); }
+    public boolean isSimpleAllocation() { return (arraySize instanceof IntLiteral size && size.isOne()); }
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
 
     @Override

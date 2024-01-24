@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -214,7 +214,7 @@ public class EventFactory {
     }
 
     public CondJump newJumpUnless(Expression cond, Label target) {
-        if (cond instanceof BConst constant && !constant.getValue()) {
+        if (cond instanceof BoolLiteral constant && !constant.getValue()) {
             return newGoto(target);
         }
         return new CondJump(expressions.makeNot(cond), target);
@@ -382,12 +382,12 @@ public class EventFactory {
             return newCompareExchange(register, address, expectedAddr, desiredValue, mo, false);
         }
 
-        public AtomicFetchOp newFetchOp(Register register, Expression address, Expression value, IOpBin op, String mo) {
+        public AtomicFetchOp newFetchOp(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
             return new AtomicFetchOp(register, address, op, value, mo);
         }
 
         public AtomicFetchOp newFADD(Register register, Expression address, Expression value, String mo) {
-            return newFetchOp(register, address, value, IOpBin.ADD, mo);
+            return newFetchOp(register, address, value, IntBinaryOp.ADD, mo);
         }
 
         public AtomicFetchOp newIncrement(Register register, Expression address, String mo) {
@@ -395,7 +395,7 @@ public class EventFactory {
                 throw new IllegalArgumentException(String.format("Non-integer type %s for increment operation.",
                         register.getType()));
             }
-            return newFetchOp(register, address, expressions.makeOne(integerType), IOpBin.ADD, mo);
+            return newFetchOp(register, address, expressions.makeOne(integerType), IntBinaryOp.ADD, mo);
         }
 
         public AtomicLoad newLoad(Register register, Expression address, String mo) {
@@ -449,7 +449,7 @@ public class EventFactory {
             return newCompareExchange(oldValueRegister, cmpRegister, address, expectedAddr, desiredValue, mo, false);
         }
 
-        public LlvmRMW newRMW(Register register, Expression address, Expression value, IOpBin op, String mo) {
+        public LlvmRMW newRMW(Register register, Expression address, Expression value, IntBinaryOp op, String mo) {
             return new LlvmRMW(register, address, op, value, mo);
         }
 
@@ -554,19 +554,19 @@ public class EventFactory {
             return new LKMMCmpXchg(register, address, cmp, value, mo);
         }
 
-        public LKMMFetchOp newRMWFetchOp(Expression address, Register register, Expression value, IOpBin op, String mo) {
+        public LKMMFetchOp newRMWFetchOp(Expression address, Register register, Expression value, IntBinaryOp op, String mo) {
             return new LKMMFetchOp(register, address, op, value, mo);
         }
 
-        public LKMMOpNoReturn newRMWOp(Expression address, Expression value, IOpBin op) {
+        public LKMMOpNoReturn newRMWOp(Expression address, Expression value, IntBinaryOp op) {
             return new LKMMOpNoReturn(address, op, value);
         }
 
-        public LKMMOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IOpBin op) {
+        public LKMMOpAndTest newRMWOpAndTest(Expression address, Register register, Expression value, IntBinaryOp op) {
             return new LKMMOpAndTest(register, address, op, value);
         }
 
-        public LKMMOpReturn newRMWOpReturn(Expression address, Register register, Expression value, IOpBin op, String mo) {
+        public LKMMOpReturn newRMWOpReturn(Expression address, Register register, Expression value, IntBinaryOp op, String mo) {
             return new LKMMOpReturn(register, address, op, value, mo);
         }
 
@@ -746,7 +746,7 @@ public class EventFactory {
 
         private PTX(EventFactory original) { super(original); }
 
-        public PTXAtomOp newAtomOp(Expression address, Register register, Expression value, IOpBin op, String mo,
+        public PTXAtomOp newAtomOp(Expression address, Register register, Expression value, IntBinaryOp op, String mo,
                 String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for atom.
             PTXAtomOp atom = new PTXAtomOp(register, address, op, value, mo);
@@ -768,7 +768,7 @@ public class EventFactory {
             return atom;
         }
 
-        public PTXRedOp newRedOp(Expression address, Expression value, IOpBin op, String mo, String scope) {
+        public PTXRedOp newRedOp(Expression address, Expression value, IntBinaryOp op, String mo, String scope) {
             // PTX (currently) only generates memory orders ACQ_REL and RLX for red.
             PTXRedOp red = new PTXRedOp(address, value, op, mo);
             red.addTags(scope);
@@ -801,7 +801,7 @@ public class EventFactory {
             return new VulkanRMW(register, address, value, mo, scope);
         }
 
-        public VulkanRMWOp newRMWOp(Expression address, Register register, Expression value, IOpBin op, String mo,
+        public VulkanRMWOp newRMWOp(Expression address, Register register, Expression value, IntBinaryOp op, String mo,
                 String scope) {
             return new VulkanRMWOp(register, address, op, value, mo, scope);
         }
