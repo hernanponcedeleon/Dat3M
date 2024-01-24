@@ -402,8 +402,8 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        String moLoad = ARMv8.extractLoadMoFromCMo(mo);
-        String moStore = ARMv8.extractStoreMoFromCMo(mo);
+        String moLoad = ARMv8.extractLoadMoFromLKMo(mo);
+        String moStore = ARMv8.extractStoreMoFromLKMo(mo);
 
         Register dummy = e.getFunction().newRegister(e.getResultRegister().getType());
         Label casEnd = eventFactory.newLabel("CAS_end");
@@ -436,8 +436,8 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        String moLoad = ARMv8.extractLoadMoFromCMo(mo);
-        String moStore = ARMv8.extractStoreMoFromCMo(mo);
+        String moLoad = ARMv8.extractLoadMoFromLKMo(mo);
+        String moStore = ARMv8.extractStoreMoFromLKMo(mo);
 
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = eventFactory.newRMWLoadExclusiveWithMo(dummy, address, moLoad);
@@ -587,8 +587,8 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Register resultRegister = e.getResultRegister();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        String moLoad = ARMv8.extractLoadMoFromCMo(mo);
-        String moStore = ARMv8.extractStoreMoFromCMo(mo);
+        String moLoad = ARMv8.extractLoadMoFromLKMo(mo);
+        String moStore = ARMv8.extractStoreMoFromLKMo(mo);
         Register dummy = e.getFunction().newRegister(e.getAccessType());
 
         Load load = eventFactory.newRMWLoadExclusiveWithMo(dummy, address, moLoad);

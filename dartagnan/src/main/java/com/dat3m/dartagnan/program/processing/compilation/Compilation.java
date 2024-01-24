@@ -104,8 +104,8 @@ public class Compilation implements ProgramProcessor {
             deleted properly!
 
      */
-    public List<Event> getCompilationResult(Event toBeCompiled) {
-        VisitorBase<?> compiler = getCompiler(toBeCompiled.getFunction().getProgram().getEventFactory());
+    public List<Event> getCompilationResult(Event toBeCompiled, EventFactory eventFactory) {
+        VisitorBase<?> compiler = getCompiler(eventFactory);
         compiler.funcToBeCompiled = toBeCompiled.getFunction();
         return toBeCompiled.accept(compiler);
     }

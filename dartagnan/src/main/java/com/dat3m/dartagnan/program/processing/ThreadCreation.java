@@ -378,14 +378,14 @@ public class ThreadCreation implements ProgramProcessor {
         final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
                 events.withLinux().newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
                 events.withAtomic().newStore(address, storeValue, Tag.C11.MO_RELEASE);
-        return compiler.getCompilationResult(releaseStore);
+        return compiler.getCompilationResult(releaseStore, events);
     }
 
     private List<Event> newAcquireLoad(Register resultRegister, Expression address, EventFactory events) {
         final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
                 events.withLinux().newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
                 events.withAtomic().newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
-        return compiler.getCompilationResult(acquireLoad);
+        return compiler.getCompilationResult(acquireLoad, events);
     }
 
 
