@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -16,8 +15,8 @@ public class Init extends Store {
     private final MemoryObject base;
     private final int offset;
 
-    public Init(MemoryObject b, int o, Expression address, ExpressionFactory expressionFactory) {
-        super(address, b.getInitialValue(o).orElse(expressionFactory.makeZero(expressionFactory.getTypeFactory().getArchType())));
+    public Init(MemoryObject b, int o, Expression address, Expression value) {
+        super(address, value);
         base = b;
         offset = o;
         addTags(Tag.INIT);

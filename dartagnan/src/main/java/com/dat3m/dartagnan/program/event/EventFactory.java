@@ -154,7 +154,8 @@ public class EventFactory {
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
                 expressions.makeADD(base, expressions.makeValue(offset, base.getType()));
-        return new Init(base, offset, address, expressions);
+        final Expression value = base.getInitialValue(offset).orElse(expressions.makeZero(expressions.getTypeFactory().getArchType()));
+        return new Init(base, offset, address, value);
     }
 
     public ValueFunctionCall newValueFunctionCall(Register resultRegister, Function function, List<Expression> arguments) {
