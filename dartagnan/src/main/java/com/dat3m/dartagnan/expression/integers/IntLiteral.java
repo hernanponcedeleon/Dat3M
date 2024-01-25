@@ -3,15 +3,24 @@ package com.dat3m.dartagnan.expression.integers;
 import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
 
+/*
+    Implementation note: This class represents values of fixed-size integer types using BigInteger.
+    However, our integer types have no signedness but BigInteger does.
+    This results in values that have their highest bit set to have non-unique representation,
+    depending on whether that bit is treated as a sign-bit or not.
+    We could opt to make this
+ */
 public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
 
     private final BigInteger value;
 
     public IntLiteral(IntegerType type, BigInteger value) {
         super(type);
+        Preconditions.checkArgument(type.canContain(value));
         this.value = value;
     }
 
