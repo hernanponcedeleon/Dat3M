@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -39,7 +38,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private static final Logger logger = LogManager.getLogger(VisitorLlvm.class);
 
     // Global context
-    private final Program program = new Program(new Memory(), Program.SourceLanguage.LLVM);
+    private final Program program = new Program(Program.SourceLanguage.LLVM);
     private final EventFactory.Llvm eventFactory = program.getEventFactory().withLlvm();
     private final ExpressionFactory expressions = eventFactory.getExpressionFactory();
     private final TypeFactory types = expressions.getTypeFactory();
@@ -241,7 +240,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         check(!constantMap.containsKey(name), "Redeclared constant in %s.", ctx);
         final Type type = parseType(ctx.type());
         final int size = types.getMemorySizeInBytes(type);
-        final MemoryObject globalObject = program.getMemory().allocate((IntegerType) pointerType, size, true);
+        final MemoryObject globalObject = program.getMemory().allocate(size, true);
         globalObject.setCVar(name);
         if (ctx.threadLocal() != null) {
             globalObject.setIsThreadLocal(true);

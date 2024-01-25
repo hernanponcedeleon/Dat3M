@@ -18,7 +18,6 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
@@ -46,18 +45,16 @@ public class ProgramBuilder {
     private final EventFactory events;
     private final ExpressionFactory expressions;
     private final TypeFactory types;
-    private final IntegerType addressType;
     private final FunctionType defaultThreadType;
     private final Expression zero;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Construction
     private ProgramBuilder(SourceLanguage format) {
-        this.program = new Program(new Memory(), format);
+        this.program = new Program(format);
         this.events = program.getEventFactory();
         this.expressions = events.getExpressionFactory();
         this.types = expressions.getTypeFactory();
-        this.addressType = (IntegerType) types.getPointerType();
         this.defaultThreadType = types.getFunctionType(types.getVoidType(), List.of());
         this.zero = expressions.makeZero(types.getArchType());
     }
@@ -188,7 +185,7 @@ public class ProgramBuilder {
 
     public MemoryObject getOrNewMemoryObject(String name) {
         final MemoryObject mem = locations.computeIfAbsent(name,
-                k -> program.getMemory().allocate(addressType, 1, true));
+                k -> program.getMemory().allocate(1, true));
         mem.setCVar(name);
         return mem;
     }
@@ -196,7 +193,7 @@ public class ProgramBuilder {
     public MemoryObject newMemoryObject(String name, int size) {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
-        final MemoryObject mem = program.getMemory().allocate(addressType, size, true);
+        final MemoryObject mem = program.getMemory().allocate(size, true);
         mem.setCVar(name);
         locations.put(name, mem);
         return mem;
@@ -299,7 +296,7 @@ public class ProgramBuilder {
 
     public void initVirLocEqCon(String leftName, IntLiteral iValue){
         final MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(addressType, 1, true, true, null));
+                leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);
         object.setInitialValue(0, iValue);
     }
@@ -310,7 +307,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k -> program.getMemory().allocateVirtual(addressType, 1, true, true, null));
+                k -> program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);
         object.setInitialValue(0, rightLocation.getInitialValue(0).orElse(zero));
     }
@@ -321,7 +318,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k -> program.getMemory().allocateVirtual(addressType, 1, true, true, rightLocation));
+                k -> program.getMemory().allocateVirtual(1, true, true, rightLocation));
         object.setCVar(leftName);
         object.setInitialValue(0, rightLocation.getInitialValue(0).orElse(zero));
     }
@@ -332,7 +329,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k -> program.getMemory().allocateVirtual(addressType, 1, true, false, rightLocation));
+                k -> program.getMemory().allocateVirtual(1, true, false, rightLocation));
         object.setCVar(leftName);
         object.setInitialValue(0, rightLocation.getInitialValue(0).orElse(zero));
     }

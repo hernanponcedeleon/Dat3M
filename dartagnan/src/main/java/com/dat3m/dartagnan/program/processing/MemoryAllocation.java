@@ -45,7 +45,7 @@ public class MemoryAllocation implements ProgramProcessor {
         final TypeFactory types = eventFactory.getExpressionFactory().getTypeFactory();
         final IntegerType addressType = (IntegerType) types.getPointerType();
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(addressType, getSize(alloc, types), false);
+            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc, types), false);
             final Local local = eventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);

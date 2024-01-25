@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.NonDetInt;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -17,34 +18,27 @@ public class Program {
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
-    private String name;
+    private String name = "";
     private AbstractAssert spec;
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
-    private final List<Thread> threads;
-    private final List<Function> functions;
+    private final List<Thread> threads = new ArrayList<>();
+    private final List<Function> functions = new ArrayList<>();
     private final List<NonDetInt> constants = new ArrayList<>();
+    private final TypeFactory typeFactory;
     private final Memory memory;
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
-    private final TypeFactory typeFactory;
     private final ExpressionFactory expressionFactory;
     private final EventFactory eventFactory;
 
-    public Program(Memory memory, SourceLanguage format) {
-        this("", memory, format);
-    }
-
-    public Program(String name, Memory memory, SourceLanguage format) {
-        this.name = name;
-        this.memory = memory;
-        this.threads = new ArrayList<>();
-        this.functions = new ArrayList<>();
+    public Program(SourceLanguage format) {
         this.format = format;
         this.typeFactory = TypeFactory.newInstance();
         this.expressionFactory = ExpressionFactory.newInstance(typeFactory);
         this.eventFactory = EventFactory.newInstance(expressionFactory);
+        this.memory = new Memory((IntegerType) typeFactory.getPointerType());
     }
 
     public SourceLanguage getFormat() {
