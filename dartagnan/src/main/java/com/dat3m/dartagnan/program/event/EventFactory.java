@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class EventFactory {
 
@@ -112,6 +113,7 @@ public class EventFactory {
     // ------------------------------------------ Memory events ------------------------------------------
 
     public Alloc newAlloc(Register register, Type allocType, Expression arraySize, boolean isHeapAlloc) {
+        checkArgument(register.getType() == types.getArchType());
         return new Alloc(register, allocType, arraySize, isHeapAlloc);
     }
 
