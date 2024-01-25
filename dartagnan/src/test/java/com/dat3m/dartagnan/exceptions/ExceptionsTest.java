@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Skip;
-import com.dat3m.dartagnan.program.memory.Memory;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
 
@@ -52,9 +51,8 @@ public class ExceptionsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void diffPrecisionInt() {
-        final Program program = new Program(new Memory(), SourceLanguage.LITMUS);
-        final ExpressionFactory expressions = program.getEventFactory().getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
+        final TypeFactory types = TypeFactory.newInstance();
+        final ExpressionFactory expressions = ExpressionFactory.newInstance(types);
         // Both arguments should have same precision
         Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
         Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
@@ -63,16 +61,17 @@ public class ExceptionsTest {
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullLabel() {
-        final var program = new Program(new Memory(), SourceLanguage.LITMUS);
-        final EventFactory events = program.getEventFactory();
-        final ExpressionFactory expressions = events.getExpressionFactory();
+        final TypeFactory types = TypeFactory.newInstance();
+        final ExpressionFactory expressions = ExpressionFactory.newInstance(types);
+        final EventFactory events = EventFactory.newInstance(expressions);
         events.newJump(expressions.makeFalse(), null);
     }
 
     @Test(expected = NullPointerException.class)
     public void JumpWithNullExpr() {
-        final var program = new Program(new Memory(), SourceLanguage.LITMUS);
-        final EventFactory events = program.getEventFactory();
+        final TypeFactory types = TypeFactory.newInstance();
+        final ExpressionFactory expressions = ExpressionFactory.newInstance(types);
+        final EventFactory events = EventFactory.newInstance(expressions);
         events.newJump(null, events.newLabel("DUMMY"));
     }
 

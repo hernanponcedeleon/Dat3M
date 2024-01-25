@@ -84,7 +84,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 .stream().filter(info -> !info.isUnrolled())
                 .map(info -> info.iterations().get(0)).toList();
 
-        final ConstantPropagator propagator = new ConstantPropagator(func.getProgram().getEventFactory().getExpressionFactory());
+        final ConstantPropagator propagator = new ConstantPropagator(func.getProgram().getExpressionFactory());
         for (Event cur : func.getEvents()) {
 
             if (cur instanceof Label && inflowMap.containsKey(cur)) {

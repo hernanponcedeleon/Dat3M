@@ -24,7 +24,7 @@ public class GEPToAddition implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        final var transformer = new GEPToAdditionTransformer(program.getEventFactory().getExpressionFactory());
+        final var transformer = new GEPToAdditionTransformer(program.getExpressionFactory());
         for (Function function : program.getFunctions()) {
             for (RegReader reader : function.getEvents(RegReader.class)) {
                 reader.transformExpressions(transformer);

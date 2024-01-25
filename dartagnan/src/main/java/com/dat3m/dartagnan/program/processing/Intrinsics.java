@@ -310,7 +310,7 @@ public class Intrinsics {
     private static void declareNondetBool(Program program) {
         // used by VisitorLKMM
         if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
-            final TypeFactory types = program.getEventFactory().getExpressionFactory().getTypeFactory();
+            final TypeFactory types = program.getTypeFactory();
             final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
             //TODO this id will not be unique
             program.addFunction(new Function("__VERIFIER_nondet_bool", type, List.of(), 0, null));

@@ -72,7 +72,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
       However, the exists/forall clauses could still refer to that register and observe a non-zero value.
      */
     private void replaceX0Register(Program program) {
-        final var x0Replacer = new ExprTransformer(program.getEventFactory().getExpressionFactory()) {
+        final var x0Replacer = new ExprTransformer(expressions) {
             @Override
             public Expression visit(Register reg) {
                 return reg.getName().equals("x0") ? expressions.makeGeneralZero(reg.getType()) : reg;

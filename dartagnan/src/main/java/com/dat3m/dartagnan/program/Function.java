@@ -59,7 +59,7 @@ public class Function implements Expression {
 
     @Override
     public Type getType() {
-        final TypeFactory types = program.getEventFactory().getExpressionFactory().getTypeFactory();
+        final TypeFactory types = program.getTypeFactory();
         return types.getArchType();
     }
 

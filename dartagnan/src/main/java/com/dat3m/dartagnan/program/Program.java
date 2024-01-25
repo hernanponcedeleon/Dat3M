@@ -28,6 +28,8 @@ public class Program {
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
+    private final TypeFactory typeFactory;
+    private final ExpressionFactory expressionFactory;
     private final EventFactory eventFactory;
 
     public Program(Memory memory, SourceLanguage format) {
@@ -40,7 +42,9 @@ public class Program {
         this.threads = new ArrayList<>();
         this.functions = new ArrayList<>();
         this.format = format;
-        this.eventFactory = EventFactory.newInstance(ExpressionFactory.newInstance(TypeFactory.newInstance()));
+        this.typeFactory = TypeFactory.newInstance();
+        this.expressionFactory = ExpressionFactory.newInstance(typeFactory);
+        this.eventFactory = EventFactory.newInstance(expressionFactory);
     }
 
     public SourceLanguage getFormat() {
@@ -98,6 +102,14 @@ public class Program {
 
     public EventFactory getEventFactory() {
         return eventFactory;
+    }
+
+    public ExpressionFactory getExpressionFactory() {
+        return expressionFactory;
+    }
+
+    public TypeFactory getTypeFactory() {
+        return typeFactory;
     }
 
     public void addThread(Thread t) {
