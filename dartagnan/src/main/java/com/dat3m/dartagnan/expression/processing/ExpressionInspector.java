@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 
 /*
     This is a helper class to be used to traverse/inspect expression with RegReader.transformExpressions,

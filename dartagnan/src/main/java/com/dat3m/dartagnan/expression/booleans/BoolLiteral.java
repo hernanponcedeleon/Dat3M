@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.expression.booleans;
 
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 
 public final class BoolLiteral extends LiteralExpressionBase<BooleanType> {

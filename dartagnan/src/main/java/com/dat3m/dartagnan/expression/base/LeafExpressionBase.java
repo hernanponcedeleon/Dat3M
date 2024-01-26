@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.expression.base;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.LeafExpression;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 import com.google.common.collect.ImmutableSet;

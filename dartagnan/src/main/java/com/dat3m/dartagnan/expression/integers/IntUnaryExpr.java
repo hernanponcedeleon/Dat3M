@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;

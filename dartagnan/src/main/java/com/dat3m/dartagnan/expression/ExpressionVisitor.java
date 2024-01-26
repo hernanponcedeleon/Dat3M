@@ -1,6 +1,5 @@
-package com.dat3m.dartagnan.expression.processing;
+package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;

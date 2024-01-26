@@ -2,10 +2,10 @@ package com.dat3m.dartagnan.expression.misc;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.ExpressionBase;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.Type;
 
 import java.util.List;
 

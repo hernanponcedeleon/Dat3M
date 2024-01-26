@@ -1,5 +1,7 @@
 package com.dat3m.dartagnan.expression.type;
 
+import com.dat3m.dartagnan.expression.Type;
+
 import java.util.List;
 import java.util.stream.Collectors;
 

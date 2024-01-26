@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.expression.integers;
 
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.google.common.base.Preconditions;
 
