@@ -62,7 +62,8 @@ class VisitorBase<F extends EventFactory> implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitInitLock(InitLock e) {
-        return eventSequence(eventFactory.newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
+        return eventSequence(
+                eventFactory.newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
         );
     }
 
@@ -153,7 +154,9 @@ class VisitorBase<F extends EventFactory> implements EventVisitor<List<Event>> {
         Load load = eventFactory.newRMWLoadWithMo(dummyReg, address, mo);
         RMWStore store = eventFactory.newRMWStoreWithMo(load, address, e.getValue(), mo);
         return eventSequence(
-                load, store, eventFactory.newLocal(resultRegister, dummyReg)
+                load,
+                store,
+                eventFactory.newLocal(resultRegister, dummyReg)
         );
     }
 

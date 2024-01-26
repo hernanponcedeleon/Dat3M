@@ -70,6 +70,7 @@ public class Inlining implements ProgramProcessor {
 
     private void inlineAllCalls(Function function, Map<Function, Snapshot> snapshots) {
         final EventFactory eventFactory = function.getProgram().getEventFactory();
+        final Expression trueExpression = eventFactory.getExpressionFactory().makeTrue();
         int scopeCounter = 0;
         final Map<Event, List<Function>> exitToCallMap = new HashMap<>();
         // Iteratively replace the first call.
@@ -85,7 +86,7 @@ public class Inlining implements ProgramProcessor {
             exitToCallMap.computeIfAbsent(call.getSuccessor(), k -> new ArrayList<>()).add(callTarget);
             final long depth = exitToCallMap.values().stream().filter(c -> c.contains(callTarget)).count();
             if (depth > bound) {
-                final AbortIf boundEvent = eventFactory.newAbortIf(eventFactory.getExpressionFactory().makeTrue());
+                final AbortIf boundEvent = eventFactory.newAbortIf(trueExpression);
                 boundEvent.copyAllMetadataFrom(call);
                 boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
                 call.replaceBy(boundEvent);

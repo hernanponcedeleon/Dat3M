@@ -76,10 +76,9 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
+        Expression zero = expressions.makeZero((IntegerType) e.getAccessType());
         return eventSequence(
-                eventFactory.newStoreWithMo(e.getAddress(),
-                expressions.makeZero((IntegerType) e.getAccessType()),
-                ARMv8.MO_REL)
+                eventFactory.newStoreWithMo(e.getAddress(), zero, ARMv8.MO_REL)
         );
     }
 
@@ -415,7 +414,7 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Store store = eventFactory.newRMWStoreExclusiveWithMo(address, e.getStoreValue(), true, moStore);
         Label label = eventFactory.newLabel("FakeDep");
         Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = newMemoryBarrierAfter(mo);
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newDataMemoryBarrier(ISH) : null;
 
         return eventSequence(
                 load,
@@ -444,7 +443,7 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Store store = eventFactory.newRMWStoreExclusiveWithMo(address, e.getValue(), true, moStore);
         Label label = eventFactory.newLabel("FakeDep");
         Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = newMemoryBarrierAfter(mo);
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newDataMemoryBarrier(ISH) : null;
 
         return eventSequence(
                 load,
@@ -523,7 +522,7 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Store store = eventFactory.newRMWStoreExclusiveWithMo(address, modifiedValue, true, moStore);
         Label label = eventFactory.newLabel("FakeDep");
         Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = newMemoryBarrierAfter(mo);
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newDataMemoryBarrier(ISH) : null;
 
         return eventSequence(
                 load,
@@ -561,7 +560,7 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Expression unless = e.getCmp();
         Label cauEnd = eventFactory.newLabel("CAddU_end");
         CondJump branchOnCauCmpResult = eventFactory.newJumpUnless(expressions.makeBooleanCast(dummy), cauEnd);
-        Event optionalMemoryBarrierAfter = newMemoryBarrierAfter(mo);
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newDataMemoryBarrier(ISH) : null;
 
         return eventSequence(
                 load,
@@ -597,7 +596,7 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         Local testOp = newAssignment(resultRegister, expressions.makeNot(expressions.makeBooleanCast(dummy)));
         Label label = eventFactory.newLabel("FakeDep");
         Event fakeCtrlDep = eventFactory.newFakeCtrlDep(dummy, label);
-        Event optionalMemoryBarrierAfter = newMemoryBarrierAfter(mo);
+        Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newDataMemoryBarrier(ISH) : null;
 
         return eventSequence(
                 load,
@@ -636,7 +635,4 @@ class VisitorArm8 extends VisitorBase<EventFactory.AArch64> {
         );
     }
 
-    private Event newMemoryBarrierAfter(String mo) {
-        return mo.equals(Tag.Linux.MO_MB) ? eventFactory.newDataMemoryBarrier(ISH) : null;
-    }
 }

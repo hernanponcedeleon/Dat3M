@@ -46,31 +46,33 @@ public class AnalysisTest {
     @Test
     public void dependencyMustOverride() throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        final EventFactory events = b.getEventFactory();
-        final ExpressionFactory expressions = events.getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
+        final EventFactory eventFactory = b.getEventFactory();
+        final ExpressionFactory expressionFactory = eventFactory.getExpressionFactory();
+        final TypeFactory typeFactory = expressionFactory.getTypeFactory();
+        final Expression one = expressionFactory.makeOne(typeFactory.getArchType());
+        final Expression two = expressionFactory.makeValue(BigInteger.valueOf(2), typeFactory.getArchType());
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
         Label alt = b.getOrCreateLabel(0, "alt");
-        b.addChild(0, events.newJump(new NonDetBool(types.getBooleanType()), alt));
-        Local e0 = events.newLocal(r0, expressions.makeValue(BigInteger.valueOf(1), types.getArchType()));
+        b.addChild(0, eventFactory.newJump(new NonDetBool(typeFactory.getBooleanType()), alt));
+        Local e0 = eventFactory.newLocal(r0, one);
         b.addChild(0, e0);
-        Local e1 = events.newLocal(r1, r0);
+        Local e1 = eventFactory.newLocal(r1, r0);
         b.addChild(0, e1);
         Label join = b.getOrCreateLabel(0,"join");
-        b.addChild(0, events.newGoto(join));
+        b.addChild(0, eventFactory.newGoto(join));
         b.addChild(0, alt);
-        Local e2 = events.newLocal(r1, expressions.makeValue(BigInteger.valueOf(2), types.getArchType()));
+        Local e2 = eventFactory.newLocal(r1, two);
         b.addChild(0, e2);
         b.addChild(0, join);
-        Local e3 = events.newLocal(r2, r0);
+        Local e3 = eventFactory.newLocal(r2, r0);
         b.addChild(0, e3);
-        Local e4 = events.newLocal(r2, r1);
+        Local e4 = eventFactory.newLocal(r2, r1);
         b.addChild(0, e4);
-        Local e5 = events.newLocal(r0, r2);
+        Local e5 = eventFactory.newLocal(r0, r2);
         b.addChild(0, e5);
 
         Program program = b.build();
@@ -114,10 +116,11 @@ public class AnalysisTest {
 
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        final EventFactory events = b.getEventFactory();
-        final ExpressionFactory expressions = events.getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
-        final Expression zero = expressions.makeZero(types.getArchType());
+        final EventFactory eventFactory = b.getEventFactory();
+        final ExpressionFactory expressionFactory = eventFactory.getExpressionFactory();
+        final TypeFactory typeFactory = expressionFactory.getTypeFactory();
+        final Expression zero = expressionFactory.makeZero(typeFactory.getArchType());
+        final Expression one = expressionFactory.makeOne(typeFactory.getArchType());
         final MemoryObject x = b.newMemoryObject("x", 2);
         final MemoryObject y = b.newMemoryObject("y", 1);
 
@@ -125,16 +128,14 @@ public class AnalysisTest {
         Register r0 = b.getOrNewRegister(0, "r0");
         //this is undefined behavior in C11
         //the expression does not match a sum, but x occurs in it
-        b.addChild(0, events.newLocal(r0,
-                expressions.makeMUL(x, expressions.makeValue(BigInteger.valueOf(1), types.getArchType()))));
-        Store e0 = events.newStore(r0, zero);
+        b.addChild(0, eventFactory.newLocal(r0, expressionFactory.makeMUL(x, one)));
+        Store e0 = eventFactory.newStore(r0, zero);
         b.addChild(0, e0);
-        Store e1 = events.newStore(expressions.makeADD(r0,
-                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), zero);
+        Store e1 = eventFactory.newStore(expressionFactory.makeADD(r0, one), zero);
         b.addChild(0, e1);
-        Store e2 = events.newStore(x, zero);
+        Store e2 = eventFactory.newStore(x, zero);
         b.addChild(0, e2);
-        Store e3 = events.newStore(y, zero);
+        Store e3 = eventFactory.newStore(y, zero);
         b.addChild(0, e3);
 
         Program program = b.build();
@@ -167,24 +168,23 @@ public class AnalysisTest {
 
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
         final ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        final EventFactory events = b.getEventFactory();
-        final ExpressionFactory expressions = events.getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
+        final EventFactory eventFactory = b.getEventFactory();
+        final ExpressionFactory expressionFactory = eventFactory.getExpressionFactory();
+        final TypeFactory typeFactory = expressionFactory.getTypeFactory();
         final MemoryObject x = b.newMemoryObject("x", 3);
-        final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression zero = expressionFactory.makeZero(typeFactory.getArchType());
+        final Expression one = expressionFactory.makeOne(typeFactory.getArchType());
         x.setInitialValue(0, x);
 
         b.newThread(0);
-        Store e0 = events.newStore(expressions.makeADD(x,
-                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), zero);
+        Store e0 = eventFactory.newStore(expressionFactory.makeADD(x, one), zero);
         b.addChild(0, e0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        Load e1 = events.newLoad(r0, x);
+        Load e1 = eventFactory.newLoad(r0, x);
         b.addChild(0, e1);
-        Store e2 = events.newStore(r0, zero);
+        Store e2 = eventFactory.newStore(r0, zero);
         b.addChild(0, e2);
-        Store e3 = events.newStore(expressions.makeADD(r0,
-                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), r0);
+        Store e3 = eventFactory.newStore(expressionFactory.makeADD(r0, one), r0);
         b.addChild(0, e3);
 
         Program program = b.build();
@@ -222,29 +222,29 @@ public class AnalysisTest {
         final TypeFactory types = expressions.getTypeFactory();
         final IntegerType type = types.getArchType();
         final Expression zero = expressions.makeZero(type);
+        final Expression one = expressions.makeOne(type);
+        final Expression two = expressions.makeValue(BigInteger.valueOf(2), type);
+        final Expression four = expressions.makeValue(BigInteger.valueOf(4), type);
         final MemoryObject x = b.newMemoryObject("x", 3);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         b.addChild(0, events.newLocal(r0, b.newConstant(type, true)));
         Label l0 = b.getOrCreateLabel(0,"l0");
-        b.addChild(0, events.newJump(expressions.makeOr(
-                expressions.makeGT(r0, expressions.makeOne(type), true),
-                expressions.makeLT(r0, zero, true)), l0));
+        b.addChild(0, events.newJump(
+                expressions.makeOr(expressions.makeGT(r0, one, true), expressions.makeLT(r0, zero, true)), l0));
         Store e0 = events.newStore(x, zero);
         b.addChild(0, e0);
-        Store e1 = events.newStore(expressions.makeADD(x,
-                expressions.makeValue(BigInteger.valueOf(1), types.getArchType())), zero);
+        Store e1 = events.newStore(expressions.makeADD(x, one), zero);
         b.addChild(0, e1);
-        Store e2 = events.newStore(expressions.makeADD(x,
-                expressions.makeValue(BigInteger.valueOf(2), types.getArchType())), zero);
+        Store e2 = events.newStore(expressions.makeADD(x, two), zero);
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, events.newLocal(r1, zero));
         Store e3 = events.newStore(expressions.makeADD(
                 expressions.makeADD(x,
-                        expressions.makeMUL(r0, expressions.makeValue(BigInteger.valueOf(2), types.getArchType()))),
-                        expressions.makeMUL(r1, expressions.makeValue(BigInteger.valueOf(4), types.getArchType()))),
+                        expressions.makeMUL(r0, two)),
+                        expressions.makeMUL(r1, four)),
                 zero);
         b.addChild(0, e3);
         b.addChild(0, l0);
@@ -284,17 +284,17 @@ public class AnalysisTest {
         final TypeFactory types = expressions.getTypeFactory();
         final MemoryObject x = b.newMemoryObject("x", 3);
         final Expression zero = expressions.makeZero(types.getArchType());
+        final Expression one = expressions.makeOne(types.getArchType());
+        final Expression two = expressions.makeValue(BigInteger.valueOf(2), types.getArchType());
         x.setInitialValue(0, x);
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
         Load e0 = events.newLoad(r0, x);
         b.addChild(0, e0);
-        Store e1 = events.newStore(x,
-                expressions.makeADD(r0, expressions.makeValue(BigInteger.valueOf(1), types.getArchType())));
+        Store e1 = events.newStore(x, expressions.makeADD(r0, one));
         b.addChild(0, e1);
-        Store e2 = events.newStore(expressions.makeADD(x,
-                expressions.makeValue(BigInteger.valueOf(2), types.getArchType())), zero);
+        Store e2 = events.newStore(expressions.makeADD(x, two), zero);
         b.addChild(0, e2);
         Store e3 = events.newStore(r0, zero);
         b.addChild(0, e3);
@@ -339,8 +339,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, events.newLocal(r0,
-                expressions.makeMUL(x, expressions.makeValue(BigInteger.valueOf(0), types.getArchType()))));
+        b.addChild(0, events.newLocal(r0, expressions.makeMUL(x, zero)));
         b.addChild(0, events.newLocal(r0, y));
         Store e0 = events.newStore(r0, zero);
         b.addChild(0, e0);
@@ -391,8 +390,7 @@ public class AnalysisTest {
         b.addChild(0, events.newLocal(r0, y));
         Store e0 = events.newStore(r0, zero);
         b.addChild(0, e0);
-        b.addChild(0, events.newLocal(r0,
-                expressions.makeMUL(x, expressions.makeValue(BigInteger.valueOf(0), types.getArchType()))));
+        b.addChild(0, events.newLocal(r0, expressions.makeMUL(x, zero)));
         Store e1 = events.newStore(x, zero);
         b.addChild(0, e1);
         Store e2 = events.newStore(y, zero);

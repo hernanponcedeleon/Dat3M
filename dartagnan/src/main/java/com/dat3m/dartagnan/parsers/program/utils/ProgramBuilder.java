@@ -42,9 +42,9 @@ public class ProgramBuilder {
     private final Map<String, MemoryObject> locations = new HashMap<>();
 
     private final Program program;
-    private final EventFactory events;
-    private final ExpressionFactory expressions;
-    private final TypeFactory types;
+    private final EventFactory eventFactory;
+    private final ExpressionFactory expressionFactory;
+    private final TypeFactory typeFactory;
     private final FunctionType defaultThreadType;
     private final Expression zero;
 
@@ -52,11 +52,11 @@ public class ProgramBuilder {
     // Construction
     private ProgramBuilder(SourceLanguage format) {
         this.program = new Program(format);
-        this.events = program.getEventFactory();
-        this.expressions = events.getExpressionFactory();
-        this.types = expressions.getTypeFactory();
-        this.defaultThreadType = types.getFunctionType(types.getVoidType(), List.of());
-        this.zero = expressions.makeZero(types.getArchType());
+        this.eventFactory = program.getEventFactory();
+        this.expressionFactory = eventFactory.getExpressionFactory();
+        this.typeFactory = expressionFactory.getTypeFactory();
+        this.defaultThreadType = typeFactory.getFunctionType(typeFactory.getVoidType(), List.of());
+        this.zero = expressionFactory.makeZero(typeFactory.getArchType());
     }
 
     public static ProgramBuilder forArch(SourceLanguage format, Arch arch) {
@@ -99,15 +99,15 @@ public class ProgramBuilder {
     // Misc
 
     public TypeFactory getTypeFactory() {
-        return types;
+        return typeFactory;
     }
 
     public ExpressionFactory getExpressionFactory() {
-        return expressions;
+        return expressionFactory;
     }
 
     public EventFactory getEventFactory() {
-        return events;
+        return eventFactory;
     }
 
     public void setAssert(AbstractAssert ass) {
@@ -127,7 +127,7 @@ public class ProgramBuilder {
         if(id2FunctionsMap.containsKey(tid)) {
             throw new MalformedProgramException("Function or thread with id " + tid + " already exists.");
         }
-        final Thread thread = new Thread(name, defaultThreadType, List.of(), tid, events.newThreadStart(null));
+        final Thread thread = new Thread(name, defaultThreadType, List.of(), tid, eventFactory.newThreadStart(null));
         id2FunctionsMap.put(tid, thread);
         program.addThread(thread);
         return thread;
@@ -222,17 +222,17 @@ public class ProgramBuilder {
     public void initRegEqLocPtr(int regThread, String regName, String locName, Type type) {
         MemoryObject object = getOrNewMemoryObject(locName);
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, events.newLocal(reg, object));
+        addChild(regThread, eventFactory.newLocal(reg, object));
     }
 
     public void initRegEqLocVal(int regThread, String regName, String locName, Type type) {
         Register reg = getOrNewRegister(regThread, regName, type);
-        addChild(regThread, events.newLocal(reg, getOrNewMemoryObject(locName).getInitialValue(0).orElse(zero)));
+        addChild(regThread, eventFactory.newLocal(reg, getOrNewMemoryObject(locName).getInitialValue(0).orElse(zero)));
     }
 
     public void initRegEqConst(int regThread, String regName, Expression value){
         Preconditions.checkArgument(value.getRegs().isEmpty());
-        addChild(regThread, events.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
+        addChild(regThread, eventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ public class ProgramBuilder {
     }
 
     public Register getOrNewRegister(int fid, String name) {
-        return getOrNewRegister(fid, name, types.getArchType());
+        return getOrNewRegister(fid, name, typeFactory.getArchType());
     }
 
     public Register getOrNewRegister(int fid, String name, Type type) {
@@ -263,7 +263,7 @@ public class ProgramBuilder {
     public Label getOrCreateLabel(int funcId, String name){
         return fid2LabelsMap
                 .computeIfAbsent(funcId, k -> new HashMap<>())
-                .computeIfAbsent(name, events::newLabel);
+                .computeIfAbsent(name, eventFactory::newLabel);
     }
 
     public Label getEndOfThreadLabel(int tid) {
@@ -278,7 +278,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Function or thread with id " + id + " already exists.");
         }
         // Litmus threads run unconditionally (have no creator) and have no parameters/return types.
-        ThreadStart threadEntry = events.newThreadStart(null);
+        ThreadStart threadEntry = eventFactory.newThreadStart(null);
         Thread scopedThread = switch (arch) {
             case PTX -> new Thread(name, defaultThreadType, List.of(), id, threadEntry,
                     ScopeHierarchy.ScopeHierarchyForPTX(scopeIds[0], scopeIds[1]), new HashSet<>());

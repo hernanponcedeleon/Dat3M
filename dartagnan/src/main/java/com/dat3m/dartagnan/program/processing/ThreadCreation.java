@@ -332,7 +332,8 @@ public class ThreadCreation implements ProgramProcessor {
 
             // Sync
             final Register startSignal = thread.newRegister("__startT" + tid, types.getBooleanType());
-            thread.getEntry().insertAfter(eventSequence(newAcquireLoad(startSignal, comAddr, eventFactory),
+            thread.getEntry().insertAfter(eventSequence(
+                    newAcquireLoad(startSignal, comAddr, eventFactory),
                     eventFactory.newAssume(startSignal)
             ));
 
@@ -371,18 +372,18 @@ public class ThreadCreation implements ProgramProcessor {
         return ((ValueFunctionCall) call).getResultRegister();
     }
 
-    private List<Event> newReleaseStore(Expression address, Expression storeValue, EventFactory events) {
+    private List<Event> newReleaseStore(Expression address, Expression storeValue, EventFactory eventFactory) {
         final Event releaseStore = compiler.getTarget() == Arch.LKMM ?
-                events.withLinux().newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
-                events.withAtomic().newStore(address, storeValue, Tag.C11.MO_RELEASE);
-        return compiler.getCompilationResult(releaseStore, events);
+                eventFactory.withLinux().newLKMMStore(address, storeValue, Tag.Linux.MO_RELEASE) :
+                eventFactory.withAtomic().newStore(address, storeValue, Tag.C11.MO_RELEASE);
+        return compiler.getCompilationResult(releaseStore, eventFactory);
     }
 
-    private List<Event> newAcquireLoad(Register resultRegister, Expression address, EventFactory events) {
+    private List<Event> newAcquireLoad(Register resultRegister, Expression address, EventFactory eventFactory) {
         final Event acquireLoad = compiler.getTarget() == Arch.LKMM ?
-                events.withLinux().newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
-                events.withAtomic().newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
-        return compiler.getCompilationResult(acquireLoad, events);
+                eventFactory.withLinux().newLKMMLoad(resultRegister, address, Tag.Linux.MO_ACQUIRE) :
+                eventFactory.withAtomic().newLoad(resultRegister, address, Tag.C11.MO_ACQUIRE);
+        return compiler.getCompilationResult(acquireLoad, eventFactory);
     }
 
 

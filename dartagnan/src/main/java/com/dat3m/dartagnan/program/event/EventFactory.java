@@ -511,11 +511,10 @@ public class EventFactory {
         private AArch64(EventFactory original) { super(original); }
 
         public enum Option {
-            //System domain
-            SY, LD, ST, //Outer shareable domain
-            OSH, OSHLD, OSHST, //Inner shareable domain
-            ISH, ISHLD, ISHST, //Non-shareable domain
-            NSH, NSHLD, NSHST,
+            SY, LD, ST, //System domain
+            OSH, OSHLD, OSHST, //Outer shareable domain
+            ISH, ISHLD, ISHST, //Inner shareable domain
+            NSH, NSHLD, NSHST, //Non-shareable domain
         }
 
         public GenericVisibleEvent newDataMemoryBarrier(Option option) {
@@ -775,14 +774,6 @@ public class EventFactory {
             PTXRedOp red = new PTXRedOp(address, value, op, mo);
             red.addTags(scope);
             return red;
-        }
-
-        public GenericVisibleEvent newAvDevice() {
-            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
-        }
-
-        public GenericVisibleEvent newVisDevice() {
-            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
         }
 
     }

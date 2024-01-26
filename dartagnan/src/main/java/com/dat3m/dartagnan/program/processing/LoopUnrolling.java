@@ -142,10 +142,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBackJump.replaceBy(boundEvent);
 
                 // Mark end of loop, so we can find it later again
-                final Label endOfLoopMarker = eventFactory.newLabel(String.format("%s%s%s",
-                        loopName,
-                        LOOP_INFO_SEPARATOR,
-                        LOOP_INFO_BOUND_SUFFIX));
+                final Label endOfLoopMarker = eventFactory.newLabel(String.format("%s%s%s", loopName, LOOP_INFO_SEPARATOR, LOOP_INFO_BOUND_SUFFIX));
                 endOfLoopMarker.addTags(Tag.NOOPT);
                 boundEvent.getPredecessor().insertAfter(endOfLoopMarker);
 
@@ -192,9 +189,9 @@ public class LoopUnrolling implements ProgramProcessor {
     }
 
     private Event newBoundEvent(Function func, EventFactory eventFactory) {
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
+        final ExpressionFactory expressionFactory = eventFactory.getExpressionFactory();
         final Event boundEvent = func instanceof Thread thread ? eventFactory.newGoto((Label) thread.getExit()) :
-                eventFactory.newAbortIf(expressions.makeTrue());
+                eventFactory.newAbortIf(expressionFactory.makeTrue());
         boundEvent.addTags(Tag.BOUND, Tag.EARLYTERMINATION, Tag.NOOPT);
         return boundEvent;
     }

@@ -401,9 +401,9 @@ public class VisitorPower extends VisitorBase<EventFactory.Power> {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
+        Expression result = expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand());
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = eventFactory.newLocal(dummyReg,
-                expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = eventFactory.newLocal(dummyReg, result);
 
         Load load = eventFactory.newRMWLoadExclusive(resultRegister, address);
         Store store = eventFactory.newRMWStoreConditional(address, dummyReg, true);

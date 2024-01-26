@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -43,9 +42,15 @@ public class MemoryAllocation implements ProgramProcessor {
     private void processAllocations(Program program) {
         final EventFactory eventFactory = program.getEventFactory();
         final TypeFactory types = eventFactory.getExpressionFactory().getTypeFactory();
-        final IntegerType addressType = (IntegerType) types.getPointerType();
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc, types), false);
+            final int count;
+            try {
+                count = alloc.getArraySize().reduce().getValueAsInt();
+            } catch (Exception e) {
+                throw new MalformedProgramException(String.format("Variable-sized alloc '%s' is not supported", alloc));
+            }
+            final int size = count * types.getMemorySizeInBytes(alloc.getAllocationType());
+            final MemoryObject allocatedObject = program.getMemory().allocate(size, false);
             final Local local = eventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);
@@ -53,17 +58,6 @@ public class MemoryAllocation implements ProgramProcessor {
 
             // TODO: We can initialize the initial memory based on the allocation type.
         }
-    }
-
-    private int getSize(Alloc alloc, TypeFactory types) {
-        int count;
-        try {
-            count = alloc.getArraySize().reduce().getValueAsInt();
-        } catch (Exception e) {
-            final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
-            throw new MalformedProgramException(error);
-        }
-        return count * types.getMemorySizeInBytes(alloc.getAllocationType());
     }
 
     public void moveAndAlignMemoryObjects(Memory memory) {

@@ -168,8 +168,8 @@ public class VisitorC11 extends VisitorBase<EventFactory> {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = eventFactory.newLocal(dummyReg,
-                expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Expression result = expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand());
+        Local localOp = eventFactory.newLocal(dummyReg, result);
 
         Load load = eventFactory.newRMWLoadExclusiveWithMo(resultRegister, address, mo);
         Store store = eventFactory.newRMWStoreExclusiveWithMo(address, dummyReg, true, mo);

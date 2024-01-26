@@ -124,8 +124,7 @@ class VisitorRISCV extends VisitorBase<EventFactory.RISCV> {
         String moStore = Tag.RISCV.extractStoreMoFromCMo(mo);
 
         Load load = eventFactory.newRMWLoadExclusiveWithMo(resultRegister, address, moLoad);
-        Store store =
-                eventFactory.newRMWStoreConditional(address, e.getValue(), moStore, true);
+        Store store = eventFactory.newRMWStoreConditional(address, e.getValue(), moStore, true);
         Label label = eventFactory.newLabel("FakeDep");
         Event fakeCtrlDep = eventFactory.newFakeCtrlDep(resultRegister, label);
 
@@ -288,8 +287,8 @@ class VisitorRISCV extends VisitorBase<EventFactory.RISCV> {
     public List<Event> visitAtomicLoad(AtomicLoad e) {
         String mo = e.getMo();
         Event optionalBarrierBefore = Tag.C11.MO_SC.equals(mo) ? eventFactory.newRWRWFence() : null;
-        Event optionalBarrierAfter =
-                Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ? eventFactory.newRRWFence() : null;
+        Event optionalBarrierAfter = Tag.C11.MO_SC.equals(mo) || Tag.C11.MO_ACQUIRE.equals(mo) ?
+                eventFactory.newRRWFence() : null;
 
         return eventSequence(
                 optionalBarrierBefore,
@@ -614,7 +613,8 @@ class VisitorRISCV extends VisitorBase<EventFactory.RISCV> {
         Event optionalMemoryBarrierAfter = mo.equals(Tag.Linux.MO_MB) ? eventFactory.newRWRWFence() :
                 mo.equals(Tag.Linux.MO_ACQUIRE) ? eventFactory.newRRWFence() : null;
 
-        return eventSequence(load,
+        return eventSequence(
+                load,
                 eventFactory.newLocal(dummy, expressions.makeNEQ(regValue, unless)),
                 branchOnCauCmpResult,
                 store,

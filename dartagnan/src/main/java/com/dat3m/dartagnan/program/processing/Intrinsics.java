@@ -81,7 +81,7 @@ public class Intrinsics {
         private EnumSet<AssertionType> notToInline = EnumSet.noneOf(AssertionType.class);
 
         public ProgramProcessor markIntrinsicsPass() {
-            return program -> markIntrinsics(this, program);
+            return program -> markIntrinsics(program);
         }
 
         /*
@@ -288,7 +288,7 @@ public class Intrinsics {
         List<Event> replace(Intrinsics self, FunctionCall call);
     }
 
-    private static void markIntrinsics(Factory factory, Program program) {
+    private static void markIntrinsics(Program program) {
         declareNondetBool(program);
 
         final var missingSymbols = new TreeSet<String>();
@@ -364,7 +364,7 @@ public class Intrinsics {
     private List<Event> inlineAsZero(FunctionCall call) {
         if (call instanceof ValueFunctionCall valueCall) {
             final Register reg = valueCall.getResultRegister();
-            final Expression zero = eventFactory.getExpressionFactory().makeGeneralZero(reg.getType());
+            final Expression zero = expressions.makeGeneralZero(reg.getType());
             logger.debug("Replaced (unsupported) call to \"{}\" by zero.", call.getCalledFunction().getName());
             return List.of(eventFactory.newLocal(reg, zero));
         } else {
@@ -373,7 +373,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(eventFactory.newAbortIf(eventFactory.getExpressionFactory().makeTrue()));
+        return List.of(eventFactory.newAbortIf(expressions.makeTrue()));
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {
@@ -630,7 +630,8 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
-        return List.of(eventFactory.withPthread().newLock(lockName, lockAddress),
+        return List.of(
+                eventFactory.withPthread().newLock(lockName, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -646,7 +647,8 @@ public class Intrinsics {
         final Expression locked = expressions.makeOne(types.getArchType());
         final Expression unlocked = expressions.makeZero(types.getArchType());
         final Expression fail = expressions.makeNot(successRegister);
-        return List.of(eventFactory.withLlvm().newCompareExchange(oldValueRegister,
+        return List.of(
+                eventFactory.withLlvm().newCompareExchange(oldValueRegister,
                         successRegister,
                         lockAddress,
                         unlocked,
@@ -661,7 +663,8 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final String lockName = lockAddress.toString();
-        return List.of(eventFactory.withPthread().newUnlock(lockName, lockAddress),
+        return List.of(
+                eventFactory.withPthread().newUnlock(lockName, lockAddress),
                 assignSuccess(errorRegister)
         );
     }
@@ -972,14 +975,13 @@ public class Intrinsics {
                 "Non-integer %s type for \"llvm.ctlz\".", type);
         checkArgument(input.getType().equals(type),
                 "Return type %s of \"llvm.ctlz\" must match argument type %s.", type, input.getType());
-        final Expression resultExpression = eventFactory.getExpressionFactory().makeCTLZ(input, (IntegerType) type);
+        final Expression resultExpression = expressions.makeCTLZ(input, (IntegerType) type);
         final Event assignment = eventFactory.newLocal(resultReg, resultExpression);
         return List.of(assignment);
     }
 
     private List<Event> inlineLLVMCtpop(ValueFunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#llvm-ctpop-intrinsic
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         final Expression input = call.getArguments().get(0);
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
@@ -1006,7 +1008,6 @@ public class Intrinsics {
 
     private List<Event> inlineLLVMMinMax(ValueFunctionCall call) {
         //see https://llvm.org/docs/LangRef.html#standard-c-c-library-intrinsics
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         final List<Expression> arguments = call.getArguments();
         final Expression left = arguments.get(0);
         final Expression right = arguments.get(1);
@@ -1030,7 +1031,6 @@ public class Intrinsics {
             unsignedSatSub(x, y)
                 return x > y ? x - y : 0;
          */
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
         final Expression x = arguments.get(0);
@@ -1073,7 +1073,6 @@ public class Intrinsics {
                     ret = x + y;
                 return ret;
          */
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
         final Expression x = arguments.get(0);
@@ -1314,8 +1313,6 @@ public class Intrinsics {
 
     // Handles both std.memcpy and llvm.memcpy
     private List<Event> inlineMemCpy(FunctionCall call) {
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
         final Expression src = call.getArguments().get(1);
@@ -1350,8 +1347,6 @@ public class Intrinsics {
     }
 
     private List<Event> inlineMemCmp(FunctionCall call) {
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
         final Function caller = call.getFunction();
         final Expression src1 = call.getArguments().get(0);
         final Expression src2 = call.getArguments().get(1);
@@ -1389,8 +1384,6 @@ public class Intrinsics {
 
     // Handles, std.memset, llvm.memset and __memset_chk (checked memset)
     private List<Event> inlineMemSet(FunctionCall call) {
-        final ExpressionFactory expressions = eventFactory.getExpressionFactory();
-        final TypeFactory types = expressions.getTypeFactory();
         final Expression dest = call.getArguments().get(0);
         final Expression fillExpr = call.getArguments().get(1);
         final Expression countExpr = call.getArguments().get(2);

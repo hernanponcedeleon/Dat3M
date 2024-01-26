@@ -112,17 +112,17 @@ public class Compilation implements ProgramProcessor {
 
     // -----------------------------------------------------------------------------
 
-    private VisitorBase<?> getCompiler(EventFactory events) {
+    private VisitorBase<?> getCompiler(EventFactory eventFactory) {
         return switch (target) {
-            case C11 -> new VisitorC11(events);
-            case LKMM -> new VisitorLKMM(events);
-            case TSO -> new VisitorTso(events);
-            case POWER -> new VisitorPower(events, useRC11Scheme, cToPowerScheme);
-            case ARM8 -> new VisitorArm8(events, useRC11Scheme);
-            case IMM -> new VisitorIMM(events);
-            case RISCV -> new VisitorRISCV(events, useRC11Scheme);
-            case PTX -> new VisitorPTX(events);
-            case VULKAN -> new VisitorVulkan(events);
+            case C11 -> new VisitorC11(eventFactory);
+            case LKMM -> new VisitorLKMM(eventFactory);
+            case TSO -> new VisitorTso(eventFactory);
+            case POWER -> new VisitorPower(eventFactory, useRC11Scheme, cToPowerScheme);
+            case ARM8 -> new VisitorArm8(eventFactory, useRC11Scheme);
+            case IMM -> new VisitorIMM(eventFactory);
+            case RISCV -> new VisitorRISCV(eventFactory, useRC11Scheme);
+            case PTX -> new VisitorPTX(eventFactory);
+            case VULKAN -> new VisitorVulkan(eventFactory);
         };
     }
 
