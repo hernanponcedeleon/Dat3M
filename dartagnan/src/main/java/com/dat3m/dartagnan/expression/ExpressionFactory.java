@@ -1,17 +1,8 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
-import com.dat3m.dartagnan.expression.misc.GEPExpr;
-import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.booleans.*;
+import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.misc.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 

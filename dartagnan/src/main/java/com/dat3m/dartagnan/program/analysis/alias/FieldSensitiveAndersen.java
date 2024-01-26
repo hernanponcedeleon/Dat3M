@@ -25,8 +25,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.expression.op.IntBinaryOp.*;
-import static com.dat3m.dartagnan.expression.op.IntUnaryOp.MINUS;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;

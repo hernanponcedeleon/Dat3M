@@ -4,18 +4,14 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
-import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.op.IntBinaryOp.RSHIFT;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.RSHIFT;
 
 public class ExprSimplifier extends ExprTransformer {
 

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.expression.op;
+package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
@@ -9,6 +9,11 @@ public enum IntBinaryOp implements ExpressionKind {
 
     @Override
     public String toString() {
+        return getSymbol();
+    }
+
+    @Override
+    public String getSymbol() {
         return switch (this) {
             case ADD -> "+";
             case SUB -> "-";
@@ -23,10 +28,6 @@ public enum IntBinaryOp implements ExpressionKind {
             case ARSHIFT -> ">>";
             default -> super.toString();
         };
-    }
-
-    public String getName() {
-        return this.name().toLowerCase();
     }
 
     public static IntBinaryOp intToOp(int i) {

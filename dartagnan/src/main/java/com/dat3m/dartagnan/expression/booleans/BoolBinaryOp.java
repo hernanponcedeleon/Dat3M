@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.expression.op;
+package com.dat3m.dartagnan.expression.booleans;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
@@ -6,11 +6,16 @@ public enum BoolBinaryOp implements ExpressionKind {
     AND, OR;
 
     @Override
-    public String toString() {
+    public String getSymbol() {
         return switch (this) {
             case AND -> "&&";
             case OR -> "||";
         };
+    }
+
+    @Override
+    public String toString() {
+        return getSymbol();
     }
 
     public boolean combine(boolean a, boolean b){
@@ -19,4 +24,5 @@ public enum BoolBinaryOp implements ExpressionKind {
             case OR -> a || b;
         };
     }
+
 }

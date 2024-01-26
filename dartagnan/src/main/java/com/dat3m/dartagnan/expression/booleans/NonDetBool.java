@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.expression.booleans;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 
@@ -14,7 +13,7 @@ public class NonDetBool extends LeafExpressionBase<BooleanType> {
     }
 
     @Override
-    public ExpressionKind getKind() { return Kind.NONDET; }
+    public ExpressionKind getKind() { return ExpressionKind.Other.NONDET; }
 
     @Override
     public String toString() {

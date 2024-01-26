@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.specification;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.CmpOp;
+import com.dat3m.dartagnan.expression.misc.CmpOp;
 import com.dat3m.dartagnan.program.Register;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 

@@ -4,12 +4,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -37,8 +33,8 @@ import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
-import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_SIGNED;
-import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_UNSIGNED;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_SIGNED;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_UNSIGNED;
 
 /*
     Sparse conditional constant propagation performs both CP and DCE simultaneously.

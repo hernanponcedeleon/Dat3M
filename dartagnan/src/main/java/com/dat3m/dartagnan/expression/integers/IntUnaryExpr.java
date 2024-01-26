@@ -2,14 +2,13 @@ package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
-import com.dat3m.dartagnan.expression.op.IntUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_SIGNED;
-import static com.dat3m.dartagnan.expression.op.IntUnaryOp.CAST_UNSIGNED;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_SIGNED;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_UNSIGNED;
 import static com.google.common.base.Verify.verify;
 
 public class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {

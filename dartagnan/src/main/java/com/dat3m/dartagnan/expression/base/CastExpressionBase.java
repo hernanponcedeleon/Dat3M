@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.expression.base;
 
 import com.dat3m.dartagnan.expression.CastExpression;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.Kind;
+import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
@@ -40,7 +40,7 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
     public List<Expression> getOperands() { return List.of(operand); }
 
     @Override
-    public Kind getKind() { return Kind.CAST; }
+    public ExpressionKind.Other getKind() { return ExpressionKind.Other.CAST; }
 
     @Override
     public ImmutableSet<Register> getRegs() { return operand.getRegs(); }

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.expression.op;
+package com.dat3m.dartagnan.expression.misc;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
@@ -9,6 +9,11 @@ public enum CmpOp implements ExpressionKind {
 
     @Override
     public String toString() {
+        return getSymbol();
+    }
+
+    @Override
+    public String getSymbol() {
         return switch (this) {
             case EQ -> "==";
             case NEQ -> "!=";

@@ -28,7 +28,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitIntBinaryExpression(IntBinaryExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitIntCmpExpression(IntCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitIntUnaryExpression(IntUnaryExpr expr) { return visitUnaryExpression(expr); }
-    default TRet visitIntSizeCasExpression(IntSizeCast expr) { return visitCastExpression(expr); }
+    default TRet visitIntSizeCastExpression(IntSizeCast expr) { return visitCastExpression(expr); }
     default TRet visitIntLiteral(IntLiteral lit) { return visitLeafExpression(lit); }
     default TRet visitNonDetIntExpression(NonDetInt expr) { return visitLeafExpression(expr); }
 

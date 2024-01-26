@@ -5,11 +5,10 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.booleans.NonDetBool;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.NonDetInt;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.op.IntBinaryOp;
-import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -1434,6 +1433,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private interface MdNode extends Expression {
 
         Type TYPE = new Type() { };
+        ExpressionKind MdKind = new ExpressionKind() {
+            @Override
+            public String getSymbol() { return "Md"; }
+            @Override
+            public String getName() { return "Metadata"; }
+            @Override
+            public String toString() { return getName(); }
+        };
 
         @Override
         default Type getType() { return TYPE; }
@@ -1446,7 +1453,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         @Override
         default List<Expression> getOperands() { return List.of(); }
         @Override
-        default ExpressionKind getKind() { return Kind.OTHER; }
+        default ExpressionKind getKind() { return MdKind; }
     }
 
     private static final MdNode MD_NULL = new MdNode() {

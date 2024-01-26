@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 
@@ -54,7 +53,7 @@ public class NonDetInt extends LeafExpressionBase<IntegerType> {
     }
 
     @Override
-    public ExpressionKind getKind() { return Kind.NONDET; }
+    public ExpressionKind getKind() { return ExpressionKind.Other.NONDET; }
 
     @Override
     public IntLiteral reduce() {

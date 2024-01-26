@@ -3,7 +3,7 @@ grammar LitmusVulkan;
 import LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
 }
 
 main

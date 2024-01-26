@@ -3,7 +3,8 @@ grammar LitmusC;
 import LinuxLexer, C11Lexer, LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.booleans.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 }
 

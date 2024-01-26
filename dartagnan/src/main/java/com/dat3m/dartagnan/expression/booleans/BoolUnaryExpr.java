@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.expression.booleans;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
-import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 

@@ -3,7 +3,7 @@ grammar LitmusAArch64;
 import LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 }
 

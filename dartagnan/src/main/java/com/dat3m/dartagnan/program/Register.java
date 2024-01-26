@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.google.common.collect.ImmutableSet;
@@ -46,7 +45,7 @@ public class Register extends LeafExpressionBase<Type> {
     }
 
     @Override
-    public ExpressionKind getKind() { return Kind.REGISTER; }
+    public ExpressionKind getKind() { return ExpressionKind.Other.REGISTER; }
 
     @Override
     public String toString() {

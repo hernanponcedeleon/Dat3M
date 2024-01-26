@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.expression.misc;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.base.ExpressionBase;
-import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -52,8 +51,8 @@ public class ITEExpr extends ExpressionBase<Type> {
     }
 
     @Override
-    public ExpressionKind getKind() {
-        return Kind.ITE;
+    public ExpressionKind.Other getKind() {
+        return ExpressionKind.Other.ITE;
     }
 
     @Override

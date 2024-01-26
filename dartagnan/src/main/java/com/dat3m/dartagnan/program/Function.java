@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.LeafExpression;
-import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -71,7 +70,7 @@ public class Function implements LeafExpression {
 
     @Override
     public ExpressionKind getKind() {
-        return Kind.FUNCTION_ADDR;
+        return ExpressionKind.Other.FUNCTION_ADDR;
     }
 
     public String getName() { return this.name; }

@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.expression.base;
 
-import com.dat3m.dartagnan.expression.op.Kind;
+import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 
@@ -12,5 +12,5 @@ public abstract class LiteralExpressionBase<TType extends Type> extends LeafExpr
     }
 
     @Override
-    public Kind getKind() { return Kind.LITERAL; }
+    public ExpressionKind.Other getKind() { return ExpressionKind.Other.LITERAL; }
 }

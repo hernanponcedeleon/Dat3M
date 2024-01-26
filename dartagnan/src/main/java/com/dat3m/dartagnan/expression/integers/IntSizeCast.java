@@ -69,6 +69,6 @@ public class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visitIntSizeCasExpression(this);
+        return visitor.visitIntSizeCastExpression(this);
     }
 }

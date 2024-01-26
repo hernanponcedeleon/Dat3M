@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.expression.op.IntBinaryOp.ADD;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 
 /**
  * Inclusion-based pointer analysis by Andersen.

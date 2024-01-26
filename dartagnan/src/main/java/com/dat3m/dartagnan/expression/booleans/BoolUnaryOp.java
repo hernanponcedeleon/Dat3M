@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.expression.op;
+package com.dat3m.dartagnan.expression.booleans;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
@@ -7,7 +7,12 @@ public enum BoolUnaryOp implements ExpressionKind {
 
     @Override
     public String toString() {
-       	return "!";
+       	return getSymbol();
+    }
+
+    @Override
+    public String getSymbol() {
+        return "!";
     }
 
     public boolean combine(boolean a){
