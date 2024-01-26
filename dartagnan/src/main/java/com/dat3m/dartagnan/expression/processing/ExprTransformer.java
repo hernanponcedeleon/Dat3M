@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
@@ -45,6 +46,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitIntUnaryExpression(IntUnaryExpr expr) {
         return expressions.makeUnary(expr.getKind(), expr.getOperand().accept(this), expr.getType());
+    }
+
+    @Override
+    public Expression visitIntSizeCastExpression(IntSizeCast expr) {
+        return expressions.makeIntegerCast(expr.getOperand().accept(this), expr.getTargetType(), expr.preservesSign());
     }
 
     @Override

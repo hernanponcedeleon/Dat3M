@@ -13,7 +13,7 @@ public class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
 
     private final boolean preserveSign;
 
-    protected IntSizeCast(IntegerType targetType, Expression operand, boolean preserveSign) {
+    public IntSizeCast(IntegerType targetType, Expression operand, boolean preserveSign) {
         super(targetType, operand);
         Preconditions.checkArgument(operand.getType() instanceof IntegerType);
         this.preserveSign = (preserveSign && isExtension()) || isNoop();
@@ -57,7 +57,7 @@ public class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
         } else if (targetType.isMathematical()) {
             return true;
         } else {
-            return sourceType.getBitWidth() > targetType.getBitWidth();
+            return sourceType.getBitWidth() < targetType.getBitWidth();
         }
     }
 

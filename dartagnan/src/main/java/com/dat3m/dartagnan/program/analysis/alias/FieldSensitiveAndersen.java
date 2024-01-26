@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
@@ -360,6 +361,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             Result i = x.getOperand().accept(this);
             return i == null ? null : x.getKind() != MINUS ? i :
                     new Result(null, null, i.offset.negate(), i.alignment == 0 ? 1 : i.alignment);
+        }
+
+        @Override
+        public Result visitIntSizeCastExpression(IntSizeCast expr) {
+            // We assume type casts do not affect the value of pointers.
+            return expr.getOperand().accept(this);
         }
 
         @Override

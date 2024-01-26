@@ -33,8 +33,6 @@ import java.util.function.Predicate;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.CONSTANT_PROPAGATION;
 import static com.dat3m.dartagnan.configuration.OptionNames.PROPAGATE_COPY_ASSIGNMENTS;
-import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_SIGNED;
-import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_UNSIGNED;
 
 /*
     Sparse conditional constant propagation performs both CP and DCE simultaneously.
@@ -244,14 +242,19 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         @Override
         public Expression visitIntUnaryExpression(IntUnaryExpr iUn) {
             Expression inner = transform(iUn.getOperand());
-            Expression result;
-            if ((iUn.getKind() == CAST_SIGNED || iUn.getKind() == CAST_UNSIGNED) && iUn.getType() == inner.getType()) {
-                result = inner;
-            } else {
-                result = expressions.makeUnary(iUn.getKind(), inner, iUn.getType());
-            }
+            Expression result = expressions.makeUnary(iUn.getKind(), inner, iUn.getType());
             if (inner instanceof IntLiteral) {
                 return result.reduce();
+            }
+            return result;
+        }
+
+        @Override
+        public Expression visitIntSizeCastExpression(IntSizeCast expr) {
+            Expression inner = transform(expr.getOperand());
+            Expression result = expressions.makeIntegerCast(inner, expr.getTargetType(), expr.preservesSign());
+            if (inner instanceof IntLiteral) {
+                result = result.reduce();
             }
             return result;
         }

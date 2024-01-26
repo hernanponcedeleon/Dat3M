@@ -7,22 +7,12 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_SIGNED;
-import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.CAST_UNSIGNED;
 import static com.google.common.base.Verify.verify;
 
 public class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {
 
     public IntUnaryExpr(IntUnaryOp operator, Expression operand, IntegerType t) {
         super(t, operator, operand);
-    }
-
-    @Override
-    public String toString() {
-        if (kind == CAST_SIGNED || kind == CAST_UNSIGNED) {
-            return String.format("(%s %s to %s)", operand, kind, getType());
-        }
-        return super.toString();
     }
 
     @Override
@@ -36,24 +26,6 @@ public class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {
         BigInteger value = inner.getValue();
         IntegerType targetType = getType();
         switch (kind) {
-            case CAST_SIGNED, CAST_UNSIGNED -> {
-                boolean signed = kind.equals(CAST_SIGNED);
-                boolean truncate = !targetType.isMathematical() &&
-                        (innerType.isMathematical() || targetType.getBitWidth() < innerType.getBitWidth());
-                if (truncate) {
-                    BigInteger v = value;
-                    for (int i = targetType.getBitWidth(); i < value.bitLength(); i++) {
-                        v = v.clearBit(i);
-                    }
-                    return new IntLiteral(targetType, v);
-                }
-                if (!innerType.isMathematical()) {
-                    verify(innerType.canContain(value), "");
-                    BigInteger result = innerType.applySign(value, signed);
-                    return new IntLiteral(targetType, result);
-                }
-                return new IntLiteral(targetType, value);
-            }
             case MINUS -> {
                 return new IntLiteral(targetType, value.negate());
             }

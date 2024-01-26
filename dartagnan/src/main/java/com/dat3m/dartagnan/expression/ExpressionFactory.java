@@ -171,7 +171,11 @@ public final class ExpressionFactory {
         if (operand.getType() instanceof BooleanType) {
             return makeITE(operand, makeOne(targetType), makeZero(targetType));
         }
-        return makeUnary(signed ? IntUnaryOp.CAST_SIGNED : IntUnaryOp.CAST_UNSIGNED, operand, targetType);
+        assert operand.getType() instanceof IntegerType;
+        if (operand.getType().equals(targetType)) {
+            return operand;
+        }
+        return new IntSizeCast(targetType, operand, signed);
     }
 
     public Expression makeUnary(IntUnaryOp operator, Expression operand, IntegerType targetType) {

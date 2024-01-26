@@ -19,7 +19,6 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import java.math.BigInteger;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Verify.verify;
 import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
@@ -228,6 +227,30 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
+    public Formula visitIntSizeCastExpression(IntSizeCast expr) {
+        Formula inner = encode(expr.getOperand());
+        if (inner instanceof IntegerFormula || expr.getTargetType().isMathematical() || expr.isNoop()) {
+            //TODO If narrowing, constrain the value.
+            return inner;
+        }
+
+        if (inner instanceof BitvectorFormula number) {
+            final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            final int targetBitWidth = expr.getTargetType().getBitWidth();
+            final int sourceBitWidth = expr.getSourceType().getBitWidth();
+            assert (sourceBitWidth == bvmgr.getLength(number));
+
+            if (expr.isExtension()) {
+                return bvmgr.extend(number, targetBitWidth - sourceBitWidth, expr.preservesSign());
+            } else {
+                return bvmgr.extract(number, targetBitWidth - 1, 0);
+            }
+        }
+
+        throw new UnsupportedOperationException(String.format("Encoding of (%s) not supported.", expr));
+    }
+
+    @Override
     public Formula visitIntUnaryExpression(IntUnaryExpr iUn) {
         Formula inner = encode(iUn.getOperand());
         switch (iUn.getKind()) {
@@ -239,43 +262,17 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return bitvectorFormulaManager().negate(number);
                 }
             }
-            case CAST_SIGNED, CAST_UNSIGNED -> {
-                boolean signed = iUn.getKind().equals(IntUnaryOp.CAST_SIGNED);
-                if (inner instanceof BooleanFormula bool) {
-                    return bool;
-                }
-                if (context.useIntegers || iUn.getType().isMathematical()) {
-                    verify(!context.useIntegers || inner instanceof IntegerFormula);
-                    if(inner instanceof BitvectorFormula number) {
-                        return bitvectorFormulaManager().toIntegerFormula(number, signed);
-                    }
-                    //TODO If narrowing, constrain the value.
-                    return inner;
-                } else {
-                    final int bitWidth = iUn.getType().getBitWidth();
-                    if (inner instanceof IntegerFormula number) {
-                        return bitvectorFormulaManager().makeBitvector(bitWidth, number);
-                    }
-                    if (inner instanceof BitvectorFormula number) {
-                        int innerBitWidth = bitvectorFormulaManager().getLength(number);
-                        if (innerBitWidth < bitWidth) {
-                            return bitvectorFormulaManager().extend(number, bitWidth - innerBitWidth, signed);
-                        }
-                        return bitvectorFormulaManager().extract(number, bitWidth - 1, 0);
-                    }
-                }
-            }
             case CTLZ -> {
                 if (inner instanceof BitvectorFormula bv) {
-                    BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
+                    BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
                     // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) ? 63 : 64)
-                    int bvLength = bitvectorFormulaManager.getLength(bv);
-                    BitvectorFormula bv1 = bitvectorFormulaManager.makeBitvector(1, 1);
-                    BitvectorFormula enc = bitvectorFormulaManager.makeBitvector(bvLength, bvLength);
-                    for(int i = bitvectorFormulaManager.getLength(bv) - 1; i >= 0; i--) {
-                        BitvectorFormula bvi = bitvectorFormulaManager.makeBitvector(bvLength, i);
-                        BitvectorFormula bvbit = bitvectorFormulaManager.extract(bv, bvLength - (i + 1), bvLength - (i + 1));
-                        enc = booleanFormulaManager.ifThenElse(bitvectorFormulaManager.equal(bvbit, bv1), bvi, enc);
+                    int bvLength = bvmgr.getLength(bv);
+                    BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
+                    BitvectorFormula enc = bvmgr.makeBitvector(bvLength, bvLength);
+                    for(int i = bvmgr.getLength(bv) - 1; i >= 0; i--) {
+                        BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
+                        BitvectorFormula bvbit = bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1));
+                        enc = booleanFormulaManager.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, enc);
                     }
                     return enc;
                 }
