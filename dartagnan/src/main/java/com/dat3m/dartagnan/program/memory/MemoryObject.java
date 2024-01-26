@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<IntegerType, Kind> {
+public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     private final int index;
     private final int size;
@@ -128,6 +128,6 @@ public class MemoryObject extends LeafExpressionBase<IntegerType, Kind> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitMemoryObject(this);
     }
 }

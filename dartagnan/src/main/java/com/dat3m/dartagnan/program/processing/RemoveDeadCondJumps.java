@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.Atom;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -122,7 +122,7 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
                 || other.getGuard() instanceof BoolUnaryExpr otherGuard && otherGuard.getOperand().equals(jump.getGuard())) {
             return true;
         }
-        if (jump.getGuard() instanceof Atom a1 && other.getGuard() instanceof Atom a2) {
+        if (jump.getGuard() instanceof IntCmpExpr a1 && other.getGuard() instanceof IntCmpExpr a2) {
             return a1.getKind().inverted() == a2.getKind() && a1.getLeft().equals(a2.getLeft()) && a1.getRight().equals(a2.getRight());
         }
         return false;

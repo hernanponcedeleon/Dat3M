@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ITEExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.Atom;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -20,23 +20,23 @@ import static com.dat3m.dartagnan.expression.op.IntBinaryOp.RSHIFT;
 public class ExprSimplifier extends ExprTransformer {
 
     @Override
-    public Expression visit(Atom atom) {
-        Expression lhs = atom.getLeft().accept(this);
-        Expression rhs = atom.getRight().accept(this);
+    public Expression visitIntCmpExpression(IntCmpExpr cmp) {
+        Expression lhs = cmp.getLeft().accept(this);
+        Expression rhs = cmp.getRight().accept(this);
         if (lhs.equals(rhs)) {
-            return switch (atom.getKind()) {
+            return switch (cmp.getKind()) {
                 case EQ, LTE, ULTE, GTE, UGTE -> expressions.makeTrue();
                 case NEQ, LT, ULT, GT, UGT -> expressions.makeFalse();
             };
         }
         if (lhs instanceof IntLiteral lc && rhs instanceof IntLiteral rc) {
-            return expressions.makeValue(atom.getKind().combine(lc.getValue(), rc.getValue()));
+            return expressions.makeValue(cmp.getKind().combine(lc.getValue(), rc.getValue()));
         }
-        return expressions.makeBinary(lhs, atom.getKind(), rhs);
+        return expressions.makeBinary(lhs, cmp.getKind(), rhs);
     }
 
     @Override
-    public Expression visit(BoolBinaryExpr bBin) {
+    public Expression visitBoolBinaryExpression(BoolBinaryExpr bBin) {
         Expression l = bBin.getLeft().accept(this);
         Expression r = bBin.getRight().accept(this);
         Expression left = l instanceof BoolLiteral || !(r instanceof BoolLiteral) ? l : r;
@@ -59,7 +59,7 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public Expression visit(BoolUnaryExpr bUn) {
+    public Expression visitBoolUnaryExpression(BoolUnaryExpr bUn) {
         Expression inner = bUn.getOperand().accept(this);
         assert bUn.getKind() == BoolUnaryOp.NOT;
         if (inner instanceof BoolLiteral constant) {
@@ -69,15 +69,15 @@ public class ExprSimplifier extends ExprTransformer {
             return innerUnary.getOperand();
         }
 
-        if (inner instanceof Atom atom) {
+        if (inner instanceof IntCmpExpr cmp) {
             // Move negations into the atoms COp
-            return expressions.makeBinary(atom.getLeft(), atom.getKind().inverted(), atom.getRight());
+            return expressions.makeBinary(cmp.getLeft(), cmp.getKind().inverted(), cmp.getRight());
         }
         return expressions.makeUnary(bUn.getKind(), inner);
     }
 
     @Override
-    public Expression visit(IntBinaryExpr iBin) {
+    public Expression visitIntBinaryExpression(IntBinaryExpr iBin) {
         Expression lhs = iBin.getLeft().accept(this);
         Expression rhs = iBin.getRight().accept(this);
         IntBinaryOp op = iBin.getKind();
@@ -152,13 +152,13 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public Expression visit(IntUnaryExpr iUn) {
+    public Expression visitIntUnaryExpression(IntUnaryExpr iUn) {
         // TODO: Add simplifications
-        return super.visit(iUn);
+        return super.visitIntUnaryExpression(iUn);
     }
 
     @Override
-    public Expression visit(ITEExpr iteExpr) {
+    public Expression visitITEExpression(ITEExpr iteExpr) {
         Expression cond = iteExpr.getCondition().accept(this);
         Expression t = iteExpr.getTrueCase().accept(this);
         Expression f = iteExpr.getFalseCase().accept(this);

@@ -1,5 +1,7 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.expression.misc;
 
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.base.ExpressionBase;
 import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -16,7 +18,7 @@ public class ITEExpr extends ExpressionBase<Type> {
     private final Expression trueCase;
     private final Expression falseCase;
 
-    ITEExpr(Expression condition, Expression trueCase, Expression falseCase) {
+    public ITEExpr(Expression condition, Expression trueCase, Expression falseCase) {
         super(trueCase.getType());
         checkArgument(condition.getType() instanceof BooleanType,
                 "ITE with non-boolean condition %s.", condition);
@@ -56,7 +58,7 @@ public class ITEExpr extends ExpressionBase<Type> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitITEExpression(this);
     }
 
     @Override

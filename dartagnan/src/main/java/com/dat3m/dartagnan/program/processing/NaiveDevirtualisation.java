@@ -251,7 +251,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         public void reset() { collectedFunctions.clear(); }
 
         @Override
-        public Expression visit(Function function) {
+        public Expression visitFunction(Function function) {
             collectedFunctions.add(function);
             return function;
         }
@@ -262,7 +262,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
         private final Map<Function, IntLiteral> func2AddressMap = new HashMap<>();
 
         @Override
-        public Expression visit(Function function) {
+        public Expression visitFunction(Function function) {
             return func2AddressMap.containsKey(function) ? func2AddressMap.get(function) : function;
         }
     }

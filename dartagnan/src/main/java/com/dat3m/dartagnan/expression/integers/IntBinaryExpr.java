@@ -5,16 +5,15 @@ import com.dat3m.dartagnan.expression.base.BinaryExpressionBase;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.google.common.base.Preconditions;
+import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
 import java.math.BigInteger;
 
 public class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBinaryOp> {
 
-    public IntBinaryExpr(Expression lhs, IntBinaryOp op, Expression rhs) {
-        super((IntegerType) lhs.getType(), op, lhs, rhs);
-        Preconditions.checkArgument(lhs.getType().equals(rhs.getType()),
-                "The types of %s and %s do not match.", lhs, rhs);
+    public IntBinaryExpr(Expression left, IntBinaryOp op, Expression right) {
+        super((IntegerType) left.getType(), op, left, right);
+        ExpressionHelper.checkSameType(left, right);
     }
 
     @Override
@@ -26,7 +25,7 @@ public class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBinaryOp
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitIntBinaryExpression(this);
     }
 
     @Override

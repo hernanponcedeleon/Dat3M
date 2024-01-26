@@ -14,6 +14,6 @@ public class BoolUnaryExpr extends UnaryExpressionBase<BooleanType, BoolUnaryOp>
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitBoolUnaryExpression(this);
     }
 }

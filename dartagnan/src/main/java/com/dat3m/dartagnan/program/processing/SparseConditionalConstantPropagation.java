@@ -1,14 +1,14 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ITEExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.Atom;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
@@ -196,23 +196,23 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         private Map<Register, Expression> propagationMap;
 
         @Override
-        public Expression visit(Register reg) {
+        public Expression visitRegister(Register reg) {
             return propagationMap.getOrDefault(reg, reg);
         }
 
         @Override
-        public Expression visit(Atom atom) {
-            Expression lhs = transform(atom.getLeft());
-            Expression rhs = transform(atom.getRight());
+        public Expression visitIntCmpExpression(IntCmpExpr cmp) {
+            Expression lhs = transform(cmp.getLeft());
+            Expression rhs = transform(cmp.getRight());
             if (lhs instanceof IntLiteral left && rhs instanceof IntLiteral right) {
-                return expressions.makeValue(atom.getKind().combine(left.getValue(), right.getValue()));
+                return expressions.makeValue(cmp.getKind().combine(left.getValue(), right.getValue()));
             } else {
-                return expressions.makeBinary(lhs, atom.getKind(), rhs);
+                return expressions.makeBinary(lhs, cmp.getKind(), rhs);
             }
         }
 
         @Override
-        public Expression visit(BoolBinaryExpr bBin) {
+        public Expression visitBoolBinaryExpression(BoolBinaryExpr bBin) {
             Expression lhs = transform(bBin.getLeft());
             Expression rhs = transform(bBin.getRight());
             if (lhs instanceof BoolLiteral left && rhs instanceof BoolLiteral right) {
@@ -223,7 +223,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         @Override
-        public Expression visit(BoolUnaryExpr bUn) {
+        public Expression visitBoolUnaryExpression(BoolUnaryExpr bUn) {
             Expression inner = transform(bUn.getOperand());
             if (inner instanceof BoolLiteral bc) {
                 return expressions.makeValue(bUn.getKind().combine(bc.getValue()));
@@ -233,7 +233,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         @Override
-        public Expression visit(IntBinaryExpr iBin) {
+        public Expression visitIntBinaryExpression(IntBinaryExpr iBin) {
             Expression lhs = transform(iBin.getLeft());
             Expression rhs = transform(iBin.getRight());
             if (lhs instanceof IntLiteral left && rhs instanceof IntLiteral right) {
@@ -246,7 +246,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         @Override
-        public Expression visit(IntUnaryExpr iUn) {
+        public Expression visitIntUnaryExpression(IntUnaryExpr iUn) {
             Expression inner = transform(iUn.getOperand());
             Expression result;
             if ((iUn.getKind() == CAST_SIGNED || iUn.getKind() == CAST_UNSIGNED) && iUn.getType() == inner.getType()) {
@@ -261,7 +261,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
 
         @Override
-        public Expression visit(ITEExpr iteExpr) {
+        public Expression visitITEExpression(ITEExpr iteExpr) {
             Expression guard = transform(iteExpr.getCondition());
             Expression trueBranch = transform(iteExpr.getTrueCase());
             Expression falseBranch = transform(iteExpr.getFalseCase());

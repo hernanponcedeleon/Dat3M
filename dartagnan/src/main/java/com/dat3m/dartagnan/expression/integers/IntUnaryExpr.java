@@ -77,7 +77,7 @@ public class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitIntUnaryExpression(this);
     }
 
     @Override

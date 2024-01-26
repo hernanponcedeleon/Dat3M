@@ -24,7 +24,7 @@ public final class BoolLiteral extends LiteralExpressionBase<BooleanType> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitBoolLiteral(this);
     }
 
     @Override

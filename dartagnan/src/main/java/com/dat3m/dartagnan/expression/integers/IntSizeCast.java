@@ -36,21 +36,14 @@ public class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
     }
 
     @Override
-    public <T> T accept(ExpressionVisitor<T> visitor) {
-        return null;
-    }
-
-    @Override
     public IntLiteral reduce() {
-        // NOTE: The following computations are quite convoluted due to the fact that
-        // we use non-unique BigInteger representations of values.
-        final IntLiteral lit = operand.reduce();
-        final int targetWidth = targetType.getBitWidth();
+        final IntLiteral lit = getOperand().reduce();
         final int sourceWidth = getSourceType().getBitWidth();
+        final int targetWidth = getTargetType().getBitWidth();
         if (isNoop()) {
             return lit;
         } else if (isTruncation()) {
-            return new IntLiteral( targetType, IntegerHelper.truncateNoNormalize(lit.getValue(), targetWidth));
+            return new IntLiteral(targetType, IntegerHelper.truncateNoNormalize(lit.getValue(), targetWidth));
         } else {
             assert isExtension();
             final BigInteger extendedValue = IntegerHelper.extend(lit.getValue(), sourceWidth, targetWidth, preserveSign);
@@ -66,5 +59,16 @@ public class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
         } else {
             return sourceType.getBitWidth() > targetType.getBitWidth();
         }
+    }
+
+    @Override
+    public String toString() {
+        final String opName = isTruncation() ? "trunc" : (preserveSign ? "sext" : "zext");
+        return String.format("%s %s to %s", operand, opName, targetType);
+    }
+
+    @Override
+    public <T> T accept(ExpressionVisitor<T> visitor) {
+        return visitor.visitIntSizeCasExpression(this);
     }
 }

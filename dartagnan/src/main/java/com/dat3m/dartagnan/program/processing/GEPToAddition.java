@@ -3,8 +3,8 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.GEPExpression;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
@@ -45,10 +45,10 @@ public class GEPToAddition implements ProgramProcessor {
         private final IntegerType archType = types.getArchType();
 
         @Override
-        public Expression visit(GEPExpression getElementPointer) {
+        public Expression visitGEPExpression(GEPExpr getElementPointer) {
             Type type = getElementPointer.getIndexingType();
-            Expression result = getElementPointer.getBaseExpression().accept(this);
-            final List<Expression> offsets = getElementPointer.getOffsetExpressions();
+            Expression result = getElementPointer.getBase().accept(this);
+            final List<Expression> offsets = getElementPointer.getOffsets();
             assert !offsets.isEmpty();
             result = expressions.makeADD(result,
                     expressions.makeMUL(

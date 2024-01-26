@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ITEExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -290,6 +290,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             result = x.accept(this);
         }
 
+        @Override
+        public Result visitExpression(Expression expr) {
+            return null;
+        }
+
         List<Location> address() {
             if (result != null && result.address != null) {
                 verify(address.size() == 1);
@@ -310,7 +315,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IntBinaryExpr x) {
+        public Result visitIntBinaryExpression(IntBinaryExpr x) {
             Result l = x.getLeft().accept(this);
             Result r = x.getRight().accept(this);
             if (l == null || r == null || x.getKind() == RSHIFT) {
@@ -351,33 +356,33 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IntUnaryExpr x) {
+        public Result visitIntUnaryExpression(IntUnaryExpr x) {
             Result i = x.getOperand().accept(this);
             return i == null ? null : x.getKind() != MINUS ? i :
                     new Result(null, null, i.offset.negate(), i.alignment == 0 ? 1 : i.alignment);
         }
 
         @Override
-        public Result visit(ITEExpr x) {
+        public Result visitITEExpression(ITEExpr x) {
             x.getTrueCase().accept(this);
             x.getFalseCase().accept(this);
             return null;
         }
 
         @Override
-        public Result visit(MemoryObject a) {
+        public Result visitMemoryObject(MemoryObject a) {
             address.add(a);
             return new Result(a, null, BigInteger.ZERO, 0);
         }
 
         @Override
-        public Result visit(Register r) {
+        public Result visitRegister(Register r) {
             register.add(r);
             return new Result(null, r, BigInteger.ZERO, 0);
         }
 
         @Override
-        public Result visit(IntLiteral v) {
+        public Result visitIntLiteral(IntLiteral v) {
             return new Result(null, null, v.getValue(), 0);
         }
 

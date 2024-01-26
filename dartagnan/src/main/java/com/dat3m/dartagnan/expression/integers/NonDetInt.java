@@ -10,7 +10,7 @@ import java.math.BigInteger;
 import java.util.Optional;
 
 // TODO why is NonDetInt not a IntConst?
-public class NonDetInt extends LeafExpressionBase<IntegerType, Kind> {
+public class NonDetInt extends LeafExpressionBase<IntegerType> {
 
     private final int id;
     private final boolean signed;
@@ -66,7 +66,7 @@ public class NonDetInt extends LeafExpressionBase<IntegerType, Kind> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitNonDetIntExpression(this);
     }
 
     @Override

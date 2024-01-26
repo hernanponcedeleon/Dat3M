@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Construction;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.booleans.NonDetBool;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.NonDetInt;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
@@ -275,17 +275,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private void setInitialMemoryFromConstant(MemoryObject memObj, int offset, Expression constant) {
         if (constant.getType() instanceof ArrayType arrayType) {
-            assert constant instanceof Construction;
-            final Construction constArray = (Construction) constant;
-            final List<Expression> arrayElements = constArray.getArguments();
+            assert constant instanceof ConstructExpr;
+            final ConstructExpr constArray = (ConstructExpr) constant;
+            final List<Expression> arrayElements = constArray.getOperands();
             final int stepSize = types.getMemorySizeInBytes(arrayType.getElementType());
             for (int i = 0; i < arrayElements.size(); i++) {
                 setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
             }
         } else if (constant.getType() instanceof AggregateType) {
-            assert constant instanceof Construction;
-            final Construction constStruct = (Construction) constant;
-            final List<Expression> structElements = constStruct.getArguments();
+            assert constant instanceof ConstructExpr;
+            final ConstructExpr constStruct = (ConstructExpr) constant;
+            final List<Expression> structElements = constStruct.getOperands();
             int currentOffset = offset;
             for (Expression structElement : structElements) {
                 setInitialMemoryFromConstant(memObj, currentOffset, structElement);

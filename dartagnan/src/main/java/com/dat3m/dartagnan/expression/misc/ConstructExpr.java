@@ -1,5 +1,7 @@
-package com.dat3m.dartagnan.expression;
+package com.dat3m.dartagnan.expression.misc;
 
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.base.NaryExpressionBase;
 import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.AggregateType;
@@ -10,15 +12,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class Construction implements Expression {
+public final class ConstructExpr extends NaryExpressionBase<Type, Kind> {
 
-    private final Type type;
-    private final List<Expression> arguments;
-
-    Construction(Type type, List<Expression> arguments) {
-        this.type = checkNotNull(type);
+    public ConstructExpr(Type type, List<Expression> arguments) {
+        super(type, Kind.CONSTRUCT, List.copyOf(arguments));
         checkArgument(type instanceof AggregateType || type instanceof ArrayType,
                 "Non-constructible type %s.", type);
         checkArgument(!(type instanceof AggregateType a) ||
@@ -27,36 +25,16 @@ public final class Construction implements Expression {
         checkArgument(!(type instanceof ArrayType a) ||
                 !a.hasKnownNumElements() ||
                 arguments.size() <= a.getNumElements(),
-                "Initializing a shorter array from given items");
-        this.arguments = List.copyOf(checkNotNull(arguments));
-    }
-
-    public List<Expression> getArguments() {
-        return arguments;
-    }
-
-    @Override
-    public Type getType() {
-        return type;
-    }
-
-    @Override
-    public List<Expression> getOperands() {
-        return getArguments();
-    }
-
-    @Override
-    public ExpressionKind getKind() {
-        return Kind.CONSTRUCT;
+                "Initializing a shorter array from given items.");
     }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitConstructExpression(this);
     }
 
     @Override
     public String toString() {
-        return arguments.stream().map(Expression::toString).collect(Collectors.joining(", ", "{ ", " }"));
+        return operands.stream().map(Expression::toString).collect(Collectors.joining(", ", "{ ", " }"));
     }
 }

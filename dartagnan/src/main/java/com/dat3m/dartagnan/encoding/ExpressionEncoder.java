@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ITEExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.NonDetBool;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.op.IntUnaryOp;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -67,19 +67,19 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(Atom atom) {
-        Formula lhs = encode(atom.getLeft());
-        Formula rhs = encode(atom.getRight());
-        return context.encodeComparison(atom.getKind(), lhs, rhs);
+    public Formula visitIntCmpExpression(IntCmpExpr cmp) {
+        Formula lhs = encode(cmp.getLeft());
+        Formula rhs = encode(cmp.getRight());
+        return context.encodeComparison(cmp.getKind(), lhs, rhs);
     }
 
     @Override
-    public Formula visit(BoolLiteral boolLiteral) {
+    public Formula visitBoolLiteral(BoolLiteral boolLiteral) {
         return booleanFormulaManager.makeBoolean(boolLiteral.getValue());
     }
 
     @Override
-    public Formula visit(BoolBinaryExpr bBin) {
+    public Formula visitBoolBinaryExpression(BoolBinaryExpr bBin) {
         BooleanFormula lhs = encodeAsBoolean(bBin.getLeft());
         BooleanFormula rhs = encodeAsBoolean(bBin.getRight());
         return switch (bBin.getKind()) {
@@ -89,18 +89,18 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(BoolUnaryExpr bUn) {
+    public Formula visitBoolUnaryExpression(BoolUnaryExpr bUn) {
         BooleanFormula inner = encodeAsBoolean(bUn.getOperand());
         return booleanFormulaManager.not(inner);
     }
 
     @Override
-    public Formula visit(NonDetBool nonDetBool) {
+    public Formula visitNonDetBoolExpression(NonDetBool nonDetBool) {
         return booleanFormulaManager.makeVariable(Integer.toString(nonDetBool.hashCode()));
     }
 
     @Override
-    public Formula visit(IntLiteral intLiteral) {
+    public Formula visitIntLiteral(IntLiteral intLiteral) {
         
         BigInteger value = intLiteral.getValue();
         Type type = intLiteral.getType();
@@ -108,7 +108,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IntBinaryExpr iBin) {
+    public Formula visitIntBinaryExpression(IntBinaryExpr iBin) {
         Formula lhs = encode(iBin.getLeft());
         Formula rhs = encode(iBin.getRight());
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
@@ -229,7 +229,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(IntUnaryExpr iUn) {
+    public Formula visitIntUnaryExpression(IntUnaryExpr iUn) {
         Formula inner = encode(iUn.getOperand());
         switch (iUn.getKind()) {
             case MINUS -> {
@@ -287,7 +287,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(ITEExpr iteExpr) {
+    public Formula visitITEExpression(ITEExpr iteExpr) {
         BooleanFormula guard = encodeAsBoolean(iteExpr.getCondition());
         Formula tBranch = encode(iteExpr.getTrueCase());
         Formula fBranch = encode(iteExpr.getFalseCase());
@@ -295,14 +295,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(NonDetInt iNonDet) {
+    public Formula visitNonDetIntExpression(NonDetInt iNonDet) {
         String name = iNonDet.getName();
         Type type = iNonDet.getType();
         return context.makeVariable(name, type);
     }
 
     @Override
-    public Formula visit(Register reg) {
+    public Formula visitRegister(Register reg) {
         String name = event == null ?
                 reg.getName() + "_" + reg.getFunction().getId() + "_final" :
                 reg.getName() + "(" + event.getGlobalId() + ")";
@@ -311,12 +311,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visit(MemoryObject memObj) {
+    public Formula visitMemoryObject(MemoryObject memObj) {
         return context.makeLiteral(memObj.getType(), memObj.getAddress());
     }
 
     @Override
-    public Formula visit(Location location) {
+    public Formula visitLocation(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
         return context.lastValue(location.getMemoryObject(), location.getOffset());
     }

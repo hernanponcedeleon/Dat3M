@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 
 //TODO instances of this class should be managed by the program
-public class NonDetBool extends LeafExpressionBase<BooleanType, Kind> {
+public class NonDetBool extends LeafExpressionBase<BooleanType> {
 
     public NonDetBool(BooleanType type) {
         super(type);
@@ -23,6 +23,6 @@ public class NonDetBool extends LeafExpressionBase<BooleanType, Kind> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitNonDetBoolExpression(this);
     }
 }

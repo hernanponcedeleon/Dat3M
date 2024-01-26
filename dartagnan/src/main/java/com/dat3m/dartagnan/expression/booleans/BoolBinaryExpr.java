@@ -14,7 +14,7 @@ public class BoolBinaryExpr extends BinaryExpressionBase<BooleanType, BoolBinary
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitBoolBinaryExpression(this);
     }
 
 }

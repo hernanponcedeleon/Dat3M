@@ -1,19 +1,20 @@
 package com.dat3m.dartagnan.program.memory;
 
-import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
-public class Location extends UnaryExpressionBase<IntegerType, Kind> {
+public class Location extends LeafExpressionBase<IntegerType> {
 
     private final String name;
     private final MemoryObject base;
     private final int offset;
 
     public Location(String name, MemoryObject base, int offset) {
-        super(TypeFactory.getInstance().getArchType(), Kind.MEMORY_ADDR, base);
+        super(TypeFactory.getInstance().getArchType());
         this.name = name;
         this.base = base;
         this.offset = offset;
@@ -32,8 +33,13 @@ public class Location extends UnaryExpressionBase<IntegerType, Kind> {
     }
 
     @Override
+    public ExpressionKind getKind() {
+        return Kind.MEMORY_ADDR;
+    }
+
+    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitLocation(this);
     }
 
     @Override

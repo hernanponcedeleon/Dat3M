@@ -3,10 +3,14 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.Atom;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.op.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
@@ -161,7 +165,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression leftOperand, CmpOp operator, Expression rightOperand) {
-        return new Atom(types.getBooleanType(), operator, leftOperand, rightOperand);
+        return new IntCmpExpr(types.getBooleanType(), operator, leftOperand, rightOperand);
     }
 
     public Expression makeNEG(Expression operand, IntegerType targetType) {
@@ -240,17 +244,17 @@ public final class ExpressionFactory {
 
     public Expression makeConstruct(List<Expression> arguments) {
         final AggregateType type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
-        return new Construction(type, arguments);
+        return new ConstructExpr(type, arguments);
     }
 
     public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
         final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
                 types.getArrayType(elementType);
-        return new Construction(type, items);
+        return new ConstructExpr(type, items);
     }
 
     public Expression makeExtract(int fieldIndex, Expression object) {
-        return new Extraction(fieldIndex, object);
+        return new ExtractExpr(fieldIndex, object);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -260,6 +264,6 @@ public final class ExpressionFactory {
         //TODO getPointerType()
         Preconditions.checkArgument(base.getType().equals(types.getArchType()),
                 "Applying offsets to non-pointer expression.");
-        return new GEPExpression(types.getArchType(), indexingType, base, offsets);
+        return new GEPExpr(types.getArchType(), indexingType, base, offsets);
     }
 }

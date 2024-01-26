@@ -73,7 +73,7 @@ public class VisitorLitmusRISCV extends LitmusRISCVBaseVisitor<Object> {
     private void replaceX0Register(Program program) {
         final ExpressionVisitor<Expression> x0Replacer = new ExprTransformer() {
             @Override
-            public Expression visit(Register reg) {
+            public Expression visitRegister(Register reg) {
                 return reg.getName().equals("x0") ? expressions.makeGeneralZero(reg.getType()) : reg;
             }
         };

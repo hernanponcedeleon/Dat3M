@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.program;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.op.Kind;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -19,7 +19,7 @@ import com.google.common.base.Preconditions;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Function implements Expression {
+public class Function implements LeafExpression {
 
     protected String name;
     protected Event entry; // Can be null for intrinsics
@@ -197,12 +197,7 @@ public class Function implements Expression {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
-    @Override
-    public IntLiteral reduce() {
-        throw new UnsupportedOperationException("Cannot reduce functions");
+        return visitor.visitFunction(this);
     }
 
     // TODO: Ugly function, but we need it for now to create copies of functions.

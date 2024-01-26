@@ -47,7 +47,7 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
 
     @Override
     public String toString() {
-        return String.format("cast (%s) to %s", operand, targetType);
+        return String.format("cast %s to %s", operand, targetType);
     }
 
     @Override

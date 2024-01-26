@@ -42,7 +42,7 @@ public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitIntLiteral(this);
     }
 
     @Override

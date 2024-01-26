@@ -13,7 +13,7 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Register extends LeafExpressionBase<Type, Kind> {
+public class Register extends LeafExpressionBase<Type> {
 
     private final String name;
     private String cVar;
@@ -77,7 +77,7 @@ public class Register extends LeafExpressionBase<Type, Kind> {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitRegister(this);
     }
 
     // ============================== Static utility =============================

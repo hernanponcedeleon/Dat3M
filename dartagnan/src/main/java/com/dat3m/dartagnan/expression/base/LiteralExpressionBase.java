@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 
 @NoInterface
-public abstract class LiteralExpressionBase<TType extends Type> extends LeafExpressionBase<TType, Kind> {
+public abstract class LiteralExpressionBase<TType extends Type> extends LeafExpressionBase<TType> {
 
     protected LiteralExpressionBase(TType type) {
         super(type);

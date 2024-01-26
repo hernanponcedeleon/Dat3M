@@ -168,7 +168,7 @@ public class Inlining implements ProgramProcessor {
         // Substitute registers in the copied body
         var substitution = new ExprTransformer() {
             @Override
-            public Expression visit(Register register) {
+            public Expression visitRegister(Register register) {
                 return checkNotNull(registerMap.get(register));
             }
         };

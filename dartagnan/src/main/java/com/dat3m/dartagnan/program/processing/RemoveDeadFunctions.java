@@ -82,7 +82,7 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         public void reset() { collectedFunctions.clear(); }
 
         @Override
-        public Expression visit(Function function) {
+        public Expression visitFunction(Function function) {
             collectedFunctions.add(function);
             return function;
         }
