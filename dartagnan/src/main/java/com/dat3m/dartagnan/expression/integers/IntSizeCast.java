@@ -5,9 +5,6 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.CastExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
-import com.dat3m.dartagnan.expression.utils.IntegerHelper;
-
-import java.math.BigInteger;
 
 public final class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
 
@@ -33,22 +30,6 @@ public final class IntSizeCast extends CastExpressionBase<IntegerType, IntegerTy
 
     public boolean preservesSign() {
         return preserveSign;
-    }
-
-    @Override
-    public IntLiteral reduce() {
-        final IntLiteral lit = getOperand().reduce();
-        final int sourceWidth = getSourceType().getBitWidth();
-        final int targetWidth = getTargetType().getBitWidth();
-        if (isNoop()) {
-            return lit;
-        } else if (isTruncation()) {
-            return new IntLiteral(targetType, IntegerHelper.truncateNoNormalize(lit.getValue(), targetWidth));
-        } else {
-            assert isExtension();
-            final BigInteger extendedValue = IntegerHelper.extend(lit.getValue(), sourceWidth, targetWidth, preserveSign);
-            return new IntLiteral(targetType, extendedValue);
-        }
     }
 
     private static boolean isExtension(IntegerType sourceType, IntegerType targetType) {

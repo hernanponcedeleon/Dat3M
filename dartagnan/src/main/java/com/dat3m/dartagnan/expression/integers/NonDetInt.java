@@ -55,14 +55,6 @@ public final class NonDetInt extends LeafExpressionBase<IntegerType> {
     public ExpressionKind getKind() { return ExpressionKind.Other.NONDET; }
 
     @Override
-    public IntLiteral reduce() {
-        if (min.equals(max)) {
-            return new IntLiteral(getType(), min);
-        }
-        return super.reduce();
-    }
-
-    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitNonDetIntExpression(this);
     }

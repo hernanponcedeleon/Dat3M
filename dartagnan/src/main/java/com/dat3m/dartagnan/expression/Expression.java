@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
 
@@ -15,8 +14,5 @@ public interface Expression {
 
     default ImmutableSet<Register> getRegs() {
         return ImmutableSet.of();
-    }
-    default IntLiteral reduce() {
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
     }
 }

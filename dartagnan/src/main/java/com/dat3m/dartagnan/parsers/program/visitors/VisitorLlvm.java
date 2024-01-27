@@ -1442,11 +1442,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         @Override
         default Type getType() { return TYPE; }
         @Override
-        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException();}
+        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException(); }
         @Override
-        default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
-        @Override
-        default IntLiteral reduce() { throw new UnsupportedOperationException(); }
+        default <T> T accept(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
         @Override
         default List<Expression> getOperands() { return List.of(); }
         @Override

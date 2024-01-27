@@ -14,8 +14,4 @@ public enum BoolUnaryOp implements ExpressionKind {
     public String getSymbol() {
         return "!";
     }
-
-    public boolean combine(boolean a){
-       	return !a;
-    }
 }

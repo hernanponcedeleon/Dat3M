@@ -36,11 +36,6 @@ public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
     public boolean isZero() { return value.equals(BigInteger.ZERO); }
 
     @Override
-    public IntLiteral reduce() {
-        return this;
-    }
-
-    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitIntLiteral(this);
     }

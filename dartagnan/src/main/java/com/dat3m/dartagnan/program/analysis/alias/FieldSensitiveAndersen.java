@@ -324,7 +324,10 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             }
             if (l.address == null && l.register == null && l.alignment == 0 && r.address == null &&
                     r.register == null && r.alignment == 0) {
-                return new Result(null, null, x.getKind().combine(l.offset, r.offset), 0);
+                // TODO: Make sure that the type of normalization does not break this code.
+                //  Maybe always do signed normalization?
+                return new Result(null, null,
+                        x.getKind().apply(l.offset, r.offset, x.getType().getBitWidth()), 0);
             }
             if (x.getKind() == MUL) {
                 if (l.address != null || r.address != null) {

@@ -38,7 +38,6 @@ public final class ExtractExpr extends UnaryExpressionBase<Type, ExpressionKind.
         return index;
     }
 
-
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitExtractExpression(this);

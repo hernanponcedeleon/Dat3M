@@ -205,22 +205,7 @@ public class ExprSimplifier extends ExprTransformer {
         // Folding of constants
         if (left instanceof IntLiteral leftLit && right instanceof IntLiteral rightLit) {
             final int bitWidth = expr.getType().getBitWidth();
-            final BigInteger result = switch (op) {
-                case ADD -> IntegerHelper.add(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case SUB -> IntegerHelper.sub(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case MUL -> IntegerHelper.mul(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case DIV -> IntegerHelper.sdiv(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case UDIV -> IntegerHelper.udiv(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case SREM -> IntegerHelper.srem(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case UREM -> IntegerHelper.urem(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case AND -> IntegerHelper.and(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case OR -> IntegerHelper.or(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case XOR -> IntegerHelper.xor(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case RSHIFT -> IntegerHelper.rshift(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case ARSHIFT -> IntegerHelper.arshift(leftLit.getValue(), rightLit.getValue(), bitWidth);
-                case LSHIFT -> IntegerHelper.lshift(leftLit.getValue(), rightLit.getValue(), bitWidth);
-            };
-            return expressions.makeValue(result, expr.getType());
+            return expressions.makeValue(op.apply(leftLit.getValue(), rightLit.getValue(), bitWidth), expr.getType());
         }
 
         // TODO: Use associativity to merge nested operators

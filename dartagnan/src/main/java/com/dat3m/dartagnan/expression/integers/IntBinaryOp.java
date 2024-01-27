@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
 
 import java.math.BigInteger;
 
@@ -46,37 +47,21 @@ public enum IntBinaryOp implements ExpressionKind {
         };
     }
 
-    public BigInteger combine(BigInteger a, BigInteger b) {
-        switch (this) {
-            case ADD:
-                return a.add(b);
-            case SUB:
-                return a.subtract(b);
-            case MUL:
-                return a.multiply(b);
-            case DIV:
-            case UDIV:
-                return a.divide(b);
-            case SREM:
-            case UREM:
-                return a.remainder(b);
-            case AND:
-                return a.and(b);
-            case OR:
-                return a.or(b);
-            case XOR:
-                return a.xor(b);
-            case LSHIFT:
-                return a.shiftLeft(b.intValue());
-            case RSHIFT:
-                if (a.signum() < 0) {
-                    // BigInteger does not support logical shift on negative values
-                    throw new UnsupportedOperationException("No support for " + this + " on negative values.");
-                }
-                // For non-negative values, a logical shift is identical to a regular shift
-            case ARSHIFT:
-                return a.shiftRight(b.intValue());
-        }
-        throw new UnsupportedOperationException("Illegal operator " + this + " in IntBinaryOp");
+    public BigInteger apply(BigInteger a, BigInteger b, int bitWidth) {
+        return switch (this) {
+            case ADD -> IntegerHelper.add(a, b, bitWidth);
+            case SUB -> IntegerHelper.sub(a, b, bitWidth);
+            case MUL -> IntegerHelper.mul(a, b, bitWidth);
+            case DIV -> IntegerHelper.sdiv(a, b, bitWidth);
+            case UDIV -> IntegerHelper.udiv(a, b, bitWidth);
+            case SREM -> IntegerHelper.srem(a, b, bitWidth);
+            case UREM -> IntegerHelper.urem(a, b, bitWidth);
+            case AND -> IntegerHelper.and(a, b, bitWidth);
+            case OR -> IntegerHelper.or(a, b, bitWidth);
+            case XOR -> IntegerHelper.xor(a, b, bitWidth);
+            case LSHIFT -> IntegerHelper.lshift(a, b, bitWidth);
+            case RSHIFT -> IntegerHelper.rshift(a, b, bitWidth);
+            case ARSHIFT -> IntegerHelper.arshift(a, b, bitWidth);
+        };
     }
 }

@@ -18,11 +18,4 @@ public enum BoolBinaryOp implements ExpressionKind {
         return getSymbol();
     }
 
-    public boolean combine(boolean a, boolean b){
-        return switch (this) {
-            case AND -> a && b;
-            case OR -> a || b;
-        };
-    }
-
 }

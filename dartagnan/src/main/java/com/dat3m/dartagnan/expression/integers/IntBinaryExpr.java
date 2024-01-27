@@ -16,23 +16,15 @@ public final class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBi
     }
 
     @Override
-    public IntLiteral reduce() {
-        BigInteger v1 = left.reduce().getValue();
-        BigInteger v2 = right.reduce().getValue();
-        return new IntLiteral(getType(), kind.combine(v1, v2));
-    }
-
-    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitIntBinaryExpression(this);
     }
 
     @Override
     public int hashCode() {
-        if (kind.equals(IntBinaryOp.RSHIFT)) {
-            return left.hashCode() >>> right.hashCode();
-        }
-        return (kind.combine(BigInteger.valueOf(left.hashCode()), BigInteger.valueOf(right.hashCode()))).intValue();
+        final BigInteger leftHash = BigInteger.valueOf(left.hashCode());
+        final BigInteger rightHash = BigInteger.valueOf(left.hashCode());
+        return kind.apply(leftHash, rightHash, 32).intValue();
     }
 
     @Override
