@@ -393,6 +393,8 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
+        v1 = expressions.makeBooleanCast(v1);
+        v2 = expressions.makeBooleanCast(v2);
         Expression result = expressions.makeBinary(v1, ctx.opBool().op, v2);
         return assignToReturnRegister(register, result);
     }
@@ -401,6 +403,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Expression visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
         Register register = getReturnRegister(false);
         Expression v = (Expression)ctx.re().accept(this);
+        v = expressions.makeBooleanCast(v);
         Expression result = expressions.makeNot(v);
         return assignToReturnRegister(register, result);
     }
