@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 
 //TODO instances of this class should be managed by the program
-public class NonDetBool extends LeafExpressionBase<BooleanType> {
+public final class NonDetBool extends LeafExpressionBase<BooleanType> {
 
     public NonDetBool(BooleanType type) {
         super(type);

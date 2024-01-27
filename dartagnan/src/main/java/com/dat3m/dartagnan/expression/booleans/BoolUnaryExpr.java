@@ -5,10 +5,10 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.UnaryExpressionBase;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 
-public class BoolUnaryExpr extends UnaryExpressionBase<BooleanType, BoolUnaryOp> {
+public final class BoolUnaryExpr extends UnaryExpressionBase<BooleanType, BoolUnaryOp> {
 
-    public BoolUnaryExpr(BooleanType type, BoolUnaryOp operatorKind, Expression operand) {
-        super(type, operatorKind, operand);
+    public BoolUnaryExpr(BoolUnaryOp operatorKind, Expression operand) {
+        super((BooleanType) operand.getType(), operatorKind, operand);
     }
 
     @Override

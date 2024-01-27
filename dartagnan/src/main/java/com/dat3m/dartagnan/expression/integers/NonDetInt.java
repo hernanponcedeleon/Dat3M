@@ -8,8 +8,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import java.math.BigInteger;
 import java.util.Optional;
 
-// TODO why is NonDetInt not a IntConst?
-public class NonDetInt extends LeafExpressionBase<IntegerType> {
+public final class NonDetInt extends LeafExpressionBase<IntegerType> {
 
     private final int id;
     private final boolean signed;

@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
 import java.math.BigInteger;
 
-public class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBinaryOp> {
+public final class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBinaryOp> {
 
     public IntBinaryExpr(Expression left, IntBinaryOp op, Expression right) {
         super((IntegerType) left.getType(), op, left, right);

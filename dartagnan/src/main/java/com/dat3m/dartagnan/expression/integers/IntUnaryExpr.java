@@ -9,10 +9,10 @@ import java.math.BigInteger;
 
 import static com.google.common.base.Verify.verify;
 
-public class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {
+public final class IntUnaryExpr extends UnaryExpressionBase<IntegerType, IntUnaryOp> {
 
-    public IntUnaryExpr(IntUnaryOp operator, Expression operand, IntegerType t) {
-        super(t, operator, operand);
+    public IntUnaryExpr(IntUnaryOp operator, Expression operand) {
+        super((IntegerType) operand.getType(), operator, operand);
     }
 
     @Override

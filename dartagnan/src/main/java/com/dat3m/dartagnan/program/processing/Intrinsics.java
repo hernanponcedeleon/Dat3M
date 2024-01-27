@@ -969,7 +969,7 @@ public class Intrinsics {
                 "Non-integer %s type for \"llvm.ctlz\".", type);
         checkArgument(input.getType().equals(type),
                 "Return type %s of \"llvm.ctlz\" must match argument type %s.", type, input.getType());
-        final Expression resultExpression = expressions.makeCTLZ(input, (IntegerType) type);
+        final Expression resultExpression = expressions.makeCTLZ(input);
         final Event assignment = EventFactory.newLocal(resultReg, resultExpression);
         return List.of(assignment);
     }

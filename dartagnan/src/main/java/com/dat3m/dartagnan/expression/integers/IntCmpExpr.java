@@ -5,13 +5,14 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.BinaryExpressionBase;
 import com.dat3m.dartagnan.expression.misc.CmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
-public class IntCmpExpr extends BinaryExpressionBase<BooleanType, CmpOp> {
+public final class IntCmpExpr extends BinaryExpressionBase<BooleanType, CmpOp> {
 
-    public IntCmpExpr(BooleanType type, CmpOp kind, Expression left, Expression right) {
+    public IntCmpExpr(BooleanType type, Expression left, CmpOp kind, Expression right) {
         super(type, kind, left, right);
-        ExpressionHelper.checkSameType(left, right);
+        ExpressionHelper.checkSameExpectedType(left, right, IntegerType.class);
     }
 
     @Override

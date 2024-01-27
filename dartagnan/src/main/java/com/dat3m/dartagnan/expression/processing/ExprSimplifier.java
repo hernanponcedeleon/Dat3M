@@ -169,7 +169,7 @@ public class ExprSimplifier extends ExprTransformer {
             return neg.getOperand();
         }
 
-        return expressions.makeUnary(expr.getKind(), operand, expr.getType());
+        return expressions.makeUnary(expr.getKind(), operand);
     }
 
     @Override

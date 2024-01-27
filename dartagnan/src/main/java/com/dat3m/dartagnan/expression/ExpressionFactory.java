@@ -45,7 +45,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeUnary(BoolUnaryOp operator, Expression operand) {
-        return new BoolUnaryExpr(types.getBooleanType(), operator, operand);
+        return new BoolUnaryExpr(operator, operand);
     }
 
     public Expression makeAnd(Expression leftOperand, Expression rightOperand) {
@@ -57,7 +57,7 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression leftOperand, BoolBinaryOp operator, Expression rightOperand) {
-        return new BoolBinaryExpr(booleanType, leftOperand, operator, rightOperand);
+        return new BoolBinaryExpr(leftOperand, operator, rightOperand);
     }
 
     public Expression makeGeneralZero(Type type) {
@@ -156,15 +156,15 @@ public final class ExpressionFactory {
     }
 
     public Expression makeBinary(Expression leftOperand, CmpOp operator, Expression rightOperand) {
-        return new IntCmpExpr(types.getBooleanType(), operator, leftOperand, rightOperand);
+        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeNEG(Expression operand, IntegerType targetType) {
-        return makeUnary(IntUnaryOp.MINUS, operand, targetType);
+    public Expression makeNEG(Expression operand) {
+        return makeUnary(IntUnaryOp.MINUS, operand);
     }
 
-    public Expression makeCTLZ(Expression operand, IntegerType targetType) {
-        return makeUnary(IntUnaryOp.CTLZ, operand, targetType);
+    public Expression makeCTLZ(Expression operand) {
+        return makeUnary(IntUnaryOp.CTLZ, operand);
     }
 
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
@@ -178,10 +178,10 @@ public final class ExpressionFactory {
         return new IntSizeCast(targetType, operand, signed);
     }
 
-    public Expression makeUnary(IntUnaryOp operator, Expression operand, IntegerType targetType) {
+    public Expression makeUnary(IntUnaryOp operator, Expression operand) {
         Preconditions.checkArgument(operand.getType() instanceof IntegerType,
                 "Non-integer operand for %s %s.", operator, operand);
-        return new IntUnaryExpr(operator, operand, targetType);
+        return new IntUnaryExpr(operator, operand);
     }
 
     public Expression makeADD(Expression leftOperand, Expression rightOperand) {
@@ -255,6 +255,6 @@ public final class ExpressionFactory {
         //TODO getPointerType()
         Preconditions.checkArgument(base.getType().equals(types.getArchType()),
                 "Applying offsets to non-pointer expression.");
-        return new GEPExpr(types.getArchType(), indexingType, base, offsets);
+        return new GEPExpr(indexingType, base, offsets);
     }
 }

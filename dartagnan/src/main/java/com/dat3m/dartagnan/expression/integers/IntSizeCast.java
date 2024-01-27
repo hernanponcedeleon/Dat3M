@@ -4,18 +4,18 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.CastExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.dat3m.dartagnan.expression.utils.IntegerHelper;
-import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
 
-public class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
+public final class IntSizeCast extends CastExpressionBase<IntegerType, IntegerType> {
 
     private final boolean preserveSign;
 
     public IntSizeCast(IntegerType targetType, Expression operand, boolean preserveSign) {
         super(targetType, operand);
-        Preconditions.checkArgument(operand.getType() instanceof IntegerType);
+        ExpressionHelper.checkExpectedType(operand, IntegerType.class);
         this.preserveSign = (preserveSign && isExtension()) || isNoop();
     }
 

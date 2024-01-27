@@ -45,7 +45,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
 
     @Override
     public Expression visitIntUnaryExpression(IntUnaryExpr expr) {
-        return expressions.makeUnary(expr.getKind(), expr.getOperand().accept(this), expr.getType());
+        return expressions.makeUnary(expr.getKind(), expr.getOperand().accept(this));
     }
 
     @Override

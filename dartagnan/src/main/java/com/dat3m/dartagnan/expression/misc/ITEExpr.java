@@ -11,7 +11,7 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class ITEExpr extends ExpressionBase<Type> {
+public final class ITEExpr extends ExpressionBase<Type> {
 
     private final Expression condition;
     private final Expression trueCase;
