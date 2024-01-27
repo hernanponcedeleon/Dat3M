@@ -1,182 +1,264 @@
 package com.dat3m.dartagnan.expression.processing;
 
+
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
 import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.misc.CmpOp;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.expression.utils.IntegerHelper;
+import com.google.common.base.VerifyException;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.RSHIFT;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 
 public class ExprSimplifier extends ExprTransformer {
 
+    // If set to "false", the simplifier will not destroy register dependencies, i.e.,
+    // it will maintain "expr.getRegs() == simplified(expr).getRegs()".
+    // For example, "0*r" will not get simplified to "0";
+    private final boolean aggressive;
+
+    public ExprSimplifier(boolean aggressive) {
+        this.aggressive = aggressive;
+    }
+
+    @Override
+    public Expression visitBoolBinaryExpression(BoolBinaryExpr expr) {
+        Expression left = expr.getLeft().accept(this);
+        Expression right = expr.getRight().accept(this);
+
+        // ------- Operations on same value -------
+        if (aggressive && left.equals(right)) {
+            return expressions.makeTrue();
+        }
+
+        // ------- Operations with constants -------
+        if (left instanceof BoolLiteral) {
+            // Swap constant to right
+            Expression temp = right;
+            right = left;
+            left = temp;
+        }
+
+        if (left instanceof BoolLiteral lit) {
+            final boolean neutralValue = switch (expr.getKind()) {
+                case AND -> true;
+                case OR -> false;
+            };
+            final boolean absorbingValue = !neutralValue;
+
+            if (lit.getValue() == neutralValue) {
+                return right;
+            } else if (aggressive || right.getRegs().isEmpty()) {
+                return expressions.makeValue(absorbingValue);
+            }
+        }
+
+        // TODO: Simplifications of nested expressions like "b && !b => false".
+
+        return expressions.makeBinary(left, expr.getKind(), right);
+    }
+
+    @Override
+    public Expression visitBoolUnaryExpression(BoolUnaryExpr expr) {
+        assert expr.getKind() == BoolUnaryOp.NOT;
+        final Expression operand = expr.getOperand().accept(this);
+
+        // Constant negation
+        if (operand instanceof BoolLiteral lit) {
+            expressions.makeValue(!lit.getValue());
+        }
+
+        // Double negation
+        if (operand instanceof BoolUnaryExpr negation) {
+            assert negation.getKind() == BoolUnaryOp.NOT;
+            return negation.getOperand();
+        }
+
+        return expressions.makeUnary(expr.getKind(), operand);
+    }
+
     @Override
     public Expression visitIntCmpExpression(IntCmpExpr cmp) {
-        Expression lhs = cmp.getLeft().accept(this);
-        Expression rhs = cmp.getRight().accept(this);
-        if (lhs.equals(rhs)) {
-            return switch (cmp.getKind()) {
-                case EQ, LTE, ULTE, GTE, UGTE -> expressions.makeTrue();
-                case NEQ, LT, ULT, GT, UGT -> expressions.makeFalse();
+        Expression left = cmp.getLeft().accept(this);
+        Expression right = cmp.getRight().accept(this);
+        CmpOp op = cmp.getKind();
+
+        // Normalize "x > y" to "y < x" (and similar).
+        if (op == CmpOp.GTE || op == CmpOp.GT || op == CmpOp.UGTE || op == CmpOp.UGT) {
+            Expression temp = left;
+            left = right;
+            right = temp;
+            op = op.reverse();
+        }
+
+        // ------- Operations on same value -------
+        if (aggressive && left.equals(right)) {
+            return expressions.makeValue(!op.isStrict());
+        }
+
+        // ------- Operations with constants -------
+        if (left instanceof IntLiteral l1 && right instanceof IntLiteral l2) {
+            final int bitWidth = l1.getType().getBitWidth();
+            final boolean cmpResult = switch (op) {
+                case EQ -> IntegerHelper.equals(l1.getValue(), l2.getValue(), bitWidth);
+                case NEQ -> !IntegerHelper.equals(l1.getValue(), l2.getValue(), bitWidth);
+                case LT -> IntegerHelper.scmp(l1.getValue(), l2.getValue(), bitWidth) < 0;
+                case LTE -> IntegerHelper.scmp(l1.getValue(), l2.getValue(), bitWidth) <= 0;
+                case ULT -> IntegerHelper.ucmp(l1.getValue(), l2.getValue(), bitWidth) < 0;
+                case ULTE -> IntegerHelper.ucmp(l1.getValue(), l2.getValue(), bitWidth) <= 0;
+                default ->
+                    throw new VerifyException(String.format("Unexpected comparison operator '%s'. Missing normalization?", op));
             };
+            return expressions.makeValue(cmpResult);
         }
-        if (lhs instanceof IntLiteral lc && rhs instanceof IntLiteral rc) {
-            return expressions.makeValue(cmp.getKind().combine(lc.getValue(), rc.getValue()));
-        }
-        return expressions.makeBinary(lhs, cmp.getKind(), rhs);
+
+        return expressions.makeBinary(left, op, right);
     }
 
     @Override
-    public Expression visitBoolBinaryExpression(BoolBinaryExpr bBin) {
-        Expression l = bBin.getLeft().accept(this);
-        Expression r = bBin.getRight().accept(this);
-        Expression left = l instanceof BoolLiteral || !(r instanceof BoolLiteral) ? l : r;
-        Expression right = left == l ? r : l;
-        if (left instanceof BoolLiteral constant) {
-            boolean value = constant.getValue();
-            boolean neutralValue = switch (bBin.getKind()) {
-                case OR -> false;
-                case AND -> true;
-            };
-            if (value == neutralValue) {
-                return right;
+    public Expression visitIntSizeCastExpression(IntSizeCast expr) {
+        final Expression operand = expr.getOperand().accept(this);
+
+        // ------- Operations with constants -------
+        if (operand instanceof IntLiteral lit) {
+            final int sourceWidth = expr.getSourceType().getBitWidth();
+            final int targetWidth = expr.getTargetType().getBitWidth();
+            final BigInteger newValue;
+            if (expr.isExtension()) {
+                newValue = IntegerHelper.extend(lit.getValue(), sourceWidth, targetWidth, expr.preservesSign());
+            } else if (expr.isTruncation()) {
+                newValue = IntegerHelper.truncateNoNormalize(lit.getValue(), targetWidth);
+            } else {
+                newValue = lit.getValue();
             }
-            // otherwise value is the absorbing value
-            if (right.getRegs().isEmpty()) {
+
+            return expressions.makeValue(newValue, expr.getTargetType());
+        }
+
+        // TODO: Simplify nested casts
+
+        // TODO: Push casts into operators?
+
+        return expressions.makeIntegerCast(operand, expr.getTargetType(), expr.preservesSign());
+    }
+
+    @Override
+    public Expression visitIntUnaryExpression(IntUnaryExpr expr) {
+        final Expression operand = expr.getOperand().accept(this);
+
+        // ------- Operations with constants -------
+        if (operand instanceof IntLiteral lit) {
+            final int bitWidth = expr.getType().getBitWidth();
+            final BigInteger newValue = switch (expr.getKind()) {
+                case MINUS -> IntegerHelper.neg(lit.getValue(), bitWidth);
+                case CTLZ -> IntegerHelper.ctlz(lit.getValue(), bitWidth);
+            };
+            return expressions.makeValue(newValue, expr.getType());
+        }
+
+        // ------- Nested negation -------
+        if (operand instanceof IntUnaryExpr neg && neg.getKind() == IntUnaryOp.MINUS) {
+            return neg.getOperand();
+        }
+
+        return expressions.makeUnary(expr.getKind(), operand, expr.getType());
+    }
+
+    @Override
+    public Expression visitIntBinaryExpression(IntBinaryExpr expr) {
+        Expression left = expr.getLeft().accept(this);
+        Expression right = expr.getRight().accept(this);
+        IntBinaryOp op = expr.getKind();
+
+        // ------- Operations with constants -------
+        if (op.isCommutative() && left instanceof IntLiteral) {
+            // Swap constant to right
+            Expression temp = right;
+            right = left;
+            left = temp;
+        }
+
+        // Optimizations for "x op constant"
+        if (right instanceof IntLiteral lit) {
+            if (lit.isZero() && (op == ADD || op == SUB || op == IntBinaryOp.OR || op == XOR
+                    || op == LSHIFT || op == RSHIFT || op == ARSHIFT)) {
                 return left;
             }
-        }
-        return expressions.makeBinary(left, bBin.getKind(), right);
-    }
 
-    @Override
-    public Expression visitBoolUnaryExpression(BoolUnaryExpr bUn) {
-        Expression inner = bUn.getOperand().accept(this);
-        assert bUn.getKind() == BoolUnaryOp.NOT;
-        if (inner instanceof BoolLiteral constant) {
-            return expressions.makeValue(!constant.getValue());
-        }
-        if (inner instanceof BoolUnaryExpr innerUnary && innerUnary.getKind() == BoolUnaryOp.NOT) {
-            return innerUnary.getOperand();
-        }
-
-        if (inner instanceof IntCmpExpr cmp) {
-            // Move negations into the atoms COp
-            return expressions.makeBinary(cmp.getLeft(), cmp.getKind().inverted(), cmp.getRight());
-        }
-        return expressions.makeUnary(bUn.getKind(), inner);
-    }
-
-    @Override
-    public Expression visitIntBinaryExpression(IntBinaryExpr iBin) {
-        Expression lhs = iBin.getLeft().accept(this);
-        Expression rhs = iBin.getRight().accept(this);
-        IntBinaryOp op = iBin.getKind();
-        if (lhs.equals(rhs)) {
-            switch(op) {
-                case AND:
-                case OR:
-                    return lhs;
-                case XOR:
-                    return expressions.makeZero(iBin.getType());
+            if (lit.isOne() && (op == MUL || op == DIV || op == UDIV)) {
+                return left;
             }
-        }
-        if (! (lhs instanceof IntLiteral || rhs instanceof IntLiteral)) {
-            return expressions.makeBinary(lhs, op, rhs);
-        } else if (lhs instanceof IntLiteral && rhs instanceof IntLiteral) {
-            // If we reduce MemoryObject as a normal IntLiteral, we loose the fact that it is a Memory Object
-            // We cannot call reduce for RSHIFT (lack of implementation)
-            if(!(lhs instanceof MemoryObject) && op != RSHIFT) {
-                return expressions.makeBinary(lhs, op, rhs).reduce();
-            }
-            // Rule to reduce &mem + 0
-            if(lhs instanceof MemoryObject && rhs.equals(expressions.makeZero(types.getArchType()))) {
-                return lhs;
+
+            if (lit.isZero() && op == MUL && (aggressive || left.getRegs().isEmpty())) {
+                return expressions.makeValue(0, expr.getType());
             }
         }
 
-        if (lhs instanceof IntLiteral lc) {
-            BigInteger val = lc.getValue();
-            switch (op) {
-                case MUL:
-                    if (val.equals(BigInteger.ZERO)) {
-                        return lhs;
-                    }
-                    if (val.equals(BigInteger.ONE)) {
-                        return rhs;
-                    }
-                case ADD:
-                    if (val.equals(BigInteger.ZERO)) {
-                        return rhs;
-                    }
+        // Folding of constants
+        if (left instanceof IntLiteral leftLit && right instanceof IntLiteral rightLit) {
+            final int bitWidth = expr.getType().getBitWidth();
+            final BigInteger result = switch (op) {
+                case ADD -> IntegerHelper.add(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case SUB -> IntegerHelper.sub(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case MUL -> IntegerHelper.mul(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case DIV -> IntegerHelper.sdiv(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case UDIV -> IntegerHelper.udiv(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case SREM -> IntegerHelper.srem(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case UREM -> IntegerHelper.urem(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case AND -> IntegerHelper.and(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case OR -> IntegerHelper.or(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case XOR -> IntegerHelper.xor(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case RSHIFT -> IntegerHelper.rshift(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case ARSHIFT -> IntegerHelper.arshift(leftLit.getValue(), rightLit.getValue(), bitWidth);
+                case LSHIFT -> IntegerHelper.lshift(leftLit.getValue(), rightLit.getValue(), bitWidth);
+            };
+            return expressions.makeValue(result, expr.getType());
+        }
+
+        // TODO: Use associativity to merge nested operators
+
+        return expressions.makeBinary(left, op, right);
+    }
+
+    @Override
+    public Expression visitITEExpression(ITEExpr expr) {
+        final Expression cond = expr.getCondition().accept(this);
+        final Expression trueCase = expr.getTrueCase().accept(this);
+        final Expression falseCase = expr.getFalseCase().accept(this);
+
+        // ------- Operations with constants -------
+        if (cond instanceof BoolLiteral lit) {
+            if (lit.getValue() && (aggressive || falseCase.getRegs().isEmpty())) {
+                return trueCase;
             }
-            return expressions.makeBinary(lhs, op, rhs);
+            if (!lit.getValue() && (aggressive || trueCase.getRegs().isEmpty())) {
+                return falseCase;
+            }
         }
 
-        IntLiteral rc = (IntLiteral)rhs;
-        BigInteger val = rc.getValue();
-        switch (op) {
-            case MUL:
-                if (val.equals(BigInteger.ZERO)) {
-                    return rhs;
-                }
-                if (val.equals(BigInteger.ONE)) {
-                    return lhs;
-                }
-                break;
-            case ADD:
-            case SUB:
-                if(val.equals(BigInteger.ZERO)) {
-                    return lhs;
-                }
-                // Rule for associativity (rhs is IntLiteral) since we cannot reduce MemoryObjects
-                // Either op can be +/-, but this does not affect correctness
-                // e.g. (&mem + x) - y -> &mem + reduced(x - y)
-                if(lhs instanceof IntBinaryExpr lhsBin && lhsBin.getRight() instanceof IntLiteral && lhsBin.getKind() != RSHIFT) {
-                    Expression newLHS = lhsBin.getLeft();
-                    Expression newRHS = expressions.makeBinary(lhsBin.getRight(), lhsBin.getKind(), rhs).reduce();
-                    return expressions.makeBinary(newLHS, op, newRHS);
-                }
-
+        // ------- Identical cases -------
+        if (aggressive && trueCase.equals(falseCase)) {
+            return trueCase;
         }
-        return expressions.makeBinary(lhs, op, rhs);
+
+        return expressions.makeITE(cond, trueCase, falseCase);
     }
 
     @Override
-    public Expression visitIntUnaryExpression(IntUnaryExpr iUn) {
-        // TODO: Add simplifications
-        return super.visitIntUnaryExpression(iUn);
-    }
-
-    @Override
-    public Expression visitITEExpression(ITEExpr iteExpr) {
-        Expression cond = iteExpr.getCondition().accept(this);
-        Expression t = iteExpr.getTrueCase().accept(this);
-        Expression f = iteExpr.getFalseCase().accept(this);
-
-        if (cond instanceof BoolLiteral constantGuard) {
-            return constantGuard.getValue() ? t : f;
-        } else if (t.equals(f)) {
-            return t;
+    public Expression visitExtractExpression(ExtractExpr expr) {
+        Expression inner = expr.getOperand().accept(this);
+        if (inner instanceof ConstructExpr construct) {
+            return construct.getOperands().get(expr.getFieldIndex());
         }
 
-        // Simplifies "ITE(cond, 1, 0)" to "cond" and "ITE(cond, 0, 1) to "!cond"
-        // TODO: It is not clear if this gives performance improvements or not
-        if (t instanceof IntLiteral tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
-                && f instanceof IntLiteral fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
-            return cond;
-        } else if (t instanceof IntLiteral tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
-                && f instanceof IntLiteral fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
-            return expressions.makeNot(cond);
-        }
-
-        return expressions.makeITE(cond, t, f);
+        return expressions.makeExtract(expr.getFieldIndex(), inner);
     }
-
-
 }

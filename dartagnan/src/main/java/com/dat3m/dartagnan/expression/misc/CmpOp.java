@@ -39,10 +39,31 @@ public enum CmpOp implements ExpressionKind {
         };
     }
 
+    public CmpOp reverse() {
+        return switch (this) {
+            case EQ, NEQ -> this;
+            case GTE -> LTE;
+            case UGTE -> ULTE;
+            case LTE -> GTE;
+            case ULTE -> UGTE;
+            case GT -> LT;
+            case UGT -> ULT;
+            case LT -> GT;
+            case ULT -> UGT;
+        };
+    }
+
     public boolean isSigned() {
         return switch (this) {
             case EQ, NEQ, GTE, LTE, GT, LT -> true;
             case UGTE, ULTE, UGT, ULT -> false;
+        };
+    }
+
+    public boolean isStrict() {
+        return switch (this) {
+            case NEQ, LT, ULT, GT, UGT -> true;
+            case EQ, LTE, ULTE, GTE, UGTE -> false;
         };
     }
 

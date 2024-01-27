@@ -1,12 +1,9 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.processing.ExprTransformer;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
@@ -20,7 +17,6 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -110,19 +106,26 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                     }
                 }
 
+                // Update event with propagation data
                 propagator.propagationMap = propagationMap;
                 if (cur instanceof RegReader regReader) {
                     regReader.transformExpressions(propagator);
                 }
                 reachableEvents.add(cur);
 
+                // Invalidate outdated propagation data
+                if (cur instanceof RegWriter rw) {
+                    propagationMap.remove(rw.getResultRegister());
+                    if (propagateCopyAssignments) {
+                        propagationMap.values().removeIf(expr -> expr.getRegs().contains(rw.getResultRegister()));
+                    }
+                }
+
+                // Add new propagation data
                 if (cur instanceof Local local) {
                     final Expression expr = local.getExpr();
                     final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
                     propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-                } else if (cur instanceof RegWriter rw) {
-                    // We treat all other register writers as non-constant
-                    propagationMap.remove(rw.getResultRegister());
                 }
 
                 if (cur instanceof CondJump jump) {
@@ -181,103 +184,19 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
      * A simple expression transformer that
      * - replaces regs by constant values (if known)
      * - simplifies constant (sub)expressions to a single constant
-     * It does NOT
-     * - use associativity to find more constant subexpressions
-     * - simplify trivial expressions like "x == x" or "0*x" to avoid eliminating any dependencies
+     * It does NOT eliminate any register expressions (e.g. "r == r" or "0*r") to keep register dependencies.
      */
-    private static class ConstantPropagator extends ExprTransformer {
+    private static class ConstantPropagator extends ExprSimplifier {
 
         private Map<Register, Expression> propagationMap;
+
+        ConstantPropagator() {
+            super(false);
+        }
 
         @Override
         public Expression visitRegister(Register reg) {
             return propagationMap.getOrDefault(reg, reg);
-        }
-
-        @Override
-        public Expression visitIntCmpExpression(IntCmpExpr cmp) {
-            Expression lhs = transform(cmp.getLeft());
-            Expression rhs = transform(cmp.getRight());
-            if (lhs instanceof IntLiteral left && rhs instanceof IntLiteral right) {
-                return expressions.makeValue(cmp.getKind().combine(left.getValue(), right.getValue()));
-            } else {
-                return expressions.makeBinary(lhs, cmp.getKind(), rhs);
-            }
-        }
-
-        @Override
-        public Expression visitBoolBinaryExpression(BoolBinaryExpr bBin) {
-            Expression lhs = transform(bBin.getLeft());
-            Expression rhs = transform(bBin.getRight());
-            if (lhs instanceof BoolLiteral left && rhs instanceof BoolLiteral right) {
-                return expressions.makeValue(bBin.getKind().combine(left.getValue(), right.getValue()));
-            } else {
-                return expressions.makeBinary(lhs, bBin.getKind(), rhs);
-            }
-        }
-
-        @Override
-        public Expression visitBoolUnaryExpression(BoolUnaryExpr bUn) {
-            Expression inner = transform(bUn.getOperand());
-            if (inner instanceof BoolLiteral bc) {
-                return expressions.makeValue(bUn.getKind().combine(bc.getValue()));
-            } else {
-                return expressions.makeUnary(bUn.getKind(), inner);
-            }
-        }
-
-        @Override
-        public Expression visitIntBinaryExpression(IntBinaryExpr iBin) {
-            Expression lhs = transform(iBin.getLeft());
-            Expression rhs = transform(iBin.getRight());
-            if (lhs instanceof IntLiteral left && rhs instanceof IntLiteral right) {
-                return expressions.makeValue(iBin.getKind().combine(left.getValue(), right.getValue()), left.getType());
-            } else if ((iBin.getKind() == IntBinaryOp.ADD || iBin.getKind() == IntBinaryOp.SUB) && rhs instanceof IntLiteral right && right.isZero()) {
-                return lhs;
-            } else {
-                return expressions.makeBinary(lhs, iBin.getKind(), rhs);
-            }
-        }
-
-        @Override
-        public Expression visitIntUnaryExpression(IntUnaryExpr iUn) {
-            Expression inner = transform(iUn.getOperand());
-            Expression result = expressions.makeUnary(iUn.getKind(), inner, iUn.getType());
-            if (inner instanceof IntLiteral) {
-                return result.reduce();
-            }
-            return result;
-        }
-
-        @Override
-        public Expression visitIntSizeCastExpression(IntSizeCast expr) {
-            Expression inner = transform(expr.getOperand());
-            Expression result = expressions.makeIntegerCast(inner, expr.getTargetType(), expr.preservesSign());
-            if (inner instanceof IntLiteral) {
-                result = result.reduce();
-            }
-            return result;
-        }
-
-        @Override
-        public Expression visitITEExpression(ITEExpr iteExpr) {
-            Expression guard = transform(iteExpr.getCondition());
-            Expression trueBranch = transform(iteExpr.getTrueCase());
-            Expression falseBranch = transform(iteExpr.getFalseCase());
-            // We optimize ITEs only if all subexpressions are constant to avoid messing up data dependencies
-            if (guard instanceof BoolLiteral constant && constant.getValue() && falseBranch.getRegs().isEmpty()) {
-                return trueBranch;
-            }
-            if (guard instanceof BoolLiteral constant && !constant.getValue() && trueBranch.getRegs().isEmpty()) {
-                return falseBranch;
-            }
-            return expressions.makeITE(guard, trueBranch, falseBranch);
-        }
-
-        private Expression transform(Expression expression) {
-            Expression result = expression.accept(this);
-            Verify.verify(result.getType().equals(expression.getType()), "Type mismatch in constant propagation.");
-            return result;
         }
     }
 

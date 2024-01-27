@@ -128,6 +128,10 @@ public class IntegerHelper {
         return truncate(x.multiply(y), bitWidth);
     }
 
+    public static BigInteger neg(BigInteger x, int bitWidth) {
+        return truncate(x.negate(), bitWidth);
+    }
+
     public static BigInteger sdiv(BigInteger x, BigInteger y, int bitWidth) {
         final BigInteger sx = normalizeSigned(x, bitWidth);
         final BigInteger sy = normalizeSigned(y, bitWidth);
@@ -150,6 +154,25 @@ public class IntegerHelper {
         final BigInteger ux = normalizeUnsigned(x, bitWidth);
         final BigInteger uy = normalizeUnsigned(y, bitWidth);
         return normalize(ux.remainder(uy), bitWidth);
+    }
+
+    // We use LLVM semantics: "y" is considered unsigned
+    public static BigInteger lshift(BigInteger x, BigInteger y, int bitWidth) {
+        y = normalizeUnsigned(y, bitWidth);
+        return normalize(x.shiftLeft(y.intValueExact()), bitWidth);
+    }
+
+    // We use LLVM semantics: "y" is considered unsigned
+    public static BigInteger rshift(BigInteger x, BigInteger y, int bitWidth) {
+        x = normalizeUnsigned(x, bitWidth);
+        y = normalizeUnsigned(y, bitWidth);
+        return x.shiftRight(y.intValueExact());
+    }
+
+    // We use LLVM semantics: "y" is considered unsigned
+    public static BigInteger arshift(BigInteger x, BigInteger y, int bitWidth) {
+        y = normalizeUnsigned(y, bitWidth);
+        return x.shiftRight(y.intValueExact());
     }
 
     public static BigInteger and(BigInteger x, BigInteger y, int bitWidth) {
@@ -185,6 +208,18 @@ public class IntegerHelper {
         Preconditions.checkArgument(isRepresentable(y, bitWidth));
 
         return normalize(x, bitWidth).equals(normalize(y, bitWidth));
+    }
+
+    public static BigInteger ctlz(BigInteger x, int bitWidth) {
+        int leadingZeroes = 0;
+        for (int i = bitWidth - 1; i >= 0; i--) {
+            if (!x.testBit(i)) {
+                leadingZeroes++;
+            } else {
+                break;
+            }
+        }
+        return BigInteger.valueOf(leadingZeroes);
     }
 
 }

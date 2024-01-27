@@ -122,8 +122,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case DIV:
                 case UDIV:
                     return integerFormulaManager.divide(i1, i2);
-                case MOD:
-                    return integerFormulaManager.modulo(i1, i2);
                 case AND:
                     bitvectorFormulaManager = bitvectorFormulaManager();
                     return bitvectorFormulaManager.toIntegerFormula(
@@ -192,16 +190,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return bitvectorFormulaManager.divide(bv1, bv2, true);
                 case UDIV:
                     return bitvectorFormulaManager.divide(bv1, bv2, false);
-                case MOD:
-                    BitvectorFormula rem = bitvectorFormulaManager.modulo(bv1, bv2, true);
-                    // Check if rem and bv2 have the same sign
-                    int rem_length = bitvectorFormulaManager.getLength(rem);
-                    int bv2_length = bitvectorFormulaManager.getLength(bv2);
-                    BitvectorFormula srem = bitvectorFormulaManager.extract(rem, rem_length - 1, rem_length - 1);
-                    BitvectorFormula sbv2 = bitvectorFormulaManager.extract(bv2, bv2_length - 1, bv2_length - 1);
-                    BooleanFormula cond = bitvectorFormulaManager.equal(srem, sbv2);
-                    // If they have the same sign, return the reminder, otherwise invert it
-                    return booleanFormulaManager.ifThenElse(cond, rem, bitvectorFormulaManager.negate(rem));
                 case SREM:
                     return bitvectorFormulaManager.modulo(bv1, bv2, true);
                 case UREM:

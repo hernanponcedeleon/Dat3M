@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import java.math.BigInteger;
 
 public enum IntBinaryOp implements ExpressionKind {
-    ADD, SUB, MUL, DIV, UDIV, MOD, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM;
+    ADD, SUB, MUL, DIV, UDIV, AND, OR, XOR, LSHIFT, RSHIFT, ARSHIFT, SREM, UREM;
 
     @Override
     public String toString() {
@@ -19,7 +19,6 @@ public enum IntBinaryOp implements ExpressionKind {
             case SUB -> "-";
             case MUL -> "*";
             case DIV -> "/";
-            case MOD -> "%";
             case AND -> "&";
             case OR -> "|";
             case XOR -> "^";
@@ -40,6 +39,13 @@ public enum IntBinaryOp implements ExpressionKind {
         };
     }
 
+    public boolean isCommutative() {
+        return switch (this) {
+            case ADD, MUL, OR, XOR, AND -> true;
+            default -> false;
+        };
+    }
+
     public BigInteger combine(BigInteger a, BigInteger b) {
         switch (this) {
             case ADD:
@@ -51,8 +57,6 @@ public enum IntBinaryOp implements ExpressionKind {
             case DIV:
             case UDIV:
                 return a.divide(b);
-            case MOD:
-                return a.mod(b);
             case SREM:
             case UREM:
                 return a.remainder(b);

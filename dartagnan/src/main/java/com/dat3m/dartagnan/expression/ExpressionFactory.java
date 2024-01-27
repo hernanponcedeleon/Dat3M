@@ -200,10 +200,6 @@ public final class ExpressionFactory {
         return makeBinary(leftOperand, signed ? IntBinaryOp.DIV : IntBinaryOp.UDIV, rightOperand);
     }
 
-    public Expression makeMOD(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.MOD, rightOperand);
-    }
-
     public Expression makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IntBinaryOp.SREM : IntBinaryOp.UREM, rightOperand);
     }
