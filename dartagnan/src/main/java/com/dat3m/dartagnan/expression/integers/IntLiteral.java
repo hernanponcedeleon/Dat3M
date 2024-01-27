@@ -12,7 +12,6 @@ import java.math.BigInteger;
     However, our integer types have no signedness but BigInteger does.
     This results in values that have their highest bit set to have non-unique representation,
     depending on whether that bit is treated as a sign-bit or not.
-    We could opt to make this
  */
 public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
 
