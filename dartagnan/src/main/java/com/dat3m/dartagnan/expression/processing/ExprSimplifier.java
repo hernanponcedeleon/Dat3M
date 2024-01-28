@@ -65,8 +65,8 @@ public class ExprSimplifier extends ExprTransformer {
             final boolean absorbingValue = !neutralValue;
 
             if (lit.getValue() == neutralValue) {
-                return right;
-            } else if (aggressive || right.getRegs().isEmpty()) {
+                return left;
+            } else if (aggressive || left.getRegs().isEmpty()) {
                 return expressions.makeValue(absorbingValue);
             }
         }
