@@ -20,6 +20,10 @@ public class FloatType implements Type {
         return exponentBits;
     }
 
+    public int getBitWidth() {
+        return mantissaBits + exponentBits;
+    }
+
     @Override
     public int hashCode() {
         return 127 * mantissaBits + exponentBits;
@@ -34,6 +38,6 @@ public class FloatType implements Type {
 
     @Override
     public String toString() {
-        return String.format("float%s", mantissaBits + exponentBits);
+        return String.format("float%s", getBitWidth());
     }
 }

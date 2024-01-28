@@ -115,6 +115,8 @@ public final class TypeFactory {
             } else {
                 sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
             }
+        } else if (type instanceof FloatType floatType) {
+            sizeInBytes = IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
         } else {
             throw new UnsupportedOperationException("Cannot compute the size of " + type);
         }

@@ -65,28 +65,18 @@ public final class ExpressionFactory {
         return new BoolBinaryExpr(leftOperand, operator, rightOperand);
     }
 
-    public Expression makeGeneralZero(Type type) {
-        if (type instanceof ArrayType arrayType) {
-            Expression zero = makeGeneralZero(arrayType.getElementType());
-            List<Expression> zeroes = new ArrayList<>(arrayType.getNumElements());
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                zeroes.add(zero);
-            }
-            return makeArray(arrayType.getElementType(), zeroes, true);
-        } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
-            for (Type fieldType : structType.getDirectFields()) {
-                zeroes.add(makeGeneralZero(fieldType));
-            }
-            return makeConstruct(zeroes);
-        } else if (type instanceof IntegerType intType) {
-            return makeZero(intType);
-        } else if (type == booleanType) {
-            return makeFalse();
-        } else {
-            throw new UnsupportedOperationException("Cannot create zero of type " + type);
+    public Expression makeBooleanCast(Expression operand) {
+        final Type sourceType = operand.getType();
+        if (sourceType instanceof BooleanType) {
+            return operand;
+        } else if (sourceType instanceof IntegerType intType) {
+            makeNEQ(operand, makeZero(intType));
         }
+        throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, booleanType));
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Integers
 
     public IntLiteral makeZero(IntegerType type) {
         return makeValue(BigInteger.ZERO, type);
@@ -106,48 +96,6 @@ public final class ExpressionFactory {
 
     public IntLiteral makeValue(BigInteger value, IntegerType type) {
         return new IntLiteral(type, value);
-    }
-
-    public Expression makeCast(Expression expression, Type type, boolean signed) {
-        if (type instanceof BooleanType) {
-            return makeBooleanCast(expression);
-        }
-        if (type instanceof IntegerType integerType) {
-            return makeIntegerCast(expression, integerType, signed);
-        }
-        throw new UnsupportedOperationException(String.format("Cast %s into %s.", expression, type));
-    }
-
-    public Expression makeCast(Expression expression, Type type) {
-        return makeCast(expression, type, false);
-    }
-
-    public Expression makeITE(Expression condition, Expression ifTrue, Expression ifFalse) {
-        return new ITEExpr(condition, ifTrue, ifFalse);
-    }
-
-    public Expression makeBooleanCast(Expression operand) {
-        Type operandType = operand.getType();
-        if (operandType instanceof BooleanType) {
-            return operand;
-        }
-        Preconditions.checkArgument(operandType instanceof IntegerType,
-                "makeBoolean with unknown-typed operand %s.", operand);
-        return makeNEQ(operand, makeZero((IntegerType) operandType));
-    }
-
-    public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
-        if (leftOperand.getType() instanceof BooleanType) {
-            return makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
-        }
-        return makeBinary(leftOperand, IntCmpOp.EQ, rightOperand);
-    }
-
-    public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
-        if (leftOperand.getType() instanceof BooleanType) {
-            return makeNot(makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
-        }
-        return makeBinary(leftOperand, IntCmpOp.NEQ, rightOperand);
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
@@ -179,14 +127,15 @@ public final class ExpressionFactory {
     }
 
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
-        if (operand.getType() instanceof BooleanType) {
+        final Type sourceType = operand.getType();
+
+        if (sourceType instanceof BooleanType) {
             return makeITE(operand, makeOne(targetType), makeZero(targetType));
+        } else if (sourceType instanceof IntegerType) {
+            return sourceType.equals(targetType) ? operand : new IntSizeCast(targetType, operand, signed);
         }
-        assert operand.getType() instanceof IntegerType;
-        if (operand.getType().equals(targetType)) {
-            return operand;
-        }
-        return new IntSizeCast(targetType, operand, signed);
+
+        throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
     }
 
     public Expression makeUnary(IntUnaryOp operator, Expression operand) {
@@ -244,7 +193,7 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Floats
 
-    public Expression makeValue(BigDecimal value, FloatType type) {
+    public FloatLiteral makeValue(BigDecimal value, FloatType type) {
         return new FloatLiteral(type, value, false, false);
     }
 
@@ -310,5 +259,106 @@ public final class ExpressionFactory {
         Preconditions.checkArgument(base.getType().equals(types.getArchType()),
                 "Applying offsets to non-pointer expression.");
         return new GEPExpr(indexingType, base, offsets);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Misc
+    public Expression makeGeneralZero(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            Expression zero = makeGeneralZero(arrayType.getElementType());
+            List<Expression> zeroes = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                zeroes.add(zero);
+            }
+            return makeArray(arrayType.getElementType(), zeroes, true);
+        } else if (type instanceof AggregateType structType) {
+            List<Expression> zeroes = new ArrayList<>(structType.getDirectFields().size());
+            for (Type fieldType : structType.getDirectFields()) {
+                zeroes.add(makeGeneralZero(fieldType));
+            }
+            return makeConstruct(zeroes);
+        } else if (type instanceof IntegerType intType) {
+            return makeZero(intType);
+        } else if (type instanceof BooleanType) {
+            return makeFalse();
+        } else if (type instanceof FloatType floatType) {
+            return makeValue(BigDecimal.ZERO, floatType);
+        } else {
+            throw new UnsupportedOperationException("Cannot create zero of type " + type);
+        }
+    }
+
+    public Expression makeCast(Expression expression, Type type, boolean signed) {
+        if (type instanceof BooleanType) {
+            return makeBooleanCast(expression);
+        } else if (type instanceof IntegerType integerType) {
+            return makeIntegerCast(expression, integerType, signed);
+        }
+        throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
+    }
+
+    public Expression makeCast(Expression expression, Type type) {
+        return makeCast(expression, type, false);
+    }
+
+    public Expression makeITE(Expression condition, Expression ifTrue, Expression ifFalse) {
+        return new ITEExpr(condition, ifTrue, ifFalse);
+    }
+
+    public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
+        final Type type = leftOperand.getType();
+        if (type instanceof BooleanType) {
+            return makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
+        } else if (type instanceof IntegerType) {
+            return makeBinary(leftOperand, IntCmpOp.EQ, rightOperand);
+        } else if (type instanceof FloatType) {
+            // TODO: Decide on a default semantics for float equality?
+            return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
+        }
+        throw new UnsupportedOperationException("Equality not supported on type: " + type);
+    }
+
+    public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
+        final Type type = leftOperand.getType();
+        if (type instanceof BooleanType) {
+            return makeNot(makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
+        } else if (type instanceof IntegerType) {
+            return makeBinary(leftOperand, IntCmpOp.NEQ, rightOperand);
+        } else if (type instanceof FloatType) {
+            // TODO: Decide on a default semantics for float equality?
+            return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
+        }
+        throw new UnsupportedOperationException("Disequality not supported on type: " + type);
+    }
+
+    public Expression makeUnary(ExpressionKind op, Expression expr) {
+        if (op instanceof BoolUnaryOp boolOp) {
+            return makeUnary(boolOp, expr);
+        } else if (op instanceof IntUnaryOp intOp) {
+            return makeUnary(intOp, expr);
+        } else if (op instanceof FloatUnaryOp floatOp) {
+            return makeFloatUnary(floatOp, expr);
+        }
+        throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
+    }
+
+    public Expression makeBinary(Expression x, ExpressionKind op, Expression y) {
+        if (op instanceof BoolBinaryOp boolOp) {
+            return makeBinary(x, boolOp, y);
+        } else if (op instanceof IntBinaryOp intOp) {
+            return makeBinary(x, intOp, y);
+        } else if (op instanceof FloatBinaryOp floatOp) {
+            return makeFloatBinary(x, floatOp, y);
+        }
+        throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
+    }
+
+    public Expression makeCompare(Expression x, ExpressionKind cmpOp, Expression y) {
+        if (cmpOp instanceof IntCmpOp intCmpOp) {
+            return makeBinary(x, intCmpOp, y);
+        } else if (cmpOp instanceof FloatCmpOp floatOp) {
+            return makeFloatCmp(x, floatOp, y);
+        }
+        throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
 }
