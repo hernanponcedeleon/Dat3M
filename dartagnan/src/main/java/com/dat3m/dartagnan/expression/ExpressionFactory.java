@@ -70,7 +70,7 @@ public final class ExpressionFactory {
         if (sourceType instanceof BooleanType) {
             return operand;
         } else if (sourceType instanceof IntegerType intType) {
-            makeNEQ(operand, makeZero(intType));
+            return makeNEQ(operand, makeZero(intType));
         }
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, booleanType));
     }
