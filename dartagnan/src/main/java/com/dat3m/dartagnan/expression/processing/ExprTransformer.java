@@ -24,11 +24,6 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Override
-    public Expression visitIntCmpExpression(IntCmpExpr cmp) {
-        return expressions.makeBinary(cmp.getLeft().accept(this), cmp.getKind(), cmp.getRight().accept(this));
-    }
-
-    @Override
     public Expression visitBoolBinaryExpression(BoolBinaryExpr expr) {
         return expressions.makeBinary(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));
     }
@@ -41,6 +36,11 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitIntBinaryExpression(IntBinaryExpr iBin) {
         return expressions.makeBinary(iBin.getLeft().accept(this), iBin.getKind(), iBin.getRight().accept(this));
+    }
+
+    @Override
+    public Expression visitIntCmpExpression(IntCmpExpr cmp) {
+        return expressions.makeBinary(cmp.getLeft().accept(this), cmp.getKind(), cmp.getRight().accept(this));
     }
 
     @Override
