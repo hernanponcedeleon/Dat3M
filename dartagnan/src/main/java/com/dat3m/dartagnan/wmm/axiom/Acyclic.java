@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.wmm.axiom;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.FormulaManager;
@@ -23,8 +22,6 @@ import java.util.*;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Preconditions.checkArgument;
 
-
-@Options
 public class Acyclic extends Axiom {
 
     private static final Logger logger = LogManager.getLogger(Acyclic.class);

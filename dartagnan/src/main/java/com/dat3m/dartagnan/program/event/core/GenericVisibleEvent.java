@@ -1,7 +1,8 @@
 package com.dat3m.dartagnan.program.event.core;
 
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 public class GenericVisibleEvent extends AbstractEvent {

@@ -4,20 +4,17 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.NonDetInt;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Program.SourceLanguage;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.ScopeHierarchy;
+import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
@@ -26,6 +23,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
 
@@ -192,8 +190,8 @@ public class ProgramBuilder {
         return mem;
     }
 
-    public INonDet newConstant(IntegerType type, boolean signed) {
-        var constant = new INonDet(program.getConstants().size(), type, signed);
+    public NonDetInt newConstant(IntegerType type, boolean signed) {
+        var constant = new NonDetInt(program.getConstants().size(), type, signed);
         program.addConstant(constant);
         return constant;
     }
@@ -223,8 +221,9 @@ public class ProgramBuilder {
         addChild(regThread, EventFactory.newLocal(reg,getInitialValue(locName)));
     }
 
-    public void initRegEqConst(int regThread, String regName, IConst iValue){
-        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, iValue.getType()), iValue));
+    public void initRegEqConst(int regThread, String regName, Expression value){
+        Preconditions.checkArgument(value.getRegs().isEmpty());
+        addChild(regThread, EventFactory.newLocal(getOrNewRegister(regThread, regName, value.getType()), value));
     }
 
     private Expression getInitialValue(String name) {
@@ -290,7 +289,7 @@ public class ProgramBuilder {
         newScopedThread(arch, String.valueOf(id), id, ids);
     }
 
-    public void initVirLocEqCon(String leftName, IConst iValue){
+    public void initVirLocEqCon(String leftName, IntLiteral iValue){
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
         object.setCVar(leftName);

@@ -4,9 +4,9 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.EventVisitor;
+import com.dat3m.dartagnan.program.event.RegReader;
 
 import java.util.ArrayList;
 import java.util.HashSet;

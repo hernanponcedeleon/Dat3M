@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.event.common;
 
+import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
 
 @NoInterface
 public abstract class FenceBase extends AbstractEvent {

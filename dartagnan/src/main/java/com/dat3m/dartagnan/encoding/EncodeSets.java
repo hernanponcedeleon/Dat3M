@@ -1,13 +1,16 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Definition.Visitor;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 // Propagates relationships in a verification task that need to be constrained in an SMT-based verification.
 final class EncodeSets implements Visitor<Map<Relation, EventGraph>> {

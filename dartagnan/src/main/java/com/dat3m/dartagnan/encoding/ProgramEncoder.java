@@ -1,17 +1,17 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.NonDetInt;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
@@ -78,7 +78,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
-        for (INonDet constant : context.getTask().getProgram().getConstants()) {
+        for (NonDetInt constant : context.getTask().getProgram().getConstants()) {
             Formula formula = context.encodeFinalExpression(constant);
             if (formula instanceof BitvectorFormula bitvector) {
                 boolean signed = constant.isSigned();
@@ -156,7 +156,7 @@ public class ProgramEncoder implements Encoder {
         // For all objects, their 'final' value fetched here represents their constant value.
         final var addrExprs = new ArrayList<BooleanFormula>();
         for (final MemoryObject object : memory.getObjects()) {
-            final BigInteger addressInteger = object.getValue();
+            final BigInteger addressInteger = object.getAddress();
             final Formula addressVariable = context.encodeFinalExpression(object);
             if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
                 final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();

@@ -1,15 +1,13 @@
 package com.dat3m.dartagnan.expression.processing;
 
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.COpBin;
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.op.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.op.IntBinaryOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.math.BigInteger;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.RSHIFT;
+import static com.dat3m.dartagnan.expression.op.IntBinaryOp.RSHIFT;
 
 public class ExprSimplifier extends ExprTransformer {
 
@@ -18,49 +16,24 @@ public class ExprSimplifier extends ExprTransformer {
         Expression lhs = atom.getLHS().accept(this);
         Expression rhs = atom.getRHS().accept(this);
         if (lhs.equals(rhs)) {
-            switch(atom.getOp()) {
-                case EQ:
-                case LTE:
-                case ULTE:
-                case GTE:
-                case UGTE:
-                    return expressions.makeTrue();
-                case NEQ:
-                case LT:
-                case ULT:
-                case GT:
-                case UGT:
-                    return expressions.makeFalse();
-            }
+            return switch (atom.getOp()) {
+                case EQ, LTE, ULTE, GTE, UGTE -> expressions.makeTrue();
+                case NEQ, LT, ULT, GT, UGT -> expressions.makeFalse();
+            };
         }
-        if (lhs instanceof IConst lc && rhs instanceof  IConst rc) {
+        if (lhs instanceof IntLiteral lc && rhs instanceof IntLiteral rc) {
             return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
-        }
-        // Due to constant propagation, and the lack of a proper type system
-        // we can end up with comparisons like "False == 1"
-        if (lhs instanceof BConst lc && rhs instanceof IConst rc) {
-            return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
-        }
-        if (lhs instanceof IConst lc && rhs instanceof BConst rc) {
-            return expressions.makeValue(atom.getOp().combine(lc.getValue(), rc.getValue()));
-        }
-        if (lhs.getType() instanceof BooleanType && rhs instanceof IConst rc) {
-            // Simplify "cond == 1" to just "cond"
-            // TODO: If necessary, add versions for "cond == 0" and for "cond != 0/1"
-            if (atom.getOp() == COpBin.EQ && rc.getValue().intValue() == 1) {
-                return lhs;
-            }
         }
         return expressions.makeBinary(lhs, atom.getOp(), rhs);
     }
 
     @Override
-    public Expression visit(BExprBin bBin) {
+    public Expression visit(BoolBinaryExpr bBin) {
         Expression l = bBin.getLHS().accept(this);
         Expression r = bBin.getRHS().accept(this);
-        Expression left = l instanceof BConst || !(r instanceof BConst) ? l : r;
+        Expression left = l instanceof BoolLiteral || !(r instanceof BoolLiteral) ? l : r;
         Expression right = left == l ? r : l;
-        if (left instanceof BConst constant) {
+        if (left instanceof BoolLiteral constant) {
             boolean value = constant.getValue();
             boolean neutralValue = switch (bBin.getOp()) {
                 case OR -> false;
@@ -78,13 +51,13 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public Expression visit(BExprUn bUn) {
+    public Expression visit(BoolUnaryExpr bUn) {
         Expression inner = bUn.getInner().accept(this);
-        assert bUn.getOp() == BOpUn.NOT;
-        if (inner instanceof BConst constant) {
+        assert bUn.getOp() == BoolUnaryOp.NOT;
+        if (inner instanceof BoolLiteral constant) {
             return expressions.makeValue(!constant.getValue());
         }
-        if (inner instanceof BExprUn innerUnary && innerUnary.getOp() == BOpUn.NOT) {
+        if (inner instanceof BoolUnaryExpr innerUnary && innerUnary.getOp() == BoolUnaryOp.NOT) {
             return innerUnary.getInner();
         }
 
@@ -96,10 +69,10 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public Expression visit(IExprBin iBin) {
+    public Expression visit(IntBinaryExpr iBin) {
         Expression lhs = iBin.getLHS().accept(this);
         Expression rhs = iBin.getRHS().accept(this);
-        IOpBin op = iBin.getOp();
+        IntBinaryOp op = iBin.getOp();
         if (lhs.equals(rhs)) {
             switch(op) {
                 case AND:
@@ -109,10 +82,10 @@ public class ExprSimplifier extends ExprTransformer {
                     return expressions.makeZero(iBin.getType());
             }
         }
-        if (! (lhs instanceof IConst || rhs instanceof IConst)) {
+        if (! (lhs instanceof IntLiteral || rhs instanceof IntLiteral)) {
             return expressions.makeBinary(lhs, op, rhs);
-        } else if (lhs instanceof IConst && rhs instanceof IConst) {
-            // If we reduce MemoryObject as a normal IConst, we loose the fact that it is a Memory Object
+        } else if (lhs instanceof IntLiteral && rhs instanceof IntLiteral) {
+            // If we reduce MemoryObject as a normal IntLiteral, we loose the fact that it is a Memory Object
             // We cannot call reduce for RSHIFT (lack of implementation)
             if(!(lhs instanceof MemoryObject) && op != RSHIFT) {
                 return expressions.makeBinary(lhs, op, rhs).reduce();
@@ -123,7 +96,7 @@ public class ExprSimplifier extends ExprTransformer {
             }
         }
 
-        if (lhs instanceof IConst lc) {
+        if (lhs instanceof IntLiteral lc) {
             BigInteger val = lc.getValue();
             switch (op) {
                 case MUL:
@@ -141,7 +114,7 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeBinary(lhs, op, rhs);
         }
 
-        IConst rc = (IConst)rhs;
+        IntLiteral rc = (IntLiteral)rhs;
         BigInteger val = rc.getValue();
         switch (op) {
             case MUL:
@@ -157,10 +130,10 @@ public class ExprSimplifier extends ExprTransformer {
                 if(val.equals(BigInteger.ZERO)) {
                     return lhs;
                 }
-                // Rule for associativity (rhs is IConst) since we cannot reduce MemoryObjects
+                // Rule for associativity (rhs is IntLiteral) since we cannot reduce MemoryObjects
                 // Either op can be +/-, but this does not affect correctness
                 // e.g. (&mem + x) - y -> &mem + reduced(x - y)
-                if(lhs instanceof IExprBin lhsBin && lhsBin.getRHS() instanceof IConst && lhsBin.getOp() != RSHIFT) {
+                if(lhs instanceof IntBinaryExpr lhsBin && lhsBin.getRHS() instanceof IntLiteral && lhsBin.getOp() != RSHIFT) {
                     Expression newLHS = lhsBin.getLHS();
                     Expression newRHS = expressions.makeBinary(lhsBin.getRHS(), lhsBin.getOp(), rhs).reduce();
                     return expressions.makeBinary(newLHS, op, newRHS);
@@ -171,18 +144,18 @@ public class ExprSimplifier extends ExprTransformer {
     }
 
     @Override
-    public Expression visit(IExprUn iUn) {
+    public Expression visit(IntUnaryExpr iUn) {
         // TODO: Add simplifications
         return super.visit(iUn);
     }
 
     @Override
-    public Expression visit(IfExpr ifExpr) {
-        Expression cond = ifExpr.getGuard().accept(this);
-        Expression t = ifExpr.getTrueBranch().accept(this);
-        Expression f = ifExpr.getFalseBranch().accept(this);
+    public Expression visit(ITEExpr iteExpr) {
+        Expression cond = iteExpr.getGuard().accept(this);
+        Expression t = iteExpr.getTrueBranch().accept(this);
+        Expression f = iteExpr.getFalseBranch().accept(this);
 
-        if (cond instanceof BConst constantGuard) {
+        if (cond instanceof BoolLiteral constantGuard) {
             return constantGuard.getValue() ? t : f;
         } else if (t.equals(f)) {
             return t;
@@ -190,15 +163,15 @@ public class ExprSimplifier extends ExprTransformer {
 
         // Simplifies "ITE(cond, 1, 0)" to "cond" and "ITE(cond, 0, 1) to "!cond"
         // TODO: It is not clear if this gives performance improvements or not
-        if (t instanceof IConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
-                && f instanceof IConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
+        if (t instanceof IntLiteral tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 1
+                && f instanceof IntLiteral fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 0) {
             return cond;
-        } else if (t instanceof IConst tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
-                && f instanceof IConst fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
+        } else if (t instanceof IntLiteral tConstant && tConstant.getType().isMathematical() && tConstant.getValueAsInt() == 0
+                && f instanceof IntLiteral fConstant && fConstant.getType().isMathematical() && fConstant.getValueAsInt() == 1) {
             return expressions.makeNot(cond);
         }
 
-        return expressions.makeConditional(cond, t, f);
+        return expressions.makeITE(cond, t, f);
     }
 
 

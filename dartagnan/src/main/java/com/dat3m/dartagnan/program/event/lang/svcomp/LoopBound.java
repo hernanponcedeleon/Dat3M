@@ -5,8 +5,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;

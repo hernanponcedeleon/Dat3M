@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -76,7 +76,7 @@ public class UnreachableCodeElimination implements FunctionProcessor {
 
     private boolean isTerminator(Event e) {
         return e instanceof Return
-                || e instanceof AbortIf abort && abort.getCondition() instanceof BConst b && b.getValue();
+                || e instanceof AbortIf abort && abort.getCondition() instanceof BoolLiteral b && b.getValue();
     }
 
 }

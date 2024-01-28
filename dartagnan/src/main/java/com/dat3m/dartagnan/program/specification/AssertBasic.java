@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.specification;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.CmpOp;
 import com.dat3m.dartagnan.program.Register;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
@@ -13,9 +13,9 @@ public class AssertBasic extends AbstractAssert {
 
     private final Expression e1;
     private final Expression e2;
-    private final COpBin op;
+    private final CmpOp op;
 
-    public AssertBasic(Expression e1, COpBin op, Expression e2){
+    public AssertBasic(Expression e1, CmpOp op, Expression e2) {
         this.e1 = e1;
         this.e2 = e2;
         this.op = op;
@@ -29,26 +29,26 @@ public class AssertBasic extends AbstractAssert {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return valueToString(e1) + op + valueToString(e2);
     }
 
-    private String valueToString(Expression value){
-        if(value instanceof Register register){
+    private String valueToString(Expression value) {
+        if (value instanceof Register register) {
             return register.getFunction().getId() + ":" + value;
         }
         return value.toString();
     }
 
-	@Override
-	public List<Register> getRegs() {
-		List<Register> regs = new ArrayList<>();
-		if(e1 instanceof Register r1) {
-			regs.add(r1);
-		}
-		if(e2 instanceof Register r2) {
-			regs.add(r2);
-		}
-		return regs;
-	}
+    @Override
+    public List<Register> getRegs() {
+        List<Register> regs = new ArrayList<>();
+        if (e1 instanceof Register r1) {
+            regs.add(r1);
+        }
+        if (e2 instanceof Register r2) {
+            regs.add(r2);
+        }
+        return regs;
+    }
 }

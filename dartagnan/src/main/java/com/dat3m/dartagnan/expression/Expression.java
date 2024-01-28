@@ -15,7 +15,7 @@ public interface Expression {
 
     <T> T accept(ExpressionVisitor<T> visitor);
 
-    default IConst reduce() {
+    default IntLiteral reduce() {
         throw new UnsupportedOperationException("Reduce not supported for " + this);
     }
 }

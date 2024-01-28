@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusAArch64BaseVisitor;
@@ -208,7 +208,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
         if (!(register.getType() instanceof IntegerType integerType)) {
             throw new ParsingException("Comparing non-integer register.");
         }
-        IValue zero = expressions.makeZero(integerType);
+        IntLiteral zero = expressions.makeZero(integerType);
         Expression expr = expressions.makeBinary(register, ctx.branchRegInstruction().op, zero);
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.label().getText());
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
@@ -228,7 +228,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Expression visitExpressionRegister64(LitmusAArch64Parser.ExpressionRegister64Context ctx) {
         Expression expr = programBuilder.getOrNewRegister(mainThread, ctx.register64().id, archType);
         if(ctx.shift() != null){
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archType);
+            IntLiteral val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archType);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -238,7 +238,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Expression visitExpressionRegister32(LitmusAArch64Parser.ExpressionRegister32Context ctx) {
         Expression expr = programBuilder.getOrNewRegister(mainThread, ctx.register32().id, archType);
         if(ctx.shift() != null){
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archType);
+            IntLiteral val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archType);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;
@@ -248,7 +248,7 @@ public class VisitorLitmusAArch64 extends LitmusAArch64BaseVisitor<Object> {
     public Expression visitExpressionImmediate(LitmusAArch64Parser.ExpressionImmediateContext ctx) {
         Expression expr = expressions.parseValue(ctx.immediate().constant().getText(), archType);
         if(ctx.shift() != null){
-            IValue val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archType);
+            IntLiteral val = expressions.parseValue(ctx.shift().immediate().constant().getText(), archType);
             expr = expressions.makeBinary(expr, ctx.shift().shiftOperator().op, val);
         }
         return expr;

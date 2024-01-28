@@ -20,50 +20,50 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
 
     @Override
-    public Expression visit(BConst bConst) {
-        return bConst;
+    public Expression visit(BoolLiteral boolLiteral) {
+        return boolLiteral;
     }
 
     @Override
-    public Expression visit(BExprBin bBin) {
+    public Expression visit(BoolBinaryExpr bBin) {
         return expressions.makeBinary(bBin.getLHS().accept(this), bBin.getOp(), bBin.getRHS().accept(this));
     }
 
     @Override
-    public Expression visit(BExprUn bUn) {
+    public Expression visit(BoolUnaryExpr bUn) {
         return expressions.makeUnary(bUn.getOp(), bUn.getInner().accept(this));
     }
 
     @Override
-    public Expression visit(BNonDet bNonDet) {
-        return bNonDet;
+    public Expression visit(NonDetBool nonDetBool) {
+        return nonDetBool;
     }
 
     @Override
-    public Expression visit(IValue iValue) {
-        return iValue;
+    public Expression visit(IntLiteral intLiteral) {
+        return intLiteral;
     }
 
     @Override
-    public Expression visit(IExprBin iBin) {
+    public Expression visit(IntBinaryExpr iBin) {
         return expressions.makeBinary(iBin.getLHS().accept(this), iBin.getOp(), iBin.getRHS().accept(this));
     }
 
     @Override
-    public Expression visit(IExprUn iUn) {
+    public Expression visit(IntUnaryExpr iUn) {
         return expressions.makeUnary(iUn.getOp(), iUn.getInner().accept(this), iUn.getType());
     }
 
     @Override
-    public Expression visit(IfExpr ifExpr) {
-        return expressions.makeConditional(
-                ifExpr.getGuard().accept(this),
-                ifExpr.getTrueBranch().accept(this),
-                ifExpr.getFalseBranch().accept(this));
+    public Expression visit(ITEExpr iteExpr) {
+        return expressions.makeITE(
+                iteExpr.getGuard().accept(this),
+                iteExpr.getTrueBranch().accept(this),
+                iteExpr.getFalseBranch().accept(this));
     }
 
     @Override
-    public Expression visit(INonDet iNonDet) {
+    public Expression visit(NonDetInt iNonDet) {
         return iNonDet;
     }
 

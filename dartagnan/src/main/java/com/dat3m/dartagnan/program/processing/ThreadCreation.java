@@ -4,8 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -14,16 +13,11 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -110,7 +104,7 @@ public class ThreadCreation implements ProgramProcessor {
 
             // We collect the communication addresses we use for each thread id.
             // These are used later to lower pthread_join.
-            final Map<IValue, Expression> tid2ComAddrMap = new LinkedHashMap<>();
+            final Map<IntLiteral, Expression> tid2ComAddrMap = new LinkedHashMap<>();
             for (FunctionCall call : thread.getEvents(FunctionCall.class)) {
                 if (!call.isDirectCall()) {
                     continue;
@@ -128,7 +122,7 @@ public class ThreadCreation implements ProgramProcessor {
                         assert resultRegister.getType() instanceof IntegerType;
 
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
-                        final IValue tidExpr = expressions.makeValue(nextTid, archType);
+                        final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
                         comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
 
@@ -174,7 +168,7 @@ public class ThreadCreation implements ProgramProcessor {
         This method replaces in <thread> all pthread_join calls by a switch over all possible tids.
         Each candidate thread gets a switch-case which tries to synchronize with that thread.
      */
-    private void handlePthreadJoins(Thread thread, Map<IValue, Expression> tid2ComAddrMap) {
+    private void handlePthreadJoins(Thread thread, Map<IntLiteral, Expression> tid2ComAddrMap) {
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         int joinCounter = 0;
@@ -202,11 +196,11 @@ public class ThreadCreation implements ProgramProcessor {
 
             // ----- Construct a switch case for each possible tid -----
             final Map<Expression, List<Event>> tid2joinCases = new LinkedHashMap<>();
-            for (IValue tidCandidate : tid2ComAddrMap.keySet()) {
+            for (IntLiteral tidCandidate : tid2ComAddrMap.keySet()) {
                 final int tid = tidCandidate.getValueAsInt();
                 final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidCandidate);
 
-                if (tidExpr instanceof IConst iConst && iConst.getValueAsInt() != tid) {
+                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) {
                     // Little optimization if we join with a constant address
                     continue;
                 }

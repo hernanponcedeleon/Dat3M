@@ -7,8 +7,8 @@ import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Register.UsageType;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;

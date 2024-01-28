@@ -2,10 +2,10 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

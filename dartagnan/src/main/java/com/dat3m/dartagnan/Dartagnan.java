@@ -9,10 +9,10 @@ import com.dat3m.dartagnan.parsers.witness.ParserWitness;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
@@ -63,7 +63,7 @@ public class Dartagnan extends BaseOptions {
     private static final Logger logger = LogManager.getLogger(Dartagnan.class);
 
     private static final Set<String> supportedFormats =
-            ImmutableSet.copyOf(Arrays.asList(".litmus", ".c", ".i", "ll"));
+            ImmutableSet.copyOf(Arrays.asList(".litmus", ".c", ".i", ".ll"));
 
     private Dartagnan(Configuration config) throws InvalidConfigurationException {
         config.recursiveInject(this);
@@ -87,18 +87,13 @@ public class Dartagnan extends BaseOptions {
         GlobalSettings.configure(config);
         LogGlobalSettings();
 
-        if (Arrays.stream(args).noneMatch(a -> supportedFormats.stream().anyMatch(a::endsWith))) {
-            throw new IllegalArgumentException("Input program not given or format not recognized");
-        }
-        // get() is guaranteed to succeed
-        File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith)).findFirst().get());
+        File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Input program not given or format not recognized")));
         logger.info("Program path: " + fileProgram);
 
-        if (Arrays.stream(args).noneMatch(a -> a.endsWith(".cat"))) {
-            throw new IllegalArgumentException("CAT model not given or format not recognized");
-        }
-        // get() is guaranteed to succeed
-        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst().get());
+        File fileModel = new File(Arrays.stream(args).filter(a -> a.endsWith(".cat")).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("CAT model not given or format not recognized")));
         logger.info("CAT file path: " + fileModel);
 
         Wmm mcm = new ParserCat().parse(fileModel);
@@ -147,7 +142,7 @@ public class Dartagnan extends BaseOptions {
                     BasicLogManager.create(solverConfig),
                     sdm.getNotifier(),
                     o.getSolver());
-                 ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+                    ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
                 ModelChecker modelChecker;
                 if (properties.contains(DATARACEFREEDOM)) {
                     if (properties.size() > 1) {
@@ -215,14 +210,17 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker, String summary) {
+    private static void generateWitnessIfAble(VerificationTask task, ProverEnvironment prover,
+            ModelChecker modelChecker, String summary) {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
-        if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel() && properties.contains(PROGRAM_SPEC)) {
+        if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
+                && properties.contains(PROGRAM_SPEC)) {
             try {
-                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, modelChecker.getResult(), summary);
+                WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
+                        modelChecker.getResult(), summary);
                 if (w.canBeBuilt()) {
-                    //  We can only write witnesses if the path to the original C file was given.
+                    // We can only write witnesses if the path to the original C file was given.
                     w.build().write();
                 }
             } catch (InvalidConfigurationException e) {
@@ -231,7 +229,8 @@ public class Dartagnan extends BaseOptions {
         }
     }
 
-    public static String generateResultSummary(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker) throws SolverException {
+    public static String generateResultSummary(VerificationTask task, ProverEnvironment prover,
+            ModelChecker modelChecker) throws SolverException {
         // ----------------- Generate output of verification result -----------------
         final Program p = task.getProgram();
         final EnumSet<Property> props = task.getProperty();
@@ -250,10 +249,11 @@ public class Dartagnan extends BaseOptions {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
-                    for(Assert ass: p.getThreadEvents(Assert.class)) {
+                    for (Assert ass : p.getThreadEvents(Assert.class)) {
                         final boolean isViolated = TRUE.equals(model.evaluate(encCtx.execution(ass)))
-                                && FALSE.equals(model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
-                        if(isViolated) {
+                                && FALSE.equals(
+                                        model.evaluate(encCtx.encodeExpressionAsBooleanAt(ass.getExpression(), ass)));
+                        if (isViolated) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(ass).getContextOfType(CallContext.class), " -> ");
                             summary
@@ -269,9 +269,9 @@ public class Dartagnan extends BaseOptions {
                 }
                 if (props.contains(LIVENESS) && FALSE.equals(model.evaluate(LIVENESS.getSMTVariable(encCtx)))) {
                     summary.append("============ Liveness violation found ============\n");
-                    for(CondJump e : p.getThreadEvents(CondJump.class)) {
-                        if(e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
-                            && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
+                    for (CondJump e : p.getThreadEvents(CondJump.class)) {
+                        if (e.hasTag(Tag.SPINLOOP) && TRUE.equals(model.evaluate(encCtx.execution(e)))
+                                && TRUE.equals(model.evaluate(encCtx.jumpCondition(e)))) {
                             final String callStack = makeContextString(
                                     synContext.getContextInfo(e).getContextOfType(CallContext.class), " -> ");
                             summary
@@ -286,7 +286,8 @@ public class Dartagnan extends BaseOptions {
                 }
                 final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                         .filter(Axiom::isFlagged)
-                        .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+                        .filter(ax -> props.contains(CAT_SPEC)
+                                && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
                         .toList();
                 if (!violatedCATSpecs.isEmpty()) {
                     summary.append("======= CAT specification violation found =======\n");
@@ -329,7 +330,8 @@ public class Dartagnan extends BaseOptions {
                 } else {
                     final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
                             .filter(Axiom::isFlagged)
-                            .filter(ax -> props.contains(CAT_SPEC) && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
+                            .filter(ax -> props.contains(CAT_SPEC)
+                                    && FALSE.equals(model.evaluate(CAT_SPEC.getSMTVariable(ax, encCtx))))
                             .toList();
                     for (Axiom violatedAx : violatedCATSpecs) {
                         summary.append("Flag ")
@@ -344,7 +346,7 @@ public class Dartagnan extends BaseOptions {
                     logger.warn("Unexpected result for litmus test: {}", result);
                     summary.append(result).append("\n");
                 } else if (task.getProperty().contains(PROGRAM_SPEC)) {
-                    //... which can be good or bad (no witness = bad, not violation = good)
+                    // ... which can be good or bad (no witness = bad, not violation = good)
                     summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
                     summary.append(result == PASS ? "Ok" : "No").append("\n");
                 }
@@ -353,9 +355,11 @@ public class Dartagnan extends BaseOptions {
         return summary.toString();
     }
 
-    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover) throws SolverException {
+    private static void printWarningIfThreadStartFailed(Program p, EncodingContext encoder, ProverEnvironment prover)
+            throws SolverException {
         for (Event e : p.getThreadEvents()) {
-            if (e.hasTag(Tag.STARTLOAD) && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
+            if (e.hasTag(Tag.STARTLOAD)
+                    && BigInteger.ZERO.equals(prover.getModel().evaluate(encoder.value((Load) e)))) {
                 // This msg should be displayed even if the logging is off
                 System.out.printf(
                         "[WARNING] The call to pthread_create of thread %s failed. To force thread creation to succeed use --%s=true%n",

@@ -2,14 +2,14 @@ package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
 import com.google.common.base.Preconditions;
@@ -189,7 +189,7 @@ public class Function implements Expression {
     }
 
     @Override
-    public IConst reduce() {
+    public IntLiteral reduce() {
         throw new UnsupportedOperationException("Cannot reduce functions");
     }
 

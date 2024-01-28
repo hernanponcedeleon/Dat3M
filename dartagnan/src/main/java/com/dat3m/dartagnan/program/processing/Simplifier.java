@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.BConst;
+import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
@@ -63,7 +63,7 @@ public class Simplifier implements FunctionProcessor {
         final Label jumpTarget = jump.getLabel();
         final Event successor = jump.getSuccessor();
         final Expression guard = jump.getGuard();
-        if(jumpTarget.equals(successor) && guard instanceof BConst) {
+        if(jumpTarget.equals(successor) && guard instanceof BoolLiteral) {
             return jump.tryDelete();
         }
         return false;

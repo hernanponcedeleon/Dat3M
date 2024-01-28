@@ -1,11 +1,11 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.expression.BoolUnaryExpr;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -118,8 +118,8 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
         if (!(e instanceof CondJump other)) {
             return false;
         }
-        if (jump.getGuard() instanceof BExprUn jumpGuard && jumpGuard.getInner().equals(other.getGuard())
-                || other.getGuard() instanceof BExprUn otherGuard && otherGuard.getInner().equals(jump.getGuard())) {
+        if (jump.getGuard() instanceof BoolUnaryExpr jumpGuard && jumpGuard.getInner().equals(other.getGuard())
+                || other.getGuard() instanceof BoolUnaryExpr otherGuard && otherGuard.getInner().equals(jump.getGuard())) {
             return true;
         }
         if (jump.getGuard() instanceof Atom a1 && other.getGuard() instanceof Atom a2) {

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.op.CmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
@@ -9,8 +9,13 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -130,13 +135,13 @@ public final class EncodingContext {
         return new ExpressionEncoder(this, event).encode(expression);
     }
 
-    public BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs) {
+    public BooleanFormula encodeComparison(CmpOp op, Formula lhs, Formula rhs) {
         if (lhs instanceof BooleanFormula l && rhs instanceof BooleanFormula r) {
             return switch (op) {
                 case EQ -> booleanFormulaManager.equivalence(l, r);
                 case NEQ -> booleanFormulaManager.not(booleanFormulaManager.equivalence(l, r));
                 default -> throw new UnsupportedOperationException(
-                        String.format("Encoding of COpBin operation %s not supported on boolean formulas.", op));
+                        String.format("Encoding of CmpOp operation %s not supported on boolean formulas.", op));
             };
         }
         if (lhs instanceof IntegerFormula l && rhs instanceof IntegerFormula r) {
@@ -155,13 +160,13 @@ public final class EncodingContext {
             return switch (op) {
                 case EQ -> bitvectorFormulaManager.equal(l, r);
                 case NEQ -> booleanFormulaManager.not(bitvectorFormulaManager.equal(l, r));
-                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(COpBin.LT));
-                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(COpBin.LTE));
-                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(COpBin.GT));
-                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(COpBin.GTE));
+                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(CmpOp.LT));
+                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(CmpOp.LTE));
+                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(CmpOp.GT));
+                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(CmpOp.GTE));
             };
         }
-        throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
+        throw new UnsupportedOperationException("Encoding not supported for CmpOp: " + lhs + " " + op + " " + rhs);
     }
 
     public BooleanFormula controlFlow(Event event) {

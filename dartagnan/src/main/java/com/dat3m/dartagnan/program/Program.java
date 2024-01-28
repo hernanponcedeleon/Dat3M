@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.INonDet;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.expression.NonDetInt;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
@@ -12,14 +12,14 @@ import java.util.stream.Collectors;
 
 public class Program {
 
-    public enum SourceLanguage { LITMUS, LLVM }
+    public enum SourceLanguage { LITMUS, LLVM, SPV }
 
     private String name;
     private AbstractAssert spec;
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
     private final List<Function> functions;
-    private final List<INonDet> constants = new ArrayList<>();
+    private final List<NonDetInt> constants = new ArrayList<>();
     private final Memory memory;
     private Arch arch;
     private int unrollingBound = 0;
@@ -117,11 +117,11 @@ public class Program {
         return functions.stream().filter(f -> f.getName().equals(name)).findFirst();
     }
 
-    public void addConstant(INonDet constant) {
+    public void addConstant(NonDetInt constant) {
         constants.add(constant);
     }
 
-    public Collection<INonDet> getConstants() {
+    public Collection<NonDetInt> getConstants() {
         return Collections.unmodifiableCollection(constants);
     }
 

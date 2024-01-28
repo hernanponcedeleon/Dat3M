@@ -3,15 +3,15 @@ package com.dat3m.dartagnan.program.event.lang;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
@@ -58,14 +58,14 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public Expression getArraySize() { return arraySize; }
     public boolean isHeapAllocation() { return isHeapAllocation; }
 
-    public boolean isSimpleAllocation() { return (arraySize instanceof IValue size && size.isOne()); }
+    public boolean isSimpleAllocation() { return (arraySize instanceof IntLiteral size && size.isOne()); }
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
 
     public Expression getAllocationSize() {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final TypeFactory types = TypeFactory.getInstance();
         final Expression allocationSize;
-        if (arraySize instanceof IValue value) {
+        if (arraySize instanceof IntLiteral value) {
             allocationSize = expressions.makeValue(
                     BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)).multiply(value.getValue()),
                     types.getArchType()
