@@ -49,6 +49,13 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
+    public FloatType getFloatType(int mantissaBits, int exponentBits) {
+        checkArgument(mantissaBits > 0 && exponentBits > 0,
+                "Cannot construct floating-point type with mantissa %s and exponent %s",
+                mantissaBits, exponentBits);
+        return typeNormalizer.normalize(new FloatType(mantissaBits, exponentBits));
+    }
+
     public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes) {
         return getFunctionType(returnType, parameterTypes, false);
     }

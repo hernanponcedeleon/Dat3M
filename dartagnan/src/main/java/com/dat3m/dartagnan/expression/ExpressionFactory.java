@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.booleans.*;
+import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
@@ -9,6 +10,7 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -237,6 +239,49 @@ public final class ExpressionFactory {
         Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
                 "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Floats
+
+    public Expression makeValue(BigDecimal value, FloatType type) {
+        return new FloatLiteral(type, value, false, false);
+    }
+
+    public Expression makeFADD(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FADD, y);
+    }
+
+    public Expression makeFSUB(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FSUB, y);
+    }
+
+    public Expression makeFMUL(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMUL, y);
+    }
+
+    public Expression makeFDIV(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FDIV, y);
+    }
+
+    public Expression makeFREM(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FREM, y);
+    }
+
+    public Expression makeFloatBinary(Expression x, FloatBinaryOp op, Expression y) {
+        return new FloatBinaryExpr(x, op, y);
+    }
+
+    public Expression makeFNEG(Expression expr) {
+        return new FloatUnaryExpr(FloatUnaryOp.NEG, expr);
+    }
+
+    public Expression makeFloatUnary(FloatUnaryOp op, Expression expr) {
+        return new FloatUnaryExpr(op, expr);
+    }
+
+    public Expression makeFloatCmp(Expression x, FloatCmpOp op, Expression y) {
+        return new FloatCmpExpr(booleanType, x, op, y);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

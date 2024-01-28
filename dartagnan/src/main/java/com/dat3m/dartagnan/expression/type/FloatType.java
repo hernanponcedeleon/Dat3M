@@ -34,6 +34,6 @@ public class FloatType implements Type {
 
     @Override
     public String toString() {
-        return String.format("float(%s, %s)", mantissaBits, exponentBits);
+        return String.format("float%s", mantissaBits + exponentBits);
     }
 }
