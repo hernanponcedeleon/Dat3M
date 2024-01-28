@@ -23,7 +23,7 @@ public final class IntBinaryExpr extends BinaryExpressionBase<IntegerType, IntBi
     @Override
     public int hashCode() {
         final BigInteger leftHash = BigInteger.valueOf(left.hashCode());
-        final BigInteger rightHash = BigInteger.valueOf(left.hashCode());
+        final BigInteger rightHash = BigInteger.valueOf(right.hashCode());
         return kind.apply(leftHash, rightHash, 32).intValue();
     }
 
