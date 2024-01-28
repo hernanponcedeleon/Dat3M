@@ -4,9 +4,7 @@ import com.dat3m.dartagnan.expression.CastExpression;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 import java.util.Objects;
@@ -41,9 +39,6 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
 
     @Override
     public ExpressionKind.Other getKind() { return ExpressionKind.Other.CAST; }
-
-    @Override
-    public ImmutableSet<Register> getRegs() { return operand.getRegs(); }
 
     @Override
     public String toString() {

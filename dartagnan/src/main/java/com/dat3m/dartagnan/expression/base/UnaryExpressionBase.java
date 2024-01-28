@@ -4,9 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.UnaryExpression;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,9 +29,6 @@ public abstract class UnaryExpressionBase<TType extends Type, TKind extends Expr
 
     @Override
     public TKind getKind() { return kind; }
-
-    @Override
-    public ImmutableSet<Register> getRegs() { return operand.getRegs(); }
 
     @Override
     public String toString() {

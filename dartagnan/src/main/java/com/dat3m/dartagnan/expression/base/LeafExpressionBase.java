@@ -3,9 +3,7 @@ package com.dat3m.dartagnan.expression.base;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 
@@ -18,9 +16,6 @@ public abstract class LeafExpressionBase<TType extends Type> extends ExpressionB
 
     @Override
     public List<Expression> getOperands() { return List.of(); }
-
-    @Override
-    public ImmutableSet<Register> getRegs() { return ImmutableSet.of(); }
 
     @Override
     public int hashCode() {

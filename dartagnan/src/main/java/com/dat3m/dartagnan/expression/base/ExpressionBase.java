@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.expression.base;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Objects;
 
@@ -19,15 +17,6 @@ public abstract class ExpressionBase<TType extends Type> implements Expression {
 
     @Override
     public TType getType() { return this.type; }
-
-    @Override
-    public ImmutableSet<Register> getRegs() {
-        final ImmutableSet.Builder<Register> builder = ImmutableSet.builder();
-        for (Expression expr : getOperands()) {
-            builder.addAll(expr.getRegs());
-        }
-        return builder.build();
-    }
 
     @Override
     public int hashCode() {
