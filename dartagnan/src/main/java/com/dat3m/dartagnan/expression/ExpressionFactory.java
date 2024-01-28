@@ -132,10 +132,16 @@ public final class ExpressionFactory {
     }
 
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
+        if (leftOperand.getType() instanceof BooleanType) {
+            return makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
+        }
         return makeBinary(leftOperand, CmpOp.EQ, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
+        if (leftOperand.getType() instanceof BooleanType) {
+            return makeNot(makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
+        }
         return makeBinary(leftOperand, CmpOp.NEQ, rightOperand);
     }
 

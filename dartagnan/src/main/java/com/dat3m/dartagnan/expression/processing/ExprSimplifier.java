@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.expression.processing;
 
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.CmpOp;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
@@ -16,6 +13,8 @@ import com.google.common.base.VerifyException;
 
 import java.math.BigInteger;
 
+import static com.dat3m.dartagnan.expression.booleans.BoolBinaryOp.AND;
+import static com.dat3m.dartagnan.expression.booleans.BoolBinaryOp.OR;
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
 
 public class ExprSimplifier extends ExprTransformer {
@@ -33,6 +32,7 @@ public class ExprSimplifier extends ExprTransformer {
     public Expression visitBoolBinaryExpression(BoolBinaryExpr expr) {
         Expression left = expr.getLeft().accept(this);
         Expression right = expr.getRight().accept(this);
+        BoolBinaryOp op = expr.getKind();
 
         // ------- Operations on same value -------
         if (aggressive && left.equals(right)) {
@@ -47,10 +47,20 @@ public class ExprSimplifier extends ExprTransformer {
             left = temp;
         }
 
-        if (left instanceof BoolLiteral lit) {
+        if (left instanceof BoolLiteral l1 && right instanceof BoolLiteral l2) {
+            final boolean newValue = switch (op) {
+                case AND -> l1.getValue() && l2.getValue();
+                case OR -> l1.getValue() || l2.getValue();
+                case IFF -> l1.getValue() == l2.getValue();
+            };
+            return expressions.makeValue(newValue);
+        }
+
+        if (right instanceof BoolLiteral lit && (op == AND || op == OR)) {
             final boolean neutralValue = switch (expr.getKind()) {
                 case AND -> true;
                 case OR -> false;
+                default -> throw new VerifyException("Unexpected bool operator: " + op);
             };
             final boolean absorbingValue = !neutralValue;
 

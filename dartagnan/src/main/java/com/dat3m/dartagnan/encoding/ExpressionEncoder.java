@@ -83,6 +83,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         return switch (bBin.getKind()) {
             case AND -> booleanFormulaManager.and(lhs, rhs);
             case OR -> booleanFormulaManager.or(lhs, rhs);
+            case IFF -> booleanFormulaManager.equivalence(lhs, rhs);
         };
     }
 
