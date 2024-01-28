@@ -1,10 +1,10 @@
-package com.dat3m.dartagnan.expression.misc;
+package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
 import java.math.BigInteger;
 
-public enum CmpOp implements ExpressionKind {
+public enum IntCmpOp implements ExpressionKind {
     EQ, NEQ, GTE, LTE, GT, LT, UGTE, ULTE, UGT, ULT;
 
     @Override
@@ -24,7 +24,7 @@ public enum CmpOp implements ExpressionKind {
         };
     }
 
-    public CmpOp inverted() {
+    public IntCmpOp inverted() {
         return switch (this) {
             case EQ -> NEQ;
             case NEQ -> EQ;
@@ -39,7 +39,7 @@ public enum CmpOp implements ExpressionKind {
         };
     }
 
-    public CmpOp reverse() {
+    public IntCmpOp reverse() {
         return switch (this) {
             case EQ, NEQ -> this;
             case GTE -> LTE;

@@ -2,7 +2,10 @@ package com.dat3m.dartagnan.expression;
 
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.*;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.google.common.base.Preconditions;
 
@@ -135,33 +138,33 @@ public final class ExpressionFactory {
         if (leftOperand.getType() instanceof BooleanType) {
             return makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
         }
-        return makeBinary(leftOperand, CmpOp.EQ, rightOperand);
+        return makeBinary(leftOperand, IntCmpOp.EQ, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         if (leftOperand.getType() instanceof BooleanType) {
             return makeNot(makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
         }
-        return makeBinary(leftOperand, CmpOp.NEQ, rightOperand);
+        return makeBinary(leftOperand, IntCmpOp.NEQ, rightOperand);
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? CmpOp.LT : CmpOp.ULT, rightOperand);
+        return makeBinary(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? CmpOp.GT : CmpOp.UGT, rightOperand);
+        return makeBinary(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? CmpOp.LTE : CmpOp.ULTE, rightOperand);
+        return makeBinary(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? CmpOp.GTE : CmpOp.UGTE, rightOperand);
+        return makeBinary(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
-    public Expression makeBinary(Expression leftOperand, CmpOp operator, Expression rightOperand) {
+    public Expression makeBinary(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 

@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.misc.CmpOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
@@ -135,13 +135,13 @@ public final class EncodingContext {
         return new ExpressionEncoder(this, event).encode(expression);
     }
 
-    public BooleanFormula encodeComparison(CmpOp op, Formula lhs, Formula rhs) {
+    public BooleanFormula encodeComparison(IntCmpOp op, Formula lhs, Formula rhs) {
         if (lhs instanceof BooleanFormula l && rhs instanceof BooleanFormula r) {
             return switch (op) {
                 case EQ -> booleanFormulaManager.equivalence(l, r);
                 case NEQ -> booleanFormulaManager.not(booleanFormulaManager.equivalence(l, r));
                 default -> throw new UnsupportedOperationException(
-                        String.format("Encoding of CmpOp operation %s not supported on boolean formulas.", op));
+                        String.format("Encoding of IntCmpOp operation %s not supported on boolean formulas.", op));
             };
         }
         if (lhs instanceof IntegerFormula l && rhs instanceof IntegerFormula r) {
@@ -160,13 +160,13 @@ public final class EncodingContext {
             return switch (op) {
                 case EQ -> bitvectorFormulaManager.equal(l, r);
                 case NEQ -> booleanFormulaManager.not(bitvectorFormulaManager.equal(l, r));
-                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(CmpOp.LT));
-                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(CmpOp.LTE));
-                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(CmpOp.GT));
-                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(CmpOp.GTE));
+                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(IntCmpOp.LT));
+                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(IntCmpOp.LTE));
+                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(IntCmpOp.GT));
+                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(IntCmpOp.GTE));
             };
         }
-        throw new UnsupportedOperationException("Encoding not supported for CmpOp: " + lhs + " " + op + " " + rhs);
+        throw new UnsupportedOperationException("Encoding not supported for IntCmpOp: " + lhs + " " + op + " " + rhs);
     }
 
     public BooleanFormula controlFlow(Event event) {

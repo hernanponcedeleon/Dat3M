@@ -4,7 +4,6 @@ package com.dat3m.dartagnan.expression.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.*;
 import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.CmpOp;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
@@ -99,10 +98,10 @@ public class ExprSimplifier extends ExprTransformer {
     public Expression visitIntCmpExpression(IntCmpExpr cmp) {
         Expression left = cmp.getLeft().accept(this);
         Expression right = cmp.getRight().accept(this);
-        CmpOp op = cmp.getKind();
+        IntCmpOp op = cmp.getKind();
 
         // Normalize "x > y" to "y < x" (and similar).
-        if (op == CmpOp.GTE || op == CmpOp.GT || op == CmpOp.UGTE || op == CmpOp.UGT) {
+        if (op == IntCmpOp.GTE || op == IntCmpOp.GT || op == IntCmpOp.UGTE || op == IntCmpOp.UGT) {
             Expression temp = left;
             left = right;
             right = temp;

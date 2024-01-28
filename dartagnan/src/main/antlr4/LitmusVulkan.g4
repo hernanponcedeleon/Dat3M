@@ -263,13 +263,13 @@ operation locals [IntBinaryOp op]
     |   Period Xor {$op = IntBinaryOp.XOR;}
     ;
 
-cond returns [CmpOp op]
-    :   Beq {$op = CmpOp.EQ;}
-    |   Bne {$op = CmpOp.NEQ;}
-    |   Bge {$op = CmpOp.GTE;}
-    |   Ble {$op = CmpOp.LTE;}
-    |   Bgt {$op = CmpOp.GT;}
-    |   Blt {$op = CmpOp.LT;}
+cond returns [IntCmpOp op]
+    :   Beq {$op = IntCmpOp.EQ;}
+    |   Bne {$op = IntCmpOp.NEQ;}
+    |   Bge {$op = IntCmpOp.GTE;}
+    |   Ble {$op = IntCmpOp.LTE;}
+    |   Bgt {$op = IntCmpOp.GT;}
+    |   Blt {$op = IntCmpOp.LT;}
     ;
 
 Locations
