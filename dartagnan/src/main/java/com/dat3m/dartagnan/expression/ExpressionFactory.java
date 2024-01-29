@@ -181,6 +181,8 @@ public final class ExpressionFactory {
             return makeITE(operand, makeOne(targetType), makeZero(targetType));
         } else if (sourceType instanceof IntegerType) {
             return sourceType.equals(targetType) ? operand : new IntSizeCast(targetType, operand, signed);
+        } else if (sourceType instanceof FloatType) {
+            return new FloatToIntCast(targetType, operand, signed);
         }
 
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
@@ -188,6 +190,10 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Floats
+
+    public FloatLiteral makeZero(FloatType type) {
+        return makeValue(BigDecimal.ZERO, type);
+    }
 
     public FloatLiteral makeValue(BigDecimal value, FloatType type) {
         return new FloatLiteral(type, value, false, false);
@@ -229,6 +235,18 @@ public final class ExpressionFactory {
         return new FloatBinaryExpr(x, op, y);
     }
 
+    public Expression makeFloatCast(Expression operand, FloatType targetType, boolean signed) {
+        final Type sourceType = operand.getType();
+
+        if (sourceType instanceof FloatType) {
+            return sourceType.equals(targetType) ? operand : new FloatSizeCast(targetType, operand);
+        } else if (sourceType instanceof IntegerType) {
+            return new IntToFloatCast(targetType, operand, signed);
+        }
+
+        throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
 
@@ -259,6 +277,7 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Misc
+
     public Expression makeGeneralZero(Type type) {
         if (type instanceof ArrayType arrayType) {
             Expression zero = makeGeneralZero(arrayType.getElementType());
@@ -278,7 +297,7 @@ public final class ExpressionFactory {
         } else if (type instanceof BooleanType) {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
-            return makeValue(BigDecimal.ZERO, floatType);
+            return makeZero(floatType);
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }
@@ -289,6 +308,8 @@ public final class ExpressionFactory {
             return makeBooleanCast(expression);
         } else if (type instanceof IntegerType integerType) {
             return makeIntegerCast(expression, integerType, signed);
+        } else if (type instanceof FloatType floatType) {
+            return makeFloatCast(expression, floatType, signed);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }

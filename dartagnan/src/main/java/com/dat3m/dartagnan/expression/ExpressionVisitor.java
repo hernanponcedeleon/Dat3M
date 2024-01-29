@@ -4,10 +4,7 @@ import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.booleans.NonDetBool;
-import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
-import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
-import com.dat3m.dartagnan.expression.floats.FloatLiteral;
-import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
@@ -32,6 +29,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitIntCmpExpression(IntCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitIntUnaryExpression(IntUnaryExpr expr) { return visitUnaryExpression(expr); }
     default TRet visitIntSizeCastExpression(IntSizeCast expr) { return visitCastExpression(expr); }
+    default TRet visitFloatToIntCastExpression(FloatToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitIntLiteral(IntLiteral lit) { return visitLeafExpression(lit); }
     default TRet visitNonDetIntExpression(NonDetInt expr) { return visitLeafExpression(expr); }
 
@@ -45,6 +43,8 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitFloatBinaryExpression(FloatBinaryExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitFloatCmpExpression(FloatCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitFloatUnaryExpression(FloatUnaryExpr expr) { return visitUnaryExpression(expr); }
+    default TRet visitFloatSizeCastExpression(FloatSizeCast expr) { return visitCastExpression(expr); }
+    default TRet visitIntToFloatCastExpression(IntToFloatCast expr) { return visitCastExpression(expr); }
     default TRet visitFloatLiteral(FloatLiteral lit) { return visitLeafExpression(lit); }
 
     // =================================== Aggregates ===================================
@@ -67,4 +67,5 @@ public interface ExpressionVisitor<TRet> {
                 expr.getClass().getSimpleName(), clazz.getSimpleName());
         return new UnsupportedOperationException(error);
     }
+
 }

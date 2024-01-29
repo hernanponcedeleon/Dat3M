@@ -207,7 +207,7 @@ public class ExprSimplifier extends ExprTransformer {
             }
 
             if (lit.isZero() && op == MUL && (aggressive || left.getRegs().isEmpty())) {
-                return expressions.makeValue(0, expr.getType());
+                return expressions.makeZero(expr.getType());
             }
         }
 

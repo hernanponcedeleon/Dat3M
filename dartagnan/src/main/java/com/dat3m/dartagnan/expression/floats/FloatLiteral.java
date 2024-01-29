@@ -15,13 +15,13 @@ import java.math.BigDecimal;
 public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
 
     private final BigDecimal value;
-    private final boolean isNAN;
+    private final boolean isNaN;
     private final boolean isInf;
 
-    public FloatLiteral(FloatType type, BigDecimal value, boolean isNAN, boolean isInf) {
+    public FloatLiteral(FloatType type, BigDecimal value, boolean isNaN, boolean isInf) {
         super(type);
         this.value = value;
-        this.isNAN = isNAN;
+        this.isNaN = isNaN;
         this.isInf = isInf;
     }
 
@@ -48,12 +48,17 @@ public final class FloatLiteral extends LiteralExpressionBase<FloatType> {
         return this == o || (o instanceof FloatLiteral val
                 && getType().equals(val.getType())
                 && value.equals(val.value)
-                && isNAN == val.isNAN
+                && isNaN == val.isNaN
                 && isInf == val.isInf);
     }
 
     @Override
     public String toString() {
+        if (isInf) {
+            return "INF";
+        } else if (isNaN) {
+            return "NaN";
+        }
         return String.format("%s(%s)", getType(), value);
     }
 }
