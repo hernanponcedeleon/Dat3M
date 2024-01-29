@@ -419,6 +419,6 @@ public final class EncodingContext {
             int bitWidth = integerType.getBitWidth();
             return formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
         }
-        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
+        throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }
 }

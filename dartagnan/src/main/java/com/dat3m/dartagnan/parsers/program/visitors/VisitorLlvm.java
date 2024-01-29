@@ -2,10 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.booleans.NonDetBool;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.NonDetInt;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -264,7 +262,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         check (!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
         check (isExternal || hasInitializer, "Global without initializer; %s", ctx);
 
-        final Expression value = hasInitializer ? checkExpression(type, ctx.constant()) : makeNonDetOfType(type);
+        final Expression value;
+        value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
         setInitialMemoryFromConstant(globalObject, 0, value);
         return null;
     }
@@ -391,7 +390,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
-                block.events.add(newLocal(resultRegister, makeNonDetOfType(returnType)));
+                block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
             }
             return resultRegister;
         }
@@ -875,7 +874,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitPoisonConst(PoisonConstContext ctx) {
         // It is correct to replace a poison value with an undef value or any value of the type.
-        return makeNonDetOfType(expectedType);
+        return program.newConstant(expectedType);
     }
 
     @Override
@@ -1289,32 +1288,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helpers
-
-    public Expression makeNonDetOfType(Type type) {
-        if (type instanceof ArrayType arrayType) {
-            final List<Expression> entries = new ArrayList<>(arrayType.getNumElements());
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                entries.add(makeNonDetOfType(arrayType.getElementType()));
-            }
-            return expressions.makeArray(arrayType.getElementType(), entries, true);
-        } else if (type instanceof AggregateType structType) {
-            final List<Expression> elements = new ArrayList<>(structType.getDirectFields().size());
-            for (Type fieldType : structType.getDirectFields()) {
-                elements.add(makeNonDetOfType(fieldType));
-            }
-            return expressions.makeConstruct(elements);
-        } else if (type instanceof IntegerType intType) {
-            final NonDetInt value = new NonDetInt(program.getConstants().size(), intType, true);
-            value.setMin(intType.getMinimumValue(true));
-            value.setMax(intType.getMaximumValue(true));
-            program.addConstant(value);
-            return value;
-        } else if (type instanceof BooleanType) {
-            return new NonDetBool(types.getBooleanType());
-        } else {
-            throw new UnsupportedOperationException("Cannot create non-deterministic value of type " + type);
-        }
-    }
 
     private void check(boolean condition, String message, ParserRuleContext context) {
         if (!condition) {

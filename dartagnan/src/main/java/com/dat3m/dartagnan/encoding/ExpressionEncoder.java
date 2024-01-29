@@ -6,13 +6,13 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.booleans.NonDetBool;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -94,8 +94,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
 
     @Override
-    public Formula visitNonDetBoolExpression(NonDetBool nonDetBool) {
-        return booleanFormulaManager.makeVariable(Integer.toString(nonDetBool.hashCode()));
+    public Formula visitNonDetValue(NonDetValue nonDet) {
+        return context.makeVariable(nonDet.toString(), nonDet.getType());
     }
 
     @Override
@@ -277,13 +277,6 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         Formula tBranch = encode(iteExpr.getTrueCase());
         Formula fBranch = encode(iteExpr.getFalseCase());
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
-    }
-
-    @Override
-    public Formula visitNonDetIntExpression(NonDetInt iNonDet) {
-        String name = iNonDet.getName();
-        Type type = iNonDet.getType();
-        return context.makeVariable(name, type);
     }
 
     @Override

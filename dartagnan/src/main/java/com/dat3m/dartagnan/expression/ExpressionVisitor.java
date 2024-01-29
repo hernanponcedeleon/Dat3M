@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.expression;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.booleans.NonDetBool;
 import com.dat3m.dartagnan.expression.floats.*;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
@@ -14,6 +13,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 
 public interface ExpressionVisitor<TRet> {
 
@@ -31,13 +31,11 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitIntSizeCastExpression(IntSizeCast expr) { return visitCastExpression(expr); }
     default TRet visitFloatToIntCastExpression(FloatToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitIntLiteral(IntLiteral lit) { return visitLeafExpression(lit); }
-    default TRet visitNonDetIntExpression(NonDetInt expr) { return visitLeafExpression(expr); }
 
     // =================================== Booleans ===================================
     default TRet visitBoolBinaryExpression(BoolBinaryExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitBoolUnaryExpression(BoolUnaryExpr expr) { return visitUnaryExpression(expr); }
     default TRet visitBoolLiteral(BoolLiteral lit) { return visitLeafExpression(lit); }
-    default TRet visitNonDetBoolExpression(NonDetBool expr) { return visitLeafExpression(expr); }
 
     // =================================== Floats ===================================
     default TRet visitFloatBinaryExpression(FloatBinaryExpr expr) { return visitBinaryExpression(expr); }
@@ -54,12 +52,15 @@ public interface ExpressionVisitor<TRet> {
     // =================================== Pointer ===================================
     default TRet visitGEPExpression(GEPExpr expr) { return visitExpression(expr); }
 
-    // =================================== Misc ===================================
+    // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }
+
+    // =================================== Program-specific ===================================
     default TRet visitRegister(Register reg) { return visitLeafExpression(reg); }
     default TRet visitFunction(Function function) { return visitLeafExpression(function); }
     default TRet visitMemoryObject(MemoryObject memObj) { return visitLeafExpression(memObj); }
     default TRet visitLocation(Location loc) { return visitLeafExpression(loc); }
+    default TRet visitNonDetValue(NonDetValue nonDet) { return visitLeafExpression(nonDet); }
 
 
     private static UnsupportedOperationException unsupported(Expression expr, Class<?> clazz) {
