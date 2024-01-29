@@ -13,7 +13,7 @@ y=0;
 }
  P0@cta 0,gpu 0           | P1@cta 1,gpu 0           | P2@cta 1,gpu 0           ;
  ld r0, 1                 | ld.weak r0, x            | ld.weak r0, x            ;
- st.weak x, r0            | fence.sc.cta             | fence.sc.sys             ;
+ st.weak x, r0            | fence.sc.cta             | fence.sc.gpu             ;
                           | ld r2, 1                 | ld.weak r2, y            ;
                           | st.weak y, r2            |                          ;
 exists

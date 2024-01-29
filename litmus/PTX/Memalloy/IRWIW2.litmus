@@ -18,4 +18,4 @@ y=0;
                           | ld r2, 1                 |                          | ld r2, 1                 ;
                           | st.weak y, r2            |                          | st.weak y, r2            ;
 exists
-(x == 0 /\ y == 2 /\ P1:r0 == 2 /\ P3:r0 == 2)
+(x == 2 /\ y == 2 /\ P1:r0 == 2 /\ P3:r0 == 2)
