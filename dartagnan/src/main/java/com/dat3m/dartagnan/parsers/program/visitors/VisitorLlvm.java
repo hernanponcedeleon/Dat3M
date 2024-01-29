@@ -572,56 +572,56 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitAddInst(AddInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeADD(left, right));
+        return assignToRegister(expressions.makeAdd(left, right));
     }
 
     @Override
     public Expression visitSubInst(SubInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeSUB(left, right));
+        return assignToRegister(expressions.makeSub(left, right));
     }
 
     @Override
     public Expression visitMulInst(MulInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeMUL(left, right));
+        return assignToRegister(expressions.makeMul(left, right));
     }
 
     @Override
     public Expression visitShlInst(ShlInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeLSH(left, right));
+        return assignToRegister(expressions.makeLshift(left, right));
     }
 
     @Override
     public Expression visitLShrInst(LShrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeRSH(left, right, false));
+        return assignToRegister(expressions.makeRshift(left, right, false));
     }
 
     @Override
     public Expression visitAShrInst(AShrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeRSH(left, right, true));
+        return assignToRegister(expressions.makeRshift(left, right, true));
     }
 
     @Override
     public Expression visitAndInst(AndInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeAND(left, right));
+        return assignToRegister(expressions.makeIntAnd(left, right));
     }
 
     @Override
     public Expression visitOrInst(OrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeOR(left, right));
+        return assignToRegister(expressions.makeIntOr(left, right));
     }
 
     @Override
@@ -646,7 +646,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 );
             }
         } else {
-            xorExpr = expressions.makeXOR(left, right);
+            xorExpr = expressions.makeIntXor(left, right);
         }
         return assignToRegister(xorExpr);
     }
@@ -655,28 +655,28 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitSRemInst(SRemInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeREM(left, right, true));
+        return assignToRegister(expressions.makeRem(left, right, true));
     }
 
     @Override
     public Expression visitURemInst(URemInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeREM(left, right, false));
+        return assignToRegister(expressions.makeRem(left, right, false));
     }
 
     @Override
     public Expression visitUDivInst(UDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeDIV(left, right, false));
+        return assignToRegister(expressions.makeDiv(left, right, false));
     }
 
     @Override
     public Expression visitSDivInst(SDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeDIV(left, right, true));
+        return assignToRegister(expressions.makeDiv(left, right, true));
     }
 
     // Aggregate instructions
@@ -905,7 +905,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeADD(left, right);
+        return expressions.makeAdd(left, right);
     }
 
     @Override
@@ -913,7 +913,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeSUB(left, right);
+        return expressions.makeSub(left, right);
     }
 
     @Override
@@ -921,7 +921,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeMUL(left, right);
+        return expressions.makeMul(left, right);
     }
 
     @Override
@@ -929,7 +929,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeLSH(left, right);
+        return expressions.makeLshift(left, right);
     }
 
     @Override
@@ -937,7 +937,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeRSH(left, right, false);
+        return expressions.makeRshift(left, right, false);
     }
 
     @Override
@@ -945,7 +945,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeRSH(left, right, true);
+        return expressions.makeRshift(left, right, true);
     }
 
     @Override
@@ -953,7 +953,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeAND(left, right);
+        return expressions.makeIntAnd(left, right);
     }
 
     @Override
@@ -961,7 +961,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeOR(left, right);
+        return expressions.makeIntOr(left, right);
     }
 
     @Override
@@ -969,7 +969,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeXOR(left, right);
+        return expressions.makeIntXor(left, right);
     }
 
     // Conversions

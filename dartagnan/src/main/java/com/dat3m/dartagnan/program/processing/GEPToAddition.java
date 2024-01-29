@@ -54,16 +54,16 @@ public class GEPToAddition implements ProgramProcessor {
             Expression result = getElementPointer.getBase().accept(this);
             final List<Expression> offsets = getElementPointer.getOffsets();
             assert !offsets.isEmpty();
-            result = expressions.makeADD(result,
-                    expressions.makeMUL(
+            result = expressions.makeAdd(result,
+                    expressions.makeMul(
                             expressions.makeValue(types.getMemorySizeInBytes(type), archType),
                             expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true)));
             for (final Expression oldOffset : offsets.subList(1, offsets.size())) {
                 final Expression offset = oldOffset.accept(this);
                 if (type instanceof ArrayType arrayType) {
                     type = arrayType.getElementType();
-                    result = expressions.makeADD(result,
-                            expressions.makeMUL(
+                    result = expressions.makeAdd(result,
+                            expressions.makeMul(
                                     expressions.makeValue(types.getMemorySizeInBytes(arrayType.getElementType()), archType),
                                     expressions.makeIntegerCast(offset, archType, true)));
                     continue;
@@ -81,7 +81,7 @@ public class GEPToAddition implements ProgramProcessor {
                 for (final Type elementType : aggregateType.getDirectFields().subList(0, value)) {
                     o += types.getMemorySizeInBytes(elementType);
                 }
-                result = expressions.makeADD(result, expressions.makeValue(o, archType));
+                result = expressions.makeAdd(result, expressions.makeValue(o, archType));
             }
             return result;
         }

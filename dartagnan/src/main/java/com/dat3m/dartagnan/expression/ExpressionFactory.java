@@ -46,22 +46,22 @@ public final class ExpressionFactory {
     }
 
     public Expression makeNot(Expression operand) {
-        return makeUnary(BoolUnaryOp.NOT, operand);
-    }
-
-    public Expression makeUnary(BoolUnaryOp operator, Expression operand) {
-        return new BoolUnaryExpr(operator, operand);
+        return makeBoolUnary(BoolUnaryOp.NOT, operand);
     }
 
     public Expression makeAnd(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, BoolBinaryOp.AND, rightOperand);
+        return makeBoolBinary(leftOperand, BoolBinaryOp.AND, rightOperand);
     }
 
     public Expression makeOr(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, BoolBinaryOp.OR, rightOperand);
+        return makeBoolBinary(leftOperand, BoolBinaryOp.OR, rightOperand);
     }
 
-    public Expression makeBinary(Expression leftOperand, BoolBinaryOp operator, Expression rightOperand) {
+    public Expression makeBoolUnary(BoolUnaryOp operator, Expression operand) {
+        return new BoolUnaryExpr(operator, operand);
+    }
+
+    public Expression makeBoolBinary(Expression leftOperand, BoolBinaryOp operator, Expression rightOperand) {
         return new BoolBinaryExpr(leftOperand, operator, rightOperand);
     }
 
@@ -99,31 +99,79 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+        return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+        return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+        return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
-    }
-
-    public Expression makeBinary(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
-        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
+        return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
     public Expression makeNEG(Expression operand) {
-        return makeUnary(IntUnaryOp.MINUS, operand);
+        return makeIntUnary(IntUnaryOp.MINUS, operand);
     }
 
     public Expression makeCTLZ(Expression operand) {
-        return makeUnary(IntUnaryOp.CTLZ, operand);
+        return makeIntUnary(IntUnaryOp.CTLZ, operand);
+    }
+
+    public Expression makeAdd(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.ADD, rightOperand);
+    }
+
+    public Expression makeSub(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.SUB, rightOperand);
+    }
+
+    public Expression makeMul(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.MUL, rightOperand);
+    }
+
+    public Expression makeDiv(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntBinary(leftOperand, signed ? IntBinaryOp.DIV : IntBinaryOp.UDIV, rightOperand);
+    }
+
+    public Expression makeRem(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntBinary(leftOperand, signed ? IntBinaryOp.SREM : IntBinaryOp.UREM, rightOperand);
+    }
+
+    public Expression makeIntAnd(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.AND, rightOperand);
+    }
+
+    public Expression makeIntOr(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.OR, rightOperand);
+    }
+
+    public Expression makeIntXor(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.XOR, rightOperand);
+    }
+
+    public Expression makeLshift(Expression leftOperand, Expression rightOperand) {
+        return makeIntBinary(leftOperand, IntBinaryOp.LSHIFT, rightOperand);
+    }
+
+    public Expression makeRshift(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makeIntBinary(leftOperand, signed ? IntBinaryOp.ARSHIFT : IntBinaryOp.RSHIFT, rightOperand);
+    }
+
+    public Expression makeIntUnary(IntUnaryOp operator, Expression operand) {
+        return new IntUnaryExpr(operator, operand);
+    }
+
+    public Expression makeIntCmp(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
+        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
+    }
+
+    public Expression makeIntBinary(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
+        return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
@@ -138,58 +186,6 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
     }
 
-    public Expression makeUnary(IntUnaryOp operator, Expression operand) {
-        Preconditions.checkArgument(operand.getType() instanceof IntegerType,
-                "Non-integer operand for %s %s.", operator, operand);
-        return new IntUnaryExpr(operator, operand);
-    }
-
-    public Expression makeADD(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.ADD, rightOperand);
-    }
-
-    public Expression makeSUB(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.SUB, rightOperand);
-    }
-
-    public Expression makeMUL(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.MUL, rightOperand);
-    }
-
-    public Expression makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntBinaryOp.DIV : IntBinaryOp.UDIV, rightOperand);
-    }
-
-    public Expression makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntBinaryOp.SREM : IntBinaryOp.UREM, rightOperand);
-    }
-
-    public Expression makeAND(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.AND, rightOperand);
-    }
-
-    public Expression makeOR(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.OR, rightOperand);
-    }
-
-    public Expression makeXOR(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.XOR, rightOperand);
-    }
-
-    public Expression makeLSH(Expression leftOperand, Expression rightOperand) {
-        return makeBinary(leftOperand, IntBinaryOp.LSHIFT, rightOperand);
-    }
-
-    public Expression makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeBinary(leftOperand, signed ? IntBinaryOp.ARSHIFT : IntBinaryOp.RSHIFT, rightOperand);
-    }
-
-    public Expression makeBinary(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
-        Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
-                "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
-        return new IntBinaryExpr(leftOperand, operator, rightOperand);
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Floats
 
@@ -197,31 +193,27 @@ public final class ExpressionFactory {
         return new FloatLiteral(type, value, false, false);
     }
 
-    public Expression makeFADD(Expression x, Expression y) {
+    public Expression makeFAdd(Expression x, Expression y) {
         return new FloatBinaryExpr(x, FloatBinaryOp.FADD, y);
     }
 
-    public Expression makeFSUB(Expression x, Expression y) {
+    public Expression makeFSub(Expression x, Expression y) {
         return new FloatBinaryExpr(x, FloatBinaryOp.FSUB, y);
     }
 
-    public Expression makeFMUL(Expression x, Expression y) {
+    public Expression makeFMul(Expression x, Expression y) {
         return new FloatBinaryExpr(x, FloatBinaryOp.FMUL, y);
     }
 
-    public Expression makeFDIV(Expression x, Expression y) {
+    public Expression makeFDiv(Expression x, Expression y) {
         return new FloatBinaryExpr(x, FloatBinaryOp.FDIV, y);
     }
 
-    public Expression makeFREM(Expression x, Expression y) {
+    public Expression makeFRem(Expression x, Expression y) {
         return new FloatBinaryExpr(x, FloatBinaryOp.FREM, y);
     }
 
-    public Expression makeFloatBinary(Expression x, FloatBinaryOp op, Expression y) {
-        return new FloatBinaryExpr(x, op, y);
-    }
-
-    public Expression makeFNEG(Expression expr) {
+    public Expression makeFNeg(Expression expr) {
         return new FloatUnaryExpr(FloatUnaryOp.NEG, expr);
     }
 
@@ -231,6 +223,10 @@ public final class ExpressionFactory {
 
     public Expression makeFloatCmp(Expression x, FloatCmpOp op, Expression y) {
         return new FloatCmpExpr(booleanType, x, op, y);
+    }
+
+    public Expression makeFloatBinary(Expression x, FloatBinaryOp op, Expression y) {
+        return new FloatBinaryExpr(x, op, y);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -308,9 +304,9 @@ public final class ExpressionFactory {
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
-            return makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
+            return makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
         } else if (type instanceof IntegerType) {
-            return makeBinary(leftOperand, IntCmpOp.EQ, rightOperand);
+            return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.OEQ, rightOperand);
@@ -321,9 +317,9 @@ public final class ExpressionFactory {
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
-            return makeNot(makeBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
+            return makeNot(makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
         } else if (type instanceof IntegerType) {
-            return makeBinary(leftOperand, IntCmpOp.NEQ, rightOperand);
+            return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
             return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
@@ -333,9 +329,9 @@ public final class ExpressionFactory {
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {
         if (op instanceof BoolUnaryOp boolOp) {
-            return makeUnary(boolOp, expr);
+            return makeBoolUnary(boolOp, expr);
         } else if (op instanceof IntUnaryOp intOp) {
-            return makeUnary(intOp, expr);
+            return makeIntUnary(intOp, expr);
         } else if (op instanceof FloatUnaryOp floatOp) {
             return makeFloatUnary(floatOp, expr);
         }
@@ -344,9 +340,9 @@ public final class ExpressionFactory {
 
     public Expression makeBinary(Expression x, ExpressionKind op, Expression y) {
         if (op instanceof BoolBinaryOp boolOp) {
-            return makeBinary(x, boolOp, y);
+            return makeBoolBinary(x, boolOp, y);
         } else if (op instanceof IntBinaryOp intOp) {
-            return makeBinary(x, intOp, y);
+            return makeIntBinary(x, intOp, y);
         } else if (op instanceof FloatBinaryOp floatOp) {
             return makeFloatBinary(x, floatOp, y);
         }
@@ -355,7 +351,7 @@ public final class ExpressionFactory {
 
     public Expression makeCompare(Expression x, ExpressionKind cmpOp, Expression y) {
         if (cmpOp instanceof IntCmpOp intCmpOp) {
-            return makeBinary(x, intCmpOp, y);
+            return makeIntCmp(x, intCmpOp, y);
         } else if (cmpOp instanceof FloatCmpOp floatOp) {
             return makeFloatCmp(x, floatOp, y);
         }

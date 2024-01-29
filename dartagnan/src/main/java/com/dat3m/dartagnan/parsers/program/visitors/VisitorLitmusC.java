@@ -375,7 +375,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeBinary(v1, ctx.opCompare().op, v2);
+        Expression result = expressions.makeIntCmp(v1, ctx.opCompare().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -384,7 +384,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeBinary(v1, ctx.opArith().op, v2);
+        Expression result = expressions.makeIntBinary(v1, ctx.opArith().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -395,7 +395,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Expression v2 = (Expression)ctx.re(1).accept(this);
         v1 = expressions.makeBooleanCast(v1);
         v2 = expressions.makeBooleanCast(v2);
-        Expression result = expressions.makeBinary(v1, ctx.opBool().op, v2);
+        Expression result = expressions.makeBoolBinary(v1, ctx.opBool().op, v2);
         return assignToReturnRegister(register, result);
     }
 

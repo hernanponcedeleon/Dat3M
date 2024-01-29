@@ -558,7 +558,7 @@ public class Intrinsics {
         return List.of(
                 EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
                 EventFactory.newStore(keyAddress, storageAddressRegister),
-                EventFactory.newStore(expressions.makeADD(storageAddressRegister, destructorOffset), destructor),
+                EventFactory.newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -581,7 +581,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeADD(key, offset))
+                EventFactory.newLoad(result, expressions.makeAdd(key, offset))
         );
     }
 
@@ -593,7 +593,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newStore(expressions.makeADD(key, offset), value),
+                EventFactory.newStore(expressions.makeAdd(key, offset), value),
                 assignSuccess(errorRegister)
         );
     }
@@ -812,7 +812,7 @@ public class Intrinsics {
                 expressions.makeITE(
                         expressions.makeEQ(expected, getRwlockUnlockedValue()),
                         expressions.makeValue(BigInteger.TWO, getRwlockDatatype()),
-                        expressions.makeADD(expected, expressions.makeOne(getRwlockDatatype()))
+                        expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype()))
                 ),
                 Tag.C11.MO_ACQUIRE
         );
@@ -884,7 +884,7 @@ public class Intrinsics {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression elementCount = call.getArguments().get(0);
         final Expression elementSize = call.getArguments().get(1);
-        final Expression totalSize = expressions.makeMUL(elementCount, elementSize);
+        final Expression totalSize = expressions.makeMul(elementCount, elementSize);
         return List.of(
                 EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
         );
@@ -980,7 +980,7 @@ public class Intrinsics {
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
         final IntegerType type = (IntegerType) resultReg.getType();
-        final Expression increment = expressions.makeADD(resultReg, expressions.makeOne(type));
+        final Expression increment = expressions.makeAdd(resultReg, expressions.makeOne(type));
 
         final List<Event> replacement = new ArrayList<>();
         replacement.add(EventFactory.newLocal(resultReg, expressions.makeZero(type)));
@@ -990,7 +990,7 @@ public class Intrinsics {
             final Expression testMask = expressions.makeValue(BigInteger.ONE.shiftLeft(i), type);
             //TODO: dedicated test-bit expressions might yield better results, and they are supported by the SMT backend
             // in the form of extract operations.
-            final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
+            final Expression testBit = expressions.makeEQ(expressions.makeIntAnd(input, testMask), testMask);
 
             replacement.add(
                     EventFactory.newLocal(resultReg, expressions.makeITE(testBit, increment, resultReg))
@@ -1042,18 +1042,18 @@ public class Intrinsics {
             final Expression leftIsNegative = expressions.makeLT(x, expressions.makeZero(type), true);
             final Expression noOverflow = expressions.makeEQ(
                     leftIsNegative,
-                    expressions.makeLT(y, expressions.makeSUB(x, resultReg), true)
+                    expressions.makeLT(y, expressions.makeSub(x, resultReg), true)
             );
 
             return List.of(
                     EventFactory.newLocal(resultReg, expressions.makeITE(leftIsNegative, min, max)),
-                    EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeSUB(x, y), resultReg))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeSub(x, y), resultReg))
             );
         } else {
             final Expression noUnderflow = expressions.makeGT(x, y, false);
             final Expression zero = expressions.makeZero(type);
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeITE(noUnderflow, expressions.makeSUB(x, y), zero))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(noUnderflow, expressions.makeSub(x, y), zero))
             );
         }
     }
@@ -1085,12 +1085,12 @@ public class Intrinsics {
                 expressions.makeFalse();
         final Expression noOverflow = expressions.makeEQ(
                 leftIsNegative,
-                expressions.makeGT(y, expressions.makeSUB(resultReg, x), isSigned)
+                expressions.makeGT(y, expressions.makeSub(resultReg, x), isSigned)
         );
 
         return List.of(
                 EventFactory.newLocal(resultReg, expressions.makeITE(leftIsNegative, min, max)),
-                EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeADD(x, y), resultReg))
+                EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeAdd(x, y), resultReg))
         );
     }
 
@@ -1120,7 +1120,7 @@ public class Intrinsics {
 
         // Check for integer encoding
         final IntegerType iType = (IntegerType) x.getType();
-        final Expression result = expressions.makeBinary(x, op, y);
+        final Expression result = expressions.makeIntBinary(x, op, y);
         final Expression rangeCheck = checkIfValueInRangeOfType(result, iType, true);
 
         // Check for BV encoding. From LLVM's language manual:
@@ -1132,7 +1132,7 @@ public class Intrinsics {
         final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
         final Expression yExt = expressions.makeCast(y, types.getIntegerType(width + 1), true);
         final Expression resultExt = expressions.makeCast(result, types.getIntegerType(width + 1), true);
-        final Expression bvCheck = expressions.makeEQ(expressions.makeBinary(xExt, op, yExt), resultExt);
+        final Expression bvCheck = expressions.makeEQ(expressions.makeIntBinary(xExt, op, yExt), resultExt);
 
         final Expression flag = expressions.makeCast(
                 expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
@@ -1321,8 +1321,8 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeADD(src, offset);
-            final Expression destAddr = expressions.makeADD(dest, offset);
+            final Expression srcAddr = expressions.makeAdd(src, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 
@@ -1356,8 +1356,8 @@ public class Intrinsics {
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression src1Addr = expressions.makeADD(src1, offset);
-            final Expression src2Addr = expressions.makeADD(src2, offset);
+            final Expression src1Addr = expressions.makeAdd(src1, offset);
+            final Expression src2Addr = expressions.makeAdd(src2, offset);
             //FIXME: This method should properly load byte chunks and compare them (unsigned).
             // This requires proper mixed-size support though
             final Register regSrc1 = caller.getOrNewRegister("__memcmp_src1_" + i, returnReg.getType());
@@ -1366,7 +1366,7 @@ public class Intrinsics {
             replacement.addAll(List.of(
                     EventFactory.newLoad(regSrc1, src1Addr),
                     EventFactory.newLoad(regSrc2, src2Addr),
-                    EventFactory.newLocal(returnReg, expressions.makeSUB(src1, src2)),
+                    EventFactory.newLocal(returnReg, expressions.makeSub(src1, src2)),
                     EventFactory.newJump(expressions.makeNEQ(src1, src2), endCmp)
             ));
         }
@@ -1408,7 +1408,7 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>( count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeADD(dest, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
 
             replacement.add(EventFactory.newStore(destAddr, zero));
         }

@@ -72,7 +72,7 @@ public class ExprSimplifier extends ExprTransformer {
 
         // TODO: Simplifications of nested expressions like "b && !b => false".
 
-        return expressions.makeBinary(left, expr.getKind(), right);
+        return expressions.makeBoolBinary(left, expr.getKind(), right);
     }
 
     @Override
@@ -91,7 +91,7 @@ public class ExprSimplifier extends ExprTransformer {
             return negation.getOperand();
         }
 
-        return expressions.makeUnary(expr.getKind(), operand);
+        return expressions.makeBoolUnary(expr.getKind(), operand);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class ExprSimplifier extends ExprTransformer {
             return expressions.makeValue(cmpResult);
         }
 
-        return expressions.makeBinary(left, op, right);
+        return expressions.makeIntCmp(left, op, right);
     }
 
     @Override
@@ -178,7 +178,7 @@ public class ExprSimplifier extends ExprTransformer {
             return neg.getOperand();
         }
 
-        return expressions.makeUnary(expr.getKind(), operand);
+        return expressions.makeIntUnary(expr.getKind(), operand);
     }
 
     @Override
@@ -219,7 +219,7 @@ public class ExprSimplifier extends ExprTransformer {
 
         // TODO: Use associativity to merge nested operators
 
-        return expressions.makeBinary(left, op, right);
+        return expressions.makeIntBinary(left, op, right);
     }
 
     @Override

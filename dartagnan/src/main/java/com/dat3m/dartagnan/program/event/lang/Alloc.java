@@ -71,7 +71,7 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
                     types.getArchType()
             );
         } else {
-            allocationSize = expressions.makeMUL(
+            allocationSize = expressions.makeMul(
                     expressions.makeValue(
                             BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)),
                             (IntegerType) arraySize.getType()),

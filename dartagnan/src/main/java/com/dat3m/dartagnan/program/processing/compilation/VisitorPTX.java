@@ -25,7 +25,7 @@ public class VisitorPTX extends VisitorBase {
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(mo));
         RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
+                expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(mo));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
@@ -83,7 +83,7 @@ public class VisitorPTX extends VisitorBase {
         Register dummy = e.getFunction().newRegister(e.getAccessType());
         Load load = newRMWLoadWithMo(dummy, address, Tag.PTX.loadMO(e.getMo()));
         RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
+                expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), Tag.PTX.storeMO(e.getMo()));
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(

@@ -56,7 +56,7 @@ public class ExceptionsTest {
         // Both arguments should have same precision
         Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
         Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
-        ExpressionFactory.getInstance().makeADD(a, b);
+        ExpressionFactory.getInstance().makeAdd(a, b);
     }
 
     @Test(expected = NullPointerException.class)

@@ -223,8 +223,8 @@ public class AnalysisTest {
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, newLocal(r1, expressions.makeZero(type)));
-        Store e3 = newStore(expressions.makeADD(
-                expressions.makeADD(x, mult(r0, 2)),
+        Store e3 = newStore(expressions.makeAdd(
+                expressions.makeAdd(x, mult(r0, 2)),
                 mult(r1, 4)));
         b.addChild(0, e3);
         b.addChild(0, l0);
@@ -396,11 +396,11 @@ public class AnalysisTest {
     }
 
     private Expression plus(Expression lhs, long rhs) {
-        return expressions.makeADD(lhs, value(rhs));
+        return expressions.makeAdd(lhs, value(rhs));
     }
 
     private Expression mult(Expression lhs, long rhs) {
-        return expressions.makeMUL(lhs, value(rhs));
+        return expressions.makeMul(lhs, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {

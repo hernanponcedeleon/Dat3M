@@ -171,7 +171,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeADD(lhs, rhs);
+        Expression exp = expressions.makeAdd(lhs, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -180,7 +180,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeSUB(lhs, rhs);
+        Expression exp = expressions.makeSub(lhs, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -189,7 +189,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeMUL(lhs, rhs);
+        Expression exp = expressions.makeMul(lhs, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -198,7 +198,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeDIV(lhs, rhs, true);
+        Expression exp = expressions.makeDiv(lhs, rhs, true);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -329,7 +329,7 @@ public class VisitorLitmusPTX extends LitmusPTXBaseVisitor<Object> {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression expr = expressions.makeBinary(lhs, ctx.cond().op, rhs);
+        Expression expr = expressions.makeIntCmp(lhs, ctx.cond().op, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 
