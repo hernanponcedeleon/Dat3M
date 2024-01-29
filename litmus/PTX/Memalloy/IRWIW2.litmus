@@ -1,6 +1,5 @@
 PTX IRWIW2
 "Rf-c-gl2l2 Mcta-d-Rgl2-Wgl2 Ws-w-gl2l2 Rf-w-gl2l2 Mgl-d-Rgl2-Wgl2 Ws-c-gl2l2"
-"https://github.com/johnwickerson/memalloy/blob/master/ptx_testing/IRWIW2.txt"
 "https://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"
 {
 P0:r0=0;

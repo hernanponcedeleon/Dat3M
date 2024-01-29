@@ -1,6 +1,5 @@
 PTX WWC1
 "Rf-c-g Mcta-d-Rg-Wg Rf-w-g Mgl-d-Rg-Wg Ws-c-g"
-"https://github.com/johnwickerson/memalloy/blob/master/ptx_testing/WWC1.txt"
 "https://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"
 {
 P0:r0=0;

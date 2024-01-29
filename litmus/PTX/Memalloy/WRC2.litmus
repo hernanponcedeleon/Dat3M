@@ -1,6 +1,5 @@
 PTX WRC2
 "Rf-c-g Mgl-d-Rg-Wg Rf-w-g Mcta-d-Rg-Rg Fr-c-g"
-"https://github.com/johnwickerson/memalloy/blob/master/ptx_testing/WRC2.txt"
 "https://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"
 {
 P0:r0=0;
