@@ -144,7 +144,7 @@ public class ExprSimplifier extends ExprTransformer {
             if (expr.isExtension()) {
                 newValue = IntegerHelper.extend(lit.getValue(), sourceWidth, targetWidth, expr.preservesSign());
             } else if (expr.isTruncation()) {
-                newValue = IntegerHelper.truncateNoNormalize(lit.getValue(), targetWidth);
+                newValue = IntegerHelper.truncate(lit.getValue(), targetWidth);
             } else {
                 newValue = lit.getValue();
             }

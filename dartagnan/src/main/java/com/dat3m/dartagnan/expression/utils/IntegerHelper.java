@@ -7,17 +7,8 @@ import java.util.function.BiFunction;
 
 public class IntegerHelper {
 
-    public static final boolean SIGNED_NORMALIZATION = true;
 
     private IntegerHelper() { }
-
-    public static BigInteger normalize(BigInteger value, int bitWidth) {
-        return SIGNED_NORMALIZATION ? normalizeSigned(value, bitWidth) : normalizeUnsigned(value, bitWidth);
-    }
-
-    public static boolean isNormalized(BigInteger value, int bitWidth) {
-        return SIGNED_NORMALIZATION ? isSignedNormalized(value, bitWidth) : isUnsignedNormalized(value, bitWidth);
-    }
 
     public static BigInteger normalizeSigned(BigInteger value, int bitWidth) {
         return isSignedNormalized(value, bitWidth) ? value : value.subtract(BigInteger.ONE.shiftLeft(bitWidth));
@@ -49,7 +40,11 @@ public class IntegerHelper {
     }
 
     public static BigInteger truncate(BigInteger value, int targetBitWidth) {
-        return truncateAndNormalize(value, targetBitWidth, IntegerHelper::normalize);
+        if (isRepresentable(value, targetBitWidth)) {
+            return value;
+        }
+        final boolean isNegative = value.signum() < 0 && value.testBit(targetBitWidth - 1);
+        return isNegative ? truncateSigned(value, targetBitWidth) : truncateUnsigned(value, targetBitWidth);
     }
 
     public static BigInteger truncateSigned(BigInteger value, int targetBitWidth) {
@@ -58,14 +53,6 @@ public class IntegerHelper {
 
     public static BigInteger truncateUnsigned(BigInteger value, int targetBitWidth) {
         return truncateAndNormalize(value, targetBitWidth, IntegerHelper::normalizeUnsigned);
-    }
-
-    public static BigInteger truncateNoNormalize(BigInteger value, int targetBitWidth) {
-        if (isRepresentable(value, targetBitWidth)) {
-            return value;
-        }
-        final boolean isNegative = value.signum() < 0 && value.testBit(targetBitWidth - 1);
-        return isNegative ? truncateSigned(value, targetBitWidth) : truncateUnsigned(value, targetBitWidth);
     }
 
     private static BigInteger truncateAndNormalize(BigInteger value, int targetBitWidth,
@@ -135,31 +122,31 @@ public class IntegerHelper {
     public static BigInteger sdiv(BigInteger x, BigInteger y, int bitWidth) {
         final BigInteger sx = normalizeSigned(x, bitWidth);
         final BigInteger sy = normalizeSigned(y, bitWidth);
-        return normalize(sx.divide(sy), bitWidth);
+        return normalizeSigned(sx.divide(sy), bitWidth);
     }
 
     public static BigInteger udiv(BigInteger x, BigInteger y, int bitWidth) {
         final BigInteger ux = normalizeUnsigned(x, bitWidth);
         final BigInteger uy = normalizeUnsigned(y, bitWidth);
-        return normalize(ux.divide(uy), bitWidth);
+        return normalizeUnsigned(ux.divide(uy), bitWidth);
     }
 
     public static BigInteger srem(BigInteger x, BigInteger y, int bitWidth) {
         final BigInteger sx = normalizeSigned(x, bitWidth);
         final BigInteger sy = normalizeSigned(y, bitWidth);
-        return normalize(sx.remainder(sy), bitWidth);
+        return normalizeSigned(sx.remainder(sy), bitWidth);
     }
 
     public static BigInteger urem(BigInteger x, BigInteger y, int bitWidth) {
         final BigInteger ux = normalizeUnsigned(x, bitWidth);
         final BigInteger uy = normalizeUnsigned(y, bitWidth);
-        return normalize(ux.remainder(uy), bitWidth);
+        return normalizeUnsigned(ux.remainder(uy), bitWidth);
     }
 
     // We use LLVM semantics: "y" is considered unsigned
     public static BigInteger lshift(BigInteger x, BigInteger y, int bitWidth) {
         y = normalizeUnsigned(y, bitWidth);
-        return normalize(x.shiftLeft(y.intValueExact()), bitWidth);
+        return truncate(x.shiftLeft(y.intValueExact()), bitWidth);
     }
 
     // We use LLVM semantics: "y" is considered unsigned
@@ -176,19 +163,15 @@ public class IntegerHelper {
     }
 
     public static BigInteger and(BigInteger x, BigInteger y, int bitWidth) {
-        return normalize(x.and(y), bitWidth);
+        return x.and(y);
     }
 
     public static BigInteger or(BigInteger x, BigInteger y, int bitWidth) {
-        return normalize(x.or(y), bitWidth);
+        return x.or(y);
     }
 
     public static BigInteger xor(BigInteger x, BigInteger y, int bitWidth) {
         return truncate(x.xor(y), bitWidth);
-    }
-
-    public static BigInteger and(BigInteger x, int bitWidth) {
-        return normalize(x.negate(), bitWidth);
     }
 
     public static int scmp(BigInteger x, BigInteger y, int bitWidth) {
@@ -207,7 +190,7 @@ public class IntegerHelper {
         Preconditions.checkArgument(isRepresentable(x, bitWidth));
         Preconditions.checkArgument(isRepresentable(y, bitWidth));
 
-        return normalize(x, bitWidth).equals(normalize(y, bitWidth));
+        return normalizeSigned(x, bitWidth).equals(normalizeSigned(y, bitWidth));
     }
 
     public static BigInteger ctlz(BigInteger x, int bitWidth) {
