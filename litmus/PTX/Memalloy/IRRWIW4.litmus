@@ -1,0 +1,20 @@
+PTX IRRWIW3
+"Rf-w-s Mgl-d-Rs-Rg Fr-c-g Rf-c-g Mcta-d-Rg-Ws Ws-w-s"
+"https://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xsyg.txt"
+{
+P0:r0=0;
+P1:r0=0;
+P1:r2=0;
+P2:r0=0;
+P3:r0=0;
+P3:r2=0;
+x=0;
+y=0;
+}
+ P0@cta 0,gpu 0           | P1@cta 0,gpu 0           | P2@cta 0,gpu 0           | P3@cta 1,gpu 0           ;
+ ld r0, 2                 | ld.weak r0, x            | ld r0, 1                 | ld.weak r0, x            ;
+ st.weak x, r0            | fence.sc.cta             | st.weak x, r0            | fence.sc.gpu             ;
+                          | ld.weak r2, y            |                          | ld r2, 1                 ;
+                          |                          |                          | st.weak y, r2            ;
+exists
+(x == 2 /\ P1:r0 == 2 /\ P1:r2 == 0 /\ P3: r0 == 1)
