@@ -9,12 +9,20 @@ public class NonDetValue extends LeafExpressionBase<Type> {
 
     private final int id;
 
+    // TODO: This is a temporary solution: Signedness is meaningless for the standard BV encoding
+    //  and for all types except IntegerType. We only require it for integer-based encodings to make them
+    //  more precise.
+    private boolean isSigned = false;
+
     public NonDetValue(Type type, int id) {
         super(type);
         this.id = id;
     }
 
     public int getId() { return id; }
+
+    public boolean isSigned() { return isSigned; }
+    public void setIsSigned(boolean value ) { isSigned = value; }
 
     @Override
     public ExpressionKind getKind() {

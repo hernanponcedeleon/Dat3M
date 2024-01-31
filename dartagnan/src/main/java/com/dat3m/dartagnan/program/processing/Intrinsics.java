@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -1272,7 +1273,8 @@ public class Intrinsics {
             default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
         };
 
-        final Expression value = call.getFunction().getProgram().newConstant(types.getIntegerType(bits));
+        final NonDetValue value = (NonDetValue) call.getFunction().getProgram().newConstant(types.getIntegerType(bits));
+        value.setIsSigned(signed);
         return List.of(EventFactory.newLocal(register, expressions.makeCast(value, register.getType(), signed)));
     }
 

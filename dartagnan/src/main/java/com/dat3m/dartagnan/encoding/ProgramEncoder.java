@@ -80,13 +80,14 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
         for (NonDetValue value : context.getTask().getProgram().getConstants()) {
-            Formula formula = context.encodeFinalExpression(value);
+            final Formula formula = context.encodeFinalExpression(value);
             if (formula instanceof IntegerFormula intFormula && value.getType() instanceof IntegerType intType && !intType.isMathematical()) {
-                IntegerFormulaManager integerFormulaManager = context.getFormulaManager().getIntegerFormulaManager();
-                IntegerFormula min = integerFormulaManager.makeNumber(intType.getMinimumValue(true));
-                IntegerFormula max = integerFormulaManager.makeNumber(intType.getMaximumValue(false));
-                enc.add(integerFormulaManager.greaterOrEquals(intFormula, min));
-                enc.add(integerFormulaManager.lessOrEquals(intFormula, max));
+                // This special case is for when we encode BVs with integers.
+                final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+                final IntegerFormula min = imgr.makeNumber(intType.getMinimumValue(value.isSigned()));
+                final IntegerFormula max = imgr.makeNumber(intType.getMaximumValue(value.isSigned()));
+                enc.add(imgr.greaterOrEquals(intFormula, min));
+                enc.add(imgr.lessOrEquals(intFormula, max));
             }
         }
         return context.getBooleanFormulaManager().and(enc);

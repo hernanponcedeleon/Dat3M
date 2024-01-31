@@ -49,15 +49,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             return bForm;
         }
         if (formula instanceof BitvectorFormula bvForm) {
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            int length = bitvectorFormulaManager.getLength(bvForm);
-            BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
-            return bitvectorFormulaManager.greaterThan(bvForm, zero, false);
+            BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            BitvectorFormula zero = bvmgr.makeBitvector(bvmgr.getLength(bvForm), 0);
+            return bvmgr.greaterThan(bvForm, zero, false);
         }
         assert formula instanceof IntegerFormula;
-        IntegerFormulaManager integerFormulaManager = integerFormulaManager();
-        IntegerFormula zero = integerFormulaManager.makeNumber(0);
-        return integerFormulaManager.greaterThan((IntegerFormula) formula, zero);
+        IntegerFormulaManager imgr = integerFormulaManager();
+        IntegerFormula zero = imgr.makeNumber(0);
+        return imgr.greaterThan((IntegerFormula) formula, zero);
     }
 
     Formula encode(Expression expression) {
@@ -110,106 +109,92 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     public Formula visitIntBinaryExpression(IntBinaryExpr iBin) {
         Formula lhs = encode(iBin.getLeft());
         Formula rhs = encode(iBin.getRight());
+        final int bitWidth = iBin.getType().isMathematical() ? 64 : iBin.getType().getBitWidth();
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
-            BitvectorFormulaManager bitvectorFormulaManager;
-            IntegerFormulaManager integerFormulaManager = integerFormulaManager();
+            BitvectorFormulaManager bvmgr;
+            IntegerFormulaManager imgr = integerFormulaManager();
             switch (iBin.getKind()) {
                 case ADD:
-                    return integerFormulaManager.add(i1, i2);
+                    return imgr.add(i1, i2);
                 case SUB:
-                    return integerFormulaManager.subtract(i1, i2);
+                    return imgr.subtract(i1, i2);
                 case MUL:
-                    return integerFormulaManager.multiply(i1, i2);
+                    return imgr.multiply(i1, i2);
                 case DIV:
                 case UDIV:
-                    return integerFormulaManager.divide(i1, i2);
+                    return imgr.divide(i1, i2);
                 case AND:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.and(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                    bvmgr = bitvectorFormulaManager();
+                    return bvmgr.toIntegerFormula(
+                            bvmgr.and(
+                                    bvmgr.makeBitvector(bitWidth, i1),
+                                    bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case OR:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.or(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                    bvmgr = bitvectorFormulaManager();
+                    return bvmgr.toIntegerFormula(
+                            bvmgr.or(
+                                    bvmgr.makeBitvector(bitWidth, i1),
+                                    bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case XOR:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.xor(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                    bvmgr = bitvectorFormulaManager();
+                    return bvmgr.toIntegerFormula(
+                            bvmgr.xor(
+                                    bvmgr.makeBitvector(bitWidth, i1),
+                                    bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case LSHIFT:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.shiftLeft(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2)),
+                    bvmgr = bitvectorFormulaManager();
+                    return bvmgr.toIntegerFormula(
+                            bvmgr.shiftLeft(
+                                    bvmgr.makeBitvector(bitWidth, i1),
+                                    bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case RSHIFT:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.shiftRight(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2),
+                    bvmgr = bitvectorFormulaManager();
+                    return bvmgr.toIntegerFormula(
+                            bvmgr.shiftRight(
+                                    bvmgr.makeBitvector(bitWidth, i1),
+                                    bvmgr.makeBitvector(bitWidth, i2),
                                     false),
                             false);
                 case ARSHIFT:
-                    bitvectorFormulaManager = bitvectorFormulaManager();
-                    return bitvectorFormulaManager.toIntegerFormula(
-                            bitvectorFormulaManager.shiftRight(
-                                    bitvectorFormulaManager.makeBitvector(32, i1),
-                                    bitvectorFormulaManager.makeBitvector(32, i2),
+                    bvmgr = bitvectorFormulaManager();
+                    return bvmgr.toIntegerFormula(
+                            bvmgr.shiftRight(
+                                    bvmgr.makeBitvector(bitWidth, i1),
+                                    bvmgr.makeBitvector(bitWidth, i2),
                                     true),
                             false);
                 case SREM:
                 case UREM:
-                    IntegerFormula zero = integerFormulaManager.makeNumber(0);
-                    IntegerFormula modulo = integerFormulaManager.modulo(i1, i2);
+                    IntegerFormula zero = imgr.makeNumber(0);
+                    IntegerFormula modulo = imgr.modulo(i1, i2);
                     BooleanFormula cond = booleanFormulaManager.and(
-                            integerFormulaManager.distinct(asList(modulo, zero)),
-                            integerFormulaManager.lessThan(i1, zero));
-                    return booleanFormulaManager.ifThenElse(cond, integerFormulaManager.subtract(modulo, i2), modulo);
+                            imgr.distinct(asList(modulo, zero)),
+                            imgr.lessThan(i1, zero));
+                    return booleanFormulaManager.ifThenElse(cond, imgr.subtract(modulo, i2), modulo);
                 default:
                     throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on integer formulas.");
             }
         } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
-            BitvectorFormulaManager bitvectorFormulaManager = bitvectorFormulaManager();
-            switch (iBin.getKind()) {
-                case ADD:
-                    return bitvectorFormulaManager.add(bv1, bv2);
-                case SUB:
-                    return bitvectorFormulaManager.subtract(bv1, bv2);
-                case MUL:
-                    return bitvectorFormulaManager.multiply(bv1, bv2);
-                case DIV:
-                    return bitvectorFormulaManager.divide(bv1, bv2, true);
-                case UDIV:
-                    return bitvectorFormulaManager.divide(bv1, bv2, false);
-                case SREM:
-                    return bitvectorFormulaManager.modulo(bv1, bv2, true);
-                case UREM:
-                    return bitvectorFormulaManager.modulo(bv1, bv2, false);
-                case AND:
-                    return bitvectorFormulaManager.and(bv1, bv2);
-                case OR:
-                    return bitvectorFormulaManager.or(bv1, bv2);
-                case XOR:
-                    return bitvectorFormulaManager.xor(bv1, bv2);
-                case LSHIFT:
-                    return bitvectorFormulaManager.shiftLeft(bv1, bv2);
-                case RSHIFT:
-                    return bitvectorFormulaManager.shiftRight(bv1, bv2, false);
-                case ARSHIFT:
-                    return bitvectorFormulaManager.shiftRight(bv1, bv2, true);
-                default:
-                    throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on bitvector formulas.");
-            }
+            BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            return switch (iBin.getKind()) {
+                case ADD -> bvmgr.add(bv1, bv2);
+                case SUB -> bvmgr.subtract(bv1, bv2);
+                case MUL -> bvmgr.multiply(bv1, bv2);
+                case DIV -> bvmgr.divide(bv1, bv2, true);
+                case UDIV -> bvmgr.divide(bv1, bv2, false);
+                case SREM -> bvmgr.modulo(bv1, bv2, true);
+                case UREM -> bvmgr.modulo(bv1, bv2, false);
+                case AND -> bvmgr.and(bv1, bv2);
+                case OR -> bvmgr.or(bv1, bv2);
+                case XOR -> bvmgr.xor(bv1, bv2);
+                case LSHIFT -> bvmgr.shiftLeft(bv1, bv2);
+                case RSHIFT -> bvmgr.shiftRight(bv1, bv2, false);
+                case ARSHIFT -> bvmgr.shiftRight(bv1, bv2, true);
+            };
         } else {
             throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on formulas of mismatching type.");
         }
