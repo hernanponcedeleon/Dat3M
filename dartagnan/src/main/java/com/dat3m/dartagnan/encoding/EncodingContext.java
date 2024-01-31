@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -215,8 +216,11 @@ public final class EncodingContext {
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
-        //TODO match this with the actual type.
-        return formulaManager.getBitvectorFormulaManager().makeVariable(base.getType().getBitWidth(), name);
+        //TODO match this with the actual type stored at the memory address
+        // (we do not know and guess the arch type right now)
+        TypeFactory types = TypeFactory.getInstance();
+        int archSize = types.getMemorySizeInBytes(types.getArchType());
+        return formulaManager.getBitvectorFormulaManager().makeVariable(archSize, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
