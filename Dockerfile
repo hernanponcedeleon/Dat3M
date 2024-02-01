@@ -12,6 +12,8 @@ RUN apt-get update && \
     apt-get install -y sudo && \
     apt-get install -y wget && \
     apt-get install -y maven && \
+    apt-get install openjdk-17-jdk \
+    apt-get install openjdk-17-jre \
     apt-get install -y cmake && \
     apt-get install -y autoconf && \
     apt-get install -y automake && \
