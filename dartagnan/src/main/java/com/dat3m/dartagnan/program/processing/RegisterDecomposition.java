@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.Construction;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.Extraction;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.program.Function;
@@ -39,10 +39,10 @@ public class RegisterDecomposition implements ProgramProcessor {
                 if (!(writer instanceof LlvmCmpXchg) &&
                         writer.getResultRegister().getType() instanceof AggregateType) {
                     if (!(writer instanceof Local local) ||
-                            !(local.getExpr() instanceof Construction construction)) {
-                        throw new UnsupportedOperationException("No support for indirect aggregate construction");
+                            !(local.getExpr() instanceof ConstructExpr construct)) {
+                        throw new UnsupportedOperationException("No support for indirect aggregate construct");
                     }
-                    final List<Expression> arguments = construction.getArguments();
+                    final List<Expression> arguments = construct.getOperands();
                     final var componentAssignments = new ArrayList<Event>();
                     for (int i = 0; i < arguments.size(); i++) {
                         final Expression argument = arguments.get(i);
@@ -68,11 +68,11 @@ public class RegisterDecomposition implements ProgramProcessor {
         private final Map<RegisterIndex, Register> map = new HashMap<>();
 
         @Override
-        public Expression visit(Extraction extraction) {
-            if (!(extraction.getObject() instanceof Register reg)) {
-                throw new UnsupportedOperationException("No support for indirect extraction");
+        public Expression visitExtractExpression(ExtractExpr expr) {
+            if (!(expr.getOperand() instanceof Register reg)) {
+                throw new UnsupportedOperationException("No support for indirect expr");
             }
-            final var index = new RegisterIndex(reg, extraction.getFieldIndex());
+            final var index = new RegisterIndex(reg, expr.getFieldIndex());
             return checkNotNull(map.get(index));
         }
     }

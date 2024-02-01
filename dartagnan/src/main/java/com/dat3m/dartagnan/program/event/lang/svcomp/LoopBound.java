@@ -2,7 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.svcomp;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -21,7 +22,8 @@ public class LoopBound extends CodeAnnotation implements RegReader {
     }
 
     public int getConstantBound() {
-        int bound = this.bound.reduce().getValueAsInt();
+        Preconditions.checkState(this.bound instanceof IntLiteral, "Non-literal bound: %s", bound);
+        int bound = ((IntLiteral)this.bound).getValueAsInt();
         if (bound <= 0) {
             throw new MalformedProgramException("Non-positive loop bound annotation: " + this);
         }

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -53,7 +54,7 @@ public class MemoryAllocation implements ProgramProcessor {
 
     private int getSize(Alloc alloc) {
         try {
-            return alloc.getAllocationSize().reduce().getValueAsInt();
+            return ((IntLiteral)alloc.getAllocationSize()).getValueAsInt();
         } catch (Exception e) {
             final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
             throw new MalformedProgramException(error);

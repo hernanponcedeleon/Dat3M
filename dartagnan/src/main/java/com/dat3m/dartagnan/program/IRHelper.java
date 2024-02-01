@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.program;
 
-import com.dat3m.dartagnan.expression.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;

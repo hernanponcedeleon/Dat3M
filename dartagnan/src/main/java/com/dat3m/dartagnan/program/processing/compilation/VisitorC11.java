@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -78,7 +78,7 @@ public class VisitorC11 extends VisitorBase {
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
         Load load = newRMWLoadWithMo(resultRegister, address, mo);
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
         RMWStore store = newRMWStoreWithMo(load, address, dummyReg, mo);
 
         return tagList(eventSequence(
@@ -163,7 +163,7 @@ public class VisitorC11 extends VisitorBase {
         String mo = e.getMo();
 
         Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Local localOp = newLocal(dummyReg, expressions.makeBinary(resultRegister, e.getOperator(), e.getOperand()));
+        Local localOp = newLocal(dummyReg, expressions.makeIntBinary(resultRegister, e.getOperator(), e.getOperand()));
 
         Load load = newRMWLoadExclusiveWithMo(resultRegister, address, mo);
         Store store = newRMWStoreExclusiveWithMo(address, dummyReg, true, mo);

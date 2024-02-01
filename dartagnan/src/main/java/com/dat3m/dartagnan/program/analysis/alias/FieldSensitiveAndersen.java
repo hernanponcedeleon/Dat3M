@@ -1,7 +1,12 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -21,8 +26,8 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.expression.op.IntBinaryOp.*;
-import static com.dat3m.dartagnan.expression.op.IntUnaryOp.MINUS;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Verify.verify;
 import static java.util.stream.Collectors.toList;
@@ -286,6 +291,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
             result = x.accept(this);
         }
 
+        @Override
+        public Result visitExpression(Expression expr) {
+            return null;
+        }
+
         List<Location> address() {
             if (result != null && result.address != null) {
                 verify(address.size() == 1);
@@ -306,17 +316,20 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IntBinaryExpr x) {
-            Result l = x.getLHS().accept(this);
-            Result r = x.getRHS().accept(this);
-            if (l == null || r == null || x.getOp() == RSHIFT) {
+        public Result visitIntBinaryExpression(IntBinaryExpr x) {
+            Result l = x.getLeft().accept(this);
+            Result r = x.getRight().accept(this);
+            if (l == null || r == null || x.getKind() == RSHIFT) {
                 return null;
             }
             if (l.address == null && l.register == null && l.alignment == 0 && r.address == null &&
                     r.register == null && r.alignment == 0) {
-                return new Result(null, null, x.getOp().combine(l.offset, r.offset), 0);
+                // TODO: Make sure that the type of normalization does not break this code.
+                //  Maybe always do signed normalization?
+                return new Result(null, null,
+                        x.getKind().apply(l.offset, r.offset, x.getType().getBitWidth()), 0);
             }
-            if (x.getOp() == MUL) {
+            if (x.getKind() == MUL) {
                 if (l.address != null || r.address != null) {
                     return null;
                 }
@@ -326,12 +339,12 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                         min(min(l.alignment, l.register) * r.offset.intValue(),
                                 min(r.alignment, r.register) * l.offset.intValue()));
             }
-            if (x.getOp() == ADD || x.getOp() == SUB) {
+            if (x.getKind() == ADD || x.getKind() == SUB) {
                 if (l.address != null && r.address != null) {
                     return null;
                 }
                 MemoryObject base = l.address != null ? l.address : r.address;
-                BigInteger offset = x.getOp() == ADD ? l.offset.add(r.offset) : l.offset.subtract(r.offset);
+                BigInteger offset = x.getKind() == ADD ? l.offset.add(r.offset) : l.offset.subtract(r.offset);
                 if (base != null) {
                     return new Result(base,
                             null,
@@ -347,33 +360,39 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         }
 
         @Override
-        public Result visit(IntUnaryExpr x) {
-            Result i = x.getInner().accept(this);
-            return i == null ? null : x.getOp() != MINUS ? i :
+        public Result visitIntUnaryExpression(IntUnaryExpr x) {
+            Result i = x.getOperand().accept(this);
+            return i == null ? null : x.getKind() != MINUS ? i :
                     new Result(null, null, i.offset.negate(), i.alignment == 0 ? 1 : i.alignment);
         }
 
         @Override
-        public Result visit(ITEExpr x) {
-            x.getTrueBranch().accept(this);
-            x.getFalseBranch().accept(this);
+        public Result visitIntSizeCastExpression(IntSizeCast expr) {
+            // We assume type casts do not affect the value of pointers.
+            return expr.getOperand().accept(this);
+        }
+
+        @Override
+        public Result visitITEExpression(ITEExpr x) {
+            x.getTrueCase().accept(this);
+            x.getFalseCase().accept(this);
             return null;
         }
 
         @Override
-        public Result visit(MemoryObject a) {
+        public Result visitMemoryObject(MemoryObject a) {
             address.add(a);
             return new Result(a, null, BigInteger.ZERO, 0);
         }
 
         @Override
-        public Result visit(Register r) {
+        public Result visitRegister(Register r) {
             register.add(r);
             return new Result(null, r, BigInteger.ZERO, 0);
         }
 
         @Override
-        public Result visit(IntLiteral v) {
+        public Result visitIntLiteral(IntLiteral v) {
             return new Result(null, null, v.getValue(), 0);
         }
 

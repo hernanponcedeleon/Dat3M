@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.expression.type;
 
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.utils.Normalizer;
 import com.google.common.math.IntMath;
 
@@ -16,7 +17,6 @@ public final class TypeFactory {
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType pointerDifferenceType;
-    private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
 
     private final Normalizer typeNormalizer = new Normalizer();
 
@@ -39,13 +39,16 @@ public final class TypeFactory {
         return pointerDifferenceType;
     }
 
-    public IntegerType getIntegerType() {
-        return mathematicalIntegerType;
-    }
-
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
+    }
+
+    public FloatType getFloatType(int mantissaBits, int exponentBits) {
+        checkArgument(mantissaBits > 0 && exponentBits > 0,
+                "Cannot construct floating-point type with mantissa %s and exponent %s",
+                mantissaBits, exponentBits);
+        return typeNormalizer.normalize(new FloatType(mantissaBits, exponentBits));
     }
 
     public FunctionType getFunctionType(Type returnType, List<? extends Type> parameterTypes) {
@@ -101,12 +104,9 @@ public final class TypeFactory {
             }
             sizeInBytes = aggregateSize;
         } else if (type instanceof IntegerType integerType) {
-            if (integerType.isMathematical()) {
-                // FIXME: We cannot give proper sizes for mathematical integers.
-                sizeInBytes = 8;
-            } else {
-                sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
-            }
+            sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
+        } else if (type instanceof FloatType floatType) {
+            sizeInBytes = IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
         } else {
             throw new UnsupportedOperationException("Cannot compute the size of " + type);
         }

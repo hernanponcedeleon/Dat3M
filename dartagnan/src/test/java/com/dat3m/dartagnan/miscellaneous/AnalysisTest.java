@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.miscellaneous;
 import com.dat3m.dartagnan.configuration.Alias;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.NonDetBool;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
@@ -54,7 +53,7 @@ public class AnalysisTest {
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
         Label alt = b.getOrCreateLabel(0, "alt");
-        b.addChild(0, newJump(new NonDetBool(types.getBooleanType()), alt));
+        b.addChild(0, newJump(b.newConstant(types.getBooleanType()), alt));
         Local e0 = newLocal(r0, value(1));
         b.addChild(0, e0);
         Local e1 = newLocal(r1, r0);
@@ -210,7 +209,7 @@ public class AnalysisTest {
 
         b.newThread(0);
         Register r0 = b.getOrNewRegister(0, "r0");
-        b.addChild(0, newLocal(r0, b.newConstant(type, true)));
+        b.addChild(0, newLocal(r0, b.newConstant(type)));
         Label l0 = b.getOrCreateLabel(0,"l0");
         b.addChild(0, newJump(expressions.makeOr(
                 expressions.makeGT(r0, expressions.makeOne(type), true),
@@ -223,8 +222,8 @@ public class AnalysisTest {
         b.addChild(0, e2);
         Register r1 = b.getOrNewRegister(0, "r1");
         b.addChild(0, newLocal(r1, expressions.makeZero(type)));
-        Store e3 = newStore(expressions.makeADD(
-                expressions.makeADD(x, mult(r0, 2)),
+        Store e3 = newStore(expressions.makeAdd(
+                expressions.makeAdd(x, mult(r0, 2)),
                 mult(r1, 4)));
         b.addChild(0, e3);
         b.addChild(0, l0);
@@ -396,11 +395,11 @@ public class AnalysisTest {
     }
 
     private Expression plus(Expression lhs, long rhs) {
-        return expressions.makeADD(lhs, value(rhs));
+        return expressions.makeAdd(lhs, value(rhs));
     }
 
     private Expression mult(Expression lhs, long rhs) {
-        return expressions.makeMUL(lhs, value(rhs));
+        return expressions.makeMul(lhs, value(rhs));
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {

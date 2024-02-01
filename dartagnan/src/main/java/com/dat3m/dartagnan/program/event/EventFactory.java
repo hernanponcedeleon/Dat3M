@@ -1,12 +1,12 @@
 package com.dat3m.dartagnan.program.event;
 
-import com.dat3m.dartagnan.expression.BoolLiteral;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.op.IntBinaryOp;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -131,7 +131,7 @@ public class EventFactory {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
-                expressions.makeADD(base, expressions.makeValue(offset, base.getType()));
+                expressions.makeAdd(base, expressions.makeValue(offset, base.getType()));
         return new Init(base, offset, address);
     }
 

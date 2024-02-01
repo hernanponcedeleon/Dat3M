@@ -1,9 +1,14 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.expression.NonDetInt;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
@@ -19,12 +24,14 @@ public class Program {
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
     private final List<Function> functions;
-    private final List<NonDetInt> constants = new ArrayList<>();
+    private final List<NonDetValue> constants = new ArrayList<>();
     private final Memory memory;
     private Arch arch;
     private int unrollingBound = 0;
     private boolean isCompiled;
     private final SourceLanguage format;
+
+    private int nextConstantId = 0;
 
     public Program(Memory memory, SourceLanguage format) {
         this("", memory, format);
@@ -117,11 +124,29 @@ public class Program {
         return functions.stream().filter(f -> f.getName().equals(name)).findFirst();
     }
 
-    public void addConstant(NonDetInt constant) {
-        constants.add(constant);
+    public Expression newConstant(Type type) {
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+
+        if (type instanceof ArrayType arrayType) {
+            final List<Expression> entries = new ArrayList<>(arrayType.getNumElements());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                entries.add(newConstant(arrayType.getElementType()));
+            }
+            return expressions.makeArray(arrayType.getElementType(), entries, true);
+        }
+        if (type instanceof AggregateType aggregateType) {
+            final List<Expression> elements = new ArrayList<>(aggregateType.getDirectFields().size());
+            for (Type fieldType : aggregateType.getDirectFields()) {
+                elements.add(newConstant(fieldType));
+            }
+            return expressions.makeConstruct(elements);
+        }
+        var expression = new NonDetValue(type, nextConstantId++);
+        constants.add(expression);
+        return expression;
     }
 
-    public Collection<NonDetInt> getConstants() {
+    public Collection<NonDetValue> getConstants() {
         return Collections.unmodifiableCollection(constants);
     }
 

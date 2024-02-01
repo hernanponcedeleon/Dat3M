@@ -3,7 +3,8 @@ grammar LitmusC;
 import LinuxLexer, C11Lexer, LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.booleans.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 }
 
@@ -210,13 +211,13 @@ opBool returns [BoolBinaryOp op]
     |   BarBar  {$op = BoolBinaryOp.OR;}
     ;
 
-opCompare returns [CmpOp op]
-    :   EqualsEquals    {$op = CmpOp.EQ;}
-    |   NotEquals       {$op = CmpOp.NEQ;}
-    |   LessEquals      {$op = CmpOp.LTE;}
-    |   GreaterEquals   {$op = CmpOp.GTE;}
-    |   Less            {$op = CmpOp.LT;}
-    |   Greater         {$op = CmpOp.GT;}
+opCompare returns [IntCmpOp op]
+    :   EqualsEquals    {$op = IntCmpOp.EQ;}
+    |   NotEquals       {$op = IntCmpOp.NEQ;}
+    |   LessEquals      {$op = IntCmpOp.LTE;}
+    |   GreaterEquals   {$op = IntCmpOp.GTE;}
+    |   Less            {$op = IntCmpOp.LT;}
+    |   Greater         {$op = IntCmpOp.GT;}
     ;
 
 opArith returns [IntBinaryOp op]
