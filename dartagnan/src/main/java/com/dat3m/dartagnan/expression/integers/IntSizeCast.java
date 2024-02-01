@@ -33,13 +33,7 @@ public final class IntSizeCast extends CastExpressionBase<IntegerType, IntegerTy
     }
 
     private static boolean isExtension(IntegerType sourceType, IntegerType targetType) {
-        if (sourceType.isMathematical()) {
-            return false;
-        } else if (targetType.isMathematical()) {
-            return true;
-        } else {
-            return sourceType.getBitWidth() < targetType.getBitWidth();
-        }
+        return sourceType.getBitWidth() < targetType.getBitWidth();
     }
 
     @Override

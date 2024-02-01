@@ -36,9 +36,9 @@ public class ExceptionsTest {
     public void RegisterAlreadyExist() {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         Thread t = pb.newThread(0);
-        t.newRegister("r1", types.getIntegerType());
+        t.newRegister("r1", types.getIntegerType(64));
         // Adding same register a second time
-        t.newRegister("r1", types.getIntegerType());
+        t.newRegister("r1", types.getIntegerType(64));
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -360,10 +360,10 @@ public final class EncodingContext {
             return booleanFormulaManager.makeBoolean(!value.equals(BigInteger.ZERO));
         }
         if (type instanceof IntegerType integerType) {
-            if (useIntegers || integerType.isMathematical()) {
+            if (useIntegers) {
                 return formulaManager.getIntegerFormulaManager().makeNumber(value);
             } else {
-                return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(),value);
+                return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
             }
         }
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
@@ -414,7 +414,7 @@ public final class EncodingContext {
             return booleanFormulaManager.makeVariable(name);
         }
         if (type instanceof IntegerType integerType) {
-            if (useIntegers || integerType.isMathematical()) {
+            if (useIntegers) {
                 return formulaManager.getIntegerFormulaManager().makeVariable(name);
             } else {
                 return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);

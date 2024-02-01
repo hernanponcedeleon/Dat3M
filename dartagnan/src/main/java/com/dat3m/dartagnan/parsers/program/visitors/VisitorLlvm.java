@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -627,26 +626,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitXorInst(XorInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        final Expression xorExpr;
-        if ((right instanceof IntLiteral intLiteral && intLiteral.getType().isMathematical()
-            && (intLiteral.isZero() || intLiteral.isOne()))) {
-            // NOTE: If we parse the program with mathematical integers, we try to eliminate "xor 1" expressions.
-            // The reason is that "xor 1" is used to implement boolean negations, i.e., even if the C source program
-            // has no bitwise operators, "xor 1" is frequently added by the compiler.
-            // Not eliminating this operator frequently results in theory-mixing that the SMT-backend cannot handle.
-            if (intLiteral.isZero()) {
-                xorExpr = left;
-            } else {
-                //FIXME: This is only valid on "xor 1" applied to "i1" operators, but is unsound for any other bit-width.
-                xorExpr = expressions.makeITE(
-                        expressions.makeEQ(left, expressions.makeGeneralZero(left.getType())),
-                        expressions.makeOne((IntegerType) left.getType()),
-                        expressions.makeZero((IntegerType) left.getType())
-                );
-            }
-        } else {
-            xorExpr = expressions.makeIntXor(left, right);
-        }
+        final Expression xorExpr = expressions.makeIntXor(left, right);
         return assignToRegister(xorExpr);
     }
 

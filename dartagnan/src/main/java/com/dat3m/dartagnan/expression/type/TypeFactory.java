@@ -17,7 +17,6 @@ public final class TypeFactory {
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType pointerDifferenceType;
-    private final IntegerType mathematicalIntegerType = new IntegerType(IntegerType.MATHEMATICAL);
 
     private final Normalizer typeNormalizer = new Normalizer();
 
@@ -38,10 +37,6 @@ public final class TypeFactory {
 
     public Type getPointerType() {
         return pointerDifferenceType;
-    }
-
-    public IntegerType getIntegerType() {
-        return mathematicalIntegerType;
     }
 
     public IntegerType getIntegerType(int bitWidth) {
@@ -109,12 +104,7 @@ public final class TypeFactory {
             }
             sizeInBytes = aggregateSize;
         } else if (type instanceof IntegerType integerType) {
-            if (integerType.isMathematical()) {
-                // FIXME: We cannot give proper sizes for mathematical integers.
-                sizeInBytes = 8;
-            } else {
-                sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
-            }
+            sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
         } else if (type instanceof FloatType floatType) {
             sizeInBytes = IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
         } else {

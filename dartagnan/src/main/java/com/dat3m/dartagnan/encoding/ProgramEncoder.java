@@ -81,7 +81,7 @@ public class ProgramEncoder implements Encoder {
         List<BooleanFormula> enc = new ArrayList<>();
         for (NonDetValue value : context.getTask().getProgram().getConstants()) {
             final Formula formula = context.encodeFinalExpression(value);
-            if (formula instanceof IntegerFormula intFormula && value.getType() instanceof IntegerType intType && !intType.isMathematical()) {
+            if (formula instanceof IntegerFormula intFormula && value.getType() instanceof IntegerType intType) {
                 // This special case is for when we encode BVs with integers.
                 final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
                 final IntegerFormula min = imgr.makeNumber(intType.getMinimumValue(value.isSigned()));

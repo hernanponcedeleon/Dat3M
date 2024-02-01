@@ -107,9 +107,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visitIntBinaryExpression(IntBinaryExpr iBin) {
-        Formula lhs = encode(iBin.getLeft());
-        Formula rhs = encode(iBin.getRight());
-        final int bitWidth = iBin.getType().isMathematical() ? 64 : iBin.getType().getBitWidth();
+        final Formula lhs = encode(iBin.getLeft());
+        final Formula rhs = encode(iBin.getRight());
+        final int bitWidth = iBin.getType().getBitWidth();
+
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
             BitvectorFormulaManager bvmgr;
             IntegerFormulaManager imgr = integerFormulaManager();
@@ -203,7 +204,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visitIntSizeCastExpression(IntSizeCast expr) {
         Formula inner = encode(expr.getOperand());
-        if (inner instanceof IntegerFormula || expr.getTargetType().isMathematical() || expr.isNoop()) {
+        if (inner instanceof IntegerFormula || expr.isNoop()) {
             //TODO If narrowing, constrain the value.
             return inner;
         }
