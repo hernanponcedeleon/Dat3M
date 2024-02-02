@@ -40,8 +40,9 @@ public class Edge extends AbstractDerivable implements Comparable<Edge> {
 
     @Override
     public int hashCode() {
-        int a = dId1;
-        return  a ^ (31 * dId2 + 0x9e3779b9 + (a << 6) + (a >> 2)); // Best hashing function ever :)
+        return 127 * dId1 + dId2;
+        //int a = dId1;
+        //return  a ^ (31 * dId2 + 0x9e3779b9 + (a << 6) + (a >> 2)); // Best hashing function ever :)
     }
 
 

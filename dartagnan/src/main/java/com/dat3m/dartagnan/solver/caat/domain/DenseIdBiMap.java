@@ -48,7 +48,8 @@ public class DenseIdBiMap<T> {
     }
 
     public int getId(Object obj) {
-        return objToIdMap.getOrDefault(obj, -1);
+        Integer id = objToIdMap.get(obj);
+        return id != null ? id : -1;
     }
 
     public T getObject(int id) {
