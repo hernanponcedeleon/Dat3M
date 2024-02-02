@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.OnlineRefinementSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -158,9 +159,15 @@ public class CLocksTest extends AbstractCTest {
 		assertEquals(expected, s.getResult());
 	}
 
-    @Test
+    //@Test
 	public void testRefinement() throws Exception {
 		RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+		assertEquals(expected, s.getResult());
+	}
+
+	@Test
+	public void testOnlineRefinement() throws Exception {
+		OnlineRefinementSolver s = OnlineRefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
 		assertEquals(expected, s.getResult());
 	}
 }

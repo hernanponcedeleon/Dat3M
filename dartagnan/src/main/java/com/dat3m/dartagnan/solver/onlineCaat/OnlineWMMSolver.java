@@ -4,27 +4,27 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.caat.domain.DenseIdBiMap;
-import com.dat3m.dartagnan.solver.caat.domain.Domain;
+import com.dat3m.dartagnan.solver.caat.domain.GenericDomain;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.google.common.collect.Maps;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.basicimpl.AbstractUserPropagator;
 
 import java.util.*;
 
-public class OnlineWMMSolver {
+public class OnlineWMMSolver extends AbstractUserPropagator {
 
+    private final VerificationTask task;
     private final ExecutionGraph executionGraph;
     private final CAATSolver solver;
     private final EncodingContext encodingContext;
@@ -32,6 +32,8 @@ public class OnlineWMMSolver {
     private final Decoder decoder;
     private final Refiner refiner;
     private final BooleanFormulaManager bmgr;
+
+    private final Map<Relation, Relation> encodedRelation2OriginalRelationMap = Maps.newIdentityHashMap();
 
     public OnlineWMMSolver(VerificationTask task, EncodingContext encCtx, Context analysisContext, Set<Relation> cutRelations) {
         analysisContext.requires(RelationAnalysis.class);
@@ -41,8 +43,22 @@ public class OnlineWMMSolver {
         this.decoder = new Decoder(encCtx);
         this.encodingContext = encCtx;
         this.refiner = new Refiner();
+        this.task = task;
 
         this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
+
+        for (Relation rel : encCtx.getTask().getMemoryModel().getRelations()) {
+            final String relName = rel.getName().orElse(null);
+            final Relation relInFullModel;
+            if (relName != null) {
+                relInFullModel = task.getMemoryModel().getRelation(relName);
+            } else {
+                final String term = rel.getNameOrTerm();
+                relInFullModel = task.getMemoryModel().getRelations().stream()
+                        .filter(r -> r.getNameOrTerm().equals(term)).findFirst().get();
+            }
+            encodedRelation2OriginalRelationMap.put(rel, relInFullModel);
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------
@@ -51,78 +67,104 @@ public class OnlineWMMSolver {
     // ------------------------------------------------------------------------------------------------------
     // Online features
 
-
     private final Deque<Integer> backtrackPoints = new ArrayDeque<>();
     private final Deque<BooleanFormula> knownValues = new ArrayDeque<>();
     private final Map<BooleanFormula, Boolean> partialModel = new HashMap<>();
+    private final Set<BooleanFormula> trueValues = new HashSet<>();
 
-    protected void onPush() {
+    @Override
+    public void onPush() {
         backtrackPoints.push(knownValues.size());
+        //System.out.println("Pushed: " + backtrackPoints.size());
     }
 
-    protected void onPop(int numLevels) {
+    @Override
+    public void onPop(int numLevels) {
+        int popLevels = numLevels;
+        int backtrackTo = 0;
         while (numLevels > 0) {
-            backtrackPoints.pop();
+            backtrackTo = backtrackPoints.pop();
             numLevels--;
         }
-        assert !backtrackPoints.isEmpty();
 
-        final int backtrackTo = backtrackPoints.peek();
         while (knownValues.size() > backtrackTo) {
-            partialModel.remove(knownValues.pop());
+            final BooleanFormula revertedAssignment = knownValues.pop();
+            if (partialModel.remove(revertedAssignment)) {
+                trueValues.remove(revertedAssignment);
+            }
+        }
+
+        System.out.printf("Backtracked %d levels to level %d\n", popLevels, backtrackPoints.size());
+    }
+
+    @Override
+    public void onKnownValue(BooleanFormula expr, BooleanFormula value) {
+        knownValues.push(expr);
+        final boolean isTrue = bmgr.isTrue(value);
+        partialModel.put(expr, isTrue);
+        if (isTrue) {
+            trueValues.add(expr);
+            //System.out.printf("Assigned %s to true\n", expr);
         }
     }
 
-    protected void onKnownValue(BooleanFormula expr, BooleanFormula value) {
-        knownValues.add(expr);
-        partialModel.put(expr, bmgr.isTrue(value));
+    @Override
+    public void initialize() {
+        backend.notifyOnKnownValue();
+        backend.notifyOnFinalCheck();
+
+        for (BooleanFormula formula : decoder.getDecodableFormulas()) {
+            backend.registerExpression(formula);
+        }
     }
 
-    protected void onFinalCheck() {
-        initModel();
+    // --- Temporary statistics ---
+    private long totalModelExtractionTime = 0;
+    private int checkCounter = 0;
+
+    @Override
+    public void onFinalCheck() {
         Result result = check();
+        checkCounter++;
+        totalModelExtractionTime += result.stats.modelExtractionTime;
 
         if (result.status == CAATSolver.Status.INCONSISTENT) {
             final List<Refiner.Conflict> conflicts = refiner.computeConflicts(result.coreReasons, encodingContext);
             for (Refiner.Conflict conflict : conflicts) {
                 assert conflict.assignment().stream().allMatch(partialModel::containsKey);
-                //backend.propagateConflict(conflict.toArray(new BooleanFormula[0]));
+                backend.propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
             }
         }
+
+        StringBuilder builder = new StringBuilder()
+                .append("Model extraction: ").append(result.stats.modelExtractionTime).append("\n")
+                .append("Population time: ").append(result.stats.caatStats.getPopulationTime()).append("\n")
+                .append("Total Model extraction: ").append(totalModelExtractionTime).append("\n");
+
+        System.out.printf("------------ Check #%d ------------ \n%s", checkCounter, builder);
+        System.out.println("------------------------------------");
     }
 
     private void initModel() {
         List<Event> executedEvents = new ArrayList<>();
-        List<RelationInfo> relationInfos = new ArrayList<>();
-        for (BooleanFormula assigned : knownValues) {
-            if (!partialModel.get(assigned)) {
-                continue;
-            }
-
-            EncodingInfo info = decoder.decode(assigned);
-            if (info instanceof ExecInfo eventInfo) {
-                executedEvents.addAll(eventInfo.events());
-            } else if (info instanceof RelationInfo relInfo) {
-                relationInfos.add(relInfo);
-            }
+        List<EdgeInfo> edges = new ArrayList<>();
+        for (BooleanFormula assigned : trueValues) {
+            Decoder.Info info = decoder.decode(assigned);
+            executedEvents.addAll(info.events());
+            edges.addAll(info.edges());
         }
 
         // Init domain
         executedEvents.removeIf(e -> !e.hasTag(Tag.VISIBLE));
-        executedEvents.sort(Comparator.comparingInt(Event::getGlobalId));
-        final EventDomain domain = new EventDomain();
-        executedEvents.forEach(domain.eventMap::addObject);
+        GenericDomain<Event> domain = new GenericDomain<>(executedEvents);
+        executionGraph.getCAATModel().initializeToDomain(domain);
 
         // Setup base relation graphs
-        for (RelationInfo relInfo : relationInfos) {
-            for (EdgeInfo edge : relInfo.edges()) {
-                final SimpleGraph graph = (SimpleGraph) executionGraph.getRelationGraph(edge.relation());
-                graph.add(new Edge(domain.getId(edge.source()), domain.getId(edge.target())));
-            }
+        for (EdgeInfo edge : edges) {
+            final Relation relInFullModel = encodedRelation2OriginalRelationMap.get(edge.relation());
+            final SimpleGraph graph = (SimpleGraph) executionGraph.getRelationGraph(relInFullModel);
+            graph.add(new Edge(domain.getId(edge.source()), domain.getId(edge.target())));
         }
-
-        // Initialize CAATModel + populate all graphs
-        executionGraph.getCAATModel().initializeToDomain(domain);
     }
 
     private Result check() {
@@ -156,23 +198,6 @@ public class OnlineWMMSolver {
 
     // ------------------------------------------------------------------------------------------------------
     // Classes
-
-    private static class EventDomain implements Domain<Event> {
-
-        final DenseIdBiMap<Event> eventMap = DenseIdBiMap.createHashBased(100);
-
-        @Override
-        public int size() { return eventMap.size(); }
-
-        @Override
-        public Collection<Event> getElements() { return eventMap.getKeys(); }
-
-        @Override
-        public int getId(Object obj) { return eventMap.getId(obj); }
-
-        @Override
-        public Event getObjectById(int id) { return eventMap.getObject(id); }
-    }
 
     public static class Result {
         private CAATSolver.Status status;

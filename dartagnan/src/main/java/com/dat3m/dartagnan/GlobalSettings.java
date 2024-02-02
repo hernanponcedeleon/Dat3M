@@ -35,7 +35,7 @@ public class GlobalSettings {
     */
     public static final boolean REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES = false;
 
-    public static final CoreReasoner.SymmetricLearning REFINEMENT_SYMMETRIC_LEARNING = CoreReasoner.SymmetricLearning.FULL;
+    public static final CoreReasoner.SymmetricLearning REFINEMENT_SYMMETRIC_LEARNING = CoreReasoner.SymmetricLearning.NONE;
 
     // --------------------
 

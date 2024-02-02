@@ -14,16 +14,31 @@ import java.util.*;
 
 public class Decoder {
 
-    private final Map<BooleanFormula, EncodingInfo> formula2Info = new HashMap<>();
+    public record Info(List<Event> events, List<EdgeInfo> edges) {
+
+        public Info() {
+            this(new ArrayList<>(), new ArrayList<>());
+        }
+
+        public void add(Relation rel, Event x, Event y) {
+            edges.add(new EdgeInfo(rel, x, y));
+        }
+    }
+
+    private final Map<BooleanFormula, Info> formula2Info = new HashMap<>(1000, 0.5f);
 
     public Decoder(EncodingContext ctx) {
         extractExecutionInfo(ctx);
         extractRelationInfo(ctx);
     }
 
-    public EncodingInfo decode(BooleanFormula formula) {
+    public Info decode(BooleanFormula formula) {
         return Preconditions.checkNotNull(formula2Info.get(formula),
                 "No information associated to formula %s", formula);
+    }
+
+    public Set<BooleanFormula> getDecodableFormulas() {
+        return formula2Info.keySet();
     }
 
     private void extractRelationInfo(EncodingContext ctx) {
@@ -40,7 +55,7 @@ public class Decoder {
             for (Event x : outMap.keySet()) {
                 for (Event y : outMap.get(x)) {
                     final BooleanFormula edgeLiteral = ctx.edge(rel, x, y);
-                    final RelationInfo info = (RelationInfo) formula2Info.getOrDefault(edgeLiteral, new RelationInfo());
+                    final Info info = formula2Info.computeIfAbsent(edgeLiteral, key -> new Info());
                     info.add(rel, x, y);
                 }
             }
@@ -55,7 +70,7 @@ public class Decoder {
             lit2EventMap.computeIfAbsent(ctx.execution(e), key -> new ArrayList<>()).add(e);
         }
 
-        lit2EventMap.forEach((lit, events) -> formula2Info.put(lit, new ExecInfo(events)));
+        lit2EventMap.forEach((lit, events) -> formula2Info.put(lit, new Info(events, new ArrayList<>())));
     }
 
 }

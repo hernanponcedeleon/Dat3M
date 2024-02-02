@@ -6,16 +6,15 @@ import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
 import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
+import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.DynamicDefaultWMMGraph;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -63,7 +62,6 @@ public class ExecutionGraph {
     private final Set<Relation> cutRelations;
 
     private CAATModel caatModel;
-    private EventDomain domain;
 
     // =================================================
 
@@ -88,8 +86,7 @@ public class ExecutionGraph {
         constructMappings(createOnlyAxiomRelevantGraphs);
     }
 
-    public void initializeFromModel(ExecutionModel executionModel) {
-        domain = new EventDomain(executionModel);
+    public void initializeFromDomain(Domain<?> domain) {
         caatModel.initializeToDomain(domain);
     }
 
@@ -156,8 +153,8 @@ public class ExecutionGraph {
         return caatModel;
     }
 
-    public EventDomain getDomain() {
-        return domain;
+    public Domain<?> getDomain() {
+        return caatModel.getDomain();
     }
 
     public BiMap<Relation, RelationGraph> getRelationGraphMap() {

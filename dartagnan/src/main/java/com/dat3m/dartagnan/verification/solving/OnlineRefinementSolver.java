@@ -30,7 +30,10 @@ import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.ProverEnvironment;
+import org.sosy_lab.java_smt.api.SolverContext;
+import org.sosy_lab.java_smt.api.SolverException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -154,6 +157,12 @@ public class OnlineRefinementSolver extends ModelChecker {
                 .withConfig(task.getConfig())
                 .build(program, baselineModel, task.getProperty());
 
+        for (Relation rel : memoryModel.getRelations()) {
+            if (!rel.isInternal() && rel.getDependencies().stream().allMatch(Relation::isInternal)) {
+                getCopyOfRelation(rel, baselineModel);
+            }
+        }
+
         // ------------------------ Preprocessing / Analysis ------------------------
 
         preprocessProgram(task, config);
@@ -189,9 +198,7 @@ public class OnlineRefinementSolver extends ModelChecker {
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
-        final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final OnlineWMMSolver userPropagator = new OnlineWMMSolver(task, context, analysisContext, cutRelations);
-        //final WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -199,7 +206,7 @@ public class OnlineRefinementSolver extends ModelChecker {
         prover.addConstraint(baselineEncoder.encodeFullMemoryModel());
         prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
-        // TODO: register UserPropagator, register expressions
+        prover.registerUserPropagator(userPropagator);
 
         // ------------------------ Solving ------------------------
         logger.info("Refinement procedure started.");
@@ -224,7 +231,6 @@ public class OnlineRefinementSolver extends ModelChecker {
             final long lastTime = System.currentTimeMillis();
             prover.pop();
             prover.addConstraint(propertyEncoder.encodeBoundEventExec());
-            // Add back the refinement clauses we already found, hoping that this improves the performance.
             isUnsat = prover.isUnsat();
             boundCheckTime = System.currentTimeMillis() - lastTime;
 
