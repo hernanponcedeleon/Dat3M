@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
-import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.DynamicDefaultWMMGraph;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -80,7 +79,7 @@ public class ExecutionGraph {
         final Wmm memoryModel = verificationTask.getMemoryModel();
         for (String specialRel : SPECIAL_RELS) {
             if (memoryModel.containsRelation(specialRel)) {
-                cutRelations.add(memoryModel.getRelation(specialRel));
+                this.cutRelations.add(memoryModel.getRelation(specialRel));
             }
         }
         constructMappings(createOnlyAxiomRelevantGraphs);
@@ -243,7 +242,7 @@ public class ExecutionGraph {
         // ===== Filter special relations ======
         String name = rel.getNameOrTerm();
         if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(name);
+            graph = new SimpleGraph();
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
             RelationGraph g = getOrCreateGraphFromRelation(dependencies.get(0));
             graph = relClass == Inverse.class ? new InverseGraph(g) :

@@ -47,7 +47,7 @@ public class Decoder {
         //FIXME: The below does not treat data/addr/ctrl as base relations but rather idd, ctrlDirect, etc.
         // However, we want the base relations as understood by CAT!
         final List<Relation> baseRelations = memoryModel.getRelations().stream()
-                .filter(r -> r.getDependencies().isEmpty()).toList();
+                .filter(this::isBase).toList();
 
         for (Relation rel : baseRelations) {
             final EventGraph maySet = ra.getKnowledge(rel).getMaySet();
@@ -60,6 +60,12 @@ public class Decoder {
                 }
             }
         }
+    }
+
+    private boolean isBase(Relation rel) {
+        return !rel.isInternal() && (rel.getDependencies().isEmpty() ||
+                rel.getName().map(name -> name.equals("addr") || name.equals("data") || name.equals("ctrl"))
+                        .orElse(false));
     }
 
     private void extractExecutionInfo(EncodingContext ctx) {

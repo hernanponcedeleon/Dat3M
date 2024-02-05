@@ -24,7 +24,6 @@ import java.util.*;
 
 public class OnlineWMMSolver extends AbstractUserPropagator {
 
-    private final VerificationTask task;
     private final ExecutionGraph executionGraph;
     private final CAATSolver solver;
     private final EncodingContext encodingContext;
@@ -35,6 +34,10 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     private final Map<Relation, Relation> encodedRelation2OriginalRelationMap = Maps.newIdentityHashMap();
 
+    // --- Some statistics ---
+    private long totalModelExtractionTime = 0;
+    private int checkCounter = 0;
+
     public OnlineWMMSolver(VerificationTask task, EncodingContext encCtx, Context analysisContext, Set<Relation> cutRelations) {
         analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, analysisContext, cutRelations, true);
@@ -43,7 +46,6 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         this.decoder = new Decoder(encCtx);
         this.encodingContext = encCtx;
         this.refiner = new Refiner();
-        this.task = task;
 
         this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
 
@@ -61,9 +63,6 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         }
     }
 
-    // ----------------------------------------------------------------------------------------------------
-    // Setup
-
     // ------------------------------------------------------------------------------------------------------
     // Online features
 
@@ -80,7 +79,6 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     @Override
     public void onPop(int numLevels) {
-        int popLevels = numLevels;
         int backtrackTo = 0;
         while (numLevels > 0) {
             backtrackTo = backtrackPoints.pop();
@@ -94,18 +92,19 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
             }
         }
 
-        System.out.printf("Backtracked %d levels to level %d\n", popLevels, backtrackPoints.size());
+        //System.out.printf("Backtracked %d levels to level %d\n", popLevels, backtrackPoints.size());
     }
 
     @Override
-    public void onKnownValue(BooleanFormula expr, BooleanFormula value) {
+    public void onKnownValue(BooleanFormula expr, boolean value) {
         knownValues.push(expr);
-        final boolean isTrue = bmgr.isTrue(value);
-        partialModel.put(expr, isTrue);
-        if (isTrue) {
+        partialModel.put(expr, value);
+        if (value) {
             trueValues.add(expr);
             //System.out.printf("Assigned %s to true\n", expr);
         }
+
+        progressPropagation();
     }
 
     @Override
@@ -118,9 +117,15 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         }
     }
 
-    // --- Temporary statistics ---
-    private long totalModelExtractionTime = 0;
-    private int checkCounter = 0;
+    private final Queue<Refiner.Conflict> openPropagations = new ArrayDeque<>();
+
+    private void progressPropagation() {
+        if (!openPropagations.isEmpty()) {
+            backend.propagateConsequence(new BooleanFormula[0],
+                    bmgr.not(bmgr.and(openPropagations.poll().assignment().toArray(new BooleanFormula[0]))));
+        }
+    }
+
 
     @Override
     public void onFinalCheck() {
@@ -130,9 +135,15 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
         if (result.status == CAATSolver.Status.INCONSISTENT) {
             final List<Refiner.Conflict> conflicts = refiner.computeConflicts(result.coreReasons, encodingContext);
+            boolean isFirst = true;
             for (Refiner.Conflict conflict : conflicts) {
                 assert conflict.assignment().stream().allMatch(partialModel::containsKey);
-                backend.propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
+                if (isFirst) {
+                    backend.propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
+                    isFirst = false;
+                } else {
+                   openPropagations.add(conflict);
+                }
             }
         }
 
@@ -163,7 +174,9 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         for (EdgeInfo edge : edges) {
             final Relation relInFullModel = encodedRelation2OriginalRelationMap.get(edge.relation());
             final SimpleGraph graph = (SimpleGraph) executionGraph.getRelationGraph(relInFullModel);
-            graph.add(new Edge(domain.getId(edge.source()), domain.getId(edge.target())));
+            if (graph != null) {
+                graph.add(new Edge(domain.getId(edge.source()), domain.getId(edge.target())));
+            }
         }
     }
 
