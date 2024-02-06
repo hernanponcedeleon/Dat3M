@@ -34,10 +34,6 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     private final Map<Relation, Relation> encodedRelation2OriginalRelationMap = Maps.newIdentityHashMap();
 
-    // --- Some statistics ---
-    private long totalModelExtractionTime = 0;
-    private int checkCounter = 0;
-
     public OnlineWMMSolver(VerificationTask task, EncodingContext encCtx, Context analysisContext, Set<Relation> cutRelations) {
         analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(task, analysisContext, cutRelations, true);
@@ -72,6 +68,16 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final Set<BooleanFormula> trueValues = new HashSet<>();
 
     @Override
+    public void initialize() {
+        backend.notifyOnKnownValue();
+        backend.notifyOnFinalCheck();
+
+        for (BooleanFormula formula : decoder.getDecodableFormulas()) {
+            backend.registerExpression(formula);
+        }
+    }
+
+    @Override
     public void onPush() {
         backtrackPoints.push(knownValues.size());
         //System.out.println("Pushed: " + backtrackPoints.size());
@@ -101,20 +107,9 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         partialModel.put(expr, value);
         if (value) {
             trueValues.add(expr);
-            //System.out.printf("Assigned %s to true\n", expr);
         }
 
         progressPropagation();
-    }
-
-    @Override
-    public void initialize() {
-        backend.notifyOnKnownValue();
-        backend.notifyOnFinalCheck();
-
-        for (BooleanFormula formula : decoder.getDecodableFormulas()) {
-            backend.registerExpression(formula);
-        }
     }
 
     private final Queue<Refiner.Conflict> openPropagations = new ArrayDeque<>();
@@ -126,6 +121,9 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         }
     }
 
+    // --- Some statistics ---
+    private long totalModelExtractionTime = 0;
+    private int checkCounter = 0;
 
     @Override
     public void onFinalCheck() {
@@ -137,8 +135,10 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
             final List<Refiner.Conflict> conflicts = refiner.computeConflicts(result.coreReasons, encodingContext);
             boolean isFirst = true;
             for (Refiner.Conflict conflict : conflicts) {
-                assert conflict.assignment().stream().allMatch(partialModel::containsKey);
-                if (isFirst) {
+                // The second part of the check is for symmetric clauses that are not yet conflicts.
+                final boolean isConflict = isFirst &&
+                        conflict.assignment().stream().allMatch(l -> partialModel.getOrDefault(l, false));
+                if (isConflict) {
                     backend.propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
                     isFirst = false;
                 } else {

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.solver.onlineCaat;
 
+import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
@@ -11,6 +12,7 @@ import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner.SymmetricLearning;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
@@ -19,6 +21,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
+import com.dat3m.dartagnan.wmm.definition.Fences;
 
 import java.util.*;
 import java.util.function.Function;
@@ -27,8 +30,6 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
 
 // The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver.
 public class CoreReasoner {
-
-    public enum SymmetricLearning { NONE, LINEAR, QUADRATIC, FULL }
 
     private final ExecutionGraph executionGraph;
     private final ExecutionAnalysis exec;
@@ -47,7 +48,7 @@ public class CoreReasoner {
             termMap.put(r.getNameOrTerm(), r);
         }
 
-        this.learningOption = SymmetricLearning.NONE;
+        this.learningOption = GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
         symm = analysisContext.requires(ThreadSymmetry.class);
         symmPermutations = computeSymmetryPermutations();
     }
@@ -84,6 +85,7 @@ public class CoreReasoner {
                     } else if (LOC.equals(name)) {
                         coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
                     } else {
+                        assert  !(rel.getDefinition() instanceof Fences);
                         coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
                     }
 

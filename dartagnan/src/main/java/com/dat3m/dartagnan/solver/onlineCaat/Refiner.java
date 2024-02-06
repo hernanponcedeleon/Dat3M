@@ -25,14 +25,22 @@ public class Refiner {
     public record Conflict(List<BooleanFormula> assignment) {}
 
     public List<Conflict> computeConflicts(DNF<CoreLiteral> coreReasons, EncodingContext context) {
+        final BooleanFormulaManager bmgr  = context.getBooleanFormulaManager();
         final List<Conflict> conflicts = new ArrayList<>();
         for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
             List<BooleanFormula> assignment = new ArrayList<>();
             for (CoreLiteral lit : reason.getLiterals()) {
                 final BooleanFormula litFormula = encode(lit, context);
-                assignment.add(litFormula);
+                if (!bmgr.isFalse(litFormula)) {
+                    assignment.add(litFormula);
+                } else {
+                    assignment = null;
+                    break;
+                }
             }
-            conflicts.add(new Conflict(assignment));
+            if (assignment != null) {
+                conflicts.add(new Conflict(assignment));
+            }
         }
         return conflicts;
     }
