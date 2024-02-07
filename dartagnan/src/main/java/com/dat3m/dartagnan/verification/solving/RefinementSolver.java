@@ -493,24 +493,24 @@ public class RefinementSolver extends ModelChecker {
         if (baselines.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
             baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
-                    baseline.getRelation(POLOC),
+                    baseline.getOrCreatePredefinedRelation(POLOC),
                     rf,
-                    baseline.getRelation(CO),
-                    baseline.getRelation(FR)))));
+                    baseline.getOrCreatePredefinedRelation(CO),
+                    baseline.getOrCreatePredefinedRelation(FR)))));
         }
         if (baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
             baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
-                    baseline.getRelation(CTRL),
-                    baseline.getRelation(DATA),
-                    baseline.getRelation(ADDR),
+                    baseline.getOrCreatePredefinedRelation(CTRL),
+                    baseline.getOrCreatePredefinedRelation(DATA),
+                    baseline.getOrCreatePredefinedRelation(ADDR),
                     rf))));
         }
         if (baselines.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
-            Relation rmw = baseline.getRelation(RMW);
-            Relation coe = baseline.getRelation(COE);
-            Relation fre = baseline.getRelation(FRE);
+            Relation rmw = baseline.getOrCreatePredefinedRelation(RMW);
+            Relation coe = baseline.getOrCreatePredefinedRelation(COE);
+            Relation fre = baseline.getOrCreatePredefinedRelation(FRE);
             Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
             Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
             baseline.addConstraint(new Empty(rmwANDfrecoe));

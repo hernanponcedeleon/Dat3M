@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.CatParser.*;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -146,7 +147,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     public Object visitExprBasic(ExprBasicContext ctx) {
         String name = ctx.n.getText();
         Object predicate = namespace.computeIfAbsent(name,
-                k -> wmm.containsRelation(k) ? wmm.getRelation(k) : Filter.byTag(k));
+                k -> RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(k) : Filter.byTag(k));
         return predicate;
     }
 
@@ -229,7 +230,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoRecursion(c);
         Relation r0 = wmm.newRelation();
         Relation r1 = wmm.newRelation();
-        Relation r2 = wmm.getRelation(ID);
+        Relation r2 = wmm.getOrCreatePredefinedRelation(ID);
         Relation r3 = parseAsRelation(c.e);
         return addDefinition(new TransitiveClosure(r0, addDefinition(new Union(r1, r2, r3))));
     }
@@ -255,7 +256,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoRecursion(c);
         Relation r0 = wmm.newRelation();
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Union(r0, wmm.getRelation(ID), r1));
+        return addDefinition(new Union(r0, wmm.getOrCreatePredefinedRelation(ID), r1));
     }
 
     @Override
