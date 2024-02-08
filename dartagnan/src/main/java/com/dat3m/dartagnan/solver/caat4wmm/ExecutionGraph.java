@@ -248,7 +248,7 @@ public class ExecutionGraph {
             graph = new DynamicDefaultWMMGraph(name);
         } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
-        } else if (relClass == SameAddress.class) {
+        } else if (relClass == SameLocation.class) {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
@@ -278,14 +278,14 @@ public class ExecutionGraph {
             graph = new CartesianGraph(lhs, rhs);
         } else if (relClass == ReadModifyWrites.class) {
             graph = new RMWGraph();
-        } else if (relClass == DifferentThreads.class) {
+        } else if (relClass == External.class) {
             graph = new ExternalGraph();
-        } else if (relClass == SameThread.class) {
+        } else if (relClass == Internal.class) {
             graph = new InternalGraph();
         } else if (relClass == Fences.class) {
             graph = new FenceGraph(((Fences) rel.getDefinition()).getFilter());
-        } else if (relClass == Identity.class) {
-            SetPredicate set = getOrCreateSetFromFilter(((Identity) rel.getDefinition()).getFilter());
+        } else if (relClass == SetIdentity.class) {
+            SetPredicate set = getOrCreateSetFromFilter(((SetIdentity) rel.getDefinition()).getFilter());
             graph = new SetIdentityGraph(set);
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();

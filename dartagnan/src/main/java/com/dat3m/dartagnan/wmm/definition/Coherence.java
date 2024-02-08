@@ -11,6 +11,6 @@ public class Coherence extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitCoherence(definedRelation);
+        return v.visitCoherence(this);
     }
 }

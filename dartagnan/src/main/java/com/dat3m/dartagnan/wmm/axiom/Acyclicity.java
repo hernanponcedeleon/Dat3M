@@ -22,15 +22,15 @@ import java.util.*;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class Acyclic extends Axiom {
+public class Acyclicity extends Axiom {
 
-    private static final Logger logger = LogManager.getLogger(Acyclic.class);
+    private static final Logger logger = LogManager.getLogger(Acyclicity.class);
 
-    public Acyclic(Relation rel, boolean negated, boolean flag) {
+    public Acyclicity(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
     }
 
-    public Acyclic(Relation rel) {
+    public Acyclicity(Relation rel) {
         super(rel, false, false);
     }
 
@@ -483,5 +483,10 @@ public class Acyclic extends Axiom {
 
     private BooleanFormula getSMTCycleVar(Event e1, Event e2, FormulaManager m) {
         return m.getBooleanFormulaManager().makeVariable(String.format("cycle %s %d %d", m.escape(getNameOrTerm()), e1.getGlobalId(), e2.getGlobalId()));
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitAcyclicity(this);
     }
 }

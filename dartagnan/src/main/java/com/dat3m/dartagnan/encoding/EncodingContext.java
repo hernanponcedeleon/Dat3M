@@ -22,7 +22,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,8 +97,8 @@ public final class EncodingContext {
         if (logger.isInfoEnabled()) {
             logger.info("Number of encoded edges for acyclicity: {}",
                     task.getMemoryModel().getAxioms().stream()
-                            .filter(Acyclic.class::isInstance)
-                            .mapToInt(a -> ((Acyclic) a).getEncodeGraphSize(analysisContext))
+                            .filter(Acyclicity.class::isInstance)
+                            .mapToInt(a -> ((Acyclicity) a).getEncodeGraphSize(analysisContext))
                             .sum());
         }
         return context;

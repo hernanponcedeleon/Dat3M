@@ -264,7 +264,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
         checkNoRecursion(c);
         Relation r0 = wmm.newRelation();
         Filter s1 = parseAsFilter(c.e);
-        return addDefinition(new Identity(r0, s1));
+        return addDefinition(new SetIdentity(r0, s1));
     }
 
     @Override

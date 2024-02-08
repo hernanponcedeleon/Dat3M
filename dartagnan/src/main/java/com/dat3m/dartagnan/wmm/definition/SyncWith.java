@@ -14,7 +14,7 @@ public class SyncWith extends Definition {
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitSyncWith(definedRelation);
+        return v.visitSyncWith(this);
     }
 
 }

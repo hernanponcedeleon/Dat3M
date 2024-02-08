@@ -217,15 +217,15 @@ public class Wmm {
         final Relation r = newRelation(name);
         final Definition def = switch (name) {
             case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
-            case LOC -> new SameAddress(r);
-            case ID -> new Identity(r, Filter.byTag(Tag.VISIBLE));
-            case INT -> new SameThread(r);
-            case EXT -> new DifferentThreads(r);
+            case LOC -> new SameLocation(r);
+            case ID -> new SetIdentity(r, Filter.byTag(Tag.VISIBLE));
+            case INT -> new Internal(r);
+            case EXT -> new External(r);
             case CO -> new Coherence(r);
             case RF -> new ReadFrom(r);
             case RMW -> new ReadModifyWrites(r);
-            case CASDEP -> new CompareAndSwapDependency(r);
-            case CRIT -> new CriticalSections(r);
+            case CASDEP -> new CASDependency(r);
+            case CRIT -> new LinuxCriticalSections(r);
             case IDD -> new DirectDataDependency(r);
             case ADDRDIRECT -> new DirectAddressDependency(r);
             case CTRLDIRECT -> new DirectControlDependency(r);
@@ -275,7 +275,7 @@ public class Wmm {
             case SYNCBAR -> new SyncBar(r);
             case SYNC_BARRIER -> intersection(r, getOrCreatePredefinedRelation(SYNCBAR), getOrCreatePredefinedRelation(SCTA));
             case SYNC_FENCE -> new SyncFence(r);
-            case VLOC -> new VirtualLocation(r);
+            case VLOC -> new SameVirtualLocation(r);
             default ->
                     throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         };

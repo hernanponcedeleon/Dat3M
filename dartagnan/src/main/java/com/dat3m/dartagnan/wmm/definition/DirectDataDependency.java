@@ -12,7 +12,7 @@ public class DirectDataDependency extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitInternalDataDependency(definedRelation);
+        return v.visitInternalDataDependency(this);
     }
 
     @Override

@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
@@ -25,13 +24,10 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.wmm.Assumption;
-import com.dat3m.dartagnan.wmm.Definition;
-import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.*;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclic;
-import com.dat3m.dartagnan.wmm.axiom.Empty;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.Iterables;
@@ -420,9 +416,9 @@ public class RefinementSolver extends ModelChecker {
         targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
                 .forEach(ax -> collectDependencies(ax.getRelation(), cutCandidates));
         for (Relation rel : cutCandidates) {
-            if (rel.getDefinition() instanceof Difference) {
-                Relation sec = ((Difference) rel.getDefinition()).complement;
-                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof Identity
+            if (rel.getDefinition() instanceof Difference diff) {
+                Relation sec = diff.getSubtrahend();
+                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof SetIdentity
                         || sec.getDefinition() instanceof CartesianProduct) {
                     // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear
                     // non-derived in our Wmm but for CAAT they are derived from unary predicates!
@@ -456,7 +452,7 @@ public class RefinementSolver extends ModelChecker {
         return m.addDefinition(rel.getDefinition().accept(new RelationCopier(m, copy)));
     }
 
-    private static final class RelationCopier implements Definition.Visitor<Definition> {
+    private static final class RelationCopier implements Constraint.Visitor<Definition> {
         final Wmm targetModel;
         final Relation relation;
 
@@ -465,23 +461,23 @@ public class RefinementSolver extends ModelChecker {
             relation = r;
         }
 
-        @Override public Definition visitUnion(Relation r, Relation... o) { return new Union(relation, copy(o)); }
-        @Override public Definition visitIntersection(Relation r, Relation... o) { return new Intersection(relation, copy(o)); }
-        @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new Difference(relation, copy(r1), copy(r2)); }
-        @Override public Definition visitComposition(Relation r, Relation r1, Relation r2) { return new Composition(relation, copy(r1), copy(r2)); }
-        @Override public Definition visitInverse(Relation r, Relation r1) { return new Inverse(relation, copy(r1)); }
-        @Override public Definition visitDomainIdentity(Relation r, Relation r1) { return new DomainIdentity(relation, copy(r1)); }
-        @Override public Definition visitRangeIdentity(Relation r, Relation r1) { return new RangeIdentity(relation, copy(r1)); }
-        @Override public Definition visitTransitiveClosure(Relation r, Relation r1) { return new TransitiveClosure(relation, copy(r1)); }
-        @Override public Definition visitIdentity(Relation r, Filter filter) { return new Identity(relation, filter); }
-        @Override public Definition visitProduct(Relation r, Filter f1, Filter f2) { return new CartesianProduct(relation, f1, f2); }
-        @Override public Definition visitFences(Relation r, Filter type) { return new Fences(relation, type); }
+        @Override public Definition visitUnion(Union union) { return new Union(relation, copy(union.getOperands())); }
+        @Override public Definition visitIntersection(Intersection inter) { return new Intersection(relation, copy(inter.getOperands())); }
+        @Override public Definition visitDifference(Difference diff) { return new Difference(relation, copy(diff.getMinuend()), copy(diff.getSubtrahend())); }
+        @Override public Definition visitComposition(Composition comp) { return new Composition(relation, copy(comp.getLeftOperand()), copy(comp.getRightOperand())); }
+        @Override public Definition visitInverse(Inverse inv) { return new Inverse(relation, copy(inv.getOperand())); }
+        @Override public Definition visitDomainIdentity(DomainIdentity domId) { return new DomainIdentity(relation, copy(domId.getOperand())); }
+        @Override public Definition visitRangeIdentity(RangeIdentity rangeId) { return new RangeIdentity(relation, copy(rangeId.getOperand())); }
+        @Override public Definition visitTransitiveClosure(TransitiveClosure trans) { return new TransitiveClosure(relation, copy(trans.getOperand())); }
+        @Override public Definition visitSetIdentity(SetIdentity id) { return new SetIdentity(relation, id.getFilter()); }
+        @Override public Definition visitProduct(CartesianProduct prod) { return new CartesianProduct(relation, prod.getFirstFilter(), prod.getSecondFilter()); }
+        @Override public Definition visitFences(Fences fenceDef) { return new Fences(relation, fenceDef.getFilter()); }
 
         private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
-        private Relation[] copy(Relation[] r) {
-            Relation[] a = new Relation[r.length];
-            for (int i = 0; i < r.length; i++) {
-                a[i] = copy(r[i]);
+        private Relation[] copy(List<Relation> r) {
+            Relation[] a = new Relation[r.size()];
+            for (int i = 0; i < a.length; i++) {
+                a[i] = copy(r.get(i));
             }
             return a;
         }
@@ -492,7 +488,7 @@ public class RefinementSolver extends ModelChecker {
         Relation rf = baseline.getRelation(RF);
         if (baselines.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+            baseline.addConstraint(new Acyclicity(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getOrCreatePredefinedRelation(POLOC),
                     rf,
                     baseline.getOrCreatePredefinedRelation(CO),
@@ -500,7 +496,7 @@ public class RefinementSolver extends ModelChecker {
         }
         if (baselines.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
+            baseline.addConstraint(new Acyclicity(baseline.addDefinition(new Union(baseline.newRelation(),
                     baseline.getOrCreatePredefinedRelation(CTRL),
                     baseline.getOrCreatePredefinedRelation(DATA),
                     baseline.getOrCreatePredefinedRelation(ADDR),
@@ -513,7 +509,7 @@ public class RefinementSolver extends ModelChecker {
             Relation fre = baseline.getOrCreatePredefinedRelation(FRE);
             Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
             Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
-            baseline.addConstraint(new Empty(rmwANDfrecoe));
+            baseline.addConstraint(new Emptiness(rmwANDfrecoe));
         }
         return baseline;
     }

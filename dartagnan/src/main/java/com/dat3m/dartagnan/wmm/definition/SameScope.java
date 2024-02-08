@@ -15,9 +15,11 @@ public class SameScope extends Definition {
         this.specificScope = specificScope;
     }
 
+    public String getSpecificScope() { return specificScope; }
+
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitSameScope(definedRelation, this.specificScope);
+        return v.visitSameScope(this);
     }
 
 }

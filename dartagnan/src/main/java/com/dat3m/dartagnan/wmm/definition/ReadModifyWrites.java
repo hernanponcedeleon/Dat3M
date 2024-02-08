@@ -11,6 +11,6 @@ public class ReadModifyWrites extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitReadModifyWrites(definedRelation);
+        return v.visitReadModifyWrites(this);
     }
 }

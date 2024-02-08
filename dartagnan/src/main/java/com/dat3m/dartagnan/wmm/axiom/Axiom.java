@@ -9,7 +9,10 @@ import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public abstract class Axiom implements Constraint {
 
@@ -90,14 +93,14 @@ public abstract class Axiom implements Constraint {
     // ===================== Utility methods ===================
     
     public boolean isEmptiness() {
-    	return this instanceof Empty;
+    	return this instanceof Emptiness;
     }
     
     public boolean isAcyclicity() {
-    	return this instanceof Acyclic;
+    	return this instanceof Acyclicity;
     }
     
     public boolean isIrreflexivity() {
-    	return this instanceof Irreflexive;
+    	return this instanceof Irreflexivity;
     }
 }

@@ -10,7 +10,7 @@ public class SyncFence extends Definition {
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitSyncFence(definedRelation);
+        return v.visitSyncFence(this);
     }
 
 }

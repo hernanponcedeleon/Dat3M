@@ -10,7 +10,7 @@ public class SyncBar extends Definition {
     }
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitSyncBarrier(definedRelation);
+        return v.visitSyncBarrier(this);
     }
 
 }

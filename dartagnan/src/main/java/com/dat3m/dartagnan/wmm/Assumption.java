@@ -41,4 +41,9 @@ public final class Assumption implements Constraint {
         }
         return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, e));
     }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitAssumption(this);
+    }
 }
