@@ -82,12 +82,7 @@ public class Wmm {
     }
 
     public Relation getRelation(String name) {
-        for (Relation r : relations) {
-            if (r.hasName(name)) {
-                return r;
-            }
-        }
-        return null;
+        return relations.stream().filter(r -> r.hasName(name)).findFirst().orElse(null);
     }
 
     public Relation getOrCreatePredefinedRelation(String name) {
@@ -162,10 +157,8 @@ public class Wmm {
             rel.configure(config);
         }
 
-        for (Constraint c : constraints) {
-            if (c instanceof Axiom axiom) {
-                axiom.configure(config);
-            }
+        for (Axiom ax : getAxioms()) {
+            ax.configure(config);
         }
 
         logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
@@ -189,7 +182,8 @@ public class Wmm {
     private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
         for (Relation r : List.copyOf(relations)) {
             if (!r.names.isEmpty() || !cls.isInstance(r.definition) ||
-                    constraints.stream().anyMatch(c -> ((Axiom) c).getRelation().equals(r))) {
+                    constraints.stream().filter(c -> !(c instanceof Definition))
+                            .anyMatch(c -> c.getConstrainedRelations().contains(r))) {
                 continue;
             }
             List<Relation> parents = relations.stream().filter(x -> x.getDependencies().contains(r)).toList();
@@ -212,6 +206,14 @@ public class Wmm {
     }
 
     private Relation makePredefinedRelation(String name) {
+        /*
+            WARNING: The code has possibly unexpected behaviour:
+             - If a relation like `ext` is already defined (different from the standard definition),
+               constructing e.g. `rfe` will refer to this new definition.
+             - When constructing derived relations like fr, the intermediately defined relations like rf^-1
+               will get constructed even if they already exist in the model.
+             TODO: Clarify what the intended behaviour should be.
+         */
         final Relation r = newRelation(name);
         final Definition def = switch (name) {
             case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
