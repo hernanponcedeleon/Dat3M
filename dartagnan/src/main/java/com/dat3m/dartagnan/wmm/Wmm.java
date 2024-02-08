@@ -42,9 +42,9 @@ public class Wmm {
     // necessary to specify the anarchic program semantics.
     public final static ImmutableSet<String> ANARCHIC_CORE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
-    private final List<Constraint> constraints = new ArrayList<>();
-    private final Map<String, Filter> filters = new HashMap<>();
+    private final List<Constraint> constraints = new ArrayList<>(); // NOTE: Stores only non-defining constraints
     private final Set<Relation> relations = new HashSet<>();
+    private final Map<String, Filter> filters = new HashMap<>();
 
     private final Config config = new Config();
 
@@ -53,17 +53,6 @@ public class Wmm {
     }
 
     public Config getConfig() { return this.config; }
-
-    public void addConstraint(Constraint constraint) {
-        if (constraint instanceof Definition def) {
-            addDefinition(def);
-            return;
-        }
-        Collection<? extends Relation> constrainedRelations = constraint.getConstrainedRelations();
-        checkArgument(relations.containsAll(constrainedRelations),
-                "Some untracked relation in %s", constrainedRelations);
-        constraints.add(constraint);
-    }
 
     public List<Constraint> getConstraints() {
         return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();
@@ -98,7 +87,7 @@ public class Wmm {
     }
 
     public Relation newRelation() {
-        Relation relation = new Relation(this);
+        final Relation relation = new Relation(this);
         relations.add(relation);
         return relation;
     }
@@ -122,12 +111,31 @@ public class Wmm {
         relations.remove(relation);
     }
 
+    public void addConstraint(Constraint constraint) {
+        if (constraint instanceof Definition def) {
+            addDefinition(def);
+        } else {
+            final Collection<? extends Relation> constrainedRelations = constraint.getConstrainedRelations();
+            checkArgument(relations.containsAll(constrainedRelations),
+                    "Some untracked relation in %s", constrainedRelations);
+            constraints.add(constraint);
+        }
+    }
+
+    public void removeConstraint(Constraint constraint) {
+        if (constraint instanceof Definition def) {
+            removeDefinition(def.definedRelation);
+        } else {
+            constraints.remove(constraint);
+        }
+    }
+
     public Relation addDefinition(Definition definition) {
-        List<Relation> constrainedRelations = definition.getConstrainedRelations();
+        final List<Relation> constrainedRelations = definition.getConstrainedRelations();
         checkArgument(relations.containsAll(constrainedRelations),
                 "Some untracked relation in %s.", constrainedRelations);
         logger.trace("Add definition {}", definition);
-        Relation relation = definition.getDefinedRelation();
+        final Relation relation = definition.getDefinedRelation();
         checkArgument(relation.definition instanceof Definition.Undefined,
                 "Already defined relation %s.", relation);
         relation.definition = definition;
@@ -149,14 +157,20 @@ public class Wmm {
         return filters.computeIfAbsent(name, Filter::byTag);
     }
 
-    // ====================== Utility Methods ====================
+    @Override
+    public String toString() {
+        Stream<String> a = constraints.stream().map(Constraint::toString);
+        Stream<String> r = relations.stream()
+                .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
+                .map(x -> x.definition.toString());
+        Stream<String> s = filters.values().stream().map(Filter::toString);
+        return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
+    }
+
+    // ========================================== Utility Methods ========================================
 
     public void configureAll(Configuration config) throws InvalidConfigurationException {
         config.inject(this.config);
-        for (Relation rel : getRelations()) {
-            rel.configure(config);
-        }
-
         for (Axiom ax : getAxioms()) {
             ax.configure(config);
         }
@@ -167,16 +181,6 @@ public class Wmm {
     public void simplify() {
         simplifyAssociatives(Union.class, Union::new);
         simplifyAssociatives(Intersection.class, Intersection::new);
-    }
-
-    @Override
-    public String toString() {
-        Stream<String> a = constraints.stream().map(Constraint::toString);
-        Stream<String> r = relations.stream()
-                .filter(x -> !x.names.isEmpty() && !(x.definition instanceof Definition.Undefined) && !x.hasName(x.definition.getTerm()))
-                .map(x -> x.definition.toString());
-        Stream<String> s = filters.values().stream().map(Filter::toString);
-        return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
     private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
@@ -202,6 +206,40 @@ public class Wmm {
                 removeDefinition(r);
                 deleteRelation(r);
             }
+        }
+    }
+
+    public void removeUnconstrainedRelations() {
+        // TODO: Currently removes all axiom-irrelevant relations and thus may remove
+        //  other relations part of other constraints.
+        final DependencyCollector collector = new DependencyCollector();
+        getAxioms().forEach(ax -> ax.accept(collector));
+        final Set<Relation> relevantRelations = new HashSet<>(collector.collectedRelations);
+        Wmm.ANARCHIC_CORE_RELATIONS.forEach(n -> relevantRelations.add(getRelation(n)));
+
+        for (Constraint c : List.copyOf(getConstraints())) {
+            if (!relevantRelations.containsAll(c.getConstrainedRelations())) {
+                removeConstraint(c);
+            }
+        }
+
+        for (Relation rel : Set.copyOf(getRelations())) {
+            if (!relevantRelations.contains(rel)) {
+                deleteRelation(rel);
+            }
+        }
+}
+
+    private final static class DependencyCollector implements Constraint.Visitor<Void> {
+        private final Set<Relation> collectedRelations = new HashSet<>();
+        @Override
+        public Void visitConstraint(Constraint constraint) {
+            for (Relation rel :  constraint.getConstrainedRelations()) {
+                if (collectedRelations.add(rel)) {
+                    rel.getDefinition().accept(this);
+                }
+            }
+            return null;
         }
     }
 
@@ -236,8 +274,8 @@ public class Wmm {
                 yield new Inverse(r, getOrCreatePredefinedRelation(RF));
             }
             case FR -> composition(r, getOrCreatePredefinedRelation(RFINV), getOrCreatePredefinedRelation(CO));
-            case MM -> new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.MEMORY));
-            case MV -> new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.VISIBLE));
+            case MM -> product(r, Tag.MEMORY, Tag.MEMORY);
+            case MV -> product(r, Tag.MEMORY, Tag.VISIBLE);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
             case DATA -> intersection(r, getOrCreatePredefinedRelation(IDDTRANS), getOrCreatePredefinedRelation(MM));
             case ADDR -> {
@@ -296,5 +334,9 @@ public class Wmm {
 
     private Definition fence(Relation r0, String name) {
         return new Fences(r0, Filter.byTag(name));
+    }
+
+    private Definition product(Relation r0, String tag1, String tag2) {
+        return new CartesianProduct(r0, Filter.byTag(tag1), Filter.byTag(tag2));
     }
 }

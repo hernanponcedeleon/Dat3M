@@ -3,8 +3,6 @@ package com.dat3m.dartagnan.wmm;
 import com.dat3m.dartagnan.utils.dependable.Dependent;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Union;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +45,6 @@ public final class Relation implements Dependent<Relation> {
         return relations.subList(1, relations.size());
     }
 
-    public void configure(Configuration config) throws InvalidConfigurationException { }
-
     public Wmm getMemoryModel() { return this.wmm; }
 
     public List<String> getNames() { return names; }
@@ -57,11 +53,18 @@ public final class Relation implements Dependent<Relation> {
         return names.isEmpty() ? Optional.empty() : Optional.of(names.get(0));
     }
 
+    public boolean hasName() { return !names.isEmpty(); }
+
+    public boolean hasName(String n) {
+        return names.contains(n);
+    }
+
     public String getNameOrTerm() {
         return names.isEmpty() ? getDefinition().getTerm() : names.get(0);
     }
 
     public boolean isInternal() {
+        // TODO: This is an ugly method that should be replaced somehow.
         return hasName(ADDRDIRECT) || hasName(CTRLDIRECT) || hasName(IDD) || hasName(IDDTRANS) ||
                 definition instanceof Composition && getDependencies().get(0).hasName(IDDTRANS) ||
                 definition instanceof Union && getDependencies().get(0).hasName(ADDRDIRECT);
@@ -72,7 +75,4 @@ public final class Relation implements Dependent<Relation> {
         return names + " := " + getDefinition().getTerm();
     }
 
-    public boolean hasName(String n) {
-        return names.contains(n);
-    }
 }
