@@ -26,6 +26,10 @@ public final class Assumption implements Constraint {
         must = checkNotNull(mustSet);
     }
 
+    public Relation getRelation() { return rel; }
+    public EventGraph getMaySet() { return may; }
+    public EventGraph getMustSet() { return must; }
+
     @Override
     public Set<Relation> getConstrainedRelations() {
         return Set.of(rel);

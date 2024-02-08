@@ -69,7 +69,7 @@ public abstract class Definition implements Constraint {
     }
 
     public static final class Undefined extends Definition {
-        Undefined(Relation r) {
+        public Undefined(Relation r) {
             super(r, "undefined");
         }
 

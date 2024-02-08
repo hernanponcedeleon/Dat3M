@@ -51,6 +51,8 @@ public abstract class Axiom implements Constraint {
         return flag;
     }
 
+    public boolean isNegated() { return negated; }
+
     public String getName() {
         return name;
     }

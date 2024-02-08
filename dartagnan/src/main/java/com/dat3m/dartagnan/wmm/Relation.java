@@ -51,6 +51,8 @@ public final class Relation implements Dependent<Relation> {
 
     public Wmm getMemoryModel() { return this.wmm; }
 
+    public List<String> getNames() { return names; }
+
     public Optional<String> getName() {
         return names.isEmpty() ? Optional.empty() : Optional.of(names.get(0));
     }
@@ -70,7 +72,7 @@ public final class Relation implements Dependent<Relation> {
         return names + " := " + getDefinition().getTerm();
     }
 
-    boolean hasName(String n) {
+    public boolean hasName(String n) {
         return names.contains(n);
     }
 }
