@@ -210,10 +210,11 @@ public class Wmm {
     }
 
     public void removeUnconstrainedRelations() {
-        // TODO: Currently removes all axiom-irrelevant relations and thus may remove
-        //  other relations part of other constraints.
+        // A relation is considered "unconstrained" if it does not (directly or indirectly) contribute to a
+        // non-defining constraint. Such relations (and their defining constraints) can safely be deleted
+        // without changing the semantics of the memory model.
         final DependencyCollector collector = new DependencyCollector();
-        getAxioms().forEach(ax -> ax.accept(collector));
+        getConstraints().stream().filter(c -> !(c instanceof Definition)).forEach(c -> c.accept(collector));
         final Set<Relation> relevantRelations = new HashSet<>(collector.collectedRelations);
         Wmm.ANARCHIC_CORE_RELATIONS.forEach(n -> relevantRelations.add(getRelation(n)));
 
@@ -268,12 +269,10 @@ public class Wmm {
             case ADDRDIRECT -> new DirectAddressDependency(r);
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
-            case RFINV -> {
-                //FIXME: We don't need a name for "rf^-1", this is a normal relation!
-                // This causes models that explicitly mention "rf^-1" to have two versions of the same relation!
-                yield new Inverse(r, getOrCreatePredefinedRelation(RF));
+            case FR ->  {
+                Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
+                yield composition(r, rfinv, getOrCreatePredefinedRelation(CO));
             }
-            case FR -> composition(r, getOrCreatePredefinedRelation(RFINV), getOrCreatePredefinedRelation(CO));
             case MM -> product(r, Tag.MEMORY, Tag.MEMORY);
             case MV -> product(r, Tag.MEMORY, Tag.VISIBLE);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));

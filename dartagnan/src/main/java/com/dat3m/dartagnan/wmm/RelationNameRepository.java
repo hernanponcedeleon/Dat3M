@@ -19,7 +19,6 @@ public class RelationNameRepository {
     public static final String ADDRDIRECT = "addrDirect";
     public static final String CTRLDIRECT = "ctrlDirect";
     public static final String EMPTY = "0";
-    public static final String RFINV = "rf^-1";
     public static final String FR = "fr";
     public static final String MM = "(M*M)";
     public static final String MV = "(M*V)";
