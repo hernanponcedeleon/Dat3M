@@ -407,16 +407,31 @@ public class RefinementSolver extends ModelChecker {
     // Special memory model processing
 
     private static RefinementModel generateRefinementModel(Wmm original) {
-        // We cut (i) negated relations (if derived) and (ii) negated axioms
+        // We cut (i) negated axioms, (ii) negated relations (if derived),
+        // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
+        // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
         final Set<Constraint> constraintsToCut = new HashSet<>();
         for (Constraint c : original.getConstraints()) {
             if (c instanceof Axiom ax && ax.isNegated()) {
+                // (i) Negated axioms
                 constraintsToCut.add(ax);
             } else if (c instanceof Difference diff) {
+                // (ii) Negated relations (if derived)
                 final Relation sub = diff.getSubtrahend();
                 final Definition subDef = sub.getDefinition();
-                if (!sub.getDependencies().isEmpty() || subDef instanceof SetIdentity || subDef instanceof CartesianProduct) {
+                if (!sub.getDependencies().isEmpty()
+                        // The following three definitions are "semi-derived" and need to get cut
+                        // to get a semi-positive model.
+                        || subDef instanceof SetIdentity
+                        || subDef instanceof CartesianProduct
+                        || subDef instanceof Fences) {
                     constraintsToCut.add(subDef);
+                }
+            } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
+                // (iii) Special relations
+                final String name = def.getDefinedRelation().getName().get();
+                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)) {
+                    constraintsToCut.add(c);
                 }
             }
         }
@@ -456,8 +471,12 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static void removeFlaggedAxiomsAndReduce(Wmm memoryModel) {
+        // We remove flagged axioms.
+        // NOTE: Theoretically, we could cut them but in practice this causes the whole model to get eagerly encoded,
+        // resulting in the worst combination: eagerly encoded model relations + lazy axiom checks.
+        // The performance on, e.g., LKMM is horrendous!!!!
         List.copyOf(memoryModel.getAxioms()).stream()
-                .filter(Axiom::isNegated)
+                .filter(Axiom::isFlagged)
                 .forEach(memoryModel::removeConstraint);
         memoryModel.removeUnconstrainedRelations();
     }
@@ -498,7 +517,7 @@ public class RefinementSolver extends ModelChecker {
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(trace.iterations.size()).append("\n")
-                .append("Total native solving time(ms): ").append(totalNativeSolvingTime + boundCheckTime).append("\n")
+                .append("Total native solving time(ms): ").append(totalNativeSolvingTime).append("\n")
                 .append("   -- Bound check time(ms): ").append(boundCheckTime).append("\n")
                 .append("Total CAAT solving time(ms): ").append(totalCaatTime).append("\n")
                 .append("   -- Model extraction time(ms): ").append(totalModelExtractTime).append("\n")

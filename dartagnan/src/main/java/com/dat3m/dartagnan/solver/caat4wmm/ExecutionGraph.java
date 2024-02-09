@@ -73,7 +73,6 @@ public class ExecutionGraph {
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
-        // TODO: Clean this up
         cutRelations = refinementModel.computeBoundaryRelations().stream()
                 .filter(r -> r.getName().map(n -> !Wmm.ANARCHIC_CORE_RELATIONS.contains(n)).orElse(true))
                 .map(refinementModel::translateToOriginal)
@@ -228,7 +227,10 @@ public class ExecutionGraph {
 
         // ===== Filter special relations ======
         String name = rel.getNameOrTerm();
-        if (SPECIAL_RELS.contains(name)) {
+        if (cutRelations.contains(rel)) {
+            graph = new DynamicDefaultWMMGraph(name);
+        } else if (SPECIAL_RELS.contains(name)) {
+            // TODO: This case is unnecessary if we decide to cut the special relations upfront
             graph = switch (name) {
                 case CTRL -> new CtrlDepGraph();
                 case DATA -> new DataDepGraph();
@@ -237,8 +239,6 @@ public class ExecutionGraph {
                 default ->
                         throw new UnsupportedOperationException(name + " is marked as special relation but has associated graph.");
             };
-        } else if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(name);
         } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
         } else if (relClass == SameLocation.class) {
