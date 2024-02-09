@@ -3,7 +3,7 @@ grammar LitmusAArch64;
 import LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 }
 
@@ -168,13 +168,13 @@ arithmeticInstruction locals [IntBinaryOp op]
 //    |   EON     { throw new RuntimeException("Instruction EON is not implemented"); }
     ;
 
-branchCondition returns [CmpOp op]
-    :   EQ {$op = CmpOp.EQ;}
-    |   NE {$op = CmpOp.NEQ;}
-    |   GE {$op = CmpOp.GTE;}
-    |   LE {$op = CmpOp.LTE;}
-    |   GT {$op = CmpOp.GT;}
-    |   LT {$op = CmpOp.LT;}
+branchCondition returns [IntCmpOp op]
+    :   EQ {$op = IntCmpOp.EQ;}
+    |   NE {$op = IntCmpOp.NEQ;}
+    |   GE {$op = IntCmpOp.GTE;}
+    |   LE {$op = IntCmpOp.LTE;}
+    |   GT {$op = IntCmpOp.GT;}
+    |   LT {$op = IntCmpOp.LT;}
 //    |   CS
 //    |   HS
 //    |   CC
@@ -188,9 +188,9 @@ branchCondition returns [CmpOp op]
 //    |   AL
     ;
 
-branchRegInstruction returns [CmpOp op]
-    :   CBZ     {$op = CmpOp.EQ;}
-    |   CBNZ    {$op = CmpOp.NEQ;}
+branchRegInstruction returns [IntCmpOp op]
+    :   CBZ     {$op = IntCmpOp.EQ;}
+    |   CBNZ    {$op = IntCmpOp.NEQ;}
     ;
 
 shiftOperator returns [IntBinaryOp op]

@@ -21,7 +21,6 @@ import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.configuration.OptionNames.REDUCE_ACYCLICITY_ENCODE_SETS;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Verify.verify;
 
 public class Wmm {
 
@@ -39,121 +38,68 @@ public class Wmm {
 
     private static final Logger logger = LogManager.getLogger(Wmm.class);
 
-    public final static ImmutableSet<String> BASE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
+    // These relations are part of every memory model (even the "empty" one) because they are
+    // necessary to specify the anarchic program semantics.
+    public final static ImmutableSet<String> ANARCHIC_CORE_RELATIONS = ImmutableSet.of(CO, RF, RMW);
 
-    private final List<Constraint> constraints = new ArrayList<>();
-    private final Map<String, Filter> filters = new HashMap<>();
+    private final List<Constraint> constraints = new ArrayList<>(); // NOTE: Stores only non-defining constraints
     private final Set<Relation> relations = new HashSet<>();
+    private final Map<String, Filter> filters = new HashMap<>();
 
     private final Config config = new Config();
 
     public Wmm() {
-        BASE_RELATIONS.forEach(this::getRelation);
+        ANARCHIC_CORE_RELATIONS.forEach(this::getOrCreatePredefinedRelation);
     }
 
     public Config getConfig() { return this.config; }
-
-    /**
-     * Inserts a constraint into this model.
-     * @param constraint Constraint over relations in this model, to be inserted.
-     */
-    public void addConstraint(Constraint constraint) {
-        if (constraint instanceof Definition def) {
-            addDefinition(def);
-        }
-        Collection<? extends Relation> constrainedRelations = constraint.getConstrainedRelations();
-        checkArgument(relations.containsAll(constrainedRelations),
-                "Some untracked relation in %s", constrainedRelations);
-        constraints.add(constraint);
-    }
 
     public List<Constraint> getConstraints() {
         return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();
     }
 
-    /**
-     * @return View of all axioms in this model in insertion order.
-     */
     public List<Axiom> getAxioms() {
         return constraints.stream().filter(Axiom.class::isInstance).map(Axiom.class::cast).toList();
     }
 
-    /**
-     * @return View of all relation objects in this model, excluding unused built-ins.
-     * Contains at least {@code rf}, {@code co} and {@code rmw}.
-     */
     public Set<Relation> getRelations() {
         return Set.copyOf(relations);
     }
 
-    /**
-     * Tests the namespace of relations.
-     * @return {@code name} is a valid argument for {@link #getRelation(String)}.
-     */
     public boolean containsRelation(String name) {
-        return relations.stream().anyMatch(r -> r.hasName(name)) || RelationNameRepository.contains(name);
+        return relations.stream().anyMatch(r -> r.hasName(name));
     }
 
-    /**
-     * Queries a relation by name in this model.
-     * @param name Uniquely identifies a relation in this model.
-     * @return The relation in this model named {@code name}, or {@code null} if no such exists.
-     */
     public Relation getRelation(String name) {
-        for (Relation r : relations) {
-            if (r.hasName(name)) {
-                return r;
-            }
-        }
-        checkArgument(RelationNameRepository.contains(name),
-                "Undefined relation name %s.", name);
-        Definition definition = basicDefinition(name);
-        verify(definition.definedRelation.definition instanceof Definition.Undefined,
-                "Already initialized built-in relation %s.", name);
-        definition.definedRelation.definition = definition;
-        return definition.definedRelation;
+        return relations.stream().filter(r -> r.hasName(name)).findFirst().orElse(null);
     }
 
-    /**
-     * Binds a name to a relation.
-     * @param name Currently-unbound identifier, preferably devoid of special symbols.
-     * @param relation Element to be named.
-     */
+    public Relation getOrCreatePredefinedRelation(String name) {
+        checkArgument(RelationNameRepository.contains(name), "Undefined relation name %s.", name);
+        final Relation rel = getRelation(name);
+        return rel != null ? rel : makePredefinedRelation(name);
+
+    }
+
     public void addAlias(String name, Relation relation) {
-        checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
-                "Already bound name %s.", name);
+        checkArgument(!containsRelation(name), "Already bound name %s.", name);
         relation.names.add(name);
     }
 
-    /**
-     * Instantiates a new unnamed and undefined element in this model.
-     * @return The created relation.
-     */
     public Relation newRelation() {
-        Relation relation = new Relation(this);
+        final Relation relation = new Relation(this);
         relations.add(relation);
         return relation;
     }
 
-    /**
-     * Instantiates a new undefined element in this model.
-     * @param name Currently-unbound name for the new relation.
-     * @return The created named relation.
-     */
     public Relation newRelation(String name) {
-        checkArgument(relations.stream().noneMatch(r -> r.hasName(name)),
-                "Already bound name %s.", name);
-        Relation relation = new Relation(this);
+        checkArgument(!containsRelation(name), "Already bound name %s.", name);
+        final Relation relation = new Relation(this);
         relation.names.add(name);
         relations.add(relation);
         return relation;
     }
 
-    /**
-     * Removes a relation from this model, including all names bound to it.
-     * @param relation Relation that participates in no constraint of this model.
-     *                 Should no longer be used.
-     */
     public void deleteRelation(Relation relation) {
         checkArgument(relation.definition instanceof Definition.Undefined,
                 "Still defined relation %s.", relation);
@@ -161,33 +107,41 @@ public class Wmm {
                 "Some axiom constrains relation %s.", relation);
         checkArgument(relations.stream().noneMatch(r -> r.getDependencies().contains(relation)),
                 "Some definition constrains relation %s.", relation);
-        logger.trace("delete relation {}", relation);
+        logger.trace("Delete relation {}", relation);
         relations.remove(relation);
     }
 
-    /**
-     * Inserts a definition to this model.
-     * <p>
-     * <b>NOTE</b>: This also adds the defined relation to this model, if not done already.
-     * @param definition Constraints a subset of relations that are tracked in this model.
-     * @return Relation inside this model, which is defined accordingly.  Usually the defined relation.
-     */
+    public void addConstraint(Constraint constraint) {
+        if (constraint instanceof Definition def) {
+            addDefinition(def);
+        } else {
+            final Collection<? extends Relation> constrainedRelations = constraint.getConstrainedRelations();
+            checkArgument(relations.containsAll(constrainedRelations),
+                    "Some untracked relation in %s", constrainedRelations);
+            constraints.add(constraint);
+        }
+    }
+
+    public void removeConstraint(Constraint constraint) {
+        if (constraint instanceof Definition def) {
+            removeDefinition(def.definedRelation);
+        } else {
+            constraints.remove(constraint);
+        }
+    }
+
     public Relation addDefinition(Definition definition) {
-        List<Relation> constrainedRelations = definition.getConstrainedRelations();
+        final List<Relation> constrainedRelations = definition.getConstrainedRelations();
         checkArgument(relations.containsAll(constrainedRelations),
                 "Some untracked relation in %s.", constrainedRelations);
         logger.trace("Add definition {}", definition);
-        Relation relation = definition.getDefinedRelation();
+        final Relation relation = definition.getDefinedRelation();
         checkArgument(relation.definition instanceof Definition.Undefined,
                 "Already defined relation %s.", relation);
         relation.definition = definition;
         return relation;
     }
 
-    /**
-     * Removes a single constraint from this model.
-     * @param definedRelation Identifies the definition to be removed.
-     */
     public void removeDefinition(Relation definedRelation) {
         checkArgument(!(definedRelation.definition instanceof Definition.Undefined),
                 "Already undefined relation %s.", definedRelation);
@@ -203,28 +157,6 @@ public class Wmm {
         return filters.computeIfAbsent(name, Filter::byTag);
     }
 
-    // ====================== Utility Methods ====================
-
-    public void configureAll(Configuration config) throws InvalidConfigurationException {
-        config.inject(this.config);
-        for (Relation rel : getRelations()) {
-            rel.configure(config);
-        }
-
-        for (Constraint c : constraints) {
-            if (c instanceof Axiom axiom) {
-                axiom.configure(config);
-            }
-        }
-
-        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
-    }
-
-    public void simplify() {
-        simplifyAssociatives(Union.class, Union::new);
-        simplifyAssociatives(Intersection.class, Intersection::new);
-    }
-
     @Override
     public String toString() {
         Stream<String> a = constraints.stream().map(Constraint::toString);
@@ -235,10 +167,27 @@ public class Wmm {
         return Stream.of(a, r, s).flatMap(Stream::sorted).collect(Collectors.joining("\n"));
     }
 
+    // ========================================== Utility Methods ========================================
+
+    public void configureAll(Configuration config) throws InvalidConfigurationException {
+        config.inject(this.config);
+        for (Axiom ax : getAxioms()) {
+            ax.configure(config);
+        }
+
+        logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
+    }
+
+    public void simplify() {
+        simplifyAssociatives(Union.class, Union::new);
+        simplifyAssociatives(Intersection.class, Intersection::new);
+    }
+
     private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
         for (Relation r : List.copyOf(relations)) {
             if (!r.names.isEmpty() || !cls.isInstance(r.definition) ||
-                    constraints.stream().anyMatch(c -> ((Axiom) c).getRelation().equals(r))) {
+                    constraints.stream().filter(c -> !(c instanceof Definition))
+                            .anyMatch(c -> c.getConstrainedRelations().contains(r))) {
                 continue;
             }
             List<Relation> parents = relations.stream().filter(x -> x.getDependencies().contains(r)).toList();
@@ -260,58 +209,100 @@ public class Wmm {
         }
     }
 
-    private Definition basicDefinition(String name) {
-        Relation r = newRelation(name);
-        return switch (name) {
+    public void removeUnconstrainedRelations() {
+        // A relation is considered "unconstrained" if it does not (directly or indirectly) contribute to a
+        // non-defining constraint. Such relations (and their defining constraints) can safely be deleted
+        // without changing the semantics of the memory model.
+        final DependencyCollector collector = new DependencyCollector();
+        getConstraints().stream().filter(c -> !(c instanceof Definition)).forEach(c -> c.accept(collector));
+        final Set<Relation> relevantRelations = new HashSet<>(collector.collectedRelations);
+        Wmm.ANARCHIC_CORE_RELATIONS.forEach(n -> relevantRelations.add(getRelation(n)));
+
+        for (Constraint c : List.copyOf(getConstraints())) {
+            if (!relevantRelations.containsAll(c.getConstrainedRelations())) {
+                removeConstraint(c);
+            }
+        }
+
+        for (Relation rel : Set.copyOf(getRelations())) {
+            if (!relevantRelations.contains(rel)) {
+                deleteRelation(rel);
+            }
+        }
+}
+
+    private final static class DependencyCollector implements Constraint.Visitor<Void> {
+        private final Set<Relation> collectedRelations = new HashSet<>();
+        @Override
+        public Void visitConstraint(Constraint constraint) {
+            for (Relation rel :  constraint.getConstrainedRelations()) {
+                if (collectedRelations.add(rel)) {
+                    rel.getDefinition().accept(this);
+                }
+            }
+            return null;
+        }
+    }
+
+    private Relation makePredefinedRelation(String name) {
+        /*
+            WARNING: The code has possibly unexpected behaviour:
+             - If a relation like `ext` is already defined (different from the standard definition),
+               constructing e.g. `rfe` will refer to this new definition.
+             - When constructing derived relations like fr, the intermediately defined relations like rf^-1
+               will get constructed even if they already exist in the model.
+             TODO: Clarify what the intended behaviour should be.
+         */
+        final Relation r = newRelation(name);
+        final Definition def = switch (name) {
             case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
-            case LOC -> new SameAddress(r);
-            case ID -> new Identity(r, Filter.byTag(Tag.VISIBLE));
-            case INT -> new SameThread(r);
-            case EXT -> new DifferentThreads(r);
+            case LOC -> new SameLocation(r);
+            case ID -> new SetIdentity(r, Filter.byTag(Tag.VISIBLE));
+            case INT -> new Internal(r);
+            case EXT -> new External(r);
             case CO -> new Coherence(r);
             case RF -> new ReadFrom(r);
             case RMW -> new ReadModifyWrites(r);
-            case CASDEP -> new CompareAndSwapDependency(r);
-            case CRIT -> new CriticalSections(r);
+            case CASDEP -> new CASDependency(r);
+            case CRIT -> new LinuxCriticalSections(r);
             case IDD -> new DirectDataDependency(r);
             case ADDRDIRECT -> new DirectAddressDependency(r);
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
-            case RFINV -> {
-                //FIXME: We don't need a name for "rf^-1", this is a normal relation!
-                // This causes models that explicitly mention "rf^-1" to have two versions of the same relation!
-                yield new Inverse(r, getRelation(RF));
+            case FR ->  {
+                Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
+                yield composition(r, rfinv, getOrCreatePredefinedRelation(CO));
             }
-            case FR -> composition(r, getRelation(RFINV), getRelation(CO));
-            case MM -> new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.MEMORY));
-            case MV -> new CartesianProduct(r, Filter.byTag(Tag.MEMORY), Filter.byTag(Tag.VISIBLE));
-            case IDDTRANS -> new TransitiveClosure(r, getRelation(IDD));
-            case DATA -> intersection(r, getRelation(IDDTRANS), getRelation(MM));
+            case MM -> product(r, Tag.MEMORY, Tag.MEMORY);
+            case MV -> product(r, Tag.MEMORY, Tag.VISIBLE);
+            case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
+            case DATA -> intersection(r, getOrCreatePredefinedRelation(IDDTRANS), getOrCreatePredefinedRelation(MM));
             case ADDR -> {
-                Relation addrdirect = getRelation(ADDRDIRECT);
-                Relation comp = addDefinition(composition(newRelation(), getRelation(IDDTRANS), addrdirect));
+                Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
+                Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
-                yield intersection(r, union, getRelation(MM));
+                yield intersection(r, union, getOrCreatePredefinedRelation(MM));
             }
             case CTRL -> {
-                Relation comp = addDefinition(composition(newRelation(), getRelation(IDDTRANS), getRelation(CTRLDIRECT)));
-                yield intersection(r, comp, getRelation(MV));
+                Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS),
+                        getOrCreatePredefinedRelation(CTRLDIRECT)));
+                yield intersection(r, comp, getOrCreatePredefinedRelation(MV));
             }
-            case POLOC -> intersection(r, getRelation(PO), getRelation(LOC));
-            case RFE ->  intersection(r, getRelation(RF), getRelation(EXT));
-            case RFI -> intersection(r, getRelation(RF), getRelation(INT));
-            case COE -> intersection(r, getRelation(CO), getRelation(EXT));
-            case COI -> intersection(r, getRelation(CO), getRelation(INT));
-            case FRE -> intersection(r, getRelation(FR), getRelation(EXT));
-            case FRI -> intersection(r, getRelation(FR), getRelation(INT));
+            case POLOC -> intersection(r, getOrCreatePredefinedRelation(PO), getOrCreatePredefinedRelation(LOC));
+            case RFE ->  intersection(r, getOrCreatePredefinedRelation(RF), getOrCreatePredefinedRelation(EXT));
+            case RFI -> intersection(r, getOrCreatePredefinedRelation(RF), getOrCreatePredefinedRelation(INT));
+            case COE -> intersection(r, getOrCreatePredefinedRelation(CO), getOrCreatePredefinedRelation(EXT));
+            case COI -> intersection(r, getOrCreatePredefinedRelation(CO), getOrCreatePredefinedRelation(INT));
+            case FRE -> intersection(r, getOrCreatePredefinedRelation(FR), getOrCreatePredefinedRelation(EXT));
+            case FRI -> intersection(r, getOrCreatePredefinedRelation(FR), getOrCreatePredefinedRelation(INT));
             case MFENCE -> fence(r, MFENCE);
             case ISH -> fence(r, ISH);
             case ISB -> fence(r, ISB);
             case SYNC -> fence(r, SYNC);
             case ISYNC -> fence(r, ISYNC);
             case LWSYNC -> fence(r, LWSYNC);
-            case CTRLISYNC -> intersection(r, getRelation(CTRL), getRelation(ISYNC));
-            case CTRLISB -> intersection(r, getRelation(CTRL), getRelation(ISB));
+            case CTRLISYNC -> intersection(r, getOrCreatePredefinedRelation(CTRL), getOrCreatePredefinedRelation(ISYNC));
+            case CTRLISB -> intersection(r, getOrCreatePredefinedRelation(CTRL), getOrCreatePredefinedRelation(ISB));
             case SR -> new SameScope(r);
             case SCTA -> new SameScope(r, Tag.PTX.CTA);
             case SSG -> new SameScope(r, Tag.Vulkan.SUB_GROUP);
@@ -319,12 +310,13 @@ public class Wmm {
             case SQF -> new SameScope(r, Tag.Vulkan.QUEUE_FAMILY);
             case SSW -> new SyncWith(r);
             case SYNCBAR -> new SyncBar(r);
-            case SYNC_BARRIER -> intersection(r, getRelation(SYNCBAR), getRelation(SCTA));
+            case SYNC_BARRIER -> intersection(r, getOrCreatePredefinedRelation(SYNCBAR), getOrCreatePredefinedRelation(SCTA));
             case SYNC_FENCE -> new SyncFence(r);
-            case VLOC -> new VirtualLocation(r);
+            case VLOC -> new SameVirtualLocation(r);
             default ->
                     throw new RuntimeException(name + "is part of RelationNameRepository but it has no associated relation.");
         };
+        return addDefinition(def);
     }
 
     private Definition union(Relation r0, Relation r1, Relation r2) {
@@ -341,5 +333,9 @@ public class Wmm {
 
     private Definition fence(Relation r0, String name) {
         return new Fences(r0, Filter.byTag(name));
+    }
+
+    private Definition product(Relation r0, String tag1, String tag2) {
+        return new CartesianProduct(r0, Filter.byTag(tag1), Filter.byTag(tag2));
     }
 }

@@ -1,7 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -118,12 +118,12 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
         if (!(e instanceof CondJump other)) {
             return false;
         }
-        if (jump.getGuard() instanceof BoolUnaryExpr jumpGuard && jumpGuard.getInner().equals(other.getGuard())
-                || other.getGuard() instanceof BoolUnaryExpr otherGuard && otherGuard.getInner().equals(jump.getGuard())) {
+        if (jump.getGuard() instanceof BoolUnaryExpr jumpGuard && jumpGuard.getOperand().equals(other.getGuard())
+                || other.getGuard() instanceof BoolUnaryExpr otherGuard && otherGuard.getOperand().equals(jump.getGuard())) {
             return true;
         }
-        if (jump.getGuard() instanceof Atom a1 && other.getGuard() instanceof Atom a2) {
-            return a1.getOp().inverted() == a2.getOp() && a1.getLHS().equals(a2.getLHS()) && a1.getRHS().equals(a2.getRHS());
+        if (jump.getGuard() instanceof IntCmpExpr a1 && other.getGuard() instanceof IntCmpExpr a2) {
+            return a1.getKind().inverted() == a2.getKind() && a1.getLeft().equals(a2.getLeft()) && a1.getRight().equals(a2.getRight());
         }
         return false;
     }

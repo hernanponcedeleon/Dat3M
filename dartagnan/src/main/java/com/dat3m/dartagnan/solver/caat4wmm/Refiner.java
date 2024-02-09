@@ -13,7 +13,6 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 /*
@@ -26,21 +25,19 @@ public class Refiner {
     public BooleanFormula refine(DNF<CoreLiteral> coreReasons, EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> refinement = new ArrayList<>();
-        HashSet<BooleanFormula> addedFormulas = new HashSet<>(); // To avoid adding duplicates
-        // For each symmetry permutation, we will create refinement clauses
         for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
-            BooleanFormula permutedClause = bmgr.makeFalse();
+            BooleanFormula clause = bmgr.makeFalse();
             for (CoreLiteral lit : reason.getLiterals()) {
                 final BooleanFormula litFormula = encode(lit, context);
                 if (bmgr.isFalse(litFormula)) {
-                    permutedClause = bmgr.makeTrue();
+                    clause = bmgr.makeTrue();
                     break;
                 } else {
-                    permutedClause = bmgr.or(permutedClause, bmgr.not(litFormula));
+                    clause = bmgr.or(clause, bmgr.not(litFormula));
                 }
             }
-            if (addedFormulas.add(permutedClause)) {
-                refinement.add(permutedClause);
+            if (!bmgr.isTrue(clause)) {
+                refinement.add(clause);
             }
         }
         return bmgr.and(refinement);

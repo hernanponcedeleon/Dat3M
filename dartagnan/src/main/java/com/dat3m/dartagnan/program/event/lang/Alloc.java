@@ -3,10 +3,10 @@ package com.dat3m.dartagnan.program.event.lang;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IntLiteral;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
@@ -71,7 +71,7 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
                     types.getArchType()
             );
         } else {
-            allocationSize = expressions.makeMUL(
+            allocationSize = expressions.makeMul(
                     expressions.makeValue(
                             BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)),
                             (IntegerType) arraySize.getType()),

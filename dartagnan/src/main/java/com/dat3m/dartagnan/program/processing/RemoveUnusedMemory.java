@@ -40,7 +40,7 @@ public class RemoveUnusedMemory implements ProgramProcessor {
         private final HashSet<MemoryObject> memoryObjects = new HashSet<>();
 
         @Override
-        public Expression visit(MemoryObject address) {
+        public Expression visitMemoryObject(MemoryObject address) {
             memoryObjects.add(address);
             return address;
         }

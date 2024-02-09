@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusLISABaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusLISAParser;
@@ -186,35 +186,35 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
     public Object visitAdd(LitmusLISAParser.AddContext ctx) {
         Expression e1 = (Expression) ctx.expression(0).accept(this);
         Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeADD(e1, e2);
+        return expressions.makeAdd(e1, e2);
     }
 
     @Override
     public Object visitSub(LitmusLISAParser.SubContext ctx) {
         Expression e1 = (Expression) ctx.expression(0).accept(this);
         Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeSUB(e1, e2);
+        return expressions.makeSub(e1, e2);
     }
 
     @Override
     public Object visitXor(LitmusLISAParser.XorContext ctx) {
         Expression e1 = (Expression) ctx.expression(0).accept(this);
         Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeXOR(e1, e2);
+        return expressions.makeIntXor(e1, e2);
     }
 
     @Override
     public Object visitOr(LitmusLISAParser.OrContext ctx) {
         Expression e1 = (Expression) ctx.expression(0).accept(this);
         Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeOR(e1, e2);
+        return expressions.makeIntOr(e1, e2);
     }
 
     @Override
     public Object visitAnd(LitmusLISAParser.AndContext ctx) {
         Expression e1 = (Expression) ctx.expression(0).accept(this);
         Expression e2 = (Expression) ctx.expression(1).accept(this);
-        return expressions.makeAND(e1, e2);
+        return expressions.makeIntAnd(e1, e2);
     }
 
 	@Override
@@ -240,7 +240,7 @@ public class VisitorLitmusLISA extends LitmusLISABaseVisitor<Object> {
     public Object visitArrayAccess(LitmusLISAParser.ArrayAccessContext ctx) {
         MemoryObject base = (MemoryObject) ctx.location().accept(this);
         Expression offset = (Expression) ctx.value().accept(this);
-        return expressions.makeADD(base, offset);
+        return expressions.makeAdd(base, offset);
     }
 
 }

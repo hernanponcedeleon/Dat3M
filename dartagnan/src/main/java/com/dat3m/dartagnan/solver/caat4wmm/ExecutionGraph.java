@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -30,6 +28,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -54,7 +53,7 @@ public class ExecutionGraph {
     // Some are not declared final for purely technical reasons but all of them get
     // assigned during construction.
 
-    private final VerificationTask verificationTask;
+    private final RefinementModel refinementModel;
     private final RelationAnalysis ra;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
     private final BiMap<Filter, SetPredicate> filterSetMap;
@@ -68,13 +67,16 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
-        this.verificationTask = verificationTask;
-        ra = analysisContext.requires(RelationAnalysis.class);
+    public ExecutionGraph(RefinementModel refinementModel, RelationAnalysis ra, boolean createOnlyAxiomRelevantGraphs) {
+        this.refinementModel = refinementModel;
+        this.ra = ra;
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
-        this.cutRelations = cutRelations;
+        cutRelations = refinementModel.computeBoundaryRelations().stream()
+                .filter(r -> r.getName().map(n -> !Wmm.ANARCHIC_CORE_RELATIONS.contains(n)).orElse(true))
+                .map(refinementModel::translateToOriginal)
+                .collect(Collectors.toSet());
         constructMappings(createOnlyAxiomRelevantGraphs);
     }
 
@@ -86,7 +88,7 @@ public class ExecutionGraph {
     // --------------------------------------------------
 
     private void constructMappings(boolean createOnlyAxiomRelevantGraphs) {
-        final Wmm memoryModel = verificationTask.getMemoryModel();
+        final Wmm memoryModel = refinementModel.getOriginalModel();
 
         Set<RelationGraph> graphs = new HashSet<>();
         Set<Constraint> constraints = new HashSet<>();
@@ -138,8 +140,6 @@ public class ExecutionGraph {
 
     // ================ Accessors =======================
 
-    public VerificationTask getVerificationTask() { return verificationTask; }
-
     public CAATModel getCAATModel() { return caatModel; }
 
     public EventDomain getDomain() { return domain; }
@@ -159,7 +159,7 @@ public class ExecutionGraph {
     }
 
     public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(verificationTask.getMemoryModel().getRelation(name));
+        return getRelationGraph(refinementModel.getOriginalModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
@@ -227,28 +227,21 @@ public class ExecutionGraph {
 
         // ===== Filter special relations ======
         String name = rel.getNameOrTerm();
-        if (SPECIAL_RELS.contains(name)) {
-            switch (name) {
-                case CTRL:
-                    graph = new CtrlDepGraph();
-                    break;
-                case DATA:
-                    graph = new DataDepGraph();
-                    break;
-                case ADDR:
-                    graph = new AddrDepGraph();
-                    break;
-                case CRIT:
-                    graph = new RcuGraph();
-                    break;
-                default:
-                    throw new UnsupportedOperationException(name + " is marked as special relation but has associated graph.");
-            }
-        } else if (cutRelations.contains(rel)) {
+        if (cutRelations.contains(rel)) {
             graph = new DynamicDefaultWMMGraph(name);
+        } else if (SPECIAL_RELS.contains(name)) {
+            // TODO: This case is unnecessary if we decide to cut the special relations upfront
+            graph = switch (name) {
+                case CTRL -> new CtrlDepGraph();
+                case DATA -> new DataDepGraph();
+                case ADDR -> new AddrDepGraph();
+                case CRIT -> new RcuGraph();
+                default ->
+                        throw new UnsupportedOperationException(name + " is marked as special relation but has associated graph.");
+            };
         } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
-        } else if (relClass == SameAddress.class) {
+        } else if (relClass == SameLocation.class) {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
@@ -278,14 +271,14 @@ public class ExecutionGraph {
             graph = new CartesianGraph(lhs, rhs);
         } else if (relClass == ReadModifyWrites.class) {
             graph = new RMWGraph();
-        } else if (relClass == DifferentThreads.class) {
+        } else if (relClass == External.class) {
             graph = new ExternalGraph();
-        } else if (relClass == SameThread.class) {
+        } else if (relClass == Internal.class) {
             graph = new InternalGraph();
         } else if (relClass == Fences.class) {
             graph = new FenceGraph(((Fences) rel.getDefinition()).getFilter());
-        } else if (relClass == Identity.class) {
-            SetPredicate set = getOrCreateSetFromFilter(((Identity) rel.getDefinition()).getFilter());
+        } else if (relClass == SetIdentity.class) {
+            SetPredicate set = getOrCreateSetFromFilter(((SetIdentity) rel.getDefinition()).getFilter());
             graph = new SetIdentityGraph(set);
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();

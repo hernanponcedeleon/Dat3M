@@ -14,11 +14,13 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.dat3m.dartagnan.wmm.utils.Flag;
 import com.google.common.collect.Iterables;
@@ -30,7 +32,6 @@ import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
 import static com.dat3m.dartagnan.program.event.Tag.*;
@@ -98,7 +99,7 @@ public class WmmEncoder implements Encoder {
         Wmm memoryModel = context.getTask().getMemoryModel();
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
                 Iterables.concat(
-                        Iterables.transform(Wmm.BASE_RELATIONS, memoryModel::getRelation), // base relations
+                        Iterables.transform(Wmm.ANARCHIC_CORE_RELATIONS, memoryModel::getRelation), // base relations
                         Iterables.transform(memoryModel.getAxioms(), Axiom::getRelation) // axiom relations
                 )
         );
@@ -138,30 +139,33 @@ public class WmmEncoder implements Encoder {
         return encodeSet;
     }
 
-    private final class RelationEncoder implements Definition.Visitor<Void> {
+    private final class RelationEncoder implements Constraint.Visitor<Void> {
         final Program program = context.getTask().getProgram();
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
         @Override
-        public Void visitDefinition(Relation rel, List<? extends Relation> dependencies) {
+        public Void visitDefinition(Definition def) {
+            final Relation rel = def.getDefinedRelation();
             EncodingContext.EdgeEncoder edge = context.edge(rel);
             encodeSets.get(rel).apply((e1, e2) -> enc.add(bmgr.equivalence(edge.encode(e1, e2), execution(e1, e2))));
             return null;
         }
 
         @Override
-        public Void visitUnion(Relation rel, Relation... r) {
+        public Void visitUnion(Union union) {
+            final Relation rel = union.getDefinedRelation();
+            final List<Relation> operands = union.getOperands();
             EventGraph must = ra.getKnowledge(rel).getMustSet();
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
-            EncodingContext.EdgeEncoder[] encoders = Stream.of(r).map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
+            EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
             encodeSets.get(rel).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (must.contains(e1, e2)) {
                     enc.add(bmgr.equivalence(edge, execution(e1, e2)));
                 } else {
-                    List<BooleanFormula> opt = new ArrayList<>(r.length);
+                    List<BooleanFormula> opt = new ArrayList<>(operands.size());
                     for (EncodingContext.EdgeEncoder e : encoders) {
                         opt.add(e.encode(e1, e2));
                     }
@@ -172,18 +176,20 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitIntersection(Relation rel, Relation... r) {
+        public Void visitIntersection(Intersection inter) {
+            final Relation rel = inter.getDefinedRelation();
+            final List<Relation> operands = inter.getOperands();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
-            RelationAnalysis.Knowledge[] knowledges = Stream.of(r).map(ra::getKnowledge).toArray(RelationAnalysis.Knowledge[]::new);
+            RelationAnalysis.Knowledge[] knowledges = operands.stream().map(ra::getKnowledge).toArray(RelationAnalysis.Knowledge[]::new);
             EncodingContext.EdgeEncoder e0 = context.edge(rel);
-            EncodingContext.EdgeEncoder[] encoders = Stream.of(r).map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
+            EncodingContext.EdgeEncoder[] encoders = operands.stream().map(context::edge).toArray(EncodingContext.EdgeEncoder[]::new);
             encodeSets.get(rel).apply((e1, e2) -> {
                 BooleanFormula edge = e0.encode(e1, e2);
                 if (k.getMustSet().contains(e1, e2)) {
                     enc.add(bmgr.equivalence(edge, execution(e1, e2)));
                 } else {
-                    List<BooleanFormula> opt = new ArrayList<>(r.length);
-                    for (int i = 0; i < r.length; i++) {
+                    List<BooleanFormula> opt = new ArrayList<>(operands.size());
+                    for (int i = 0; i < operands.size(); i++) {
                         if (!knowledges[i].getMustSet().contains(e1, e2)) {
                             opt.add(encoders[i].encode(e1, e2));
                         }
@@ -195,7 +201,10 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitDifference(Relation rel, Relation r1, Relation r2) {
+        public Void visitDifference(Difference diff) {
+            final Relation rel = diff.getDefinedRelation();
+            final Relation r1 = diff.getMinuend();
+            final Relation r2 = diff.getSubtrahend();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
@@ -214,7 +223,10 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitComposition(Relation rel, Relation r1, Relation r2) {
+        public Void visitComposition(Composition comp) {
+            final Relation rel = comp.getDefinedRelation();
+            final Relation r1 = comp.getLeftOperand();
+            final Relation r2 = comp.getRightOperand();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
             final RelationAnalysis.Knowledge k1 = ra.getKnowledge(r1);
             final RelationAnalysis.Knowledge k2 = ra.getKnowledge(r2);
@@ -243,7 +255,9 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitDomainIdentity(Relation rel, Relation r1) {
+        public Void visitDomainIdentity(DomainIdentity domId) {
+            final Relation rel = domId.getDefinedRelation();
+            final Relation r1 = domId.getOperand();
             Map<Event, Set<Event>> mayOut = ra.getKnowledge(r1).getMaySet().getOutMap();
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
@@ -259,7 +273,9 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitRangeIdentity(Relation rel, Relation r1) {
+        public Void visitRangeIdentity(RangeIdentity rangeId) {
+            final Relation rel = rangeId.getDefinedRelation();
+            final Relation r1 = rangeId.getOperand();
             Map<Event, Set<Event>> mayIn = ra.getKnowledge(r1).getMaySet().getInMap();
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
@@ -275,7 +291,9 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitTransitiveClosure(Relation rel, Relation r1) {
+        public Void visitTransitiveClosure(TransitiveClosure trans) {
+            final Relation rel = trans.getDefinedRelation();
+            final Relation r1 = trans.getOperand();
             final EventGraph relMustSet = ra.getKnowledge(rel).getMustSet();
             final EventGraph relMaySet = ra.getKnowledge(rel).getMaySet();
             final EventGraph r1MaySet = ra.getKnowledge(r1).getMaySet();
@@ -304,7 +322,9 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitInverse(Relation rel, Relation r1) {
+        public Void visitInverse(Inverse inv) {
+            final Relation rel = inv.getDefinedRelation();
+            final Relation r1 = inv.getOperand();
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             EncodingContext.EdgeEncoder enc0 = context.edge(rel);
             EncodingContext.EdgeEncoder enc1 = context.edge(r1);
@@ -318,7 +338,9 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitFences(Relation rel, Filter fenceSet) {
+        public Void visitFences(Fences fence) {
+            final Relation rel = fence.getDefinedRelation();
+            final Filter fenceSet = fence.getFilter();
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             List<Event> fences = program.getThreadEvents().stream().filter(fenceSet::apply).toList();
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
@@ -339,13 +361,13 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitInternalDataDependency(Relation idd) {
-            return visitDirectDependency(idd);
+        public Void visitInternalDataDependency(DirectDataDependency idd) {
+            return visitDirectDependency(idd.getDefinedRelation());
         }
 
         @Override
-        public Void visitAddressDependency(Relation addrDirect) {
-            return visitDirectDependency(addrDirect);
+        public Void visitAddressDependency(DirectAddressDependency addrDirect) {
+            return visitDirectDependency(addrDirect.getDefinedRelation());
         }
 
         private Void visitDirectDependency(Relation r) {
@@ -367,7 +389,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitCriticalSections(Relation rscs) {
+        public Void visitLinuxCriticalSections(LinuxCriticalSections rscsDef) {
+            final Relation rscs = rscsDef.getDefinedRelation();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rscs);
             final Map<Event, Set<Event>> mayIn = k.getMaySet().getInMap();
             final Map<Event, Set<Event>> mayOut = k.getMaySet().getOutMap();
@@ -390,7 +413,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitReadModifyWrites(Relation rmw) {
+        public Void visitReadModifyWrites(ReadModifyWrites rmwDef) {
+            final Relation rmw = rmwDef.getDefinedRelation();
             BooleanFormula unpredictable = bmgr.makeFalse();
             final RelationAnalysis.Knowledge k = ra.getKnowledge(rmw);
             final Map<Event, Set<Event>> mayIn = k.getMaySet().getInMap();
@@ -461,7 +485,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitSameAddress(Relation loc) {
+        public Void visitSameLocation(SameLocation locDef) {
+            final Relation loc = locDef.getDefinedRelation();
             EncodingContext.EdgeEncoder edge = context.edge(loc);
             encodeSets.get(loc).apply((e1, e2) ->
                     enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(
@@ -471,7 +496,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitReadFrom(Relation rf) {
+        public Void visitReadFrom(ReadFrom rfDef) {
+            final Relation rf = rfDef.getDefinedRelation();
             Map<MemoryEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
             EncodingContext.EdgeEncoder edge = context.edge(rf);
             ra.getKnowledge(rf).getMaySet().apply((e1, e2) -> {
@@ -504,7 +530,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitCoherence(Relation co) {
+        public Void visitCoherence(Coherence coDef) {
+            final Relation co = coDef.getDefinedRelation();
             boolean idl = !context.useSATEncoding;
             List<MemoryCoreEvent> allWrites = program.getThreadEvents(MemoryCoreEvent.class).stream()
                     .filter(e -> e.hasTag(WRITE))
@@ -567,7 +594,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitSyncBarrier(Relation rel) {
+        public Void visitSyncBarrier(SyncBar syncBar) {
+            final Relation rel = syncBar.getDefinedRelation();
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             encodeSets.get(rel).apply((e1, e2) -> {
@@ -591,7 +619,8 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
-        public Void visitSyncFence(Relation syncFence) {
+        public Void visitSyncFence(SyncFence syncFenceDef) {
+            final Relation syncFence = syncFenceDef.getDefinedRelation();;
             final boolean idl = !context.useSATEncoding;
             final String relName = syncFence.getName().get(); // syncFence is base, it always has a name
             List<Event> allFenceSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);

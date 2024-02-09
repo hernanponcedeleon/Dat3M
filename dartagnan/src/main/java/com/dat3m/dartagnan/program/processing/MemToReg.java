@@ -2,12 +2,12 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.IntLiteral;
-import com.dat3m.dartagnan.expression.op.IntBinaryOp;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
@@ -330,12 +330,12 @@ public class MemToReg implements FunctionProcessor {
             int sum = 0;
             while (!(expression instanceof Register register)) {
                 if (!(expression instanceof IntBinaryExpr bin) ||
-                        bin.getOp() != IntBinaryOp.ADD ||
-                        !(bin.getRHS() instanceof IntLiteral offset)) {
+                        bin.getKind() != IntBinaryOp.ADD ||
+                        !(bin.getRight() instanceof IntLiteral offset)) {
                     return null;
                 }
                 sum += offset.getValueAsInt();
-                expression = bin.getLHS();
+                expression = bin.getLeft();
             }
             return new RegisterOffset(register, sum);
         }

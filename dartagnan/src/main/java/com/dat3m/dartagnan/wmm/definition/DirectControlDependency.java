@@ -15,6 +15,6 @@ public class DirectControlDependency extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitControl(definedRelation);
+        return v.visitControlDependency(this);
     }
 }

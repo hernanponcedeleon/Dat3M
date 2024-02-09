@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IntBinaryOp;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
@@ -261,24 +261,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         check (!(isExternal && hasInitializer), "External global cannot have initializer: %s", ctx);
         check (isExternal || hasInitializer, "Global without initializer; %s", ctx);
 
-        final Expression value = hasInitializer ? checkExpression(type, ctx.constant()) : makeNonDetOfType(type);
+        final Expression value;
+        value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
         setInitialMemoryFromConstant(globalObject, 0, value);
         return null;
     }
 
     private void setInitialMemoryFromConstant(MemoryObject memObj, int offset, Expression constant) {
         if (constant.getType() instanceof ArrayType arrayType) {
-            assert constant instanceof Construction;
-            final Construction constArray = (Construction) constant;
-            final List<Expression> arrayElements = constArray.getArguments();
+            assert constant instanceof ConstructExpr;
+            final ConstructExpr constArray = (ConstructExpr) constant;
+            final List<Expression> arrayElements = constArray.getOperands();
             final int stepSize = types.getMemorySizeInBytes(arrayType.getElementType());
             for (int i = 0; i < arrayElements.size(); i++) {
                 setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
             }
         } else if (constant.getType() instanceof AggregateType) {
-            assert constant instanceof Construction;
-            final Construction constStruct = (Construction) constant;
-            final List<Expression> structElements = constStruct.getArguments();
+            assert constant instanceof ConstructExpr;
+            final ConstructExpr constStruct = (ConstructExpr) constant;
+            final List<Expression> structElements = constStruct.getOperands();
             int currentOffset = offset;
             for (Expression structElement : structElements) {
                 setInitialMemoryFromConstant(memObj, currentOffset, structElement);
@@ -388,7 +389,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //TODO add support form inline assembly
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
-                block.events.add(newLocal(resultRegister, makeNonDetOfType(returnType)));
+                block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
             }
             return resultRegister;
         }
@@ -569,82 +570,63 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitAddInst(AddInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeADD(left, right));
+        return assignToRegister(expressions.makeAdd(left, right));
     }
 
     @Override
     public Expression visitSubInst(SubInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeSUB(left, right));
+        return assignToRegister(expressions.makeSub(left, right));
     }
 
     @Override
     public Expression visitMulInst(MulInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeMUL(left, right));
+        return assignToRegister(expressions.makeMul(left, right));
     }
 
     @Override
     public Expression visitShlInst(ShlInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeLSH(left, right));
+        return assignToRegister(expressions.makeLshift(left, right));
     }
 
     @Override
     public Expression visitLShrInst(LShrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeRSH(left, right, false));
+        return assignToRegister(expressions.makeRshift(left, right, false));
     }
 
     @Override
     public Expression visitAShrInst(AShrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeRSH(left, right, true));
+        return assignToRegister(expressions.makeRshift(left, right, true));
     }
 
     @Override
     public Expression visitAndInst(AndInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeAND(left, right));
+        return assignToRegister(expressions.makeIntAnd(left, right));
     }
 
     @Override
     public Expression visitOrInst(OrInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeOR(left, right));
+        return assignToRegister(expressions.makeIntOr(left, right));
     }
 
     @Override
     public Expression visitXorInst(XorInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        final Expression xorExpr;
-        if ((right instanceof IntLiteral intLiteral && intLiteral.getType().isMathematical()
-            && (intLiteral.isZero() || intLiteral.isOne()))) {
-            // NOTE: If we parse the program with mathematical integers, we try to eliminate "xor 1" expressions.
-            // The reason is that "xor 1" is used to implement boolean negations, i.e., even if the C source program
-            // has no bitwise operators, "xor 1" is frequently added by the compiler.
-            // Not eliminating this operator frequently results in theory-mixing that the SMT-backend cannot handle.
-            if (intLiteral.isZero()) {
-                xorExpr = left;
-            } else {
-                //FIXME: This is only valid on "xor 1" applied to "i1" operators, but is unsound for any other bit-width.
-                xorExpr = expressions.makeITE(
-                        expressions.makeEQ(left, expressions.makeGeneralZero(left.getType())),
-                        expressions.makeOne((IntegerType) left.getType()),
-                        expressions.makeZero((IntegerType) left.getType())
-                );
-            }
-        } else {
-            xorExpr = expressions.makeXOR(left, right);
-        }
+        final Expression xorExpr = expressions.makeIntXor(left, right);
         return assignToRegister(xorExpr);
     }
 
@@ -652,28 +634,28 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitSRemInst(SRemInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeREM(left, right, true));
+        return assignToRegister(expressions.makeRem(left, right, true));
     }
 
     @Override
     public Expression visitURemInst(URemInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeREM(left, right, false));
+        return assignToRegister(expressions.makeRem(left, right, false));
     }
 
     @Override
     public Expression visitUDivInst(UDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeDIV(left, right, false));
+        return assignToRegister(expressions.makeDiv(left, right, false));
     }
 
     @Override
     public Expression visitSDivInst(SDivInstContext ctx) {
         final Expression left = visitTypeValue(ctx.typeValue());
         final Expression right = checkExpression(left.getType(), ctx.value());
-        return assignToRegister(expressions.makeDIV(left, right, true));
+        return assignToRegister(expressions.makeDiv(left, right, true));
     }
 
     // Aggregate instructions
@@ -872,7 +854,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     @Override
     public Expression visitPoisonConst(PoisonConstContext ctx) {
         // It is correct to replace a poison value with an undef value or any value of the type.
-        return makeNonDetOfType(expectedType);
+        return program.newConstant(expectedType);
     }
 
     @Override
@@ -902,7 +884,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeADD(left, right);
+        return expressions.makeAdd(left, right);
     }
 
     @Override
@@ -910,7 +892,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeSUB(left, right);
+        return expressions.makeSub(left, right);
     }
 
     @Override
@@ -918,7 +900,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeMUL(left, right);
+        return expressions.makeMul(left, right);
     }
 
     @Override
@@ -926,7 +908,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeLSH(left, right);
+        return expressions.makeLshift(left, right);
     }
 
     @Override
@@ -934,7 +916,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeRSH(left, right, false);
+        return expressions.makeRshift(left, right, false);
     }
 
     @Override
@@ -942,7 +924,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeRSH(left, right, true);
+        return expressions.makeRshift(left, right, true);
     }
 
     @Override
@@ -950,7 +932,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeAND(left, right);
+        return expressions.makeIntAnd(left, right);
     }
 
     @Override
@@ -958,7 +940,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeOR(left, right);
+        return expressions.makeIntOr(left, right);
     }
 
     @Override
@@ -966,7 +948,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert ctx.typeConst().size() == 2;
         final Expression left = visitTypeConst(ctx.typeConst(0));
         final Expression right = visitTypeConst(ctx.typeConst(1));
-        return expressions.makeXOR(left, right);
+        return expressions.makeIntXor(left, right);
     }
 
     // Conversions
@@ -1287,32 +1269,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     // ----------------------------------------------------------------------------------------------------------------
     // Helpers
 
-    public Expression makeNonDetOfType(Type type) {
-        if (type instanceof ArrayType arrayType) {
-            final List<Expression> entries = new ArrayList<>(arrayType.getNumElements());
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                entries.add(makeNonDetOfType(arrayType.getElementType()));
-            }
-            return expressions.makeArray(arrayType.getElementType(), entries, true);
-        } else if (type instanceof AggregateType structType) {
-            final List<Expression> elements = new ArrayList<>(structType.getDirectFields().size());
-            for (Type fieldType : structType.getDirectFields()) {
-                elements.add(makeNonDetOfType(fieldType));
-            }
-            return expressions.makeConstruct(elements);
-        } else if (type instanceof IntegerType intType) {
-            final NonDetInt value = new NonDetInt(program.getConstants().size(), intType, true);
-            value.setMin(intType.getMinimumValue(true));
-            value.setMax(intType.getMaximumValue(true));
-            program.addConstant(value);
-            return value;
-        } else if (type instanceof BooleanType) {
-            return new NonDetBool(types.getBooleanType());
-        } else {
-            throw new UnsupportedOperationException("Cannot create non-deterministic value of type " + type);
-        }
-    }
-
     private void check(boolean condition, String message, ParserRuleContext context) {
         if (!condition) {
             throw new ParsingException(String.format(message, context.getText()));
@@ -1427,15 +1383,25 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private interface MdNode extends Expression {
 
         Type TYPE = new Type() { };
+        ExpressionKind MdKind = new ExpressionKind() {
+            @Override
+            public String getSymbol() { return "Md"; }
+            @Override
+            public String getName() { return "Metadata"; }
+            @Override
+            public String toString() { return getName(); }
+        };
 
         @Override
         default Type getType() { return TYPE; }
         @Override
-        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException();}
+        default ImmutableSet<Register> getRegs() { throw new UnsupportedOperationException(); }
         @Override
-        default <T> T accept(ExpressionVisitor<T> visitor) { return null;}
+        default <T> T accept(ExpressionVisitor<T> visitor) { throw new UnsupportedOperationException(); }
         @Override
-        default IntLiteral reduce() { throw new UnsupportedOperationException(); }
+        default List<Expression> getOperands() { return List.of(); }
+        @Override
+        default ExpressionKind getKind() { return MdKind; }
     }
 
     private static final MdNode MD_NULL = new MdNode() {

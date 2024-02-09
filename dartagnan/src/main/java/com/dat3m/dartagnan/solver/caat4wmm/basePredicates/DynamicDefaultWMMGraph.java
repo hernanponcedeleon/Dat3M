@@ -40,7 +40,10 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
                 Optional<EventData> d1 = model.getData(e1);
                 Optional<EventData> d2 = model.getData(e2);
                 if (d1.isPresent() && d2.isPresent()) {
-                    simpleGraph.add(getEdgeFromEventData(d1.get(), d2.get(), m, edge));
+                    Edge e = getEdgeFromEventData(d1.get(), d2.get(), m, edge);
+                    if (e != null) {
+                        simpleGraph.add(getEdgeFromEventData(d1.get(), d2.get(), m, edge));
+                    }
                 }
             });
         } else {
@@ -56,7 +59,7 @@ public class DynamicDefaultWMMGraph extends MaterializedWMMGraph {
     }
 
     private Edge getEdgeFromEventData(EventData e1, EventData e2, Model m, EncodingContext.EdgeEncoder edge) {
-        return m.evaluate(edge.encode(e1.getEvent(), e2.getEvent())) == Boolean.TRUE
+        return Boolean.TRUE.equals(m.evaluate(edge.encode(e1.getEvent(), e2.getEvent())))
                 ? new Edge(e1.getId(), e2.getId()) : null;
     }
 }

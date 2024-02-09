@@ -8,12 +8,13 @@ P1:r2=0;
 P2:r0=0;
 P2:r2=0;
 x=0;
+y=0;
 }
  P0@cta 0,gpu 0           | P1@cta 1,gpu 0           | P2@cta 1,gpu 0           ;
  ld r0, 1                 | ld.weak r0, x            | ld r0, 2                 ;
  st.weak x, r0            | fence.sc.cta             | ld r2, 3                 ;
-                          | ld.weak r2, x            | st.weak x, r0            ;
+                          | ld.weak r2, y            | st.weak x, r0            ;
                           |                          | fence.sc.gpu             ;
-                          |                          | st.weak x, r2            ;
+                          |                          | st.weak y, r2            ;
 exists
 (P1:r0 == 1 /\ P1:r2 == 0 /\ x == 1)

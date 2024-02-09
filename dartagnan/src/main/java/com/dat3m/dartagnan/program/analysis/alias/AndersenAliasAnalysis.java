@@ -1,8 +1,8 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.expression.op.IntBinaryOp.ADD;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
 
 /**
  * Inclusion-based pointer analysis by Andersen.
@@ -154,7 +154,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (expr instanceof Register) {
             // r1 = r2 -> add edge r2 --> r1
             addEdge(expr, register);
-        } else if (expr instanceof IntBinaryExpr iBin && iBin.getLHS() instanceof Register) {
+        } else if (expr instanceof IntBinaryExpr iBin && iBin.getLeft() instanceof Register) {
             addAllAddresses(register, maxAddressSet);
             variables.add(register);
         } else if (expr instanceof MemoryObject mem) {
@@ -209,9 +209,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         if (!(exp instanceof IntBinaryExpr iBin)) {
             return;
         }
-        Expression base = iBin.getLHS();
+        Expression base = iBin.getLeft();
         if (base instanceof MemoryObject mem) {
-            Expression rhs = iBin.getRHS();
+            Expression rhs = iBin.getRight();
             if (rhs instanceof IntLiteral ic) {
                 addTarget(reg, new Location(mem, ic.getValueAsInt()));
             } else {
@@ -224,7 +224,7 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
         }
         //accept register2 = register1 + constant
         for (Location target : targets.getOrDefault(base, Set.of())) {
-            Expression rhs = ((IntBinaryExpr) exp).getRHS();
+            Expression rhs = ((IntBinaryExpr) exp).getRight();
             if (rhs instanceof IntLiteral ic) {
                 int o = target.offset + ic.getValueAsInt();
                 if (o < target.base.size()) {
@@ -277,9 +277,9 @@ public class AndersenAliasAnalysis implements AliasAnalysis {
                 failed = false;
                 return;
             }
-            if (x instanceof IntBinaryExpr iBin && iBin.getOp() == ADD) {
-                Expression lhs = iBin.getLHS();
-                Expression rhs = iBin.getRHS();
+            if (x instanceof IntBinaryExpr iBin && iBin.getKind() == ADD) {
+                Expression lhs = iBin.getLeft();
+                Expression rhs = iBin.getRight();
                 if (lhs instanceof MemoryObject mem && rhs instanceof IntLiteral ic) {
                     location = new Location(mem, ic.getValueAsInt());
                     failed = false;

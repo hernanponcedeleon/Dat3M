@@ -3,10 +3,14 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.GEPExpression;
-import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -45,21 +49,21 @@ public class GEPToAddition implements ProgramProcessor {
         private final IntegerType archType = types.getArchType();
 
         @Override
-        public Expression visit(GEPExpression getElementPointer) {
+        public Expression visitGEPExpression(GEPExpr getElementPointer) {
             Type type = getElementPointer.getIndexingType();
-            Expression result = getElementPointer.getBaseExpression().accept(this);
-            final List<Expression> offsets = getElementPointer.getOffsetExpressions();
+            Expression result = getElementPointer.getBase().accept(this);
+            final List<Expression> offsets = getElementPointer.getOffsets();
             assert !offsets.isEmpty();
-            result = expressions.makeADD(result,
-                    expressions.makeMUL(
+            result = expressions.makeAdd(result,
+                    expressions.makeMul(
                             expressions.makeValue(types.getMemorySizeInBytes(type), archType),
                             expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true)));
             for (final Expression oldOffset : offsets.subList(1, offsets.size())) {
                 final Expression offset = oldOffset.accept(this);
                 if (type instanceof ArrayType arrayType) {
                     type = arrayType.getElementType();
-                    result = expressions.makeADD(result,
-                            expressions.makeMUL(
+                    result = expressions.makeAdd(result,
+                            expressions.makeMul(
                                     expressions.makeValue(types.getMemorySizeInBytes(arrayType.getElementType()), archType),
                                     expressions.makeIntegerCast(offset, archType, true)));
                     continue;
@@ -77,7 +81,7 @@ public class GEPToAddition implements ProgramProcessor {
                 for (final Type elementType : aggregateType.getDirectFields().subList(0, value)) {
                     o += types.getMemorySizeInBytes(elementType);
                 }
-                result = expressions.makeADD(result, expressions.makeValue(o, archType));
+                result = expressions.makeAdd(result, expressions.makeValue(o, archType));
             }
             return result;
         }

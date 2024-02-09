@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.logic.AbstractLiteral;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 
 public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements CoreLiteral {
 
@@ -27,10 +26,6 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
             this.e1 = e1;
             this.e2 = e2;
         }
-    }
-
-    public AddressLiteral(Tuple e, boolean isNegative) {
-        this(e.first(), e.second(), isNegative);
     }
 
     @Override

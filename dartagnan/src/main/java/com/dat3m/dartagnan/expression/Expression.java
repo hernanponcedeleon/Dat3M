@@ -1,21 +1,31 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
 import com.dat3m.dartagnan.program.Register;
 import com.google.common.collect.ImmutableSet;
+
+import java.util.List;
 
 public interface Expression {
 
     Type getType();
-
-    default ImmutableSet<Register> getRegs() {
-        return ImmutableSet.of();
-    }
-
+    List<Expression> getOperands();
+    ExpressionKind getKind();
     <T> T accept(ExpressionVisitor<T> visitor);
 
-    default IntLiteral reduce() {
-        throw new UnsupportedOperationException("Reduce not supported for " + this);
+    default ImmutableSet<Register> getRegs() {
+        class RegisterCollector implements ExpressionInspector {
+            private final ImmutableSet.Builder<Register> regs = ImmutableSet.builder();
+            @Override
+            public Expression visitRegister(Register reg) {
+                regs.add(reg);
+                return reg;
+            }
+        }
+
+        final RegisterCollector collector = new RegisterCollector();
+        this.accept(collector);
+        return collector.regs.build();
     }
+
 }

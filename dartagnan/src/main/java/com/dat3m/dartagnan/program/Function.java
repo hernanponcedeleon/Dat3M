@@ -1,11 +1,8 @@
 package com.dat3m.dartagnan.program;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IntLiteral;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Event;
@@ -17,7 +14,7 @@ import com.google.common.base.Preconditions;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Function implements Expression {
+public class Function implements LeafExpression {
 
     protected String name;
     protected Event entry; // Can be null for intrinsics
@@ -60,6 +57,16 @@ public class Function implements Expression {
     @Override
     public Type getType() {
         return TypeFactory.getInstance().getArchType();
+    }
+
+    @Override
+    public List<Expression> getOperands() {
+        return List.of();
+    }
+
+    @Override
+    public ExpressionKind getKind() {
+        return ExpressionKind.Other.FUNCTION_ADDR;
     }
 
     public String getName() { return this.name; }
@@ -185,12 +192,7 @@ public class Function implements Expression {
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
-
-    @Override
-    public IntLiteral reduce() {
-        throw new UnsupportedOperationException("Cannot reduce functions");
+        return visitor.visitFunction(this);
     }
 
     // TODO: Ugly function, but we need it for now to create copies of functions.

@@ -4,9 +4,9 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IntLiteral;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -265,7 +265,7 @@ public class ThreadCreation implements ProgramProcessor {
         }
         final ExpressionVisitor<Expression> regSubstituter = new ExprTransformer() {
             @Override
-            public Expression visit(Register reg) {
+            public Expression visitRegister(Register reg) {
                 return Preconditions.checkNotNull(registerReplacement.get(reg));
             }
         };
@@ -342,7 +342,7 @@ public class ThreadCreation implements ProgramProcessor {
         final Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
         final ExprTransformer transformer = new ExprTransformer() {
             @Override
-            public Expression visit(MemoryObject memObj) {
+            public Expression visitMemoryObject(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
                     final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
                     final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());

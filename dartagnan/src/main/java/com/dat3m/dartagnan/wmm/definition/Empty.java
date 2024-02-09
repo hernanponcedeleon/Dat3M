@@ -12,6 +12,6 @@ public class Empty extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitEmpty(definedRelation);
+        return v.visitEmpty(this);
     }
 }

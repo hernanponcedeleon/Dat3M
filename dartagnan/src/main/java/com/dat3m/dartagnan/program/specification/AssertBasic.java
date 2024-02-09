@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.specification;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.CmpOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.program.Register;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
@@ -13,9 +13,9 @@ public class AssertBasic extends AbstractAssert {
 
     private final Expression e1;
     private final Expression e2;
-    private final CmpOp op;
+    private final IntCmpOp op;
 
-    public AssertBasic(Expression e1, CmpOp op, Expression e2) {
+    public AssertBasic(Expression e1, IntCmpOp op, Expression e2) {
         this.e1 = e1;
         this.e2 = e2;
         this.op = op;

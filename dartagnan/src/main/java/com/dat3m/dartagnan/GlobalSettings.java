@@ -45,6 +45,15 @@ public class GlobalSettings {
         logger.info("REFINEMENT_SYMMETRIC_LEARNING: " + REFINEMENT_SYMMETRIC_LEARNING.name());
     }
 
+    public static String getHomeDirectory() {
+        String env = System.getenv("DAT3M_HOME");
+        if (env == null) {
+            logger.warn("Environment variable DAT3M_HOME not set. Default to empty path.");
+            return "";
+        }
+        return env;
+    }
+
     public static String getOrCreateOutputDirectory() throws IOException {
         String path = getOutputDirectory();
         Files.createDirectories(Paths.get(path));

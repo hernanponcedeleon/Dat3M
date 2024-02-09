@@ -36,9 +36,9 @@ public class ExceptionsTest {
     public void RegisterAlreadyExist() {
         ProgramBuilder pb = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         Thread t = pb.newThread(0);
-        t.newRegister("r1", types.getIntegerType());
+        t.newRegister("r1", types.getIntegerType(64));
         // Adding same register a second time
-        t.newRegister("r1", types.getIntegerType());
+        t.newRegister("r1", types.getIntegerType(64));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -56,7 +56,7 @@ public class ExceptionsTest {
         // Both arguments should have same precision
         Expression a = expressions.makeValue(BigInteger.ONE, types.getIntegerType(32));
         Expression b = expressions.makeValue(BigInteger.ONE, types.getIntegerType(64));
-        ExpressionFactory.getInstance().makeADD(a, b);
+        ExpressionFactory.getInstance().makeAdd(a, b);
     }
 
     @Test(expected = NullPointerException.class)

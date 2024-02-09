@@ -1,11 +1,23 @@
 package com.dat3m.dartagnan.expression.processing;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.LeafExpression;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
 
@@ -15,98 +27,85 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     protected final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     @Override
-    public Expression visit(Atom atom) {
-        return expressions.makeBinary(atom.getLHS().accept(this), atom.getOp(), atom.getRHS().accept(this));
+    public Expression visitBoolBinaryExpression(BoolBinaryExpr expr) {
+        return expressions.makeBoolBinary(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));
     }
 
     @Override
-    public Expression visit(BoolLiteral boolLiteral) {
-        return boolLiteral;
+    public Expression visitBoolUnaryExpression(BoolUnaryExpr expr) {
+        return expressions.makeBoolUnary(expr.getKind(), expr.getOperand().accept(this));
     }
 
     @Override
-    public Expression visit(BoolBinaryExpr bBin) {
-        return expressions.makeBinary(bBin.getLHS().accept(this), bBin.getOp(), bBin.getRHS().accept(this));
+    public Expression visitIntBinaryExpression(IntBinaryExpr iBin) {
+        return expressions.makeIntBinary(iBin.getLeft().accept(this), iBin.getKind(), iBin.getRight().accept(this));
     }
 
     @Override
-    public Expression visit(BoolUnaryExpr bUn) {
-        return expressions.makeUnary(bUn.getOp(), bUn.getInner().accept(this));
+    public Expression visitIntCmpExpression(IntCmpExpr cmp) {
+        return expressions.makeIntCmp(cmp.getLeft().accept(this), cmp.getKind(), cmp.getRight().accept(this));
     }
 
     @Override
-    public Expression visit(NonDetBool nonDetBool) {
-        return nonDetBool;
+    public Expression visitIntUnaryExpression(IntUnaryExpr expr) {
+        return expressions.makeIntUnary(expr.getKind(), expr.getOperand().accept(this));
     }
 
     @Override
-    public Expression visit(IntLiteral intLiteral) {
-        return intLiteral;
+    public Expression visitIntSizeCastExpression(IntSizeCast expr) {
+        return expressions.makeIntegerCast(expr.getOperand().accept(this), expr.getTargetType(), expr.preservesSign());
     }
 
     @Override
-    public Expression visit(IntBinaryExpr iBin) {
-        return expressions.makeBinary(iBin.getLHS().accept(this), iBin.getOp(), iBin.getRHS().accept(this));
+    public Expression visitFloatBinaryExpression(FloatBinaryExpr expr) {
+        return expressions.makeFloatBinary(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));
     }
 
     @Override
-    public Expression visit(IntUnaryExpr iUn) {
-        return expressions.makeUnary(iUn.getOp(), iUn.getInner().accept(this), iUn.getType());
+    public Expression visitFloatCmpExpression(FloatCmpExpr expr) {
+        return expressions.makeFloatCmp(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));
     }
 
     @Override
-    public Expression visit(ITEExpr iteExpr) {
+    public Expression visitFloatUnaryExpression(FloatUnaryExpr expr) {
+        return expressions.makeFloatUnary(expr.getKind(), expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitITEExpression(ITEExpr expr) {
         return expressions.makeITE(
-                iteExpr.getGuard().accept(this),
-                iteExpr.getTrueBranch().accept(this),
-                iteExpr.getFalseBranch().accept(this));
+                expr.getCondition().accept(this),
+                expr.getTrueCase().accept(this),
+                expr.getFalseCase().accept(this));
     }
 
     @Override
-    public Expression visit(NonDetInt iNonDet) {
-        return iNonDet;
-    }
-
-    @Override
-    public Expression visit(Register reg) {
-        return reg;
-    }
-
-    @Override
-    public Expression visit(MemoryObject address) {
-        return address;
-    }
-
-    @Override
-    public Expression visit(Location location) {
-        return location;
-    }
-
-    @Override
-    public Expression visit(Function function) { return function; }
-
-    @Override
-    public Expression visit(Construction construction) {
+    public Expression visitConstructExpression(ConstructExpr construct) {
         final var arguments = new ArrayList<Expression>();
-        for (final Expression argument : construction.getArguments()) {
+        for (final Expression argument : construct.getOperands()) {
             arguments.add(argument.accept(this));
         }
         return expressions.makeConstruct(arguments);
     }
 
     @Override
-    public Expression visit(Extraction extraction) {
-        Expression object = extraction.getObject().accept(this);
-        return expressions.makeExtract(extraction.getFieldIndex(), object);
+    public Expression visitExtractExpression(ExtractExpr expr) {
+        Expression object = expr.getOperand().accept(this);
+        return expressions.makeExtract(expr.getFieldIndex(), object);
     }
 
     @Override
-    public Expression visit(GEPExpression getElementPointer) {
-        Expression base = getElementPointer.getBaseExpression().accept(this);
+    public Expression visitGEPExpression(GEPExpr gep) {
+        Expression base = gep.getBase().accept(this);
         final var offsets = new ArrayList<Expression>();
-        for (Expression offset : getElementPointer.getOffsetExpressions()) {
+        for (Expression offset : gep.getOffsets()) {
             offsets.add(offset.accept(this));
         }
-        return expressions.makeGetElementPointer(getElementPointer.getIndexingType(), base, offsets);
+        return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
+    }
+
+    @Override
+    public Expression visitLeafExpression(LeafExpression expr) {
+        return expr;
     }
 }

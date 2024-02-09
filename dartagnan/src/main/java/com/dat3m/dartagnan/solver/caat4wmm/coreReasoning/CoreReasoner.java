@@ -14,9 +14,9 @@ import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.FenceGraph;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.Fences;
 
@@ -40,17 +40,17 @@ public class CoreReasoner {
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetricLearning learningOption;
 
-    public CoreReasoner(VerificationTask task, Context analysisContext, ExecutionGraph executionGraph) {
+    public CoreReasoner(Wmm memoryModel, Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
-        for (Relation r : task.getMemoryModel().getRelations()) {
+        this.symm = analysisContext.requires(ThreadSymmetry.class);
+        this.learningOption = REFINEMENT_SYMMETRIC_LEARNING;
+        this.symmPermutations = computeSymmetryPermutations();
+
+        for (Relation r : memoryModel.getRelations()) {
             termMap.put(r.getNameOrTerm(), r);
         }
-
-        this.learningOption = REFINEMENT_SYMMETRIC_LEARNING;
-        symm = analysisContext.requires(ThreadSymmetry.class);
-        symmPermutations = computeSymmetryPermutations();
     }
 
     // Returns the (reduced) core reason of a base reason. If symmetry reasoning is enabled,
@@ -83,8 +83,7 @@ public class CoreReasoner {
                         // Statically absent edges
                     } else {
                         final String name = rel.getNameOrTerm();
-                        if (name.equals(RF) || name.equals(CO)
-                                || executionGraph.getCutRelations().contains(rel)) {
+                        if (name.equals(RF) || name.equals(CO) || executionGraph.getCutRelations().contains(rel)) {
                             coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
                         } else if (name.equals(LOC)) {
                             coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
