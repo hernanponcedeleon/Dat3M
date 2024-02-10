@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
+import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -29,6 +30,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -66,22 +68,16 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
+    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, RefinementModel refinementModel, boolean createOnlyAxiomRelevantGraphs) {
         this.verificationTask = verificationTask;
         ra = analysisContext.requires(RelationAnalysis.class);
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
-        this.cutRelations = new HashSet<>(cutRelations);
-
-        // We always cut special relations like Addr which are considered base by CAT
-        // but are derived in our internal representation.
-        final Wmm memoryModel = verificationTask.getMemoryModel();
-        for (String specialRel : SPECIAL_RELS) {
-            if (memoryModel.containsRelation(specialRel)) {
-                this.cutRelations.add(memoryModel.getRelation(specialRel));
-            }
-        }
+        this.cutRelations = refinementModel.computeBoundaryRelations().stream()
+                .filter(r -> r.getName().map(n -> !Wmm.ANARCHIC_CORE_RELATIONS.contains(n)).orElse(true))
+                .map(refinementModel::translateToOriginal)
+                .collect(Collectors.toSet());
         constructMappings(createOnlyAxiomRelevantGraphs);
     }
 

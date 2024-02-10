@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.solver.caat.domain.GenericDomain;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
+import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
@@ -15,7 +16,6 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.google.common.collect.Maps;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.basicimpl.AbstractUserPropagator;
@@ -31,32 +31,21 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final Decoder decoder;
     private final Refiner refiner;
     private final BooleanFormulaManager bmgr;
+    private final RefinementModel refinementModel;
 
-    private final Map<Relation, Relation> encodedRelation2OriginalRelationMap = Maps.newIdentityHashMap();
+    //private final Map<Relation, Relation> encodedRelation2OriginalRelationMap = Maps.newIdentityHashMap();
 
-    public OnlineWMMSolver(VerificationTask task, EncodingContext encCtx, Context analysisContext, Set<Relation> cutRelations) {
+    public OnlineWMMSolver(VerificationTask task, EncodingContext encCtx, Context analysisContext,
+                           RefinementModel refinementModel) {
         analysisContext.requires(RelationAnalysis.class);
-        this.executionGraph = new ExecutionGraph(task, analysisContext, cutRelations, true);
+        this.executionGraph = new ExecutionGraph(task, analysisContext, refinementModel, true);
         this.reasoner = new CoreReasoner(task, analysisContext, executionGraph);
         this.solver = CAATSolver.create();
-        this.decoder = new Decoder(encCtx);
+        this.decoder = new Decoder(encCtx, refinementModel);
         this.encodingContext = encCtx;
         this.refiner = new Refiner();
-
         this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
-
-        for (Relation rel : encCtx.getTask().getMemoryModel().getRelations()) {
-            final String relName = rel.getName().orElse(null);
-            final Relation relInFullModel;
-            if (relName != null) {
-                relInFullModel = task.getMemoryModel().getRelation(relName);
-            } else {
-                final String term = rel.getNameOrTerm();
-                relInFullModel = task.getMemoryModel().getRelations().stream()
-                        .filter(r -> r.getNameOrTerm().equals(term)).findFirst().get();
-            }
-            encodedRelation2OriginalRelationMap.put(rel, relInFullModel);
-        }
+        this.refinementModel = refinementModel;
     }
 
     // ------------------------------------------------------------------------------------------------------
@@ -145,6 +134,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
                    openPropagations.add(conflict);
                 }
             }
+            assert !isFirst;
         }
 
         StringBuilder builder = new StringBuilder()
@@ -172,7 +162,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
         // Setup base relation graphs
         for (EdgeInfo edge : edges) {
-            final Relation relInFullModel = encodedRelation2OriginalRelationMap.get(edge.relation());
+            final Relation relInFullModel = refinementModel.translateToOriginal(edge.relation());
             final SimpleGraph graph = (SimpleGraph) executionGraph.getRelationGraph(relInFullModel);
             if (graph != null) {
                 graph.add(new Edge(domain.getId(edge.source()), domain.getId(edge.target())));

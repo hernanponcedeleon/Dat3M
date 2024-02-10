@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.solver.onlineCaat;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
@@ -27,9 +28,9 @@ public class Decoder {
 
     private final Map<BooleanFormula, Info> formula2Info = new HashMap<>(1000, 0.5f);
 
-    public Decoder(EncodingContext ctx) {
+    public Decoder(EncodingContext ctx, RefinementModel refinementModel) {
         extractExecutionInfo(ctx);
-        extractRelationInfo(ctx);
+        extractRelationInfo(ctx, refinementModel);
     }
 
     public Info decode(BooleanFormula formula) {
@@ -41,15 +42,13 @@ public class Decoder {
         return formula2Info.keySet();
     }
 
-    private void extractRelationInfo(EncodingContext ctx) {
+    private void extractRelationInfo(EncodingContext ctx, RefinementModel refinementModel) {
         final Wmm memoryModel = ctx.getTask().getMemoryModel();
         final RelationAnalysis ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
         //FIXME: The below does not treat data/addr/ctrl as base relations but rather idd, ctrlDirect, etc.
         // However, we want the base relations as understood by CAT!
-        final List<Relation> baseRelations = memoryModel.getRelations().stream()
-                .filter(this::isBase).toList();
-
-        for (Relation rel : baseRelations) {
+        final Set<Relation> boundary = refinementModel.computeBoundaryRelations();
+        for (Relation rel : boundary) {
             final EventGraph maySet = ra.getKnowledge(rel).getMaySet();
             final Map<Event, Set<Event>> outMap = maySet.getOutMap();
             for (Event x : outMap.keySet()) {
@@ -60,12 +59,6 @@ public class Decoder {
                 }
             }
         }
-    }
-
-    private boolean isBase(Relation rel) {
-        return !rel.isInternal() && (rel.getDependencies().isEmpty() ||
-                rel.getName().map(name -> name.equals("addr") || name.equals("data") || name.equals("ctrl"))
-                        .orElse(false));
     }
 
     private void extractExecutionInfo(EncodingContext ctx) {

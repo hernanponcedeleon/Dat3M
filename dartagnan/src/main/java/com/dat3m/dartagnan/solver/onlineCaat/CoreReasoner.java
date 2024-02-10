@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreReasoner.SymmetricLearning;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
@@ -21,12 +20,9 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.definition.Fences;
 
 import java.util.*;
 import java.util.function.Function;
-
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
 
 // The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver.
 public class CoreReasoner {
@@ -82,10 +78,7 @@ public class CoreReasoner {
                         addExecReason(e1, e2, coreReason);
                     } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
                         // Statically absent edges
-                    } else if (LOC.equals(name)) {
-                        coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
                     } else {
-                        assert  !(rel.getDefinition() instanceof Fences);
                         coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
                     }
 
