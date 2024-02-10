@@ -190,14 +190,14 @@ public class Reasoner {
             RelationGraph lhs = (RelationGraph) graph.getDependencies().get(0);
             RelationGraph rhs = (RelationGraph) graph.getDependencies().get(1);
 
-            if (rhs.getDependencies().size() > 0) {
+            if (!rhs.getDependencies().isEmpty()) {
                 throw new IllegalStateException(
                         String.format("Cannot compute reason of edge %s in difference graph %s because its right-hand side %s " +
                                 "is derived.", edge, graph, rhs));
             }
 
             Conjunction<CAATLiteral> reason = computeReason(lhs, edge)
-                    .and(new EdgeLiteral(rhs.getName(), edge, true).toSingletonReason());
+                    .and(new EdgeLiteral(rhs, edge, false).toSingletonReason());
             assert !reason.isFalse();
             return reason;
         }
@@ -267,7 +267,7 @@ public class Reasoner {
 
         @Override
         public Conjunction<CAATLiteral> visitBaseGraph(RelationGraph graph, Edge edge, Void unused) {
-            return new EdgeLiteral(graph.getName(), edge, false).toSingletonReason();
+            return new EdgeLiteral(graph, edge, true).toSingletonReason();
         }
     }
 
@@ -311,20 +311,20 @@ public class Reasoner {
             SetPredicate lhs = set.getDependencies().get(0);
             SetPredicate rhs = set.getDependencies().get(1);
 
-            if (rhs.getDependencies().size() > 0) {
+            if (!rhs.getDependencies().isEmpty()) {
                 throw new IllegalStateException(String.format("Cannot compute reason of element %s in " +
                         "set difference %s because its right-hand side %s is derived.", ele, set, rhs));
             }
 
             Conjunction<CAATLiteral> reason = computeReason(lhs, ele)
-                    .and(new ElementLiteral(rhs.getName(), ele, true).toSingletonReason());
+                    .and(new ElementLiteral(rhs, ele, false).toSingletonReason());
             assert !reason.isFalse();
             return reason;
         }
 
         @Override
         public Conjunction<CAATLiteral> visitBaseSet(SetPredicate set, Element ele, Void unused) {
-            return new ElementLiteral(set.getName(), ele, false).toSingletonReason();
+            return new ElementLiteral(set, ele, true).toSingletonReason();
         }
     }
 }

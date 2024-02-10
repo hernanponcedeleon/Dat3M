@@ -211,7 +211,7 @@ public class RefinementSolver extends ModelChecker {
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext);
-        final Refiner refiner = new Refiner();
+        final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -612,8 +612,8 @@ public class RefinementSolver extends ModelChecker {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
                     if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getData(edgeLit.getData().first()).get() == e1 &&
-                                model.getData(edgeLit.getData().second()).get() == e2) {
+                        if (model.getData(edgeLit.getSource()).get() == e1 &&
+                                model.getData(edgeLit.getTarget()).get() == e2) {
                             return true;
                         }
                     }

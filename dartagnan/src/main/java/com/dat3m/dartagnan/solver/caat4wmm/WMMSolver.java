@@ -31,7 +31,7 @@ public class WMMSolver {
         final RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
         this.executionGraph = new ExecutionGraph(refinementModel, ra, true);
         this.executionModel = m;
-        this.reasoner = new CoreReasoner(refinementModel.getOriginalModel(), analysisContext, executionGraph);
+        this.reasoner = new CoreReasoner(analysisContext, executionGraph);
         this.solver = CAATSolver.create();
     }
 

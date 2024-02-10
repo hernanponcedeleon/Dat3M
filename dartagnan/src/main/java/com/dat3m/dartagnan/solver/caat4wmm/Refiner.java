@@ -20,7 +20,10 @@ import java.util.List;
  */
 public class Refiner {
 
-    public Refiner() { }
+    private RefinementModel refinementModel;
+    public Refiner(RefinementModel refinementModel) {
+        this.refinementModel = refinementModel;
+    }
 
     public BooleanFormula refine(DNF<CoreLiteral> coreReasons, EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
@@ -47,14 +50,14 @@ public class Refiner {
         final BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         final BooleanFormula enc;
         if (literal instanceof ExecLiteral lit) {
-            enc = encoder.execution(lit.getData());
+            enc = encoder.execution(lit.getEvent());
         } else if (literal instanceof AddressLiteral loc) {
             enc = encoder.sameAddress((MemoryCoreEvent) loc.getFirst(), (MemoryCoreEvent) loc.getSecond());
         } else if (literal instanceof RelLiteral lit) {
-            final Relation rel = encoder.getTask().getMemoryModel().getRelation(lit.getName());
-            enc = encoder.edge(rel, lit.getData().first(), lit.getData().second());
+            final Relation rel = refinementModel.translateToBase(lit.getRelation());
+            enc = encoder.edge(rel, lit.getSource(), lit.getTarget());
         } else {
-            throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
+            throw new IllegalArgumentException("CoreLiteral " + literal + " is not supported");
         }
 
         return literal.isNegative() ? bmgr.not(enc) : enc;
