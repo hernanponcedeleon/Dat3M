@@ -211,7 +211,7 @@ public class Intrinsics {
         LKMM_SPIN_UNLOCK("__LKMM_SPIN_UNLOCK", true, false, true, true, Intrinsics::handleLKMMIntrinsic),
         LKMM_FENCE("__LKMM_FENCE", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
         // --------------------------- Misc ---------------------------
-        STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
+        STD_MEMCPY(List.of("memcpy", "memcpy_s"), true, true, true, false, Intrinsics::inlineMemCpy),
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
