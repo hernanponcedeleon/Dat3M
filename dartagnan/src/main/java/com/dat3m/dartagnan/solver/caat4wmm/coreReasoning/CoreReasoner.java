@@ -16,7 +16,6 @@ import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.definition.Fences;
 
@@ -34,23 +33,18 @@ public class CoreReasoner {
     private final ExecutionGraph executionGraph;
     private final ExecutionAnalysis exec;
     private final RelationAnalysis ra;
-    private final Map<String, Relation> termMap = new HashMap<>();
 
     private final ThreadSymmetry symm;
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetricLearning learningOption;
 
-    public CoreReasoner(Wmm memoryModel, Context analysisContext, ExecutionGraph executionGraph) {
+    public CoreReasoner(Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
         this.symm = analysisContext.requires(ThreadSymmetry.class);
         this.learningOption = REFINEMENT_SYMMETRIC_LEARNING;
         this.symmPermutations = computeSymmetryPermutations();
-
-        for (Relation r : memoryModel.getRelations()) {
-            termMap.put(r.getNameOrTerm(), r);
-        }
     }
 
     // Returns the (reduced) core reason of a base reason. If symmetry reasoning is enabled,
@@ -66,15 +60,15 @@ public class CoreReasoner {
             List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
             for (CAATLiteral lit : baseReason.getLiterals()) {
                 if (lit instanceof ElementLiteral elLit) {
-                    final Event e = perm.apply(domain.getObjectById(elLit.getElement().getId()).getEvent());
                     // We only have static tags, so all of them reduce to execution literals
-                    coreReason.add(new ExecLiteral(e, lit.isNegative()));
+                    final Event e = perm.apply(domain.getObjectById(elLit.getData().getId()).getEvent());
+                    coreReason.add(new ExecLiteral(e, lit.isPositive()));
                 } else {
                     final EdgeLiteral edgeLit = (EdgeLiteral) lit;
-                    final Edge edge = edgeLit.getEdge();
+                    final Edge edge = edgeLit.getData();
                     final Event e1 = perm.apply(domain.getObjectById(edge.getFirst()).getEvent());
                     final Event e2 = perm.apply(domain.getObjectById(edge.getSecond()).getEvent());
-                    final Relation rel = termMap.get(lit.getName());
+                    final Relation rel = executionGraph.getRelationGraphMap().inverse().get(edgeLit.getPredicate());
 
                     if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
                         // Statically present edges
@@ -82,11 +76,11 @@ public class CoreReasoner {
                     } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
                         // Statically absent edges
                     } else {
-                        final String name = rel.getNameOrTerm();
-                        if (name.equals(RF) || name.equals(CO) || executionGraph.getCutRelations().contains(rel)) {
-                            coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
-                        } else if (name.equals(LOC)) {
-                            coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
+                        String name = rel.getName().orElse(null);
+                        if (RF.equals(name) || CO.equals(name) || executionGraph.getCutRelations().contains(rel)) {
+                            coreReason.add(new RelLiteral(rel, e1, e2, lit.isPositive()));
+                        } else if (LOC.equals(name)) {
+                            coreReason.add(new AddressLiteral(e1, e2, lit.isPositive()));
                         } else if (rel.getDefinition() instanceof Fences) {
                             // This is a special case since "fencerel(F) = po;[F];po".
                             // We should do this transformation directly on the Wmm to avoid this special reasoning
@@ -119,11 +113,10 @@ public class CoreReasoner {
             if (!(lit instanceof ExecLiteral execLit) || lit.isNegative()) {
                 return false;
             }
-            final Event ev = execLit.getData();
+            final Event ev = execLit.getEvent();
             return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
-                    .anyMatch(e -> exec.isImplied(e.getData().first(), ev)
-                            || exec.isImplied(e.getData().second(), ev));
+                    .anyMatch(e -> exec.isImplied(e.getSource(), ev) || exec.isImplied(e.getTarget(), ev));
 
         });
     }

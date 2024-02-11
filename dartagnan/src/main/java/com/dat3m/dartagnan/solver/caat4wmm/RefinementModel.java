@@ -91,17 +91,24 @@ public class RefinementModel {
         final BiMap<Constraint, Constraint> orig2BaseConstraints = HashBiMap.create();
         final BiMap<Relation, Relation> orig2BaseRelations = HashBiMap.create();
 
+        for (String coreRelName : Wmm.ANARCHIC_CORE_RELATIONS) {
+            // Special handle core relations because we need them in every memory model
+            // (even if they were not explicitly cut)
+            final Relation origRel = cut.getMemoryModel().getRelation(coreRelName);
+            final Relation baseRel = base.getRelation(coreRelName);
+            orig2BaseRelations.put(origRel, baseRel);
+            orig2BaseConstraints.put(origRel.getDefinition(), baseRel.getDefinition());
+        }
+
         final Set<Relation> lower = cut.getLowerRelations();
         for (Relation rel : lower) {
-            final String name = rel.getName().orElse(null);
-            if (name != null && Wmm.ANARCHIC_CORE_RELATIONS.contains(name)) {
-                orig2BaseRelations.put(rel, base.getRelation(name));
-                orig2BaseConstraints.put(rel.getDefinition(), base.getRelation(name).getDefinition());
-            } else {
-                final Relation copy = base.newRelation();
-                rel.getNames().forEach(n -> base.addAlias(n, copy));
-                orig2BaseRelations.put(rel, copy);
+            if (orig2BaseRelations.containsKey(rel)) {
+                // Skip the anarchic relations we already copied above
+                continue;
             }
+            final Relation copy = base.newRelation();
+            rel.getNames().forEach(n -> base.addAlias(n, copy));
+            orig2BaseRelations.put(rel, copy);
         }
 
         final ConstraintCopier copier = new ConstraintCopier(orig2BaseRelations);
@@ -110,7 +117,6 @@ public class RefinementModel {
                 // Skip the anarchic constraints we already copied above
                 continue;
             }
-
             final Constraint copy = c.accept(copier);
             base.addConstraint(copy);
             orig2BaseConstraints.put(c, copy);
