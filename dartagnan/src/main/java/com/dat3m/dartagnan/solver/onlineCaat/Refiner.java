@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.solver.onlineCaat;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
@@ -20,7 +21,11 @@ import java.util.List;
  */
 public class Refiner {
 
-    public Refiner() { }
+    private final RefinementModel refinementModel;
+
+    public Refiner(RefinementModel refinementModel) {
+        this.refinementModel = refinementModel;
+    }
 
     public record Conflict(List<BooleanFormula> assignment) {}
 
@@ -49,12 +54,12 @@ public class Refiner {
         final BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         final BooleanFormula enc;
         if (literal instanceof ExecLiteral lit) {
-            enc = encoder.execution(lit.getData());
+            enc = encoder.execution(lit.getEvent());
         } else if (literal instanceof AddressLiteral loc) {
             enc = encoder.sameAddress((MemoryCoreEvent) loc.getFirst(), (MemoryCoreEvent) loc.getSecond());
         } else if (literal instanceof RelLiteral lit) {
-            final Relation rel = encoder.getTask().getMemoryModel().getRelation(lit.getName());
-            enc = encoder.edge(rel, lit.getData().first(), lit.getData().second());
+            final Relation rel = refinementModel.translateToBase(lit.getRelation());
+            enc = encoder.edge(rel, lit.getSource(), lit.getTarget());
         } else {
             throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
         }

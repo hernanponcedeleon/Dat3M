@@ -43,7 +43,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         this.solver = CAATSolver.create();
         this.decoder = new Decoder(encCtx, refinementModel);
         this.encodingContext = encCtx;
-        this.refiner = new Refiner();
+        this.refiner = new Refiner(refinementModel);
         this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
         this.refinementModel = refinementModel;
     }

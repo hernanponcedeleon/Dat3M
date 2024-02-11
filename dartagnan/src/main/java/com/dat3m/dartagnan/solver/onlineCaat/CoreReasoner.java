@@ -62,16 +62,15 @@ public class CoreReasoner {
             List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
             for (CAATLiteral lit : baseReason.getLiterals()) {
                 if (lit instanceof ElementLiteral elLit) {
-                    final Event e = perm.apply(domain.getObjectById(elLit.getElement().getId()));
+                    final Event e = perm.apply(domain.getObjectById(elLit.getData().getId()));
                     // We only have static tags, so all of them reduce to execution literals
                     coreReason.add(new ExecLiteral(e, lit.isNegative()));
                 } else {
                     final EdgeLiteral edgeLit = (EdgeLiteral) lit;
-                    final Edge edge = edgeLit.getEdge();
+                    final Edge edge = edgeLit.getData();
                     final Event e1 = perm.apply(domain.getObjectById(edge.getFirst()));
                     final Event e2 = perm.apply(domain.getObjectById(edge.getSecond()));
-                    final Relation rel = termMap.get(lit.getName());
-                    final String name = rel.getNameOrTerm();
+                    final Relation rel = executionGraph.getRelationGraphMap().inverse().get(edgeLit.getPredicate());
 
                     if (lit.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
                         // Statically present edges
@@ -79,7 +78,7 @@ public class CoreReasoner {
                     } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
                         // Statically absent edges
                     } else {
-                        coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
+                        coreReason.add(new RelLiteral(rel, e1, e2, lit.isPositive()));
                     }
 
                     /*else {
@@ -121,11 +120,10 @@ public class CoreReasoner {
             if (!(lit instanceof ExecLiteral execLit) || lit.isNegative()) {
                 return false;
             }
-            final Event ev = execLit.getData();
+            final Event ev = execLit.getEvent();
             return reason.stream().filter(e -> e instanceof RelLiteral && e.isPositive())
                     .map(RelLiteral.class::cast)
-                    .anyMatch(e -> exec.isImplied(e.getData().first(), ev)
-                            || exec.isImplied(e.getData().second(), ev));
+                    .anyMatch(e -> exec.isImplied(e.getSource(), ev) || exec.isImplied(e.getTarget(), ev));
 
         });
     }
