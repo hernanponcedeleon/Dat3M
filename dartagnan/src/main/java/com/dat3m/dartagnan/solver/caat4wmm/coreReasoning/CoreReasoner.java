@@ -76,6 +76,7 @@ public class CoreReasoner {
                     } else if (lit.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
                         // Statically absent edges
                     } else {
+                        // Dynamic edges
                         String name = rel.getName().orElse(null);
                         if (RF.equals(name) || CO.equals(name) || executionGraph.getCutRelations().contains(rel)) {
                             coreReason.add(new RelLiteral(rel, e1, e2, lit.isPositive()));
@@ -89,13 +90,7 @@ public class CoreReasoner {
                             }
                             addFenceReason(rel, edge, coreReason);
                         } else {
-                            // FIXME: Right now, we assume many relations like data, ctrl and addr to be static.
-                            //  In order to fix this, we would need to cut/eagerly encode the dependency relations.
-                            if (lit.isNegative()) {
-                                // TODO: Support negated literals (ideally via lazy/on-demand cutting)
-                                throw new UnsupportedOperationException(String.format("Negated literals of type %s are not supported.", rel));
-                            }
-                            addExecReason(e1, e2, coreReason);
+                            throw new UnsupportedOperationException(String.format("Literals of type %s are not supported.", rel));
                         }
                     }
                 }
