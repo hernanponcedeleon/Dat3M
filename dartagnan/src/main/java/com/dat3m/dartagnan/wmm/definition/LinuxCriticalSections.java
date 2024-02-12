@@ -4,14 +4,14 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 
-public class ReadModifyWrites extends Definition {
+public class LinuxCriticalSections extends Definition {
 
-    public ReadModifyWrites(Relation r0) {
-        super(r0, RelationNameRepository.RMW);
+    public LinuxCriticalSections(Relation r0) {
+        super(r0, RelationNameRepository.CRIT);
     }
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitReadModifyWrites(this);
+        return v.visitLinuxCriticalSections(this);
     }
 }

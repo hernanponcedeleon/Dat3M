@@ -12,13 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class Empty extends Axiom {
+public class Emptiness extends Axiom {
 
-    public Empty(Relation rel, boolean negated, boolean flag) {
+    public Emptiness(Relation rel, boolean negated, boolean flag) {
         super(rel, negated, flag);
     }
 
-    public Empty(Relation rel) {
+    public Emptiness(Relation rel) {
         super(rel, false, false);
     }
 
@@ -37,12 +37,17 @@ public class Empty extends Axiom {
 
     @Override
     public List<BooleanFormula> consistent(EncodingContext ctx) {
-    	BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
         List<BooleanFormula> enc = new ArrayList<>();
         final EncodingContext.EdgeEncoder edge = ctx.edge(rel);
         getEncodeGraph(ctx.getAnalysisContext())
                 .apply((e1, e2) -> enc.add(edge.encode(e1, e2)));
         return negated ? List.of(bmgr.or(enc)) : enc.stream().map(bmgr::not).toList();
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitEmptiness(this);
     }
 
     @Override

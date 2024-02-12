@@ -30,7 +30,12 @@ public class ForceEncodeAxiom extends Axiom {
     @Override
     public List<BooleanFormula> consistent(EncodingContext ctx) {
         BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
-		return negated ? List.of(bmgr.makeFalse()) : List.of();
+        return negated ? List.of(bmgr.makeFalse()) : List.of();
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitForceEncodeAxiom(this);
     }
 
     @Override

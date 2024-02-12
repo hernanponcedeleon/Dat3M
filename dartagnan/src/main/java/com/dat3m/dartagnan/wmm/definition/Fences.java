@@ -17,7 +17,7 @@ public class Fences extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitFences(definedRelation, filter);
+        return v.visitFences(this);
     }
 
 }

@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 
 //TODO: This relation may contain non-visible events. Is this reasonable?
-public class Identity extends Definition {
+public class SetIdentity extends Definition {
 
     private final Filter filter;
 
-    public Identity(Relation r0, Filter s1) {
+    public SetIdentity(Relation r0, Filter s1) {
         super(r0, "[" + s1 + "]");
         filter = s1;
     }
@@ -20,6 +20,6 @@ public class Identity extends Definition {
 
     @Override
     public <T> T accept(Visitor<? extends T> v) {
-        return v.visitIdentity(definedRelation, filter);
+        return v.visitSetIdentity(this);
     }
 }

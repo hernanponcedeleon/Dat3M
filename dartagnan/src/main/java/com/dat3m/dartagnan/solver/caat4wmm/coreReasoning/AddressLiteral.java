@@ -2,23 +2,22 @@ package com.dat3m.dartagnan.solver.caat4wmm.coreReasoning;
 
 
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.utils.logic.AbstractLiteral;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 
-public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements CoreLiteral {
+import java.util.Objects;
 
-    private static final String NAME = "memAddr";
+public final class AddressLiteral implements CoreLiteral {
 
-    protected Event e1;
-    protected Event e2;
+    private final Event e1;
+    private final Event e2;
+    private final boolean isPositive;
 
     public Event getFirst() { return e1; }
     public Event getSecond() { return e2; }
 
     //TODO: This normalization is ugly. We should use a literal factory at some point
     // which should perform such normalization.
-    public AddressLiteral(Event e1, Event e2, boolean isNegative) {
-        super(NAME, isNegative);
+    public AddressLiteral(Event e1, Event e2, boolean isPositive) {
+        this.isPositive = isPositive;
         if (e1.getGlobalId() > e2.getGlobalId()) {
             // We normalize the direction, because loc is symmetric
             this.e1 = e2;
@@ -29,34 +28,37 @@ public class AddressLiteral extends AbstractLiteral<CoreLiteral> implements Core
         }
     }
 
-    public AddressLiteral(Tuple e, boolean isNegative) {
-        this(e.first(), e.second(), isNegative);
-    }
-
-    @Override
-    public int hashCode() {
-        return baseHashCode() + 31*e1.hashCode() + e2.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        } else if (obj == null || obj.getClass() != getClass()) {
-            return false;
-        }
-
-        AddressLiteral addrLit = (AddressLiteral) obj;
-        return baseEquals(addrLit) && addrLit.e1.equals(e1) && addrLit.e2.equals(e2);
-    }
-
     @Override
     public String toString() {
-        return String.format("(%s(%s) %s %s(%s))", NAME, e1.getGlobalId(), isNegative ? "!=" : "==", NAME, e2.getGlobalId());
+        return String.format("(%s(%s) %s %s(%s))",
+                getName(), e1.getGlobalId(), isPositive ? "==" : "!=", getName(), e2.getGlobalId());
+    }
+
+    @Override
+    public String getName() {
+        return "addr";
+    }
+
+    @Override
+    public boolean isPositive() {
+        return isPositive;
     }
 
     @Override
     public AddressLiteral negated() {
-        return new AddressLiteral(e1, e2, !isNegative);
+        return new AddressLiteral(e1, e2, !isPositive);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(e1, e2, isPositive);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof AddressLiteral other &&
+                this.e1 == other.e1 &&
+                this.e2 == other.e2 &&
+                this.isPositive == other.isPositive);
     }
 }

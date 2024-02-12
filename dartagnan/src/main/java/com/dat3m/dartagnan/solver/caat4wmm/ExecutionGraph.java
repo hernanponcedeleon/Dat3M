@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -21,32 +19,18 @@ import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
+import java.util.stream.Collectors;
 
 public class ExecutionGraph {
-
-    // These graphs are only relevant for data, ctrl and addr, all of which have a special event graph (see below)
-    //TODO: We need a better way to handle the composed relations (in case we rename them as well?)
-    private static final Set<String> EXCLUDED_RELS = ImmutableSet.of(
-            IDD, IDDTRANS, CTRLDIRECT, ADDRDIRECT, String.format("(%s;%s)", IDDTRANS, ADDRDIRECT),
-            String.format("(%s+(%s;%s))", ADDRDIRECT, IDDTRANS, ADDRDIRECT),
-            String.format("(%s;%s)", IDDTRANS, CTRLDIRECT)
-    );
-
-
-    // These relations have special event graphs associated with them
-    private static final Set<String> SPECIAL_RELS = ImmutableSet.of(ADDR, DATA, CTRL, CRIT);
-
 
     // ================== Fields =====================
 
@@ -54,7 +38,7 @@ public class ExecutionGraph {
     // Some are not declared final for purely technical reasons but all of them get
     // assigned during construction.
 
-    private final VerificationTask verificationTask;
+    private final RefinementModel refinementModel;
     private final RelationAnalysis ra;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
     private final BiMap<Filter, SetPredicate> filterSetMap;
@@ -68,14 +52,19 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, Set<Relation> cutRelations, boolean createOnlyAxiomRelevantGraphs) {
-        this.verificationTask = verificationTask;
-        ra = analysisContext.requires(RelationAnalysis.class);
+    public ExecutionGraph(RefinementModel refinementModel, RelationAnalysis ra) {
+        this.refinementModel = refinementModel;
+        this.ra = ra;
         relationGraphMap = HashBiMap.create();
         filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
-        this.cutRelations = cutRelations;
-        constructMappings(createOnlyAxiomRelevantGraphs);
+        cutRelations = refinementModel.computeBoundaryRelations().stream()
+                .filter(r -> r.getName().map(n -> !Wmm.ANARCHIC_CORE_RELATIONS.contains(n)).orElse(true))
+                .map(refinementModel::translateToOriginal)
+                .collect(Collectors.toSet());
+
+        checkNoUnsupportedRelations(refinementModel);
+        constructMappings();
     }
 
     public void initializeFromModel(ExecutionModel executionModel) {
@@ -85,14 +74,21 @@ public class ExecutionGraph {
 
     // --------------------------------------------------
 
-    private void constructMappings(boolean createOnlyAxiomRelevantGraphs) {
-        final Wmm memoryModel = verificationTask.getMemoryModel();
+    private void constructMappings() {
+        final Wmm memoryModel = refinementModel.getOriginalModel();
 
         Set<RelationGraph> graphs = new HashSet<>();
         Set<Constraint> constraints = new HashSet<>();
         DependencyGraph<Relation> dependencyGraph = DependencyGraph.from(memoryModel.getRelations());
+        Set<Relation> upperRelations = refinementModel.getUpperRelations();
 
+        // Special treatment for recursive relations.
         for (Set<DependencyGraph<Relation>.Node> component : dependencyGraph.getSCCs()) {
+            if (!upperRelations.contains(component.stream().findAny().get().getContent())) {
+                // We skip all relations that are below or on the cut, because we do not handle recursion on those
+                continue;
+            }
+
             if (component.size() > 1) {
                 for (DependencyGraph<Relation>.Node node : component) {
                     Relation relation = node.getContent();
@@ -122,23 +118,12 @@ public class ExecutionGraph {
             constraints.add(constraint);
         }
 
-        if (!createOnlyAxiomRelevantGraphs) {
-            for (Relation rel : DependencyGraph.from(memoryModel.getRelations()).getNodeContents()) {
-                if (!EXCLUDED_RELS.contains(rel.getNameOrTerm())) {
-                    RelationGraph graph = getOrCreateGraphFromRelation(rel);
-                    graphs.add(graph);
-                }
-            }
-        }
-
         caatModel = CAATModel.from(graphs, constraints);
     }
 
     // =================================================
 
     // ================ Accessors =======================
-
-    public VerificationTask getVerificationTask() { return verificationTask; }
 
     public CAATModel getCAATModel() { return caatModel; }
 
@@ -159,7 +144,7 @@ public class ExecutionGraph {
     }
 
     public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(verificationTask.getMemoryModel().getRelation(name));
+        return getRelationGraph(refinementModel.getOriginalModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
@@ -189,6 +174,16 @@ public class ExecutionGraph {
     // =======================================================
 
     //=================== Reading the WMM ====================
+
+    private void checkNoUnsupportedRelations(RefinementModel refinementModel) {
+        // Check that unsupported relations are all below the cut.
+        for (Relation rel : refinementModel.getOriginalModel().getRelations()) {
+            if (rel.isInternal() || rel.getDefinition() instanceof LinuxCriticalSections) {
+                Preconditions.checkArgument(refinementModel.translateToBase(rel) != null,
+                        "Relation '%s' is not supported. Missing cut?", rel.getNameOrTerm());
+            }
+        }
+    }
 
     private Constraint getOrCreateConstraintFromAxiom(Axiom axiom) {
         if (constraintMap.containsKey(axiom)) {
@@ -221,34 +216,15 @@ public class ExecutionGraph {
     }
 
     private RelationGraph createGraphFromRelation(Relation rel) {
-        RelationGraph graph;
-        Class<?> relClass = rel.getDefinition().getClass();
-        List<Relation> dependencies = rel.getDependencies();
+        final RelationGraph graph;
+        final Class<?> relClass = rel.getDefinition().getClass();
+        final List<Relation> dependencies = rel.getDependencies();
 
-        // ===== Filter special relations ======
-        String name = rel.getNameOrTerm();
-        if (SPECIAL_RELS.contains(name)) {
-            switch (name) {
-                case CTRL:
-                    graph = new CtrlDepGraph();
-                    break;
-                case DATA:
-                    graph = new DataDepGraph();
-                    break;
-                case ADDR:
-                    graph = new AddrDepGraph();
-                    break;
-                case CRIT:
-                    graph = new RcuGraph();
-                    break;
-                default:
-                    throw new UnsupportedOperationException(name + " is marked as special relation but has associated graph.");
-            }
-        } else if (cutRelations.contains(rel)) {
-            graph = new DynamicDefaultWMMGraph(name);
+        if (cutRelations.contains(rel)) {
+            graph = new DynamicDefaultWMMGraph(refinementModel.translateToBase(rel));
         } else if (relClass == ReadFrom.class) {
             graph = new ReadFromGraph();
-        } else if (relClass == SameAddress.class) {
+        } else if (relClass == SameLocation.class) {
             graph = new LocationGraph();
         } else if (relClass == ProgramOrder.class) {
             graph = new ProgramOrderGraph();
@@ -278,14 +254,14 @@ public class ExecutionGraph {
             graph = new CartesianGraph(lhs, rhs);
         } else if (relClass == ReadModifyWrites.class) {
             graph = new RMWGraph();
-        } else if (relClass == DifferentThreads.class) {
+        } else if (relClass == External.class) {
             graph = new ExternalGraph();
-        } else if (relClass == SameThread.class) {
+        } else if (relClass == Internal.class) {
             graph = new InternalGraph();
         } else if (relClass == Fences.class) {
             graph = new FenceGraph(((Fences) rel.getDefinition()).getFilter());
-        } else if (relClass == Identity.class) {
-            SetPredicate set = getOrCreateSetFromFilter(((Identity) rel.getDefinition()).getFilter());
+        } else if (relClass == SetIdentity.class) {
+            SetPredicate set = getOrCreateSetFromFilter(((SetIdentity) rel.getDefinition()).getFilter());
             graph = new SetIdentityGraph(set);
         } else if (relClass == Empty.class) {
             graph = new EmptyGraph();
@@ -294,7 +270,7 @@ public class ExecutionGraph {
             graph = new StaticDefaultWMMGraph(rel, ra);
         }
 
-        graph.setName(name);
+        graph.setName(rel.getNameOrTerm());
         return graph;
     }
 
