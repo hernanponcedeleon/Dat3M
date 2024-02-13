@@ -15,6 +15,7 @@ import com.google.common.collect.HashBiMap;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RefinementModel {
 
@@ -73,6 +74,11 @@ public class RefinementModel {
         for (Relation rel : computeBoundaryRelations()) {
             baseModel.addConstraint(new ForceEncodeAxiom(rel));
         }
+    }
+
+    public Set<Relation> getUpperRelations() {
+        return originalModel.getRelations().stream().filter(r -> !orig2BaseRelations.containsKey(r))
+                .collect(Collectors.toSet());
     }
 
     // =============================================================================================

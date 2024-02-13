@@ -460,7 +460,7 @@ public class RelationAnalysis {
 
         @Override
         public Knowledge visitSetIdentity(SetIdentity id) {
-            Filter set = id.getFilter();
+            final Filter set = id.getFilter();
             EventGraph must = new EventGraph();
             for (Event e : program.getThreadEvents()) {
                 if (set.apply(e)) {
@@ -569,7 +569,7 @@ public class RelationAnalysis {
 
         @Override
         public Knowledge visitFences(Fences fenceDef) {
-            Filter fence = fenceDef.getFilter();
+            final Filter fence = fenceDef.getFilter();
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
             for (Thread t : program.getThreads()) {

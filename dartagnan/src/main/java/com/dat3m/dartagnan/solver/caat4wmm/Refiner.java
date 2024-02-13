@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class Refiner {
 
-    private RefinementModel refinementModel;
+    private final RefinementModel refinementModel;
     public Refiner(RefinementModel refinementModel) {
         this.refinementModel = refinementModel;
     }
