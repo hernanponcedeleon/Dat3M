@@ -192,7 +192,7 @@ public class OnlineRefinementSolver extends ModelChecker {
         final SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
-        final OnlineWMMSolver userPropagator = new OnlineWMMSolver(task, context, analysisContext, refinementModel);
+        final OnlineWMMSolver userPropagator = new OnlineWMMSolver(refinementModel, analysisContext, context);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());

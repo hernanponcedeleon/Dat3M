@@ -17,7 +17,6 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 
@@ -30,22 +29,17 @@ public class CoreReasoner {
     private final ExecutionGraph executionGraph;
     private final ExecutionAnalysis exec;
     private final RelationAnalysis ra;
-    private final Map<String, Relation> termMap = new HashMap<>();
 
     private final ThreadSymmetry symm;
     private final List<Function<Event, Event>> symmPermutations;
     private final SymmetricLearning learningOption;
 
-    public CoreReasoner(VerificationTask task, Context analysisContext, ExecutionGraph executionGraph) {
+    public CoreReasoner(Context analysisContext, ExecutionGraph executionGraph) {
         this.executionGraph = executionGraph;
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
-        for (Relation r : task.getMemoryModel().getRelations()) {
-            termMap.put(r.getNameOrTerm(), r);
-        }
-
+        this.symm = analysisContext.requires(ThreadSymmetry.class);
         this.learningOption = GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
-        symm = analysisContext.requires(ThreadSymmetry.class);
         symmPermutations = computeSymmetryPermutations();
     }
 
@@ -80,31 +74,6 @@ public class CoreReasoner {
                     } else {
                         coreReason.add(new RelLiteral(rel, e1, e2, lit.isPositive()));
                     }
-
-                    /*else {
-                        final String name = rel.getNameOrTerm();
-                        if (name.equals(RF) || name.equals(CO)
-                                || executionGraph.getCutRelations().contains(rel)) {
-                            coreReason.add(new RelLiteral(name, e1, e2, lit.isNegative()));
-                        } else if (name.equals(LOC)) {
-                            coreReason.add(new AddressLiteral(e1, e2, lit.isNegative()));
-                        } else if (rel.getDefinition() instanceof Fences) {
-                            // This is a special case since "fencerel(F) = po;[F];po".
-                            // We should do this transformation directly on the Wmm to avoid this special reasoning
-                            if (lit.isNegative()) {
-                                throw new UnsupportedOperationException(String.format("FenceRel %s is not allowed on the rhs of differences.", rel));
-                            }
-                            addFenceReason(rel, edge, coreReason);
-                        } else {
-                            // FIXME: Right now, we assume many relations like data, ctrl and addr to be static.
-                            //  In order to fix this, we would need to cut/eagerly encode the dependency relations.
-                            if (lit.isNegative()) {
-                                // TODO: Support negated literals (ideally via lazy/on-demand cutting)
-                                throw new UnsupportedOperationException(String.format("Negated literals of type %s are not supported.", rel));
-                            }
-                            addExecReason(e1, e2, coreReason);
-                        }
-                    }*/
                 }
             }
             minimize(coreReason);
@@ -145,22 +114,6 @@ public class CoreReasoner {
             coreReasons.add(new ExecLiteral(e2));
         }
     }
-
-    /*private void addFenceReason(Relation rel, Edge edge, List<CoreLiteral> coreReasons) {
-        FenceGraph fenceGraph = (FenceGraph) executionGraph.getRelationGraph(rel);
-        EventDomain domain = executionGraph.getDomain();
-        EventData e1 = domain.getObjectById(edge.getFirst());
-        EventData e2 = domain.getObjectById(edge.getSecond());
-        EventData f = fenceGraph.getNextFence(e1);
-
-        coreReasons.add(new ExecLiteral(f.getEvent()));
-        if (!exec.isImplied(f.getEvent(), e1.getEvent())) {
-            coreReasons.add(new ExecLiteral(e1.getEvent()));
-        }
-        if (!exec.isImplied(f.getEvent(), e2.getEvent())) {
-            coreReasons.add(new ExecLiteral(e2.getEvent()));
-        }
-    }*/
 
     // =============================================================================================
     // ======================================== Symmetry ===========================================

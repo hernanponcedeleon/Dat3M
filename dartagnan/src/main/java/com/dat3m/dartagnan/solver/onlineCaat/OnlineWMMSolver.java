@@ -13,9 +13,7 @@ import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.basicimpl.AbstractUserPropagator;
@@ -33,19 +31,15 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final BooleanFormulaManager bmgr;
     private final RefinementModel refinementModel;
 
-    //private final Map<Relation, Relation> encodedRelation2OriginalRelationMap = Maps.newIdentityHashMap();
-
-    public OnlineWMMSolver(VerificationTask task, EncodingContext encCtx, Context analysisContext,
-                           RefinementModel refinementModel) {
-        analysisContext.requires(RelationAnalysis.class);
-        this.executionGraph = new ExecutionGraph(task, analysisContext, refinementModel, true);
-        this.reasoner = new CoreReasoner(task, analysisContext, executionGraph);
-        this.solver = CAATSolver.create();
-        this.decoder = new Decoder(encCtx, refinementModel);
-        this.encodingContext = encCtx;
-        this.refiner = new Refiner(refinementModel);
-        this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
+    public OnlineWMMSolver(RefinementModel refinementModel, Context analysisContext, EncodingContext encCtx) {
         this.refinementModel = refinementModel;
+        this.encodingContext = encCtx;
+        this.executionGraph = new ExecutionGraph(refinementModel);
+        this.reasoner = new CoreReasoner(analysisContext, executionGraph);
+        this.decoder = new Decoder(encCtx, refinementModel);
+        this.refiner = new Refiner(refinementModel);
+        this.solver = CAATSolver.create();
+        this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
     }
 
     // ------------------------------------------------------------------------------------------------------
@@ -158,7 +152,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         // Init domain
         executedEvents.removeIf(e -> !e.hasTag(Tag.VISIBLE));
         GenericDomain<Event> domain = new GenericDomain<>(executedEvents);
-        executionGraph.getCAATModel().initializeToDomain(domain);
+        executionGraph.initializeToDomain(domain);
 
         // Setup base relation graphs
         for (EdgeInfo edge : edges) {

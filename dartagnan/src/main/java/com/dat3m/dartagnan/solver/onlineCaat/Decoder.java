@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import com.google.common.base.Preconditions;
@@ -43,10 +42,7 @@ public class Decoder {
     }
 
     private void extractRelationInfo(EncodingContext ctx, RefinementModel refinementModel) {
-        final Wmm memoryModel = ctx.getTask().getMemoryModel();
         final RelationAnalysis ra = ctx.getAnalysisContext().requires(RelationAnalysis.class);
-        //FIXME: The below does not treat data/addr/ctrl as base relations but rather idd, ctrlDirect, etc.
-        // However, we want the base relations as understood by CAT!
         final Set<Relation> boundary = refinementModel.computeBoundaryRelations();
         for (Relation rel : boundary) {
             final EventGraph maySet = ra.getKnowledge(rel).getMaySet();

@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.solver.onlineCaat;
 
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.CAATModel;
 import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
 import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
@@ -10,20 +9,15 @@ import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
-import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import java.util.Collection;
@@ -32,22 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
-
 public class ExecutionGraph {
-
-    // These graphs are only relevant for data, ctrl and addr, all of which have a special event graph (see below)
-    //TODO: We need a better way to handle the composed relations (in case we rename them as well?)
-    private static final Set<String> EXCLUDED_RELS = ImmutableSet.of(
-            IDD, IDDTRANS, CTRLDIRECT, ADDRDIRECT, String.format("(%s;%s)", IDDTRANS, ADDRDIRECT),
-            String.format("(%s+(%s;%s))", ADDRDIRECT, IDDTRANS, ADDRDIRECT),
-            String.format("(%s;%s)", IDDTRANS, CTRLDIRECT)
-    );
-
-
-    // These relations have special event graphs associated with them
-    private static final Set<String> SPECIAL_RELS = ImmutableSet.of(ADDR, DATA, CTRL, CRIT);
-
 
     // ================== Fields =====================
 
@@ -55,10 +34,8 @@ public class ExecutionGraph {
     // Some are not declared final for purely technical reasons but all of them get
     // assigned during construction.
 
-    private final VerificationTask verificationTask;
-    private final RelationAnalysis ra;
+    private final RefinementModel refinementModel;
     private final BiMap<Relation, RelationGraph> relationGraphMap;
-    private final BiMap<Filter, SetPredicate> filterSetMap;
     private final BiMap<Axiom, Constraint> constraintMap;
     private final Set<Relation> cutRelations;
 
@@ -68,27 +45,25 @@ public class ExecutionGraph {
 
     // ============= Construction & Init ===============
 
-    public ExecutionGraph(VerificationTask verificationTask, Context analysisContext, RefinementModel refinementModel, boolean createOnlyAxiomRelevantGraphs) {
-        this.verificationTask = verificationTask;
-        ra = analysisContext.requires(RelationAnalysis.class);
+    public ExecutionGraph(RefinementModel refinementModel) {
+        this.refinementModel = refinementModel;
         relationGraphMap = HashBiMap.create();
-        filterSetMap = HashBiMap.create();
         constraintMap = HashBiMap.create();
         this.cutRelations = refinementModel.computeBoundaryRelations().stream()
                 .filter(r -> r.getName().map(n -> !Wmm.ANARCHIC_CORE_RELATIONS.contains(n)).orElse(true))
                 .map(refinementModel::translateToOriginal)
                 .collect(Collectors.toSet());
-        constructMappings(createOnlyAxiomRelevantGraphs);
+        constructMappings();
     }
 
-    public void initializeFromDomain(Domain<?> domain) {
+    public void initializeToDomain(Domain<?> domain) {
         caatModel.initializeToDomain(domain);
     }
 
     // --------------------------------------------------
 
-    private void constructMappings(boolean createOnlyAxiomRelevantGraphs) {
-        final Wmm memoryModel = verificationTask.getMemoryModel();
+    private void constructMappings() {
+        final Wmm memoryModel = refinementModel.getOriginalModel();
 
         Set<RelationGraph> graphs = new HashSet<>();
         Set<Constraint> constraints = new HashSet<>();
@@ -124,25 +99,12 @@ public class ExecutionGraph {
             constraints.add(constraint);
         }
 
-        if (!createOnlyAxiomRelevantGraphs) {
-            for (Relation rel : DependencyGraph.from(memoryModel.getRelations()).getNodeContents()) {
-                if (!EXCLUDED_RELS.contains(rel.getNameOrTerm())) {
-                    RelationGraph graph = getOrCreateGraphFromRelation(rel);
-                    graphs.add(graph);
-                }
-            }
-        }
-
         caatModel = CAATModel.from(graphs, constraints);
     }
 
     // =================================================
 
     // ================ Accessors =======================
-
-    public VerificationTask getVerificationTask() {
-        return verificationTask;
-    }
 
     public CAATModel getCAATModel() {
         return caatModel;
@@ -169,7 +131,7 @@ public class ExecutionGraph {
     }
 
     public RelationGraph getRelationGraphByName(String name) {
-        return getRelationGraph(verificationTask.getMemoryModel().getRelation(name));
+        return getRelationGraph(refinementModel.getOriginalModel().getRelation(name));
     }
 
     public Constraint getConstraint(Axiom axiom) {
@@ -236,7 +198,6 @@ public class ExecutionGraph {
         List<Relation> dependencies = rel.getDependencies();
 
         // ===== Filter special relations ======
-        String name = rel.getNameOrTerm();
         if (cutRelations.contains(rel)) {
             graph = new SimpleGraph();
         } else if (relClass == Inverse.class || relClass == TransitiveClosure.class || relClass == RangeIdentity.class) {
@@ -257,17 +218,13 @@ public class ExecutionGraph {
             graph = relClass == Composition.class ? new CompositionGraph(g1, g2) :
                     new DifferenceGraph(g1, g2);
         } else if (relClass == CartesianProduct.class) {
+            // Unreachable for now, since Wmm treats these as base relations and we cut all base relations.
             graph = new SimpleGraph();
-            // TODO: Use more compact representation here
-            /*CartesianProduct cartRel = (CartesianProduct) rel.getDefinition();
-            SetPredicate lhs = getOrCreateSetFromFilter(cartRel.getFirstFilter());
-            SetPredicate rhs = getOrCreateSetFromFilter(cartRel.getSecondFilter());
-            graph = new CartesianGraph(lhs, rhs);*/
         } else {
             graph = new SimpleGraph();
         }
 
-        graph.setName(name);
+        graph.setName(rel.getNameOrTerm());
         return graph;
     }
 
