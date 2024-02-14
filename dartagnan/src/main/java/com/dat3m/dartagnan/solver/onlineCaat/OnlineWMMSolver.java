@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.PropagatorBackend;
 import org.sosy_lab.java_smt.basicimpl.AbstractUserPropagator;
 
 import java.util.*;
@@ -51,12 +52,13 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final Set<BooleanFormula> trueValues = new HashSet<>();
 
     @Override
-    public void initialize() {
-        backend.notifyOnKnownValue();
-        backend.notifyOnFinalCheck();
+    public void initializeWithBackend(PropagatorBackend backend) {
+        super.initializeWithBackend(backend);
+        getBackend().notifyOnKnownValue();
+        getBackend().notifyOnFinalCheck();
 
         for (BooleanFormula formula : decoder.getDecodableFormulas()) {
-            backend.registerExpression(formula);
+            getBackend().registerExpression(formula);
         }
     }
 
@@ -99,7 +101,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     private void progressPropagation() {
         if (!openPropagations.isEmpty()) {
-            backend.propagateConsequence(new BooleanFormula[0],
+            getBackend().propagateConsequence(new BooleanFormula[0],
                     bmgr.not(bmgr.and(openPropagations.poll().assignment().toArray(new BooleanFormula[0]))));
         }
     }
@@ -122,7 +124,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
                 final boolean isConflict = isFirst &&
                         conflict.assignment().stream().allMatch(l -> partialModel.getOrDefault(l, false));
                 if (isConflict) {
-                    backend.propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
+                    getBackend().propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
                     isFirst = false;
                 } else {
                    openPropagations.add(conflict);
