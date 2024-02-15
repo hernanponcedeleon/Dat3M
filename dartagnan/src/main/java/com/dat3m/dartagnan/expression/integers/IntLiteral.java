@@ -28,7 +28,7 @@ public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
     }
 
     public int getValueAsInt() {
-        return value.intValue();
+        return value.intValueExact();
     }
 
     public boolean isOne() { return value.equals(BigInteger.ONE); }
