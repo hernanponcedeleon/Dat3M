@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
@@ -11,6 +12,7 @@ import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.alias.TBAA;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
@@ -50,6 +52,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private final Map<String, TypeDefContext> typeDefinitionMap = new HashMap<>();
     private final Map<String, Type> typeMap = new HashMap<>();
     private final Map<String, MdNode> metadataSymbolTable = new LinkedHashMap<>();
+    private final TBAABuilder tbaaBuilder = new TBAABuilder();
     private int functionCounter;
     // Nonnull, if the visitor is inside a function body.
     private Function function;
@@ -313,6 +316,22 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             MdNode mdNode = (MdNode) metadataCtx.accept(this);
             assert mdNode instanceof MdReference;
             mdNode = metadataSymbolTable.get(((MdReference) mdNode).mdName());
+
+            final String metaDatatype = metadataCtx.MetadataName().toString();
+
+            if (metaDatatype.equals("!tbaa")) {
+                // We assume a tbaa access tag
+                assert mdNode instanceof MdTuple;
+                final MdTuple accessNode = (MdTuple) mdNode;
+                final List<MdNode> children = accessNode.mdFields();
+
+                final TBAA.Type base = tbaaBuilder.getTBAATypeFromNode(children.get(0));
+                final TBAA.Type access = tbaaBuilder.getTBAATypeFromNode(children.get(1));
+                final int offset = ((MdGenericValue<IntLiteral>)children.get(2)).value().getValueAsInt();
+                // final int isConstant = ((MdGenericValue<IntLiteral>)children.get(3)).value().getValueAsInt();
+
+                metadata.add(new TBAA.AccessTag(base, access, offset));
+            }
 
             if (mdNode instanceof SpecialMdTupleNode diLocationNode && diLocationNode.nodeType() == SpecialMdTupleNode.Type.DILocation) {
                 SpecialMdTupleNode scope = diLocationNode;
@@ -1462,5 +1481,52 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             return Optional.empty();
         }
     }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // TBAA-metadata
+
+    private class TBAABuilder {
+        private final Map<MdNode, TBAA.Type> md2tbaaMap = new HashMap<>();
+
+        private TBAA.Type getTBAATypeFromNode(MdNode node) {
+            if (node instanceof MdReference ref) {
+                node = metadataSymbolTable.get(ref.mdName());
+            }
+            assert node instanceof MdTuple;
+
+            if (!md2tbaaMap.containsKey(node)) {
+                final MdTuple tbaaTypeMdNode = (MdTuple) node;
+                final List<MdNode> children = tbaaTypeMdNode.mdFields();
+                if (children.size() <= 1) {
+                    // Root
+                    final String rootName = children.isEmpty() ? "root" : children.get(0).toString();
+                    final TBAA.Type root = new TBAA.ScalarType(rootName, null);
+                    md2tbaaMap.put(tbaaTypeMdNode, root);
+                } else if (children.size() == 3) {
+                    // Scalar type node
+                    final String name = children.get(0).toString();
+                    final TBAA.Type parent = getTBAATypeFromNode(children.get(1));
+                    assert children.get(2).toString().equals("0");
+                    final TBAA.Type typeNode = new TBAA.ScalarType(name, parent);
+                    md2tbaaMap.put(tbaaTypeMdNode, typeNode);
+                } else {
+                    // Struct type node
+                    final String name = children.get(0).toString();
+                    final List<TBAA.TypeOffset> typeOffsets = new ArrayList<>();
+                    for (int i = 1; i < children.size(); i += 2) {
+                        final TBAA.Type innerType = getTBAATypeFromNode(children.get(i));
+                        final int offset = ((MdGenericValue<IntLiteral>)children.get(i+1)).value().getValueAsInt();
+                        typeOffsets.add(new TBAA.TypeOffset(innerType, offset));
+                    }
+                    final TBAA.StructType typeNode = new TBAA.StructType(name, typeOffsets);
+                    md2tbaaMap.put(tbaaTypeMdNode, typeNode);
+                }
+            }
+
+            return md2tbaaMap.get(node);
+        }
+
+    }
+
 
 }
