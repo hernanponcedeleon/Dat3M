@@ -47,6 +47,7 @@ public interface AliasAnalysis {
                 throw new UnsupportedOperationException("Alias method not recognized");
         }
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
+        a = new CombinedAliasAnalysis(a, TBAA.fromConfig(config));
         if (Arch.supportsVirtualAddressing(program.getArch())) {
             a = VirtualAliasAnalysis.wrap(a);
         }

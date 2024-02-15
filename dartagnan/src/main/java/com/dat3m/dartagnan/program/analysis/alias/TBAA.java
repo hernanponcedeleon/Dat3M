@@ -1,13 +1,34 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.Metadata;
+import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class TBAA {
+public final class TBAA implements AliasAnalysis {
 
     private TBAA() {}
+
+    public static AliasAnalysis fromConfig(Configuration config) {
+        return new TBAA();
+    }
+
+    @Override
+    public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        return false;
+    }
+
+    @Override
+    public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+        final AccessTag aTag = a.getMetadata(AccessTag.class);
+        final AccessTag bTag = b.getMetadata(AccessTag.class);
+        return aTag == null || bTag == null || canAlias(aTag, bTag);
+    }
+
+    // ================================================================================================
+    // Helper methods
 
     public static boolean canAlias(AccessTag x, AccessTag y) {
         final TypeOffset xAccess = new TypeOffset(x.base(), x.offset());
@@ -40,7 +61,7 @@ public final class TBAA {
                 final TypeOffset cur = structType.offsets().get(i);
                 final TypeOffset next = (i + 1) < structType.offsets().size() ? structType.offsets().get(i + 1) : null;
 
-                if (next == null || next.offset() < typeOffset.offset()) {
+                if (next == null || next.offset() > typeOffset.offset()) {
                     return new TypeOffset(cur.type(), cur.offset() - typeOffset.offset());
                 }
             }
