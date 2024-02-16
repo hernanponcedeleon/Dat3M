@@ -310,39 +310,34 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
 
         final List<Metadata> metadata = new ArrayList<>();
-        //FIXME: This code only looks for DILocation metadata,
-        // and it only extracts the information needed to construct SourceLocation metadata
         for (MetadataAttachmentContext metadataCtx:  metadataAttachmentContexts) {
             MdNode mdNode = (MdNode) metadataCtx.accept(this);
             assert mdNode instanceof MdReference;
             mdNode = metadataSymbolTable.get(((MdReference) mdNode).mdName());
 
             final String metaDatatype = metadataCtx.MetadataName().toString();
-
             if (metaDatatype.equals("!tbaa")) {
-                // We assume a tbaa access tag
-                assert mdNode instanceof MdTuple;
-                final MdTuple accessNode = (MdTuple) mdNode;
-                final List<MdNode> children = accessNode.mdFields();
-
-                final TBAA.Type base = tbaaBuilder.getTBAATypeFromNode(children.get(0));
-                final TBAA.Type access = tbaaBuilder.getTBAATypeFromNode(children.get(1));
-                final int offset = ((MdGenericValue<IntLiteral>)children.get(2)).value().getValueAsInt();
-                // final int isConstant = ((MdGenericValue<IntLiteral>)children.get(3)).value().getValueAsInt();
-
-                metadata.add(new TBAA.AccessTag(base, access, offset));
-            }
-
-            if (mdNode instanceof SpecialMdTupleNode diLocationNode && diLocationNode.nodeType() == SpecialMdTupleNode.Type.DILocation) {
-                SpecialMdTupleNode scope = diLocationNode;
-                while (scope.getField("scope").isPresent()) {
-                    scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
+                // TBAA
+                metadata.add(tbaaBuilder.getTBAAAccessFromNode(mdNode));
+            } else if (metaDatatype.equals("!dbg")) {
+                //FIXME: This code only looks for DILocation metadata
+                // and it only extracts the information needed to construct SourceLocation metadata
+                if (mdNode instanceof SpecialMdTupleNode diLocationNode && diLocationNode.nodeType() == SpecialMdTupleNode.Type.DILocation) {
+                    SpecialMdTupleNode scope = diLocationNode;
+                    while (scope.getField("scope").isPresent()) {
+                        scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
+                    }
+                    assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
+                    final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
+                    final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
+                    final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
+                    metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
                 }
-                assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
-                final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
-                final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
-                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
-                metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
+            } else {
+                if (logger.isDebugEnabled()) {
+                    final String optional = !metaDatatype.equals("!llvm.loop") ? " Potential for optimization?" : "";
+                    logger.debug("Skipped parsing of {} metadata.{}", metaDatatype, optional);
+                }
             }
         }
 
@@ -1487,6 +1482,27 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     private class TBAABuilder {
         private final Map<MdNode, TBAA.Type> md2tbaaMap = new HashMap<>();
+        private final Map<MdNode, TBAA.AccessTag> md2accessMap = new HashMap<>();
+
+        private TBAA.AccessTag getTBAAAccessFromNode(MdNode node) {
+            if (node instanceof MdReference ref) {
+                node = metadataSymbolTable.get(ref.mdName());
+            }
+            assert node instanceof MdTuple;
+            final MdTuple accessNode = (MdTuple) node;
+
+            if (!md2accessMap.containsKey(accessNode)) {
+                // We assume a tbaa access tag
+                final List<MdNode> children = accessNode.mdFields();
+                final TBAA.Type base = tbaaBuilder.getTBAATypeFromNode(children.get(0));
+                final TBAA.Type access = tbaaBuilder.getTBAATypeFromNode(children.get(1));
+                final int offset = ((MdGenericValue<IntLiteral>) children.get(2)).value().getValueAsInt();
+                // final int isConstant = ((MdGenericValue<IntLiteral>)children.get(3)).value().getValueAsInt();
+                md2accessMap.put(node, new TBAA.AccessTag(base, access, offset));
+            }
+
+            return md2accessMap.get(node);
+        }
 
         private TBAA.Type getTBAATypeFromNode(MdNode node) {
             if (node instanceof MdReference ref) {
