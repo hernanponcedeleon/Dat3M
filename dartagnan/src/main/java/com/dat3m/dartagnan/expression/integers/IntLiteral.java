@@ -31,6 +31,10 @@ public final class IntLiteral extends LiteralExpressionBase<IntegerType> {
         return value.intValueExact();
     }
 
+    public long getValueAsLong() {
+        return value.longValueExact();
+    }
+
     public boolean isOne() { return value.equals(BigInteger.ONE); }
     public boolean isZero() { return value.equals(BigInteger.ZERO); }
 
