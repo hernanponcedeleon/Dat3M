@@ -8,26 +8,27 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
-import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
+import com.dat3m.dartagnan.utils.DominatorTree;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.util.*;
-import java.util.function.BiPredicate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /*
     This pass instruments loops that do not cause a side effect in an iteration to terminate, i.e., to avoid spinning.
@@ -49,7 +50,6 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
     private static class IterationData {
         private LoopAnalysis.LoopIterationInfo iterationInfo;
         private final List<Event> sideEffects = new ArrayList<>();
-        private final List<Event> guaranteedExitPoints = new ArrayList<>();
         private boolean isAlwaysSideEffectFull = false;
     }
 
@@ -167,17 +167,13 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         final IterationData data = new IterationData();
         data.iterationInfo = iteration;
         data.sideEffects.addAll(collectSideEffects(iterStart, iterEnd));
-        iteration.computeBody().stream()
-                .filter(CondJump.class::isInstance).map(CondJump.class::cast)
-                .filter(j -> j.isGoto() && j.getLabel().getGlobalId() > iterEnd.getGlobalId())
-                .forEach(data.guaranteedExitPoints::add);
 
         return data;
     }
 
     private List<Event> collectSideEffects(Event iterStart, Event iterEnd) {
         List<Event> sideEffects = new ArrayList<>();
-        // Unsafe means the loop read from the registers before writing to them.
+        // Unsafe means the loop reads from the registers before writing to them.
         Set<Register> unsafeRegisters = new HashSet<>();
         // Safe means the loop wrote to these register before using them
         Set<Register> safeRegisters = new HashSet<>();
@@ -211,9 +207,13 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         return sideEffects;
     }
 
-    // ----------------------- Dominator-related -----------------------
 
     private void reduceToDominatingSideEffects(IterationData data) {
+        if (data.sideEffects.isEmpty()) {
+            // There are no side effects.
+            return;
+        }
+
         final LoopAnalysis.LoopIterationInfo iter = data.iterationInfo;
         final Event start = iter.getIterationStart();
         final Event end = iter.getIterationEnd();
@@ -225,137 +225,35 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
             return;
         }
 
-        final List<Event> iterBody = iter.computeBody();
-        // to compute the pre-dominator tree ...
-        final Map<Event, List<Event>> immPredMap = new HashMap<>();
-        immPredMap.put(iterBody.get(0), List.of());
-        for (Event e : iterBody.subList(1, iterBody.size())) {
-            final List<Event> preds = new ArrayList<>();
-            final Event pred = e.getPredecessor();
-            if (!(pred instanceof CondJump jump && jump.isGoto())) {
-                preds.add(pred);
-            }
-            if (e instanceof Label label) {
-                preds.addAll(label.getJumpSet());
-            }
-            immPredMap.put(e, preds);
+        final DominatorTree<Event> preDominatorTree = DominatorAnalysis.computePreDominatorTree(start, end);
+        final DominatorTree<Event> postDominatorTree = DominatorAnalysis.computePostDominatorTree(start, end);
+
+        // (1) Delete all side effects that are on exit paths (those have no dominator in the post-dominator tree
+        // because they are no predecessor of the end of the loop body).
+        final Predicate<Event> isOnExitPath = (e -> postDominatorTree.getImmediateDominator(e) == null);
+        data.sideEffects.removeIf(isOnExitPath);
+
+        // (2) Check if always side-effect-full at the end of an iteration directly before entering the next one.
+        // This is an approximation: If the end of the iteration is predominated by some side effect
+        // then we always observe side effects.
+        data.isAlwaysSideEffectFull = Streams.stream(preDominatorTree.getDominators(end))
+                .anyMatch(data.sideEffects::contains);
+        if (data.isAlwaysSideEffectFull) {
+            return;
         }
 
-        // to compute the post-dominator tree ...
-        final List<Event> reversedOrderEvents = new ArrayList<>(Lists.reverse(iterBody));
-        final Map<Event, List<Event>> immSuccMap = new HashMap<>();
-        immSuccMap.put(reversedOrderEvents.get(0), List.of());
-        for (Event e : iterBody) {
-            for (Event pred : immPredMap.get(e)) {
-                immSuccMap.computeIfAbsent(pred, key -> new ArrayList<>()).add(e);
-            }
-        }
-
-        // We delete all side effects that are guaranteed to lead to an exit point, i.e.,
-        // those that never reach a subsequent iteration.
-        reversedOrderEvents.forEach(e -> immSuccMap.putIfAbsent(e, List.of()));
-        List<Event> exitPoints = new ArrayList<>(data.guaranteedExitPoints);
-        boolean changed = true;
-        while (changed) {
-            changed = !exitPoints.isEmpty();
-            for (Event exit : exitPoints) {
-                assert immSuccMap.get(exit).isEmpty();
-                immSuccMap.remove(exit);
-                immPredMap.get(exit).forEach(pred -> immSuccMap.get(pred).remove(exit));
-            }
-            exitPoints = immSuccMap.keySet().stream().filter(e -> e != end && immSuccMap.get(e).isEmpty()).collect(Collectors.toList());
-        }
-        reversedOrderEvents.removeIf(e -> ! immSuccMap.containsKey(e));
-
-
-        final Map<Event, Event> preDominatorTree = computeDominatorTree(iterBody, immPredMap::get);
-
-        {
-            // Check if always side-effect-full
-            // This is an approximation: If the end of the iteration is predominated by some side effect
-            // then we always observe side effects.
-            Event dom = end;
-            do {
-                if (data.sideEffects.contains(dom)) {
-                    // A special case where the loop is always side-effect-full
-                    // There is no need to proceed further
-                    data.isAlwaysSideEffectFull = true;
-                    return;
-                }
-            } while ((dom = preDominatorTree.get(dom)) != start);
-        }
-
-        // Remove all side effects that are guaranteed to exit the loop.
-        data.sideEffects.removeIf(e -> !immSuccMap.containsKey(e));
-
-        // Delete all pre-dominated side effects
-        for (final Event e : List.copyOf(data.sideEffects)) {
-            Event dom = e;
-            while ((dom = preDominatorTree.get(dom)) != start) {
-                assert dom != null;
-                if (data.sideEffects.contains(dom)) {
-                    data.sideEffects.remove(e);
-                    break;
-                }
+        // (3) Delete all side effects that are dominated by another one
+        // NOTE: This can be implemented more efficiently, but maybe we don't need to.
+        for (int i = data.sideEffects.size() - 1; i >= 0; i--) {
+            final Event sideEffect = data.sideEffects.get(i);
+            final Iterable<Event> dominators = Iterables.concat(
+                    preDominatorTree.getStrictDominators(sideEffect),
+                    postDominatorTree.getStrictDominators(sideEffect)
+            );
+            final boolean isDominated = Iterables.tryFind(dominators, data.sideEffects::contains).isPresent();
+            if (isDominated) {
+                data.sideEffects.remove(i);
             }
         }
-
-        // Delete all post-dominated side effects
-        final Map<Event, Event> postDominatorTree = computeDominatorTree(reversedOrderEvents, immSuccMap::get);
-        for (final Event e : List.copyOf(data.sideEffects)) {
-            Event dom = e;
-            while ((dom = postDominatorTree.get(dom)) != end) {
-                assert dom != null;
-                if (data.sideEffects.contains(dom)) {
-                    data.sideEffects.remove(e);
-                    break;
-                }
-            }
-        }
-    }
-
-    private Map<Event, Event> computeDominatorTree(List<Event> events,
-                                                   java.util.function.Function<Event, ? extends Collection<Event>> predsFunc) {
-        Preconditions.checkNotNull(events);
-        Preconditions.checkNotNull(predsFunc);
-        if (events.isEmpty()) {
-            return Map.of();
-        }
-
-        // Compute natural ordering on <events>
-        final Map<Event, Integer> orderingMap = Maps.uniqueIndex(IntStream.range(0, events.size()).boxed()::iterator, events::get);
-        @SuppressWarnings("ConstantConditions")
-        final BiPredicate<Event, Event> leq = (x, y) -> orderingMap.get(x) <= orderingMap.get(y);
-
-        // Compute actual dominator tree
-        final Map<Event, Event> dominatorTree = new HashMap<>();
-        dominatorTree.put(events.get(0), events.get(0));
-        for (Event cur : events.subList(1, events.size())) {
-            final Collection<Event> preds = predsFunc.apply(cur);
-            Verify.verify(preds.stream().allMatch(dominatorTree::containsKey),
-                    "Error: detected predecessor outside of the provided event list.");
-            final Event immDom = preds.stream().reduce(null, (x, y) -> commonDominator(x, y, dominatorTree, leq));
-            dominatorTree.put(cur, immDom);
-        }
-
-        return dominatorTree;
-    }
-
-    private Event commonDominator(Event a, Event b, Map<Event, Event> dominatorTree, BiPredicate<Event, Event> leq) {
-        Preconditions.checkArgument(a != null || b != null);
-        if (a == null) {
-            return b;
-        } else if (b == null) {
-            return a;
-        }
-
-        while (a != b) {
-            if (leq.test(a, b)) {
-                b = dominatorTree.get(b);
-            } else {
-                a = dominatorTree.get(a);
-            }
-        }
-        return a; // a==b
     }
 }
