@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.Result;
@@ -11,7 +10,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,12 +48,6 @@ public class LibvsyncTest extends AbstractCTest {
     @Override
     protected Provider<Wmm> getWmmProvider() {
         return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/imm.cat"))));
-    }
-
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(OptionNames.SOLVER, "yices2")
-                .build());
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
