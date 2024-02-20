@@ -44,7 +44,6 @@ public class EBRTest extends AbstractCTest {
         return Provider.fromSupplier(() -> Configuration.defaultConfiguration());
     }
 
-
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{

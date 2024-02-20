@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +39,11 @@ public class LibvsyncTest extends AbstractCTest {
     @Override
     protected long getTimeout() {
         return 300000;
+    }
+
+    @Override
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(() -> Configuration.defaultConfiguration());
     }
 
     @Override
