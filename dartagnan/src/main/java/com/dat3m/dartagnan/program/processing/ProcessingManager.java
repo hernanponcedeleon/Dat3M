@@ -103,9 +103,9 @@ public class ProcessingManager implements ProgramProcessor {
                         Target.FUNCTIONS, false
                 ),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
+                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
-                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
