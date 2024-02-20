@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
+import com.dat3m.dartagnan.program.event.lang.svcomp.SpinStart;
 import com.dat3m.dartagnan.utils.DominatorTree;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -34,41 +35,37 @@ import java.util.stream.Collectors;
 
     NOTE: This pass is required to detect liveness violations.
  */
-public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcessor {
+public class DynamicSpinLoopDetection implements ProgramProcessor {
 
-    private static final Logger logger = LogManager.getLogger(DynamicPureLoopCutting.class);
+    private static final Logger logger = LogManager.getLogger(DynamicSpinLoopDetection.class);
 
-    public static DynamicPureLoopCutting fromConfig(Configuration config) {
-        return new DynamicPureLoopCutting();
-    }
-
-    @Override
-    public void run(Function function) {
-        final LoopAnalysis loopAnalysis = LoopAnalysis.onFunction(function);
-        final List<LoopData> loops = computeLoopData(function, loopAnalysis);
-        loops.forEach(this::collectSideEffects);
-        loops.forEach(this::reduceToDominatingSideEffects);
-        loops.forEach(this::instrumentSideEffectTracking);
+    public static DynamicSpinLoopDetection fromConfig(Configuration config) {
+        return new DynamicSpinLoopDetection();
     }
 
     @Override
     public void run(Program program) {
         Preconditions.checkArgument(!program.isUnrolled(),
-                "DynamicPureLoopCutting cannot be run on already unrolled programs.");
+                "DynamicSpinLoopDetection cannot be run on already unrolled programs.");
+
         final LoopAnalysis loopAnalysis = LoopAnalysis.newInstance(program);
         AnalysisStats stats = new AnalysisStats(0, 0);
         for (Function func : Iterables.concat(program.getFunctions(), program.getThreads())) {
             final List<LoopData> loops = computeLoopData(func, loopAnalysis);
             loops.forEach(this::collectSideEffects);
             loops.forEach(this::reduceToDominatingSideEffects);
-            loops.forEach(this::instrumentSideEffectTracking);
+            loops.forEach(this::instrumentLoop);
             stats = stats.add(collectStats(loops));
         }
+        IdReassignment.newInstance().run(program); // Reassign ids for the instrumented code.
 
         // NOTE: We log "potential spin loops" as only those that are not also "static".
         logger.info("Found {} static spin loops and {} potential spin loops.",
                 stats.numStaticSpinLoops, (stats.numPotentialSpinLoops - stats.numStaticSpinLoops));
     }
+
+    // ==================================================================================================
+    // Internals
 
     private List<LoopData> computeLoopData(Function func, LoopAnalysis loopAnalysis) {
         final List<LoopAnalysis.LoopInfo> loops = loopAnalysis.getLoopsOfFunction(func);
@@ -76,17 +73,20 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
     }
 
     private void collectSideEffects(LoopData loop) {
-        if (loop.getStart().hasTag(Tag.SPINLOOP)) {
-            // If the iteration start is tagged as "SPINLOOP", we treat the iteration as side effect free
-            loop.isAlwaysSideEffectful = false;
-            loop.sideEffects.clear();
+        if (loop.getStart().getSuccessor() instanceof SpinStart) {
+            // A user-placed annotation guarantees absence of side effects.
+
+            // This checks assumes the following implementation of await_while
+            // #define await_while(cond)                                                  \
+            // for (int tmp = (__VERIFIER_loop_begin(), 0); __VERIFIER_spin_start(),  \
+            //     tmp = cond, __VERIFIER_spin_end(!tmp), tmp;)
             return;
         }
 
         // FIXME: The reasoning about safe/unsafe registers is not correct because
         //  we do not traverse the control-flow but naively go top-down through the loop.
-        //  We need to use proper dominator reasoning
-        List<Event> sideEffects = new ArrayList<>();
+        //  We need to use proper dominator reasoning!
+
         // Unsafe means the loop reads from the registers before writing to them.
         Set<Register> unsafeRegisters = new HashSet<>();
         // Safe means the loop wrote to these register before using them
@@ -99,7 +99,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
                             || !call.getCalledFunction().isIntrinsic()
                             || call.getCalledFunction().getIntrinsicInfo().writesMemory()))) {
                 // We assume side effects for all writes, writing intrinsics, and non-intrinsic function calls.
-                sideEffects.add(cur);
+                loop.sideEffects.add(cur);
                 continue;
             }
 
@@ -114,23 +114,21 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
                     // The loop writes to a register it previously read from.
                     // This means the next loop iteration will observe the newly written value,
                     // hence the loop is not side effect free.
-                    sideEffects.add(cur);
+                    loop.sideEffects.add(cur);
                 } else {
                     safeRegisters.add(writer.getResultRegister());
                 }
             }
         } while ((cur = cur.getSuccessor()) != loop.getEnd().getSuccessor());
 
-        loop.sideEffects.addAll(sideEffects);
     }
 
     private void reduceToDominatingSideEffects(LoopData loop) {
-        final List<Event> sideEffects = loop.sideEffects;
-        if (sideEffects.isEmpty()) {
-            // There are no side effects.
+        if (loop.sideEffects.isEmpty()) {
             return;
         }
 
+        final List<Event> sideEffects = loop.sideEffects;
         final Event start = loop.getStart();
         final Event end = loop.getEnd();
 
@@ -145,8 +143,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         // (2) Check if always side-effect-full at the end of an iteration directly before entering the next one.
         // This is an approximation: If the end of the iteration is predominated by some side effect
         // then we always observe side effects.
-        loop.isAlwaysSideEffectful = Streams.stream(preDominatorTree.getDominators(end))
-                .anyMatch(sideEffects::contains);
+        loop.isAlwaysSideEffectful = Streams.stream(preDominatorTree.getDominators(end)).anyMatch(sideEffects::contains);
         if (loop.isAlwaysSideEffectful) {
             return;
         }
@@ -166,7 +163,7 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         }
     }
 
-    private void instrumentSideEffectTracking(LoopData loop) {
+    private void instrumentLoop(LoopData loop) {
         if (loop.isAlwaysSideEffectful) {
             return;
         }
@@ -187,10 +184,16 @@ public class DynamicPureLoopCutting implements ProgramProcessor, FunctionProcess
         final Event assumeSideEffect = newSpinTerminator(expressions.makeNot(trackingReg), func);
         assumeSideEffect.copyAllMetadataFrom(loop.getStart());
         loop.getEnd().getPredecessor().insertAfter(assumeSideEffect);
+
+        // Special case: If the loop is fully side-effect-free, we can set its unrolling bound to 1.
+        if (loop.sideEffects.isEmpty()) {
+            final Event loopBound = EventFactory.Svcomp.newLoopBound(expressions.makeValue(1, types.getArchType()));
+            loop.getStart().getPredecessor().insertAfter(loopBound);
+        }
     }
 
     private Event newSpinTerminator(Expression guard, Function func) {
-        Event terminator = func instanceof Thread thread ?
+        final Event terminator = func instanceof Thread thread ?
                 EventFactory.newJump(guard, (Label) thread.getExit())
                 : EventFactory.newAbortIf(guard);
         terminator.addTags(Tag.SPINLOOP, Tag.EARLYTERMINATION, Tag.NOOPT);
