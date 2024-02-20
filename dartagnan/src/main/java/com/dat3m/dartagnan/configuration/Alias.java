@@ -7,7 +7,7 @@ public enum Alias implements OptionInterface {
 	FIELD_SENSITIVE, FIELD_INSENSITIVE, FULL;
 
 	public static Alias getDefault() {
-		return FIELD_SENSITIVE;
+		return FULL;
 	}
 	
 	// Used to decide the order shown by the selector in the UI
