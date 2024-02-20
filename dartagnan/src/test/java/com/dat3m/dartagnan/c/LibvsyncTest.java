@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.Result;
@@ -43,6 +42,11 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
+    protected Provider<Configuration> getConfigurationProvider() {
+        return Provider.fromSupplier(() -> Configuration.defaultConfiguration());
+    }
+
+    @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
         return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC, Property.LIVENESS));
     }
@@ -50,12 +54,6 @@ public class LibvsyncTest extends AbstractCTest {
     @Override
     protected Provider<Wmm> getWmmProvider() {
         return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/imm.cat"))));
-    }
-
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.builder()
-                .setOption(OptionNames.SOLVER, "yices2")
-                .build());
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
