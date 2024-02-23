@@ -262,6 +262,7 @@ public class Wmm {
             case EXT -> new External(r);
             case CO -> new Coherence(r);
             case RF -> new ReadFrom(r);
+            case UR -> new ReadFromUninit(r);
             case RMW -> new ReadModifyWrites(r);
             case CASDEP -> new CASDependency(r);
             case CRIT -> new LinuxCriticalSections(r);
@@ -270,8 +271,14 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case FR ->  {
-                Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
-                yield composition(r, rfinv, getOrCreatePredefinedRelation(CO));
+                final Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
+                final Relation ur = getOrCreatePredefinedRelation(UR);
+                final Relation loc = getOrCreatePredefinedRelation(LOC);
+                final Relation wId = addDefinition(new SetIdentity(newRelation(), Filter.byTag(Tag.WRITE)));
+                final Relation locWid = addDefinition(composition(newRelation(), loc, wId));
+                final Relation urlocWid = addDefinition(composition(newRelation(), ur, locWid));
+                final Relation frStandard = addDefinition(composition(newRelation(), rfinv, getOrCreatePredefinedRelation(CO)));
+                yield union(r, frStandard, urlocWid);
             }
             case MM -> product(r, Tag.MEMORY, Tag.MEMORY);
             case MV -> product(r, Tag.MEMORY, Tag.VISIBLE);

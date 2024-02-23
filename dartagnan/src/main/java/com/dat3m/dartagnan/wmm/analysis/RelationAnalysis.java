@@ -872,6 +872,19 @@ public class RelationAnalysis {
         }
 
         @Override
+        public Knowledge visitReadFromUninit(ReadFromUninit urDef) {
+            final List<Load> loads = program.getThreadEvents(Load.class);
+            EventGraph may = new EventGraph();
+            EventGraph must = new EventGraph();
+
+            for (Load load : loads) {
+                may.add(load, load);
+            }
+
+            return new Knowledge(may, must);
+        }
+
+        @Override
         public Knowledge visitSameLocation(SameLocation loc) {
             EventGraph may = new EventGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);

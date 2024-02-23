@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -499,7 +500,7 @@ public class WmmEncoder implements Encoder {
         public Void visitReadFrom(ReadFrom rfDef) {
             final Relation rf = rfDef.getDefinedRelation();
             Map<MemoryEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
-            EncodingContext.EdgeEncoder edge = context.edge(rf);
+            final EncodingContext.EdgeEncoder edge = context.edge(rf);
             ra.getKnowledge(rf).getMaySet().apply((e1, e2) -> {
                 MemoryCoreEvent w = (MemoryCoreEvent) e1;
                 MemoryCoreEvent r = (MemoryCoreEvent) e2;
@@ -510,23 +511,60 @@ public class WmmEncoder implements Encoder {
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });
             for (MemoryEvent r : edgeMap.keySet()) {
-                List<BooleanFormula> edges = edgeMap.get(r);
+                // TODO: We can improve this by setting "uninit=false" whenever there is
+                //  a must-aliasing store before
+                final BooleanFormula uninit = getUninitVar((Load)r);
+                enc.add(bmgr.implication(uninit, context.equalZero(context.value(r))));
+
+                final List<BooleanFormula> rfEdges = edgeMap.get(r);
                 if (GlobalSettings.ALLOW_MULTIREADS) {
-                    enc.add(bmgr.implication(context.execution(r), bmgr.or(edges)));
+                    enc.add(bmgr.implication(context.execution(r), bmgr.or(bmgr.or(rfEdges), uninit)));
                     continue;
                 }
-                int num = edges.size();
+
                 String rPrefix = "s(" + RF + ",E" + r.getGlobalId() + ",";
-                BooleanFormula lastSeqVar = edges.get(0);
-                for (int i = 1; i < num; i++) {
+                BooleanFormula lastSeqVar = uninit;
+                for (int i = 0; i < rfEdges.size(); i++) {
                     BooleanFormula newSeqVar = bmgr.makeVariable(rPrefix + i + ")");
-                    enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, edges.get(i))));
-                    enc.add(bmgr.not(bmgr.and(edges.get(i), lastSeqVar)));
+                    enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, rfEdges.get(i))));
+                    enc.add(bmgr.not(bmgr.and(rfEdges.get(i), lastSeqVar)));
                     lastSeqVar = newSeqVar;
                 }
                 enc.add(bmgr.implication(context.execution(r), lastSeqVar));
             }
             return null;
+        }
+
+        @Override
+        public Void visitReadFromUninit(ReadFromUninit urDef) {
+            final Relation ur = urDef.getDefinedRelation();;
+            final List<Load> loads = program.getThreadEvents(Load.class);
+            final EventGraph maySet = ra.getKnowledge(ur).getMaySet();
+            final EventGraph mustSet = ra.getKnowledge(ur).getMustSet();
+
+            final List<BooleanFormula> enc = new ArrayList<>();
+            for (Load load : loads) {
+                if (!maySet.contains(load, load)) {
+                    enc.add(bmgr.not(getUninitVar(load)));
+                } else if (mustSet.contains(load, load)) {
+                    enc.add(getUninitVar(load));
+                }
+            }
+
+            final EncodingContext.EdgeEncoder edgeEnc = context.edge(ur);
+            encodeSets.get(ur).apply((e1, e2) -> {
+                if (e1 == e2 && e1 instanceof Load load) {
+                    enc.add(bmgr.equivalence(edgeEnc.encode(load, load), getUninitVar(load)));
+                } else {
+                    enc.add(bmgr.not(edgeEnc.encode(e1, e2)));
+                }
+            });
+            this.enc.addAll(enc);
+            return null;
+        }
+
+        private BooleanFormula getUninitVar(Load load) {
+            return bmgr.makeVariable("uninit " + load.getGlobalId());
         }
 
         @Override

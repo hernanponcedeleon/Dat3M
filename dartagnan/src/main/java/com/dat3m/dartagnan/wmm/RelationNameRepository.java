@@ -13,6 +13,7 @@ public class RelationNameRepository {
     public static final String EXT = "ext";
     public static final String CO = "co";
     public static final String RF = "rf";
+    public static final String UR = "UR";
     public static final String RMW = "rmw";
     public static final String CRIT = "rcu-rscs";
     public static final String IDD = "idd";
