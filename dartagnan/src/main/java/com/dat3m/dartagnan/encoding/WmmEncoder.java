@@ -510,13 +510,11 @@ public class WmmEncoder implements Encoder {
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });
-            for (MemoryEvent r : edgeMap.keySet()) {
-                // TODO: We can improve this by setting "uninit=false" whenever there is
-                //  a must-aliasing store before
-                final BooleanFormula uninit = getUninitVar((Load)r);
+            for (Load r : program.getThreadEvents(Load.class)) {
+                final BooleanFormula uninit = getUninitReadVar(r);
                 enc.add(bmgr.implication(uninit, context.equalZero(context.value(r))));
 
-                final List<BooleanFormula> rfEdges = edgeMap.get(r);
+                final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
                 if (GlobalSettings.ALLOW_MULTIREADS) {
                     enc.add(bmgr.implication(context.execution(r), bmgr.or(bmgr.or(rfEdges), uninit)));
                     continue;
@@ -545,16 +543,16 @@ public class WmmEncoder implements Encoder {
             final List<BooleanFormula> enc = new ArrayList<>();
             for (Load load : loads) {
                 if (!maySet.contains(load, load)) {
-                    enc.add(bmgr.not(getUninitVar(load)));
+                    enc.add(bmgr.not(getUninitReadVar(load)));
                 } else if (mustSet.contains(load, load)) {
-                    enc.add(getUninitVar(load));
+                    enc.add(getUninitReadVar(load));
                 }
             }
 
             final EncodingContext.EdgeEncoder edgeEnc = context.edge(ur);
             encodeSets.get(ur).apply((e1, e2) -> {
                 if (e1 == e2 && e1 instanceof Load load) {
-                    enc.add(bmgr.equivalence(edgeEnc.encode(load, load), getUninitVar(load)));
+                    enc.add(bmgr.equivalence(edgeEnc.encode(load, load), getUninitReadVar(load)));
                 } else {
                     enc.add(bmgr.not(edgeEnc.encode(e1, e2)));
                 }
@@ -563,8 +561,8 @@ public class WmmEncoder implements Encoder {
             return null;
         }
 
-        private BooleanFormula getUninitVar(Load load) {
-            return bmgr.makeVariable("uninit " + load.getGlobalId());
+        private BooleanFormula getUninitReadVar(Load load) {
+            return bmgr.makeVariable("uninit_read " + load.getGlobalId());
         }
 
         @Override

@@ -430,7 +430,8 @@ public class RefinementSolver extends ModelChecker {
             } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
                 // (iii) Special relations
                 final String name = def.getDefinedRelation().getName().get();
-                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)) {
+                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)
+                    || name.equals(UR)) {
                     constraintsToCut.add(c);
                 }
             }
