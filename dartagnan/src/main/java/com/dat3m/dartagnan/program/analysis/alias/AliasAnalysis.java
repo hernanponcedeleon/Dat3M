@@ -20,7 +20,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 
 public interface AliasAnalysis {
@@ -147,12 +147,14 @@ public interface AliasAnalysis {
         // Generates the .dot file and convert into the .png file.
         String programName = program.getName();
         String programBase = programName.substring(0, programName.lastIndexOf('.'));
-        File dotFile = new File(getOutputDirectory() + "/" + programBase + "-alias.dot");
-        try (var writer = new FileWriter(dotFile)) {
-            graphviz.generateOutput(writer);
-            writer.flush();
-            logger.info("Alias graph written to {}.", dotFile);
-            Graphviz.convert(dotFile);
+        try {
+            File dotFile = new File(getOrCreateOutputDirectory() + "/" + programBase + "-alias.dot");
+            try (var writer = new FileWriter(dotFile)) {
+                graphviz.generateOutput(writer);
+                writer.flush();
+                logger.info("Alias graph written to {}.", dotFile);
+                Graphviz.convert(dotFile);
+            }
         } catch (IOException | InterruptedException x) {
             logger.warn("Could not write initial alias graph: \"{}\".", x.getMessage());
         }

@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
-  
-  <Appenders>
 
-    <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
-    </Console>
-	
-    <File name="File" fileName="${env:DAT3M_OUTPUT}/logs/${sys:LOGNAME}.log">
-	    <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
-    </File>
-    
-  </Appenders>
-  
-  <Loggers>
-    <Root level="info">
-      <AppenderRef ref="Console"/>
-      <AppenderRef ref="File"/>
-    </Root>
-    
-  </Loggers>
+    <Properties>
+        <Property name="logDir">$${env:DAT3M_OUTPUT:-output}</Property>
+        <Property name="logFile">$${sys:LOGNAME:-dartagnan}</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
+        </Console>
+        <File name="File" fileName="${logDir}/logs/${logFile}.log">
+            <PatternLayout pattern="%d{HH:mm:ss} [%-5level] %C{1}.%M - %msg%n"/>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Root>
+    </Loggers>
 </Configuration>
