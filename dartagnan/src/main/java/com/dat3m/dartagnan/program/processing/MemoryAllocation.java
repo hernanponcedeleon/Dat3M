@@ -90,12 +90,15 @@ public class MemoryAllocation implements ProgramProcessor {
         int nextThreadId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
                 .mapToInt(Function::getId).max().getAsInt() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
-            final boolean isStaticallyInitialized = !isLitmus
-                    && memObj.isStaticallyAllocated();
-            final Iterable<Integer> fieldsToInit = isStaticallyInitialized ?
-                    memObj.getStaticallyInitializedFields() : IntStream.range(0, memObj.size()).boxed()::iterator;
+            final Iterable<Integer> fieldsToInit = isLitmus ?
+                    // TODO: Why do we require all init events for litmus code?
+                    IntStream.range(0, memObj.size()).boxed()::iterator
+                    : (memObj.isStaticallyAllocated() ? memObj.getStaticallyInitializedFields() : List.of());
 
             for(int i : fieldsToInit) {
+                // NOTE: If we do not care about distinguishing init reads from uninit reads,
+                // we could skip creating init events if their value matches with the default value anyway.
+
                 final Event init = EventFactory.newInit(memObj, i);
                 // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
                 final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId,
