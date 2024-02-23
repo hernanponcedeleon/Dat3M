@@ -20,7 +20,7 @@ let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
 let ccon = R & CON
 
-let fr = rf^-1 ; mo
+//let fr = rf^-1 ; mo
 
 let dd = (data | addr)+
 
@@ -68,8 +68,8 @@ acyclic hb as Hb
 (* coherent_memory_use *)
 let hbl = hb & loc
 
-irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
-
+//irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
+irreflexive ((fr | mo) ; rf? ; hb) as Coh
 (* visible_side_effect_set *)
 let vis = (hbl & (W * R)) \ (hbl; [W] ; hbl)
 
@@ -126,3 +126,5 @@ acyclic (((SC * SC) & scp) \ id) as Spartial
 
 // Atomicity
 empty rmw & (fre; coe) as atomic
+
+empty(UR;loc;[IW])
