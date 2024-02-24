@@ -40,5 +40,3 @@ acyclic psc | pscb as SC
 (* no OOTA *)
 let ar = rfe | bob | ppo | detour | psc | [W & STRONG];po;[W]
 acyclic ar
-
-empty(UR;loc;[IW])

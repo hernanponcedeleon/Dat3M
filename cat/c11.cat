@@ -126,5 +126,3 @@ acyclic (((SC * SC) & scp) \ id) as Spartial
 
 // Atomicity
 empty rmw & (fre; coe) as atomic
-
-empty(UR;loc;[IW])
