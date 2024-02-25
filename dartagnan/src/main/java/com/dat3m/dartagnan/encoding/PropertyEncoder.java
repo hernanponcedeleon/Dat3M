@@ -414,7 +414,7 @@ public class PropertyEncoder implements Encoder {
     */
     private class LivenessEncoder {
 
-        private class SpinIteration {
+        private static class SpinIteration {
             public final List<Load> containedLoads = new ArrayList<>();
             // Execution of the <boundJump> means the loop performed a side-effect-free
             // iteration without exiting. If such a jump is executed + all loads inside the loop
