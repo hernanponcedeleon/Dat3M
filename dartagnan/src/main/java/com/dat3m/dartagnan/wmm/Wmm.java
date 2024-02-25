@@ -13,7 +13,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -143,10 +142,10 @@ public class Wmm {
     }
 
     public void removeDefinition(Relation definedRelation) {
-        checkArgument(!(definedRelation.definition instanceof Definition.Undefined),
-                "Already undefined relation %s.", definedRelation);
-        logger.trace("Remove definition {}", definedRelation.definition);
-        definedRelation.definition = new Definition.Undefined(definedRelation);
+        if (!(definedRelation.getDefinition() instanceof Definition.Undefined)) {
+            logger.trace("Remove definition {}", definedRelation.definition);
+            definedRelation.definition = new Definition.Undefined(definedRelation);
+        }
     }
 
     public void addFilter(Filter filter) {
@@ -176,72 +175,6 @@ public class Wmm {
         }
 
         logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
-    }
-
-    public void simplify() {
-        simplifyAssociatives(Union.class, Union::new);
-        simplifyAssociatives(Intersection.class, Intersection::new);
-    }
-
-    private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
-        for (Relation r : List.copyOf(relations)) {
-            if (!r.names.isEmpty() || !cls.isInstance(r.definition) ||
-                    constraints.stream().filter(c -> !(c instanceof Definition))
-                            .anyMatch(c -> c.getConstrainedRelations().contains(r))) {
-                continue;
-            }
-            List<Relation> parents = relations.stream().filter(x -> x.getDependencies().contains(r)).toList();
-            Relation p = parents.size() == 1 ? parents.get(0) : null;
-            if (p != null && cls.isInstance(p.definition)) {
-                Relation[] o = Stream.of(r, p)
-                        .flatMap(x -> x.getDependencies().stream())
-                        .filter(x -> !r.equals(x))
-                        .distinct()
-                        .toArray(Relation[]::new);
-                removeDefinition(p);
-                Relation alternative = addDefinition(constructor.apply(p, o));
-                if (alternative != p) {
-                    logger.warn("relation {} becomes duplicate of {}", p, alternative);
-                }
-                removeDefinition(r);
-                deleteRelation(r);
-            }
-        }
-    }
-
-    public void removeUnconstrainedRelations() {
-        // A relation is considered "unconstrained" if it does not (directly or indirectly) contribute to a
-        // non-defining constraint. Such relations (and their defining constraints) can safely be deleted
-        // without changing the semantics of the memory model.
-        final DependencyCollector collector = new DependencyCollector();
-        getConstraints().stream().filter(c -> !(c instanceof Definition)).forEach(c -> c.accept(collector));
-        final Set<Relation> relevantRelations = new HashSet<>(collector.collectedRelations);
-        Wmm.ANARCHIC_CORE_RELATIONS.forEach(n -> relevantRelations.add(getRelation(n)));
-
-        for (Constraint c : List.copyOf(getConstraints())) {
-            if (!relevantRelations.containsAll(c.getConstrainedRelations())) {
-                removeConstraint(c);
-            }
-        }
-
-        for (Relation rel : Set.copyOf(getRelations())) {
-            if (!relevantRelations.contains(rel)) {
-                deleteRelation(rel);
-            }
-        }
-}
-
-    private final static class DependencyCollector implements Constraint.Visitor<Void> {
-        private final Set<Relation> collectedRelations = new HashSet<>();
-        @Override
-        public Void visitConstraint(Constraint constraint) {
-            for (Relation rel :  constraint.getConstrainedRelations()) {
-                if (collectedRelations.add(rel)) {
-                    rel.getDefinition().accept(this);
-                }
-            }
-            return null;
-        }
     }
 
     private Relation makePredefinedRelation(String name) {
