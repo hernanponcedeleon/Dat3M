@@ -59,8 +59,9 @@ public enum Property implements OptionInterface {
 
     public BooleanFormula getSMTVariable(Axiom ax, EncodingContext ctx) {
         Preconditions.checkState(this == CAT_SPEC);
-        return ctx.getBooleanFormulaManager()
-                .makeVariable("Flag " + Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+        final String varName = ctx.getFormulaManager().escape("Flag " +
+                Optional.ofNullable(ax.getName()).orElse(ax.getRelation().getNameOrTerm()));
+        return ctx.getBooleanFormulaManager().makeVariable(varName);
     }
 
     // ------------------------- Static -------------------------

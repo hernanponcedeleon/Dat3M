@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.CartesianProduct;
 import com.dat3m.dartagnan.wmm.definition.Fences;
+import com.dat3m.dartagnan.wmm.definition.SameScope;
 import com.dat3m.dartagnan.wmm.definition.SetIdentity;
 import com.dat3m.dartagnan.wmm.utils.ConstraintCopier;
 import org.apache.logging.log4j.LogManager;
@@ -87,6 +88,9 @@ public class MergeEquivalentRelations implements WmmProcessor {
         }
         if (def1 instanceof Fences f1 && def2 instanceof Fences f2) {
             return f1.getFilter().equals(f2.getFilter());
+        }
+        if (def1 instanceof SameScope s1 && def2 instanceof SameScope s2) {
+            return s1.getSpecificScope().equals(s2.getSpecificScope());
         }
 
         // Standard derived relations are equal if their dependencies are equal.
