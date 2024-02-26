@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public class MergeEquivalentRelations implements WmmProcessor {
@@ -90,7 +91,7 @@ public class MergeEquivalentRelations implements WmmProcessor {
             return f1.getFilter().equals(f2.getFilter());
         }
         if (def1 instanceof SameScope s1 && def2 instanceof SameScope s2) {
-            return s1.getSpecificScope().equals(s2.getSpecificScope());
+            return Objects.equals(s1.getSpecificScope(), s2.getSpecificScope());
         }
 
         // Standard derived relations are equal if their dependencies are equal.
@@ -114,6 +115,10 @@ public class MergeEquivalentRelations implements WmmProcessor {
 
         final List<Constraint> constraints = List.copyOf(wmm.getConstraints());
         for (Constraint c : constraints) {
+            if (c.getConstrainedRelations().stream().noneMatch(r -> r != eqMap.get(r))) {
+                continue;
+            }
+
             if (c instanceof Definition def && eqMap.get(def.getDefinedRelation()) != def.getDefinedRelation()) {
                 wmm.removeConstraint(c);
             } else if (!(c instanceof Definition.Undefined)) {

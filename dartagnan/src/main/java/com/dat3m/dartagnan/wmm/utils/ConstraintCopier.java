@@ -39,6 +39,7 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
         return copy;
     }
 
+    @Override
     public Emptiness visitEmptiness(Emptiness axiom) {
         return copyName(axiom, new Emptiness(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
     }
@@ -197,7 +198,7 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
 
     @Override
     public SameScope visitSameScope(SameScope sc) {
-        return new SameScope(translate(sc.getDefinedRelation()));
+        return new SameScope(translate(sc.getDefinedRelation()), sc.getSpecificScope());
     }
 
     @Override
