@@ -443,6 +443,21 @@ public class RelationAnalysis {
         }
 
         @Override
+        public Knowledge visitFree(Free def) {
+            final List<Event> visibleEvents = program.getThreadEventsWithAllTags(VISIBLE);
+            EventGraph must = new EventGraph();
+            EventGraph may = new EventGraph();
+
+            for (Event e1 : visibleEvents) {
+                for (Event e2 : visibleEvents) {
+                    may.add(e1, e2);
+                }
+            }
+
+            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+        }
+
+        @Override
         public Knowledge visitProduct(CartesianProduct prod) {
             final Filter domain = prod.getFirstFilter();
             final Filter range = prod.getSecondFilter();
