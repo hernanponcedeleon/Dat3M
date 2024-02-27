@@ -9,6 +9,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// A relation is considered "dead" if it does not (directly or indirectly) contribute to a
+// non-defining constraint. Such relations (and their defining constraints) can safely be deleted
+// without changing the semantics of the memory model.
 public class RemoveDeadRelations implements WmmProcessor {
 
     private RemoveDeadRelations() {
@@ -20,9 +23,6 @@ public class RemoveDeadRelations implements WmmProcessor {
 
     @Override
     public void run(Wmm memoryModel) {
-        // A relation is considered "unconstrained" if it does not (directly or indirectly) contribute to a
-        // non-defining constraint. Such relations (and their defining constraints) can safely be deleted
-        // without changing the semantics of the memory model.
         final List<Constraint> constraints = List.copyOf(memoryModel.getConstraints());
         final DependencyCollector collector = new DependencyCollector();
         constraints.stream().filter(c -> !(c instanceof Definition)).forEach(c -> c.accept(collector));
