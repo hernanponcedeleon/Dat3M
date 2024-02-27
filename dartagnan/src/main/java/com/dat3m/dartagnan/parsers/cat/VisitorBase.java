@@ -144,7 +144,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitExprFree(ExprFreeContext ctx) {
+    public Object visitExprNew(ExprNewContext ctx) {
         return addDefinition(new Free(wmm.newRelation()));
     }
 
