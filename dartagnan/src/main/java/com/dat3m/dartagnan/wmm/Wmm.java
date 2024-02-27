@@ -206,20 +206,23 @@ public class Wmm {
                 Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
                 yield composition(r, rfinv, getOrCreatePredefinedRelation(CO));
             }
-            case MM -> product(r, Tag.MEMORY, Tag.MEMORY);
-            case MV -> product(r, Tag.MEMORY, Tag.VISIBLE);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            case DATA -> intersection(r, getOrCreatePredefinedRelation(IDDTRANS), getOrCreatePredefinedRelation(MM));
+            case DATA -> intersection(r,
+                    getOrCreatePredefinedRelation(IDDTRANS),
+                    addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
+            );
             case ADDR -> {
                 Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
-                yield intersection(r, union, getOrCreatePredefinedRelation(MM));
+                Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
+                yield intersection(r, union, mm);
             }
             case CTRL -> {
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS),
                         getOrCreatePredefinedRelation(CTRLDIRECT)));
-                yield intersection(r, comp, getOrCreatePredefinedRelation(MV));
+                Relation mv = addDefinition(product(newRelation(), Tag.MEMORY, Tag.VISIBLE));
+                yield intersection(r, comp, mv);
             }
             case POLOC -> intersection(r, getOrCreatePredefinedRelation(PO), getOrCreatePredefinedRelation(LOC));
             case RFE ->  intersection(r, getOrCreatePredefinedRelation(RF), getOrCreatePredefinedRelation(EXT));
