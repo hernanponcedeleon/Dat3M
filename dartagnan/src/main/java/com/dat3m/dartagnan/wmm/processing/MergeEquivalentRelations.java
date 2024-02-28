@@ -71,7 +71,8 @@ public class MergeEquivalentRelations implements WmmProcessor {
         }
 
         if (r1.isRecursive() || r2.isRecursive()) {
-            // For now, we return false for different recursive relations.
+            // TODO: For now, we return false for recursive relations, because they are harder to compare.
+            //  They are also unlikely to turn out equivalent.
             return false;
         }
 

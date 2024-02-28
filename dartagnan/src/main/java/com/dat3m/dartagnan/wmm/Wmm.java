@@ -143,7 +143,7 @@ public class Wmm {
 
     public void removeDefinition(Relation definedRelation) {
         if (!(definedRelation.getDefinition() instanceof Definition.Undefined)) {
-            logger.trace("Remove definition {}", definedRelation.definition);
+            logger.trace("Remove definition {}", definedRelation.getDefinition());
             definedRelation.definition = new Definition.Undefined(definedRelation);
         }
     }
