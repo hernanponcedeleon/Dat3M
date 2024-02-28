@@ -201,6 +201,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private void processMemoryEvent(MemoryCoreEvent event) {
         logger.trace("{}", event);
         if (event instanceof Load) {
+            // event was already processed in processWriter(RegWriter)
             return;
         }
         final Offset<Variable> address = getResultVariable(event.getAddress(), event);
@@ -215,7 +216,20 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 final Offset<Offset<Variable>> edge = new Offset<>(value, address.offset, address.alignment);
                 addInto(address.base.stores, edge);
                 value.base.seeAlso.add(address.base);
-                processCommunication(List.of(edge), List.copyOf(address.base.loads));
+                final List<Offset<Variable>> loads = new ArrayList<>(address.base.loads);
+                for (final Variable includer : address.base.seeAlso) {
+                    if (includer.loads.isEmpty()) {
+                        continue;
+                    }
+                    for (final Offset<Variable> i : includer.includes) {
+                        if (i.base == address.base) {
+                            for (final Offset<Variable> load : includer.loads) {
+                                loads.add(join(load, i.offset, i.alignment));
+                            }
+                        }
+                    }
+                }
+                processCommunication(List.of(edge), loads);
             }
         }
     }
