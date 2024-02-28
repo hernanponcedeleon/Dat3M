@@ -136,9 +136,6 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -185,9 +182,6 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -244,9 +238,6 @@ public class AnalysisTest {
         b.addChild(0, l0);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -293,9 +284,6 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
