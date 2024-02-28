@@ -176,10 +176,10 @@ public class RefinementSolver extends ModelChecker {
 
         // ------------------------ Preprocessing / Analysis ------------------------
 
-        removeFlaggedAxiomsAndReduce(memoryModel);
+        removeFlaggedAxioms(memoryModel);
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
-        preprocessMemoryModel(task);
+        preprocessMemoryModel(task, config);
 
         performStaticProgramAnalyses(task, analysisContext, config);
         // Copy context without WMM analyses because we want to analyse a second model later
@@ -470,7 +470,7 @@ public class RefinementSolver extends ModelChecker {
         }
     }
 
-    private static void removeFlaggedAxiomsAndReduce(Wmm memoryModel) {
+    private static void removeFlaggedAxioms(Wmm memoryModel) {
         // We remove flagged axioms.
         // NOTE: Theoretically, we could cut them but in practice this causes the whole model to get eagerly encoded,
         // resulting in the worst combination: eagerly encoded model relations + lazy axiom checks.
@@ -478,7 +478,6 @@ public class RefinementSolver extends ModelChecker {
         List.copyOf(memoryModel.getAxioms()).stream()
                 .filter(Axiom::isFlagged)
                 .forEach(memoryModel::removeConstraint);
-        memoryModel.removeUnconstrainedRelations();
     }
 
     // ================================================================================================================
