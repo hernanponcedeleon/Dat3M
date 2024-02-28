@@ -65,6 +65,11 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
+    public Constraint visitFree(Free def) {
+        return new Free(translate(def.getDefinedRelation()));
+    }
+
+    @Override
     public Union visitUnion(Union def) {
         return new Union(translate(def.getDefinedRelation()), translate(def.getOperands()));
     }

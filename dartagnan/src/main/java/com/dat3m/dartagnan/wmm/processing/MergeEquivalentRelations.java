@@ -4,10 +4,7 @@ import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.definition.CartesianProduct;
-import com.dat3m.dartagnan.wmm.definition.Fences;
-import com.dat3m.dartagnan.wmm.definition.SameScope;
-import com.dat3m.dartagnan.wmm.definition.SetIdentity;
+import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.ConstraintCopier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,8 +73,8 @@ public class MergeEquivalentRelations implements WmmProcessor {
             return false;
         }
 
-        if (def1 instanceof Definition.Undefined) {
-            // Different undefined relations are not equal.
+        if (def1 instanceof Definition.Undefined || def1 instanceof Free) {
+            // Different undefined or free relations are never equal.
             return false;
         }
 

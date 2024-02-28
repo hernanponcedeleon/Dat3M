@@ -49,6 +49,7 @@ expression
     |   FENCEREL LPAR e = expression RPAR                               # exprFencerel
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
+    |   call = NEW LPAR RPAR                                            # exprNew
     ;
 
 LET     :   'let';
@@ -81,6 +82,7 @@ RBRAC   :   ']';
 FENCEREL    :   'fencerel';
 DOMAIN      :   'domain';
 RANGE       :   'range';
+NEW         :   'new';
 
 FLAG       :   'flag';
 

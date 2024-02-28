@@ -154,6 +154,14 @@ public class WmmEncoder implements Encoder {
         }
 
         @Override
+        public Void visitFree(Free def) {
+            final Relation rel = def.getDefinedRelation();
+            EncodingContext.EdgeEncoder edge = context.edge(rel);
+            encodeSets.get(rel).apply((e1, e2) -> enc.add(bmgr.implication(edge.encode(e1, e2), execution(e1, e2))));
+            return null;
+        }
+
+        @Override
         public Void visitUnion(Union union) {
             final Relation rel = union.getDefinedRelation();
             final List<Relation> operands = union.getOperands();
