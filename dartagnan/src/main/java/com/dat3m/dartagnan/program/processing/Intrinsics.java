@@ -64,9 +64,6 @@ public class Intrinsics {
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    // TODO: This id should be part of Program
-    private int constantId;
-
     private Intrinsics() {
     }
 
@@ -180,7 +177,7 @@ public class Intrinsics {
         VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineSpinStart),
         VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineSpinEnd),
         VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
-        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineUserAssert),
+        VERIFIER_ASSERT("__VERIFIER_assert", false, false, true, true, Intrinsics::inlineUserAssert),
         VERIFIER_NONDET(List.of("__VERIFIER_nondet_bool",
                 "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -892,8 +889,22 @@ public class Intrinsics {
         return List.of(assertion, abort);
     }
 
+    private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
+        if(notToInline.contains(skip)) {
+            return List.of();
+        }
+        assert call.getArguments().size() == 1;
+        final Expression condition = call.getArguments().get(0);
+        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        return List.of(assertion);
+    }
+
     private List<Event> inlineUserAssert(FunctionCall call) {
-        return inlineAssert(call, AssertionType.USER, "user assertion");
+        if (call.getCalledFunction().getIntrinsicInfo() == Info.VERIFIER_ASSERT) {
+            return inlineVerifierAssert(call, AssertionType.USER, "user assertion");
+        } else {
+            return inlineAssert(call, AssertionType.USER, "user assertion");
+        }
     }
 
     private List<Event> inlineIntegerOverflow(FunctionCall call) {
@@ -1223,7 +1234,6 @@ public class Intrinsics {
     // Simple late intrinsics
 
     private void inlineLate(Program program) {
-        constantId = 0;
         program.getThreads().forEach(this::inlineLate);
     }
 
