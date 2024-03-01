@@ -543,7 +543,7 @@ public class WmmEncoder implements Encoder {
 
         @Override
         public Void visitReadFromUninit(ReadFromUninit urDef) {
-            final Relation ur = urDef.getDefinedRelation();;
+            final Relation ur = urDef.getDefinedRelation();
             final List<Load> loads = program.getThreadEvents(Load.class);
             final EventGraph maySet = ra.getKnowledge(ur).getMaySet();
             final EventGraph mustSet = ra.getKnowledge(ur).getMustSet();

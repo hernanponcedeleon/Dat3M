@@ -207,7 +207,7 @@ public class Wmm {
                 final Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
                 final Relation ur = getOrCreatePredefinedRelation(UR);
                 final Relation loc = getOrCreatePredefinedRelation(LOC);
-                final Relation wId = addDefinition(new SetIdentity(newRelation("__W"), Filter.byTag(Tag.WRITE)));
+                final Relation wId = addDefinition(new SetIdentity(newRelation(), Filter.byTag(Tag.WRITE)));
                 final Relation locWid = addDefinition(composition(newRelation(), loc, wId));
                 final Relation urlocWid = addDefinition(composition(newRelation(), ur, locWid));
                 final Relation frStandard = addDefinition(composition(newRelation(), rfinv, getOrCreatePredefinedRelation(CO)));
