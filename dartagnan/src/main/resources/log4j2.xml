@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
-  
-  <Appenders>
 
-    <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
-    </Console>
-	
-    <File name="File" fileName="${env:DAT3M_OUTPUT}/logs/${sys:LOGNAME}.log">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
-    </File>
+    <Properties>
+        <Property name="logDir">$${env:DAT3M_OUTPUT:-output}</Property>
+        <Property name="logFile">$${sys:LOGNAME:-dartagnan}</Property>
+    </Properties>
 
-    <Console name="Refinement_Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
-    </Console>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
+        </Console>
+        <File name="File" fileName="${logDir}/logs/${logFile}.log">
+            <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
+        </File>
+        <Console name="Refinement_Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
+        </Console>
+        <File name="Refinement_File" fileName="${logDir}/logs/refinement.log">
+            <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
+        </File>
+    </Appenders>
 
-    <File name="Refinement_File" fileName="${env:DAT3M_OUTPUT}/logs/refinement.log">
-      <PatternLayout pattern="%d{[dd.MM.yyyy] HH:mm:ss} %highlight{[%level]} %C{1}.%M - %msg%n"/>
-    </File>
-    
-  </Appenders>
-  
-  <Loggers>
-    <Logger name="com.dat3m.dartagnan.verification.solving.RefinementSolver" level="info" additivity="false">
-      <AppenderRef ref="Refinement_Console"/>
-      <AppenderRef ref="Refinement_File"/>
-    </Logger>
-    <Root level="info">
-      <AppenderRef ref="Console"/>
-      <AppenderRef ref="File"/>
-    </Root>
-  </Loggers>
+    <Loggers>
+        <Logger name="com.dat3m.dartagnan.verification.solving.RefinementSolver" level="info" additivity="false">
+            <AppenderRef ref="Refinement_Console"/>
+            <AppenderRef ref="Refinement_File"/>
+        </Logger>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Root>
+    </Loggers>
 </Configuration>

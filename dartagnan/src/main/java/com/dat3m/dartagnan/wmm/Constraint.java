@@ -90,6 +90,7 @@ public interface Constraint {
 
         // Base
         default T visitUndefined(Definition.Undefined def) { return visitDefinition(def); }
+        default T visitFree(Free def) { return visitDefinition(def); }
         default T visitEmpty(Empty def) { return visitDefinition(def); }
         default T visitProgramOrder(ProgramOrder po) { return visitDefinition(po); }
         default T visitExternal(External ext) { return visitDefinition(ext); }

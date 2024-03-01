@@ -144,6 +144,11 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitExprNew(ExprNewContext ctx) {
+        return addDefinition(new Free(wmm.newRelation()));
+    }
+
+    @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         String name = ctx.n.getText();
         Object predicate = namespace.computeIfAbsent(name,

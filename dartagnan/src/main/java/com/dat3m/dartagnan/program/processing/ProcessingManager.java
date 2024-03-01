@@ -37,10 +37,10 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean dce = true;
 
-    @Option(name = DYNAMIC_PURE_LOOP_CUTTING,
+    @Option(name = DYNAMIC_SPINLOOP_DETECTION,
             description = "Instruments loops to terminate early when spinning.",
             secure = true)
-    private boolean dynamicPureLoopCutting = true;
+    private boolean dynamicSpinLoopDetection = true;
 
     // =================== Debugging options ===================
 
@@ -98,14 +98,10 @@ public class ProcessingManager implements ProgramProcessor {
                 Compilation.fromConfig(config), // We keep compilation global for now
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
-                ProgramProcessor.fromFunctionProcessor(
-                        SimpleSpinLoopDetection.fromConfig(config),
-                        Target.FUNCTIONS, false
-                ),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
+                dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
-                dynamicPureLoopCutting ? DynamicPureLoopCutting.fromConfig(config) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),

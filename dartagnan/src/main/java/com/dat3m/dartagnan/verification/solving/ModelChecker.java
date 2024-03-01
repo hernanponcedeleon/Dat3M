@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.specification.AbstractAssert;
@@ -19,15 +18,11 @@ import com.dat3m.dartagnan.program.specification.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.axiom.Emptiness;
-import com.dat3m.dartagnan.wmm.definition.Composition;
-import com.dat3m.dartagnan.wmm.definition.SetIdentity;
+import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
@@ -81,18 +76,9 @@ public abstract class ModelChecker {
             computeSpecificationFromProgramAssertions(program);
         }
     }
-
-    public static void preprocessMemoryModel(VerificationTask task) {
-        task.getMemoryModel().simplify();
-
-        // --- Add empty(UR;loc;[IW]) to enforce that initial writes are read if available.
-        final Wmm mm = task.getMemoryModel();
-        final Relation ur = mm.getOrCreatePredefinedRelation(RelationNameRepository.UR);
-        final Relation loc = mm.getOrCreatePredefinedRelation(RelationNameRepository.LOC);
-        final Relation iw = mm.addDefinition(new SetIdentity(mm.newRelation(), mm.getFilter(Tag.INIT)));
-        final Relation lociw = mm.addDefinition(new Composition(mm.newRelation(), loc, iw));
-        final Relation urlociw = mm.addDefinition(new Composition(mm.newRelation(), ur, lociw));
-        mm.addConstraint(new Emptiness(urlociw));
+    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
+        final Wmm memoryModel = task.getMemoryModel();
+        WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
 
     /**
