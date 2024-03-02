@@ -35,6 +35,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
@@ -54,6 +55,13 @@ public class WmmEncoder implements Encoder {
             secure = true)
     private boolean enableActiveSets = true;
 
+    @Option(name = MEMORY_IS_ZEROED,
+            description = "Assumes the whole memory is zeroed before the program runs." +
+                    "In particular, if set to TRUE, reads from uninitialized memory will return zero." +
+                    "Otherwise, uninitialized memory has a nondeterministic value.",
+            secure = true)
+    private boolean memoryIsZeroed = true;
+
     // =====================================================================
 
     private WmmEncoder(EncodingContext c) {
@@ -65,6 +73,7 @@ public class WmmEncoder implements Encoder {
         WmmEncoder encoder = new WmmEncoder(context);
         context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
+        logger.info("{}: {}", MEMORY_IS_ZEROED, encoder.memoryIsZeroed);
         long t0 = System.currentTimeMillis();
         if (encoder.enableActiveSets) {
             encoder.initializeEncodeSets();
@@ -520,7 +529,9 @@ public class WmmEncoder implements Encoder {
             });
             for (Load r : program.getThreadEvents(Load.class)) {
                 final BooleanFormula uninit = getUninitReadVar(r);
-                enc.add(bmgr.implication(uninit, context.equalZero(context.value(r))));
+                if (memoryIsZeroed) {
+                    enc.add(bmgr.implication(uninit, context.equalZero(context.value(r))));
+                }
 
                 final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
                 if (GlobalSettings.ALLOW_MULTIREADS) {

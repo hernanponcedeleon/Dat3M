@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
@@ -14,6 +15,10 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -27,11 +32,31 @@ import java.util.stream.Stream;
             (TODO: If possible, only allocate subset of relevant init events)
         (3) replaces the Malloc event with a local register assignment, assigning the newly created MemoryObject
  */
+@Options
 public class MemoryAllocation implements ProgramProcessor {
 
-    private MemoryAllocation() { }
+    // =========================== Configurables ===========================
 
-    public static MemoryAllocation newInstance() { return new MemoryAllocation(); }
+    @Option(name = OptionNames.INIT_DYNAMIC_ALLOCATIONS,
+            description = "Creates init events for dynamic allocations. Those init events zero out the memory.",
+            secure = true)
+    private boolean createInitsForDynamicAllocations = true;
+
+    // ======================================================================
+
+
+    private MemoryAllocation() {
+    }
+
+    public static MemoryAllocation newInstance() {
+        return new MemoryAllocation();
+    }
+
+    public static MemoryAllocation fromConfig(Configuration config) throws InvalidConfigurationException {
+        final MemoryAllocation memAlloc = new MemoryAllocation();
+        config.inject(memAlloc);
+        return memAlloc;
+    }
 
     @Override
     public void run(Program program) {
@@ -90,10 +115,14 @@ public class MemoryAllocation implements ProgramProcessor {
         int nextThreadId = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
                 .mapToInt(Function::getId).max().getAsInt() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
-            final Iterable<Integer> fieldsToInit = isLitmus ?
-                    // TODO: Why do we require all init events for litmus code?
-                    IntStream.range(0, memObj.size()).boxed()::iterator
-                    : (memObj.isStaticallyAllocated() ? memObj.getStaticallyInitializedFields() : List.of());
+            final Iterable<Integer> fieldsToInit;
+            if (isLitmus || (createInitsForDynamicAllocations && memObj.isDynamicallyAllocated())) {
+                fieldsToInit = IntStream.range(0, memObj.size()).boxed()::iterator;
+            } else if (memObj.isStaticallyAllocated()) {
+                fieldsToInit = memObj.getStaticallyInitializedFields();
+            } else {
+                fieldsToInit = List.of();
+            }
 
             for(int i : fieldsToInit) {
                 // NOTE: If we do not care about distinguishing init reads from uninit reads,
