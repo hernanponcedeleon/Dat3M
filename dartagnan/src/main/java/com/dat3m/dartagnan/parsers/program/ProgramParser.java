@@ -24,8 +24,10 @@ public class ProgramParser {
     public Program parse(File file) throws Exception {
         if (needsClang(file)) {
             file = compileWithClang(file, "");
+        }
+
+        if (needsOpt(file)) {
             file = applyLlvmPasses(file);
-            return new ProgramParser().parse(file);
         }
 
         Program program;
@@ -40,6 +42,10 @@ public class ProgramParser {
 
     private boolean needsClang(File f) {
         return f.getPath().endsWith(".c") || f.getPath().endsWith(".i");
+    }
+
+    private boolean needsOpt(File f) {
+        return needsClang(f) || f.getPath().endsWith(".ll");
     }
 
     public Program parse(String raw, String path, String format, String cflags) throws Exception {
