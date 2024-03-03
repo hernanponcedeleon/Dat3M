@@ -18,9 +18,9 @@ public class Utils {
         if (hours == 0 && minutes == 0) {
             return String.format("%d.%d secs", seconds, milliseconds);
         } else if (hours == 0) {
-            return String.format("%d:%d mins", minutes, seconds);
+            return String.format("%d:%02d mins", minutes, seconds);
         } else {
-            return String.format("%d:%d:%d hours", hours, minutes, seconds);
+            return String.format("%d:%02d:%02d hours", hours, minutes, seconds);
         }
     }
 }
