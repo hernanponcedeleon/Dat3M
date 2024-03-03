@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -129,7 +130,7 @@ public class RelationAnalysis {
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
-        logger.info("Finished regular analysis in {}ms", t1 - t0);
+        logger.info("Finished regular analysis in {}", Utils.toTimeString(t1 - t0));
 
         final StringBuilder summary = new StringBuilder()
                 .append("\n======== RelationAnalysis summary ======== \n");
@@ -139,7 +140,7 @@ public class RelationAnalysis {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
             a.runExtended();
-            logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
+            logger.info("Finished extended analysis in {}", Utils.toTimeString(System.currentTimeMillis() - t1));
             summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
             summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }

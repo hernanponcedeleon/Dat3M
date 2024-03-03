@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
@@ -80,7 +81,7 @@ public class WmmEncoder implements Encoder {
         } else {
             encoder.initializeAlternative();
         }
-        logger.info("Finished active sets in {}ms", System.currentTimeMillis() - t0);
+        logger.info("Finished active sets in {}", Utils.toTimeString(System.currentTimeMillis() - t0));
         RelationAnalysis ra = context.getAnalysisContext().get(RelationAnalysis.class);
         logger.info("Number of unknown edges: {}", context.getTask().getMemoryModel().getRelations().stream()
                 .filter(r -> !r.isInternal())
