@@ -31,6 +31,11 @@ jobs:
         distribution: 'adopt'
         cache: maven
 
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "14.0"
+    
     - name: Set DAT3M_HOME
       run: echo "DAT3M_HOME=$(echo $GITHUB_WORKSPACE)" >> $GITHUB_ENV
     
