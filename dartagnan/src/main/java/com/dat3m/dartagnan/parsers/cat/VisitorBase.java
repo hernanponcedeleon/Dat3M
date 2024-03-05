@@ -33,8 +33,6 @@ class VisitorBase extends CatBaseVisitor<Object> {
     private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
-    // Used as optimization to avoid creating multiple relations with (structurally) identical definitions.
-    private final Map<String, Relation> termMap = new HashMap<>();
 
     VisitorBase() {
         this.wmm = new Wmm();
