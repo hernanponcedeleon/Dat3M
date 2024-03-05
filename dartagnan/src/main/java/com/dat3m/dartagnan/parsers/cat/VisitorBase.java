@@ -292,19 +292,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     // ============================ Utility ============================
 
     private Relation addDefinition(Definition definition) {
-        Relation definedRelation = definition.getDefinedRelation();
-        String term = definition.getTerm();
-        Relation mappedRelation = termMap.get(definition.getTerm());
-        if (mappedRelation == null) {
-            // This is a new definition.
-            termMap.put(term, definedRelation);
-            return wmm.addDefinition(definition);
-        } else {
-            // We created an already existing definition, so we do not add this definition
-            // to the Wmm and instead delete the relation it is defining (redundantly)
-            wmm.deleteRelation(definedRelation);
-            return mappedRelation;
-        }
+        return wmm.addDefinition(definition);
     }
 
     private void checkNoRecursion(ExpressionContext c) {
