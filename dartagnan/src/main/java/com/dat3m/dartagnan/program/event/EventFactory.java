@@ -89,8 +89,9 @@ public class EventFactory {
 
     // ------------------------------------------ Memory events ------------------------------------------
 
-    public static Alloc newAlloc(Register register, Type allocType, Expression arraySize, boolean isHeapAlloc) {
-        return new Alloc(register, allocType, arraySize, isHeapAlloc);
+    public static Alloc newAlloc(Register register, Type allocType, Expression arraySize,
+                                 boolean isHeapAlloc, boolean doesZeroOutMemory) {
+        return new Alloc(register, allocType, arraySize, isHeapAlloc, doesZeroOutMemory);
     }
 
     public static Load newLoad(Register register, Expression address) {

@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -38,9 +40,9 @@ public class MemoryAllocation implements ProgramProcessor {
     // =========================== Configurables ===========================
 
     @Option(name = OptionNames.INIT_DYNAMIC_ALLOCATIONS,
-            description = "Creates init events for dynamic allocations. Those init events zero out the memory.",
+            description = "Creates init events for all dynamic allocations. Those init events zero out the memory.",
             secure = true)
-    private boolean createInitsForDynamicAllocations = true;
+    private boolean createInitsForDynamicAllocations = false;
 
     // ======================================================================
 
@@ -66,14 +68,22 @@ public class MemoryAllocation implements ProgramProcessor {
     }
 
     private void processAllocations(Program program) {
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        // FIXME: We should probably initialize depending on the allocation type of the alloc
+        final Expression zero = expressions.makeZero(TypeFactory.getInstance().getByteType());
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final MemoryObject allocatedObject = program.getMemory().allocate(getSize(alloc), false);
+            final int size = getSize(alloc);
+            final MemoryObject allocatedObject = program.getMemory().allocate(size, false);
             final Local local = EventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
             local.addTags(Tag.Std.MALLOC);
             local.copyAllMetadataFrom(alloc);
             alloc.replaceBy(local);
 
-            // TODO: We can initialize the initial memory based on the allocation type.
+            if (alloc.doesZeroOutMemory() || createInitsForDynamicAllocations) {
+                for (int i = 0; i < size; i++) {
+                    allocatedObject.setInitialValue(i, zero);
+                }
+            }
         }
     }
 
@@ -116,18 +126,13 @@ public class MemoryAllocation implements ProgramProcessor {
                 .mapToInt(Function::getId).max().getAsInt() + 1;
         for(MemoryObject memObj : program.getMemory().getObjects()) {
             final Iterable<Integer> fieldsToInit;
-            if (isLitmus || (createInitsForDynamicAllocations && memObj.isDynamicallyAllocated())) {
+            if (isLitmus) {
                 fieldsToInit = IntStream.range(0, memObj.size()).boxed()::iterator;
-            } else if (memObj.isStaticallyAllocated()) {
-                fieldsToInit = memObj.getStaticallyInitializedFields();
             } else {
-                fieldsToInit = List.of();
+                fieldsToInit = memObj.getInitializedFields();
             }
 
             for(int i : fieldsToInit) {
-                // NOTE: If we do not care about distinguishing init reads from uninit reads,
-                // we could skip creating init events if their value matches with the default value anyway.
-
                 final Event init = EventFactory.newInit(memObj, i);
                 // NOTE: We use different names to avoid symmetry detection treating all inits as symmetric.
                 final Thread thread = new Thread("Init_" + nextThreadId, initThreadType, List.of(), nextThreadId,

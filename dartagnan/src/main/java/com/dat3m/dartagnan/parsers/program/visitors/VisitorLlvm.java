@@ -514,7 +514,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         }
         //final int alignment = parseAlignment(ctx.align());
         //final int addressSpace = parseAddressSpace(ctx.addrSpace());
-        block.events.add(EventFactory.newAlloc(register, elementType, sizeExpression, false));
+        block.events.add(EventFactory.newAlloc(register, elementType, sizeExpression, false, false));
         return register;
     }
 
