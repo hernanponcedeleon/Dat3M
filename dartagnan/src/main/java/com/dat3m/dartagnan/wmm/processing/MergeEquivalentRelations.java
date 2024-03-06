@@ -118,6 +118,8 @@ public class MergeEquivalentRelations implements WmmProcessor {
             }
 
             if (c instanceof Definition def && eqMap.get(def.getDefinedRelation()) != def.getDefinedRelation()) {
+                logger.trace("Merging relation {} into relation {}",
+                        def.getDefinedRelation(), eqMap.get(def.getDefinedRelation()));
                 wmm.removeConstraint(c);
             } else if (!(c instanceof Definition.Undefined)) {
                 wmm.removeConstraint(c);
@@ -127,7 +129,6 @@ public class MergeEquivalentRelations implements WmmProcessor {
 
         eqMap.forEach((r, repr) -> {
             if (r != repr) {
-                logger.debug("Merged relation {} into relation {}", r, repr);
                 wmm.deleteRelation(r);
                 // Transfer names to representative relation.
                 r.getNames().forEach(name -> wmm.addAlias(name, repr));
