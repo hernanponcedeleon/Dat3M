@@ -121,22 +121,25 @@ public class ProgramEncoder implements Encoder {
         enc.add(startEvent.encodeExec(context));
 
         Event pred = startEvent;
-        for(Event e : startEvent.getSuccessor().getSuccessors()) {
-            // Immediate control flow
-            BooleanFormula cfCond = context.controlFlow(pred);
-            if (pred instanceof CondJump jump) {
-                cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
-            }
-
-            // Control flow via jumps
-            if (e instanceof Label label) {
-                for (CondJump jump : label.getJumpSet()) {
-                    cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+        Event next = startEvent.getSuccessor();
+        if (next != null) {
+            for(Event e : next.getSuccessors()) {
+                // Immediate control flow
+                BooleanFormula cfCond = context.controlFlow(pred);
+                if (pred instanceof CondJump jump) {
+                    cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
                 }
+
+                // Control flow via jumps
+                if (e instanceof Label label) {
+                    for (CondJump jump : label.getJumpSet()) {
+                        cfCond = bmgr.or(cfCond, bmgr.and(context.controlFlow(jump), context.jumpCondition(jump)));
+                    }
+                }
+                enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
+                enc.add(e.encodeExec(context));
+                pred = e;
             }
-            enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
-            enc.add(e.encodeExec(context));
-            pred = e;
         }
         return bmgr.and(enc);
     }

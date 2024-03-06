@@ -261,7 +261,6 @@ public class Dartagnan extends BaseOptions {
         StringBuilder summary = new StringBuilder();
 
         if (p.getFormat() != SourceLanguage.LITMUS) {
-            final SyntacticContextAnalysis synContext = newInstance(p);
             if (hasViolations) {
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {

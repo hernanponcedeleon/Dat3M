@@ -35,6 +35,7 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.InitLock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
+import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -42,6 +43,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
+
+// TODO:
 
 public class EventFactory {
 
@@ -747,6 +750,39 @@ public class EventFactory {
         public static VulkanRMWOp newRMWOp(Expression address, Register register, Expression value,
                                            IntBinaryOp op, String mo, String scope) {
             return new VulkanRMWOp(register, address, op, value, mo, scope);
+        }
+    }
+
+    // =============================================================================================
+    // =========================================== Spir-V ==========================================
+    // =============================================================================================
+
+    public static class Spirv {
+        private Spirv() {}
+
+        public static SpirvLoad newSpirvLoad(Register register, Expression address, String scope,
+                                             Set<String> tags) {
+            return new SpirvLoad(register, address, scope, tags);
+        }
+
+        public static SpirvStore newSpirvStore(Expression address, Expression value, String scope,
+                                               Set<String> tags) {
+            return new SpirvStore(address, value, scope, tags);
+        }
+
+        public static SpirvXchg newSpirvXchg(Register register, Expression address, Expression value,
+                                             String scope, Set<String> tags) {
+            return new SpirvXchg(register, address, value, scope, tags);
+        }
+
+        public static SpirvRmw newSpirvRmw(Register register, Expression address, IOpBin op, Expression value,
+                                            String scope, Set<String> tags) {
+            return new SpirvRmw(register, address, op, value, scope, tags);
+        }
+
+        public static SpirvCmpXchg newSpirvCmpXchg(Register register, Expression address, Expression cmp, Expression value,
+                                                   String scope, Set<String> eqTags, Set<String> neqTags) {
+            return new SpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
         }
     }
 

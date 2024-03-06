@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.event;
 import com.dat3m.dartagnan.configuration.Arch;
 
 import java.util.List;
+import java.util.Set;
 
 /*
     Tags can be attached to any event.
@@ -363,12 +364,59 @@ public final class Tag {
         }
     }
 
+    // =============================================================================================
+    // ========================================= Spir-V ============================================
+    // =============================================================================================
+    public static final class Spirv {
+        // Memory order
+        public static final String RELAXED = "RELAXED";
+        public static final String ACQUIRE = "ACQUIRE";
+        public static final String RELEASE = "RELEASE";
+        public static final String ACQ_REL = "ACQ_REL";
+        public static final String SEQ_CST = "SEQ_CST";
+
+        // Memory Order semantics
+        public static final String SEM_UNIFORM = "SEM_UNIFORM";
+        public static final String SEM_SUBGROUP = "SEM_SUBGROUP";
+        public static final String SEM_WORKGROUP = "SEM_WORKGROUP";
+        public static final String SEM_CROSS_WORKGROUP = "SEM_CROSS_WORKGROUP";
+        public static final String SEM_ATOMIC_COUNTER = "SEM_ATOMIC_COUNTER";
+        public static final String SEM_IMAGE = "SEM_IMAGE";
+        public static final String SEM_OUTPUT = "SEM_OUTPUT";
+        public static final String SEM_AVAILABLE = "SEM_AVAILABLE";
+        public static final String SEM_VISIBLE = "SEM_VISIBLE";
+        public static final String SEM_VOLATILE = "SEM_VOLATILE";
+
+        // Scope
+        public static final String CROSS_DEVICE = "CROSS_DEVICE";
+        public static final String DEVICE = "DEVICE";
+        public static final String WORKGROUP = "WORKGROUP";
+        public static final String SUBGROUP = "SUBGROUP";
+        public static final String INVOCATION = "INVOCATION";
+        public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
+        public static final String SHADER_CALL = "SHADER_CALL";
+
+        public static List<String> getMoTags() {
+            return List.of(RELAXED, ACQUIRE, RELEASE, ACQ_REL, SEQ_CST);
+        }
+
+        public static List<String> getScopeTags() {
+            return List.of(CROSS_DEVICE, DEVICE, WORKGROUP, SUBGROUP, INVOCATION, QUEUE_FAMILY, SHADER_CALL);
+        }
+
+        public static String getMoTag(Set<String> tags) {
+            return getMoTags().stream()
+                    .filter(tags::contains)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot find a memory order tag"));
+        }
+    }
+
     public static String getScopeTag(Event e, Arch arch) {
         return switch (arch) {
             case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
             case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
             default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
         };
-
     }
 }

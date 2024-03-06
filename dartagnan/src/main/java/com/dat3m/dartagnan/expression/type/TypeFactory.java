@@ -39,6 +39,10 @@ public final class TypeFactory {
         return pointerDifferenceType;
     }
 
+    public boolean isPointerType(Type type) {
+        return pointerDifferenceType.equals(type);
+    }
+
     public IntegerType getIntegerType(int bitWidth) {
         checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
