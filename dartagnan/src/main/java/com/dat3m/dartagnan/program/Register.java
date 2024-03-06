@@ -12,7 +12,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Register implements Expression {
 
-    private final String name;
+    private String name;
     private String cVar;
     private final Function function;
     private final Type type;
@@ -25,6 +25,10 @@ public class Register implements Expression {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getCVar() {

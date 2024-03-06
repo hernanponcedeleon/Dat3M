@@ -38,23 +38,23 @@ public final class ExpressionFactory {
         return value ? makeTrue() : makeFalse();
     }
 
-    public Expression makeNot(Expression operand) {
+    public BExprUn makeNot(Expression operand) {
         return makeUnary(BOpUn.NOT, operand);
     }
 
-    public Expression makeUnary(BOpUn operator, Expression operand) {
+    public BExprUn makeUnary(BOpUn operator, Expression operand) {
         return new BExprUn(types.getBooleanType(), operator, operand);
     }
 
-    public Expression makeAnd(Expression leftOperand, Expression rightOperand) {
+    public BExprBin makeAnd(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, BOpBin.AND, rightOperand);
     }
 
-    public Expression makeOr(Expression leftOperand, Expression rightOperand) {
+    public BExprBin makeOr(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, BOpBin.OR, rightOperand);
     }
 
-    public Expression makeBinary(Expression leftOperand, BOpBin operator, Expression rightOperand) {
+    public BExprBin makeBinary(Expression leftOperand, BOpBin operator, Expression rightOperand) {
         return new BExprBin(booleanType, leftOperand, operator, rightOperand);
     }
 
@@ -115,7 +115,7 @@ public final class ExpressionFactory {
         return makeCast(expression, type, false);
     }
 
-    public Expression makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
+    public IfExpr makeConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
         return new IfExpr(condition, ifTrue, ifFalse);
     }
 
@@ -129,39 +129,39 @@ public final class ExpressionFactory {
         return makeNEQ(operand, makeZero((IntegerType) operandType));
     }
 
-    public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
+    public Atom makeEQ(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, COpBin.EQ, rightOperand);
     }
 
-    public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
+    public Atom makeNEQ(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, COpBin.NEQ, rightOperand);
     }
 
-    public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Atom makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.LT : COpBin.ULT, rightOperand);
     }
 
-    public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Atom makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.GT : COpBin.UGT, rightOperand);
     }
 
-    public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Atom makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.LTE : COpBin.ULTE, rightOperand);
     }
 
-    public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public Atom makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? COpBin.GTE : COpBin.UGTE, rightOperand);
     }
 
-    public Expression makeBinary(Expression leftOperand, COpBin operator, Expression rightOperand) {
+    public Atom makeBinary(Expression leftOperand, COpBin operator, Expression rightOperand) {
         return new Atom(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeNEG(Expression operand, IntegerType targetType) {
+    public IExprUn makeNEG(Expression operand, IntegerType targetType) {
         return makeUnary(IOpUn.MINUS, operand, targetType);
     }
 
-    public Expression makeCTLZ(Expression operand, IntegerType targetType) {
+    public IExprUn makeCTLZ(Expression operand, IntegerType targetType) {
         return makeUnary(IOpUn.CTLZ, operand, targetType);
     }
 
@@ -172,57 +172,57 @@ public final class ExpressionFactory {
         return makeUnary(signed ? IOpUn.CAST_SIGNED : IOpUn.CAST_UNSIGNED, operand, targetType);
     }
 
-    public Expression makeUnary(IOpUn operator, Expression operand, IntegerType targetType) {
+    public IExprUn makeUnary(IOpUn operator, Expression operand, IntegerType targetType) {
         Preconditions.checkArgument(operand.getType() instanceof IntegerType,
                 "Non-integer operand for %s %s.", operator, operand);
         return new IExprUn(operator, operand, targetType);
     }
 
-    public Expression makeADD(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeADD(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.ADD, rightOperand);
     }
 
-    public Expression makeSUB(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeSUB(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.SUB, rightOperand);
     }
 
-    public Expression makeMUL(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeMUL(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MUL, rightOperand);
     }
 
-    public Expression makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public IExprBin makeDIV(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.DIV : IOpBin.UDIV, rightOperand);
     }
 
-    public Expression makeMOD(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeMOD(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.MOD, rightOperand);
     }
 
-    public Expression makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public IExprBin makeREM(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.SREM : IOpBin.UREM, rightOperand);
     }
 
-    public Expression makeAND(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeAND(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.AND, rightOperand);
     }
 
-    public Expression makeOR(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeOR(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.OR, rightOperand);
     }
 
-    public Expression makeXOR(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeXOR(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.XOR, rightOperand);
     }
 
-    public Expression makeLSH(Expression leftOperand, Expression rightOperand) {
+    public IExprBin makeLSH(Expression leftOperand, Expression rightOperand) {
         return makeBinary(leftOperand, IOpBin.LSHIFT, rightOperand);
     }
 
-    public Expression makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
+    public IExprBin makeRSH(Expression leftOperand, Expression rightOperand, boolean signed) {
         return makeBinary(leftOperand, signed ? IOpBin.ARSHIFT : IOpBin.RSHIFT, rightOperand);
     }
 
-    public Expression makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
+    public IExprBin makeBinary(Expression leftOperand, IOpBin operator, Expression rightOperand) {
         Preconditions.checkState(leftOperand.getType() instanceof IntegerType,
                 "Non-integer left operand %s %s %s.", leftOperand, operator, rightOperand);
         return new IExprBin((IntegerType) leftOperand.getType(), leftOperand, operator, rightOperand);
@@ -231,25 +231,25 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
 
-    public Expression makeConstruct(List<Expression> arguments) {
+    public Construction makeConstruct(List<Expression> arguments) {
         final AggregateType type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
         return new Construction(type, arguments);
     }
 
-    public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
+    public Construction makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
         final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
                 types.getArrayType(elementType);
         return new Construction(type, items);
     }
 
-    public Expression makeExtract(int fieldIndex, Expression object) {
+    public Extraction makeExtract(int fieldIndex, Expression object) {
         return new Extraction(fieldIndex, object);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Pointers
 
-    public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
+    public GEPExpression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
         //TODO getPointerType()
         Preconditions.checkArgument(base.getType().equals(types.getArchType()),
                 "Applying offsets to non-pointer expression.");

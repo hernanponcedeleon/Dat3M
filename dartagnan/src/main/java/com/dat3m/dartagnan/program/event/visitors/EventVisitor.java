@@ -13,6 +13,7 @@ import com.dat3m.dartagnan.program.event.lang.catomic.*;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.lang.pthread.*;
+import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.*;
 
 public interface EventVisitor<T> {
@@ -105,4 +106,11 @@ public interface EventVisitor<T> {
     default T visitPtxAtomExch(PTXAtomExch e) { return visitMemEvent(e); }
     default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
+
+    // ------------------ Spir-V Events ------------------
+    default T visitSpirvLoad(SpirvLoad e) { return visitMemEvent(e); }
+    default T visitSpirvStore(SpirvStore e) { return visitMemEvent(e); }
+    default T visitSpirvRMW(SpirvRmw e) { return visitMemEvent(e); }
+    default T visitSpirvXchg(SpirvXchg e) { return visitMemEvent(e); }
+    default T visitSpirvCmpXchg(SpirvCmpXchg e) { return visitMemEvent(e); }
 }

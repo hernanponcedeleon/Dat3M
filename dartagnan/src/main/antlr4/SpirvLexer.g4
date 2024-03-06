@@ -1691,4 +1691,3 @@ LiteralExtInstInteger : [A-Za-z] [A-Za-z0-9_]*;
 ModeExt_LineComment : ';' ~[\n]* -> skip;
 ModeExt_Whitespace : [ \t\r]+ -> skip;
 ModeExt_NewLine : [\n]+ -> popMode, skip;
-

@@ -18,7 +18,7 @@ public enum IOpBin {
                 return "-";
             case MUL:
                 return "*";
-            case DIV:
+            case DIV, UDIV:
                 return "/";
             case MOD:
                 return "%";

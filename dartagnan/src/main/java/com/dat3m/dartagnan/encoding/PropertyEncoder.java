@@ -31,7 +31,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.Property.*;
-import static com.dat3m.dartagnan.program.Program.SourceLanguage.LITMUS;
+import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
 
 public class PropertyEncoder implements Encoder {
@@ -105,7 +105,7 @@ public class PropertyEncoder implements Encoder {
 
         BooleanFormula encoding = (specType == Property.Type.SAFETY) ?
                 encodePropertyViolations(properties) : encodePropertyWitnesses(properties);
-        if (program.getFormat().equals(LITMUS) || properties.contains(LIVENESS)) {
+        if (!program.getFormat().equals(LLVM) || properties.contains(LIVENESS)) {
             // Both litmus assertions and liveness need to identify
             // the final stores to addresses.
             // TODO Optimization: This encoding can be restricted to only those addresses
@@ -162,7 +162,7 @@ public class PropertyEncoder implements Encoder {
         final EncodingContext.EdgeEncoder coEncoder = context.edge(co);
         final RelationAnalysis.Knowledge knowledge = ra.getKnowledge(co);
         final List<Init> initEvents = program.getThreadEvents(Init.class);
-        final boolean doEncodeFinalAddressValues = program.getFormat() == LITMUS;
+        final boolean doEncodeFinalAddressValues = program.getFormat() != LLVM;
         // Find transitively implied coherences. We can use these to reduce the encoding.
         final EventGraph transCo = ra.findTransitivelyImpliedCo(co);
         // Find all writes that are never last, i.e., those that will always have a co-successor.

@@ -71,7 +71,7 @@ public abstract class ModelChecker {
         ProcessingManager.fromConfig(config).run(program);
         // This is used to distinguish between Litmus tests (whose assertions are defined differently)
         // and C tests.
-        if(program.getFormat() != Program.SourceLanguage.LITMUS) {
+        if(program.getFormat() == Program.SourceLanguage.LLVM) {
             computeSpecificationFromProgramAssertions(program);
         }
     }

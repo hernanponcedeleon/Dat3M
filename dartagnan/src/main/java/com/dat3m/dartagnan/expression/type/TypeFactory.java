@@ -39,6 +39,10 @@ public final class TypeFactory {
         return pointerDifferenceType;
     }
 
+    public boolean isPointerType(Type type) {
+        return pointerDifferenceType.equals(type);
+    }
+
     public IntegerType getIntegerType() {
         return mathematicalIntegerType;
     }

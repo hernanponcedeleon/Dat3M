@@ -6,7 +6,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 public final class IntegerType implements Type {
 
-    final static int MATHEMATICAL = -1;
+    static final int MATHEMATICAL = -1;
 
     private final int bitWidth;
 

@@ -83,7 +83,7 @@ public class ThreadCreation implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
-        if (program.getFormat().equals(Program.SourceLanguage.LITMUS)) {
+        if (!program.getFormat().equals(Program.SourceLanguage.LLVM)) {
             return;
         }
 

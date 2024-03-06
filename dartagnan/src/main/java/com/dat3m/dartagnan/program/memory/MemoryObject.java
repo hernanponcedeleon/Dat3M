@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class MemoryObject extends IConst {
 
     private final int index;
-    private int size;
+    private final int size;
     BigInteger address;
     private String cVar;
     private boolean isThreadLocal;
