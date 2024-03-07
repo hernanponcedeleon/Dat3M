@@ -3,6 +3,10 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
@@ -27,6 +31,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,6 +67,10 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     private String currentRegisterName;
     // Nonnull, if a type has been parsed.
     private Type parsedType;
+
+    // -------- LLVM custom annotations --------
+    // These constants represent data that is only used in annotations
+    private final Map<String, Expression> annotationOnlyConstants = new HashMap<>();
 
     public VisitorLlvm() {}
 
@@ -112,7 +121,63 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                 entity.accept(this);
             }
         }
+
+        // Handle special globals marked by llvm.metadata
+        processLLVMSpecialGlobals();
+
         return null;
+    }
+
+    private record LLVMAnnotation(String name, List<Expression> arguments) {}
+
+    private void processLLVMSpecialGlobals() {
+        if (annotationOnlyConstants.containsKey("llvm.global.annotations")) {
+            final MemoryObject annotationObj = (MemoryObject) constantMap.get("llvm.global.annotations");
+            // Annotations are an array of 5-tuples (ptr var, ptr annotationName, ptr filePath, int32 ???, ptr args)
+            final List<Integer> initFields = annotationObj.getStaticallyInitializedFields().stream().sorted().toList();
+            assert initFields.size() % 5 == 0;
+            for (List<Integer> tuple : Lists.partition(initFields, 5)) {
+                // <var> may be a Function or a MemoryObject
+                final Expression var = annotationObj.getInitialValue(tuple.get(0));
+                final MemoryObject annotationName = getMemoryObject(annotationObj.getInitialValue(tuple.get(1)));
+                final MemoryObject annotationFile = getMemoryObject(annotationObj.getInitialValue(tuple.get(2)));
+                // final IntLiteral ignored = (IntLiteral) annotationObj.getInitialValue(annotation.get(3));
+                final boolean hasArgs = !(annotationObj.getInitialValue(tuple.get(4)) instanceof IntLiteral);
+                final MemoryObject argsObj = hasArgs ? (MemoryObject) annotationObj.getInitialValue(tuple.get(4)) : null;
+
+                final String name = byteArrayToLLVMString((ConstructExpr) annotationOnlyConstants.get(annotationName.getCVar()), true);
+                final String path = byteArrayToLLVMString((ConstructExpr) annotationOnlyConstants.get(annotationFile.getCVar()), true);
+                final List<Expression> args = hasArgs ? flattenConstants(argsObj) : List.of();
+
+                final LLVMAnnotation annotation = new LLVMAnnotation(name, args);
+            }
+
+        }
+    }
+
+    private List<Expression> flattenConstants(Expression expr) {
+        ExprTransformer flattener = new ExprTransformer() {
+            @Override
+            public Expression visitMemoryObject(MemoryObject memObj) {
+                if (memObj.getCVar() == null) {
+                    return memObj;
+                }
+                return annotationOnlyConstants.getOrDefault(memObj.getCVar(), memObj);
+            }
+        };
+        return expr.accept(flattener).getOperands();
+    }
+
+    private MemoryObject getMemoryObject(Expression expr) {
+        if (expr instanceof MemoryObject memObj) {
+            return memObj;
+        } else if (expr instanceof GEPExpr gep) {
+            assert gep.getBase() instanceof MemoryObject;
+            assert gep.getOffsets().stream().allMatch(o -> o instanceof IntLiteral lit && lit.isZero());
+            return (MemoryObject) gep.getBase();
+        }
+        final String error = String.format("Cannot retrieve a memory object from expression '%s'", expr);
+        throw new UnsupportedOperationException(error);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -267,6 +332,19 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Expression value;
         value = hasInitializer ? checkExpression(type, ctx.constant()) : program.newConstant(type);
         globalObject.setInitialValue(0, value);
+
+        // ------ This is for handling special llvm constants ------
+        for (GlobalFieldContext fieldCtx : ctx.globalField()) {
+            if (fieldCtx.section() != null) {
+                final String sectionStr = fieldCtx.section().StringLit().getText();
+                assert sectionStr.charAt(0) == '"' && sectionStr.charAt(sectionStr.length() - 1) == '"';
+                final String section = sectionStr.substring(1, sectionStr.length() - 1);
+                if (section.equals("llvm.metadata")) {
+                    annotationOnlyConstants.put(name, value);
+                }
+            }
+        }
+        // -----------------------------------------------------------
         return null;
     }
 
@@ -298,7 +376,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
                 }
                 assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
-                // https://llvm.org/docs/LangRef.html#difile suggests that "file" and "directory" 
+                // https://llvm.org/docs/LangRef.html#difile suggests that "file" and "directory"
                 // are mandatory fields and thus the ElseThrow
                 final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
                 final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
@@ -480,7 +558,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return null;
     }
 
-    @Override 
+    @Override
     public Expression visitInlineAsm(InlineAsmContext ctx) {
         final String asm = parseQuotedString(ctx.StringLit(0));
         final Event fence = switch(asm) {
@@ -875,8 +953,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         assert expectedType instanceof ArrayType;
         final Type elementType = ((ArrayType)expectedType).getElementType();
         if (ctx.StringLit() != null) {
-            //TODO handle strings
-            return expressions.makeGeneralZero(expectedType); // We make a 0 for now.
+            final String stringLit = ctx.StringLit().getText();
+            final String stringConstant = stringLit.substring(1, stringLit.length() - 1);
+            return llvmStringToByteArray(stringConstant);
         }
         final List<Expression> arrayValues = new ArrayList<>();
         for (TypeConstContext typeConst : ctx.typeConst()) {
@@ -1300,6 +1379,65 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     // ----------------------------------------------------------------------------------------------------------------
     // Helpers
+
+    private Expression llvmStringToByteArray(String string) {
+        final IntegerType byteType = types.getByteType();
+        final List<Expression> arrayValues = new ArrayList<>();
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+            final Expression byteExpr;
+            if (c == '\\') {
+                // Handle escape character
+                if (string.charAt(i + 1) == '\\') {
+                    // Case: "\\"
+                    byteExpr = expressions.makeValue('\\', byteType);
+                    i = i + 1;
+                } else {
+                    // Case: "\XY" where XY is are hex symbols
+                    int val = HexFormat.fromHexDigits(string.substring(i + 1, i + 3));
+                    assert 0 <= val && val <= 255;
+                    byteExpr = expressions.makeValue(val, byteType);
+                    i = i + 2;
+                }
+            } else {
+                byteExpr = expressions.makeValue(c, byteType);
+            }
+            arrayValues.add(byteExpr);
+        }
+        return expressions.makeArray(byteType, arrayValues, true);
+    }
+
+    private String byteArrayToLLVMString(ConstructExpr array, boolean removeTrailingZero) {
+        final ArrayType arrayType = (ArrayType) array.getType();
+        final IntegerType byteType = types.getByteType();
+        assert arrayType.getElementType().equals(byteType);
+
+        //TODO: Remove test code
+        removeTrailingZero = false;
+
+        List<Expression> elements = array.getOperands();
+        if (removeTrailingZero && ((IntLiteral)elements.get(elements.size() - 1)).isZero()) {
+            elements = elements.subList(0, elements.size() - 1);
+        }
+        final byte[] bytes = new byte[elements.size()];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte)((IntLiteral)elements.get(i)).getValueAsInt();
+        }
+        final String retVal = new String(bytes, StandardCharsets.UTF_8);
+        StringBuilder printable = new StringBuilder();
+        for (byte b : bytes) {
+            // TODO: Convert non-printable/non-standard characters into \XY format.
+            if (Character.isISOControl(b)) {
+                printable.append("\\")
+                        .append(Integer.toString(b >>> 4, 16))
+                        .append(Integer.toString(b & 16, 16));
+            } else {
+                printable.append((char)b);
+            }
+        }
+        final String test = printable.toString();
+        return retVal;
+    }
 
     private void check(boolean condition, String message, ParserRuleContext context) {
         if (!condition) {
