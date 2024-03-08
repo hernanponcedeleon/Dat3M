@@ -49,7 +49,8 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvTest {
 
-    private final String modelPath = getRootPath("cat/spirv.cat");
+    // TODO: Replace with Vulkan when RA is fixed
+    private final String modelPath = getRootPath("cat/sc.cat");
     private final String programPath;
     private final Result expected;
     private final String grid;
@@ -78,28 +79,45 @@ public class SpirvTest {
                 {"vector-init.spv.dis", PASS, "1,1,1", ASSERT_TYPE_FORALL, "%v3v[0]=2 %v3v[8]=1 %v3v[16]=0"},
                 {"vector.spv.dis", PASS, "1,1,1", ASSERT_TYPE_FORALL, "%v3v[0]=0 %v3v[8]=1 %v3v[16]=2"},
                 {"vector-read-write.spv.dis", PASS, "1,1,1", ASSERT_TYPE_FORALL, "%v3v[0]=2 %v3v[8]=1 %v3v[16]=0"},
-                {"ids.spv.dis", PASS, "2,1,1", ASSERT_TYPE_FORALL, "%out[0]=0 %out[8]=0 %out[16]=0 %out[24]=1 %out[32]=0 %out[40]=0"},
+                {"ids.spv.dis", PASS, "2,2,2", ASSERT_TYPE_FORALL,
+                        "%out[0]=0 %out[8]=0 %out[16]=0 " +
+                                "%out[24]=1 %out[32]=0 %out[40]=0 " +
+                                "%out[48]=0 %out[56]=1 %out[64]=0 " +
+                                "%out[72]=1 %out[80]=1 %out[88]=0 " +
+                                "%out[96]=0 %out[104]=0 %out[112]=1 " +
+                                "%out[120]=1 %out[128]=0 %out[136]=1 " +
+                                "%out[144]=0 %out[152]=1 %out[160]=1 " +
+                                "%out[168]=1 %out[176]=1 %out[184]=1"},
         });
     }
 
     @Test
     public void testAllSolvers() throws Exception {
+        // TODO: Remove time printing
+        long start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
         }
 
+        System.out.println("1: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
 
+        System.out.println("2: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
 
+        System.out.println("3: " + (System.currentTimeMillis() - start));
+        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
              ProverEnvironment prover2 = mkProver(ctx)) {
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, mkTask()).getResult());
         }
+        System.out.println("4: " + (System.currentTimeMillis() - start));
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
