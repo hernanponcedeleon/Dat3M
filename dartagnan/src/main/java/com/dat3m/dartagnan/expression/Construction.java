@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.Type;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -47,5 +48,18 @@ public final class Construction implements Expression {
     @Override
     public String toString() {
         return arguments.stream().map(Expression::toString).collect(Collectors.joining(", ", "{ ", " }"));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Construction that = (Construction) o;
+        return Objects.equals(type, that.type) && Objects.equals(arguments, that.arguments);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, arguments);
     }
 }

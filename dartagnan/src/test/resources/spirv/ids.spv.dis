@@ -19,8 +19,8 @@
          %c2 = OpConstant %uint 2
          %c3 = OpConstant %uint 3
          %c4 = OpConstant %uint 4
-    %ids_value = OpConstantComposite %ptr_v3uint %c0 %c1 %c2
-    %out_value = OpConstantComposite %ptr_v24uint %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0
+    %ids_value = OpConstantComposite %v3uint %c0 %c1 %c2
+    %out_value = OpConstantComposite %v24uint %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0 %c0
         %ids = OpVariable %ptr_v3uint Input %ids_value
         %out = OpVariable %ptr_v24uint Output %out_value
        %main = OpFunction %void None %func
