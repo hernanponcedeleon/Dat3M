@@ -3,14 +3,13 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
+import org.antlr.v4.runtime.RuleContext;
 
-import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -26,35 +25,66 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitOpConstantTrue(SpirvParser.OpConstantTrueContext ctx) {
-        return builder.addExpression(ctx.idResult().getText(), EXPR_FACTORY.makeTrue());
+        return builder.addConstant(ctx.idResult().getText(), EXPR_FACTORY.makeTrue());
+    }
+
+    @Override
+    public Expression visitOpSpecConstantTrue(SpirvParser.OpSpecConstantTrueContext ctx) {
+        return builder.addSpecConstant(ctx.idResult().getText(), EXPR_FACTORY.makeTrue());
     }
 
     @Override
     public Expression visitOpConstantFalse(SpirvParser.OpConstantFalseContext ctx) {
-        return builder.addExpression(ctx.idResult().getText(), EXPR_FACTORY.makeFalse());
+        return builder.addConstant(ctx.idResult().getText(), EXPR_FACTORY.makeFalse());
+    }
+
+    @Override
+    public Expression visitOpSpecConstantFalse(SpirvParser.OpSpecConstantFalseContext ctx) {
+        return builder.addSpecConstant(ctx.idResult().getText(), EXPR_FACTORY.makeFalse());
     }
 
     @Override
     public Expression visitOpConstant(SpirvParser.OpConstantContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
-        if (type instanceof IntegerType iType) {
-            BigInteger value = new BigInteger(ctx.valueLiteralContextDependentNumber().getText());
-            Expression expression = EXPR_FACTORY.makeValue(value, iType);
-            return builder.addExpression(id, expression);
-        }
-        throw new ParsingException("Illegal constant type '%s'", type);
+        String value = ctx.valueLiteralContextDependentNumber().getText();
+        return builder.addConstant(id, makeConstant(type, value));
+    }
+
+    @Override
+    public Expression visitOpSpecConstant(SpirvParser.OpSpecConstantContext ctx) {
+        String id = ctx.idResult().getText();
+        Type type = builder.getType(ctx.idResultType().getText());
+        String value = ctx.valueLiteralContextDependentNumber().getText();
+        return builder.addSpecConstant(id, makeConstant(type, value));
     }
 
     @Override
     public Expression visitOpConstantComposite(SpirvParser.OpConstantCompositeContext ctx) {
-        // TODO: Check types, tests
         String id = ctx.idResult().getText();
-        List<Expression> constituents = ctx.constituents().stream()
-                .map(c -> builder.getExpression(c.getText()))
-                .toList();
-        Expression expression = ExpressionFactory.getInstance().makeConstruct(constituents);
-        return builder.addExpression(id, expression);
+        Type type = builder.getType(ctx.idResultType().getText());
+        List<String> elementIds = ctx.constituents().stream().map(RuleContext::getText).toList();
+        for (String elementId : elementIds) {
+            if (builder.isSpecConstant(elementId)) {
+                throw new ParsingException("Reference to spec constant '%s' " +
+                        "from base composite constant '%s'", elementId, id);
+            }
+        }
+        return builder.addConstant(id, makeConstantComposite(id, type, elementIds));
+    }
+
+    @Override
+    public Expression visitOpSpecConstantComposite(SpirvParser.OpSpecConstantCompositeContext ctx) {
+        String id = ctx.idResult().getText();
+        Type type = builder.getType(ctx.idResultType().getText());
+        List<String> elementIds = ctx.constituents().stream().map(RuleContext::getText).toList();
+        for (String elementId : elementIds) {
+            if (!builder.isSpecConstant(elementId)) {
+                throw new ParsingException("Reference to base constant '%s' " +
+                        "from spec composite constant '%s'", elementId, id);
+            }
+        }
+        return builder.addSpecConstant(id, makeConstantComposite(id, type, elementIds));
     }
 
     @Override
@@ -72,22 +102,66 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         throw new ParsingException("Illegal NULL constant type '%s'", type);
     }
 
-    @Override
-    public Expression visitOpSpecConstant(SpirvParser.OpSpecConstantContext ctx) {
-        String id = ctx.idResult().getText();
-        Type type = builder.getType(ctx.idResultType().getText());
+    // Special handling for OpSpecConstantOp (wrapper for another Op)
+    public Type visitOpSpecConstantOp(Register register) {
+        // TODO: Implementation
+        return register.getType();
+    }
+
+    private Expression makeConstant(Type type, String value) {
         if (type instanceof IntegerType iType) {
-            BigInteger value = new BigInteger(ctx.valueLiteralContextDependentNumber().getText());
-            Expression expression = EXPR_FACTORY.makeValue(value, iType);
-            return builder.addExpression(id, expression);
+            long intValue = Long.parseLong(value);
+            return EXPR_FACTORY.makeValue(intValue, iType);
         }
         throw new ParsingException("Illegal constant type '%s'", type);
     }
 
-    // Special handling for OpSpecConstantOp (wrapper for another Op)
-    public Type visitOpSpecConstantOp(Register register) {
-        // TODO: Handle SpecConstants
-        return register.getType();
+    private Expression makeConstantComposite(String id, Type type, List<String> elementIds) {
+        if (type instanceof AggregateType aType) {
+            return makeConstantStruct(id, aType, elementIds);
+        } else if (type instanceof ArrayType aType) {
+            return makeConstantArray(id, aType, elementIds);
+        } else {
+            throw new ParsingException("Illegal type '%s' for composite constant '%s'", type, id);
+        }
+    }
+
+    private Expression makeConstantStruct(String id, AggregateType type, List<String> elementIds) {
+        List<Type> elementTypes = type.getDirectFields();
+        if (elementTypes.size() != elementIds.size()) {
+            throw new ParsingException("Mismatching number of elements in the composite constant '%s', " +
+                    "expected %d elements but received %d elements", id, elementTypes.size(), elementIds.size());
+        }
+        List<Expression> elements = new ArrayList<>();
+        for (int i = 0; i < elementTypes.size(); i++) {
+            Expression expression = builder.getExpression(elementIds.get(i));
+            if (!expression.getType().equals(elementTypes.get(i))) {
+                throw new ParsingException("Mismatching type of a composite constant '%s' element '%s', " +
+                        "expected '%s' but received '%s'", id, elementIds.get(i),
+                        elementTypes.get(i), expression.getType());
+            }
+            elements.add(expression);
+        }
+        return ExpressionFactory.getInstance().makeConstruct(elements);
+    }
+
+    private Expression makeConstantArray(String id, ArrayType type, List<String> elementIds) {
+        if (type.getNumElements() != elementIds.size()) {
+            throw new ParsingException("Mismatching number of elements in the composite constant '%s', " +
+                    "expected %d elements but received %d elements", id, type.getNumElements(), elementIds.size());
+        }
+        Type elementType = type.getElementType();
+        List<Expression> elements = new ArrayList<>();
+        for (String elementId : elementIds) {
+            Expression expression = builder.getExpression(elementId);
+            if (!expression.getType().equals(elementType)) {
+                throw new ParsingException("Mismatching type of a composite constant '%s' element '%s', " +
+                        "expected '%s' but received '%s'", id, elementId,
+                        elementType, expression.getType());
+            }
+            elements.add(expression);
+        }
+        return EXPR_FACTORY.makeArray(elementType, elements, true);
     }
 
     public Set<String> getSupportedOps() {
@@ -97,7 +171,10 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                 "OpConstant",
                 "OpConstantComposite",
                 "OpConstantNull",
-                "OpSpecConstant"
+                "OpSpecConstantTrue",
+                "OpSpecConstantFalse",
+                "OpSpecConstant",
+                "OpSpecConstantComposite"
         );
     }
 }

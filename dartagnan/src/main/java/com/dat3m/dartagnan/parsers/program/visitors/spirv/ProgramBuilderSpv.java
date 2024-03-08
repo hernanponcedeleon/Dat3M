@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuildIn;
@@ -19,7 +18,6 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -44,6 +42,7 @@ public class ProgramBuilderSpv {
     private final Map<String, Label> labels = new HashMap<>();
     private final Deque<Label> blocks = new ArrayDeque<>();
     private final Map<String, List<String>> decorations = new HashMap<>();
+    private final Set<String> specConstants = new HashSet<>();
     private final Program program;
 
     private String entryPointId;
@@ -211,6 +210,20 @@ public class ProgramBuilderSpv {
         }
         expressions.put(name, value);
         return value;
+    }
+
+    // TODO: Check during decoration if a constant is Spec
+    public boolean isSpecConstant(String id) {
+        return specConstants.contains(id);
+    }
+
+    public Expression addConstant(String id, Expression expression) {
+        return addExpression(id, expression);
+    }
+
+    public Expression addSpecConstant(String id, Expression expression) {
+        specConstants.add(id);
+        return addExpression(id, expression);
     }
 
     public Register getRegister(String id) {

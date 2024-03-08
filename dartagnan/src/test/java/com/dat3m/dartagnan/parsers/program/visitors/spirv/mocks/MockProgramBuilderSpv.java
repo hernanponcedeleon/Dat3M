@@ -38,6 +38,12 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         return (ArrayType) addType(id, type);
     }
 
+    public AggregateType mockAggregateType(String id, String... innerTypeIds) {
+        List<Type> innerTypes = Arrays.stream(innerTypeIds).map(this::getType).toList();
+        AggregateType type = TYPE_FACTORY.getAggregateType(innerTypes);
+        return (AggregateType) addType(id, type);
+    }
+
     public FunctionType mockFunctionType(String id, String retTypeId, String... argTypeIds) {
         Type retType = getType(retTypeId);
         List<Type> argTypes = Arrays.stream(argTypeIds).map(this::getType).toList();
