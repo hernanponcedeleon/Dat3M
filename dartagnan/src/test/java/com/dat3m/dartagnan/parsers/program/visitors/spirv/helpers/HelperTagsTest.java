@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv;
+package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import org.junit.Test;

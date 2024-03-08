@@ -5,9 +5,11 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuildIn;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.MemoryTransformer;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.RegisterTransformer;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.*;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperDecorations;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.MemoryTransformer;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.RegisterTransformer;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -34,7 +36,8 @@ import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TY
 
 public class ProgramBuilderSpv {
 
-    private final HelperTags helper = new HelperTags();
+    private final HelperTags helperTags = new HelperTags();
+    private final HelperDecorations helperDecorations = new HelperDecorations();
     private final Map<String, Type> types = new HashMap<>();
     private final Map<String, Type> pointedTypes = new HashMap<>();
     private final Map<String, Expression> expressions = new HashMap<>();
@@ -43,7 +46,6 @@ public class ProgramBuilderSpv {
     private final Map<Label, Event> phiBlocks = new HashMap<>();
     private final Map<String, Label> labels = new HashMap<>();
     private final Deque<Label> blocks = new ArrayDeque<>();
-    private final Map<String, List<String>> decorations = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
     private final Map<String, Expression> inputs = new HashMap<>();
     private final Program program;
@@ -251,7 +253,6 @@ public class ProgramBuilderSpv {
         inputs.put(name, value);
     }
 
-    // TODO: Check during decoration if a constant is Spec
     public boolean isSpecConstant(String id) {
         return specConstants.contains(id);
     }
@@ -281,16 +282,16 @@ public class ProgramBuilderSpv {
         return label;
     }
 
-    public void addDecoration(String id, String decoration) {
-        decorations.computeIfAbsent(id, k -> new ArrayList<>()).add(decoration);
-    }
-
     public String getScope(String id) {
-        return helper.visitScope(id, getExpression(id));
+        return helperTags.visitScope(id, getExpression(id));
     }
 
     public Set<String> getSemantics(String id) {
-        return helper.visitIdMemorySemantics(id, getExpression(id));
+        return helperTags.visitIdMemorySemantics(id, getExpression(id));
+    }
+
+    public Decoration getDecoration(DecorationType type) {
+        return helperDecorations.getDecoration(type);
     }
 
     private Function getCurrentFunctionOrThrowError() {
@@ -306,11 +307,11 @@ public class ProgramBuilderSpv {
         ScopeHierarchy scope = ScopeHierarchyForVulkan(0, z, y);
         Thread thread = createThread(tid, scope, function);
         copyEvents(tid, thread, function);
-        BuildIn decoration = new BuildIn(x, y, z);
         Memory memory = program.getMemory();
 
         // Create thread-local variables
-        ExprTransformer transformer = new MemoryTransformer(tid, memory, decoration, decorations);
+        BuiltIn builtIn = (BuiltIn)getDecoration(DecorationType.BUILT_IN);
+        ExprTransformer transformer = new MemoryTransformer(tid, memory, builtIn.setHierarchy(x, y, z));
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         return thread;
     }
