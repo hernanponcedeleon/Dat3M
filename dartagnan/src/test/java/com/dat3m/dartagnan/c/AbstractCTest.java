@@ -81,7 +81,7 @@ public abstract class AbstractCTest {
     protected final Provider<Wmm> wmmProvider = getWmmProvider();
     protected final Provider<Solvers> solverProvider = getSolverProvider();
     protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
-    protected final Provider<Configuration> configurationProvider = Provider.fromSupplier(this::getConfiguration);
+    protected final Provider<Configuration> configurationProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> taskProvider = Providers.createTask(programProvider, wmmProvider, propertyProvider, targetProvider, boundProvider, configurationProvider);
     protected final Provider<SolverContext> contextProvider = Providers.createSolverContextFromManager(shutdownManagerProvider, solverProvider);
     protected final Provider<ProverEnvironment> proverProvider = Providers.createProverWithFixedOptions(contextProvider, SolverContext.ProverOptions.GENERATE_MODELS);
