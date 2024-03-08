@@ -92,8 +92,7 @@ public class C11OrigLocksTest extends AbstractCTest {
         assertEquals(expected, s.getResult());
     }
 
-    // CAAT might not yet work for C11 
-    // @Test
+    @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
