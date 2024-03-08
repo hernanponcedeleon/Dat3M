@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuildIn;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.MemoryTransformer;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.RegisterTransformer;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -21,10 +23,10 @@ import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
@@ -252,34 +254,11 @@ public class ProgramBuilderSpv {
         ScopeHierarchy scope = ScopeHierarchyForVulkan(0, z, y);
         Thread thread = createThread(tid, scope, function);
         copyEvents(tid, thread, function);
-
-        // ------------------- Create thread-local variables -------------------
         BuildIn decoration = new BuildIn(x, y, z);
         Memory memory = program.getMemory();
-        Map<Expression, Expression> global2ThreadLocal = new HashMap<>();
-        final ExprTransformer transformer = new ExprTransformer() {
-            @Override
-            public Expression visit(MemoryObject memObj) {
-                if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
-                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
-                    final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
-                    threadLocalCopy.setCVar(varName);
-                    // TODO: SpecConstant can override some decorations (not buildIn)
-                    if (decorations.containsKey(memObj.getCVar())) {
-                        for (String decId : decorations.get(memObj.getCVar())) {
-                            decoration.decorate(threadLocalCopy, decId);
-                        }
-                    } else {
-                        for (int i = 0; i < memObj.size(); i++) {
-                            threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
-                        }
-                    }
-                    global2ThreadLocal.put(memObj, threadLocalCopy);
-                }
-                return global2ThreadLocal.getOrDefault(memObj, memObj);
-            }
-        };
 
+        // Create thread-local variables
+        ExprTransformer transformer = new MemoryTransformer(tid, memory, decoration, decorations);
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         return thread;
     }
@@ -296,33 +275,25 @@ public class ProgramBuilderSpv {
 
     private void copyEvents(int id, Thread thread, Function function) {
         // ------------------- Copy registers from target function into new thread -------------------
-        Map<Register, Register> registers = new HashMap<>();
-        for (Register reg : function.getRegisters()) {
-            registers.put(reg, thread.getOrNewRegister(reg.getName(), reg.getType()));
-        }
 
-        ExpressionVisitor<Expression> regSubstituter = new ExprTransformer() {
-            @Override
-            public Expression visit(Register reg) {
-                return Preconditions.checkNotNull(registers.get(reg));
-            }
-        };
+        Map<Register, Register> mapping = function.getRegisters().stream()
+                .collect(Collectors.toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
+        ExprTransformer transformer = new RegisterTransformer(mapping);
 
         // ------------------- Copy, update, and append the function body to the thread -------------------
-        final List<Event> body = new ArrayList<>();
-        final Map<Event, Event> copyMap = new HashMap<>();
+        List<Event> body = new ArrayList<>();
+        Map<Event, Event> copyMap = new HashMap<>();
         function.getEvents().forEach(e -> body.add(copyMap.computeIfAbsent(e, Event::getCopy)));
         for (Event copy : body) {
             if (copy instanceof EventUser user) {
                 user.updateReferences(copyMap);
             }
             if (copy instanceof RegReader reader) {
-                reader.transformExpressions(regSubstituter);
+                reader.transformExpressions(transformer);
             }
             if (copy instanceof RegWriter regWriter) {
-                regWriter.setResultRegister(registers.get(regWriter.getResultRegister()));
+                regWriter.setResultRegister(mapping.get(regWriter.getResultRegister()));
             }
-            // TODO: Handle events writing to multiple registers
         }
         thread.getEntry().insertAfter(body);
 
@@ -332,7 +303,7 @@ public class ProgramBuilderSpv {
         thread.append(threadReturnLabel);
         thread.append(threadEnd);
 
-        // ------------------- Replace AbortIf, Return, and pthread_exit -------------------
+        // ------------------- Replace AbortIf, Return  -------------------
         final Register returnRegister = function.hasReturnValue() ?
                 thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
         for (Event e : thread.getEvents()) {
@@ -341,10 +312,8 @@ public class ProgramBuilderSpv {
                 jumpToEnd.addTags(abort.getTags());
                 jumpToEnd.copyAllMetadataFrom(abort);
                 abort.replaceBy(jumpToEnd);
-            } else if (e instanceof Return || (e instanceof FunctionCall call
-                    && call.isDirectCall() && call.getCalledFunction().getName().equals("pthread_exit"))) {
-                final Expression retVal = (e instanceof Return ret) ? ret.getValue().orElse(null)
-                        : ((FunctionCall)e).getArguments().get(0);
+            } else if (e instanceof Return ret) {
+                final Expression retVal = ret.getValue().orElse(null);
                 final List<Event> replacement = eventSequence(
                         returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
                         EventFactory.newGoto(threadReturnLabel)
