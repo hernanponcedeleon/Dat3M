@@ -401,7 +401,7 @@ public class ProgramBuilderSpv {
     // ================
     // TODO: !!!
     private static List<Integer> threadGrid = List.of(1, 1, 1);
-    public static void setThreadGrid(List<Integer> threadGrid) {
+    public void setThreadGrid(List<Integer> threadGrid) {
         // TODO: Validate
         ProgramBuilderSpv.threadGrid = threadGrid;
     }

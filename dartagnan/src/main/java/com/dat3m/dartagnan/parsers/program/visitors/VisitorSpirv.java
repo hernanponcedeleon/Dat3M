@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,8 +62,46 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
-        this.visitChildren(ctx);
+        visitSpvHeader(ctx.spvHeader());
+        visitSpvInstructions(ctx.spvInstructions());
         return builder.build();
+    }
+
+    @Override
+    public Program visitSpvHeader(SpirvParser.SpvHeaderContext ctx) {
+        visitInputAnnotation(ctx.inputAnnotation());
+        visitOutputAnnotation(ctx.outputAnnotation());
+        visitConfigAnnotation(ctx.configAnnotation());
+        return null;
+    }
+
+
+    @Override
+    public Program visitInputAnnotation(SpirvParser.InputAnnotationContext ctx) {
+        //TODO: Implement
+        return null;
+    }
+
+    @Override
+    public Program visitOutputAnnotation(SpirvParser.OutputAnnotationContext ctx) {
+        //TODO: Implement
+        return null;
+    }
+
+    @Override
+    public Program visitConfigAnnotation(SpirvParser.ConfigAnnotationContext ctx) {
+        int workGroupID = Integer.parseInt(ctx.ModeAnn_Integer().get(0).getText());
+        int subGroupID = Integer.parseInt(ctx.ModeAnn_Integer().get(1).getText());
+        int threadID = Integer.parseInt(ctx.ModeAnn_Integer().get(2).getText());
+        List<Integer> threadGrid = List.of(workGroupID, subGroupID, threadID);
+        builder.setThreadGrid(threadGrid);
+        return null;
+    }
+
+    @Override
+    public Program visitSpvInstructions(SpirvParser.SpvInstructionsContext ctx) {
+        this.visitChildren(ctx);
+        return null;
     }
 
     @Override

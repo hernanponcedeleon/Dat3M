@@ -1680,6 +1680,7 @@ LiteralFloat : [+-]? [0-9]+ '.' [0-9]*;
 LiteralInteger : '-'? [0-9]+;
 LiteralUnsignedInteger : [0-9]+;
 LiteralString : '"' ~[\n"]* '"';
+AnnotationStart : ';' [ \t]* [=]+ [ \t]* [\n\r] -> pushMode(ModeAnn);
 LineComment : ';' ~[\n]* -> skip;
 Whitespace : [ \t\r\n]+ -> skip;
 
@@ -1691,3 +1692,14 @@ LiteralExtInstInteger : [A-Za-z] [A-Za-z0-9_]*;
 ModeExt_LineComment : ';' ~[\n]* -> skip;
 ModeExt_Whitespace : [ \t\r]+ -> skip;
 ModeExt_NewLine : [\n]+ -> popMode, skip;
+
+mode ModeAnn;
+LineEntry       : ';' -> skip;
+Colon           : ':';
+Comma           : ',';
+ModeAnn_Input   : 'Input';
+ModeAnn_Output  : 'Output';
+ModeAnn_Config  : 'Config';
+ModeAnn_Integer : [0-9]+;
+ModeAnn_Whitespace : [ \t\r\n]+ -> skip;
+AnnotationEnd : ';' [ \t]* [=]+ [ \t]* [\n\r] -> popMode;

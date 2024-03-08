@@ -2,7 +2,15 @@ grammar Spirv;
 
 options { tokenVocab = SpirvLexer; }
 
-spv : op* EOF;
+spv : spvHeader? spvInstructions EOF;
+
+spvHeader : AnnotationStart inputAnnotation outputAnnotation configAnnotation AnnotationEnd;
+
+inputAnnotation   : ModeAnn_Input Colon;
+outputAnnotation  : ModeAnn_Output Colon;
+configAnnotation  : ModeAnn_Config Colon ModeAnn_Integer Comma ModeAnn_Integer Comma ModeAnn_Integer;
+
+spvInstructions : op*;
 
 op
     :   opAbsISubINTEL

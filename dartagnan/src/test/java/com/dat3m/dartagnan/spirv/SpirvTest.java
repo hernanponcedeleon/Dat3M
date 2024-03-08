@@ -135,9 +135,7 @@ public class SpirvTest {
 
     private VerificationTask mkTask() throws Exception {
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder().withTarget(Arch.VULKAN);
-        // TODO: threadGrip and assertions should be parsed from the test file
-        List<Integer> threadGrid = Arrays.stream(grid.split(",")).map(Integer::parseInt).toList();
-        ProgramBuilderSpv.setThreadGrid(threadGrid);
+        // TODO: assertions should be parsed from the test file
         Program program = new ProgramParser().parse(new File(programPath));
         AbstractAssert specification = mkAssert(program, spec);
         specification.setType(specType);
