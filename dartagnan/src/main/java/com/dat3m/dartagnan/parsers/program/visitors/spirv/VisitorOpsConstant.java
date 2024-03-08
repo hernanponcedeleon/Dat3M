@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
 import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
@@ -15,32 +17,36 @@ import java.util.Set;
 
 public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
+    private final SpecId decorator;
 
     public VisitorOpsConstant(ProgramBuilderSpv builder) {
         this.builder = builder;
+        this.decorator = (SpecId) builder.getDecoration(DecorationType.SPEC_ID);
     }
 
     @Override
     public Expression visitOpConstantTrue(SpirvParser.OpConstantTrueContext ctx) {
-        return builder.addConstant(ctx.idResult().getText(), EXPR_FACTORY.makeTrue());
+        return builder.addConstant(ctx.idResult().getText(), FACTORY.makeTrue());
     }
 
     @Override
     public Expression visitOpSpecConstantTrue(SpirvParser.OpSpecConstantTrueContext ctx) {
-        return builder.addSpecConstant(ctx.idResult().getText(), EXPR_FACTORY.makeTrue());
+        String id = ctx.idResult().getText();
+        return builder.addSpecConstant(id, makeBooleanSpecConstant(id, true));
     }
 
     @Override
     public Expression visitOpConstantFalse(SpirvParser.OpConstantFalseContext ctx) {
-        return builder.addConstant(ctx.idResult().getText(), EXPR_FACTORY.makeFalse());
+        return builder.addConstant(ctx.idResult().getText(), FACTORY.makeFalse());
     }
 
     @Override
     public Expression visitOpSpecConstantFalse(SpirvParser.OpSpecConstantFalseContext ctx) {
-        return builder.addSpecConstant(ctx.idResult().getText(), EXPR_FACTORY.makeFalse());
+        String id = ctx.idResult().getText();
+        return builder.addSpecConstant(id, makeBooleanSpecConstant(id, false));
     }
 
     @Override
@@ -55,7 +61,10 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     public Expression visitOpSpecConstant(SpirvParser.OpSpecConstantContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
-        String value = ctx.valueLiteralContextDependentNumber().getText();
+        String value = decorator.getValue(id);
+        if (value == null) {
+            value = ctx.valueLiteralContextDependentNumber().getText();
+        }
         return builder.addSpecConstant(id, makeConstant(type, value));
     }
 
@@ -92,11 +101,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
         if (type instanceof BooleanType) {
-            Expression expression = EXPR_FACTORY.makeFalse();
+            Expression expression = FACTORY.makeFalse();
             return builder.addExpression(id, expression);
         }
         if (type instanceof IntegerType iType) {
-            Expression expression = EXPR_FACTORY.makeZero(iType);
+            Expression expression = FACTORY.makeZero(iType);
             return builder.addExpression(id, expression);
         }
         throw new ParsingException("Illegal NULL constant type '%s'", type);
@@ -108,10 +117,21 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         return register.getType();
     }
 
+    private Expression makeBooleanSpecConstant(String id, boolean value) {
+        String decoration = decorator.getValue(id);
+        if (decoration != null) {
+            value = !"0".equals(decoration);
+        }
+        if (value) {
+            return FACTORY.makeTrue();
+        }
+        return FACTORY.makeFalse();
+    }
+
     private Expression makeConstant(Type type, String value) {
         if (type instanceof IntegerType iType) {
             long intValue = Long.parseLong(value);
-            return EXPR_FACTORY.makeValue(intValue, iType);
+            return FACTORY.makeValue(intValue, iType);
         }
         throw new ParsingException("Illegal constant type '%s'", type);
     }
@@ -161,7 +181,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             }
             elements.add(expression);
         }
-        return EXPR_FACTORY.makeArray(elementType, elements, true);
+        return FACTORY.makeArray(elementType, elements, true);
     }
 
     public Set<String> getSupportedOps() {

@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
@@ -554,6 +555,141 @@ public class VisitorOpsConstantTest {
             assertEquals("Mismatching number of elements in the composite constant '%s', " +
                     "expected 2 elements but received 1 elements", e.getMessage());
         }
+    }
+
+    @Test
+    public void testSpecConstantFalseOverride() {
+        // given
+        String input = """
+                %f1 = OpSpecConstantFalse %bool
+                %f2 = OpSpecConstantFalse %bool
+                %f3 = OpSpecConstantFalse %bool
+                %f4 = OpSpecConstantFalse %bool
+                %b4v = OpSpecConstantComposite %bool4v %f1 %f2 %f3 %f4
+                """;
+
+        BooleanType bType = builder.mockBoolType("%bool");
+        builder.mockVectorType("%bool4v", "%bool", 4);
+
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f1", "1");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f3", "123");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f4", "0");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression f1 = FACTORY.makeTrue();
+        Expression f2 = FACTORY.makeFalse();
+        Expression f3 = FACTORY.makeTrue();
+        Expression f4 = FACTORY.makeFalse();
+
+        assertEquals(f1, data.get("%f1"));
+        assertEquals(f2, data.get("%f2"));
+        assertEquals(f3, data.get("%f3"));
+        assertEquals(f4, data.get("%f4"));
+
+        assertEquals(FACTORY.makeArray(bType, List.of(f1, f2, f3, f4), true),
+                data.get("%b4v"));
+    }
+
+    @Test
+    public void testSpecConstantTrueOverride() {
+        // given
+        String input = """
+                %t1 = OpSpecConstantTrue %bool
+                %t2 = OpSpecConstantTrue %bool
+                %t3 = OpSpecConstantTrue %bool
+                %t4 = OpSpecConstantTrue %bool
+                %b4v = OpSpecConstantComposite %bool4v %t1 %t2 %t3 %t4
+                """;
+
+        BooleanType bType = builder.mockBoolType("%bool");
+        builder.mockVectorType("%bool4v", "%bool", 4);
+
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t1", "0");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t3", "123");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t4", "1");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression t1 = FACTORY.makeFalse();
+        Expression t2 = FACTORY.makeTrue();
+        Expression t3 = FACTORY.makeTrue();
+        Expression t4 = FACTORY.makeTrue();
+
+        assertEquals(t1, data.get("%t1"));
+        assertEquals(t2, data.get("%t2"));
+        assertEquals(t3, data.get("%t3"));
+        assertEquals(t4, data.get("%t4"));
+
+        assertEquals(FACTORY.makeArray(bType, List.of(t1, t2, t3, t4), true),
+                data.get("%b4v"));
+    }
+
+    @Test
+    public void testSpecConstantOverride() {
+        // given
+        String input = """
+                %i1 = OpSpecConstant %int 1
+                %i2 = OpSpecConstant %int 2
+                %i3 = OpSpecConstant %int 3
+                %i3v = OpSpecConstantComposite %int3v %i1 %i2 %i3
+                """;
+
+        IntegerType iType = builder.mockIntType("%int", 64);
+        builder.mockVectorType("%int3v", "%int", 3);
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i1", "11");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i3", "3");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression i1 = FACTORY.makeValue(11, iType);
+        Expression i2 = FACTORY.makeValue(2, iType);
+        Expression i3 = FACTORY.makeValue(3, iType);
+
+        assertEquals(i1, data.get("%i1"));
+        assertEquals(i2, data.get("%i2"));
+        assertEquals(i3, data.get("%i3"));
+
+        assertEquals(FACTORY.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
+    }
+
+    @Test
+    public void testOverrideNotSpecConstant() {
+        // given
+        String input = """
+                %f = OpConstantFalse %bool
+                %t = OpConstantTrue %bool
+                %i = OpConstant %int 1
+                %s = OpConstantComposite %struct %f %t %i
+                """;
+
+        builder.mockBoolType("%bool");
+        IntegerType iType = builder.mockIntType("%int", 64);
+        builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
+
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f", "1");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t", "0");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i", "2");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression f = FACTORY.makeFalse();
+        Expression t = FACTORY.makeTrue();
+        Expression i = FACTORY.makeValue(1, iType);
+
+        assertEquals(f, data.get("%f"));
+        assertEquals(t, data.get("%t"));
+        assertEquals(i, data.get("%i"));
+
+        assertEquals(FACTORY.makeConstruct(List.of(f, t, i)), data.get("%s"));
     }
 
     private Map<String, Expression> parseConstants(String input) {
