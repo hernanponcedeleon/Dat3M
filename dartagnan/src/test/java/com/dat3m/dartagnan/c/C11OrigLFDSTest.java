@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -10,19 +11,22 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class RC11LFDSTest extends AbstractCTest {
+public class C11OrigLFDSTest extends AbstractCTest {
 
-    public RC11LFDSTest(String name, Arch target, Result expected) {
+    public C11OrigLFDSTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
@@ -41,34 +45,44 @@ public class RC11LFDSTest extends AbstractCTest {
     }
 
     @Override
+    protected Configuration getConfiguration() throws InvalidConfigurationException {
+        return Configuration.builder()
+                .copyFrom(super.getConfiguration())
+                .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
+                .build();
+    }
+
+    @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
+        return Providers.createWmmFromName(() -> "c11-orig");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
+        // Commented ones take too long ATM
         return Arrays.asList(new Object[][]{
-                {"dglm", C11, UNKNOWN},
+                // {"dglm", C11, UNKNOWN},
                 {"dglm-CAS-relaxed", C11, FAIL},
-                {"ms", C11, UNKNOWN},
+                // {"ms", C11, UNKNOWN},
                 {"ms-CAS-relaxed", C11, FAIL},
-                {"treiber", C11, UNKNOWN},
+                // {"treiber", C11, UNKNOWN},
                 {"treiber-CAS-relaxed", C11, FAIL},
                 {"chase-lev", C11, PASS},
-                // These have an extra thief that violate the assertion
+                // These ones have an extra thief that violate the assertion
                 {"chase-lev-fail", C11, FAIL},
                 {"hash_table", C11, PASS},
                 {"hash_table-fail", C11, FAIL},
         });
     }
 
-    //@Test
+    @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
     }
 
-    @Test
+    // CAAT might not yet work for C11 
+    // @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());

@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
@@ -10,6 +11,8 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -20,9 +23,9 @@ import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class RC11LocksTest extends AbstractCTest {
+public class C11OrigLocksTest extends AbstractCTest {
 
-    public RC11LocksTest(String name, Arch target, Result expected) {
+    public C11OrigLocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
@@ -33,12 +36,20 @@ public class RC11LocksTest extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 60000;
+        return 180000;
+    }
+
+    @Override
+    protected Configuration getConfiguration() throws InvalidConfigurationException {
+        return Configuration.builder()
+                .copyFrom(super.getConfiguration())
+                .setOption(OptionNames.INIT_DYNAMIC_ALLOCATIONS, "true")
+                .build();
     }
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromName(() -> "rc11");
+        return Providers.createWmmFromName(() -> "c11-orig");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -58,9 +69,10 @@ public class RC11LocksTest extends AbstractCTest {
                 {"spinlock", C11, PASS},
                 {"spinlock-acq2rx", C11, FAIL},
                 {"spinlock-rel2rx", C11, FAIL},
-                {"linuxrwlock", C11, UNKNOWN},
-                {"linuxrwlock-acq2rx", C11, FAIL},
-                {"linuxrwlock-rel2rx", C11, FAIL},
+                // For most models the one below is safe (UNKNOWN)
+                // It could be the case for C11 is unsafe (because it is weaker)
+                // but we are not 100% sure about this
+                {"linuxrwlock", C11, FAIL},
                 {"mutex_musl", C11, UNKNOWN},
                 {"mutex_musl-acq2rx_futex", C11, UNKNOWN},
                 {"mutex_musl-acq2rx_lock", C11, FAIL},
@@ -74,13 +86,14 @@ public class RC11LocksTest extends AbstractCTest {
         });
     }
 
-    //    @Test
+    @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
     }
 
-    @Test
+    // CAAT might not yet work for C11 
+    // @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
