@@ -197,6 +197,9 @@ public class ExecutionGraphVisualizer {
         String tag = e.getEvent().toString();
         if (e.isMemoryEvent()) {
             Object address = addresses.get(e.getAccessedAddress());
+            if (address == null) {
+                address = e.getAccessedAddress();
+            }
             BigInteger value = e.getValue();
             MemoryOrder mo = e.getEvent().getMetadata(MemoryOrder.class);
             String moString = mo == null ? "" : ", " + mo.value();

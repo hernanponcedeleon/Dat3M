@@ -2,9 +2,9 @@ package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.Property;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
@@ -12,16 +12,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.sosy_lab.common.configuration.Configuration;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.IMM;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -42,8 +40,8 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.defaultConfiguration());
+    protected Configuration getConfiguration(){
+        return Configuration.defaultConfiguration();
     }
 
     @Override
@@ -53,7 +51,7 @@ public class LibvsyncTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/imm.cat"))));
+        return Providers.createWmmFromArch(() -> IMM);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

@@ -203,8 +203,22 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case FR ->  {
-                Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
-                yield composition(r, rfinv, getOrCreatePredefinedRelation(CO));
+                // rf^-1;co
+                final Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
+                final Relation co = getOrCreatePredefinedRelation(CO);
+                final Relation frStandard = addDefinition(composition(newRelation(), rfinv, co));
+
+                // ([R] \ [range(rf)]);loc;[W]
+                final Relation reads = addDefinition(new SetIdentity(newRelation(), getFilter(Tag.READ)));
+                final Relation rfRange = addDefinition(new RangeIdentity(newRelation(), getOrCreatePredefinedRelation(RF)));
+                final Relation loc = getOrCreatePredefinedRelation(LOC);
+                final Relation writes = addDefinition(new SetIdentity(newRelation(), Filter.byTag(Tag.WRITE)));
+                final Relation ur = addDefinition(new Difference(newRelation(), reads, rfRange));
+                final Relation urloc = addDefinition(composition(newRelation(), ur, loc));
+                final Relation urlocwrites = addDefinition(composition(newRelation(), urloc, writes));
+
+                // let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+                yield union(r, frStandard, urlocwrites);
             }
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
             case DATA -> intersection(r,

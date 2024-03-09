@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -35,6 +36,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.ENABLE_ACTIVE_SETS;
+import static com.dat3m.dartagnan.configuration.OptionNames.MEMORY_IS_ZEROED;
 import static com.dat3m.dartagnan.program.event.Tag.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
@@ -54,6 +56,13 @@ public class WmmEncoder implements Encoder {
             secure = true)
     private boolean enableActiveSets = true;
 
+    @Option(name = MEMORY_IS_ZEROED,
+            description = "Assumes the whole memory is zeroed before the program runs." +
+                    "In particular, if set to TRUE, reads from uninitialized memory will return zero." +
+                    "Otherwise, uninitialized memory has a nondeterministic value.",
+            secure = true)
+    private boolean memoryIsZeroed = true;
+
     // =====================================================================
 
     private WmmEncoder(EncodingContext c) {
@@ -65,6 +74,7 @@ public class WmmEncoder implements Encoder {
         WmmEncoder encoder = new WmmEncoder(context);
         context.getTask().getConfig().inject(encoder);
         logger.info("{}: {}", ENABLE_ACTIVE_SETS, encoder.enableActiveSets);
+        logger.info("{}: {}", MEMORY_IS_ZEROED, encoder.memoryIsZeroed);
         long t0 = System.currentTimeMillis();
         if (encoder.enableActiveSets) {
             encoder.initializeEncodeSets();
@@ -508,7 +518,7 @@ public class WmmEncoder implements Encoder {
         public Void visitReadFrom(ReadFrom rfDef) {
             final Relation rf = rfDef.getDefinedRelation();
             Map<MemoryEvent, List<BooleanFormula>> edgeMap = new HashMap<>();
-            EncodingContext.EdgeEncoder edge = context.edge(rf);
+            final EncodingContext.EdgeEncoder edge = context.edge(rf);
             ra.getKnowledge(rf).getMaySet().apply((e1, e2) -> {
                 MemoryCoreEvent w = (MemoryCoreEvent) e1;
                 MemoryCoreEvent r = (MemoryCoreEvent) e2;
@@ -518,24 +528,33 @@ public class WmmEncoder implements Encoder {
                 edgeMap.computeIfAbsent(r, key -> new ArrayList<>()).add(e);
                 enc.add(bmgr.implication(e, bmgr.and(execution(w, r), sameAddress, sameValue)));
             });
-            for (MemoryEvent r : edgeMap.keySet()) {
-                List<BooleanFormula> edges = edgeMap.get(r);
+            for (Load r : program.getThreadEvents(Load.class)) {
+                final BooleanFormula uninit = getUninitReadVar(r);
+                if (memoryIsZeroed) {
+                    enc.add(bmgr.implication(uninit, context.equalZero(context.value(r))));
+                }
+
+                final List<BooleanFormula> rfEdges = edgeMap.getOrDefault(r, List.of());
                 if (GlobalSettings.ALLOW_MULTIREADS) {
-                    enc.add(bmgr.implication(context.execution(r), bmgr.or(edges)));
+                    enc.add(bmgr.implication(context.execution(r), bmgr.or(bmgr.or(rfEdges), uninit)));
                     continue;
                 }
-                int num = edges.size();
+
                 String rPrefix = "s(" + RF + ",E" + r.getGlobalId() + ",";
-                BooleanFormula lastSeqVar = edges.get(0);
-                for (int i = 1; i < num; i++) {
+                BooleanFormula lastSeqVar = uninit;
+                for (int i = 0; i < rfEdges.size(); i++) {
                     BooleanFormula newSeqVar = bmgr.makeVariable(rPrefix + i + ")");
-                    enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, edges.get(i))));
-                    enc.add(bmgr.not(bmgr.and(edges.get(i), lastSeqVar)));
+                    enc.add(bmgr.equivalence(newSeqVar, bmgr.or(lastSeqVar, rfEdges.get(i))));
+                    enc.add(bmgr.not(bmgr.and(rfEdges.get(i), lastSeqVar)));
                     lastSeqVar = newSeqVar;
                 }
                 enc.add(bmgr.implication(context.execution(r), lastSeqVar));
             }
             return null;
+        }
+
+        private BooleanFormula getUninitReadVar(Load load) {
+            return bmgr.makeVariable("uninit_read " + load.getGlobalId());
         }
 
         @Override

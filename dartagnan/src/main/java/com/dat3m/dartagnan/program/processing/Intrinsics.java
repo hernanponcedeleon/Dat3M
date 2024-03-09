@@ -367,7 +367,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue()));
+        return List.of(EventFactory.newAbortIf(expressions.makeTrue()));
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {
@@ -549,7 +549,7 @@ public class Intrinsics {
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
-                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
+                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
                 EventFactory.newStore(keyAddress, storageAddressRegister),
                 EventFactory.newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
@@ -862,19 +862,21 @@ public class Intrinsics {
 
     private List<Event> inlineMalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
+        final Type allocType = types.getByteType();
         final Expression totalSize = call.getArguments().get(0);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                EventFactory.newAlloc(resultRegister, allocType, totalSize, true, false)
         );
     }
 
     private List<Event> inlineCalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Type allocType = types.getByteType();
         final Expression elementCount = call.getArguments().get(0);
         final Expression elementSize = call.getArguments().get(1);
         final Expression totalSize = expressions.makeMul(elementCount, elementSize);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                EventFactory.newAlloc(resultRegister, allocType, totalSize, true, true)
         );
     }
 

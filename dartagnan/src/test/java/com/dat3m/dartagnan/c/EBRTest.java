@@ -12,9 +12,11 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 
 import java.io.IOException;
 import java.util.Arrays;
+
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.*;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -40,8 +42,8 @@ public class EBRTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> Configuration.defaultConfiguration());
+    protected Configuration getConfiguration() {
+        return Configuration.defaultConfiguration();
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

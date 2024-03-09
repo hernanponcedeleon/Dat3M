@@ -36,7 +36,7 @@ public class GEPToAddition implements ProgramProcessor {
         }
 
         for (MemoryObject memoryObject : program.getMemory().getObjects()) {
-            for (int field : memoryObject.getStaticallyInitializedFields()) {
+            for (int field : memoryObject.getInitializedFields()) {
                 memoryObject.setInitialValue(field, memoryObject.getInitialValue(field).accept(transformer));
             }
         }
