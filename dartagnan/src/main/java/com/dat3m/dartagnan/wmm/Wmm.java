@@ -195,7 +195,6 @@ public class Wmm {
             case EXT -> new External(r);
             case CO -> new Coherence(r);
             case RF -> new ReadFrom(r);
-            case UR -> new ReadFromUninit(r);
             case RMW -> new ReadModifyWrites(r);
             case CASDEP -> new CASDependency(r);
             case CRIT -> new LinuxCriticalSections(r);
@@ -204,8 +203,11 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case FR ->  {
+                final Relation reads = addDefinition(new SetIdentity(newRelation(), getFilter(Tag.READ)));
+                final Relation rfRange = addDefinition(new RangeIdentity(newRelation(), getOrCreatePredefinedRelation(RF)));
+                final Relation ur = addDefinition(new Difference(newRelation(), reads, rfRange));
                 final Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
-                final Relation ur = getOrCreatePredefinedRelation(UR);
+                //final Relation ur = getOrCreatePredefinedRelation(UR);
                 final Relation loc = getOrCreatePredefinedRelation(LOC);
                 final Relation wId = addDefinition(new SetIdentity(newRelation(), Filter.byTag(Tag.WRITE)));
                 final Relation locWid = addDefinition(composition(newRelation(), loc, wId));

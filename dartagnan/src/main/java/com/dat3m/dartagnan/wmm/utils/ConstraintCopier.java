@@ -187,11 +187,6 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
     }
 
     @Override
-    public Constraint visitReadFromUninit(ReadFromUninit ur) {
-        return new ReadFromUninit(translate(ur.getDefinedRelation()));
-    }
-
-    @Override
     public CASDependency visitCASDependency(CASDependency casDep) {
         return new CASDependency(translate(casDep.getDefinedRelation()));
     }

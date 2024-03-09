@@ -884,19 +884,6 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitReadFromUninit(ReadFromUninit urDef) {
-            final List<Load> loads = program.getThreadEvents(Load.class);
-            EventGraph may = new EventGraph();
-            EventGraph must = new EventGraph();
-
-            for (Load load : loads) {
-                may.add(load, load);
-            }
-
-            return new Knowledge(may, must);
-        }
-
-        @Override
         public Knowledge visitSameLocation(SameLocation loc) {
             EventGraph may = new EventGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
@@ -920,12 +907,7 @@ public class RelationAnalysis {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
 
-            for (Event regReaderEvent : program.getThreadEvents()) {
-                //TODO: Once "Event" is an interface and RegReader inherits from it,
-                // we can use program.getEvents(RegReader.class) here.
-                if (!(regReaderEvent instanceof RegReader regReader)) {
-                    continue;
-                }
+            for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
                 for (Register.Read regRead : regReader.getRegisterReads()) {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
@@ -939,12 +921,12 @@ public class RelationAnalysis {
                     if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
                         continue;
                     }
-                    Dependency.State r = dep.of(regReaderEvent, register);
+                    Dependency.State r = dep.of(regReader, register);
                     for (Event regWriter : r.may) {
-                        may.add(regWriter, regReaderEvent);
+                        may.add(regWriter, regReader);
                     }
                     for (Event regWriter : r.must) {
-                        must.add(regWriter, regReaderEvent);
+                        must.add(regWriter, regReader);
                     }
                 }
             }

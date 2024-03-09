@@ -553,34 +553,6 @@ public class WmmEncoder implements Encoder {
             return null;
         }
 
-        @Override
-        public Void visitReadFromUninit(ReadFromUninit urDef) {
-            final Relation ur = urDef.getDefinedRelation();
-            final List<Load> loads = program.getThreadEvents(Load.class);
-            final EventGraph maySet = ra.getKnowledge(ur).getMaySet();
-            final EventGraph mustSet = ra.getKnowledge(ur).getMustSet();
-
-            final List<BooleanFormula> enc = new ArrayList<>();
-            for (Load load : loads) {
-                if (!maySet.contains(load, load)) {
-                    enc.add(bmgr.not(getUninitReadVar(load)));
-                } else if (mustSet.contains(load, load)) {
-                    enc.add(getUninitReadVar(load));
-                }
-            }
-
-            final EncodingContext.EdgeEncoder edgeEnc = context.edge(ur);
-            encodeSets.get(ur).apply((e1, e2) -> {
-                if (e1 == e2 && e1 instanceof Load load) {
-                    enc.add(bmgr.equivalence(edgeEnc.encode(load, load), getUninitReadVar(load)));
-                } else {
-                    enc.add(bmgr.not(edgeEnc.encode(e1, e2)));
-                }
-            });
-            this.enc.addAll(enc);
-            return null;
-        }
-
         private BooleanFormula getUninitReadVar(Load load) {
             return bmgr.makeVariable("uninit_read " + load.getGlobalId());
         }
