@@ -13,7 +13,7 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.LOC;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 
 
-// Add empty(([R] \ [range(rf)]);loc;[IW]) to enforce that reads from uninitialized memory
+// Add empty (([R] \ [range(rf)]);loc;[IW]) to enforce that reads from uninitialized memory
 // are impossible if an init write exists.
 public class AddInitReadHandling implements WmmProcessor {
 
@@ -27,13 +27,12 @@ public class AddInitReadHandling implements WmmProcessor {
     public void run(Wmm mm) {
         final Relation reads = mm.addDefinition(new SetIdentity(mm.newRelation(), mm.getFilter(Tag.READ)));
         final Relation rfRange = mm.addDefinition(new RangeIdentity(mm.newRelation(), mm.getOrCreatePredefinedRelation(RF)));
-        final Relation ur = mm.addDefinition(new Difference(mm.newRelation(), reads, rfRange));
-
         final Relation loc = mm.getOrCreatePredefinedRelation(LOC);
         final Relation iw = mm.addDefinition(new SetIdentity(mm.newRelation(), mm.getFilter(Tag.INIT)));
-        final Relation lociw = mm.addDefinition(new Composition(mm.newRelation(), loc, iw));
-        final Relation urlociw = mm.addDefinition(new Composition(mm.newRelation(), ur, lociw));
-        mm.addConstraint(new Emptiness(urlociw));
+        final Relation ur = mm.addDefinition(new Difference(mm.newRelation(), reads, rfRange));
+        final Relation urloc = mm.addDefinition(new Composition(mm.newRelation(), ur, loc));
+        final Relation urlociw = mm.addDefinition(new Composition(mm.newRelation(), urloc, iw));
 
+        mm.addConstraint(new Emptiness(urlociw));
     }
 }
