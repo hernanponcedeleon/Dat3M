@@ -142,7 +142,7 @@ public class SVCOMPRunner extends BaseOptions {
                     String next = read.readLine();
                     // This is now the last line in the console.
                     // We avoid updating the output
-                    if(next.contains("Total verification time(ms):")) {
+                    if(next.contains("Total verification time:")) {
                         break;
                     }
                     output = next;
