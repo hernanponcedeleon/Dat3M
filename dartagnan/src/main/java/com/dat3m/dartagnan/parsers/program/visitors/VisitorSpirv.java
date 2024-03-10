@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.IConst;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
@@ -62,19 +66,12 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
-        visitSpvHeader(ctx.spvHeader());
+        visitInputAnnotation(ctx.spvHeader().inputAnnotation());
+        visitConfigAnnotation(ctx.spvHeader().configAnnotation());
         visitSpvInstructions(ctx.spvInstructions());
+        visitOutputAnnotation(ctx.spvHeader().outputAnnotation());
         return builder.build();
     }
-
-    @Override
-    public Program visitSpvHeader(SpirvParser.SpvHeaderContext ctx) {
-        visitInputAnnotation(ctx.inputAnnotation());
-        visitOutputAnnotation(ctx.outputAnnotation());
-        visitConfigAnnotation(ctx.configAnnotation());
-        return null;
-    }
-
 
     @Override
     public Program visitInputAnnotation(SpirvParser.InputAnnotationContext ctx) {
@@ -84,15 +81,20 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitOutputAnnotation(SpirvParser.OutputAnnotationContext ctx) {
-        //TODO: Implement
+        if (ctx.assertionFilter() != null) {
+            builder.setAssertFilter(new VisitorSpirvAssertions(builder).visitAssertionFilter(ctx.assertionFilter()));
+        }
+        if (ctx.assertionList() != null) {
+            builder.setAssert(new VisitorSpirvAssertions(builder).visitAssertionList(ctx.assertionList()));
+        }
         return null;
     }
 
     @Override
     public Program visitConfigAnnotation(SpirvParser.ConfigAnnotationContext ctx) {
-        int workGroupID = Integer.parseInt(ctx.ModeAnn_Integer().get(0).getText());
-        int subGroupID = Integer.parseInt(ctx.ModeAnn_Integer().get(1).getText());
-        int threadID = Integer.parseInt(ctx.ModeAnn_Integer().get(2).getText());
+        int workGroupID = Integer.parseInt(ctx.literanAnnUnsignedInteger().get(0).getText());
+        int subGroupID = Integer.parseInt(ctx.literanAnnUnsignedInteger().get(1).getText());
+        int threadID = Integer.parseInt(ctx.literanAnnUnsignedInteger().get(2).getText());
         List<Integer> threadGrid = List.of(workGroupID, subGroupID, threadID);
         builder.setThreadGrid(threadGrid);
         return null;
