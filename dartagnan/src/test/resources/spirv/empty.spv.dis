@@ -3,7 +3,7 @@
 ; Schema: 0
 ; ================
 ; Input:
-; Output:
+; Output: forall (true)
 ; Config: 1, 1, 1
 ; ================
                OpCapability Shader

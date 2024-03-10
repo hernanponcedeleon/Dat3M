@@ -2,13 +2,67 @@ grammar Spirv;
 
 options { tokenVocab = SpirvLexer; }
 
+@header{
+import com.dat3m.dartagnan.expression.op.COpBin;
+}
+
 spv : spvHeader? spvInstructions EOF;
 
 spvHeader : AnnotationStart inputAnnotation outputAnnotation configAnnotation AnnotationEnd;
 
-inputAnnotation   : ModeAnn_Input Colon;
-outputAnnotation  : ModeAnn_Output Colon;
-configAnnotation  : ModeAnn_Config Colon ModeAnn_Integer Comma ModeAnn_Integer Comma ModeAnn_Integer;
+inputAnnotation   : ModeAnn_Input Colon initList?;
+outputAnnotation  : ModeAnn_Output Colon assertionFilter? assertionList?;
+configAnnotation  : ModeAnn_Config Colon literanAnnUnsignedInteger Comma literanAnnUnsignedInteger Comma literanAnnUnsignedInteger;
+
+initList : init (Comma init)*;
+
+init : varName Equal initValue;
+
+initValue
+    :   literalAnnConstant
+    |   LBrace initValueList RBrace
+    ;
+
+initValueList : literalAnnConstant (Comma literalAnnConstant)*;
+
+assertionFilter
+    :   AssertionFilter assertion
+    ;
+
+assertionList
+    :   AssertionExists ast = assertion Comma?
+    |   AssertionNot AssertionExists ast = assertion Comma?
+    |   AssertionForall ast = assertion Comma?
+    ;
+
+assertion
+    :   annotationBoolean                                   # assertionBoolean
+    |   LPar assertion RPar                                 # assertionParenthesis
+    |   AssertionNot assertion                              # assertionNot
+    |   assertion AssertionAnd assertion                    # assertionAnd
+    |   assertion AssertionOr assertion                     # assertionOr
+    |   assertionValue assertionCompare assertionValue      # assertionBasic
+    ;
+
+assertionCompare returns [COpBin assertOp]
+    :   (Equal | EqualEqual)    {$assertOp = COpBin.EQ;}
+    |   NotEqual                {$assertOp = COpBin.NEQ;}
+    |   GreaterEqual            {$assertOp = COpBin.GTE;}
+    |   LessEqual               {$assertOp = COpBin.LTE;}
+    |   Less                    {$assertOp = COpBin.LT;}
+    |   Greater                 {$assertOp = COpBin.GT;}
+    ;
+
+assertionValue
+    :   varName LBracket ModeAnn_UnsignedInteger RBracket
+    |   varName
+    |   literalAnnConstant
+    ;
+
+varName
+    :    idResult
+    ;
+
 
 spvInstructions : op*;
 
@@ -3079,6 +3133,9 @@ pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
 literalExtInstInteger : LiteralExtInstInteger;
+annotationBoolean : True | False;
+literanAnnUnsignedInteger : ModeAnn_UnsignedInteger;
+literalAnnConstant : ModeAnn_UnsignedInteger | ModeAnn_SignedInteger | ModeAnn_Float;
 literalFloat : LiteralFloat;
 literalInteger : LiteralUnsignedInteger | LiteralInteger;
 literalString : LiteralString;

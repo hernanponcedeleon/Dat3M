@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -73,6 +74,15 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Multiple entry points are not supported");
         }
         entryPointId = id;
+    }
+
+    public void setAssert(AbstractAssert ast) {
+        program.setSpecification(ast);
+    }
+
+    public void setAssertFilter(AbstractAssert ast) {
+        ast.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+        program.setFilterSpecification(ast);
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
@@ -396,13 +406,28 @@ public class ProgramBuilderSpv {
         return blocks.stream().toList();
     }
 
+    public MemoryObject getMemoryObject(String id) {
+        return program.getMemory().getObjects().stream()
+                .filter(o -> o.getCVar().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ParsingException("Undefined memory object '%s'", id));
+    }
+
     // =================================================================================================================
 
     // ================
     // TODO: !!!
     private static List<Integer> threadGrid = List.of(1, 1, 1);
     public void setThreadGrid(List<Integer> threadGrid) {
-        // TODO: Validate
+        if (threadGrid.size() != 3) {
+            throw new ParsingException("Thread grid must have 3 dimensions");
+        }
+        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
+            throw new ParsingException("Thread grid dimensions must be positive");
+        }
+        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 124) {
+            throw new ParsingException("Thread grid dimensions must be less than 124");
+        }
         ProgramBuilderSpv.threadGrid = threadGrid;
     }
 }
