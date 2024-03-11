@@ -1680,7 +1680,7 @@ LiteralFloat : [+-]? [0-9]+ '.' [0-9]*;
 LiteralUnsignedInteger : [0-9]+;
 LiteralInteger : '-'? [0-9]+;
 LiteralString : '"' ~[\n"]* '"';
-AnnotationStart : ';' [ \t]* [=]+ [ \t]* [\n\r] -> pushMode(ModeAnn);
+HeaderStart : ';' [ \t]* [=]+ [ \t]* [\n\r] -> pushMode(ModeHeader);
 LineComment : ';' ~[\n]* -> skip;
 Whitespace : [ \t\r\n]+ -> skip;
 
@@ -1693,50 +1693,50 @@ ModeExt_LineComment : ';' ~[\n]* -> skip;
 ModeExt_Whitespace : [ \t\r]+ -> skip;
 ModeExt_NewLine : [\n]+ -> popMode, skip;
 
-mode ModeAnn;
+mode ModeHeader;
 
-ModeAnn_Input   : 'Input';
-ModeAnn_Output  : 'Output';
-ModeAnn_Config  : 'Config';
+ModeHeader_Input    : 'Input';
+ModeHeader_Output   : 'Output';
+ModeHeader_Config   : 'Config';
 
-ModeAnn_Op      : 'Op' -> type(Op);
-ModeAnn_Id      : '%' [A-Za-z0-9_]+ -> type(Id);
+ModeHeader_Op       : 'Op' -> type(Op);
+ModeHeader_Id       : '%' [A-Za-z0-9_]+ -> type(Id);
 
-AssertionExists : 'exists';
-AssertionForall : 'forall';
-AssertionFilter : 'filter';
-AssertionNot    : Tilde | 'not';
-AssertionAnd    : '/\\';
-AssertionOr     : '\\/';
+AssertionExists     : 'exists';
+AssertionForall     : 'forall';
+AssertionFilter     : 'filter';
+AssertionNot        : Tilde | 'not';
+AssertionAnd        : '/\\';
+AssertionOr         : '\\/';
 
-Equal           : '=';
-EqualEqual      : '==';
-NotEqual        : '!=';
-Less            : '<';
-Greater         : '>';
-LessEqual       : '<=';
-GreaterEqual    : '>=';
-LBracket        : '[';
-RBracket        : ']';
-LPar            : '(';
-RPar            : ')';
-LBrace          : '{';
-RBrace          : '}';
-Colon           : ':';
-Comma           : ',';
-Tilde           : '~';
+Equal               : '=';
+EqualEqual          : '==';
+NotEqual            : '!=';
+Less                : '<';
+Greater             : '>';
+LessEqual           : '<=';
+GreaterEqual        : '>=';
+LBracket            : '[';
+RBracket            : ']';
+LPar                : '(';
+RPar                : ')';
+LBrace              : '{';
+RBrace              : '}';
+Colon               : ':';
+Comma               : ',';
+Tilde               : '~';
 
-True            : 'true';
-False           : 'false';
+True                : 'true';
+False               : 'false';
 
-ModeAnn_TypeVector          : 'Vector';
-ModeAnn_TypeArray           : 'Array';
-ModeAnn_TypeRuntimeArray    : 'RuntimeArray';
-ModeAnn_TypeStruct          : 'Struct';
+ModeHeader_TypeVector          : 'Vector';
+ModeHeader_TypeArray           : 'Array';
+ModeHeader_TypeRuntimeArray    : 'RuntimeArray';
+ModeHeader_TypeStruct          : 'Struct';
 
-ModeAnn_UnsignedInteger : [0-9]+;
-ModeAnn_SignedInteger   : '-'? [0-9]+;
+ModeHeader_UnsignedInteger : [0-9]+;
+ModeHeader_SignedInteger   : '-'? [0-9]+;
 
-LineEntry       : ';' -> skip;
-ModeAnn_Whitespace : [ \t\r\n]+ -> skip;
-AnnotationEnd : ';' [ \t]* [=]+ [ \t]* [\n\r] -> popMode;
+LineEntry               : ';' -> skip;
+ModeHeader_Whitespace   : [ \t\r\n]+ -> skip;
+HeaderEnd           : ';' [ \t]* [=]+ [ \t]* [\n\r] -> popMode;

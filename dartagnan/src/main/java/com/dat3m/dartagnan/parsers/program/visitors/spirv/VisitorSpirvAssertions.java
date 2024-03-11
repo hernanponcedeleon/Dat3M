@@ -72,22 +72,22 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
 
     @Override
     public AbstractAssert visitAssertionBoolean(SpirvParser.AssertionBooleanContext ctx) {
-        return this.visitAnnotationBoolean(ctx.annotationBoolean());
+        return this.visitHeaderBoolean(ctx.headerBoolean());
     }
 
     @Override
-    public AbstractAssert visitAnnotationBoolean(SpirvParser.AnnotationBooleanContext ctx) {
+    public AbstractAssert visitHeaderBoolean(SpirvParser.HeaderBooleanContext ctx) {
         return ctx.True() != null ? new AssertTrue() : new AssertNot(new AssertTrue());
     }
 
     private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx, boolean right) {
-        if (ctx.literalAnnConstant() != null) {
-            return EXPR_FACTORY.parseValue(ctx.literalAnnConstant().getText(), TYPE_FACTORY.getArchType());
+        if (ctx.literalHeaderConstant() != null) {
+            return EXPR_FACTORY.parseValue(ctx.literalHeaderConstant().getText(), TYPE_FACTORY.getArchType());
         }
         String name = ctx.varName().getText();
         MemoryObject base = builder.getMemoryObject(name);
         checkState(base != null, "uninitialized location %s", name);
-        TerminalNode offset = ctx.ModeAnn_UnsignedInteger();
+        TerminalNode offset = ctx.ModeHeader_UnsignedInteger();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());
         return right && offset == null ? base : new Location(name, base, o);
     }

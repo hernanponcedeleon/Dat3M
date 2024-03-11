@@ -97,15 +97,15 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
-        visitInputAnnotation(ctx.spvHeader().inputAnnotation());
-        visitConfigAnnotation(ctx.spvHeader().configAnnotation());
+        visitInputHeader(ctx.spvHeader().inputHeader());
+        visitConfigHeader(ctx.spvHeader().configHeader());
         visitSpvInstructions(ctx.spvInstructions());
-        visitOutputAnnotation(ctx.spvHeader().outputAnnotation());
+        visitOutputHeader(ctx.spvHeader().outputHeader());
         return builder.build();
     }
 
     @Override
-    public Program visitInputAnnotation(SpirvParser.InputAnnotationContext ctx) {
+    public Program visitInputHeader(SpirvParser.InputHeaderContext ctx) {
         if (ctx.initList() != null) {
             new VisitorSpirvInit(builder).visitInitList(ctx.initList());
         }
@@ -113,7 +113,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     @Override
-    public Program visitOutputAnnotation(SpirvParser.OutputAnnotationContext ctx) {
+    public Program visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
         if (ctx.assertionFilter() != null) {
             builder.setAssertFilter(new VisitorSpirvAssertions(builder).visitAssertionFilter(ctx.assertionFilter()));
         }
@@ -124,10 +124,10 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     @Override
-    public Program visitConfigAnnotation(SpirvParser.ConfigAnnotationContext ctx) {
-        int workGroupID = Integer.parseInt(ctx.literanAnnUnsignedInteger().get(0).getText());
-        int subGroupID = Integer.parseInt(ctx.literanAnnUnsignedInteger().get(1).getText());
-        int threadID = Integer.parseInt(ctx.literanAnnUnsignedInteger().get(2).getText());
+    public Program visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
+        int workGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(0).getText());
+        int subGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(1).getText());
+        int threadID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(2).getText());
         List<Integer> threadGrid = List.of(workGroupID, subGroupID, threadID);
         builder.setThreadGrid(threadGrid);
         return null;
