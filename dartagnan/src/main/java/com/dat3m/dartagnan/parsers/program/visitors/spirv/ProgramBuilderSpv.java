@@ -45,6 +45,7 @@ public class ProgramBuilderSpv {
     private final Map<String, List<String>> decorations = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
     private final Program program;
+    private static List<Integer> threadGrid = null;
 
     private String entryPointId;
     protected Function currentFunction;
@@ -58,6 +59,9 @@ public class ProgramBuilderSpv {
         validateBeforeBuild();
         // TODO: append Phi Definitions
         Function entry = getEntryPointFunction();
+        if (threadGrid == null) {
+            throw new ParsingException("Thread grid is not set");
+        }
         for (int z = 0; z < threadGrid.get(2); z++) {
             for (int y = 0; y < threadGrid.get(1); y++) {
                 for (int x = 0; x < threadGrid.get(0); x++) {
@@ -413,11 +417,6 @@ public class ProgramBuilderSpv {
                 .orElseThrow(() -> new ParsingException("Undefined memory object '%s'", id));
     }
 
-    // =================================================================================================================
-
-    // ================
-    // TODO: !!!
-    private static List<Integer> threadGrid = List.of(1, 1, 1);
     public void setThreadGrid(List<Integer> threadGrid) {
         if (threadGrid.size() != 3) {
             throw new ParsingException("Thread grid must have 3 dimensions");

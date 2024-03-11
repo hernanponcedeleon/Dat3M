@@ -110,6 +110,7 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
     @Override
     public Object visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
         if (ctx.literalHeaderConstant() != null) {
+            // TODO: Integer bit width is hardcoded
             IntegerType type = TYPE_FACTORY.getIntegerType(64);
             return EXPR_FACTORY.makeValue(Long.parseLong(ctx.getText()), type);
         } else if (ctx.headerBoolean() != null) {
