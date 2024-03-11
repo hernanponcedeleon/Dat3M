@@ -49,8 +49,14 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
         }
         checkState(values.stream().map(Expression::getType).distinct().count() == 1,
                 "All values in a collection must have the same type");
-        Type type = values.get(0).getType();
-        Construction expr = EXPR_FACTORY.makeArray(type, values, false);
+        Type elementType = values.get(0).getType();
+        Type type = TYPE_FACTORY.getArrayType(elementType, values.size());
+        Construction expr = EXPR_FACTORY.makeArray(elementType, values, false);
+        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
+        memObj.setCVar(varName);
+        for (int i = 0; i < values.size(); i++) {
+            memObj.setInitialValue(i, values.get(i));
+        }
         builder.addExpression(varName, expr);
         return null;
     }
@@ -64,14 +70,15 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
         }
         checkState(values.stream().map(Expression::getType).distinct().count() == 1,
                 "All values in a collection must have the same type");
-        Type type = values.get(0).getType();
+        Type elementType = values.get(0).getType();
+        Type type = TYPE_FACTORY.getArrayType(elementType, values.size());
         Construction expr = EXPR_FACTORY.makeArray(type, values, true);
-        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(expr.getType()));
+        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
         memObj.setCVar(varName);
         for (int i = 0; i < values.size(); i++) {
             memObj.setInitialValue(i, values.get(i));
         }
-        builder.addExpression(varName, memObj);
+        builder.addExpression(varName, expr);
         return null;
     }
 
@@ -84,8 +91,9 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
         }
         checkState(values.stream().map(Expression::getType).distinct().count() == 1,
                 "All values in a collection must have the same type");
-        Type type = values.get(0).getType();
-        Construction expr = EXPR_FACTORY.makeArray(type, values, false);
+        Type elementType = values.get(0).getType();
+        Type type = TYPE_FACTORY.getArrayType(elementType, values.size());
+        Construction expr = EXPR_FACTORY.makeArray(type, values, true);
         builder.addExpression(varName, expr);
         return null;
     }
