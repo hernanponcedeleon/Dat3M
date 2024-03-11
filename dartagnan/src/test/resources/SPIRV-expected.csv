@@ -9,6 +9,7 @@ dartagnan/src/test/resources/spirv/read-write.spv.dis,1
 dartagnan/src/test/resources/spirv/vector-init.spv.dis,1
 dartagnan/src/test/resources/spirv/vector.spv.dis,1
 dartagnan/src/test/resources/spirv/vector-read-write.spv.dis,1
+dartagnan/src/test/resources/spirv/ids.spv.dis,1
 dartagnan/src/test/resources/spirv/caslock.spv.dis,1
 dartagnan/src/test/resources/spirv/caslock-acq2rx.spv.dis,0
 dartagnan/src/test/resources/spirv/caslock-rel2rx.spv.dis,0
