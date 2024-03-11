@@ -16,14 +16,20 @@ configAnnotation  : ModeAnn_Config Colon literanAnnUnsignedInteger Comma literan
 
 initList : init (Comma init)*;
 
-init : varName Equal initValue;
-
-initValue
-    :   literalAnnConstant
-    |   LBrace initValueList RBrace
+init
+    :   varName Equal ModeAnn_TypeVector LBrace initCollectionValue RBrace        # initCollectionVector
+    |   varName Equal ModeAnn_TypeArray LBrace initCollectionValue RBrace         # initCollectionArray
+    |   varName Equal ModeAnn_TypeRuntimeArray LBrace initCollectionValue RBrace  # initCollectionRuntimeArray
+    |   varName Equal ModeAnn_TypeStruct LBrace initCollectionValue RBrace        # initCollectionStruct
+    |   varName Equal initBaseValue                                               # initBase
     ;
 
-initValueList : literalAnnConstant (Comma literalAnnConstant)*;
+initCollectionValue : initBaseValue (Comma initBaseValue)*;
+
+initBaseValue
+    :   literalAnnConstant
+    |   annotationBoolean
+    ;
 
 assertionFilter
     :   AssertionFilter assertion
@@ -3135,7 +3141,7 @@ literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | Litera
 literalExtInstInteger : LiteralExtInstInteger;
 annotationBoolean : True | False;
 literanAnnUnsignedInteger : ModeAnn_UnsignedInteger;
-literalAnnConstant : ModeAnn_UnsignedInteger | ModeAnn_SignedInteger | ModeAnn_Float;
+literalAnnConstant : ModeAnn_UnsignedInteger | ModeAnn_SignedInteger;
 literalFloat : LiteralFloat;
 literalInteger : LiteralUnsignedInteger | LiteralInteger;
 literalString : LiteralString;

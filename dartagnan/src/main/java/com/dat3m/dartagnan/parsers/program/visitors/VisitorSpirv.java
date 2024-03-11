@@ -27,6 +27,41 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
         this.specConstantVisitor = getSpecConstantVisitor();
     }
 
+    static String parseOpName(SpirvParser.OpContext ctx) {
+        ParseTree innerCtx = ctx.getChild(0);
+        if ("Op".equals(innerCtx.getChild(0).getText())) {
+            return "Op" + innerCtx.getChild(1).getText();
+        }
+        if ("SpecConstantOp".equals(innerCtx.getChild(3).getText())) {
+            return "Op" + innerCtx.getChild(5).getText();
+        }
+        return "Op" + innerCtx.getChild(3).getText();
+    }
+
+    static boolean isSpecConstantOp(SpirvParser.OpContext ctx) {
+        ParseTree innerCtx = ctx.getChild(0);
+        if ("Op".equals(innerCtx.getChild(0).getText())) {
+            return false;
+        }
+        return "SpecConstantOp".equals(innerCtx.getChild(3).getText());
+    }
+
+    private static Set<Class<?>> getChildVisitors() {
+        return Set.of(
+                VisitorOpsAnnotation.class,
+                VisitorOpsArithmetic.class,
+                VisitorOpsAtomic.class,
+                VisitorOpsConstant.class,
+                VisitorOpsControlFlow.class,
+                VisitorOpsDebug.class,
+                VisitorOpsFunction.class,
+                VisitorOpsLogical.class,
+                VisitorOpsMemory.class,
+                VisitorOpsSetting.class,
+                VisitorOpsType.class
+        );
+    }
+
     private void initializeVisitors() {
         for (Class<?> cls : getChildVisitors()) {
             try {
@@ -71,7 +106,9 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitInputAnnotation(SpirvParser.InputAnnotationContext ctx) {
-        //TODO: Implement
+        if (ctx.initList() != null) {
+            new VisitorSpirvInit(builder).visitInitList(ctx.initList());
+        }
         return null;
     }
 
@@ -119,40 +156,5 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
             }
         }
         return null;
-    }
-
-    static String parseOpName(SpirvParser.OpContext ctx) {
-        ParseTree innerCtx = ctx.getChild(0);
-        if ("Op".equals(innerCtx.getChild(0).getText())) {
-            return "Op" + innerCtx.getChild(1).getText();
-        }
-        if ("SpecConstantOp".equals(innerCtx.getChild(3).getText())) {
-            return "Op" + innerCtx.getChild(5).getText();
-        }
-        return "Op" + innerCtx.getChild(3).getText();
-    }
-
-    static boolean isSpecConstantOp(SpirvParser.OpContext ctx) {
-        ParseTree innerCtx = ctx.getChild(0);
-        if ("Op".equals(innerCtx.getChild(0).getText())) {
-            return false;
-        }
-        return "SpecConstantOp".equals(innerCtx.getChild(3).getText());
-    }
-
-    private static Set<Class<?>> getChildVisitors() {
-        return Set.of(
-                VisitorOpsAnnotation.class,
-                VisitorOpsArithmetic.class,
-                VisitorOpsAtomic.class,
-                VisitorOpsConstant.class,
-                VisitorOpsControlFlow.class,
-                VisitorOpsDebug.class,
-                VisitorOpsFunction.class,
-                VisitorOpsLogical.class,
-                VisitorOpsMemory.class,
-                VisitorOpsSetting.class,
-                VisitorOpsType.class
-        );
     }
 }

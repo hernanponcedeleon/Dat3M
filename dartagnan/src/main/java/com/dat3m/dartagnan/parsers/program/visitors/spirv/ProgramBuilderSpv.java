@@ -425,8 +425,8 @@ public class ProgramBuilderSpv {
         if (threadGrid.stream().anyMatch(i -> i <= 0)) {
             throw new ParsingException("Thread grid dimensions must be positive");
         }
-        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 124) {
-            throw new ParsingException("Thread grid dimensions must be less than 124");
+        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
+            throw new ParsingException("Thread grid dimensions must be less than 128");
         }
         ProgramBuilderSpv.threadGrid = threadGrid;
     }
