@@ -1,0 +1,12 @@
+dartagnan/src/test/resources/spirv/empty-forall.spv.dis,1
+dartagnan/src/test/resources/spirv/empty-exists.spv.dis,1
+dartagnan/src/test/resources/spirv/empty-not-exists.spv.dis,0
+dartagnan/src/test/resources/spirv/empty-forall-false.spv.dis,0
+dartagnan/src/test/resources/spirv/empty-exists-false.spv.dis,0
+dartagnan/src/test/resources/spirv/empty-not-exists-false.spv.dis,1
+dartagnan/src/test/resources/spirv/init.spv.dis,1
+dartagnan/src/test/resources/spirv/read-write.spv.dis,1
+dartagnan/src/test/resources/spirv/vector-init.spv.dis,1
+dartagnan/src/test/resources/spirv/vector.spv.dis,1
+dartagnan/src/test/resources/spirv/vector-read-write.spv.dis,1
+dartagnan/src/test/resources/spirv/ids.spv.dis,1
