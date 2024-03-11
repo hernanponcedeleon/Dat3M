@@ -8,27 +8,27 @@ import com.dat3m.dartagnan.expression.op.COpBin;
 
 spv : spvHeader? spvInstructions EOF;
 
-spvHeader : AnnotationStart inputAnnotation outputAnnotation configAnnotation AnnotationEnd;
+spvHeader : HeaderStart inputHeader outputHeader configHeader HeaderEnd;
 
-inputAnnotation   : ModeAnn_Input Colon initList?;
-outputAnnotation  : ModeAnn_Output Colon assertionFilter? assertionList?;
-configAnnotation  : ModeAnn_Config Colon literanAnnUnsignedInteger Comma literanAnnUnsignedInteger Comma literanAnnUnsignedInteger;
+inputHeader   : ModeHeader_Input Colon initList?;
+outputHeader  : ModeHeader_Output Colon assertionFilter? assertionList?;
+configHeader  : ModeHeader_Config Colon literanHeaderUnsignedInteger Comma literanHeaderUnsignedInteger Comma literanHeaderUnsignedInteger;
 
 initList : init (Comma init)*;
 
 init
-    :   varName Equal ModeAnn_TypeVector LBrace initCollectionValue RBrace        # initCollectionVector
-    |   varName Equal ModeAnn_TypeArray LBrace initCollectionValue RBrace         # initCollectionArray
-    |   varName Equal ModeAnn_TypeRuntimeArray LBrace initCollectionValue RBrace  # initCollectionRuntimeArray
-    |   varName Equal ModeAnn_TypeStruct LBrace initCollectionValue RBrace        # initCollectionStruct
-    |   varName Equal initBaseValue                                               # initBase
+    :   varName Equal ModeHeader_TypeVector LBrace initCollectionValue RBrace        # initCollectionVector
+    |   varName Equal ModeHeader_TypeArray LBrace initCollectionValue RBrace         # initCollectionArray
+    |   varName Equal ModeHeader_TypeRuntimeArray LBrace initCollectionValue RBrace  # initCollectionRuntimeArray
+    |   varName Equal ModeHeader_TypeStruct LBrace initCollectionValue RBrace        # initCollectionStruct
+    |   varName Equal initBaseValue                                                  # initBase
     ;
 
 initCollectionValue : initBaseValue (Comma initBaseValue)*;
 
 initBaseValue
-    :   literalAnnConstant
-    |   annotationBoolean
+    :   literalHeaderConstant
+    |   headerBoolean
     ;
 
 assertionFilter
@@ -42,7 +42,7 @@ assertionList
     ;
 
 assertion
-    :   annotationBoolean                                   # assertionBoolean
+    :   headerBoolean                                       # assertionBoolean
     |   LPar assertion RPar                                 # assertionParenthesis
     |   AssertionNot assertion                              # assertionNot
     |   assertion AssertionAnd assertion                    # assertionAnd
@@ -60,9 +60,9 @@ assertionCompare returns [COpBin assertOp]
     ;
 
 assertionValue
-    :   varName LBracket ModeAnn_UnsignedInteger RBracket
+    :   varName LBracket ModeHeader_UnsignedInteger RBracket
     |   varName
-    |   literalAnnConstant
+    |   literalHeaderConstant
     ;
 
 varName
@@ -3139,9 +3139,9 @@ pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
 literalExtInstInteger : LiteralExtInstInteger;
-annotationBoolean : True | False;
-literanAnnUnsignedInteger : ModeAnn_UnsignedInteger;
-literalAnnConstant : ModeAnn_UnsignedInteger | ModeAnn_SignedInteger;
+headerBoolean : True | False;
+literanHeaderUnsignedInteger : ModeHeader_UnsignedInteger;
+literalHeaderConstant : ModeHeader_UnsignedInteger | ModeHeader_SignedInteger;
 literalFloat : LiteralFloat;
 literalInteger : LiteralUnsignedInteger | LiteralInteger;
 literalString : LiteralString;

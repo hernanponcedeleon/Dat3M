@@ -109,11 +109,11 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
 
     @Override
     public Object visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
-        if (ctx.literalAnnConstant() != null) {
+        if (ctx.literalHeaderConstant() != null) {
             IntegerType type = TYPE_FACTORY.getIntegerType(64);
             return EXPR_FACTORY.makeValue(Long.parseLong(ctx.getText()), type);
-        } else if (ctx.annotationBoolean() != null) {
-            boolean value = ctx.annotationBoolean().getText().equals("true");
+        } else if (ctx.headerBoolean() != null) {
+            boolean value = ctx.headerBoolean().getText().equals("true");
             return EXPR_FACTORY.makeValue(value);
         } else {
             throw new UnsupportedOperationException("Unsupported base value" + ctx.getText());
