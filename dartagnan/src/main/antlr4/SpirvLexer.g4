@@ -1729,9 +1729,13 @@ Tilde           : '~';
 True            : 'true';
 False           : 'false';
 
+ModeAnn_TypeVector          : 'Vector';
+ModeAnn_TypeArray           : 'Array';
+ModeAnn_TypeRuntimeArray    : 'RuntimeArray';
+ModeAnn_TypeStruct          : 'Struct';
+
 ModeAnn_UnsignedInteger : [0-9]+;
 ModeAnn_SignedInteger   : '-'? [0-9]+;
-ModeAnn_Float           : [+-]? [0-9]+ '.' [0-9]*;
 
 LineEntry       : ';' -> skip;
 ModeAnn_Whitespace : [ \t\r\n]+ -> skip;
