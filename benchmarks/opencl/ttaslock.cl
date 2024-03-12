@@ -10,8 +10,12 @@
 #endif
 
 static void lock(global atomic_uint* l) {
-    uint e = 0;
-    while (atomic_compare_exchange_strong_explicit(l, &e, 1, mo_lock, mo_lock) == 0) {}
+    while(1) {
+        while (atomic_load_explicit(l, memory_order_relaxed) != 0) {}
+        if(!atomic_exchange_explicit(l, 1, mo_lock)) {
+            return;
+        }
+    }
 }
 
 static void unlock(global atomic_uint* l) {
