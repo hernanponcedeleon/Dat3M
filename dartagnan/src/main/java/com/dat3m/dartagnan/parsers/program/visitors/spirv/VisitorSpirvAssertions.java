@@ -31,11 +31,11 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
     @Override
     public AbstractAssert visitAssertionList(SpirvParser.AssertionListContext ctx) {
         AbstractAssert ast = ctx.assertion().accept(this);
-        if (ctx.AssertionNot() != null) {
+        if (ctx.ModeHeader_AssertionNot() != null) {
             ast.setType(AbstractAssert.ASSERT_TYPE_NOT_EXISTS);
-        } else if (ctx.AssertionExists() != null) {
+        } else if (ctx.ModeHeader_AssertionExists() != null) {
             ast.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
-        } else if (ctx.AssertionForall() != null) {
+        } else if (ctx.ModeHeader_AssertionForall() != null) {
             ast.setType(AbstractAssert.ASSERT_TYPE_FORALL);
         } else {
             throw new ParsingException("Unrecognised assertion type");
@@ -77,7 +77,7 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
 
     @Override
     public AbstractAssert visitHeaderBoolean(SpirvParser.HeaderBooleanContext ctx) {
-        return ctx.True() != null ? new AssertTrue() : new AssertNot(new AssertTrue());
+        return ctx.ModeHeader_True() != null ? new AssertTrue() : new AssertNot(new AssertTrue());
     }
 
     private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx, boolean right) {

@@ -1,19 +1,14 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
-import com.dat3m.dartagnan.expression.Construction;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.google.common.base.Preconditions.checkState;
 
 public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
@@ -26,93 +21,48 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
 
     @Override
     public Object visitInitList(SpirvParser.InitListContext ctx) {
-        return this.visitChildren(ctx);
-    }
-
-    @Override
-    public Object visitInitBase(SpirvParser.InitBaseContext ctx) {
-        String varName = ctx.varName().getText();
-        Expression value = (Expression) visit(ctx.initBaseValue());
-        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(value.getType()));
-        memObj.setCVar(varName);
-        memObj.setInitialValue(0, value);
-        builder.addExpression(varName, memObj);
+        for (SpirvParser.InitContext init : ctx.init()) {
+            visit(init);
+        }
         return null;
     }
 
     @Override
-    public Object visitInitCollectionVector(SpirvParser.InitCollectionVectorContext ctx) {
+    public Object visitInit(SpirvParser.InitContext ctx) {
         String varName = ctx.varName().getText();
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitBaseValueContext initBaseValue : ctx.initCollectionValue().initBaseValue()) {
-            values.add((Expression) visitInitBaseValue(initBaseValue));
-        }
-        checkState(values.stream().map(Expression::getType).distinct().count() == 1,
-                "All values in a collection must have the same type");
-        Type elementType = values.get(0).getType();
-        Type type = TYPE_FACTORY.getArrayType(elementType, values.size());
-        Construction expr = EXPR_FACTORY.makeArray(elementType, values, false);
-        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
-        memObj.setCVar(varName);
-        for (int i = 0; i < values.size(); i++) {
-            memObj.setInitialValue(i, values.get(i));
+        Expression expr = (Expression) visit(ctx.initValue());
+        Type type = expr.getType();
+        if (type instanceof IntegerType || type instanceof BConst) {
+            MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
+            memObj.setCVar(varName);
+            memObj.setInitialValue(0, expr);
+        } else if (type instanceof ArrayType) {
+            MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
+            memObj.setCVar(varName);
+            for (int i = 0; i < ((ArrayType) type).getNumElements(); i++) {
+                memObj.setInitialValue(i, ((Construction) expr).getArguments().get(i));
+            }
+        } else if (type instanceof AggregateType) { // TODO: RuntimeArray should not allocate memory
+            MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
+            memObj.setCVar(varName);
+            setAggregateMemory(memObj, 0, (Construction) expr);
+        } else {
+            throw new ParsingException("Unsupported type " + type);
         }
         builder.addExpression(varName, expr);
-        return null;
+        return visitChildren(ctx);
     }
 
-    @Override
-    public Object visitInitCollectionArray(SpirvParser.InitCollectionArrayContext ctx) {
-        String varName = ctx.varName().getText();
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitBaseValueContext initBaseValue : ctx.initCollectionValue().initBaseValue()) {
-            values.add((Expression) visitInitBaseValue(initBaseValue));
+    private int setAggregateMemory(MemoryObject aggregatedMemObj, int cursor, Construction expr) {
+        for (Expression e : expr.getArguments()) {
+            if (e instanceof Construction) {
+                cursor = setAggregateMemory(aggregatedMemObj, cursor, (Construction) e);
+            } else {
+                aggregatedMemObj.setInitialValue(cursor, e);
+                cursor++;
+            }
         }
-        checkState(values.stream().map(Expression::getType).distinct().count() == 1,
-                "All values in a collection must have the same type");
-        Type elementType = values.get(0).getType();
-        Type type = TYPE_FACTORY.getArrayType(elementType, values.size());
-        Construction expr = EXPR_FACTORY.makeArray(type, values, true);
-        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(type));
-        memObj.setCVar(varName);
-        for (int i = 0; i < values.size(); i++) {
-            memObj.setInitialValue(i, values.get(i));
-        }
-        builder.addExpression(varName, expr);
-        return null;
-    }
-
-    @Override
-    public Object visitInitCollectionRuntimeArray(SpirvParser.InitCollectionRuntimeArrayContext ctx) {
-        String varName = ctx.varName().getText();
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitBaseValueContext initBaseValue : ctx.initCollectionValue().initBaseValue()) {
-            values.add((Expression) visitInitBaseValue(initBaseValue));
-        }
-        checkState(values.stream().map(Expression::getType).distinct().count() == 1,
-                "All values in a collection must have the same type");
-        Type elementType = values.get(0).getType();
-        Type type = TYPE_FACTORY.getArrayType(elementType, values.size());
-        Construction expr = EXPR_FACTORY.makeArray(type, values, true);
-        builder.addExpression(varName, expr);
-        return null;
-    }
-
-    @Override
-    public Object visitInitCollectionStruct(SpirvParser.InitCollectionStructContext ctx) {
-        String varName = ctx.varName().getText();
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitBaseValueContext initBaseValue : ctx.initCollectionValue().initBaseValue()) {
-            values.add((Expression) visitInitBaseValue(initBaseValue));
-        }
-        Construction expr = EXPR_FACTORY.makeConstruct(values);
-        MemoryObject memObj = builder.allocateMemory(TYPE_FACTORY.getMemorySizeInBytes(expr.getType()));
-        memObj.setCVar(varName);
-        for (int i = 0; i < values.size(); i++) {
-            memObj.setInitialValue(i, values.get(i));
-        }
-        builder.addExpression(varName, memObj);
-        return null;
+        return cursor;
     }
 
     @Override
@@ -125,7 +75,46 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
             boolean value = ctx.headerBoolean().getText().equals("true");
             return EXPR_FACTORY.makeValue(value);
         } else {
-            throw new UnsupportedOperationException("Unsupported base value" + ctx.getText());
+            throw new ParsingException("Unsupported base value" + ctx.getText());
         }
+    }
+
+    @Override
+    public Object visitInitCollectionVector(SpirvParser.InitCollectionVectorContext ctx) {
+        List<Expression> values = new ArrayList<>();
+        for (SpirvParser.InitBaseValueContext initBaseValueContext : ctx.initBaseValues().initBaseValue()) {
+            values.add((Expression) visitInitBaseValue(initBaseValueContext));
+        }
+        if (values.stream().map(Expression::getType).distinct().count() != 1) {
+            throw new ParsingException("All values in a collection must have the same type");
+        }
+        return EXPR_FACTORY.makeConstruct(values);
+    }
+
+    @Override
+    public Object visitInitCollectionStruct(SpirvParser.InitCollectionStructContext ctx) {
+        List<Expression> values = new ArrayList<>();
+        for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
+            values.add((Expression) visitInitValue(initValue));
+        }
+        return EXPR_FACTORY.makeConstruct(values);
+    }
+
+    @Override
+    public Object visitInitCollectionArray(SpirvParser.InitCollectionArrayContext ctx) {
+        List<Expression> values = new ArrayList<>();
+        for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
+            values.add((Expression) visitInitValue(initValue));
+        }
+        return EXPR_FACTORY.makeConstruct(values);
+    }
+
+    @Override
+    public Object visitInitCollectionRuntimeArray(SpirvParser.InitCollectionRuntimeArrayContext ctx) {
+        List<Expression> values = new ArrayList<>();
+        for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
+            values.add((Expression) visitInitValue(initValue));
+        }
+        return EXPR_FACTORY.makeConstruct(values);
     }
 }

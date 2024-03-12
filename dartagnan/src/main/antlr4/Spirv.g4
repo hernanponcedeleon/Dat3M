@@ -10,57 +10,65 @@ spv : spvHeader? spvInstructions EOF;
 
 spvHeader : HeaderStart inputHeader outputHeader configHeader HeaderEnd;
 
-inputHeader   : ModeHeader_Input Colon initList?;
-outputHeader  : ModeHeader_Output Colon assertionFilter? assertionList?;
-configHeader  : ModeHeader_Config Colon literanHeaderUnsignedInteger Comma literanHeaderUnsignedInteger Comma literanHeaderUnsignedInteger;
+inputHeader   : ModeHeader_Input ModeHeader_Colon initList?;
+outputHeader  : ModeHeader_Output ModeHeader_Colon assertionFilter? assertionList?;
+configHeader  : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
 
-initList : init (Comma init)*;
+initList : init (ModeHeader_Comma init)*;
 
-init
-    :   varName Equal ModeHeader_TypeVector LBrace initCollectionValue RBrace        # initCollectionVector
-    |   varName Equal ModeHeader_TypeArray LBrace initCollectionValue RBrace         # initCollectionArray
-    |   varName Equal ModeHeader_TypeRuntimeArray LBrace initCollectionValue RBrace  # initCollectionRuntimeArray
-    |   varName Equal ModeHeader_TypeStruct LBrace initCollectionValue RBrace        # initCollectionStruct
-    |   varName Equal initBaseValue                                                  # initBase
+init : varName ModeHeader_Equal initValue;
+
+initValue
+    :   initCollectionValue
+    |   initBaseValue
     ;
-
-initCollectionValue : initBaseValue (Comma initBaseValue)*;
 
 initBaseValue
     :   literalHeaderConstant
     |   headerBoolean
     ;
 
+initCollectionValue
+    :   ModeHeader_TypeVector ModeHeader_LBrace initBaseValues ModeHeader_RBrace        # initCollectionVector
+    |   ModeHeader_TypeStruct ModeHeader_LBrace initValues ModeHeader_RBrace            # initCollectionStruct
+    |   ModeHeader_TypeArray ModeHeader_LBrace initValues ModeHeader_RBrace             # initCollectionArray
+    |   ModeHeader_TypeRuntimeArray ModeHeader_LBrace initValues ModeHeader_RBrace      # initCollectionRuntimeArray
+    ;
+
+initValues : initValue (ModeHeader_Comma initValue)*;
+initBaseValues : initBaseValue (ModeHeader_Comma initBaseValue)*;
+
+
 assertionFilter
-    :   AssertionFilter assertion
+    :   ModeHeader_AssertionFilter assertion
     ;
 
 assertionList
-    :   AssertionExists ast = assertion Comma?
-    |   AssertionNot AssertionExists ast = assertion Comma?
-    |   AssertionForall ast = assertion Comma?
+    :   ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
+    |   ModeHeader_AssertionNot ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
+    |   ModeHeader_AssertionForall ast = assertion ModeHeader_Comma?
     ;
 
 assertion
     :   headerBoolean                                       # assertionBoolean
-    |   LPar assertion RPar                                 # assertionParenthesis
-    |   AssertionNot assertion                              # assertionNot
-    |   assertion AssertionAnd assertion                    # assertionAnd
-    |   assertion AssertionOr assertion                     # assertionOr
+    |   ModeHeader_LPar assertion ModeHeader_RPar           # assertionParenthesis
+    |   ModeHeader_AssertionNot assertion                   # assertionNot
+    |   assertion ModeHeader_AssertionAnd assertion         # assertionAnd
+    |   assertion ModeHeader_AssertionOr assertion          # assertionOr
     |   assertionValue assertionCompare assertionValue      # assertionBasic
     ;
 
 assertionCompare returns [COpBin assertOp]
-    :   (Equal | EqualEqual)    {$assertOp = COpBin.EQ;}
-    |   NotEqual                {$assertOp = COpBin.NEQ;}
-    |   GreaterEqual            {$assertOp = COpBin.GTE;}
-    |   LessEqual               {$assertOp = COpBin.LTE;}
-    |   Less                    {$assertOp = COpBin.LT;}
-    |   Greater                 {$assertOp = COpBin.GT;}
+    :   ModeHeader_EqualEqual              {$assertOp = COpBin.EQ;}
+    |   ModeHeader_NotEqual                {$assertOp = COpBin.NEQ;}
+    |   ModeHeader_GreaterEqual            {$assertOp = COpBin.GTE;}
+    |   ModeHeader_LessEqual               {$assertOp = COpBin.LTE;}
+    |   ModeHeader_Less                    {$assertOp = COpBin.LT;}
+    |   ModeHeader_Greater                 {$assertOp = COpBin.GT;}
     ;
 
 assertionValue
-    :   varName LBracket ModeHeader_UnsignedInteger RBracket
+    :   varName ModeHeader_LBracket ModeHeader_UnsignedInteger ModeHeader_RBracket
     |   varName
     |   literalHeaderConstant
     ;
@@ -3139,7 +3147,7 @@ pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
 literalExtInstInteger : LiteralExtInstInteger;
-headerBoolean : True | False;
+headerBoolean : ModeHeader_True | ModeHeader_False;
 literanHeaderUnsignedInteger : ModeHeader_UnsignedInteger;
 literalHeaderConstant : ModeHeader_UnsignedInteger | ModeHeader_SignedInteger;
 literalFloat : LiteralFloat;

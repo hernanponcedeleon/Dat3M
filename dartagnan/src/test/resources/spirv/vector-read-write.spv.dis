@@ -3,7 +3,7 @@
 ; Schema: 0
 ; ================
 ; Input: %v3value = Vector {0, 0, 0}
-; Output: forall (%v3v[0]=2 /\ %v3v[8]=1 /\ %v3v[16]=0)
+; Output: forall (%v3v[0]==2 and %v3v[8]==1 and %v3v[16]==0)
 ; Config: 1, 1, 1
 ; ================
                OpCapability Shader
