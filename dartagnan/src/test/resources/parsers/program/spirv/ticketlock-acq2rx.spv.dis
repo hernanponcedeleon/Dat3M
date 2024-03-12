@@ -1,3 +1,10 @@
+; ============================
+; Input: %12 = RuntimeArray {0}
+; Input: %13 = RuntimeArray {0}
+; Input: %14 = RuntimeArray {0}
+; Output: exists (%14[0] != 2)
+; Config: 2, 1, 1
+; ============================
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Google Clspv; 0
