@@ -1,4 +1,3 @@
-
 #ifdef ACQ2RX
 #define mo_lock memory_order_relaxed
 #else
