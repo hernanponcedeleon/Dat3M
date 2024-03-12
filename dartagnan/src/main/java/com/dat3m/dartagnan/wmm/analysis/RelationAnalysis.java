@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
 import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -217,16 +216,16 @@ public class RelationAnalysis {
 
     private void run() {
         logger.trace("Start");
-        Wmm memoryModel = task.getMemoryModel();
-        Map<Relation, List<Definition>> dependents = new HashMap<>();
+        final Wmm memoryModel = task.getMemoryModel();
+        final Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
                 dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
             }
         }
         // ------------------------------------------------
-        Initializer initializer = new Initializer();
-        Map<Relation, List<Delta>> qGlobal = new HashMap<>();
+        final Initializer initializer = new Initializer();
+        final Map<Relation, List<Delta>> qGlobal = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             Knowledge k = r.getDefinition().accept(initializer);
             knowledgeMap.put(r, k);
@@ -236,7 +235,7 @@ public class RelationAnalysis {
             }
         }
         // ------------------------------------------------
-        Propagator propagator = new Propagator();
+        final Propagator propagator = new Propagator();
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
             logger.trace("Regular analysis for component {}", scc);
             Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
@@ -256,17 +255,20 @@ public class RelationAnalysis {
             while (!qLocal.isEmpty()) {
                 Relation relation = qLocal.keySet().iterator().next();
                 logger.trace("Regular knowledge update for '{}'", relation);
-                Delta delta = knowledgeMap.get(relation).joinSet(qLocal.remove(relation));
-                if (delta.may.isEmpty() && delta.must.isEmpty()) {
-                    continue;
+
+                // TODO: Ugly fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
+                //  A proper fix would "pull" changes/deltas rather than "push" them.
+                //  The push-based approach does not properly respect the stratification.
+                Delta toAdd = Delta.combine(qLocal.remove(relation));
+                if (relation.getDefinition() instanceof Difference difference) {
+                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
+                    toAdd.may.removeAll(k.must);
+                    toAdd.must.removeAll(k.may);
                 }
 
-                // TODO: Quick fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
-                //  (doesn't affect parent relations, a proper fix needed)
-                if (relation.getDefinition() instanceof Difference difference) {
-                    Knowledge k = knowledgeMap.get(difference.complement);
-                    knowledgeMap.get(relation).may.removeAll(k.must);
-                    knowledgeMap.get(relation).must.removeAll(k.may);
+                Delta delta = knowledgeMap.get(relation).joinSet(List.of(toAdd));
+                if (delta.may.isEmpty() && delta.must.isEmpty()) {
+                    continue;
                 }
 
                 propagator.source = relation;
@@ -406,6 +408,19 @@ public class RelationAnalysis {
         Delta(EventGraph maySet, EventGraph mustSet) {
             may = maySet;
             must = mustSet;
+        }
+
+        private static Delta combine(List<Delta> deltas) {
+            if (deltas.size() == 1) {
+                return deltas.get(0);
+            }
+            EventGraph mayDelta = new EventGraph();
+            EventGraph mustDelta = new EventGraph();
+            for (Delta d : deltas) {
+                mayDelta.addAll(d.may);
+                mustDelta.addAll(d.must);
+            }
+            return new Delta(mayDelta, mustDelta);
         }
     }
 

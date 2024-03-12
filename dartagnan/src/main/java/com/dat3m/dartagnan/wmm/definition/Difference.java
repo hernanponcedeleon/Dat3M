@@ -16,6 +16,8 @@ public class Difference extends Definition {
         complement = checkNotNull(r2);
     }
 
+    public Relation getSubtrahend() { return complement; }
+
     @Override
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitDifference(definedRelation, superset, complement);
