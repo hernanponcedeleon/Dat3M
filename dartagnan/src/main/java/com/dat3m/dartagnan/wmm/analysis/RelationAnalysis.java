@@ -259,11 +259,21 @@ public class RelationAnalysis {
                 Relation relation = qLocal.keySet().iterator().next();
                 logger.trace("Regular knowledge update for '{}'", relation);
 
-                // TODO: Ugly fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
-                //  A proper fix would "pull" changes/deltas rather than "push" them.
-                //  The push-based approach does not properly respect the stratification.
+                //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
+                //  In our current propagation approach, whenever a relation r gets updated,
+                //  we compute for each dependent relation "r' = r op x" an update U(r, x, r') that needs to get applied.
+                //  When r' gets processed, the update U(r, x, r') is applied as is to r'.
+                //  However, depending on whether x is before or after r in the stratification, the computed update
+                //  may be different. In particular, we compute updates to r' before all its dependencies were computed
+                //  and thus our computation does not strictly follow the stratification.
+                //  This does not matter if the update function U(r, x, r') is monotonic in r/x but if it is not,
+                //  an early computed update may be too large!
+                //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
+                // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
+                //  We should reconsider our algorithm.
                 Delta toAdd = Delta.combine(qLocal.remove(relation));
                 if (relation.getDefinition() instanceof Difference difference) {
+                    // Our propagated update may be "too large" so we reduce it.
                     Knowledge k = knowledgeMap.get(difference.getSubtrahend());
                     toAdd.may.removeAll(k.must);
                     toAdd.must.removeAll(k.may);
