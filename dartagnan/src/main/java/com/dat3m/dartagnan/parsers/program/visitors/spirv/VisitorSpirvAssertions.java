@@ -12,6 +12,11 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.List;
+
+import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
+import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
+
 public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
@@ -26,11 +31,11 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
     public AbstractAssert visitAssertionList(SpirvParser.AssertionListContext ctx) {
         AbstractAssert ast = ctx.assertion().accept(this);
         if (ctx.ModeHeader_AssertionNot() != null) {
-            ast.setType(AbstractAssert.ASSERT_TYPE_NOT_EXISTS);
+            ast.setType(ASSERT_TYPE_NOT_EXISTS);
         } else if (ctx.ModeHeader_AssertionExists() != null) {
             ast.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
         } else if (ctx.ModeHeader_AssertionForall() != null) {
-            ast.setType(AbstractAssert.ASSERT_TYPE_FORALL);
+            ast.setType(ASSERT_TYPE_FORALL);
         } else {
             throw new ParsingException("Unrecognised assertion type");
         }
@@ -80,22 +85,44 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
 
     @Override
     public AbstractAssert visitAssertionBoolean(SpirvParser.AssertionBooleanContext ctx) {
-        return this.visitHeaderBoolean(ctx.headerBoolean());
+        return ctx.assertionValue().getText().equals("0") ? new AssertNot(new AssertTrue()) : new AssertTrue();
     }
 
-    @Override
-    public AbstractAssert visitHeaderBoolean(SpirvParser.HeaderBooleanContext ctx) {
-        return ctx.ModeHeader_True() != null ? new AssertTrue() : new AssertNot(new AssertTrue());
+    public static AbstractAssert aggregateAssertions(List<AbstractAssert> assertions) {
+        if (assertions.size() == 1) {
+            return assertions.get(0);
+        }
+        if (! assertions.stream().allMatch(AbstractAssert::isSafetySpec)) {
+            throw new ParsingException("Existential assertions can not be used in conjunction with other assertions");
+        }
+        AbstractAssert result = new AssertTrue();
+        for (AbstractAssert assertion : assertions) {
+            result = assertion.getType().equals(ASSERT_TYPE_NOT_EXISTS) ?
+                    new AssertCompositeAnd(result, getComplement(assertion)) : new AssertCompositeAnd(result, assertion);
+        }
+        result.setType(ASSERT_TYPE_FORALL);
+        return result;
+    }
+
+    private static AbstractAssert getComplement(AbstractAssert assertion) {
+        if (assertion instanceof AssertCompositeAnd) {
+            return new AssertCompositeOr(getComplement(((AssertCompositeAnd) assertion).getA1()),
+                    getComplement(((AssertCompositeAnd) assertion).getA2()));
+        } else if (assertion instanceof AssertCompositeOr) {
+            return new AssertCompositeAnd(getComplement(((AssertCompositeOr) assertion).getA1()),
+                    getComplement(((AssertCompositeOr) assertion).getA2()));
+        }
+        return new AssertNot(assertion);
     }
 
     private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx, boolean right) {
-        if (ctx.literalHeaderConstant() != null) {
-            return EXPR_FACTORY.parseValue(ctx.literalHeaderConstant().getText(), TYPE_FACTORY.getArchType());
+        if (ctx.initBaseValue() != null) {
+            return EXPR_FACTORY.parseValue(ctx.initBaseValue().getText(), TYPE_FACTORY.getArchType());
         }
         String name = ctx.varName().getText();
         MemoryObject base = builder.getMemoryObject(name);
         if (base == null) {
-            throw new ParsingException("uninitialized location %s", name);
+            throw new ParsingException("Uninitialized location %s", name);
         }
         TerminalNode offset = ctx.ModeHeader_PositiveInteger();
         int o = offset == null ? 0 : Integer.parseInt(offset.getText());

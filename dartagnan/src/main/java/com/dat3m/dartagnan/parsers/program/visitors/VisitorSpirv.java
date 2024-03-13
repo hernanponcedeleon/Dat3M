@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.lang.reflect.Constructor;
@@ -13,7 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class VisitorSpirv extends SpirvBaseVisitor<Program> {
+public class VisitorSpirv extends SpirvBaseVisitor<Object> {
 
     private final ProgramBuilderSpv builder = new ProgramBuilderSpv();
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
@@ -95,32 +96,25 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
         List<SpirvParser.OutputHeaderContext> outputHeaders = new ArrayList<>();
-        List<SpirvParser.ConfigHeaderContext> configHeaders = new ArrayList<>();
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
             if (header.outputHeader() != null) {
                 outputHeaders.add(header.outputHeader());
             } else {
-                if (header.configHeader() != null) {
-                    configHeaders.add(header.configHeader());
-                }
                 this.visit(header);
             }
         }
-        if (configHeaders.size() > 1) {
-            throw new ParsingException("Multiple config headers");
-        }
-        if (outputHeaders.size() > 1) {
-            throw new ParsingException("Multiple output headers");
-        }
         visitSpvInstructions(ctx.spvInstructions());
+        List<AbstractAssert> assertions = new ArrayList<>();
         for (SpirvParser.OutputHeaderContext outputHeader : outputHeaders) {
-            visitOutputHeader(outputHeader);
+            assertions.add(visitOutputHeader(outputHeader));
         }
+        AbstractAssert aggregatedAssertion = VisitorSpirvAssertions.aggregateAssertions(assertions);
+        builder.setAssert(aggregatedAssertion);
         return builder.build();
     }
 
     @Override
-    public Program visitInputHeader(SpirvParser.InputHeaderContext ctx) {
+    public Object visitInputHeader(SpirvParser.InputHeaderContext ctx) {
         if (ctx.initList() != null) {
             new VisitorSpirvInit(builder).visitInitList(ctx.initList());
         }
@@ -128,15 +122,15 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     @Override
-    public Program visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
+    public AbstractAssert visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
         if (ctx.assertionList() != null) {
-            builder.setAssert(new VisitorSpirvAssertions(builder).visitAssertionList(ctx.assertionList()));
+            return new VisitorSpirvAssertions(builder).visitAssertionList(ctx.assertionList());
         }
         return null;
     }
 
     @Override
-    public Program visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
+    public Object visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
         int workGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(0).getText());
         int subGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(1).getText());
         int threadID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(2).getText());
@@ -146,13 +140,13 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     }
 
     @Override
-    public Program visitSpvInstructions(SpirvParser.SpvInstructionsContext ctx) {
+    public Object visitSpvInstructions(SpirvParser.SpvInstructionsContext ctx) {
         this.visitChildren(ctx);
         return null;
     }
 
     @Override
-    public Program visitOp(SpirvParser.OpContext ctx) {
+    public Object visitOp(SpirvParser.OpContext ctx) {
         String name = parseOpName(ctx);
         SpirvBaseVisitor<?> visitor = visitors.get(name);
         if (visitor == null) {

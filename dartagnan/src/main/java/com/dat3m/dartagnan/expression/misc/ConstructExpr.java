@@ -52,3 +52,4 @@ public final class ConstructExpr extends NaryExpressionBase<Type, ExpressionKind
         return Objects.hash(type, operands);
     }
 }
+A

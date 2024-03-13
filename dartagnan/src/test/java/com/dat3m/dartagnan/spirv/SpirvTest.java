@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.utils.ResourceHelper;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
@@ -25,11 +24,8 @@ import org.sosy_lab.java_smt.api.SolverContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
@@ -41,24 +37,19 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvTest {
 
-    private static Map<String, Result> expectedResults;
     // TODO: Replace with Vulkan when RA is fixed
     private final String modelPath = getRootPath("cat/sc.cat");
     private final String programPath;
     private final Result expected;
 
     public SpirvTest(String file, Result expected) {
-        this.programPath = file;
+        this.programPath = getTestResourcePath("spirv/" + file);
         this.expected = expected;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
-        String testPath = "dartagnan/src/test/resources/spirv/";
-        String arch = "SPIRV";
-        expectedResults = ResourceHelper.getExpectedResults(arch, "");
-        Set<String> skip = ResourceHelper.getSkipSet();
-        List<Object[]> handMadeTests = Arrays.asList(new Object[][]{
+        return Arrays.asList(new Object[][]{
                 {"empty-forall.spv.dis", PASS},
                 {"empty-exists.spv.dis", PASS},
                 {"empty-not-exists.spv.dis", FAIL},
@@ -66,6 +57,9 @@ public class SpirvTest {
                 {"empty-exists-false.spv.dis", FAIL},
                 {"empty-not-exists-false.spv.dis", PASS},
                 {"init.spv.dis", PASS},
+                {"init1.spv.dis", PASS},
+                {"init2.spv.dis", PASS},
+                {"init3.spv.dis", FAIL},
                 {"read-write.spv.dis", PASS},
                 {"vector-init.spv.dis", PASS},
                 {"vector.spv.dis", PASS},
@@ -74,21 +68,7 @@ public class SpirvTest {
                 {"array-of-vector1.spv.dis", PASS},
                 {"vector-read-write.spv.dis", PASS},
                 {"ids.spv.dis", PASS},
-
         });
-        return handMadeTests.stream().map(f -> new Object[]{getTestResourcePath("spirv/" + f[0]), f[1]}).collect(ArrayList::new,
-                (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
-//        try (Stream<Path> fileStream = Files.walk(Paths.get(getRootPath(testPath)))) {
-//            return fileStream
-//                    .filter(Files::isRegularFile)
-//                    .map(Path::toString)
-//                    .filter(f -> f.endsWith("dis"))
-//                    .filter(f -> !skip.contains(f))
-//                    .filter(f -> expectedResults.containsKey(f))
-//                    .map(f -> new Object[]{f, expectedResults.get(f)})
-//                    .collect(ArrayList::new,
-//                            (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
-//        }
     }
 
     @Test
