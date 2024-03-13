@@ -76,40 +76,19 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitInitCollectionVector(SpirvParser.InitCollectionVectorContext ctx) {
+    public Object visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
         List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitBaseValueContext initBaseValueContext : ctx.initBaseValues().initBaseValue()) {
-            values.add((Expression) visitInitBaseValue(initBaseValueContext));
-        }
-        if (values.stream().map(Expression::getType).distinct().count() != 1) {
-            throw new ParsingException("All values in a collection must have the same type");
-        }
-        return EXPR_FACTORY.makeConstruct(values);
-    }
-
-    @Override
-    public Object visitInitCollectionStruct(SpirvParser.InitCollectionStructContext ctx) {
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
-            values.add((Expression) visitInitValue(initValue));
-        }
-        return EXPR_FACTORY.makeConstruct(values);
-    }
-
-    @Override
-    public Object visitInitCollectionArray(SpirvParser.InitCollectionArrayContext ctx) {
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
-            values.add((Expression) visitInitValue(initValue));
-        }
-        return EXPR_FACTORY.makeConstruct(values);
-    }
-
-    @Override
-    public Object visitInitCollectionRuntimeArray(SpirvParser.InitCollectionRuntimeArrayContext ctx) {
-        List<Expression> values = new ArrayList<>();
-        for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
-            values.add((Expression) visitInitValue(initValue));
+        if (ctx.ModeHeader_TypeVector() != null) {
+            for (SpirvParser.InitBaseValueContext initValue : ctx.initBaseValues().initBaseValue()) {
+                values.add((Expression) visitInitBaseValue(initValue));
+            }
+            if (values.stream().map(Expression::getType).distinct().count() != 1) {
+                throw new ParsingException("All values in a Vector must have the same type");
+            }
+        } else {
+            for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
+                values.add((Expression) visitInitValue(initValue));
+            }
         }
         return EXPR_FACTORY.makeConstruct(values);
     }

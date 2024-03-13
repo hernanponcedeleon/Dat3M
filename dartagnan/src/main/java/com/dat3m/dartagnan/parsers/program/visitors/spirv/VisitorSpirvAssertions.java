@@ -43,23 +43,25 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
     }
 
     @Override
-    public AbstractAssert visitAssertionParenthesis(SpirvParser.AssertionParenthesisContext ctx) {
-        return ctx.assertion().accept(this);
-    }
-
-    @Override
-    public AbstractAssert visitAssertionNot(SpirvParser.AssertionNotContext ctx) {
-        return new AssertNot(ctx.assertion().accept(this));
-    }
-
-    @Override
-    public AbstractAssert visitAssertionAnd(SpirvParser.AssertionAndContext ctx) {
-        return new AssertCompositeAnd(ctx.assertion(0).accept(this), ctx.assertion(1).accept(this));
-    }
-
-    @Override
-    public AbstractAssert visitAssertionOr(SpirvParser.AssertionOrContext ctx) {
-        return new AssertCompositeOr(ctx.assertion(0).accept(this), ctx.assertion(1).accept(this));
+    public AbstractAssert visitAssertion(SpirvParser.AssertionContext ctx) {
+        if (ctx.ModeHeader_LPar() != null) {
+            if (ctx.assertionValue() != null) {
+                return ctx.assertionValue().getText().equals("0") ?
+                        new AssertNot(new AssertTrue()) : new AssertTrue();
+            } else {
+                return ctx.assertion(0).accept(this);
+            }
+        } else if (ctx.ModeHeader_AssertionAnd() != null) {
+            return new AssertCompositeAnd(ctx.assertion(0).accept(this),
+                    ctx.assertion(1).accept(this));
+        } else if (ctx.ModeHeader_AssertionOr() != null) {
+            return new AssertCompositeOr(ctx.assertion(0).accept(this),
+                    ctx.assertion(1).accept(this));
+        } else if (ctx.assertionBasic() != null) {
+            return ctx.assertionBasic().accept(this);
+        } else {
+            throw new ParsingException("Unrecognised assertion type");
+        }
     }
 
     @Override
@@ -81,11 +83,6 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
         } else {
             throw new ParsingException("Unrecognised comparison operator");
         }
-    }
-
-    @Override
-    public AbstractAssert visitAssertionBoolean(SpirvParser.AssertionBooleanContext ctx) {
-        return ctx.assertionValue().getText().equals("0") ? new AssertNot(new AssertTrue()) : new AssertTrue();
     }
 
     public static AbstractAssert aggregateAssertions(List<AbstractAssert> assertions) {

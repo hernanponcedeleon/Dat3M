@@ -26,10 +26,10 @@ initValue
     ;
 
 initCollectionValue
-    :   ModeHeader_TypeVector ModeHeader_LBrace initBaseValues ModeHeader_RBrace        # initCollectionVector
-    |   ModeHeader_TypeStruct ModeHeader_LBrace initValues ModeHeader_RBrace            # initCollectionStruct
-    |   ModeHeader_TypeArray ModeHeader_LBrace initValues ModeHeader_RBrace             # initCollectionArray
-    |   ModeHeader_TypeRuntimeArray ModeHeader_LBrace initValues ModeHeader_RBrace      # initCollectionRuntimeArray
+    :   ModeHeader_TypeVector ModeHeader_LBrace initBaseValues ModeHeader_RBrace
+    |   ModeHeader_TypeStruct ModeHeader_LBrace initValues ModeHeader_RBrace
+    |   ModeHeader_TypeArray ModeHeader_LBrace initValues ModeHeader_RBrace
+    |   ModeHeader_TypeRuntimeArray ModeHeader_LBrace initValues ModeHeader_RBrace
     ;
 
 initValues : initValue (ModeHeader_Comma initValue)*;
@@ -42,12 +42,16 @@ assertionList
     ;
 
 assertion
-    :   ModeHeader_LPar assertion ModeHeader_RPar           # assertionParenthesis
-    |   ModeHeader_AssertionNot assertion                   # assertionNot
-    |   assertion ModeHeader_AssertionAnd assertion         # assertionAnd
-    |   assertion ModeHeader_AssertionOr assertion          # assertionOr
-    |   assertionValue assertionCompare assertionValue      # assertionBasic
-    |   assertionValue                                      # assertionBoolean
+    :   ModeHeader_LPar assertionValue ModeHeader_RPar
+    |   ModeHeader_LPar assertion ModeHeader_RPar
+    |   ModeHeader_AssertionNot assertion
+    |   assertion ModeHeader_AssertionAnd assertion
+    |   assertion ModeHeader_AssertionOr assertion
+    |   assertionBasic
+    ;
+
+assertionBasic
+    :   assertionValue assertionCompare assertionValue
     ;
 
 assertionCompare
