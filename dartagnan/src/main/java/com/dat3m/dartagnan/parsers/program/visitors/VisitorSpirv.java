@@ -11,10 +11,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
@@ -97,10 +94,28 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
-        visitInputHeader(ctx.spvHeader().inputHeader());
-        visitConfigHeader(ctx.spvHeader().configHeader());
+        List<SpirvParser.OutputHeaderContext> outputHeaders = new ArrayList<>();
+        List<SpirvParser.ConfigHeaderContext> configHeaders = new ArrayList<>();
+        for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
+            if (header.outputHeader() != null) {
+                outputHeaders.add(header.outputHeader());
+            } else {
+                if (header.configHeader() != null) {
+                    configHeaders.add(header.configHeader());
+                }
+                this.visit(header);
+            }
+        }
+        if (configHeaders.size() > 1) {
+            throw new ParsingException("Multiple config headers");
+        }
+        if (outputHeaders.size() > 1) {
+            throw new ParsingException("Multiple output headers");
+        }
         visitSpvInstructions(ctx.spvInstructions());
-        visitOutputHeader(ctx.spvHeader().outputHeader());
+        for (SpirvParser.OutputHeaderContext outputHeader : outputHeaders) {
+            visitOutputHeader(outputHeader);
+        }
         return builder.build();
     }
 
