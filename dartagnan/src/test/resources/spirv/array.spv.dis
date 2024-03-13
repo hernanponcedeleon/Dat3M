@@ -1,11 +1,9 @@
 ; SPIR-V
 ; Version: 1.0
 ; Schema: 0
-; ================
-; Input: %v3value = Array {0, 0, 0}
-; Output: forall (%v3v[0]==0 and %v3v[8]==1 and %v3v[16]==2)
-; Config: 1, 1, 1
-; ================
+; @Input: %v3value = Array {0, 0, 0}
+; @Output: forall (%v3v[0]==0 and %v3v[8]==1 and %v3v[16]==2)
+; @Config: 1, 1, 1
                OpCapability Shader
         %ext = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450

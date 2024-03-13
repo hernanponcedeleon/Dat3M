@@ -2,13 +2,15 @@ grammar Spirv;
 
 options { tokenVocab = SpirvLexer; }
 
-@header{
-import com.dat3m.dartagnan.expression.op.COpBin;
-}
+spv : spvHeaders spvInstructions EOF;
 
-spv : spvHeader? spvInstructions EOF;
+spvHeaders : spvHeader+;
 
-spvHeader : HeaderStart inputHeader outputHeader configHeader HeaderEnd;
+spvHeader
+    : inputHeader
+    | outputHeader
+    | configHeader
+    ;
 
 inputHeader   : ModeHeader_Input ModeHeader_Colon initList?;
 outputHeader  : ModeHeader_Output ModeHeader_Colon assertionFilter? assertionList?;
@@ -58,17 +60,17 @@ assertion
     |   assertionValue assertionCompare assertionValue      # assertionBasic
     ;
 
-assertionCompare returns [COpBin assertOp]
-    :   ModeHeader_EqualEqual              {$assertOp = COpBin.EQ;}
-    |   ModeHeader_NotEqual                {$assertOp = COpBin.NEQ;}
-    |   ModeHeader_GreaterEqual            {$assertOp = COpBin.GTE;}
-    |   ModeHeader_LessEqual               {$assertOp = COpBin.LTE;}
-    |   ModeHeader_Less                    {$assertOp = COpBin.LT;}
-    |   ModeHeader_Greater                 {$assertOp = COpBin.GT;}
+assertionCompare
+    :   ModeHeader_EqualEqual
+    |   ModeHeader_NotEqual
+    |   ModeHeader_GreaterEqual
+    |   ModeHeader_LessEqual
+    |   ModeHeader_Less
+    |   ModeHeader_Greater
     ;
 
 assertionValue
-    :   varName ModeHeader_LBracket ModeHeader_UnsignedInteger ModeHeader_RBracket
+    :   varName ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket
     |   varName
     |   literalHeaderConstant
     ;
@@ -3148,8 +3150,8 @@ pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
 literalExtInstInteger : LiteralExtInstInteger;
 headerBoolean : ModeHeader_True | ModeHeader_False;
-literanHeaderUnsignedInteger : ModeHeader_UnsignedInteger;
-literalHeaderConstant : ModeHeader_UnsignedInteger | ModeHeader_SignedInteger;
+literanHeaderUnsignedInteger : ModeHeader_PositiveInteger;
+literalHeaderConstant : ModeHeader_NegativeInteger | ModeHeader_PositiveInteger;
 literalFloat : LiteralFloat;
 literalInteger : LiteralUnsignedInteger | LiteralInteger;
 literalString : LiteralString;

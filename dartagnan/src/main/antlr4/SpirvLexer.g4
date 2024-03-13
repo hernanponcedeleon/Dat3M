@@ -1679,8 +1679,8 @@ Id : '%' [A-Za-z0-9_]+;
 LiteralFloat : [+-]? [0-9]+ '.' [0-9]*;
 LiteralInteger : '-'? [0-9]+;
 LiteralString : '"' ~[\n"]* '"';
-HeaderStart : ';' [ \t]* [=]+ [ \t]* [\n\r] -> pushMode(ModeHeader);
-LineComment : ';' ~[\n]* -> skip;
+LineComment : ';' ~[\n@]* -> skip;
+HeaderStart : [@] -> pushMode(ModeHeader), skip;
 Whitespace : [ \t\r\n]+ -> skip;
 
 mode ModeExt;
@@ -1731,9 +1731,8 @@ ModeHeader_TypeArray           : 'Array';
 ModeHeader_TypeRuntimeArray    : 'RuntimeArray';
 ModeHeader_TypeStruct          : 'Struct';
 
-ModeHeader_UnsignedInteger : [0-9]+;
-ModeHeader_SignedInteger   : '-'? [0-9]+;
+ModeHeader_PositiveInteger     : [0-9]+;
+ModeHeader_NegativeInteger     : '-' [0-9]+;
 
-ModeHeader_LineEntry               : ';' -> skip;
-ModeHeader_Whitespace   : [ \t\r\n]+ -> skip;
-HeaderEnd           : ';' [ \t]* [=]+ [ \t]* [\n\r] -> popMode;
+ModeHeader_Whitespace          : [ \t\r]+ -> skip;
+HeaderEnd                      : [\n]+ -> popMode, skip;

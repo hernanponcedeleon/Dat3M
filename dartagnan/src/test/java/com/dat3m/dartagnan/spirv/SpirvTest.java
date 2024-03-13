@@ -28,14 +28,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -58,17 +58,37 @@ public class SpirvTest {
         String arch = "SPIRV";
         expectedResults = ResourceHelper.getExpectedResults(arch, "");
         Set<String> skip = ResourceHelper.getSkipSet();
-        try (Stream<Path> fileStream = Files.walk(Paths.get(getRootPath(testPath)))) {
-            return fileStream
-                    .filter(Files::isRegularFile)
-                    .map(Path::toString)
-                    .filter(f -> f.endsWith("dis"))
-                    .filter(f -> !skip.contains(f))
-                    .filter(f -> expectedResults.containsKey(f))
-                    .map(f -> new Object[]{f, expectedResults.get(f)})
-                    .collect(ArrayList::new,
-                            (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
-        }
+        List<Object[]> handMadeTests = Arrays.asList(new Object[][]{
+                {"empty-forall.spv.dis", PASS},
+                {"empty-exists.spv.dis", PASS},
+                {"empty-not-exists.spv.dis", FAIL},
+                {"empty-forall-false.spv.dis", FAIL},
+                {"empty-exists-false.spv.dis", FAIL},
+                {"empty-not-exists-false.spv.dis", PASS},
+                {"init.spv.dis", PASS},
+                {"read-write.spv.dis", PASS},
+                {"vector-init.spv.dis", PASS},
+                {"vector.spv.dis", PASS},
+                {"array.spv.dis", PASS},
+                {"array-of-vector.spv.dis", PASS},
+                {"array-of-vector1.spv.dis", PASS},
+                {"vector-read-write.spv.dis", PASS},
+                {"ids.spv.dis", PASS},
+
+        });
+        return handMadeTests.stream().map(f -> new Object[]{getTestResourcePath("spirv/" + f[0]), f[1]}).collect(ArrayList::new,
+                (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
+//        try (Stream<Path> fileStream = Files.walk(Paths.get(getRootPath(testPath)))) {
+//            return fileStream
+//                    .filter(Files::isRegularFile)
+//                    .map(Path::toString)
+//                    .filter(f -> f.endsWith("dis"))
+//                    .filter(f -> !skip.contains(f))
+//                    .filter(f -> expectedResults.containsKey(f))
+//                    .map(f -> new Object[]{f, expectedResults.get(f)})
+//                    .collect(ArrayList::new,
+//                            (l, f) -> l.add(new Object[]{f[0], f[1]}), ArrayList::addAll);
+//        }
     }
 
     @Test

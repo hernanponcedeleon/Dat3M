@@ -45,7 +45,7 @@ public class ProgramBuilderSpv {
     private final Map<String, List<String>> decorations = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
     private final Program program;
-    private static List<Integer> threadGrid = null;
+    private List<Integer> threadGrid = null;
 
     private String entryPointId;
     protected Function currentFunction;
@@ -59,9 +59,6 @@ public class ProgramBuilderSpv {
         validateBeforeBuild();
         // TODO: append Phi Definitions
         Function entry = getEntryPointFunction();
-        if (threadGrid == null) {
-            throw new ParsingException("Thread grid is not set");
-        }
         for (int z = 0; z < threadGrid.get(2); z++) {
             for (int y = 0; y < threadGrid.get(1); y++) {
                 for (int x = 0; x < threadGrid.get(0); x++) {
@@ -352,6 +349,9 @@ public class ProgramBuilderSpv {
     }
 
     private void validateBeforeBuild() {
+        if (threadGrid == null) {
+            throw new ParsingException("Thread grid is not set");
+        }
         if (!forwardFunctions.isEmpty()) {
             throw new ParsingException("Missing function definitions: %s",
                     String.join(",", forwardFunctions.keySet()));
@@ -427,6 +427,6 @@ public class ProgramBuilderSpv {
         if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
             throw new ParsingException("Thread grid dimensions must be less than 128");
         }
-        ProgramBuilderSpv.threadGrid = threadGrid;
+        this.threadGrid = threadGrid;
     }
 }

@@ -1,11 +1,9 @@
 ; SPIR-V
 ; Version: 1.0
 ; Schema: 0
-; ================
-; Input:
-; Output: not exists (true)
-; Config: 1, 1, 1
-; ================
+; @Input:
+; @Output: not exists (true)
+; @Config: 1, 1, 1
                OpCapability Shader
         %ext = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
