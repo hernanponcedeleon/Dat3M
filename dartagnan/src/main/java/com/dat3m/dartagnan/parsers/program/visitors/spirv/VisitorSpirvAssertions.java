@@ -23,11 +23,6 @@ public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
     }
 
     @Override
-    public AbstractAssert visitAssertionFilter(SpirvParser.AssertionFilterContext ctx) {
-        return ctx.assertion().accept(this);
-    }
-
-    @Override
     public AbstractAssert visitAssertionList(SpirvParser.AssertionListContext ctx) {
         AbstractAssert ast = ctx.assertion().accept(this);
         if (ctx.ModeHeader_AssertionNot() != null) {
