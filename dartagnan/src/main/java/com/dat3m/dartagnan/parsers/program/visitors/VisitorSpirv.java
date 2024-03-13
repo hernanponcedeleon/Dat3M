@@ -129,9 +129,6 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
-        if (ctx.assertionFilter() != null) {
-            builder.setAssertFilter(new VisitorSpirvAssertions(builder).visitAssertionFilter(ctx.assertionFilter()));
-        }
         if (ctx.assertionList() != null) {
             builder.setAssert(new VisitorSpirvAssertions(builder).visitAssertionList(ctx.assertionList()));
         }

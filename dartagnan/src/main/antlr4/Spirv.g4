@@ -13,7 +13,7 @@ spvHeader
     ;
 
 inputHeader   : ModeHeader_Input ModeHeader_Colon initList?;
-outputHeader  : ModeHeader_Output ModeHeader_Colon assertionFilter? assertionList?;
+outputHeader  : ModeHeader_Output ModeHeader_Colon assertionList?;
 configHeader  : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
 
 initList : init (ModeHeader_Comma init)*;
@@ -39,11 +39,6 @@ initCollectionValue
 
 initValues : initValue (ModeHeader_Comma initValue)*;
 initBaseValues : initBaseValue (ModeHeader_Comma initBaseValue)*;
-
-
-assertionFilter
-    :   ModeHeader_AssertionFilter assertion
-    ;
 
 assertionList
     :   ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?

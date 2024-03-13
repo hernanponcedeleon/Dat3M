@@ -1702,7 +1702,6 @@ ModeHeader_Id       : '%' [A-Za-z0-9_]+ -> type(Id);
 
 ModeHeader_AssertionExists     : 'exists';
 ModeHeader_AssertionForall     : 'forall';
-ModeHeader_AssertionFilter     : 'filter';
 ModeHeader_AssertionNot        : 'not';
 ModeHeader_AssertionAnd        : 'and';
 ModeHeader_AssertionOr         : 'or';
