@@ -25,11 +25,6 @@ initValue
     |   initBaseValue
     ;
 
-initBaseValue
-    :   literalHeaderConstant
-    |   headerBoolean
-    ;
-
 initCollectionValue
     :   ModeHeader_TypeVector ModeHeader_LBrace initBaseValues ModeHeader_RBrace        # initCollectionVector
     |   ModeHeader_TypeStruct ModeHeader_LBrace initValues ModeHeader_RBrace            # initCollectionStruct
@@ -47,12 +42,12 @@ assertionList
     ;
 
 assertion
-    :   headerBoolean                                       # assertionBoolean
-    |   ModeHeader_LPar assertion ModeHeader_RPar           # assertionParenthesis
+    :   ModeHeader_LPar assertion ModeHeader_RPar           # assertionParenthesis
     |   ModeHeader_AssertionNot assertion                   # assertionNot
     |   assertion ModeHeader_AssertionAnd assertion         # assertionAnd
     |   assertion ModeHeader_AssertionOr assertion          # assertionOr
     |   assertionValue assertionCompare assertionValue      # assertionBasic
+    |   assertionValue                                      # assertionBoolean
     ;
 
 assertionCompare
@@ -67,7 +62,7 @@ assertionCompare
 assertionValue
     :   varName ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket
     |   varName
-    |   literalHeaderConstant
+    |   initBaseValue
     ;
 
 varName
@@ -3144,9 +3139,8 @@ pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
 literalExtInstInteger : LiteralExtInstInteger;
-headerBoolean : ModeHeader_True | ModeHeader_False;
 literanHeaderUnsignedInteger : ModeHeader_PositiveInteger;
-literalHeaderConstant : ModeHeader_NegativeInteger | ModeHeader_PositiveInteger;
+initBaseValue : ModeHeader_NegativeInteger | ModeHeader_PositiveInteger;
 literalFloat : LiteralFloat;
 literalInteger : LiteralUnsignedInteger | LiteralInteger;
 literalString : LiteralString;

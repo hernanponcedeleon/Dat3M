@@ -1722,9 +1722,6 @@ ModeHeader_RBrace              : '}';
 ModeHeader_Colon               : ':';
 ModeHeader_Comma               : ',';
 
-ModeHeader_True                : 'true';
-ModeHeader_False               : 'false';
-
 ModeHeader_TypeVector          : 'Vector';
 ModeHeader_TypeArray           : 'Array';
 ModeHeader_TypeRuntimeArray    : 'RuntimeArray';

@@ -418,6 +418,9 @@ public class ProgramBuilderSpv {
     }
 
     public void setThreadGrid(List<Integer> threadGrid) {
+        if (this.threadGrid != null) {
+            throw new ParsingException("Thread grid is set multiple times");
+        }
         if (threadGrid.size() != 3) {
             throw new ParsingException("Thread grid must have 3 dimensions");
         }

@@ -67,15 +67,11 @@ public class VisitorSpirvInit extends SpirvBaseVisitor<Object> {
 
     @Override
     public Object visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
-        if (ctx.literalHeaderConstant() != null) {
-            // TODO: Integer bit width is hardcoded
-            IntegerType type = TYPE_FACTORY.getIntegerType(64);
+        IntegerType type = TYPE_FACTORY.getIntegerType(64);
+        try {
             return EXPR_FACTORY.makeValue(Long.parseLong(ctx.getText()), type);
-        } else if (ctx.headerBoolean() != null) {
-            boolean value = ctx.headerBoolean().getText().equals("true");
-            return EXPR_FACTORY.makeValue(value);
-        } else {
-            throw new ParsingException("Unsupported base value" + ctx.getText());
+        } catch (ParsingException e) {
+            throw new ParsingException("Unsupported value " + ctx.getText());
         }
     }
 

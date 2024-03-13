@@ -1,10 +1,15 @@
+; @Input:  %ids_value = Vector {0, 1, 2}
+; @Input:  %out_value = Vector {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+; @Output: forall (%out[0]==0 and %out[8]==0 and %out[16]==0 and %out[24]==1)
+; @Output: forall (%out[32]==0 and %out[40]==0 and %out[48]==0 and %out[56]==1)
+; @Output: forall (%out[64]==0 and %out[72]==1 and %out[80]==1 and %out[88]==0)
+; @Output: forall (%out[96]==0 and %out[104]==0 and %out[112]==1 and %out[120]==1)
+; @Output: forall (%out[128]==0 and %out[136]==1 and %out[144]==0 and %out[152]==1)
+; @Output: forall (%out[160]==1 and %out[168]==1 and %out[176]==1 and %out[184]==1)
+; @Config: 2, 2, 2
 ; SPIR-V
 ; Version: 1.0
 ; Schema: 0
-; @Input:  %ids_value = Vector {0, 1, 2}
-; @Input:  %out_value = Vector {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-; @Output: forall (%out[0]==0 and %out[8]==0 and %out[16]==0 and %out[24]==1 and %out[32]==0 and %out[40]==0 and %out[48]==0 and %out[56]==1 and %out[64]==0 and %out[72]==1 and %out[80]==1 and %out[88]==0 and %out[96]==0 and %out[104]==0 and %out[112]==1 and %out[120]==1 and %out[128]==0 and %out[136]==1 and %out[144]==0 and %out[152]==1 and %out[160]==1 and %out[168]==1 and %out[176]==1 and %out[184]==1)
-; @Config: 2, 2, 2
                OpCapability Shader
         %ext = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450

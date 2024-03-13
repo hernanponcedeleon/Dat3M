@@ -21,6 +21,6 @@ public class ParserSpirv implements ParserInterface {
         ParserRuleContext parserEntryPoint = parser.spv();
         VisitorSpirv visitor = new VisitorSpirv();
 
-        return parserEntryPoint.accept(visitor);
+        return (Program) parserEntryPoint.accept(visitor);
     }
 }
