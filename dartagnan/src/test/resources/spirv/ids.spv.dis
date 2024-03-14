@@ -20,7 +20,8 @@
        %func = OpTypeFunction %void
        %uint = OpTypeInt 64 0
      %v3uint = OpTypeVector %uint 3
-     %v24uint = OpTypeVector %uint 24
+    %v24uint = OpTypeVector %uint 24
+   %ptr_uint = OpTypePointer Input %uint
  %ptr_v3uint = OpTypePointer Input %v3uint
 %ptr_v24uint = OpTypePointer Output %v24uint
          %c0 = OpConstant %uint 0
@@ -32,9 +33,9 @@
         %out = OpVariable %ptr_v24uint Output %out_value
        %main = OpFunction %void None %func
       %label = OpLabel
-      %x_ptr = OpAccessChain %ptr_v3uint %ids %c0
-      %y_ptr = OpAccessChain %ptr_v3uint %ids %c1
-      %z_ptr = OpAccessChain %ptr_v3uint %ids %c2
+      %x_ptr = OpAccessChain %ptr_uint %ids %c0
+      %y_ptr = OpAccessChain %ptr_uint %ids %c1
+      %z_ptr = OpAccessChain %ptr_uint %ids %c2
       %x_val = OpLoad %uint %x_ptr
       %y_val = OpLoad %uint %y_ptr
       %z_val = OpLoad %uint %z_ptr
@@ -45,9 +46,9 @@
       %idx_x = OpIMul %uint %4 %c3
       %idx_y = OpIAdd %uint %idx_x %c1
       %idx_z = OpIAdd %uint %idx_x %c2
-  %ptr_out_x = OpAccessChain %ptr_v3uint %out %idx_x
-  %ptr_out_y = OpAccessChain %ptr_v3uint %out %idx_y
-  %ptr_out_z = OpAccessChain %ptr_v3uint %out %idx_z
+  %ptr_out_x = OpAccessChain %ptr_uint %out %idx_x
+  %ptr_out_y = OpAccessChain %ptr_uint %out %idx_y
+  %ptr_out_z = OpAccessChain %ptr_uint %out %idx_z
                OpStore %ptr_out_x %x_val
                OpStore %ptr_out_y %y_val
                OpStore %ptr_out_z %z_val

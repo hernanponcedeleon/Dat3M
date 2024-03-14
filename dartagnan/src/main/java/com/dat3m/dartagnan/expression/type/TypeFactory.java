@@ -111,6 +111,9 @@ public final class TypeFactory {
             } else {
                 sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
             }
+        } else if (type instanceof BooleanType) {
+            // TODO: We assume 1 byte alignment
+            return 1;
         } else {
             throw new UnsupportedOperationException("Cannot compute the size of " + type);
         }

@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -13,7 +15,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.util.List;
 import java.util.Set;
 
-public class VisitorOpsMemory extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
@@ -25,119 +27,197 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitOpStore(SpirvParser.OpStoreContext ctx) {
+    public Event visitOpStore(SpirvParser.OpStoreContext ctx) {
         // TODO: Handle memoryAccess
         Expression pointer = builder.getExpression(ctx.pointer().getText());
-        Expression object = builder.getExpression(ctx.object().getText());
-        Store store = new Store(pointer, object);
-        builder.addEvent(store);
-        return null;
+        Expression value = builder.getExpression(ctx.object().getText());
+        return builder.addEvent(new Store(pointer, value));
     }
 
     @Override
-    public Expression visitOpLoad(SpirvParser.OpLoadContext ctx) {
+    public Event visitOpLoad(SpirvParser.OpLoadContext ctx) {
         // TODO: Handle memoryAccess
-        String id = ctx.idResult().getText();
-        Register register = builder.addRegister(id, ctx.idResultType().getText());
+        Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
         Expression pointer = builder.getExpression(ctx.pointer().getText());
-        Load load = new Load(register, pointer);
-        builder.addEvent(load);
-        return null;
+        return builder.addEvent(new Load(register, pointer));
     }
 
     @Override
-    public Expression visitOpVariable(SpirvParser.OpVariableContext ctx) {
+    public Event visitOpVariable(SpirvParser.OpVariableContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getPointedType(ctx.idResultType().getText());
-        int bytes = TYPE_FACTORY.getMemorySizeInBytes(type);
-        MemoryObject memObj = builder.allocateMemory(bytes);
-        memObj.setCVar(id);
-        builder.addExpression(id, memObj);
+        Expression value = getOpVariableInitialValue(ctx);
+        if (value != null) {
+            type = validateVariableType(id, type, value.getType());
+        } else if (type instanceof ArrayType aType && aType.getNumElements() == -1) {
+            throw new ParsingException("Missing initial value for runtime variable '%s'", id);
+        }
 
-        // TODO: Proper storage class enum and handling
-        //  Function should be copied for each function
-        //  handle scopes
-        if (ctx.storageClass().Input() != null
-                || ctx.storageClass().Private() != null
-                || ctx.storageClass().Function() != null) {
+        int size = TYPE_FACTORY.getMemorySizeInBytes(type);
+        MemoryObject memObj = builder.allocateMemory(size);
+        memObj.setCVar(id);
+        if (isThreadLocal(ctx.storageClass())) {
             memObj.setIsThreadLocal(true);
         }
-
-        if (ctx.initializer() != null) {
-            Expression constant = builder.getExpression(ctx.initializer().getText());
-            setInitialValue(memObj, 0, constant);
+        if (value != null) {
+            setInitialValue(memObj, 0, value);
         }
-        //builder.addVariable(id, memObj);
+
+        builder.addExpression(id, memObj);
+        builder.addVariableType(id, type);
+        return null;
+    }
+
+    private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx) {
+        String id = ctx.idResult().getText();
+        if (builder.hasInput(id)) {
+            if (ctx.initializer() == null) {
+                return builder.getInput(id);
+            }
+            throw new ParsingException("Variable '%s' has a constant initializer " +
+                    "and cannot accept an external input", id);
+        }
+        if (ctx.initializer() != null) {
+            return builder.getExpression(ctx.initializer().getText());
+        }
+        return null;
+    }
+
+    private Type validateVariableType(String id, Type varType, Type valType) {
+        if (varType.equals(valType)) {
+            return valType;
+        }
+        if (varType instanceof AggregateType t1 && valType instanceof AggregateType t2) {
+            int size = t1.getDirectFields().size();
+            if (size == t2.getDirectFields().size()) {
+                for (int i = 0; i < size; i++) {
+                    validateVariableType(id, t1.getDirectFields().get(i), t2.getDirectFields().get(i));
+                }
+                return valType;
+            }
+        }
+        if (varType instanceof ArrayType t1 && valType instanceof ArrayType t2) {
+            if (t1.getNumElements() == -1) {
+                if (t2.getNumElements() > 0) {
+                    return valType;
+                }
+            } else if (t1.getNumElements() == t2.getNumElements()) {
+                validateVariableType(id, t1.getElementType(), t2.getElementType());
+                return valType;
+            }
+        }
+        throw new ParsingException("Mismatching value type for variables '%s', " +
+                "expected '%s' but received '%s'", id, varType, valType);
+    }
+
+    private boolean isThreadLocal(SpirvParser.StorageClassContext ctx) {
+        // TODO: More fine-grained handling
+        // TODO: Input has to be thread-local only if set from BuiltIn
+        return ctx.Input() != null || ctx.Private() != null || ctx.Function() != null;
+    }
+
+    private void setInitialValue(MemoryObject memObj, int offset, Expression value) {
+        if (value.getType() instanceof ArrayType aType) {
+            Construction cValue = (Construction) value;
+            List<Expression> elements = cValue.getArguments();
+            int step = TYPE_FACTORY.getMemorySizeInBytes(aType.getElementType());
+            for (int i = 0; i < elements.size(); i++) {
+                setInitialValue(memObj, offset + i * step, elements.get(i));
+            }
+        } else if (value.getType() instanceof AggregateType) {
+            Construction cValue = (Construction) value;
+            final List<Expression> elements = cValue.getArguments();
+            int currentOffset = offset;
+            for (Expression element : elements) {
+                setInitialValue(memObj, currentOffset, element);
+                currentOffset += TYPE_FACTORY.getMemorySizeInBytes(element.getType());
+            }
+        } else if (value.getType() instanceof IntegerType) {
+            memObj.setInitialValue(offset, value);
+        } else if (value.getType() instanceof BooleanType) {
+            memObj.setInitialValue(offset, value);
+        } else {
+            throw new ParsingException("Illegal variable value type '%s'", value.getType());
+        }
+    }
+
+    @Override
+    public Event visitOpAccessChain(SpirvParser.OpAccessChainContext ctx) {
+        visitOpAccessChain(ctx.idResult().getText(), ctx.idResultType().getText(),
+                ctx.base().getText(), ctx.indexesIdRef());
         return null;
     }
 
     @Override
-    public Expression visitOpAccessChain(SpirvParser.OpAccessChainContext ctx) {
-        return visitOpAccessChain(ctx.idResult().getText(), ctx.idResultType().getText(),
+    public Event visitOpInBoundsAccessChain(SpirvParser.OpInBoundsAccessChainContext ctx) {
+        visitOpAccessChain(ctx.idResult().getText(), ctx.idResultType().getText(),
                 ctx.base().getText(), ctx.indexesIdRef());
+        return null;
     }
 
-    @Override
-    public Expression visitOpInBoundsAccessChain(SpirvParser.OpInBoundsAccessChainContext ctx) {
-        return visitOpAccessChain(ctx.idResult().getText(), ctx.idResultType().getText(),
-                ctx.base().getText(), ctx.indexesIdRef());
-    }
-
-    private Expression visitOpAccessChain(String id, String typeId, String baseId,
-                                          List<SpirvParser.IndexesIdRefContext> idxContexts) {
-        Type type = builder.getPointedType(typeId);
+    private void visitOpAccessChain(String id, String typeId, String baseId,
+                                    List<SpirvParser.IndexesIdRefContext> idxContexts) {
+        Type resultType = builder.getPointedType(typeId);
+        Type baseType = builder.getVariableType(baseId);
         Expression base = builder.getExpression(baseId);
         List<Expression> indexes = idxContexts.stream()
                 .map(c -> builder.getExpression(c.getText()))
                 .toList();
-        IExprBin expression = EXPR_FACTORY.makeBinary(base, IOpBin.ADD, getMemberPtr(type, indexes));
+        // TODO: Merge with GEPExpression?
+        Expression expression = EXPR_FACTORY.makeBinary(base, IOpBin.ADD, getMemberPtr(id, resultType, baseType, indexes));
         builder.addExpression(id, expression);
-        return expression;
     }
 
-    private IExprBin getMemberPtr(Type type, List<Expression> indexes) {
+    private IExpr getMemberPtr(String id, Type resultType, Type type, List<Expression> indexes) {
         if (type instanceof ArrayType arrayType) {
-            Type elemType = arrayType.getElementType();
-            int size = TYPE_FACTORY.getMemorySizeInBytes(elemType);
-            IValue sizeExpr = EXPR_FACTORY.makeValue(size, TYPE_FACTORY.getArchType());
-            IExprBin offsetExpr = EXPR_FACTORY.makeBinary(sizeExpr, IOpBin.MUL, indexes.get(0));
+            return getArrayMemberPtr(id, resultType, arrayType, indexes);
+        } else if (type instanceof AggregateType agType) {
+            return getStructMemberPtr(id, resultType, agType, indexes);
+        } else {
+            throw new ParsingException("Referring to a scalar type in access chain '%s'", id);
+        }
+    }
+
+    private IExpr getArrayMemberPtr(String id, Type resultType, ArrayType type, List<Expression> indexes) {
+        // TODO: Simplify if all indexes are constants
+        Type elementType = type.getElementType();
+        int size = TYPE_FACTORY.getMemorySizeInBytes(elementType);
+        IValue sizeExpr = EXPR_FACTORY.makeValue(size, TYPE_FACTORY.getArchType());
+        Expression indexExpr = EXPR_FACTORY.makeIntegerCast(indexes.get(0), sizeExpr.getType(), false);
+        IExprBin offsetExpr = EXPR_FACTORY.makeBinary(sizeExpr, IOpBin.MUL, indexExpr);
+        if (indexes.size() > 1) {
+            IExpr remainingOffsetExpr = getMemberPtr(id, resultType, elementType, indexes.subList(1, indexes.size()));
+            return EXPR_FACTORY.makeBinary(offsetExpr, IOpBin.ADD, remainingOffsetExpr);
+        }
+        if (!resultType.equals(elementType)) {
+            throw new ParsingException("Invalid value type in access chain '%s', " +
+                    "expected '%s' but received '%s'", id, resultType, elementType);
+        }
+        return offsetExpr;
+    }
+
+    private IExpr getStructMemberPtr(String id, Type resultType, AggregateType type, List<Expression> indexes) {
+        // TODO: Support for non-constants, simplify if all indexes are constants
+        Expression indexExpr = indexes.get(0);
+        if (indexExpr instanceof IValue iValue) {
+            int value = iValue.getValueAsInt();
+            int offset = 0;
+            for (int i = 0; i < value; i++) {
+                offset += TYPE_FACTORY.getMemorySizeInBytes(type.getDirectFields().get(i));
+            }
+            IValue offsetExpr = EXPR_FACTORY.makeValue(offset, TYPE_FACTORY.getArchType());
             if (indexes.size() > 1) {
-                IExprBin remOffsetExpr = getMemberPtr(elemType, indexes.subList(1, indexes.size()));
-                return EXPR_FACTORY.makeBinary(offsetExpr, IOpBin.ADD, remOffsetExpr);
+                IExpr remainingOffsetExpr = getMemberPtr(id, resultType, type.getDirectFields().get(value), indexes.subList(1, indexes.size()));
+                return EXPR_FACTORY.makeBinary(offsetExpr, IOpBin.ADD, remainingOffsetExpr);
+            }
+            Type elemType = type.getDirectFields().get(value);
+            if (!resultType.equals(elemType)) {
+                throw new ParsingException("Invalid value type in access chain '%s', " +
+                        "expected '%s' but received '%s'", id, resultType, elemType);
             }
             return offsetExpr;
-        } else if (type instanceof AggregateType) {
-            throw new UnsupportedOperationException("Not implemented");
-        } else {
-            // TODO: ParsingException
-            throw new UnsupportedOperationException("Referring to a member of a primitive type");
         }
-    }
-
-    private void setInitialValue(MemoryObject memObj, int offset, Expression constant) {
-        if (constant.getType() instanceof ArrayType arrayType) {
-            assert constant instanceof Construction;
-            final Construction constArray = (Construction) constant;
-            final List<Expression> arrayElements = constArray.getArguments();
-            final int stepSize = TYPE_FACTORY.getMemorySizeInBytes(arrayType.getElementType());
-            for (int i = 0; i < arrayElements.size(); i++) {
-                setInitialValue(memObj, offset + i * stepSize, arrayElements.get(i));
-            }
-        } else if (constant.getType() instanceof AggregateType) {
-            assert constant instanceof Construction;
-            final Construction constStruct = (Construction) constant;
-            final List<Expression> structElements = constStruct.getArguments();
-            int currentOffset = offset;
-            for (Expression structElement : structElements) {
-                setInitialValue(memObj, currentOffset, structElement);
-                currentOffset += TYPE_FACTORY.getMemorySizeInBytes(structElement.getType());
-            }
-        } else if (constant.getType() instanceof IntegerType) {
-            memObj.setInitialValue(offset, constant);
-        } else {
-            // TODO: ParsingException
-            throw new UnsupportedOperationException("Unrecognized constant value: " + constant);
-        }
+        throw new ParsingException("Unsupported non-constant offset in access chain '%s'", id);
     }
 
     public Set<String> getSupportedOps() {

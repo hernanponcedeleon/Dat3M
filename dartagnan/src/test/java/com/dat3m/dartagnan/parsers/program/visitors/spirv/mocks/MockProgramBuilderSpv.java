@@ -4,6 +4,8 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -28,13 +30,16 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         return (IntegerType) addType(id, TYPE_FACTORY.getIntegerType(bitWidth));
     }
 
-    public IntegerType mockPtrType(String id) {
+    public IntegerType mockPtrType(String id, String pointedTypeId) {
+        addPointedType(id, getType(pointedTypeId));
         return (IntegerType) addType(id, TYPE_FACTORY.getPointerType());
     }
 
     public ArrayType mockVectorType(String id, String innerTypeId, int size) {
         Type innerType = getType(innerTypeId);
-        ArrayType type = TYPE_FACTORY.getArrayType(innerType, size);
+        ArrayType type = size > 0
+                ? TYPE_FACTORY.getArrayType(innerType, size)
+                : TYPE_FACTORY.getArrayType(innerType);
         return (ArrayType) addType(id, type);
     }
 
@@ -64,6 +69,10 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
             List<Expression> elements = mockConstantArrayElements(elementType, value);
             Construction construction = EXPR_FACTORY.makeArray(elementType, elements, true);
             return addExpression(id, construction);
+        } else if (type instanceof AggregateType) {
+            List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
+            Construction construction = EXPR_FACTORY.makeConstruct(members);
+            return addExpression(id, construction);
         }
         throw new UnsupportedOperationException("Unsupported mock constant type " + typeId);
     }
@@ -81,15 +90,16 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);
     }
 
-    public void mockVariable(String id, String typeId) {
+    public MemoryObject mockVariable(String id, String typeId) {
         int bytes = TYPE_FACTORY.getMemorySizeInBytes(getType(typeId));
         MemoryObject memObj = allocateMemory(bytes);
         memObj.setCVar(id);
         addExpression(id, memObj);
+        return memObj;
     }
 
-    public void mockRegister(String id, String typeId) {
-        addExpression(id, addRegister(id, typeId));
+    public Register mockRegister(String id, String typeId) {
+        return (Register) addExpression(id, addRegister(id, typeId));
     }
 
     public void mockLabel() {
@@ -109,5 +119,13 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
 
     public Function getCurrentFunction() {
         return currentFunction;
+    }
+
+    public Event getLastEvent() {
+        List<Event> events = currentFunction.getEvents();
+        if (!events.isEmpty()) {
+            return events.get(events.size() - 1);
+        }
+        return null;
     }
 }

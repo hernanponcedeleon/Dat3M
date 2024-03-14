@@ -21,9 +21,9 @@
         %v3v = OpVariable %ptr_v3uint Uniform %v3value
        %main = OpFunction %void None %func
       %label = OpLabel
-        %el0 = OpAccessChain %ptr_v3uint %v3v %c0
-        %el1 = OpAccessChain %ptr_v3uint %v3v %c1
-        %el2 = OpAccessChain %ptr_v3uint %v3v %c2
+        %el0 = OpAccessChain %ptr_uint %v3v %c0
+        %el1 = OpAccessChain %ptr_uint %v3v %c1
+        %el2 = OpAccessChain %ptr_uint %v3v %c2
                OpStore %el0 %c0
                OpStore %el1 %c1
                OpStore %el2 %c2
