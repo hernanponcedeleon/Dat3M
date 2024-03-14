@@ -1,5 +1,5 @@
-; @Input:  %ids_value = Vector {0, 1, 2}
-; @Input:  %out_value = Vector {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+; @Input:  %ids_value = {0, 1, 2}
+; @Input:  %out_value = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 ; @Output: forall (%out[0]==0 and %out[8]==0 and %out[16]==0 and %out[24]==1)
 ; @Output: forall (%out[32]==0 and %out[40]==0 and %out[48]==0 and %out[56]==1)
 ; @Output: forall (%out[64]==0 and %out[72]==1 and %out[80]==1 and %out[88]==0)

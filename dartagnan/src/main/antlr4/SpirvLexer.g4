@@ -1722,11 +1722,6 @@ ModeHeader_RBrace              : '}';
 ModeHeader_Colon               : ':';
 ModeHeader_Comma               : ',';
 
-ModeHeader_TypeVector          : 'Vector';
-ModeHeader_TypeArray           : 'Array';
-ModeHeader_TypeRuntimeArray    : 'RuntimeArray';
-ModeHeader_TypeStruct          : 'Struct';
-
 ModeHeader_PositiveInteger     : [0-9]+;
 ModeHeader_NegativeInteger     : '-' [0-9]+;
 

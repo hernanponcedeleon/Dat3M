@@ -6,8 +6,7 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
@@ -46,22 +45,8 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
-        List<Expression> values = new ArrayList<>();
-        if (ctx.ModeHeader_TypeVector() != null) {
-            // Vector
-            for (SpirvParser.InitBaseValueContext initValue : ctx.initBaseValues().initBaseValue()) {
-                values.add(visitInitBaseValue(initValue));
-            }
-            if (values.stream().map(Expression::getType).distinct().count() != 1) {
-                throw new ParsingException("All values in a Vector must have the same type");
-            }
-            return EXPR_FACTORY.makeArray(values.get(0).getType(), values, false);
-        } else {
-            // Array, RuntimeArray, or Struct
-            for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
-                values.add(visitInitValue(initValue));
-            }
-            return EXPR_FACTORY.makeConstruct(values);
-        }
+        return EXPR_FACTORY.makeConstruct(ctx.initValues().initValue().stream()
+                .map(this::visitInitValue)
+                .collect(Collectors.toList()));
     }
 }

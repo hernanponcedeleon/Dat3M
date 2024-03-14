@@ -25,15 +25,9 @@ initValue
     |   initBaseValue
     ;
 
-initCollectionValue
-    :   ModeHeader_TypeVector ModeHeader_LBrace initBaseValues ModeHeader_RBrace
-    |   ModeHeader_TypeStruct ModeHeader_LBrace initValues ModeHeader_RBrace
-    |   ModeHeader_TypeArray ModeHeader_LBrace initValues ModeHeader_RBrace
-    |   ModeHeader_TypeRuntimeArray ModeHeader_LBrace initValues ModeHeader_RBrace
-    ;
+initCollectionValue : ModeHeader_LBrace initValues ModeHeader_RBrace;
 
 initValues : initValue (ModeHeader_Comma initValue)*;
-initBaseValues : initBaseValue (ModeHeader_Comma initBaseValue)*;
 
 assertionList
     :   ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
