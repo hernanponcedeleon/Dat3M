@@ -1731,4 +1731,4 @@ ModeHeader_PositiveInteger     : [0-9]+;
 ModeHeader_NegativeInteger     : '-' [0-9]+;
 
 ModeHeader_Whitespace          : [ \t\r]+ -> skip;
-HeaderEnd                      : [\n]+ -> popMode, skip;
+ModeHeader_NewLine             : [\n]+ -> popMode, skip;

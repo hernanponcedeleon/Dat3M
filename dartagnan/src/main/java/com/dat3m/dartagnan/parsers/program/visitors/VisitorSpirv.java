@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.lang.reflect.Constructor;
@@ -14,7 +13,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class VisitorSpirv extends SpirvBaseVisitor<Object> {
+public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     private final ProgramBuilderSpv builder = new ProgramBuilderSpv();
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
@@ -104,17 +103,14 @@ public class VisitorSpirv extends SpirvBaseVisitor<Object> {
             }
         }
         visitSpvInstructions(ctx.spvInstructions());
-        List<AbstractAssert> assertions = new ArrayList<>();
         for (SpirvParser.OutputHeaderContext outputHeader : outputHeaders) {
-            assertions.add(visitOutputHeader(outputHeader));
+            visitOutputHeader(outputHeader);
         }
-        AbstractAssert aggregatedAssertion = VisitorSpirvOutput.aggregateAssertions(assertions);
-        builder.setAssert(aggregatedAssertion);
         return builder.build();
     }
 
     @Override
-    public Object visitInputHeader(SpirvParser.InputHeaderContext ctx) {
+    public Program visitInputHeader(SpirvParser.InputHeaderContext ctx) {
         if (ctx.initList() != null) {
             new VisitorSpirvInput(builder).visitInitList(ctx.initList());
         }
@@ -122,15 +118,15 @@ public class VisitorSpirv extends SpirvBaseVisitor<Object> {
     }
 
     @Override
-    public AbstractAssert visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
+    public Program visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
         if (ctx.assertionList() != null) {
-            return new VisitorSpirvOutput(builder).visitAssertionList(ctx.assertionList());
+            new VisitorSpirvOutput(builder).visitAssertionList(ctx.assertionList());
         }
         return null;
     }
 
     @Override
-    public Object visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
+    public Program visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
         int workGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(0).getText());
         int subGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(1).getText());
         int threadID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(2).getText());
@@ -140,13 +136,13 @@ public class VisitorSpirv extends SpirvBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitSpvInstructions(SpirvParser.SpvInstructionsContext ctx) {
+    public Program visitSpvInstructions(SpirvParser.SpvInstructionsContext ctx) {
         this.visitChildren(ctx);
         return null;
     }
 
     @Override
-    public Object visitOp(SpirvParser.OpContext ctx) {
+    public Program visitOp(SpirvParser.OpContext ctx) {
         String name = parseOpName(ctx);
         SpirvBaseVisitor<?> visitor = visitors.get(name);
         if (visitor == null) {
