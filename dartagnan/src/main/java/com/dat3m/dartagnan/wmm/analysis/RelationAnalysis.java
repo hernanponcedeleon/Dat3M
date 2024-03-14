@@ -216,16 +216,16 @@ public class RelationAnalysis {
 
     private void run() {
         logger.trace("Start");
-        Wmm memoryModel = task.getMemoryModel();
-        Map<Relation, List<Definition>> dependents = new HashMap<>();
+        final Wmm memoryModel = task.getMemoryModel();
+        final Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
                 dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
             }
         }
         // ------------------------------------------------
-        Initializer initializer = new Initializer();
-        Map<Relation, List<Delta>> qGlobal = new HashMap<>();
+        final Initializer initializer = new Initializer();
+        final Map<Relation, List<Delta>> qGlobal = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             Knowledge k = r.getDefinition().accept(initializer);
             if (!enableMustSets) {
@@ -238,7 +238,7 @@ public class RelationAnalysis {
             }
         }
         // ------------------------------------------------
-        Propagator propagator = new Propagator();
+        final Propagator propagator = new Propagator();
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
             logger.trace("Regular analysis for component {}", scc);
             Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
@@ -258,17 +258,30 @@ public class RelationAnalysis {
             while (!qLocal.isEmpty()) {
                 Relation relation = qLocal.keySet().iterator().next();
                 logger.trace("Regular knowledge update for '{}'", relation);
-                Delta delta = knowledgeMap.get(relation).joinSet(qLocal.remove(relation));
-                if (delta.may.isEmpty() && delta.must.isEmpty()) {
-                    continue;
+
+                //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
+                //  In our current propagation approach, whenever a relation r gets updated,
+                //  we compute for each dependent relation "r' = r op x" an update U(r, x, r') that needs to get applied.
+                //  When r' gets processed, the update U(r, x, r') is applied as is to r'.
+                //  However, depending on whether x is before or after r in the stratification, the computed update
+                //  may be different. In particular, we compute updates to r' before all its dependencies were computed
+                //  and thus our computation does not strictly follow the stratification.
+                //  This does not matter if the update function U(r, x, r') is monotonic in r/x but if it is not,
+                //  an early computed update may be too large!
+                //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
+                // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
+                //  We should reconsider our algorithm.
+                Delta toAdd = Delta.combine(qLocal.remove(relation));
+                if (relation.getDefinition() instanceof Difference difference) {
+                    // Our propagated update may be "too large" so we reduce it.
+                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
+                    toAdd.may.removeAll(k.must);
+                    toAdd.must.removeAll(k.may);
                 }
 
-                // TODO: Quick fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
-                //  (doesn't affect parent relations, a proper fix needed)
-                if (relation.getDefinition() instanceof Difference difference) {
-                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
-                    knowledgeMap.get(relation).may.removeAll(k.must);
-                    knowledgeMap.get(relation).must.removeAll(k.may);
+                Delta delta = knowledgeMap.get(relation).joinSet(List.of(toAdd));
+                if (delta.may.isEmpty() && delta.must.isEmpty()) {
+                    continue;
                 }
 
                 propagator.source = relation;
@@ -408,6 +421,19 @@ public class RelationAnalysis {
         Delta(EventGraph maySet, EventGraph mustSet) {
             may = maySet;
             must = mustSet;
+        }
+
+        private static Delta combine(List<Delta> deltas) {
+            if (deltas.size() == 1) {
+                return deltas.get(0);
+            }
+            EventGraph mayDelta = new EventGraph();
+            EventGraph mustDelta = new EventGraph();
+            for (Delta d : deltas) {
+                mayDelta.addAll(d.may);
+                mustDelta.addAll(d.must);
+            }
+            return new Delta(mayDelta, mustDelta);
         }
     }
 
