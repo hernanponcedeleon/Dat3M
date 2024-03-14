@@ -57,6 +57,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
@@ -176,10 +177,10 @@ public class RefinementSolver extends ModelChecker {
 
         // ------------------------ Preprocessing / Analysis ------------------------
 
-        removeFlaggedAxiomsAndReduce(memoryModel);
+        removeFlaggedAxioms(memoryModel);
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
-        preprocessMemoryModel(task);
+        preprocessMemoryModel(task, config);
 
         performStaticProgramAnalyses(task, analysisContext, config);
         // Copy context without WMM analyses because we want to analyse a second model later
@@ -470,7 +471,7 @@ public class RefinementSolver extends ModelChecker {
         }
     }
 
-    private static void removeFlaggedAxiomsAndReduce(Wmm memoryModel) {
+    private static void removeFlaggedAxioms(Wmm memoryModel) {
         // We remove flagged axioms.
         // NOTE: Theoretically, we could cut them but in practice this causes the whole model to get eagerly encoded,
         // resulting in the worst combination: eagerly encoded model relations + lazy axiom checks.
@@ -478,7 +479,6 @@ public class RefinementSolver extends ModelChecker {
         List.copyOf(memoryModel.getAxioms()).stream()
                 .filter(Axiom::isFlagged)
                 .forEach(memoryModel::removeConstraint);
-        memoryModel.removeUnconstrainedRelations();
     }
 
     // ================================================================================================================
@@ -517,14 +517,14 @@ public class RefinementSolver extends ModelChecker {
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(trace.iterations.size()).append("\n")
-                .append("Total native solving time(ms): ").append(totalNativeSolvingTime).append("\n")
-                .append("   -- Bound check time(ms): ").append(boundCheckTime).append("\n")
-                .append("Total CAAT solving time(ms): ").append(totalCaatTime).append("\n")
-                .append("   -- Model extraction time(ms): ").append(totalModelExtractTime).append("\n")
-                .append("   -- Population time(ms): ").append(totalPopulationTime).append("\n")
-                .append("   -- Consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
-                .append("   -- Reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("   -- Refining time(ms): ").append(totalRefiningTime).append("\n")
+                .append("Total native solving time: ").append(toTimeString(totalNativeSolvingTime)).append("\n")
+                .append("   -- Bound check time: ").append(toTimeString(boundCheckTime)).append("\n")
+                .append("Total CAAT solving time: ").append(toTimeString(totalCaatTime)).append("\n")
+                .append("   -- Model extraction time: ").append(toTimeString(totalModelExtractTime)).append("\n")
+                .append("   -- Population time: ").append(toTimeString(totalPopulationTime)).append("\n")
+                .append("   -- Consistency check time: ").append(toTimeString(totalConsistencyCheckTime)).append("\n")
+                .append("   -- Reason computation time: ").append(toTimeString(totalReasonComputationTime)).append("\n")
+                .append("   -- Refining time: ").append(toTimeString(totalRefiningTime)).append("\n")
                 .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
                 .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (!statList.isEmpty()) {

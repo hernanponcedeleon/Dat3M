@@ -115,7 +115,7 @@ public class ProcessingManager implements ProgramProcessor {
                 intrinsics.lateInliningPass(),
                 RemoveUnusedMemory.newInstance(),
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.THREADS, true),
-                MemoryAllocation.newInstance(),
+                MemoryAllocation.fromConfig(config),
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,

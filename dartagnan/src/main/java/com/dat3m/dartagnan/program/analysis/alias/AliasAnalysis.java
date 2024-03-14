@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.visualization.Graphviz;
 import com.dat3m.dartagnan.verification.Context;
 import org.apache.logging.log4j.LogManager;
@@ -50,7 +51,7 @@ public interface AliasAnalysis {
         }
 
         long t1 = System.currentTimeMillis();
-        logger.info("Finished alias analysis in {}ms", t1 - t0);
+        logger.info("Finished alias analysis in {}", Utils.toTimeString(t1 - t0));
         return a;
     }
 

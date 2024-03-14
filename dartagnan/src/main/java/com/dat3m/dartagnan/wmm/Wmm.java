@@ -13,7 +13,6 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -143,10 +142,10 @@ public class Wmm {
     }
 
     public void removeDefinition(Relation definedRelation) {
-        checkArgument(!(definedRelation.definition instanceof Definition.Undefined),
-                "Already undefined relation %s.", definedRelation);
-        logger.trace("Remove definition {}", definedRelation.definition);
-        definedRelation.definition = new Definition.Undefined(definedRelation);
+        if (!(definedRelation.getDefinition() instanceof Definition.Undefined)) {
+            logger.trace("Remove definition {}", definedRelation.getDefinition());
+            definedRelation.definition = new Definition.Undefined(definedRelation);
+        }
     }
 
     public void addFilter(Filter filter) {
@@ -178,72 +177,6 @@ public class Wmm {
         logger.info("{}: {}", REDUCE_ACYCLICITY_ENCODE_SETS, this.config.isReduceAcyclicityEncoding());
     }
 
-    public void simplify() {
-        simplifyAssociatives(Union.class, Union::new);
-        simplifyAssociatives(Intersection.class, Intersection::new);
-    }
-
-    private void simplifyAssociatives(Class<? extends Definition> cls, BiFunction<Relation, Relation[], Definition> constructor) {
-        for (Relation r : List.copyOf(relations)) {
-            if (!r.names.isEmpty() || !cls.isInstance(r.definition) ||
-                    constraints.stream().filter(c -> !(c instanceof Definition))
-                            .anyMatch(c -> c.getConstrainedRelations().contains(r))) {
-                continue;
-            }
-            List<Relation> parents = relations.stream().filter(x -> x.getDependencies().contains(r)).toList();
-            Relation p = parents.size() == 1 ? parents.get(0) : null;
-            if (p != null && cls.isInstance(p.definition)) {
-                Relation[] o = Stream.of(r, p)
-                        .flatMap(x -> x.getDependencies().stream())
-                        .filter(x -> !r.equals(x))
-                        .distinct()
-                        .toArray(Relation[]::new);
-                removeDefinition(p);
-                Relation alternative = addDefinition(constructor.apply(p, o));
-                if (alternative != p) {
-                    logger.warn("relation {} becomes duplicate of {}", p, alternative);
-                }
-                removeDefinition(r);
-                deleteRelation(r);
-            }
-        }
-    }
-
-    public void removeUnconstrainedRelations() {
-        // A relation is considered "unconstrained" if it does not (directly or indirectly) contribute to a
-        // non-defining constraint. Such relations (and their defining constraints) can safely be deleted
-        // without changing the semantics of the memory model.
-        final DependencyCollector collector = new DependencyCollector();
-        getConstraints().stream().filter(c -> !(c instanceof Definition)).forEach(c -> c.accept(collector));
-        final Set<Relation> relevantRelations = new HashSet<>(collector.collectedRelations);
-        Wmm.ANARCHIC_CORE_RELATIONS.forEach(n -> relevantRelations.add(getRelation(n)));
-
-        for (Constraint c : List.copyOf(getConstraints())) {
-            if (!relevantRelations.containsAll(c.getConstrainedRelations())) {
-                removeConstraint(c);
-            }
-        }
-
-        for (Relation rel : Set.copyOf(getRelations())) {
-            if (!relevantRelations.contains(rel)) {
-                deleteRelation(rel);
-            }
-        }
-}
-
-    private final static class DependencyCollector implements Constraint.Visitor<Void> {
-        private final Set<Relation> collectedRelations = new HashSet<>();
-        @Override
-        public Void visitConstraint(Constraint constraint) {
-            for (Relation rel :  constraint.getConstrainedRelations()) {
-                if (collectedRelations.add(rel)) {
-                    rel.getDefinition().accept(this);
-                }
-            }
-            return null;
-        }
-    }
-
     private Relation makePredefinedRelation(String name) {
         /*
             WARNING: The code has possibly unexpected behaviour:
@@ -270,23 +203,40 @@ public class Wmm {
             case CTRLDIRECT -> new DirectControlDependency(r);
             case EMPTY -> new Empty(r);
             case FR ->  {
-                Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
-                yield composition(r, rfinv, getOrCreatePredefinedRelation(CO));
+                // rf^-1;co
+                final Relation rfinv = addDefinition(new Inverse(newRelation(), getOrCreatePredefinedRelation(RF)));
+                final Relation co = getOrCreatePredefinedRelation(CO);
+                final Relation frStandard = addDefinition(composition(newRelation(), rfinv, co));
+
+                // ([R] \ [range(rf)]);loc;[W]
+                final Relation reads = addDefinition(new SetIdentity(newRelation(), getFilter(Tag.READ)));
+                final Relation rfRange = addDefinition(new RangeIdentity(newRelation(), getOrCreatePredefinedRelation(RF)));
+                final Relation loc = getOrCreatePredefinedRelation(LOC);
+                final Relation writes = addDefinition(new SetIdentity(newRelation(), Filter.byTag(Tag.WRITE)));
+                final Relation ur = addDefinition(new Difference(newRelation(), reads, rfRange));
+                final Relation urloc = addDefinition(composition(newRelation(), ur, loc));
+                final Relation urlocwrites = addDefinition(composition(newRelation(), urloc, writes));
+
+                // let fr = rf^-1;co | ([R] \ [range(rf)]);loc;[W]
+                yield union(r, frStandard, urlocwrites);
             }
-            case MM -> product(r, Tag.MEMORY, Tag.MEMORY);
-            case MV -> product(r, Tag.MEMORY, Tag.VISIBLE);
             case IDDTRANS -> new TransitiveClosure(r, getOrCreatePredefinedRelation(IDD));
-            case DATA -> intersection(r, getOrCreatePredefinedRelation(IDDTRANS), getOrCreatePredefinedRelation(MM));
+            case DATA -> intersection(r,
+                    getOrCreatePredefinedRelation(IDDTRANS),
+                    addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY))
+            );
             case ADDR -> {
                 Relation addrdirect = getOrCreatePredefinedRelation(ADDRDIRECT);
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS), addrdirect));
                 Relation union = addDefinition(union(newRelation(), addrdirect, comp));
-                yield intersection(r, union, getOrCreatePredefinedRelation(MM));
+                Relation mm = addDefinition(product(newRelation(), Tag.MEMORY, Tag.MEMORY));
+                yield intersection(r, union, mm);
             }
             case CTRL -> {
                 Relation comp = addDefinition(composition(newRelation(), getOrCreatePredefinedRelation(IDDTRANS),
                         getOrCreatePredefinedRelation(CTRLDIRECT)));
-                yield intersection(r, comp, getOrCreatePredefinedRelation(MV));
+                Relation mv = addDefinition(product(newRelation(), Tag.MEMORY, Tag.VISIBLE));
+                yield intersection(r, comp, mv);
             }
             case POLOC -> intersection(r, getOrCreatePredefinedRelation(PO), getOrCreatePredefinedRelation(LOC));
             case RFE ->  intersection(r, getOrCreatePredefinedRelation(RF), getOrCreatePredefinedRelation(EXT));

@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Associated with an array of memory locations.
@@ -55,9 +54,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
     public boolean isStaticallyAllocated() { return isStatic; }
     public boolean isDynamicallyAllocated() { return !isStatic; }
 
-    // Should only be called for statically allocated objects.
-    public Set<Integer> getStaticallyInitializedFields() {
-        checkState(this.isStaticallyAllocated(), "Unexpected dynamic object %s", this);
+    public Set<Integer> getInitializedFields() {
         return initialValues.keySet();
     }
 
