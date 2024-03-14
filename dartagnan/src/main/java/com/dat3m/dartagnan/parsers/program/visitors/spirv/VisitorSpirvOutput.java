@@ -17,13 +17,13 @@ import java.util.List;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
 
-public class VisitorSpirvAssertions extends SpirvBaseVisitor<AbstractAssert> {
+public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
     private final ProgramBuilderSpv builder;
 
-    public VisitorSpirvAssertions(ProgramBuilderSpv builder) {
+    public VisitorSpirvOutput(ProgramBuilderSpv builder) {
         this.builder = builder;
     }
 

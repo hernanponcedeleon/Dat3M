@@ -108,7 +108,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Object> {
         for (SpirvParser.OutputHeaderContext outputHeader : outputHeaders) {
             assertions.add(visitOutputHeader(outputHeader));
         }
-        AbstractAssert aggregatedAssertion = VisitorSpirvAssertions.aggregateAssertions(assertions);
+        AbstractAssert aggregatedAssertion = VisitorSpirvOutput.aggregateAssertions(assertions);
         builder.setAssert(aggregatedAssertion);
         return builder.build();
     }
@@ -116,7 +116,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Object> {
     @Override
     public Object visitInputHeader(SpirvParser.InputHeaderContext ctx) {
         if (ctx.initList() != null) {
-            new VisitorSpirvInit(builder).visitInitList(ctx.initList());
+            new VisitorSpirvInput(builder).visitInitList(ctx.initList());
         }
         return null;
     }
@@ -124,7 +124,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Object> {
     @Override
     public AbstractAssert visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
         if (ctx.assertionList() != null) {
-            return new VisitorSpirvAssertions(builder).visitAssertionList(ctx.assertionList());
+            return new VisitorSpirvOutput(builder).visitAssertionList(ctx.assertionList());
         }
         return null;
     }

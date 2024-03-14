@@ -44,6 +44,7 @@ public class ProgramBuilderSpv {
     private final Deque<Label> blocks = new ArrayDeque<>();
     private final Map<String, List<String>> decorations = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
+    private final Map<String, Expression> inputs = new HashMap<>();
     private final Program program;
     private List<Integer> threadGrid = null;
 
@@ -221,6 +222,13 @@ public class ProgramBuilderSpv {
         }
         expressions.put(name, value);
         return value;
+    }
+
+    public void addInputs(String name, Expression value) {
+        if (inputs.containsKey(name)) {
+            throw new ParsingException("Duplicated definition '%s'", name);
+        }
+        inputs.put(name, value);
     }
 
     // TODO: Check during decoration if a constant is Spec
