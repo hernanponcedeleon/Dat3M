@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -13,9 +14,11 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.visualization.Graphviz;
 import com.dat3m.dartagnan.verification.Context;
+import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -155,11 +158,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             //TODO replace with removeFirst() when using java 21 or newer
             final Variable variable = queue.keySet().iterator().next();
             final List<Offset<Variable>> edges = queue.remove(variable);
+            logger.trace("dequeue {}", variable);
             algorithm(variable, edges);
         }
-        //printGraph();
+        printGraph();
+        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
         for (final Map.Entry<MemoryCoreEvent, Offset<Variable>> entry : eventAddressSpaceMap.entrySet()) {
-            postProcess(entry);
+            postProcess(entry, synContext);
         }
         constantMap.clear();
         variableMap.clear();
@@ -179,7 +184,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         } else if (event instanceof Load load) {
             final Offset<Variable> address = getResultVariable(load.getAddress(), load);
             if (address == null) {
-                logger.warn("null pointer address for {}", event);
+                logger.warn("null pointer address for {}: {}", event.getMetadata(SourceLocation.class), event);
                 return;
             }
             eventAddressSpaceMap.put(load, address);
@@ -273,7 +278,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    private void postProcess(Map.Entry<MemoryCoreEvent, Offset<Variable>> entry) {
+    private void postProcess(Map.Entry<MemoryCoreEvent, Offset<Variable>> entry, SyntacticContextAnalysis synContext) {
         logger.trace("{}", entry);
         final Offset<Variable> address = entry.getValue();
         if (address == null) {
@@ -288,7 +293,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // In a well-structured program, all address expressions refer to at least one memory object.
         if (logger.isWarnEnabled() && address.base.object == null &&
                 address.base.includes.stream().allMatch(i -> i.base.object == null)) {
-            logger.warn("empty pointer set for {}", entry.getKey());
+            logger.warn("empty pointer set for {}", synContext.getContextInfo(entry.getKey()));
         }
         if (address.base.includes.size() != 1) {
             return;
@@ -307,7 +312,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Inserts a single inclusion relationship into the graph.
     // Also detects and eliminates cycles, assuming that the graph was already closed transitively.
-    // Also closes the inclusion relation transitively and propagates the load and store relations.
+    // Also closes the inclusion relation transitively on the left.
     private void addEdge(Variable v1, Variable v2, int o, List<Integer> a) {
         // When adding a self-loop, try to accelerate it immediately: 'v -+1> v' means 'v -+1x> v'.
         final var edge = tryAccelerateEdge(new Offset<>(v1, o, a), v2);
@@ -316,6 +321,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         v1.seeAlso.add(v2);
         final List<Offset<Variable>> edges = queue.computeIfAbsent(v2, k -> new ArrayList<>());
+        if (edges.isEmpty()) {
+            logger.trace("enqueue {}", v2);
+        }
         edges.add(edge);
         // 'v0 -> v1 -> v2' implies 'v0 -> v2'.
         // Cases of 'v0 == v2' or 'v0 == v1' require recursion.
@@ -344,7 +352,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Called when a placeholder variable for a register writer is to be replaced by the proper variable.
-    // Also called during unification, where a cycle of variables is merged into one variable.
     // A variable cannot be removed, if some event maps to it and there are multiple replacements.
     // In this case, the mapping stays but all outgoing edges are removed from that variable.
     private void replace(Variable old, Offset<Variable> replacement) {
@@ -434,7 +441,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return offset % alignment == 0;
         }
         // Case of multiple dynamic indexes with pairwise indivisible alignments.
-        final int gcd = gcd(gcd(rightAlignment), Math.abs(offset));
+        final int gcd = IntMath.gcd(gcd(rightAlignment), Math.abs(offset));
         if (gcd == 0) {
             return true;
         }
@@ -468,7 +475,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (left == 0 && right == 0) {
             return offset == 0;
         }
-        final int divisor = left == 0 ? right : right == 0 ? left : gcd(left, right);
+        final int divisor = left == 0 ? right : right == 0 ? left : IntMath.gcd(left, right);
         final boolean nonNegativeIndexes = left == 0 ? offset <= 0 : right != 0 || offset >= 0;
         return nonNegativeIndexes && offset % divisor == 0;
     }
@@ -494,22 +501,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         int result = Math.abs(alignment.get(0));
         for (final Integer a : alignment.subList(1, alignment.size())) {
-            result = gcd(result, Math.abs(a));
+            result = IntMath.gcd(result, Math.abs(a));
         }
         return result;
-    }
-
-    private static int gcd(int left, int right) {
-        // Euclidean algorithm.  I cannot believe this is not part of the standard library.
-        assert left >= 0 && right >= 0;
-        int a = Math.min(left, right);
-        int b = Math.max(left, right);
-        while (a != 0) {
-            final int temp = b % a;
-            b = a;
-            a = temp;
-        }
-        return b;
     }
 
     private static int gcd(List<Integer> alignment) {
@@ -518,7 +512,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         int result = alignment.get(0);
         for (final Integer a : alignment.subList(1, alignment.size())) {
-            result = gcd(result, a);
+            result = IntMath.gcd(result, a);
         }
         return result;
     }
@@ -803,7 +797,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final String v : transitionBlocker) {
             graphviz.addNode(v, "fontcolor=blue");
         }
-        logger.debug("{}", problematic);
         graphviz.beginSubgraph("inclusion");
         graphviz.setEdgeAttributes("color=grey");
         graphviz.addEdges(map);
@@ -823,6 +816,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 graphviz.generateOutput(writer);
             }
             Graphviz.convert(file);
+            logger.info("generated graph at \"{}\"", file.getAbsolutePath());
         } catch (IOException | InterruptedException x) {
             logger.error("Could not create alias graph", x);
         }
