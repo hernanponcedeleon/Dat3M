@@ -21,7 +21,7 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.*;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 
 public class ProgramBuilderSpv {
 
@@ -78,13 +79,32 @@ public class ProgramBuilderSpv {
         entryPointId = id;
     }
 
-    public void setAssert(AbstractAssert ast) {
-        program.setSpecification(ast);
+    public void addAssertion(AbstractAssert ast) {
+        AbstractAssert spec = program.getSpecification();
+        if (spec == null) {
+            program.setSpecification(ast);
+        } else if (spec.isSafetySpec() && ast.isSafetySpec()) {
+            AbstractAssert result = new AssertCompositeAnd(getAssertForAll(spec), getAssertForAll(ast));
+            result.setType(ASSERT_TYPE_FORALL);
+            program.setSpecification(result);
+        } else {
+            throw new ParsingException("Existential assertions can not be used in conjunction with other assertions");
+        }
     }
 
-    public void setAssertFilter(AbstractAssert ast) {
-        ast.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        program.setFilterSpecification(ast);
+    private AbstractAssert getAssertForAll(AbstractAssert assertion) {
+        return assertion.getType().equals(ASSERT_TYPE_FORALL) ? assertion : getComplement(assertion);
+    }
+
+    private AbstractAssert getComplement(AbstractAssert assertion) {
+        if (assertion instanceof AssertCompositeAnd andAssertion) {
+            return new AssertCompositeOr(getComplement(andAssertion.getA1()),
+                    getComplement(andAssertion.getA2()));
+        } else if (assertion instanceof AssertCompositeOr orAssertion) {
+            return new AssertCompositeAnd(getComplement(orAssertion.getA1()),
+                    getComplement(orAssertion.getA2()));
+        }
+        return new AssertNot(assertion);
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {

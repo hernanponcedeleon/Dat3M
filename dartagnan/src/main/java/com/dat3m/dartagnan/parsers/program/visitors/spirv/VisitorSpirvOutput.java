@@ -12,8 +12,6 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.List;
-
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
 
@@ -39,7 +37,8 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         } else {
             throw new ParsingException("Unrecognised assertion type");
         }
-        return ast;
+        builder.addAssertion(ast);
+        return null;
     }
 
     @Override
@@ -83,33 +82,6 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         } else {
             throw new ParsingException("Unrecognised comparison operator");
         }
-    }
-
-    public static AbstractAssert aggregateAssertions(List<AbstractAssert> assertions) {
-        if (assertions.size() == 1) {
-            return assertions.get(0);
-        }
-        if (! assertions.stream().allMatch(AbstractAssert::isSafetySpec)) {
-            throw new ParsingException("Existential assertions can not be used in conjunction with other assertions");
-        }
-        AbstractAssert result = new AssertTrue();
-        for (AbstractAssert assertion : assertions) {
-            result = assertion.getType().equals(ASSERT_TYPE_NOT_EXISTS) ?
-                    new AssertCompositeAnd(result, getComplement(assertion)) : new AssertCompositeAnd(result, assertion);
-        }
-        result.setType(ASSERT_TYPE_FORALL);
-        return result;
-    }
-
-    private static AbstractAssert getComplement(AbstractAssert assertion) {
-        if (assertion instanceof AssertCompositeAnd) {
-            return new AssertCompositeOr(getComplement(((AssertCompositeAnd) assertion).getA1()),
-                    getComplement(((AssertCompositeAnd) assertion).getA2()));
-        } else if (assertion instanceof AssertCompositeOr) {
-            return new AssertCompositeAnd(getComplement(((AssertCompositeOr) assertion).getA1()),
-                    getComplement(((AssertCompositeOr) assertion).getA2()));
-        }
-        return new AssertNot(assertion);
     }
 
     private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx, boolean right) {

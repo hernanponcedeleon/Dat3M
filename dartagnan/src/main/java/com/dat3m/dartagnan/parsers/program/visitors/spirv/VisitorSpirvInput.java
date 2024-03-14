@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VisitorSpirvInput extends SpirvBaseVisitor<Object> {
+public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
     private final ProgramBuilderSpv builder;
@@ -19,7 +19,7 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitInitList(SpirvParser.InitListContext ctx) {
+    public Expression visitInitList(SpirvParser.InitListContext ctx) {
         for (SpirvParser.InitContext init : ctx.init()) {
             visit(init);
         }
@@ -27,15 +27,15 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitInit(SpirvParser.InitContext ctx) {
+    public Expression visitInit(SpirvParser.InitContext ctx) {
         String varName = ctx.varName().getText();
-        Expression expr = (Expression) visit(ctx.initValue());
+        Expression expr = visit(ctx.initValue());
         builder.addInputs(varName, expr);
         return visitChildren(ctx);
     }
 
     @Override
-    public Object visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
+    public Expression visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
         IntegerType mockType = TYPE_FACTORY.getIntegerType();
         try {
             return EXPR_FACTORY.makeValue(Long.parseLong(ctx.getText()), mockType);
@@ -45,12 +45,12 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
+    public Expression visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
         List<Expression> values = new ArrayList<>();
         if (ctx.ModeHeader_TypeVector() != null) {
             // Vector
             for (SpirvParser.InitBaseValueContext initValue : ctx.initBaseValues().initBaseValue()) {
-                values.add((Expression) visitInitBaseValue(initValue));
+                values.add(visitInitBaseValue(initValue));
             }
             if (values.stream().map(Expression::getType).distinct().count() != 1) {
                 throw new ParsingException("All values in a Vector must have the same type");
@@ -59,7 +59,7 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Object> {
         } else {
             // Array, RuntimeArray, or Struct
             for (SpirvParser.InitValueContext initValue : ctx.initValues().initValue()) {
-                values.add((Expression) visitInitValue(initValue));
+                values.add(visitInitValue(initValue));
             }
             return EXPR_FACTORY.makeConstruct(values);
         }
