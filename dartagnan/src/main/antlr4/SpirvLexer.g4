@@ -1678,9 +1678,9 @@ Equals : '=';
 Id : '%' [A-Za-z0-9_]+;
 LiteralFloat : [+-]? [0-9]+ '.' [0-9]*;
 LiteralInteger : '-'? [0-9]+;
-LiteralUnsignedInteger : [0-9]+;
 LiteralString : '"' ~[\n"]* '"';
-LineComment : ';' ~[\n]* -> skip;
+LineComment : ';' ~[\n@]* -> skip;
+HeaderStart : [@] -> pushMode(ModeHeader), skip;
 Whitespace : [ \t\r\n]+ -> skip;
 
 mode ModeExt;
@@ -1691,3 +1691,44 @@ LiteralExtInstInteger : [A-Za-z] [A-Za-z0-9_]*;
 ModeExt_LineComment : ';' ~[\n]* -> skip;
 ModeExt_Whitespace : [ \t\r]+ -> skip;
 ModeExt_NewLine : [\n]+ -> popMode, skip;
+
+mode ModeHeader;
+
+ModeHeader_Input    : 'Input';
+ModeHeader_Output   : 'Output';
+ModeHeader_Config   : 'Config';
+
+ModeHeader_Id       : '%' [A-Za-z0-9_]+ -> type(Id);
+
+ModeHeader_AssertionExists     : 'exists';
+ModeHeader_AssertionForall     : 'forall';
+ModeHeader_AssertionNot        : 'not';
+ModeHeader_AssertionAnd        : 'and';
+ModeHeader_AssertionOr         : 'or';
+
+ModeHeader_Equal               : '=';
+ModeHeader_EqualEqual          : '==';
+ModeHeader_NotEqual            : '!=';
+ModeHeader_Less                : '<';
+ModeHeader_Greater             : '>';
+ModeHeader_LessEqual           : '<=';
+ModeHeader_GreaterEqual        : '>=';
+ModeHeader_LBracket            : '[';
+ModeHeader_RBracket            : ']';
+ModeHeader_LPar                : '(';
+ModeHeader_RPar                : ')';
+ModeHeader_LBrace              : '{';
+ModeHeader_RBrace              : '}';
+ModeHeader_Colon               : ':';
+ModeHeader_Comma               : ',';
+
+ModeHeader_TypeVector          : 'Vector';
+ModeHeader_TypeArray           : 'Array';
+ModeHeader_TypeRuntimeArray    : 'RuntimeArray';
+ModeHeader_TypeStruct          : 'Struct';
+
+ModeHeader_PositiveInteger     : [0-9]+;
+ModeHeader_NegativeInteger     : '-' [0-9]+;
+
+ModeHeader_Whitespace          : [ \t\r]+ -> skip;
+ModeHeader_NewLine             : [\n]+ -> popMode, skip;

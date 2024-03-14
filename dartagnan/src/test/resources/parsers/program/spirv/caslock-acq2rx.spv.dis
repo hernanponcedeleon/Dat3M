@@ -1,6 +1,6 @@
 ; ============================
-; Input: %12 = {0}, %13={0}
-; Output: forall (%13[0] = 2)
+; Input: %12 = RuntimeArray {0}, %13 = RuntimeArray {0}
+; Output: exists (%13[0] != 2)
 ; Config: 2, 1, 1
 ; ============================
 ; SPIR-V
@@ -45,7 +45,7 @@
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
-    %uint_66 = OpConstant %uint 66
+    %uint_64 = OpConstant %uint 64
        %bool = OpTypeBool
     %uint_68 = OpConstant %uint 68
      %uint_2 = OpConstant %uint 2
@@ -59,7 +59,7 @@
                OpBranch %23
          %23 = OpLabel
          %24 = OpPhi %uint %uint_0 %17 %27 %23
-         %27 = OpAtomicCompareExchange %uint %20 %uint_1 %uint_66 %uint_66 %uint_1 %24
+         %27 = OpAtomicCompareExchange %uint %20 %uint_1 %uint_64 %uint_64 %uint_1 %24
          %29 = OpIEqual %bool %27 %24
                OpLoopMerge %32 %23 None
                OpBranchConditional %29 %32 %23

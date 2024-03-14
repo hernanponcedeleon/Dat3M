@@ -1,6 +1,6 @@
 ; ============================
-; Input: %12 = {0}, %13 = {0}
-; Output: exists (%13[0] != 2)
+; Input: %12 = RuntimeArray {0}, %13 = RuntimeArray {0}
+; Output: forall (%13[0] = 2)
 ; Config: 2, 1, 1
 ; ============================
 ; SPIR-V
@@ -47,7 +47,7 @@
      %uint_1 = OpConstant %uint 1
     %uint_66 = OpConstant %uint 66
        %bool = OpTypeBool
-    %uint_64 = OpConstant %uint 64
+    %uint_68 = OpConstant %uint 68
      %uint_2 = OpConstant %uint 2
           %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
          %12 = OpVariable %_ptr_StorageBuffer__struct_10 StorageBuffer
@@ -67,7 +67,7 @@
          %33 = OpLoad %uint %21
          %34 = OpIAdd %uint %33 %uint_1
                OpStore %21 %34
-               OpAtomicStore %20 %uint_1 %uint_64 %uint_0
+               OpAtomicStore %20 %uint_1 %uint_68 %uint_0
                OpReturn
                OpFunctionEnd
          %40 = OpExtInst %void %36 Kernel %16 %37 %uint_2 %uint_0 %38

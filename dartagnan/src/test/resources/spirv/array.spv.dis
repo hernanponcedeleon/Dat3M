@@ -1,6 +1,6 @@
-; @ Input: %v3value = Vector {0, 0, 0}
-; @ Output: forall (%v3v[0]==0 and %v3v[8]==1 and %v3v[16]==2)
-; @ Config: 1, 1, 1
+; @Input: %v3value = Array {0, 0, 0}
+; @Output: forall (%v3v[0]==0 and %v3v[8]==1 and %v3v[16]==2)
+; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0
 ; Schema: 0
@@ -12,7 +12,8 @@
        %void = OpTypeVoid
        %func = OpTypeFunction %void
        %uint = OpTypeInt 64 0
-     %v3uint = OpTypeVector %uint 3
+       %c3 = OpConstant %uint 3
+     %v3uint = OpTypeArray %uint %c3
  %ptr_v3uint = OpTypePointer Uniform %v3uint
    %ptr_uint = OpTypePointer Uniform %uint
          %c0 = OpConstant %uint 0

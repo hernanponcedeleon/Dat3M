@@ -2,7 +2,79 @@ grammar Spirv;
 
 options { tokenVocab = SpirvLexer; }
 
-spv : op* EOF;
+spv : spvHeaders spvInstructions EOF;
+
+spvHeaders : spvHeader+;
+
+spvHeader
+    : inputHeader
+    | outputHeader
+    | configHeader
+    ;
+
+inputHeader   : ModeHeader_Input ModeHeader_Colon initList?;
+outputHeader  : ModeHeader_Output ModeHeader_Colon assertionList?;
+configHeader  : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
+
+initList : init (ModeHeader_Comma init)*;
+
+init : varName ModeHeader_Equal initValue;
+
+initValue
+    :   initCollectionValue
+    |   initBaseValue
+    ;
+
+initCollectionValue
+    :   ModeHeader_TypeVector ModeHeader_LBrace initBaseValues ModeHeader_RBrace
+    |   ModeHeader_TypeStruct ModeHeader_LBrace initValues ModeHeader_RBrace
+    |   ModeHeader_TypeArray ModeHeader_LBrace initValues ModeHeader_RBrace
+    |   ModeHeader_TypeRuntimeArray ModeHeader_LBrace initValues ModeHeader_RBrace
+    ;
+
+initValues : initValue (ModeHeader_Comma initValue)*;
+initBaseValues : initBaseValue (ModeHeader_Comma initBaseValue)*;
+
+assertionList
+    :   ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
+    |   ModeHeader_AssertionNot ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
+    |   ModeHeader_AssertionForall ast = assertion ModeHeader_Comma?
+    ;
+
+assertion
+    :   ModeHeader_LPar assertionValue ModeHeader_RPar
+    |   ModeHeader_LPar assertion ModeHeader_RPar
+    |   ModeHeader_AssertionNot assertion
+    |   assertion ModeHeader_AssertionAnd assertion
+    |   assertion ModeHeader_AssertionOr assertion
+    |   assertionBasic
+    ;
+
+assertionBasic
+    :   assertionValue assertionCompare assertionValue
+    ;
+
+assertionCompare
+    :   ModeHeader_EqualEqual
+    |   ModeHeader_NotEqual
+    |   ModeHeader_GreaterEqual
+    |   ModeHeader_LessEqual
+    |   ModeHeader_Less
+    |   ModeHeader_Greater
+    ;
+
+assertionValue
+    :   varName ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket
+    |   varName
+    |   initBaseValue
+    ;
+
+varName
+    :    idResult
+    ;
+
+
+spvInstructions : op*;
 
 op
     :   opAbsISubINTEL
@@ -3071,6 +3143,8 @@ pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
 literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
 literalExtInstInteger : LiteralExtInstInteger;
+literanHeaderUnsignedInteger : ModeHeader_PositiveInteger;
+initBaseValue : ModeHeader_NegativeInteger | ModeHeader_PositiveInteger;
 literalFloat : LiteralFloat;
 literalInteger : LiteralUnsignedInteger | LiteralInteger;
 literalString : LiteralString;

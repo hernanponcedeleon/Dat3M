@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.specification.*;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -29,6 +30,7 @@ import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 
 public class ProgramBuilderSpv {
 
@@ -43,7 +45,9 @@ public class ProgramBuilderSpv {
     private final Deque<Label> blocks = new ArrayDeque<>();
     private final Map<String, List<String>> decorations = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
+    private final Map<String, Expression> inputs = new HashMap<>();
     private final Program program;
+    private List<Integer> threadGrid = null;
 
     private String entryPointId;
     protected Function currentFunction;
@@ -73,6 +77,34 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Multiple entry points are not supported");
         }
         entryPointId = id;
+    }
+
+    public void addAssertion(AbstractAssert ast) {
+        AbstractAssert spec = program.getSpecification();
+        if (spec == null) {
+            program.setSpecification(ast);
+        } else if (spec.isSafetySpec() && ast.isSafetySpec()) {
+            AbstractAssert result = new AssertCompositeAnd(getAssertForAll(spec), getAssertForAll(ast));
+            result.setType(ASSERT_TYPE_FORALL);
+            program.setSpecification(result);
+        } else {
+            throw new ParsingException("Existential assertions can not be used in conjunction with other assertions");
+        }
+    }
+
+    private AbstractAssert getAssertForAll(AbstractAssert assertion) {
+        return assertion.getType().equals(ASSERT_TYPE_FORALL) ? assertion : getComplement(assertion);
+    }
+
+    private AbstractAssert getComplement(AbstractAssert assertion) {
+        if (assertion instanceof AssertCompositeAnd andAssertion) {
+            return new AssertCompositeOr(getComplement(andAssertion.getA1()),
+                    getComplement(andAssertion.getA2()));
+        } else if (assertion instanceof AssertCompositeOr orAssertion) {
+            return new AssertCompositeAnd(getComplement(orAssertion.getA1()),
+                    getComplement(orAssertion.getA2()));
+        }
+        return new AssertNot(assertion);
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
@@ -212,6 +244,13 @@ public class ProgramBuilderSpv {
         return value;
     }
 
+    public void addInputs(String name, Expression value) {
+        if (inputs.containsKey(name)) {
+            throw new ParsingException("Duplicated definition '%s'", name);
+        }
+        inputs.put(name, value);
+    }
+
     // TODO: Check during decoration if a constant is Spec
     public boolean isSpecConstant(String id) {
         return specConstants.contains(id);
@@ -338,6 +377,9 @@ public class ProgramBuilderSpv {
     }
 
     private void validateBeforeBuild() {
+        if (threadGrid == null) {
+            throw new ParsingException("Thread grid is not set");
+        }
         if (!forwardFunctions.isEmpty()) {
             throw new ParsingException("Missing function definitions: %s",
                     String.join(",", forwardFunctions.keySet()));
@@ -396,13 +438,26 @@ public class ProgramBuilderSpv {
         return blocks.stream().toList();
     }
 
-    // =================================================================================================================
+    public MemoryObject getMemoryObject(String id) {
+        return program.getMemory().getObjects().stream()
+                .filter(o -> o.getCVar().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ParsingException("Undefined memory object '%s'", id));
+    }
 
-    // ================
-    // TODO: !!!
-    private static List<Integer> threadGrid = List.of(1, 1, 1);
-    public static void setThreadGrid(List<Integer> threadGrid) {
-        // TODO: Validate
-        ProgramBuilderSpv.threadGrid = threadGrid;
+    public void setThreadGrid(List<Integer> threadGrid) {
+        if (this.threadGrid != null) {
+            throw new ParsingException("Thread grid is set multiple times");
+        }
+        if (threadGrid.size() != 3) {
+            throw new ParsingException("Thread grid must have 3 dimensions");
+        }
+        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
+            throw new ParsingException("Thread grid dimensions must be positive");
+        }
+        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
+            throw new ParsingException("Thread grid dimensions must be less than 128");
+        }
+        this.threadGrid = threadGrid;
     }
 }
