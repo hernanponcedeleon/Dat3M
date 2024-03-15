@@ -1,9 +1,13 @@
 package com.dat3m.dartagnan.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.IValue;
 import com.dat3m.dartagnan.parsers.program.ParserSpirv;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.specification.AssertBasic;
+import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.Test;
@@ -332,6 +336,80 @@ public class SpirvHeaderTest {
             parse(header);
         } catch (Exception e) {
             assert (e.getMessage().equals("Existential assertions can not be used in conjunction with other assertions"));
+        }
+    }
+
+    @Test
+    public void testVectorOutput() {
+        String header = """
+                ; @ Input: %v3v = {77, 88, 99}
+                ; @ Output: forall (%v3v[0]==77 and %v3v[1]==88 and %v3v[2]==99)
+                ; @ Config: 1, 1, 1
+                """;
+        Program program = parse(header);
+        AssertCompositeAnd astAnd = (AssertCompositeAnd) program.getSpecification();
+        AssertCompositeAnd astAnda1 = (AssertCompositeAnd) astAnd.getA1();
+        AssertBasic astAnda2 = (AssertBasic) astAnd.getA2();
+        AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getA1();
+        AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getA2();
+        Location e1 = (Location) astAnda1a1.getE1();
+        IValue v1 = (IValue) astAnda1a1.getE2();
+        Location e2 = (Location) astAnda1a2.getE1();
+        IValue v2 = (IValue) astAnda1a2.getE2();
+        Location e3 = (Location) astAnda2.getE1();
+        IValue v3 = (IValue) astAnda2.getE2();
+        assert (e1.getName().equals("%v3v"));
+        assert (e1.getOffset() == 0);
+        assert (v1.toString().equals("bv64(77)"));
+        assert (e2.getName().equals("%v3v"));
+        assert (e2.getOffset() == 1);
+        assert (v2.toString().equals("bv64(88)"));
+        assert (e3.getName().equals("%v3v"));
+        assert (e3.getOffset() == 2);
+        assert (v3.toString().equals("bv64(99)"));
+    }
+
+    @Test
+    public void testVectorOverRangeOutput() {
+        String header = """
+                ; @ Input: %v3v = {77, 88, 99}
+                ; @ Output: forall (%v3v[0]==77 and %v3v[256]==88 and %v3v[1000]==99)
+                ; @ Config: 1, 1, 1
+                """;
+        Program program = parse(header);
+        AssertCompositeAnd astAnd = (AssertCompositeAnd) program.getSpecification();
+        AssertCompositeAnd astAnda1 = (AssertCompositeAnd) astAnd.getA1();
+        AssertBasic astAnda2 = (AssertBasic) astAnd.getA2();
+        AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getA1();
+        AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getA2();
+        Location e1 = (Location) astAnda1a1.getE1();
+        IValue v1 = (IValue) astAnda1a1.getE2();
+        Location e2 = (Location) astAnda1a2.getE1();
+        IValue v2 = (IValue) astAnda1a2.getE2();
+        Location e3 = (Location) astAnda2.getE1();
+        IValue v3 = (IValue) astAnda2.getE2();
+        assert (e1.getName().equals("%v3v"));
+        assert (e1.getOffset() == 0);
+        assert (v1.toString().equals("bv64(77)"));
+        assert (e2.getName().equals("%v3v"));
+        assert (e2.getOffset() == 256);
+        assert (v2.toString().equals("bv64(88)"));
+        assert (e3.getName().equals("%v3v"));
+        assert (e3.getOffset() == 1000);
+        assert (v3.toString().equals("bv64(99)"));
+    }
+
+    @Test
+    public void testUndefinedOutput() {
+        String header = """
+                ; @Input: %v1=7, %v2=123, %v3=0
+                ; @Output: exists (%v4!=456)
+                ; @Config: 1, 1, 1
+                """;
+        try {
+            parse(header);
+        } catch (Exception e) {
+            assert (e.getMessage().equals("Undefined memory object '%v4'"));
         }
     }
 
