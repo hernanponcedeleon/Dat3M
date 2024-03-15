@@ -50,16 +50,16 @@ public class SpirvTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"empty-forall.spv.dis", PASS},
-                {"empty-exists.spv.dis", PASS},
-                {"empty-not-exists.spv.dis", FAIL},
-                {"empty-forall-false.spv.dis", FAIL},
                 {"empty-exists-false.spv.dis", FAIL},
+                {"empty-exists-true.spv.dis", PASS},
+                {"empty-forall-false.spv.dis", FAIL},
+                {"empty-forall-true.spv.dis", PASS},
                 {"empty-not-exists-false.spv.dis", PASS},
-                {"init.spv.dis", PASS},
-                {"init1.spv.dis", PASS},
-                {"init2.spv.dis", PASS},
-                {"init3.spv.dis", FAIL},
+                {"empty-not-exists-true.spv.dis", FAIL},
+                {"init-forall.spv.dis", PASS},
+                {"init-forall-split.spv.dis", PASS},
+                {"init-forall-not-exists.spv.dis", PASS},
+                {"init-forall-not-exists-fail.spv.dis", FAIL},
                 {"read-write.spv.dis", PASS},
                 {"vector-init.spv.dis", PASS},
                 {"vector.spv.dis", PASS},
@@ -73,31 +73,19 @@ public class SpirvTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        // TODO: Remove time printing
-        long start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
         }
-
-        System.out.println("1: " + (System.currentTimeMillis() - start));
-        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }
-
-        System.out.println("2: " + (System.currentTimeMillis() - start));
-        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
-
-        System.out.println("3: " + (System.currentTimeMillis() - start));
-        start = System.currentTimeMillis();
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
              ProverEnvironment prover2 = mkProver(ctx)) {
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, mkTask()).getResult());
         }
-        System.out.println("4: " + (System.currentTimeMillis() - start));
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {

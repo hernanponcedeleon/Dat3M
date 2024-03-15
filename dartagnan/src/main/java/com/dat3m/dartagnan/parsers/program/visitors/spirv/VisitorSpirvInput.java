@@ -30,13 +30,13 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     public Expression visitInit(SpirvParser.InitContext ctx) {
         String varName = ctx.varName().getText();
         Expression expr = visit(ctx.initValue());
-        builder.addInputs(varName, expr);
+        builder.addInput(varName, expr);
         return visitChildren(ctx);
     }
 
     @Override
     public Expression visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
-        IntegerType mockType = TYPE_FACTORY.getIntegerType();
+        IntegerType mockType = TYPE_FACTORY.getArchType();
         try {
             return EXPR_FACTORY.makeValue(Long.parseLong(ctx.getText()), mockType);
         } catch (ParsingException e) {

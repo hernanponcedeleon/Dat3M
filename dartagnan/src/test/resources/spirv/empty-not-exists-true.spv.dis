@@ -1,5 +1,4 @@
-; @Input: %v1=7, %v2=123, %v3=0
-; @Output: forall (%v1==7 and %v2==123 and %v3==0)
+; @Output: not exists (1)
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0
@@ -10,8 +9,6 @@
                OpEntryPoint GLCompute %main "main"
                OpSource GLSL 450
        %void = OpTypeVoid
-       %uint = OpTypeInt 64 0
-   %ptr_uint = OpTypePointer Uniform %uint
        %func = OpTypeFunction %void
        %main = OpFunction %void None %func
       %label = OpLabel

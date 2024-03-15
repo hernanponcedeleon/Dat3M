@@ -26,8 +26,18 @@ public class SpirvHeaderTest {
                         OpSource GLSL 450
                 %void = OpTypeVoid
                 %uint = OpTypeInt 64 0
+              %v3uint = OpTypeVector %uint 3
+          %ptr_v3uint = OpTypePointer Uniform %v3uint
             %ptr_uint = OpTypePointer Uniform %uint
                 %func = OpTypeFunction %void
+                  %v1 = OpVariable %ptr_uint Uniform
+                  %v2 = OpVariable %ptr_uint Uniform
+                  %v3 = OpVariable %ptr_uint Uniform
+                  %c0 = OpConstant %uint 0
+                  %c1 = OpConstant %uint 1
+                  %c2 = OpConstant %uint 2
+                 %v3v = OpVariable %ptr_v3uint Uniform
+                  %v4 = OpVariable %ptr_v3uint Uniform
                 %main = OpFunction %void None %func
                %label = OpLabel
                         OpReturn
@@ -48,16 +58,15 @@ public class SpirvHeaderTest {
                 ; @Config: 1, 1, 1
                 """;
         Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[%v1, %v2, %v3]"));
         Optional<MemoryObject> v1 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v1")).findFirst();
         Optional<MemoryObject> v2 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v2")).findFirst();
         Optional<MemoryObject> v3 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v3")).findFirst();
         assert (v1.isPresent());
-        assert (v1.get().getInitialValue(0).toString().equals("int(7)"));
+        assert (v1.get().getInitialValue(0).toString().equals("bv64(7)"));
         assert (v2.isPresent());
-        assert (v2.get().getInitialValue(0).toString().equals("int(123)"));
+        assert (v2.get().getInitialValue(0).toString().equals("bv64(123)"));
         assert (v3.isPresent());
-        assert (v3.get().getInitialValue(0).toString().equals("int(0)"));
+        assert (v3.get().getInitialValue(0).toString().equals("bv64(0)"));
     }
 
     @Test
@@ -68,16 +77,15 @@ public class SpirvHeaderTest {
                 ;       @ Config : 1, 1, 1
                 """;
         Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[%v1, %v2, %v3]"));
         Optional<MemoryObject> v1 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v1")).findFirst();
         Optional<MemoryObject> v2 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v2")).findFirst();
         Optional<MemoryObject> v3 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v3")).findFirst();
         assert (v1.isPresent());
-        assert (v1.get().getInitialValue(0).toString().equals("int(7)"));
+        assert (v1.get().getInitialValue(0).toString().equals("bv64(7)"));
         assert (v2.isPresent());
-        assert (v2.get().getInitialValue(0).toString().equals("int(123)"));
+        assert (v2.get().getInitialValue(0).toString().equals("bv64(123)"));
         assert (v3.isPresent());
-        assert (v3.get().getInitialValue(0).toString().equals("int(0)"));
+        assert (v3.get().getInitialValue(0).toString().equals("bv64(0)"));
     }
 
     @Test
@@ -88,16 +96,15 @@ public class SpirvHeaderTest {
                 ; @Input: %v1=7, %v2=123, %v3=0
                 """;
         Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[%v1, %v2, %v3]"));
         Optional<MemoryObject> v1 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v1")).findFirst();
         Optional<MemoryObject> v2 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v2")).findFirst();
         Optional<MemoryObject> v3 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v3")).findFirst();
         assert (v1.isPresent());
-        assert (v1.get().getInitialValue(0).toString().equals("int(7)"));
+        assert (v1.get().getInitialValue(0).toString().equals("bv64(7)"));
         assert (v2.isPresent());
-        assert (v2.get().getInitialValue(0).toString().equals("int(123)"));
+        assert (v2.get().getInitialValue(0).toString().equals("bv64(123)"));
         assert (v3.isPresent());
-        assert (v3.get().getInitialValue(0).toString().equals("int(0)"));
+        assert (v3.get().getInitialValue(0).toString().equals("bv64(0)"));
     }
 
     @Test
@@ -111,16 +118,15 @@ public class SpirvHeaderTest {
                 ; @Config: 1, 1, 1
                 """;
         Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[%v1, %v2, %v3]"));
         Optional<MemoryObject> v1 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v1")).findFirst();
         Optional<MemoryObject> v2 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v2")).findFirst();
         Optional<MemoryObject> v3 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v3")).findFirst();
         assert (v1.isPresent());
-        assert (v1.get().getInitialValue(0).toString().equals("int(7)"));
+        assert (v1.get().getInitialValue(0).toString().equals("bv64(7)"));
         assert (v2.isPresent());
-        assert (v2.get().getInitialValue(0).toString().equals("int(123)"));
+        assert (v2.get().getInitialValue(0).toString().equals("bv64(123)"));
         assert (v3.isPresent());
-        assert (v3.get().getInitialValue(0).toString().equals("int(0)"));
+        assert (v3.get().getInitialValue(0).toString().equals("bv64(0)"));
     }
 
     @Test
@@ -131,21 +137,20 @@ public class SpirvHeaderTest {
                 ; @Config: 1, 1, 1
                 """;
         Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[%v1, %v2, %v3, %v4]"));
         Optional<MemoryObject> v1 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v1")).findFirst();
         Optional<MemoryObject> v2 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v2")).findFirst();
         Optional<MemoryObject> v3 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v3")).findFirst();
         Optional<MemoryObject> v4 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v4")).findFirst();
         assert (v1.isPresent());
-        assert (v1.get().getInitialValue(0).toString().equals("int(7)"));
+        assert (v1.get().getInitialValue(0).toString().equals("bv64(7)"));
         assert (v2.isPresent());
-        assert (v2.get().getInitialValue(0).toString().equals("int(123)"));
+        assert (v2.get().getInitialValue(0).toString().equals("bv64(123)"));
         assert (v3.isPresent());
-        assert (v3.get().getInitialValue(0).toString().equals("int(0)"));
+        assert (v3.get().getInitialValue(0).toString().equals("bv64(0)"));
         assert (v4.isPresent());
-        assert (v4.get().getInitialValue(0).toString().equals("int(11)"));
-        assert (v4.get().getInitialValue(1).toString().equals("int(22)"));
-        assert (v4.get().getInitialValue(2).toString().equals("int(33)"));
+        assert (v4.get().getInitialValue(0).toString().equals("bv64(11)"));
+        assert (v4.get().getInitialValue(8).toString().equals("bv64(22)"));
+        assert (v4.get().getInitialValue(16).toString().equals("bv64(33)"));
     }
 
     @Test
@@ -155,8 +160,11 @@ public class SpirvHeaderTest {
                 ; @Output: forall (0)
                 ; @Config: 1, 1, 1
                 """;
-        Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[]"));
+        try {
+            parse(header);
+        } catch (Exception e) {
+            fail("Empty input should not have thrown any exception");
+        }
     }
 
     @Test
@@ -165,8 +173,11 @@ public class SpirvHeaderTest {
                 ; @Output: forall (0)
                 ; @Config: 1, 1, 1
                 """;
-        Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[]"));
+        try {
+            parse(header);
+        } catch (Exception e) {
+            fail("Empty input should not have thrown any exception");
+        }
     }
 
     @Test
@@ -178,16 +189,15 @@ public class SpirvHeaderTest {
                 ; @Config: 1, 1, 1
                 """;
         Program program = parse(header);
-        assert (program.getMemory().getObjects().toString().equals("[%v1, %v2, %v3]"));
         Optional<MemoryObject> v1 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v1")).findFirst();
         Optional<MemoryObject> v2 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v2")).findFirst();
         Optional<MemoryObject> v3 = program.getMemory().getObjects().stream().filter(o -> o.getCVar().equals("%v3")).findFirst();
         assert (v1.isPresent());
-        assert (v1.get().getInitialValue(0).toString().equals("int(7)"));
+        assert (v1.get().getInitialValue(0).toString().equals("bv64(7)"));
         assert (v2.isPresent());
-        assert (v2.get().getInitialValue(0).toString().equals("int(123)"));
+        assert (v2.get().getInitialValue(0).toString().equals("bv64(123)"));
         assert (v3.isPresent());
-        assert (v3.get().getInitialValue(0).toString().equals("int(0)"));
+        assert (v3.get().getInitialValue(0).toString().equals("bv64(0)"));
     }
 
     @Test
@@ -217,7 +227,6 @@ public class SpirvHeaderTest {
         try {
             parse(header);
         } catch (Exception e) {
-            // TODO: is this the expected behavior?
             fail("Empty output should not have thrown any exception");
         }
     }
@@ -231,7 +240,6 @@ public class SpirvHeaderTest {
         try {
             parse(header);
         } catch (Exception e) {
-            // TODO: is this the expected behavior?
             fail("Empty output should not have thrown any exception");
         }
     }

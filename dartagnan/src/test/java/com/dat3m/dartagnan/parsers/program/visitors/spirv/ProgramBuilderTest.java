@@ -51,4 +51,7 @@ public class ProgramBuilderTest {
             assertEquals(error, e.getMessage());
         }
     }
+
+    // TODO: Test throws error if an input is unused,
+    //  i.e. refers to a non-existent or to an incorrect id
 }
