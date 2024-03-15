@@ -1,17 +1,19 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.Type;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.*;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperDecorations;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.MemoryTransformer;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.RegisterTransformer;
-import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -23,7 +25,10 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.specification.*;
+import com.dat3m.dartagnan.program.specification.AbstractAssert;
+import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
+import com.dat3m.dartagnan.program.specification.AssertCompositeOr;
+import com.dat3m.dartagnan.program.specification.AssertNot;
 import com.google.common.collect.Lists;
 
 import java.util.*;
@@ -31,7 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
-import static com.dat3m.dartagnan.program.event.EventFactory.*;
+import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 
 public class ProgramBuilderSpv {
@@ -40,6 +45,7 @@ public class ProgramBuilderSpv {
     private final HelperDecorations helperDecorations = new HelperDecorations();
     private final Map<String, Type> types = new HashMap<>();
     private final Map<String, Type> pointedTypes = new HashMap<>();
+    private final Map<String, Type> variableTypes = new HashMap<>();
     private final Map<String, Expression> expressions = new HashMap<>();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<Label, Map<Register, String>> phiDefinitions = new HashMap<>();
@@ -49,10 +55,9 @@ public class ProgramBuilderSpv {
     private final Set<String> specConstants = new HashSet<>();
     private final Map<String, Expression> inputs = new HashMap<>();
     private final Program program;
-    private List<Integer> threadGrid = null;
-
-    private String entryPointId;
     protected Function currentFunction;
+    private List<Integer> threadGrid = List.of(1, 1, 1);
+    private String entryPointId;
     private int nextFunctionId = 0;
 
     public ProgramBuilderSpv() {
@@ -217,7 +222,10 @@ public class ProgramBuilderSpv {
     public Type getPointedType(String name) {
         Type type = pointedTypes.get(name);
         if (type == null) {
-            throw new ParsingException("Reference to undefined pointer type '%s'", name);
+            if (!types.containsKey(name)) {
+                throw new ParsingException("Reference to undefined pointer type '%s'", name);
+            }
+            throw new ParsingException("Type '%s' is not a pointer type", name);
         }
         return type;
     }
@@ -227,6 +235,22 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Duplicated pointer type definition '%s'", name);
         }
         pointedTypes.put(name, type);
+        return type;
+    }
+
+    public Type getVariableType(String name) {
+        Type type = variableTypes.get(name);
+        if (type == null) {
+            throw new ParsingException("Reference to undefined variable '%s'", name);
+        }
+        return type;
+    }
+
+    public Type addVariableType(String name, Type type) {
+        if (variableTypes.containsKey(name)) {
+            throw new ParsingException("Duplicated variable type definition '%s'", name);
+        }
+        variableTypes.put(name, type);
         return type;
     }
 
@@ -246,7 +270,18 @@ public class ProgramBuilderSpv {
         return value;
     }
 
-    public void addInputs(String name, Expression value) {
+    public boolean hasInput(String id) {
+        return inputs.containsKey(id);
+    }
+
+    public Expression getInput(String id) {
+        if (inputs.containsKey(id)) {
+            return inputs.get(id);
+        }
+        throw new ParsingException("Reference to undefined input variable '%s'", id);
+    }
+
+    public void addInput(String name, Expression value) {
         if (inputs.containsKey(name)) {
             throw new ParsingException("Duplicated definition '%s'", name);
         }
@@ -274,7 +309,7 @@ public class ProgramBuilderSpv {
         return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
     }
 
-    public Label getOrCreateLabel(String id){
+    public Label getOrCreateLabel(String id) {
         Label label = labels.computeIfAbsent(id, EventFactory::newLabel);
         if (label.getFunction() == null) {
             label.setFunction(getCurrentFunctionOrThrowError());
@@ -310,8 +345,8 @@ public class ProgramBuilderSpv {
         Memory memory = program.getMemory();
 
         // Create thread-local variables
-        BuiltIn builtIn = (BuiltIn)getDecoration(DecorationType.BUILT_IN);
-        ExprTransformer transformer = new MemoryTransformer(tid, memory, builtIn.setHierarchy(x, y, z));
+        BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
+        ExprTransformer transformer = new MemoryTransformer(tid, memory, variableTypes, builtIn.setHierarchy(x, y, z));
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         return thread;
     }
@@ -378,9 +413,6 @@ public class ProgramBuilderSpv {
     }
 
     private void validateBeforeBuild() {
-        if (threadGrid == null) {
-            throw new ParsingException("Thread grid is not set");
-        }
         if (!forwardFunctions.isEmpty()) {
             throw new ParsingException("Missing function definitions: %s",
                     String.join(",", forwardFunctions.keySet()));
@@ -447,9 +479,6 @@ public class ProgramBuilderSpv {
     }
 
     public void setThreadGrid(List<Integer> threadGrid) {
-        if (this.threadGrid != null) {
-            throw new ParsingException("Thread grid is set multiple times");
-        }
         if (threadGrid.size() != 3) {
             throw new ParsingException("Thread grid must have 3 dimensions");
         }

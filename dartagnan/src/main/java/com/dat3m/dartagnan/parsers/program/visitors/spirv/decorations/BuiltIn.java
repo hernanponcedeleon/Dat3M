@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -15,7 +16,6 @@ public class BuiltIn implements Decoration {
 
     private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
     private static final IntegerType TYPE_ARCH = TypeFactory.getInstance().getArchType();
-    private static final int SIZE_ARCH = TypeFactory.getInstance().getMemorySizeInBytes(TYPE_ARCH);
 
     private final Map<String, List<String>> mapping = new HashMap<>();
 
@@ -44,16 +44,18 @@ public class BuiltIn implements Decoration {
         values.add(params[0]);
     }
 
-    public void decorate(String id, MemoryObject memObj) {
+    public void decorate(String id, MemoryObject memObj, Type type) {
         if (x < 0 || y < 0 || z < 0) {
             throw new ParsingException("Illegal BuiltIn hierarchy ('%d', '%d', '%d')", x, y, z);
         }
         for (String decoration : mapping.getOrDefault(id, List.of())) {
             switch (decoration) {
                 case "LocalInvocationId", "GlobalInvocationId" -> {
+                    int size = TypeFactory.getInstance().getMemorySizeInBytes(type) / 3;
+                    // TODO: Use array element type instead of arch type
                     memObj.setInitialValue(0, FACTORY.makeValue(x, TYPE_ARCH));
-                    memObj.setInitialValue(SIZE_ARCH, FACTORY.makeValue(y, TYPE_ARCH));
-                    memObj.setInitialValue(SIZE_ARCH * 2, FACTORY.makeValue(z, TYPE_ARCH));
+                    memObj.setInitialValue(size, FACTORY.makeValue(y, TYPE_ARCH));
+                    memObj.setInitialValue(size * 2, FACTORY.makeValue(z, TYPE_ARCH));
                 }
                 default -> throw new ParsingException("Unsupported decoration '%s'", decoration);
             }

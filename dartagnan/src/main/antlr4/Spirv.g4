@@ -4,7 +4,7 @@ options { tokenVocab = SpirvLexer; }
 
 spv : spvHeaders spvInstructions EOF;
 
-spvHeaders : spvHeader+;
+spvHeaders : spvHeader*;
 
 spvHeader
     : inputHeader

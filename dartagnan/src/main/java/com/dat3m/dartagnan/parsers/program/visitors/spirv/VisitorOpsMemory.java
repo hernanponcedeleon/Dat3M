@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -46,9 +47,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     public Event visitOpVariable(SpirvParser.OpVariableContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getPointedType(ctx.idResultType().getText());
-        Expression value = getOpVariableInitialValue(ctx);
+        Expression value = getOpVariableInitialValue(ctx, type);
         if (value != null) {
-            type = validateVariableType(id, type, value.getType());
+            type = validateVariableType(id, value, type, value.getType());
         } else if (type instanceof ArrayType aType && aType.getNumElements() == -1) {
             throw new ParsingException("Missing initial value for runtime variable '%s'", id);
         }
@@ -68,11 +69,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
-    private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx) {
+    private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx, Type type) {
         String id = ctx.idResult().getText();
         if (builder.hasInput(id)) {
             if (ctx.initializer() == null) {
-                return builder.getInput(id);
+                return castInput(id, type, builder.getInput(id));
             }
             throw new ParsingException("Variable '%s' has a constant initializer " +
                     "and cannot accept an external input", id);
@@ -83,7 +84,76 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return null;
     }
 
-    private Type validateVariableType(String id, Type varType, Type valType) {
+    private Expression castInput(String id, Type type, Expression value) {
+        if (type instanceof ArrayType aType) {
+            return castInputArray(id, aType, value);
+        }
+        if (type instanceof AggregateType aType) {
+            return castInputAggregate(id, aType, value);
+        }
+        return castInputScalar(id, type, value);
+    }
+
+    private Expression castInputArray(String id, ArrayType type, Expression value) {
+        if (value instanceof Construction cValue) {
+            // TODO: Handle empty arrays
+            int size = type.getNumElements();
+            if (size != -1 && size != cValue.getArguments().size()) {
+                // TODO: Add a unit test for this
+                throw new ParsingException("Unexpected number of elements in variable '%s', " +
+                        "expected '%d' elements but received '%d' elements", id, size, cValue.getArguments().size());
+            }
+            Type eType = type.getElementType();
+            List<Expression> elements = cValue.getArguments().stream().map(a -> castInput(id, eType, a)).toList();
+            return EXPR_FACTORY.makeArray(elements.get(0).getType(), elements, true);
+        }
+        throw new ParsingException("Mismatching value type for variable '%s', " +
+                "expected '%s' but received '%s'", id, type, value.getType());
+    }
+
+    private Expression castInputAggregate(String id, AggregateType type, Expression value) {
+        if (value instanceof Construction cValue) {
+            // TODO: Test empty structures
+            int size = type.getDirectFields().size();
+            if (size != cValue.getArguments().size()) {
+                // TODO: Add a unit test for this
+                throw new ParsingException("Unexpected number of elements in variable '%s', " +
+                        "expected '%d' elements but received '%d' elements", id, size, cValue.getArguments().size());
+            }
+            List<Expression> elements = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                elements.add(castInput(id, type.getDirectFields().get(i), cValue.getArguments().get(i)));
+            }
+            return EXPR_FACTORY.makeConstruct(elements);
+        }
+        throw new ParsingException("Mismatching value type for variable '%s', " +
+                "expected '%s' but received '%s'", id, type, value.getType());
+    }
+
+    private Expression castInputScalar(String id, Type type, Expression value) {
+        if (!value.getType().equals(TYPE_FACTORY.getArchType())) {
+            throw new ParsingException("Mismatching value type for variable '%s', " +
+                    "expected '%s' but received '%s'", id, type, value.getType());
+        }
+        if (value instanceof IConst iConst) {
+            int iValue = iConst.getValueAsInt();
+            if (type instanceof BooleanType) {
+                if (iValue == 0) {
+                    return EXPR_FACTORY.makeFalse();
+                }
+                return EXPR_FACTORY.makeTrue();
+            }
+            if (type instanceof IntegerType iType) {
+                return EXPR_FACTORY.makeValue(iValue, iType);
+            }
+            throw new ParsingException("Unexpected element type '%s' for variable '%s'",
+                    type, id);
+        }
+        throw new ParsingException("Illegal input for variable '%s', " +
+                "the value is not constant", id);
+    }
+
+    private Type validateVariableType(String id, Expression value, Type varType, Type valType) {
         if (varType.equals(valType)) {
             return valType;
         }
@@ -91,7 +161,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             int size = t1.getDirectFields().size();
             if (size == t2.getDirectFields().size()) {
                 for (int i = 0; i < size; i++) {
-                    validateVariableType(id, t1.getDirectFields().get(i), t2.getDirectFields().get(i));
+                    validateVariableType(id, value, t1.getDirectFields().get(i), t2.getDirectFields().get(i));
                 }
                 return valType;
             }
@@ -102,11 +172,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                     return valType;
                 }
             } else if (t1.getNumElements() == t2.getNumElements()) {
-                validateVariableType(id, t1.getElementType(), t2.getElementType());
+                validateVariableType(id, value, t1.getElementType(), t2.getElementType());
                 return valType;
             }
         }
-        throw new ParsingException("Mismatching value type for variables '%s', " +
+        throw new ParsingException("Mismatching value type for variable '%s', " +
                 "expected '%s' but received '%s'", id, varType, valType);
     }
 

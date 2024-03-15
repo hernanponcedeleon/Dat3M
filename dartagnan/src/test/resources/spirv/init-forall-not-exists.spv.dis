@@ -1,4 +1,4 @@
-; @Input: %v1=7, %v2=123, %v3=0
+; @Input: %v1=7, %v2=123
 ; @Output: not exists (%v1!=7 or %v2!=123)
 ; @Output: forall (%v3==0)
 ; @Config: 1, 1, 1
@@ -14,6 +14,9 @@
        %uint = OpTypeInt 64 0
    %ptr_uint = OpTypePointer Uniform %uint
        %func = OpTypeFunction %void
+         %v1 = OpVariable %ptr_uint Uniform
+         %v2 = OpVariable %ptr_uint Uniform
+         %v3 = OpVariable %ptr_uint Uniform
        %main = OpFunction %void None %func
       %label = OpLabel
                OpReturn

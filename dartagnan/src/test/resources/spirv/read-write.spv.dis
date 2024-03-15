@@ -12,6 +12,9 @@
        %void = OpTypeVoid
        %func = OpTypeFunction %void
        %uint = OpTypeInt 64 0
+   %ptr_uint = OpTypePointer Uniform %uint
+         %v1 = OpVariable %ptr_uint Uniform
+         %v2 = OpVariable %ptr_uint Uniform
        %main = OpFunction %void None %func
       %label = OpLabel
          %l1 = OpLoad %uint %v1
