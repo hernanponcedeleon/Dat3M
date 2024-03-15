@@ -118,12 +118,12 @@ public class VisitorOpsMemoryTest {
         builder.mockVectorType("%v3int", "%int", 3);
         builder.mockAggregateType("%struct", "%bool", "%int", "%v3int");
 
-        Expression c1 = builder.mockConstant("%b_const", "%bool", true);
-        Expression c2 = builder.mockConstant("%i_const", "%int", 7890);
-        Expression c3 = builder.mockConstant("%v3int_const", "%v3int", List.of(1, 2, 3));
-        Expression c4 = builder.mockConstant("%struct_const", "%struct", List.of("%b_const", "%i_const", "%v3int_const"));
+        builder.mockConstant("%b_const", "%bool", true);
+        builder.mockConstant("%i_const", "%int", 7890);
+        builder.mockConstant("%v3int_const", "%v3int", List.of(1, 2, 3));
+        builder.mockConstant("%struct_const", "%struct", List.of("%b_const", "%i_const", "%v3int_const"));
 
-        doTestInitializedVariable(input, List.of(c1, c2, c3, c4));
+        doTestInitializedVariable(input);
     }
 
     @Test
@@ -136,25 +136,26 @@ public class VisitorOpsMemoryTest {
                 """;
 
         builder.mockBoolType("%bool");
-        IntegerType iType = builder.mockIntType("%int", 32);
+        builder.mockIntType("%int", 32);
         builder.mockVectorType("%v3int", "%int", 3);
         builder.mockAggregateType("%struct", "%bool", "%int", "%v3int");
 
-        Expression c1 = EXPR_FACTORY.makeTrue();
-        Expression c2 = EXPR_FACTORY.makeValue(7890, iType);
-        List<Expression> arrValues = Stream.of(1, 2, 3).map(i -> (Expression) EXPR_FACTORY.makeValue(i, iType)).toList();
-        Expression c3 = EXPR_FACTORY.makeArray(iType, arrValues, true);
-        Expression c4 = EXPR_FACTORY.makeConstruct(List.of(c1, c2, c3));
+        IntegerType archType = TYPE_FACTORY.getArchType();
+        Expression i1 = EXPR_FACTORY.makeValue(1, archType);
+        Expression i2 = EXPR_FACTORY.makeValue(7890, archType);
+        List<Expression> iValues = Stream.of(1, 2, 3).map(i -> (Expression) EXPR_FACTORY.makeValue(i, archType)).toList();
+        Expression i3 = EXPR_FACTORY.makeArray(archType, iValues, true);
+        Expression i4 = EXPR_FACTORY.makeConstruct(List.of(i1, i2, i3));
 
-        builder.addInput("%v1", c1);
-        builder.addInput("%v2", c2);
-        builder.addInput("%v3", c3);
-        builder.addInput("%v4", c4);
+        builder.addInput("%v1", i1);
+        builder.addInput("%v2", i2);
+        builder.addInput("%v3", i3);
+        builder.addInput("%v4", i4);
 
-        doTestInitializedVariable(input, List.of(c1, c2, c3, c4));
+        doTestInitializedVariable(input);
     }
 
-    private void doTestInitializedVariable(String input, List<Expression> values) {
+    private void doTestInitializedVariable(String input) {
         // given
         builder.mockPtrType("%b_ptr", "%bool");
         builder.mockPtrType("%i_ptr", "%int");
@@ -165,20 +166,27 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
+        IntegerType iType = (IntegerType) builder.getType("%int");
+        Expression o1 = EXPR_FACTORY.makeTrue();
+        Expression o2 = EXPR_FACTORY.makeValue(7890, iType);
+        List<Expression> oValues = Stream.of(1, 2, 3).map(i -> (Expression) EXPR_FACTORY.makeValue(i, iType)).toList();
+        Construction o3 = EXPR_FACTORY.makeArray(iType, oValues, true);
+        Construction o4 = EXPR_FACTORY.makeConstruct(List.of(o1, o2, o3));
+
         MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
         assertNotNull(v1);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%bool")), v1.size());
-        assertEquals(values.get(0), v1.getInitialValue(0));
+        assertEquals(o1, v1.getInitialValue(0));
 
         MemoryObject v2 = (MemoryObject) builder.getExpression("%v2");
         assertNotNull(v2);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%int")), v2.size());
-        assertEquals(values.get(1), v2.getInitialValue(0));
+        assertEquals(o2, v2.getInitialValue(0));
 
         MemoryObject v3 = (MemoryObject) builder.getExpression("%v3");
         assertNotNull(v3);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%v3int")), v3.size());
-        List<Expression> arrElements = ((Construction) values.get(2)).getArguments();
+        List<Expression> arrElements = o3.getArguments();
         assertEquals(arrElements.get(0), v3.getInitialValue(0));
         assertEquals(arrElements.get(1), v3.getInitialValue(4));
         assertEquals(arrElements.get(2), v3.getInitialValue(8));
@@ -186,7 +194,7 @@ public class VisitorOpsMemoryTest {
         MemoryObject v4 = (MemoryObject) builder.getExpression("%v4");
         assertNotNull(v4);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%struct")), v4.size());
-        List<Expression> structElements = ((Construction) values.get(3)).getArguments();
+        List<Expression> structElements = o4.getArguments();
         assertEquals(structElements.get(0), v4.getInitialValue(0));
         assertEquals(structElements.get(1), v4.getInitialValue(1));
         assertEquals(arrElements.get(0), v4.getInitialValue(5));
@@ -212,18 +220,19 @@ public class VisitorOpsMemoryTest {
         builder.mockPtrType("%v2_ptr", "%v3ra");
         builder.mockPtrType("%v3_ptr", "%s1i1ra");
 
-        Type aType = TYPE_FACTORY.getArrayType(iType, 2);
+        IntegerType archType = TYPE_FACTORY.getArchType();
+        Type aType = TYPE_FACTORY.getArrayType(archType, 2);
 
-        Expression i1 = EXPR_FACTORY.makeValue(1, iType);
-        Expression i2 = EXPR_FACTORY.makeValue(2, iType);
-        Expression i3 = EXPR_FACTORY.makeValue(3, iType);
-        Expression i4 = EXPR_FACTORY.makeValue(4, iType);
-        Expression i5 = EXPR_FACTORY.makeValue(5, iType);
-        Expression i6 = EXPR_FACTORY.makeValue(6, iType);
+        Expression i1 = EXPR_FACTORY.makeValue(1, archType);
+        Expression i2 = EXPR_FACTORY.makeValue(2, archType);
+        Expression i3 = EXPR_FACTORY.makeValue(3, archType);
+        Expression i4 = EXPR_FACTORY.makeValue(4, archType);
+        Expression i5 = EXPR_FACTORY.makeValue(5, archType);
+        Expression i6 = EXPR_FACTORY.makeValue(6, archType);
 
-        Expression a1 = EXPR_FACTORY.makeArray(iType, List.of(i1, i2), true);
-        Expression a2 = EXPR_FACTORY.makeArray(iType, List.of(i3, i4), true);
-        Expression a3 = EXPR_FACTORY.makeArray(iType, List.of(i5, i6), true);
+        Expression a1 = EXPR_FACTORY.makeArray(archType, List.of(i1, i2), true);
+        Expression a2 = EXPR_FACTORY.makeArray(archType, List.of(i3, i4), true);
+        Expression a3 = EXPR_FACTORY.makeArray(archType, List.of(i5, i6), true);
 
         Expression a3a = EXPR_FACTORY.makeArray(aType, List.of(a1, a2, a3), true);
         Expression s = EXPR_FACTORY.makeConstruct(List.of(i1, a1));
@@ -236,28 +245,36 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
+        Expression o1 = EXPR_FACTORY.makeValue(1, iType);
+        Expression o2 = EXPR_FACTORY.makeValue(2, iType);
+        Expression o3 = EXPR_FACTORY.makeValue(3, iType);
+        Expression o4 = EXPR_FACTORY.makeValue(4, iType);
+        Expression o5 = EXPR_FACTORY.makeValue(5, iType);
+        Expression o6 = EXPR_FACTORY.makeValue(6, iType);
+
+        Type ot1 = TYPE_FACTORY.getArrayType(iType, 2);
+        Type ot2 = TYPE_FACTORY.getArrayType(ot1, 3);
+        Type ot3 = TYPE_FACTORY.getAggregateType(List.of(iType, ot1));
+
         MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
-        assertNotNull(v1);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a1.getType()), v1.size());
-        assertEquals(i1, v1.getInitialValue(0));
-        assertEquals(i2, v1.getInitialValue(4));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot1), v1.size());
+        assertEquals(o1, v1.getInitialValue(0));
+        assertEquals(o2, v1.getInitialValue(4));
 
         MemoryObject v2 = (MemoryObject) builder.getExpression("%v2");
-        assertNotNull(v2);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a3a.getType()), v2.size());
-        assertEquals(i1, v2.getInitialValue(0));
-        assertEquals(i2, v2.getInitialValue(4));
-        assertEquals(i3, v2.getInitialValue(8));
-        assertEquals(i4, v2.getInitialValue(12));
-        assertEquals(i5, v2.getInitialValue(16));
-        assertEquals(i6, v2.getInitialValue(20));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot2), v2.size());
+        assertEquals(o1, v2.getInitialValue(0));
+        assertEquals(o2, v2.getInitialValue(4));
+        assertEquals(o3, v2.getInitialValue(8));
+        assertEquals(o4, v2.getInitialValue(12));
+        assertEquals(o5, v2.getInitialValue(16));
+        assertEquals(o6, v2.getInitialValue(20));
 
         MemoryObject v3 = (MemoryObject) builder.getExpression("%v3");
-        assertNotNull(v3);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(s.getType()), v3.size());
-        assertEquals(i1, v3.getInitialValue(0));
-        assertEquals(i1, v3.getInitialValue(4));
-        assertEquals(i2, v3.getInitialValue(8));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot3), v3.size());
+        assertEquals(o1, v3.getInitialValue(0));
+        assertEquals(o1, v3.getInitialValue(4));
+        assertEquals(o2, v3.getInitialValue(8));
     }
 
     @Test
@@ -291,7 +308,7 @@ public class VisitorOpsMemoryTest {
                 %v2 = OpVariable %v2_ptr Uniform
                 """;
 
-        IntegerType iType = builder.mockIntType("%int", 32);
+        IntegerType iType = builder.mockIntType("%int", 64);
         builder.mockVectorType("%ra", "%int", -1);
         builder.mockPtrType("%v1_ptr", "%ra");
         builder.mockPtrType("%v2_ptr", "%ra");
@@ -314,14 +331,14 @@ public class VisitorOpsMemoryTest {
         assertNotNull(v1);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a1.getType()), v1.size());
         assertEquals(i1, v1.getInitialValue(0));
-        assertEquals(i2, v1.getInitialValue(4));
+        assertEquals(i2, v1.getInitialValue(8));
 
         MemoryObject v2 = (MemoryObject) builder.getExpression("%v2");
         assertNotNull(v2);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a2.getType()), v2.size());
         assertEquals(i1, v2.getInitialValue(0));
-        assertEquals(i2, v2.getInitialValue(4));
-        assertEquals(i3, v2.getInitialValue(8));
+        assertEquals(i2, v2.getInitialValue(8));
+        assertEquals(i3, v2.getInitialValue(16));
     }
 
     @Test
@@ -375,7 +392,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Mismatching value type for variables '%v', " +
+            assertEquals("Mismatching value type for variable '%v', " +
                     "expected 'bv32' but received 'bool'", e.getMessage());
         }
     }
@@ -401,7 +418,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Mismatching value type for variables '%v', " +
+            assertEquals("Mismatching value type for variable '%v', " +
                     "expected 'bv32' but received '[2 x bv32]'", e.getMessage());
         }
     }
@@ -433,7 +450,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Mismatching value type for variables '%v', " +
+            assertEquals("Mismatching value type for variable '%v', " +
                     "expected 'bv32' but received 'bool'", e.getMessage());
         }
     }
@@ -465,7 +482,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Mismatching value type for variables '%v', " +
+            assertEquals("Mismatching value type for variable '%v', " +
                     "expected 'bv16' but received 'bv32'", e.getMessage());
         }
     }
