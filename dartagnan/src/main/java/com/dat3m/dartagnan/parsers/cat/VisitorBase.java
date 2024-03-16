@@ -214,58 +214,50 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Relation visitExprInverse(ExprInverseContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new Inverse(r0, r1));
     }
 
     @Override
     public Relation visitExprTransitive(ExprTransitiveContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new TransitiveClosure(r0, r1));
     }
 
     @Override
     public Relation visitExprTransRef(ExprTransRefContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
-        Relation r1 = wmm.newRelation();
-        Relation r2 = wmm.getOrCreatePredefinedRelation(ID);
-        Relation r3 = parseAsRelation(c.e);
-        return addDefinition(new TransitiveClosure(r0, addDefinition(new Union(r1, r2, r3))));
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
+        Relation r1 = parseAsRelation(c.e);
+        Relation transClosure = addDefinition(new TransitiveClosure(wmm.newRelation(), r1));
+        return addDefinition(new Union(r0, transClosure, wmm.getOrCreatePredefinedRelation(ID)));
     }
 
     @Override
     public Relation visitExprDomainIdentity(ExprDomainIdentityContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new DomainIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprRangeIdentity(ExprRangeIdentityContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new RangeIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprOptional(ExprOptionalContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Union(r0, wmm.getOrCreatePredefinedRelation(ID), r1));
+        return addDefinition(new Union(r0, r1, wmm.getOrCreatePredefinedRelation(ID)));
     }
 
     @Override
     public Relation visitExprIdentity(ExprIdentityContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Filter s1 = parseAsFilter(c.e);
         return addDefinition(new SetIdentity(r0, s1));
     }
