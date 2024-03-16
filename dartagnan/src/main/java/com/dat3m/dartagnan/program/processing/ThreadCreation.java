@@ -348,8 +348,8 @@ public class ThreadCreation implements ProgramProcessor {
                     assert memObj.hasName();
                     final String varName = String.format("%s@T%s", memObj.getName(), thread.getId());
                     threadLocalCopy.setName(varName);
-                    for (int i = 0; i < memObj.size(); i++) {
-                        threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
+                    for (int field : memObj.getInitializedFields()) {
+                        threadLocalCopy.setInitialValue(field, memObj.getInitialValue(field));
                     }
                     global2ThreadLocal.put(memObj, threadLocalCopy);
                 }

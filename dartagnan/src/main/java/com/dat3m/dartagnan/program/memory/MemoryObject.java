@@ -35,7 +35,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
         this.size = size;
         this.allocationSite = allocationSite;
 
-        if (allocationSite != null) {
+        if (allocationSite == null) {
             // Static allocations are default-initialized
             initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
         }
@@ -69,6 +69,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
      */
     public Expression getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
+        checkArgument(initialValues.containsKey(offset), "No initial value at %s[%s]", this, offset);
         return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
     }
 
