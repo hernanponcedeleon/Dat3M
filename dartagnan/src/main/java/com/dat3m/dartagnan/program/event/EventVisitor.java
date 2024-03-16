@@ -41,6 +41,7 @@ public interface EventVisitor<T> {
     default T visitLoad(Load e) { return visitMemCoreEvent(e); }
     default T visitStore(Store e) { return visitMemCoreEvent(e); }
     default T visitInit(Init e) { return visitStore(e); }
+    default T visitAlloc(Alloc e) { return visitEvent(e); }
     // RMW core events
     default T visitRMWStore(RMWStore e) { return visitStore(e); }
     default T visitRMWStoreExclusive(RMWStoreExclusive e) { return visitStore(e); }
@@ -98,9 +99,6 @@ public interface EventVisitor<T> {
     // ------------------ SVCOMP Events ------------------
     default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
-
-	// ------------------ Std events ------------------
-    default T visitAlloc(Alloc e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
     default T visitFenceWithId(FenceWithId e) { return visitEvent(e); }

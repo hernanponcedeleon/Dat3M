@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -120,6 +121,11 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     @Override
     public Alloc getCopy() { return new Alloc(this); }
+
+    @Override
+    public <T> T accept(EventVisitor<T> visitor) {
+        return visitor.visitAlloc(this);
+    }
 
     @Override
     public BooleanFormula encodeExec(EncodingContext ctx) {
