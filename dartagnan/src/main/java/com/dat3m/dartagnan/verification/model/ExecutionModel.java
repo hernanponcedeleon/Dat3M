@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
@@ -459,7 +460,7 @@ public class ExecutionModel {
             } else if (regWriter instanceof RegReader regReader) {
                 // Note: This code might work for more cases than we check for here,
                 // but we want to throw an exception if an unexpected event appears.
-                assert regWriter instanceof Local;
+                assert regWriter instanceof Local || regWriter instanceof Alloc;
                 // ---- internal data dependency ----
                 final Set<EventData> dataDeps = new HashSet<>();
                 for (Register.Read regRead : regReader.getRegisterReads()) {

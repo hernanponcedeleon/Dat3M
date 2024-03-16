@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -135,7 +136,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
 
     protected void processRegs(Event e) {
-        if (!(e instanceof Local || e instanceof ThreadArgument)) {
+        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof Alloc)) {
             return;
         }
         assert e instanceof RegWriter;
@@ -143,6 +144,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final Expression expr;
         if (e instanceof Local local) {
             expr = local.getExpr();
+        } else if (e instanceof Alloc alloc) {
+            expr = alloc.getAllocatedObject();
         } else {
             final ThreadArgument arg = (ThreadArgument) e;
             expr = arg.getCreator().getArguments().get(arg.getIndex());

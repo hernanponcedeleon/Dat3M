@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -12,8 +10,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.common.configuration.Configuration;
@@ -69,27 +65,14 @@ public class MemoryAllocation implements ProgramProcessor {
         // FIXME: We should probably initialize depending on the allocation type of the alloc
         final Expression zero = expressions.makeZero(TypeFactory.getInstance().getByteType());
         for (Alloc alloc : program.getThreadEvents(Alloc.class)) {
-            final int size = getSize(alloc);
-            final MemoryObject allocatedObject = program.getMemory().allocate(size, false);
-            final Local local = EventFactory.newLocal(alloc.getResultRegister(), allocatedObject);
-            local.addTags(Tag.Std.MALLOC);
-            local.copyAllMetadataFrom(alloc);
-            alloc.replaceBy(local);
+            final MemoryObject allocatedObject = program.getMemory().allocate(alloc);
+            alloc.setAllocatedObject(allocatedObject);
 
             if (alloc.doesZeroOutMemory() || createInitsForDynamicAllocations) {
-                for (int i = 0; i < size; i++) {
+                for (int i = 0; i < allocatedObject.size(); i++) {
                     allocatedObject.setInitialValue(i, zero);
                 }
             }
-        }
-    }
-
-    private int getSize(Alloc alloc) {
-        try {
-            return ((IntLiteral)alloc.getAllocationSize()).getValueAsInt();
-        } catch (Exception e) {
-            final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
-            throw new MalformedProgramException(error);
         }
     }
 

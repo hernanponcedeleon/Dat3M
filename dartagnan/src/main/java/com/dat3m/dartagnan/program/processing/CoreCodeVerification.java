@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,8 +35,8 @@ public class CoreCodeVerification implements FunctionProcessor {
     private static final Set<Class<? extends Event>> CORE_CLASSES = new HashSet<>(Arrays.asList(
             Load.class, Store.class, Init.class, GenericMemoryEvent.class, GenericVisibleEvent.class,
             CondJump.class, IfAsJump.class, ExecutionStatus.class, Label.class, Local.class,
-            Skip.class, Assume.class, RMWStore.class, RMWStoreExclusive.class,
-            Assert.class,
+            Skip.class, RMWStore.class, RMWStoreExclusive.class, Alloc.class,
+            Assume.class, Assert.class,
             ThreadCreate.class, ThreadArgument.class, ThreadStart.class,
             FenceWithId.class, // For PTX and Vulkan
             BeginAtomic.class, EndAtomic.class

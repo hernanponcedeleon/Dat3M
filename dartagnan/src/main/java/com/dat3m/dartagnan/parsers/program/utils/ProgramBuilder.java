@@ -174,7 +174,7 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewMemoryObject(String name) {
-        final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
+        final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1));
         mem.setName(name);
         return mem;
     }
@@ -182,7 +182,7 @@ public class ProgramBuilder {
     public MemoryObject newMemoryObject(String name, int size) {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
-        final MemoryObject mem = program.getMemory().allocate(size, true);
+        final MemoryObject mem = program.getMemory().allocate(size);
         mem.setName(name);
         locations.put(name, mem);
         return mem;
@@ -287,7 +287,7 @@ public class ProgramBuilder {
 
     public void initVirLocEqCon(String leftName, IntLiteral iValue){
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
+                leftName, k->program.getMemory().allocateVirtual(1, true, null));
         object.setName(leftName);
         object.setInitialValue(0, iValue);
     }
@@ -298,7 +298,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(1, true, true, null));
+                k->program.getMemory().allocateVirtual(1, true, null));
         object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
@@ -309,7 +309,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
-                k->program.getMemory().allocateVirtual(1, true, true, rightLocation));
+                k->program.getMemory().allocateVirtual(1, true, rightLocation));
         object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
@@ -320,7 +320,7 @@ public class ProgramBuilder {
             throw new MalformedProgramException("Alias to non-exist location: " + rightName);
         }
         MemoryObject object = locations.computeIfAbsent(
-                leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
+                leftName, k->program.getMemory().allocateVirtual(1, false, rightLocation));
         object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }

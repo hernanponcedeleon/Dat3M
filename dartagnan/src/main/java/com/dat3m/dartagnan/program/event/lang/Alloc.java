@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.program.event.lang;
 
+import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
@@ -11,7 +12,9 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.AbstractEvent;
 import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.math.BigInteger;
 import java.util.HashSet;
@@ -31,6 +34,9 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private boolean isHeapAllocation;
     private boolean doesZeroOutMemory;
 
+    // This will be set right before the encoding stage.
+    private transient MemoryObject allocatedObject;
+
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation,
                  boolean doesZeroOutMemory) {
         Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getArchType());
@@ -44,6 +50,8 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     protected Alloc(Alloc other) {
         super(other);
+        Preconditions.checkState(allocatedObject == null,
+                "Cannot copy Alloc events after memory allocation was performed.");
         this.resultRegister = other.resultRegister;
         this.allocationType = other.allocationType;
         this.arraySize = other.arraySize;
@@ -63,6 +71,15 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     public boolean isSimpleAllocation() { return (arraySize instanceof IntLiteral size && size.isOne()); }
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
+
+    public void setAllocatedObject(MemoryObject obj) { this.allocatedObject = obj; }
+    // WARNING: This should only be accessed during encoding.
+    public MemoryObject getAllocatedObject() {
+        Preconditions.checkState(allocatedObject != null,
+                "Cannot access the allocated object of '%s': no memory object associated. " +
+                        "This method shall only be called during encoding.");
+        return allocatedObject;
+    }
 
 
     public Expression getAllocationSize() {
@@ -103,4 +120,11 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     @Override
     public Alloc getCopy() { return new Alloc(this); }
+
+    @Override
+    public BooleanFormula encodeExec(EncodingContext ctx) {
+        return ctx.getBooleanFormulaManager().and(
+                super.encodeExec(ctx),
+                ctx.equal(ctx.result(this), ctx.encodeExpressionAt(allocatedObject, this)));
+    }
 }

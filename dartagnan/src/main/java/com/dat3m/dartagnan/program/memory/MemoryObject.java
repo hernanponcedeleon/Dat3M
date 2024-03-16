@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.event.lang.Alloc;
 
 import java.util.Map;
 import java.util.Set;
@@ -21,21 +22,20 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     private final int index;
     private final int size;
-    private final boolean isStatic;
+    private final Alloc allocationSite;
 
-    private String name;
-    private boolean isThreadLocal;
+    private String name = null;
+    private boolean isThreadLocal = false;
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int index, int size, boolean isStaticallyAllocated) {
+    MemoryObject(int index, int size, Alloc allocationSite) {
         super(TypeFactory.getInstance().getArchType());
         this.index = index;
         this.size = size;
-        this.isStatic = isStaticallyAllocated;
-        this.isThreadLocal = false;
+        this.allocationSite = allocationSite;
 
-        if (isStaticallyAllocated) {
+        if (allocationSite != null) {
             // Static allocations are default-initialized
             initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
         }
@@ -45,12 +45,9 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public boolean isStaticallyAllocated() { return isStatic; }
-    public boolean isDynamicallyAllocated() { return !isStatic; }
-
-    public Set<Integer> getInitializedFields() {
-        return initialValues.keySet();
-    }
+    public boolean isStaticallyAllocated() { return allocationSite == null; }
+    public boolean isDynamicallyAllocated() { return !isStaticallyAllocated(); }
+    public Alloc getAllocationSite() { return allocationSite; }
 
     public boolean isThreadLocal() { return this.isThreadLocal; }
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
@@ -59,6 +56,10 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
      * @return Number of fields in this array.
      */
     public int size() { return size; }
+
+    public Set<Integer> getInitializedFields() {
+        return initialValues.keySet();
+    }
 
     /**
      * Initial value at a certain field of this array.
@@ -84,7 +85,8 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     @Override
     public String toString() {
-        return name != null ? "&" + name : ("&mem" + index);
+        final String name = this.name != null ? this.name : ("mem" + index);
+        return String.format("&%s%s", name, isDynamicallyAllocated() ? "@E" + allocationSite.getGlobalId() : "");
     }
 
     @Override
