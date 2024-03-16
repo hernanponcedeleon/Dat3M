@@ -276,7 +276,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visitMemoryObject(MemoryObject memObj) {
-        return context.makeLiteral(memObj.getType(), memObj.getAddress());
+        return context.makeVariable(memObj.toString(), memObj.getType());
     }
 
     @Override

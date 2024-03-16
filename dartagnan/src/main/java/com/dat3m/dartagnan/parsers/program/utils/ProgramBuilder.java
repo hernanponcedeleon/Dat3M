@@ -175,7 +175,7 @@ public class ProgramBuilder {
 
     public MemoryObject getOrNewMemoryObject(String name) {
         final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1, true));
-        mem.setCVar(name);
+        mem.setName(name);
         return mem;
     }
 
@@ -183,7 +183,7 @@ public class ProgramBuilder {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
         final MemoryObject mem = program.getMemory().allocate(size, true);
-        mem.setCVar(name);
+        mem.setName(name);
         locations.put(name, mem);
         return mem;
     }
@@ -288,7 +288,7 @@ public class ProgramBuilder {
     public void initVirLocEqCon(String leftName, IntLiteral iValue){
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(1, true, true, null));
-        object.setCVar(leftName);
+        object.setName(leftName);
         object.setInitialValue(0, iValue);
     }
 
@@ -299,7 +299,7 @@ public class ProgramBuilder {
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
                 k->program.getMemory().allocateVirtual(1, true, true, null));
-        object.setCVar(leftName);
+        object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
 
@@ -310,7 +310,7 @@ public class ProgramBuilder {
         }
         MemoryObject object = locations.computeIfAbsent(leftName,
                 k->program.getMemory().allocateVirtual(1, true, true, rightLocation));
-        object.setCVar(leftName);
+        object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
 
@@ -321,7 +321,7 @@ public class ProgramBuilder {
         }
         MemoryObject object = locations.computeIfAbsent(
                 leftName, k->program.getMemory().allocateVirtual(1, true, false, rightLocation));
-        object.setCVar(leftName);
+        object.setName(leftName);
         object.setInitialValue(0,rightLocation.getInitialValue(0));
     }
 

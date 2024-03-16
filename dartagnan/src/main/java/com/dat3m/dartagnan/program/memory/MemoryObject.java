@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
-import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -24,8 +23,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
     private final int size;
     private final boolean isStatic;
 
-    BigInteger address;
-    private String cVar;
+    private String name;
     private boolean isThreadLocal;
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
@@ -43,8 +41,9 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
         }
     }
 
-    public String getCVar() { return cVar; }
-    public void setCVar(String name) { this.cVar = name; }
+    public boolean hasName() { return name != null; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
     public boolean isStaticallyAllocated() { return isStatic; }
     public boolean isDynamicallyAllocated() { return !isStatic; }
@@ -52,9 +51,6 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
     public Set<Integer> getInitializedFields() {
         return initialValues.keySet();
     }
-
-    public BigInteger getAddress() { return this.address; }
-    public void setAddress(BigInteger addr) { this.address = addr; }
 
     public boolean isThreadLocal() { return this.isThreadLocal; }
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
@@ -88,7 +84,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     @Override
     public String toString() {
-        return cVar != null ? "&" + cVar : ("&mem" + index);
+        return name != null ? "&" + name : ("&mem" + index);
     }
 
     @Override

@@ -15,14 +15,12 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.lang.Alloc;
-import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -63,7 +61,6 @@ public class MemoryAllocation implements ProgramProcessor {
     @Override
     public void run(Program program) {
         processAllocations(program);
-        moveAndAlignMemoryObjects(program.getMemory());
         createInitEvents(program);
     }
 
@@ -93,27 +90,6 @@ public class MemoryAllocation implements ProgramProcessor {
         } catch (Exception e) {
             final String error = String.format("Variable-sized alloc '%s' is not supported", alloc);
             throw new MalformedProgramException(error);
-        }
-    }
-
-    public void moveAndAlignMemoryObjects(Memory memory) {
-        // Addresses are typically at least two byte aligned
-        //      https://stackoverflow.com/questions/23315939/why-2-lsbs-of-32-bit-arm-instruction-address-not-used
-        // Many algorithms rely on this assumption for correctness.
-        // Many objects have even stricter alignment requirements and need up to 8-byte alignment.
-        final BigInteger alignment = BigInteger.valueOf(8);
-        BigInteger nextAddr = alignment;
-        for(MemoryObject memObj : memory.getObjects()) {
-            memObj.setAddress(nextAddr);
-
-            // Compute next aligned address as follows:
-            //  nextAddr = curAddr + size + padding = k*alignment   // Alignment requirement
-            //  => padding = k*alignment - curAddr - size
-            //  => padding mod alignment = (-size) mod alignment    // k*alignment and curAddr are 0 mod alignment.
-            //  => padding = (-size) mod alignment                  // Because padding < alignment
-            final BigInteger memObjSize = BigInteger.valueOf(memObj.size());
-            final BigInteger padding = memObjSize.negate().mod(alignment);
-            nextAddr = nextAddr.add(memObjSize).add(padding);
         }
     }
 

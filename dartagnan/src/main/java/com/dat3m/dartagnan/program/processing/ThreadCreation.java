@@ -124,7 +124,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
                         final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1, true);
-                        comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
+                        comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
 
                         final List<Event> replacement = eventSequence(
                                 createEvent,
@@ -345,8 +345,8 @@ public class ThreadCreation implements ProgramProcessor {
             public Expression visitMemoryObject(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
                     final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
-                    final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
-                    threadLocalCopy.setCVar(varName);
+                    final String varName = String.format("%s@T%s", memObj.getName(), thread.getId());
+                    threadLocalCopy.setName(varName);
                     for (int i = 0; i < memObj.size(); i++) {
                         threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
                     }
