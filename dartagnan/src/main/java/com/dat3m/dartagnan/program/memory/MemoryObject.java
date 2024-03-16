@@ -9,8 +9,9 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -21,19 +22,13 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     private final int index;
     private final int size;
+    private final boolean isStatic;
+
     BigInteger address;
     private String cVar;
     private boolean isThreadLocal;
 
-    //TODO
-    // Right now we assume that either the whole object is atomic or it is not.
-    // Generally, this is not necessarily true for structs, but right now we
-    // only use this for litmus format where we do not have structs. 
-    private boolean atomic = false;
-
-    private final boolean isStatic;
-
-    private final HashMap<Integer, Expression> initialValues = new HashMap<>();
+    private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
     MemoryObject(int index, int size, boolean isStaticallyAllocated) {
         super(TypeFactory.getInstance().getArchType());
@@ -91,16 +86,9 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
         initialValues.put(offset, value);
     }
 
-    public boolean isAtomic() {
-        return atomic;
-    }
-    public void markAsAtomic() {
-        this.atomic = true;
-    }
-
     @Override
     public String toString() {
-        return cVar != null ? cVar : ("&mem" + index);
+        return cVar != null ? "&" + cVar : ("&mem" + index);
     }
 
     @Override
