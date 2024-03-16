@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.program.event.lang;
+package com.dat3m.dartagnan.program.event.core;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
@@ -27,7 +27,7 @@ import java.util.Set;
     NOTE: We consider this a "language" event rather than a "core" event, because we replace this event
     in the processing.
  */
-public class Alloc extends AbstractEvent implements RegReader, RegWriter {
+public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private Register resultRegister;
     private Type allocationType;
     private Expression arraySize;
@@ -48,9 +48,9 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
         this.doesZeroOutMemory = doesZeroOutMemory;
     }
 
-    protected Alloc(Alloc other) {
+    private Alloc(Alloc other) {
         super(other);
-        Preconditions.checkState(allocatedObject == null,
+        Preconditions.checkState(other.allocatedObject == null,
                 "Cannot copy Alloc events after memory allocation was performed.");
         this.resultRegister = other.resultRegister;
         this.allocationType = other.allocationType;

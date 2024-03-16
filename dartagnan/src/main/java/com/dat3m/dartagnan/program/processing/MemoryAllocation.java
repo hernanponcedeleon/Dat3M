@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.lang.Alloc;
+import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;

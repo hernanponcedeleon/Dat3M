@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.event.lang.Alloc;
+import com.dat3m.dartagnan.program.event.core.Alloc;
 
 import java.util.Map;
 import java.util.Set;

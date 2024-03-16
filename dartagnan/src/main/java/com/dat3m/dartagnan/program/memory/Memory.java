@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.program.event.lang.Alloc;
+import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
