@@ -173,27 +173,31 @@ public class ProgramBuilder {
         return locations.get(name);
     }
 
-    public MemoryObject getOrNewMemoryObject(String name) {
+    public MemoryObject getOrNewMemoryObject(String name, int size) {
         MemoryObject mem = locations.get(name);
         if (mem == null) {
-            mem = program.getMemory().allocate(1);
+            mem = program.getMemory().allocate(size);
             mem.setName(name);
             if (program.getFormat() == LITMUS) {
                 // Litmus code always initializes memory
-                mem.setInitialValue(0, expressions.makeValue(0, types.getArchType()));
+                final Expression zero = expressions.makeValue(0, types.getArchType());
+                for (int offset = 0; offset < size; offset++) {
+                    mem.setInitialValue(offset, zero);
+                }
             }
             locations.put(name, mem);
         }
         return mem;
     }
 
+    public MemoryObject getOrNewMemoryObject(String name) {
+        return getOrNewMemoryObject(name, 1);
+    }
+
     public MemoryObject newMemoryObject(String name, int size) {
         checkState(!locations.containsKey(name),
                 "Illegal allocation. Memory object %s is already defined", name);
-        final MemoryObject mem = program.getMemory().allocate(size);
-        mem.setName(name);
-        locations.put(name, mem);
-        return mem;
+        return getOrNewMemoryObject(name, size);
     }
 
     public Expression newConstant(Type type) {
