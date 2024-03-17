@@ -1,12 +1,10 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 
 import java.util.Map;
@@ -14,15 +12,16 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<IntegerType> {
+public class MemoryObject extends LeafExpressionBase<Type> {
 
-    // TODO: (TH) I think <index> is mostly useless.
+    // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
-    private final int index;
+    private final int id;
     // TODO: Generalize <size> to Expression
     private final int size;
     private final Alloc allocationSite;
@@ -32,17 +31,11 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int index, int size, Alloc allocationSite) {
-        super(TypeFactory.getInstance().getArchType());
-        this.index = index;
+    MemoryObject(int id, int size, Alloc allocationSite, Type ptrType) {
+        super(ptrType);
+        this.id = id;
         this.size = size;
         this.allocationSite = allocationSite;
-
-        if (allocationSite == null) {
-            // Static allocations are default-initialized
-            // TODO: Why? The parser frontend should generate initial values
-            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
-        }
     }
 
     public boolean hasName() { return name != null; }
@@ -73,7 +66,8 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
      */
     public Expression getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
+        checkState(initialValues.containsKey(offset), "%s[%s] has no init value", this, offset);
+        return initialValues.get(offset);
     }
 
     /**
@@ -89,12 +83,12 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     @Override
     public String toString() {
-        final String name = this.name != null ? this.name : ("mem" + index);
+        final String name = this.name != null ? this.name : ("mem" + id);
         return String.format("&%s%s", name, isDynamicallyAllocated() ? "@E" + allocationSite.getGlobalId() : "");
     }
 
     @Override
-    public int hashCode() { return index; }
+    public int hashCode() { return id; }
 
     @Override
     public boolean equals(Object obj) {
@@ -104,7 +98,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
             return false;
         }
 
-        return index == ((MemoryObject) obj).index;
+        return id == ((MemoryObject) obj).id;
     }
 
     @Override

@@ -174,8 +174,16 @@ public class ProgramBuilder {
     }
 
     public MemoryObject getOrNewMemoryObject(String name) {
-        final MemoryObject mem = locations.computeIfAbsent(name, k -> program.getMemory().allocate(1));
-        mem.setName(name);
+        MemoryObject mem = locations.get(name);
+        if (mem == null) {
+            mem = program.getMemory().allocate(1);
+            mem.setName(name);
+            if (program.getFormat() == LITMUS) {
+                // Litmus code always initializes memory
+                mem.setInitialValue(0, expressions.makeValue(0, types.getArchType()));
+            }
+            locations.put(name, mem);
+        }
         return mem;
     }
 
