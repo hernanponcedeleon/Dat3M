@@ -20,7 +20,10 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
+    // TODO: (TH) I think <index> is mostly useless.
+    //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
     private final int index;
+    // TODO: Generalize <size> to Expression
     private final int size;
     private final Alloc allocationSite;
 
@@ -37,6 +40,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
         if (allocationSite == null) {
             // Static allocations are default-initialized
+            // TODO: Why? The parser frontend should generate initial values
             initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
         }
     }
