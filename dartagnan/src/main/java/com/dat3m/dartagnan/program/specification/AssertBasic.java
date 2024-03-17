@@ -21,11 +21,11 @@ public class AssertBasic extends AbstractAssert {
         this.op = op;
     }
 
-    public Expression getE1() {
+    public Expression getLeft() {
         return e1;
     }
 
-    public Expression getE2() {
+    public Expression getRight() {
         return e2;
     }
 

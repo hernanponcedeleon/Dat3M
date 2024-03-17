@@ -356,16 +356,16 @@ public class SpirvHeaderTest {
                 """;
         Program program = parse(header);
         AssertCompositeAnd astAnd = (AssertCompositeAnd) program.getSpecification();
-        AssertCompositeAnd astAnda1 = (AssertCompositeAnd) astAnd.getA1();
-        AssertBasic astAnda2 = (AssertBasic) astAnd.getA2();
-        AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getA1();
-        AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getA2();
-        Location e1 = (Location) astAnda1a1.getE1();
-        IValue v1 = (IValue) astAnda1a1.getE2();
-        Location e2 = (Location) astAnda1a2.getE1();
-        IValue v2 = (IValue) astAnda1a2.getE2();
-        Location e3 = (Location) astAnda2.getE1();
-        IValue v3 = (IValue) astAnda2.getE2();
+        AssertCompositeAnd astAnda1 = (AssertCompositeAnd) astAnd.getLeft();
+        AssertBasic astAnda2 = (AssertBasic) astAnd.getRight();
+        AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getLeft();
+        AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getRight();
+        Location e1 = (Location) astAnda1a1.getLeft();
+        IValue v1 = (IValue) astAnda1a1.getRight();
+        Location e2 = (Location) astAnda1a2.getLeft();
+        IValue v2 = (IValue) astAnda1a2.getRight();
+        Location e3 = (Location) astAnda2.getLeft();
+        IValue v3 = (IValue) astAnda2.getRight();
         assert (e1.getName().equals("%v3v"));
         assert (e1.getOffset() == 0);
         assert (v1.toString().equals("bv64(77)"));
@@ -386,16 +386,16 @@ public class SpirvHeaderTest {
                 """;
         Program program = parse(header);
         AssertCompositeAnd astAnd = (AssertCompositeAnd) program.getSpecification();
-        AssertCompositeAnd astAnda1 = (AssertCompositeAnd) astAnd.getA1();
-        AssertBasic astAnda2 = (AssertBasic) astAnd.getA2();
-        AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getA1();
-        AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getA2();
-        Location e1 = (Location) astAnda1a1.getE1();
-        IValue v1 = (IValue) astAnda1a1.getE2();
-        Location e2 = (Location) astAnda1a2.getE1();
-        IValue v2 = (IValue) astAnda1a2.getE2();
-        Location e3 = (Location) astAnda2.getE1();
-        IValue v3 = (IValue) astAnda2.getE2();
+        AssertCompositeAnd astAnda1 = (AssertCompositeAnd) astAnd.getLeft();
+        AssertBasic astAnda2 = (AssertBasic) astAnd.getRight();
+        AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getLeft();
+        AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getRight();
+        Location e1 = (Location) astAnda1a1.getLeft();
+        IValue v1 = (IValue) astAnda1a1.getRight();
+        Location e2 = (Location) astAnda1a2.getLeft();
+        IValue v2 = (IValue) astAnda1a2.getRight();
+        Location e3 = (Location) astAnda2.getLeft();
+        IValue v3 = (IValue) astAnda2.getRight();
         assert (e1.getName().equals("%v3v"));
         assert (e1.getOffset() == 0);
         assert (v1.toString().equals("bv64(77)"));
@@ -505,7 +505,18 @@ public class SpirvHeaderTest {
         try {
             parse(header);
         } catch (ParsingException e) {
-            assert (e.getMessage().equals("Thread grid is not set"));
+            fail("Empty config should not have thrown any exception");
+        }
+    }
+
+    @Test
+    public void testMissingHeader() {
+        String header = """
+                """;
+        try {
+            parse(header);
+        } catch (ParsingException e) {
+            fail("Empty header should not have thrown any exception");
         }
     }
 

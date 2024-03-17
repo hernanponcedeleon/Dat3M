@@ -105,11 +105,11 @@ public class ProgramBuilderSpv {
 
     private AbstractAssert getComplement(AbstractAssert assertion) {
         if (assertion instanceof AssertCompositeAnd andAssertion) {
-            return new AssertCompositeOr(getComplement(andAssertion.getA1()),
-                    getComplement(andAssertion.getA2()));
+            return new AssertCompositeOr(getComplement(andAssertion.getLeft()),
+                    getComplement(andAssertion.getRight()));
         } else if (assertion instanceof AssertCompositeOr orAssertion) {
-            return new AssertCompositeAnd(getComplement(orAssertion.getA1()),
-                    getComplement(orAssertion.getA2()));
+            return new AssertCompositeAnd(getComplement(orAssertion.getLeft()),
+                    getComplement(orAssertion.getRight()));
         }
         return new AssertNot(assertion);
     }
