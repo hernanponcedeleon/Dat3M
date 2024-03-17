@@ -125,6 +125,7 @@ public class ThreadCreation implements ProgramProcessor {
                         final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1);
                         comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
+                        comAddress.setInitialValue(0, expressions.makeZero(archType));
 
                         final List<Event> replacement = eventSequence(
                                 createEvent,

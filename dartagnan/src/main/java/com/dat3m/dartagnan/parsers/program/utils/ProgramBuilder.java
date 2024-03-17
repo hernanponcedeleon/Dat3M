@@ -180,7 +180,7 @@ public class ProgramBuilder {
             mem.setName(name);
             if (program.getFormat() == LITMUS) {
                 // Litmus code always initializes memory
-                final Expression zero = expressions.makeValue(0, types.getArchType());
+                final Expression zero = expressions.makeZero(types.getByteType());
                 for (int offset = 0; offset < size; offset++) {
                     mem.setInitialValue(offset, zero);
                 }
