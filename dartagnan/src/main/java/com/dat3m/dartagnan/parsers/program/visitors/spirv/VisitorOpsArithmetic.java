@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.event.Event;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -17,7 +18,7 @@ import java.util.function.Function;
 import static com.dat3m.dartagnan.expression.op.IOpBin.*;
 import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
 
-public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
 
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
 
@@ -28,38 +29,33 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitOpSNegate(SpirvParser.OpSNegateContext ctx) {
+    public Event visitOpSNegate(SpirvParser.OpSNegateContext ctx) {
         return visitIntegerUnExpression(ctx.idResult(), ctx.idResultType(), ctx.operand(), MINUS);
     }
 
     @Override
-    public Expression visitOpIAdd(SpirvParser.OpIAddContext ctx) {
+    public Event visitOpIAdd(SpirvParser.OpIAddContext ctx) {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), ADD);
     }
 
     @Override
-    public Expression visitOpISub(SpirvParser.OpISubContext ctx) {
+    public Event visitOpISub(SpirvParser.OpISubContext ctx) {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), SUB);
     }
 
     @Override
-    public Expression visitOpIMul(SpirvParser.OpIMulContext ctx) {
+    public Event visitOpIMul(SpirvParser.OpIMulContext ctx) {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), MUL);
     }
 
     @Override
-    public Expression visitOpUDiv(SpirvParser.OpUDivContext ctx) {
+    public Event visitOpUDiv(SpirvParser.OpUDivContext ctx) {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), UDIV);
     }
 
     @Override
-    public Expression visitOpSDiv(SpirvParser.OpSDivContext ctx) {
+    public Event visitOpSDiv(SpirvParser.OpSDivContext ctx) {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), DIV);
-    }
-
-    @Override
-    public Expression visitOpUMod(SpirvParser.OpUModContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), MOD);
     }
 
     private Expression visitIntegerUnExpression(
@@ -72,7 +68,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
         return forType(id, typeCtx.getText(), iType -> {
             Expression left = builder.getExpression(opCtx.getText());
             if (iType.equals(left.getType())) {
-                return EXPR_FACTORY.makeUnary(op, left, iType);
+                return EXPR_FACTORY.makeUnary(op, left);
             }
             throw new ParsingException("Illegal definition for '%s', " +
                     "types do not match: '%s' is '%s' and '%s' is '%s'",
@@ -80,7 +76,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
         });
     }
 
-    private Expression visitIntegerBinExpression(
+    private Event visitIntegerBinExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.Operand1Context op1Ctx,
@@ -101,10 +97,12 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
         });
     }
 
-    private Expression forType(String id, String typeId, Function<IntegerType, Expression> f) {
+    private Event forType(String id, String typeId, Function<IntegerType, Expression> f) {
         Type type = builder.getType(typeId);
         if (type instanceof IntegerType iType) {
-            return builder.addExpression(id, f.apply(iType));
+            Register register = builder.addRegister(id, typeId);
+            Local event = EventFactory.newLocal(register, f.apply(iType));
+            return builder.addEvent(event);
         }
         if (type instanceof ArrayType) {
             throw new ParsingException("Unsupported result type for '%s', " +
@@ -120,8 +118,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
                 "OpISub",
                 "OpIMul",
                 "OpUDiv",
-                "OpSDiv",
-                "OpUMod"
+                "OpSDiv"
         );
     }
 }

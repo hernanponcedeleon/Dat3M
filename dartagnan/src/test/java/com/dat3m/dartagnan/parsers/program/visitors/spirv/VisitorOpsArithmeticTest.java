@@ -49,7 +49,6 @@ public class VisitorOpsArithmeticTest {
         doTestOpsIntegerBin("OpIMul", MUL, 2, 3);
         doTestOpsIntegerBin("OpUDiv", UDIV, 4, 2);
         doTestOpsIntegerBin("OpSDiv", DIV, 4, -2);
-        doTestOpsIntegerBin("OpUMod", MOD, 3, 2);
     }
 
     private void doTestOpsIntegerBin(String name, IOpBin op, int v1, int v2) {
