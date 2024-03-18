@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.spirv;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.RMWXchgBase;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
 

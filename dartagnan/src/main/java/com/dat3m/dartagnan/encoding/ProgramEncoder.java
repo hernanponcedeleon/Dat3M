@@ -1,19 +1,20 @@
 package com.dat3m.dartagnan.encoding;
 
-import com.dat3m.dartagnan.expression.INonDet;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,23 +79,15 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
-        for (INonDet constant : context.getTask().getProgram().getConstants()) {
-            Formula formula = context.encodeFinalExpression(constant);
-            if (formula instanceof BitvectorFormula bitvector) {
-                boolean signed = constant.isSigned();
-                var bitvectorFormulaManager = context.getFormulaManager().getBitvectorFormulaManager();
-                int bitWidth = bitvectorFormulaManager.getLength(bitvector);
-                constant.getMin().ifPresent(min -> enc.add(bitvectorFormulaManager.greaterOrEquals(bitvector, bitvectorFormulaManager.makeBitvector(bitWidth, min), signed)));
-                constant.getMax().ifPresent(max -> enc.add(bitvectorFormulaManager.lessOrEquals(bitvector, bitvectorFormulaManager.makeBitvector(bitWidth, max), signed)));
-            } else if (formula instanceof IntegerFormula integer) {
-                var integerFormulaManager = context.getFormulaManager().getIntegerFormulaManager();
-                constant.getMin().ifPresent(min -> enc.add(integerFormulaManager.greaterOrEquals(integer, integerFormulaManager.makeNumber(min))));
-                constant.getMax().ifPresent(max -> enc.add(integerFormulaManager.lessOrEquals(integer, integerFormulaManager.makeNumber(max))));
-            } else {
-                throw new UnsupportedOperationException(
-                        String.format(
-                                "Program constant bounds of type %s.",
-                                context.getFormulaManager().getFormulaType(formula)));
+        for (NonDetValue value : context.getTask().getProgram().getConstants()) {
+            final Formula formula = context.encodeFinalExpression(value);
+            if (formula instanceof IntegerFormula intFormula && value.getType() instanceof IntegerType intType) {
+                // This special case is for when we encode BVs with integers.
+                final IntegerFormulaManager imgr = context.getFormulaManager().getIntegerFormulaManager();
+                final IntegerFormula min = imgr.makeNumber(intType.getMinimumValue(value.isSigned()));
+                final IntegerFormula max = imgr.makeNumber(intType.getMaximumValue(value.isSigned()));
+                enc.add(imgr.greaterOrEquals(intFormula, min));
+                enc.add(imgr.lessOrEquals(intFormula, max));
             }
         }
         return context.getBooleanFormulaManager().and(enc);
@@ -159,7 +152,7 @@ public class ProgramEncoder implements Encoder {
         // For all objects, their 'final' value fetched here represents their constant value.
         final var addrExprs = new ArrayList<BooleanFormula>();
         for (final MemoryObject object : memory.getObjects()) {
-            final BigInteger addressInteger = object.getValue();
+            final BigInteger addressInteger = object.getAddress();
             final Formula addressVariable = context.encodeFinalExpression(object);
             if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
                 final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();

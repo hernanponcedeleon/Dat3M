@@ -13,7 +13,6 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 /*
@@ -21,26 +20,27 @@ import java.util.List;
  */
 public class Refiner {
 
-    public Refiner() { }
+    private final RefinementModel refinementModel;
+    public Refiner(RefinementModel refinementModel) {
+        this.refinementModel = refinementModel;
+    }
 
     public BooleanFormula refine(DNF<CoreLiteral> coreReasons, EncodingContext context) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         List<BooleanFormula> refinement = new ArrayList<>();
-        HashSet<BooleanFormula> addedFormulas = new HashSet<>(); // To avoid adding duplicates
-        // For each symmetry permutation, we will create refinement clauses
         for (Conjunction<CoreLiteral> reason : coreReasons.getCubes()) {
-            BooleanFormula permutedClause = bmgr.makeFalse();
+            BooleanFormula clause = bmgr.makeFalse();
             for (CoreLiteral lit : reason.getLiterals()) {
                 final BooleanFormula litFormula = encode(lit, context);
                 if (bmgr.isFalse(litFormula)) {
-                    permutedClause = bmgr.makeTrue();
+                    clause = bmgr.makeTrue();
                     break;
                 } else {
-                    permutedClause = bmgr.or(permutedClause, bmgr.not(litFormula));
+                    clause = bmgr.or(clause, bmgr.not(litFormula));
                 }
             }
-            if (addedFormulas.add(permutedClause)) {
-                refinement.add(permutedClause);
+            if (!bmgr.isTrue(clause)) {
+                refinement.add(clause);
             }
         }
         return bmgr.and(refinement);
@@ -50,14 +50,14 @@ public class Refiner {
         final BooleanFormulaManager bmgr = encoder.getBooleanFormulaManager();
         final BooleanFormula enc;
         if (literal instanceof ExecLiteral lit) {
-            enc = encoder.execution(lit.getData());
+            enc = encoder.execution(lit.getEvent());
         } else if (literal instanceof AddressLiteral loc) {
             enc = encoder.sameAddress((MemoryCoreEvent) loc.getFirst(), (MemoryCoreEvent) loc.getSecond());
         } else if (literal instanceof RelLiteral lit) {
-            final Relation rel = encoder.getTask().getMemoryModel().getRelation(lit.getName());
-            enc = encoder.edge(rel, lit.getData().first(), lit.getData().second());
+            final Relation rel = refinementModel.translateToBase(lit.getRelation());
+            enc = encoder.edge(rel, lit.getSource(), lit.getTarget());
         } else {
-            throw new IllegalArgumentException("CoreLiteral " + literal.toString() + " is not supported");
+            throw new IllegalArgumentException("CoreLiteral " + literal + " is not supported");
         }
 
         return literal.isNegative() ? bmgr.not(enc) : enc;

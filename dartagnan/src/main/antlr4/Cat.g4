@@ -15,9 +15,9 @@ definition
     ;
 
 axiomDefinition locals [Class<?> cls]
-    :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclic.class; } e = expression (AS NAME)?
-    |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexive.class; } e = expression (AS NAME)?
-    |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Empty.class; } e = expression (AS NAME)?
+    :   (flag = FLAG)? (negate = NOT)? ACYCLIC { $cls = Acyclicity.class; } e = expression (AS NAME)?
+    |   (flag = FLAG)? (negate = NOT)? IRREFLEXIVE { $cls = Irreflexivity.class; } e = expression (AS NAME)?
+    |   (flag = FLAG)? (negate = NOT)? EMPTY { $cls = Emptiness.class; } e = expression (AS NAME)?
     ;
 
 letDefinition
@@ -49,6 +49,7 @@ expression
     |   FENCEREL LPAR e = expression RPAR                               # exprFencerel
     |   LPAR e = expression RPAR                                        # expr
     |   n = NAME                                                        # exprBasic
+    |   call = NEW LPAR RPAR                                            # exprNew
     ;
 
 LET     :   'let';
@@ -81,6 +82,7 @@ RBRAC   :   ']';
 FENCEREL    :   'fencerel';
 DOMAIN      :   'domain';
 RANGE       :   'range';
+NEW         :   'new';
 
 FLAG       :   'flag';
 

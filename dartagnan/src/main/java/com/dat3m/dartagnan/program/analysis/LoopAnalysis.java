@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;

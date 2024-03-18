@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.google.common.collect.Iterables;
 
 public class IdReassignment implements ProgramProcessor {

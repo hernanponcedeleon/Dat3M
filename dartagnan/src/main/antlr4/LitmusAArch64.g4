@@ -3,7 +3,7 @@ grammar LitmusAArch64;
 import LitmusAssertions;
 
 @header{
-import com.dat3m.dartagnan.expression.op.*;
+import com.dat3m.dartagnan.expression.integers.*;
 import static com.dat3m.dartagnan.program.event.Tag.ARMv8.*;
 }
 
@@ -151,30 +151,30 @@ storeExclusiveInstruction locals [String mo]
     |   STLXR   {$mo = MO_REL;}
     ;
 
-arithmeticInstruction locals [IOpBin op]
-    :   ADD     { $op = IOpBin.ADD; }
+arithmeticInstruction locals [IntBinaryOp op]
+    :   ADD     { $op = IntBinaryOp.ADD; }
 //    |   ADDS    { throw new RuntimeException("Instruction ADDS is not implemented"); }
-    |   SUB     { $op = IOpBin.SUB; }
+    |   SUB     { $op = IntBinaryOp.SUB; }
 //    |   SUBS    { throw new RuntimeException("Instruction SUBS is not implemented"); }
 //    |   ADC     { throw new RuntimeException("Instruction ADC is not implemented"); }
 //    |   ADCS    { throw new RuntimeException("Instruction ADCS is not implemented"); }
 //    |   SBC     { throw new RuntimeException("Instruction SBC is not implemented"); }
 //    |   SBCS    { throw new RuntimeException("Instruction SBCS is not implemented"); }
-    |   AND     { $op = IOpBin.AND; }
-    |   ORR     { $op = IOpBin.OR; }
-    |   EOR     { $op = IOpBin.XOR; }
+    |   AND     { $op = IntBinaryOp.AND; }
+    |   ORR     { $op = IntBinaryOp.OR; }
+    |   EOR     { $op = IntBinaryOp.XOR; }
 //    |   BIC     { throw new RuntimeException("Instruction BIC is not implemented"); }
 //    |   ORN     { throw new RuntimeException("Instruction ORN is not implemented"); }
 //    |   EON     { throw new RuntimeException("Instruction EON is not implemented"); }
     ;
 
-branchCondition returns [COpBin op]
-    :   EQ {$op = COpBin.EQ;}
-    |   NE {$op = COpBin.NEQ;}
-    |   GE {$op = COpBin.GTE;}
-    |   LE {$op = COpBin.LTE;}
-    |   GT {$op = COpBin.GT;}
-    |   LT {$op = COpBin.LT;}
+branchCondition returns [IntCmpOp op]
+    :   EQ {$op = IntCmpOp.EQ;}
+    |   NE {$op = IntCmpOp.NEQ;}
+    |   GE {$op = IntCmpOp.GTE;}
+    |   LE {$op = IntCmpOp.LTE;}
+    |   GT {$op = IntCmpOp.GT;}
+    |   LT {$op = IntCmpOp.LT;}
 //    |   CS
 //    |   HS
 //    |   CC
@@ -188,15 +188,15 @@ branchCondition returns [COpBin op]
 //    |   AL
     ;
 
-branchRegInstruction returns [COpBin op]
-    :   CBZ     {$op = COpBin.EQ;}
-    |   CBNZ    {$op = COpBin.NEQ;}
+branchRegInstruction returns [IntCmpOp op]
+    :   CBZ     {$op = IntCmpOp.EQ;}
+    |   CBNZ    {$op = IntCmpOp.NEQ;}
     ;
 
-shiftOperator returns [IOpBin op]
-    :   LSL { $op = IOpBin.LSHIFT; }
-    |   LSR { $op = IOpBin.RSHIFT; }
-    |   ASR { $op = IOpBin.ARSHIFT; }
+shiftOperator returns [IntBinaryOp op]
+    :   LSL { $op = IntBinaryOp.LSHIFT; }
+    |   LSR { $op = IntBinaryOp.RSHIFT; }
+    |   ASR { $op = IntBinaryOp.ARSHIFT; }
     ;
 
 expr64

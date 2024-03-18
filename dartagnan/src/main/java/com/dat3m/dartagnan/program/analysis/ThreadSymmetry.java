@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.utils.equivalence.AbstractEquivalence;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.google.common.base.Preconditions;
@@ -73,13 +73,13 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     // ================= Public methods ===================
 
     public Event map(Event source, Thread targetThread) {
-    	Preconditions.checkArgument(areEquivalent(source.getThread(), targetThread),
-    			"Target thread is not symmetric with source thread.");
+        Preconditions.checkArgument(areEquivalent(source.getThread(), targetThread),
+                "Target thread is not symmetric with source thread.");
         return thread2id2EventMap.get(targetThread).get(event2IdMap.get(source));
     }
 
     public Function<Event, Event> createEventPermutation(List<Thread> origPerm, List<Thread> targetPerm) {
-    	Preconditions.checkArgument(origPerm.size() == targetPerm.size(),
+        Preconditions.checkArgument(origPerm.size() == targetPerm.size(),
                 "Target permutation has different size to original permutation.");
         if (origPerm.equals(targetPerm)) {
             return Function.identity();
@@ -104,8 +104,8 @@ public class ThreadSymmetry extends AbstractEquivalence<Thread> {
     }
 
     public List<Function<Event, Event>> createAllEventPermutations(EquivalenceClass<Thread> eqClass) {
-    	Preconditions.checkArgument(eqClass.getEquivalence() == this, 
-    			"<eqClass> is not a symmetry class of this symmetry equivalence.");
+        Preconditions.checkArgument(eqClass.getEquivalence() == this,
+                "<eqClass> is not a symmetry class of this symmetry equivalence.");
 
         final List<Thread> symmThreads = new ArrayList<>(eqClass);
         symmThreads.sort(Comparator.comparingInt(Thread::getId));

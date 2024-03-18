@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.google.common.collect.Sets;
 
 import java.util.*;
@@ -15,7 +15,7 @@ public class HelperTags {
     private final Set<String> moStrong = Set.of(ACQUIRE, RELEASE, ACQ_REL, SEQ_CST);
 
     public Set<String> visitIdMemorySemantics(String id, Expression expr) {
-        if (expr instanceof IValue iValue) {
+        if (expr instanceof IntLiteral iValue) {
             try {
                 return parseSemantics(iValue.getValue().intValue());
             } catch (IllegalArgumentException e) {
@@ -27,7 +27,7 @@ public class HelperTags {
     }
 
     public String visitScope(String id, Expression expr) {
-        if (expr instanceof IValue iValue) {
+        if (expr instanceof IntLiteral iValue) {
             try {
                 return parseScope(iValue.getValue().intValue());
             } catch (Exception e) {

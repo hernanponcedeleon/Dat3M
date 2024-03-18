@@ -45,7 +45,7 @@
         <commons-cli.version>1.5.0</commons-cli.version>
         <guava.version>32.1.2-jre</guava.version>
         <junit.version>4.13.2</junit.version>
-        <log4j.version>2.20.0</log4j.version>
+        <log4j.version>2.23.0</log4j.version>
         <rsyntaxtextarea.version>3.3.4</rsyntaxtextarea.version>
 
         <!-- 3rd party plugin versions -->
@@ -133,9 +133,6 @@
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
                         <reuseForks>false</reuseForks>
-                        <systemPropertyVariables>
-                            <LOGNAME>surefire</LOGNAME>
-                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
             </plugins>

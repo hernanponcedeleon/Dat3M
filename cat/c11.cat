@@ -9,6 +9,11 @@ Rewritten by Luc Maranget for herd7
 
 *)
 
+(*
+   This is an adapted version of C11 that supports an execution model where explicit init events
+   may be missing. As a consequence, reads may have no rf-edge if they read from initial memory.
+*)
+
 include "c11_cos.cat"
 include "c11_los.cat"
 
@@ -20,7 +25,8 @@ let cacq = ACQ | (SC & (R | F)) | ACQ_REL | (F & CON)
 let crel = REL | (SC & (W | F)) | ACQ_REL
 let ccon = R & CON
 
-let fr = rf^-1 ; mo
+// To be compatible with reads from uninit memory, we use our default definition of fr
+//let fr = rf^-1 ; mo
 
 let dd = (data | addr)+
 
@@ -68,7 +74,9 @@ acyclic hb as Hb
 (* coherent_memory_use *)
 let hbl = hb & loc
 
-irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
+// irreflexive ((rf^-1)? ; mo ; rf? ; hb) as Coh
+// To support reads from uninitialized memory
+irreflexive ((fr | mo) ; rf? ; hb) as Coh
 
 (* visible_side_effect_set *)
 let vis = (hbl & (W * R)) \ (hbl; [W] ; hbl)

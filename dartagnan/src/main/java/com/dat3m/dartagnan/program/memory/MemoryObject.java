@@ -2,8 +2,10 @@ package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.ExpressionKind;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.math.BigInteger;
@@ -11,12 +13,11 @@ import java.util.HashMap;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends IConst {
+public class MemoryObject extends LeafExpressionBase<IntegerType> {
 
     private final int index;
     private final int size;
@@ -53,9 +54,7 @@ public class MemoryObject extends IConst {
     public boolean isStaticallyAllocated() { return isStatic; }
     public boolean isDynamicallyAllocated() { return !isStatic; }
 
-    // Should only be called for statically allocated objects.
-    public Set<Integer> getStaticallyInitializedFields() {
-        checkState(this.isStaticallyAllocated(), "Unexpected dynamic object %s", this);
+    public Set<Integer> getInitializedFields() {
         return initialValues.keySet();
     }
 
@@ -92,27 +91,11 @@ public class MemoryObject extends IConst {
         initialValues.put(offset, value);
     }
 
-    /**
-     * Updates the initial value at a certain field of this array.
-     *
-     * @param offset Non-negative number of fields before the target.
-     * @param value  New value to be read at the start of each execution.
-     */
-    public void appendInitialValue(int offset, Expression value) {
-        checkArgument(offset >= 0, "array index out of bounds");
-        initialValues.put(offset, value);
-    }
-
     public boolean isAtomic() {
         return atomic;
     }
     public void markAsAtomic() {
         this.atomic = true;
-    }
-
-    @Override
-    public BigInteger getValue() {
-        return address != null ? address : BigInteger.valueOf(index);
     }
 
     @Override
@@ -135,7 +118,12 @@ public class MemoryObject extends IConst {
     }
 
     @Override
+    public ExpressionKind getKind() {
+        return ExpressionKind.Other.MEMORY_ADDR;
+    }
+
+    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visitMemoryObject(this);
     }
 }

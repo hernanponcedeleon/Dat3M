@@ -8,12 +8,12 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
-import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.Refiner;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
 import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
@@ -25,15 +25,16 @@ import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-import com.dat3m.dartagnan.wmm.Assumption;
+import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclic;
-import com.dat3m.dartagnan.wmm.axiom.Empty;
-import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
+import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.axiom.Emptiness;
 import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.utils.Cut;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -56,8 +57,9 @@ import static com.dat3m.dartagnan.configuration.OptionNames.COVERAGE;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.solver.caat.CAATSolver.Status.*;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Utils.toTimeString;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.*;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 ;
 
@@ -170,36 +172,32 @@ public class RefinementSolver extends ModelChecker {
             throws InterruptedException, SolverException, InvalidConfigurationException {
         final Program program = task.getProgram();
         final Wmm memoryModel = task.getMemoryModel();
-        final Wmm baselineModel = createDefaultWmm();
         final Context analysisContext = Context.create();
         final Configuration config = task.getConfig();
-        final VerificationTask baselineTask = VerificationTask.builder()
-                .withConfig(task.getConfig())
-                .build(program, baselineModel, task.getProperty());
 
         // ------------------------ Preprocessing / Analysis ------------------------
 
-        preprocessProgram(task, config);
-        preprocessMemoryModel(task);
-        // We cut the rhs of differences to get a semi-positive model, if possible.
-        // This call modifies the baseline model!
-        Set<Relation> cutRelations = cutRelationDifferences(memoryModel, baselineModel);
+        removeFlaggedAxioms(memoryModel);
         memoryModel.configureAll(config);
-        baselineModel.configureAll(config); // Configure after cutting!
+        preprocessProgram(task, config);
+        preprocessMemoryModel(task, config);
 
         performStaticProgramAnalyses(task, analysisContext, config);
+        // Copy context without WMM analyses because we want to analyse a second model later
         Context baselineContext = Context.createCopyFrom(analysisContext);
         performStaticWmmAnalyses(task, analysisContext, config);
-        // Transfer knowledge from target model to baseline model
-        final RelationAnalysis ra = analysisContext.requires(RelationAnalysis.class);
-        for (Relation baselineRelation : baselineModel.getRelations()) {
-            String name = baselineRelation.getNameOrTerm();
-            memoryModel.getRelations().stream()
-                    .filter(r -> name.equals(r.getNameOrTerm()))
-                    .map(ra::getKnowledge)
-                    .map(k -> new Assumption(baselineRelation, k.getMaySet(), k.getMustSet()))
-                    .forEach(baselineModel::addConstraint);
-        }
+
+        //  ------- Generate refinement model -------
+        final RefinementModel refinementModel = generateRefinementModel(memoryModel);
+        final Wmm baselineModel = refinementModel.getBaseModel();
+        addBiases(baselineModel, baselines);
+        baselineModel.configureAll(config); // Configure after cutting!
+        refinementModel.transferKnowledgeFromOriginal(analysisContext.requires(RelationAnalysis.class));
+        refinementModel.forceEncodeBoundary();
+
+        final VerificationTask baselineTask = VerificationTask.builder()
+                .withConfig(task.getConfig())
+                .build(program, baselineModel, task.getProperty());
         performStaticWmmAnalyses(baselineTask, baselineContext, config);
 
         // ------------------------ Encoding ------------------------
@@ -213,8 +211,8 @@ public class RefinementSolver extends ModelChecker {
         final WmmEncoder baselineEncoder = WmmEncoder.withContext(context);
 
         final BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
-        final WMMSolver solver = WMMSolver.withContext(context, cutRelations, task, analysisContext);
-        final Refiner refiner = new Refiner();
+        final WMMSolver solver = WMMSolver.withContext(refinementModel, context, analysisContext);
+        final Refiner refiner = new Refiner(refinementModel);
         final Property.Type propertyType = Property.getCombinedType(task.getProperty(), task);
 
         logger.info("Starting encoding using " + ctx.getVersion());
@@ -409,113 +407,78 @@ public class RefinementSolver extends ModelChecker {
     // ================================================================================================================
     // Special memory model processing
 
-    // This method cuts off negated relations that are dependencies of some
-    // consistency axiom. It ignores dependencies of flagged axioms, as those get
-    // eagerly encoded and can be completely ignored for Refinement.
-    private static Set<Relation> cutRelationDifferences(Wmm targetWmm, Wmm baselineWmm) {
-        // TODO: Add support to move flagged axioms to the baselineWmm
-        Set<Relation> cutRelations = new HashSet<>();
-        Set<Relation> cutCandidates = new HashSet<>();
-        int cutCounter = 0;
-        targetWmm.getAxioms().stream().filter(ax -> !ax.isFlagged())
-                .forEach(ax -> collectDependencies(ax.getRelation(), cutCandidates));
-        for (Relation rel : cutCandidates) {
-            if (rel.getDefinition() instanceof Difference) {
-                Relation sec = ((Difference) rel.getDefinition()).complement;
-                if (!sec.getDependencies().isEmpty() || sec.getDefinition() instanceof Identity
-                        || sec.getDefinition() instanceof CartesianProduct) {
-                    // NOTE: The check for RelSetIdentity/RelCartesian is needed because they appear
-                    // non-derived in our Wmm but for CAAT they are derived from unary predicates!
-                    logger.info("Found difference {}. Cutting rhs relation {}", rel, sec);
-                    cutRelations.add(sec);
-                    Relation baselineCopy = getCopyOfRelation(sec, baselineWmm);
-                    baselineWmm.addConstraint(new ForceEncodeAxiom(baselineCopy));
-                    // We give the cut relations new aliases in the original and the baseline wmm
-                    // so that we can match them later by name.
-                    targetWmm.addAlias("cut#" + cutCounter, sec);
-                    baselineWmm.addAlias("cut#" + cutCounter, baselineCopy);
-                    cutCounter++;
+    private static RefinementModel generateRefinementModel(Wmm original) {
+        // We cut (i) negated axioms, (ii) negated relations (if derived),
+        // and (iii) some special relations because they are derived from internal relations (like data/addr/ctrl)
+        // or because we have no dedicated implementation for them in CAAT (like Linux' rscs).
+        final Set<Constraint> constraintsToCut = new HashSet<>();
+        for (Constraint c : original.getConstraints()) {
+            if (c instanceof Axiom ax && ax.isNegated()) {
+                // (i) Negated axioms
+                constraintsToCut.add(ax);
+            } else if (c instanceof Difference diff) {
+                // (ii) Negated relations (if derived)
+                final Relation sub = diff.getSubtrahend();
+                final Definition subDef = sub.getDefinition();
+                if (!sub.getDependencies().isEmpty()
+                        // The following three definitions are "semi-derived" and need to get cut
+                        // to get a semi-positive model.
+                        || subDef instanceof SetIdentity
+                        || subDef instanceof CartesianProduct
+                        || subDef instanceof Fences) {
+                    constraintsToCut.add(subDef);
+                }
+            } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
+                // (iii) Special relations
+                final String name = def.getDefinedRelation().getName().get();
+                if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)) {
+                    constraintsToCut.add(c);
                 }
             }
         }
-        return cutRelations;
+
+        return RefinementModel.fromCut(Cut.computeInducedCut(original, constraintsToCut));
     }
 
-    private static void collectDependencies(Relation root, Set<Relation> collected) {
-        if (collected.add(root)) {
-            root.getDependencies().forEach(dep -> collectDependencies(dep, collected));
-        }
-    }
-
-    private static Relation getCopyOfRelation(Relation rel, Wmm m) {
-        Optional<String> name = rel.getName();
-        if (name.isPresent() && m.containsRelation(name.get())) {
-            return m.getRelation(name.get());
-        }
-        Relation copy = name.map(m::newRelation).orElseGet(m::newRelation);
-        return m.addDefinition(rel.getDefinition().accept(new RelationCopier(m, copy)));
-    }
-
-    private static final class RelationCopier implements Definition.Visitor<Definition> {
-        final Wmm targetModel;
-        final Relation relation;
-
-        RelationCopier(Wmm m, Relation r) {
-            targetModel = m;
-            relation = r;
-        }
-
-        @Override public Definition visitUnion(Relation r, Relation... o) { return new Union(relation, copy(o)); }
-        @Override public Definition visitIntersection(Relation r, Relation... o) { return new Intersection(relation, copy(o)); }
-        @Override public Definition visitDifference(Relation r, Relation r1, Relation r2) { return new Difference(relation, copy(r1), copy(r2)); }
-        @Override public Definition visitComposition(Relation r, Relation r1, Relation r2) { return new Composition(relation, copy(r1), copy(r2)); }
-        @Override public Definition visitInverse(Relation r, Relation r1) { return new Inverse(relation, copy(r1)); }
-        @Override public Definition visitDomainIdentity(Relation r, Relation r1) { return new DomainIdentity(relation, copy(r1)); }
-        @Override public Definition visitRangeIdentity(Relation r, Relation r1) { return new RangeIdentity(relation, copy(r1)); }
-        @Override public Definition visitTransitiveClosure(Relation r, Relation r1) { return new TransitiveClosure(relation, copy(r1)); }
-        @Override public Definition visitIdentity(Relation r, Filter filter) { return new Identity(relation, filter); }
-        @Override public Definition visitProduct(Relation r, Filter f1, Filter f2) { return new CartesianProduct(relation, f1, f2); }
-        @Override public Definition visitFences(Relation r, Filter type) { return new Fences(relation, type); }
-
-        private Relation copy(Relation r) { return getCopyOfRelation(r, targetModel); }
-        private Relation[] copy(Relation[] r) {
-            Relation[] a = new Relation[r.length];
-            for (int i = 0; i < r.length; i++) {
-                a[i] = copy(r[i]);
-            }
-            return a;
-        }
-    }
-
-    private Wmm createDefaultWmm() {
-        Wmm baseline = new Wmm();
-        Relation rf = baseline.getRelation(RF);
-        if (baselines.contains(Baseline.UNIPROC)) {
+    private static void addBiases(Wmm memoryModel, EnumSet<Baseline> biases) {
+        // FIXME: This can (in theory) add redundant intermediate relations and/or constraints that
+        //  already exist in the model.
+        final Relation rf = memoryModel.getRelation(RF);
+        if (biases.contains(Baseline.UNIPROC)) {
             // ---- acyclic(po-loc | com) ----
-            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
-                    baseline.getRelation(POLOC),
+            memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
+                    memoryModel.getOrCreatePredefinedRelation(POLOC),
                     rf,
-                    baseline.getRelation(CO),
-                    baseline.getRelation(FR)))));
+                    memoryModel.getOrCreatePredefinedRelation(CO),
+                    memoryModel.getOrCreatePredefinedRelation(FR)))));
         }
-        if (baselines.contains(Baseline.NO_OOTA)) {
+        if (biases.contains(Baseline.NO_OOTA)) {
             // ---- acyclic (dep | rf) ----
-            baseline.addConstraint(new Acyclic(baseline.addDefinition(new Union(baseline.newRelation(),
-                    baseline.getRelation(CTRL),
-                    baseline.getRelation(DATA),
-                    baseline.getRelation(ADDR),
+            memoryModel.addConstraint(new Acyclicity(memoryModel.addDefinition(new Union(memoryModel.newRelation(),
+                    memoryModel.getOrCreatePredefinedRelation(CTRL),
+                    memoryModel.getOrCreatePredefinedRelation(DATA),
+                    memoryModel.getOrCreatePredefinedRelation(ADDR),
                     rf))));
         }
-        if (baselines.contains(Baseline.ATOMIC_RMW)) {
+        if (biases.contains(Baseline.ATOMIC_RMW)) {
             // ---- empty (rmw & fre;coe) ----
-            Relation rmw = baseline.getRelation(RMW);
-            Relation coe = baseline.getRelation(COE);
-            Relation fre = baseline.getRelation(FRE);
-            Relation frecoe = baseline.addDefinition(new Composition(baseline.newRelation(), fre, coe));
-            Relation rmwANDfrecoe = baseline.addDefinition(new Intersection(baseline.newRelation(), rmw, frecoe));
-            baseline.addConstraint(new Empty(rmwANDfrecoe));
+            Relation rmw = memoryModel.getOrCreatePredefinedRelation(RMW);
+            Relation coe = memoryModel.getOrCreatePredefinedRelation(COE);
+            Relation fre = memoryModel.getOrCreatePredefinedRelation(FRE);
+            Relation frecoe = memoryModel.addDefinition(new Composition(memoryModel.newRelation(), fre, coe));
+            Relation rmwANDfrecoe = memoryModel.addDefinition(new Intersection(memoryModel.newRelation(), rmw, frecoe));
+            memoryModel.addConstraint(new Emptiness(rmwANDfrecoe));
         }
-        return baseline;
+    }
+
+    private static void removeFlaggedAxioms(Wmm memoryModel) {
+        // We remove flagged axioms.
+        // NOTE: Theoretically, we could cut them but in practice this causes the whole model to get eagerly encoded,
+        // resulting in the worst combination: eagerly encoded model relations + lazy axiom checks.
+        // The performance on, e.g., LKMM is horrendous!!!!
+        List.copyOf(memoryModel.getAxioms()).stream()
+                .filter(Axiom::isFlagged)
+                .forEach(memoryModel::removeConstraint);
     }
 
     // ================================================================================================================
@@ -554,14 +517,14 @@ public class RefinementSolver extends ModelChecker {
         StringBuilder message = new StringBuilder().append("Summary").append("\n")
                 .append(" ======== Summary ========").append("\n")
                 .append("Number of iterations: ").append(trace.iterations.size()).append("\n")
-                .append("Total native solving time(ms): ").append(totalNativeSolvingTime + boundCheckTime).append("\n")
-                .append("   -- Bound check time(ms): ").append(boundCheckTime).append("\n")
-                .append("Total CAAT solving time(ms): ").append(totalCaatTime).append("\n")
-                .append("   -- Model extraction time(ms): ").append(totalModelExtractTime).append("\n")
-                .append("   -- Population time(ms): ").append(totalPopulationTime).append("\n")
-                .append("   -- Consistency check time(ms): ").append(totalConsistencyCheckTime).append("\n")
-                .append("   -- Reason computation time(ms): ").append(totalReasonComputationTime).append("\n")
-                .append("   -- Refining time(ms): ").append(totalRefiningTime).append("\n")
+                .append("Total native solving time: ").append(toTimeString(totalNativeSolvingTime)).append("\n")
+                .append("   -- Bound check time: ").append(toTimeString(boundCheckTime)).append("\n")
+                .append("Total CAAT solving time: ").append(toTimeString(totalCaatTime)).append("\n")
+                .append("   -- Model extraction time: ").append(toTimeString(totalModelExtractTime)).append("\n")
+                .append("   -- Population time: ").append(toTimeString(totalPopulationTime)).append("\n")
+                .append("   -- Consistency check time: ").append(toTimeString(totalConsistencyCheckTime)).append("\n")
+                .append("   -- Reason computation time: ").append(toTimeString(totalReasonComputationTime)).append("\n")
+                .append("   -- Refining time: ").append(toTimeString(totalRefiningTime)).append("\n")
                 .append("   -- #Computed core reasons: ").append(totalNumReasons).append("\n")
                 .append("   -- #Computed core reduced reasons: ").append(totalNumReducedReasons).append("\n");
         if (!statList.isEmpty()) {
@@ -649,8 +612,8 @@ public class RefinementSolver extends ModelChecker {
             for (Conjunction<CoreLiteral> cube : reasons.getCubes()) {
                 for (CoreLiteral lit : cube.getLiterals()) {
                     if (lit instanceof RelLiteral edgeLit) {
-                        if (model.getData(edgeLit.getData().first()).get() == e1 &&
-                                model.getData(edgeLit.getData().second()).get() == e2) {
+                        if (model.getData(edgeLit.getSource()).get() == e1 &&
+                                model.getData(edgeLit.getTarget()).get() == e2) {
                             return true;
                         }
                     }

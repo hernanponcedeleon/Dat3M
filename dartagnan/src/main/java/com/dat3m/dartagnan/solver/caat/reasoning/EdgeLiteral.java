@@ -1,26 +1,22 @@
 package com.dat3m.dartagnan.solver.caat.reasoning;
 
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.utils.logic.AbstractDataLiteral;
+import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
 
-public class EdgeLiteral extends AbstractDataLiteral<CAATLiteral, Edge> implements CAATLiteral {
+public final class EdgeLiteral extends CAATLiteralBase<RelationGraph, Edge> {
 
-    public Edge getEdge() {
-        return data;
-    }
-
-    public EdgeLiteral(String name, Edge edge, boolean isNegative) {
-        super(name, edge, isNegative);
+    public EdgeLiteral(RelationGraph relation, Edge edge, boolean isPositive) {
+        super(relation, edge, isPositive);
     }
 
     @Override
     public EdgeLiteral negated() {
-        return new EdgeLiteral(name, data, !isNegative);
+        return new EdgeLiteral(predicate, data, !isPositive);
     }
 
     @Override
     public String toString() {
-        return toStringBase() + data.toString();
+        return getName() + data;
     }
 
 }

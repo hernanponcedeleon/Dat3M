@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.program.event.common;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.RegWriter;
 
 /*
     This class can be used as base for many value-returning operator-based RMWs, such as
@@ -14,7 +14,7 @@ public abstract class RMWOpResultBase extends RMWOpBase implements RegWriter {
 
     protected Register resultRegister;
 
-    protected RMWOpResultBase(Register register, Expression address, IOpBin operator, Expression operand, String mo) {
+    protected RMWOpResultBase(Register register, Expression address, IntBinaryOp operator, Expression operand, String mo) {
         super(address, operator, operand, mo);
         this.resultRegister = register;
     }

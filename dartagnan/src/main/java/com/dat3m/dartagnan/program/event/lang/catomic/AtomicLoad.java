@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.program.event.lang.catomic;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.LoadBase;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import com.google.common.base.Preconditions;
 
 import static com.dat3m.dartagnan.program.event.Tag.C11.MO_ACQUIRE_RELEASE;

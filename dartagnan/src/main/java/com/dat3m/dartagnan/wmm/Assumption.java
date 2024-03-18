@@ -26,6 +26,10 @@ public final class Assumption implements Constraint {
         must = checkNotNull(mustSet);
     }
 
+    public Relation getRelation() { return rel; }
+    public EventGraph getMaySet() { return may; }
+    public EventGraph getMustSet() { return must; }
+
     @Override
     public Set<Relation> getConstrainedRelations() {
         return Set.of(rel);
@@ -40,5 +44,10 @@ public final class Assumption implements Constraint {
             logger.info("Assumption disables {} and enables {} at {}", d.size(), e.size(), rel.getNameOrTerm());
         }
         return Map.of(rel, new RelationAnalysis.ExtendedDelta(d, e));
+    }
+
+    @Override
+    public <T> T accept(Visitor<? extends T> visitor) {
+        return visitor.visitAssumption(this);
     }
 }

@@ -2,12 +2,13 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -15,6 +16,9 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.ADD;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
 
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
@@ -95,16 +99,16 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     }
 
     private Expression castInputArray(String id, ArrayType type, Expression value) {
-        if (value instanceof Construction cValue) {
+        if (value instanceof ConstructExpr cValue) {
             // TODO: Handle empty arrays
             int size = type.getNumElements();
-            if (size != -1 && size != cValue.getArguments().size()) {
+            if (size != -1 && size != cValue.getOperands().size()) {
                 // TODO: Add a unit test for this
                 throw new ParsingException("Unexpected number of elements in variable '%s', " +
-                        "expected '%d' elements but received '%d' elements", id, size, cValue.getArguments().size());
+                        "expected '%d' elements but received '%d' elements", id, size, cValue.getOperands().size());
             }
             Type eType = type.getElementType();
-            List<Expression> elements = cValue.getArguments().stream().map(a -> castInput(id, eType, a)).toList();
+            List<Expression> elements = cValue.getOperands().stream().map(a -> castInput(id, eType, a)).toList();
             return EXPR_FACTORY.makeArray(elements.get(0).getType(), elements, true);
         }
         throw new ParsingException("Mismatching value type for variable '%s', " +
@@ -112,17 +116,17 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     }
 
     private Expression castInputAggregate(String id, AggregateType type, Expression value) {
-        if (value instanceof Construction cValue) {
+        if (value instanceof ConstructExpr cValue) {
             // TODO: Test empty structures
             int size = type.getDirectFields().size();
-            if (size != cValue.getArguments().size()) {
+            if (size != cValue.getOperands().size()) {
                 // TODO: Add a unit test for this
                 throw new ParsingException("Unexpected number of elements in variable '%s', " +
-                        "expected '%d' elements but received '%d' elements", id, size, cValue.getArguments().size());
+                        "expected '%d' elements but received '%d' elements", id, size, cValue.getOperands().size());
             }
             List<Expression> elements = new ArrayList<>();
             for (int i = 0; i < size; i++) {
-                elements.add(castInput(id, type.getDirectFields().get(i), cValue.getArguments().get(i)));
+                elements.add(castInput(id, type.getDirectFields().get(i), cValue.getOperands().get(i)));
             }
             return EXPR_FACTORY.makeConstruct(elements);
         }
@@ -135,7 +139,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             throw new ParsingException("Mismatching value type for variable '%s', " +
                     "expected '%s' but received '%s'", id, type, value.getType());
         }
-        if (value instanceof IConst iConst) {
+        if (value instanceof IntLiteral iConst) {
             int iValue = iConst.getValueAsInt();
             if (type instanceof BooleanType) {
                 if (iValue == 0) {
@@ -188,15 +192,15 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     private void setInitialValue(MemoryObject memObj, int offset, Expression value) {
         if (value.getType() instanceof ArrayType aType) {
-            Construction cValue = (Construction) value;
-            List<Expression> elements = cValue.getArguments();
+            ConstructExpr cValue = (ConstructExpr) value;
+            List<Expression> elements = cValue.getOperands();
             int step = TYPE_FACTORY.getMemorySizeInBytes(aType.getElementType());
             for (int i = 0; i < elements.size(); i++) {
                 setInitialValue(memObj, offset + i * step, elements.get(i));
             }
         } else if (value.getType() instanceof AggregateType) {
-            Construction cValue = (Construction) value;
-            final List<Expression> elements = cValue.getArguments();
+            ConstructExpr cValue = (ConstructExpr) value;
+            final List<Expression> elements = cValue.getOperands();
             int currentOffset = offset;
             for (Expression element : elements) {
                 setInitialValue(memObj, currentOffset, element);
@@ -234,11 +238,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 .map(c -> builder.getExpression(c.getText()))
                 .toList();
         // TODO: Merge with GEPExpression?
-        Expression expression = EXPR_FACTORY.makeBinary(base, IOpBin.ADD, getMemberPtr(id, resultType, baseType, indexes));
+        Expression expression = EXPR_FACTORY.makeBinary(base, ADD, getMemberPtr(id, resultType, baseType, indexes));
         builder.addExpression(id, expression);
     }
 
-    private IExpr getMemberPtr(String id, Type resultType, Type type, List<Expression> indexes) {
+    private Expression getMemberPtr(String id, Type resultType, Type type, List<Expression> indexes) {
         if (type instanceof ArrayType arrayType) {
             return getArrayMemberPtr(id, resultType, arrayType, indexes);
         } else if (type instanceof AggregateType agType) {
@@ -248,16 +252,16 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         }
     }
 
-    private IExpr getArrayMemberPtr(String id, Type resultType, ArrayType type, List<Expression> indexes) {
+    private Expression getArrayMemberPtr(String id, Type resultType, ArrayType type, List<Expression> indexes) {
         // TODO: Simplify if all indexes are constants
         Type elementType = type.getElementType();
         int size = TYPE_FACTORY.getMemorySizeInBytes(elementType);
-        IValue sizeExpr = EXPR_FACTORY.makeValue(size, TYPE_FACTORY.getArchType());
+        IntLiteral sizeExpr = EXPR_FACTORY.makeValue(size, TYPE_FACTORY.getArchType());
         Expression indexExpr = EXPR_FACTORY.makeIntegerCast(indexes.get(0), sizeExpr.getType(), false);
-        IExprBin offsetExpr = EXPR_FACTORY.makeBinary(sizeExpr, IOpBin.MUL, indexExpr);
+        Expression offsetExpr = EXPR_FACTORY.makeBinary(sizeExpr, MUL, indexExpr);
         if (indexes.size() > 1) {
-            IExpr remainingOffsetExpr = getMemberPtr(id, resultType, elementType, indexes.subList(1, indexes.size()));
-            return EXPR_FACTORY.makeBinary(offsetExpr, IOpBin.ADD, remainingOffsetExpr);
+            Expression remainingOffsetExpr = getMemberPtr(id, resultType, elementType, indexes.subList(1, indexes.size()));
+            return EXPR_FACTORY.makeBinary(offsetExpr, ADD, remainingOffsetExpr);
         }
         if (!resultType.equals(elementType)) {
             throw new ParsingException("Invalid value type in access chain '%s', " +
@@ -266,19 +270,19 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         return offsetExpr;
     }
 
-    private IExpr getStructMemberPtr(String id, Type resultType, AggregateType type, List<Expression> indexes) {
+    private Expression getStructMemberPtr(String id, Type resultType, AggregateType type, List<Expression> indexes) {
         // TODO: Support for non-constants, simplify if all indexes are constants
         Expression indexExpr = indexes.get(0);
-        if (indexExpr instanceof IValue iValue) {
+        if (indexExpr instanceof IntLiteral iValue) {
             int value = iValue.getValueAsInt();
             int offset = 0;
             for (int i = 0; i < value; i++) {
                 offset += TYPE_FACTORY.getMemorySizeInBytes(type.getDirectFields().get(i));
             }
-            IValue offsetExpr = EXPR_FACTORY.makeValue(offset, TYPE_FACTORY.getArchType());
+            IntLiteral offsetExpr = EXPR_FACTORY.makeValue(offset, TYPE_FACTORY.getArchType());
             if (indexes.size() > 1) {
-                IExpr remainingOffsetExpr = getMemberPtr(id, resultType, type.getDirectFields().get(value), indexes.subList(1, indexes.size()));
-                return EXPR_FACTORY.makeBinary(offsetExpr, IOpBin.ADD, remainingOffsetExpr);
+                Expression remainingOffsetExpr = getMemberPtr(id, resultType, type.getDirectFields().get(value), indexes.subList(1, indexes.size()));
+                return EXPR_FACTORY.makeBinary(offsetExpr, ADD, remainingOffsetExpr);
             }
             Type elemType = type.getDirectFields().get(value);
             if (!resultType.equals(elemType)) {

@@ -4,8 +4,8 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IConst;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusVulkanBaseVisitor;
@@ -14,15 +14,15 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
-import com.dat3m.dartagnan.program.event.core.MemoryEvent;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
+import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.event.core.Label;
-import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.antlr.v4.runtime.misc.Interval;
 
@@ -77,14 +77,14 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitVariableDeclaratorLocation(LitmusVulkanParser.VariableDeclaratorLocationContext ctx) {
         programBuilder.initVirLocEqCon(ctx.location().getText(),
-                (IConst) ctx.constant().accept(this));
+                (IntLiteral) ctx.constant().accept(this));
         return null;
     }
 
     @Override
     public Object visitVariableDeclaratorRegister(LitmusVulkanParser.VariableDeclaratorRegisterContext ctx) {
         programBuilder.initRegEqConst(ctx.threadId().id, ctx.register().getText(),
-                (IConst) ctx.constant().accept(this));
+                (IntLiteral) ctx.constant().accept(this));
         return null;
     }
 
@@ -218,7 +218,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeADD(lhs, rhs);
+        Expression exp = expressions.makeAdd(lhs, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -227,7 +227,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeSUB(lhs, rhs);
+        Expression exp = expressions.makeSub(lhs, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -236,7 +236,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeMUL(lhs, rhs);
+        Expression exp = expressions.makeMul(lhs, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -245,7 +245,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Register rd = (Register) ctx.register().accept(this);
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression exp = expressions.makeDIV(lhs, rhs, true);
+        Expression exp = expressions.makeDiv(lhs, rhs, true);
         return programBuilder.addChild(mainThread, EventFactory.newLocal(rd, exp));
     }
 
@@ -307,7 +307,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
         String storageClass = ctx.storageClass().content;
-        IOpBin op = ctx.operation().op;
+        IntBinaryOp op = ctx.operation().op;
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
         VulkanRMWOp rmw = EventFactory.Vulkan.newRMWOp(location, register, value, op, mo, scope);
@@ -393,7 +393,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         Label label = programBuilder.getOrCreateLabel(mainThread, ctx.Label().getText());
         Expression lhs = (Expression) ctx.value(0).accept(this);
         Expression rhs = (Expression) ctx.value(1).accept(this);
-        Expression expr = expressions.makeBinary(lhs, ctx.cond().op, rhs);
+        Expression expr = expressions.makeIntCmp(lhs, ctx.cond().op, rhs);
         return programBuilder.addChild(mainThread, EventFactory.newJump(expr, label));
     }
 

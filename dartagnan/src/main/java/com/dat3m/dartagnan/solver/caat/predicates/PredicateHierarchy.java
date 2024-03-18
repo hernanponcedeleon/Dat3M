@@ -88,12 +88,12 @@ public class PredicateHierarchy {
                     handleTask(tasks.poll(), true);
                 }
             }
+        }
 
-            // Notify listeners about population
-            for (CAATPredicate pred : getPredicateList()) {
-                for (PredicateListener listener : listenersMap.get(pred)) {
-                    listener.onPopulation(pred);
-                }
+        // Notify listeners about population
+        for (CAATPredicate pred : getPredicateList()) {
+            for (PredicateListener listener : listenersMap.get(pred)) {
+                listener.onPopulation(pred);
             }
         }
     }

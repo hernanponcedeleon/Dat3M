@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.analysis;
 
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
@@ -32,7 +32,8 @@ public class SyntacticContextAnalysis {
         Contexts represent information surrounding an event like the executing thread, the call stack
         and the iteration numbers of loops.
      */
-    public interface Context { }
+    public interface Context {
+    }
 
     public record ThreadContext(Thread thread) implements Context {
         @Override
@@ -69,9 +70,17 @@ public class SyntacticContextAnalysis {
             this.contextStack = contextStack;
         }
 
-        public Event getEvent() { return this.event; }
-        public ImmutableList<Context> getContextStack() { return this.contextStack; }
-        public boolean hasContext() { return !contextStack.isEmpty(); }
+        public Event getEvent() {
+            return this.event;
+        }
+
+        public ImmutableList<Context> getContextStack() {
+            return this.contextStack;
+        }
+
+        public boolean hasContext() {
+            return !contextStack.isEmpty();
+        }
 
         public <T extends Context> ImmutableList<T> getContextOfType(Class<T> contextClass) {
             final Stream<T> filteredContext = contextStack.stream()
@@ -92,7 +101,7 @@ public class SyntacticContextAnalysis {
     }
 
     // We use this enum to track loop nesting
-    private enum LoopMarkerTypes { START, INC, END }
+    private enum LoopMarkerTypes {START, INC, END}
 
     // ============================================================================
 
@@ -106,7 +115,8 @@ public class SyntacticContextAnalysis {
         return retVal;
     }
 
-    private SyntacticContextAnalysis() {}
+    private SyntacticContextAnalysis() {
+    }
 
     public static SyntacticContextAnalysis newInstance(Program program) {
         final SyntacticContextAnalysis analysis = new SyntacticContextAnalysis();

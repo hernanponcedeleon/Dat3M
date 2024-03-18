@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.parsers.program.visitors;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
@@ -13,10 +13,10 @@ import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.IfAsJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
@@ -72,7 +72,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitGlobalDeclaratorLocation(LitmusCParser.GlobalDeclaratorLocationContext ctx) {
         if (ctx.initConstantValue() != null) {
-            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
+            IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
             programBuilder.initLocEqConst(ctx.varName().getText(), value);
         }
         return null;
@@ -83,7 +83,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         if (ctx.initConstantValue() != null) {
             // FIXME: We visit declarators before threads, so we need to create threads early
             programBuilder.getOrNewThread(ctx.threadId().id);
-            IValue value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
+            IntLiteral value = expressions.parseValue(ctx.initConstantValue().constant().getText(), archType);
             programBuilder.initRegEqConst(ctx.threadId().id,ctx.varName().getText(), value);
         }
         return null;
@@ -210,7 +210,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Label elseL = programBuilder.getOrCreateLabel(currentThread,"else_" + ifId);
         Label endL = programBuilder.getOrCreateLabel(currentThread,"end_" + ifId);
 
-        IfAsJump ifEvent = EventFactory.newIfJumpUnless(expr, elseL, endL);
+        IfAsJump ifEvent = EventFactory.newIfJumpUnless(expressions.makeBooleanCast(expr), elseL, endL);
         programBuilder.addChild(currentThread, ifEvent);
 
         for(LitmusCParser.ExpressionContext expressionContext : ctx.expression())
@@ -375,7 +375,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeBinary(v1, ctx.opCompare().op, v2);
+        Expression result = expressions.makeIntCmp(v1, ctx.opCompare().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -384,7 +384,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeBinary(v1, ctx.opArith().op, v2);
+        Expression result = expressions.makeIntBinary(v1, ctx.opArith().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -393,7 +393,9 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         Register register = getReturnRegister(false);
         Expression v1 = (Expression)ctx.re(0).accept(this);
         Expression v2 = (Expression)ctx.re(1).accept(this);
-        Expression result = expressions.makeBinary(v1, ctx.opBool().op, v2);
+        v1 = expressions.makeBooleanCast(v1);
+        v2 = expressions.makeBooleanCast(v2);
+        Expression result = expressions.makeBoolBinary(v1, ctx.opBool().op, v2);
         return assignToReturnRegister(register, result);
     }
 
@@ -401,6 +403,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     public Expression visitReOpBoolNot(LitmusCParser.ReOpBoolNotContext ctx){
         Register register = getReturnRegister(false);
         Expression v = (Expression)ctx.re().accept(this);
+        v = expressions.makeBooleanCast(v);
         Expression result = expressions.makeNot(v);
         return assignToReturnRegister(register, result);
     }
@@ -435,7 +438,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Expression visitReConst(LitmusCParser.ReConstContext ctx){
         Register register = getReturnRegister(false);
-        IValue result = expressions.parseValue(ctx.getText(), archType);
+        IntLiteral result = expressions.parseValue(ctx.getText(), archType);
         return assignToReturnRegister(register, result);
     }
 

@@ -1,22 +1,22 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Atom;
-import com.dat3m.dartagnan.expression.BExprBin;
-import com.dat3m.dartagnan.expression.BExprUn;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.BOpBin;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
-import static com.dat3m.dartagnan.expression.op.BOpBin.OR;
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
-import static com.dat3m.dartagnan.expression.op.COpBin.*;
+import static com.dat3m.dartagnan.expression.booleans.BoolBinaryOp.AND;
+import static com.dat3m.dartagnan.expression.booleans.BoolBinaryOp.OR;
+import static com.dat3m.dartagnan.expression.booleans.BoolUnaryOp.NOT;
+import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -36,12 +36,12 @@ public class VisitorOpsLogicalTest {
         String input = "%expr = OpLogicalNot %bool %value";
 
         // when
-        BExprUn expr = (BExprUn) visit(builder, input);
+        BoolUnaryExpr expr = (BoolUnaryExpr) visit(builder, input);
 
         // then
         assertEquals(builder.getExpression("%expr"), expr);
-        assertEquals(builder.getExpression("%value"), expr.getInner());
-        assertEquals(NOT, expr.getOp());
+        assertEquals(builder.getExpression("%value"), expr.getOperand());
+        assertEquals(NOT, expr.getKind());
     }
 
     @Test
@@ -52,7 +52,7 @@ public class VisitorOpsLogicalTest {
         doTestOpsLogicalBin("OpLogicalOr", OR, true, true);
     }
 
-    private void doTestOpsLogicalBin(String name, BOpBin op, boolean v1, boolean v2) {
+    private void doTestOpsLogicalBin(String name, BoolBinaryOp op, boolean v1, boolean v2) {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockBoolType("%bool");
@@ -61,13 +61,13 @@ public class VisitorOpsLogicalTest {
         String input = String.format("%%expr = %s %%bool %%v1 %%v2", name);
 
         // when
-        BExprBin expr = (BExprBin) visit(builder, input);
+        BoolBinaryExpr expr = (BoolBinaryExpr) visit(builder, input);
 
         // then
         assertEquals(builder.getExpression("%expr"), expr);
-        assertEquals(builder.getExpression("%v1"), expr.getLHS());
-        assertEquals(builder.getExpression("%v2"), expr.getRHS());
-        assertEquals(op, expr.getOp());
+        assertEquals(builder.getExpression("%v1"), expr.getLeft());
+        assertEquals(builder.getExpression("%v2"), expr.getRight());
+        assertEquals(op, expr.getKind());
     }
 
     @Test
@@ -84,7 +84,7 @@ public class VisitorOpsLogicalTest {
         doTestOpsIntegerBin("OpSLessThanEqual", LTE, 1, -1);
     }
 
-    private void doTestOpsIntegerBin(String name, COpBin op, int v1, int v2) {
+    private void doTestOpsIntegerBin(String name, IntCmpOp op, int v1, int v2) {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockBoolType("%bool");
@@ -94,13 +94,13 @@ public class VisitorOpsLogicalTest {
         String input = String.format("%%expr = %s %%bool %%v1 %%v2", name);
 
         // when
-        Atom expr = (Atom) visit(builder, input);
+        IntCmpExpr expr = (IntCmpExpr) visit(builder, input);
 
         // then
         assertEquals(builder.getExpression("%expr"), expr);
-        assertEquals(builder.getExpression("%v1"), expr.getLHS());
-        assertEquals(builder.getExpression("%v2"), expr.getRHS());
-        assertEquals(op, expr.getOp());
+        assertEquals(builder.getExpression("%v1"), expr.getLeft());
+        assertEquals(builder.getExpression("%v2"), expr.getRight());
+        assertEquals(op, expr.getKind());
     }
 
     @Test

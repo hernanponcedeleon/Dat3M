@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.program.event.lang.spirv;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.common.RMWOpResultBase;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 
 import java.util.Set;
 
@@ -14,7 +14,7 @@ public class SpirvRmw extends RMWOpResultBase {
 
     private final String scope;
 
-    public SpirvRmw(Register register, Expression address, IOpBin op, Expression operand, String scope, Set<String> tags) {
+    public SpirvRmw(Register register, Expression address, IntBinaryOp op, Expression operand, String scope, Set<String> tags) {
         super(register, address, op, operand, getMoTag(tags));
         this.scope = scope;
         addTags(scope);
