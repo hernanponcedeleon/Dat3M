@@ -57,12 +57,6 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), DIV);
     }
 
-    /*
-    @Override
-    public Expression visitOpUMod(SpirvParser.OpUModContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), MOD);
-    }*/
-
     private Expression visitIntegerUnExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
@@ -121,8 +115,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Expression> {
                 "OpISub",
                 "OpIMul",
                 "OpUDiv",
-                "OpSDiv"/*,
-                "OpUMod"*/
+                "OpSDiv"
         );
     }
 }

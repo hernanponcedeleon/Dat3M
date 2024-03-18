@@ -20,6 +20,7 @@ public class RemoveUnusedMemory implements ProgramProcessor {
 
     @Override
     public void run(Program program) {
+        /*
         final Memory memory = program.getMemory();
         final MemoryObjectCollector collector = new MemoryObjectCollector();
         program.getThreadEvents(RegReader.class).forEach(r -> r.transformExpressions(collector));
@@ -31,6 +32,7 @@ public class RemoveUnusedMemory implements ProgramProcessor {
         }
         // FIXME: We should also traverse the program spec for references to memory objects
         Sets.difference(memory.getObjects(), collector.memoryObjects).forEach(memory::deleteMemoryObject);
+         */
     }
 
     private static class MemoryObjectCollector implements ExpressionInspector {
