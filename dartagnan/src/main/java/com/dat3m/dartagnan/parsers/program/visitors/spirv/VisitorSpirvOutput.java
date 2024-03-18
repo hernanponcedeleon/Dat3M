@@ -94,7 +94,8 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
             throw new ParsingException("Uninitialized location %s", name);
         }
         TerminalNode offset = ctx.ModeHeader_PositiveInteger();
-        int o = offset == null ? 0 : Integer.parseInt(offset.getText());
+        int byteWidth = base.getType().getBitWidth() / 8;
+        int o = offset == null ? 0 : Integer.parseInt(offset.getText()) * byteWidth;
         return right && offset == null ? base : new Location(name, base, o);
     }
 }
