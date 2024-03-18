@@ -64,7 +64,8 @@ public final class EncodingContext {
     @Option(name = MERGE_CF_VARS,
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
-    private boolean shouldMergeCFVars = true;
+    //private boolean shouldMergeCFVars = true;
+    private boolean shouldMergeCFVars = false;
 
     @Option(name = USE_INTEGERS,
             description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
