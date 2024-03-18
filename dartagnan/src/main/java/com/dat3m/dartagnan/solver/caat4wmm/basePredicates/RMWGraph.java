@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.solver.caat4wmm.basePredicates;
 
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
+import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.verification.model.EventData;
 

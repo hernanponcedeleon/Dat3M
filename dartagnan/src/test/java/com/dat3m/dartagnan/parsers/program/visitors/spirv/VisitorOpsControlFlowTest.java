@@ -1,14 +1,18 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import org.junit.Test;
 
@@ -91,7 +95,7 @@ public class VisitorOpsControlFlowTest {
         // then
         Function function = builder.getCurrentFunction();
         CondJump event = (CondJump) function.getEvents().get(1);
-        assertTrue(((BConst) (event.getGuard())).getValue());
+        assertTrue(((BoolLiteral) (event.getGuard())).getValue());
         assertEquals(builder.getOrCreateLabel("%label"), event.getLabel());
         assertTrue(builder.getBlocks().isEmpty());
     }
@@ -115,11 +119,11 @@ public class VisitorOpsControlFlowTest {
         Function function = builder.getCurrentFunction();
 
         CondJump event1 = (CondJump) function.getEvents().get(2);
-        assertTrue(((BConst) (event1.getGuard())).getValue());
+        assertTrue(((BoolLiteral) (event1.getGuard())).getValue());
         assertEquals(builder.getOrCreateLabel("%label3"), event1.getLabel());
 
         CondJump event2 = (CondJump) function.getEvents().get(4);
-        assertTrue(((BConst) (event2.getGuard())).getValue());
+        assertTrue(((BoolLiteral) (event2.getGuard())).getValue());
         assertEquals(builder.getOrCreateLabel("%label2"), event2.getLabel());
 
         assertEquals(List.of(builder.getOrCreateLabel("%label1")), builder.getBlocks());
@@ -325,8 +329,8 @@ public class VisitorOpsControlFlowTest {
     }
 
     private Register getGuardRegister(CondJump event) {
-        BExprUn expression = ((BExprUn) event.getGuard());
-        return (Register) expression.getInner();
+        BoolUnaryExpr expression = ((BoolUnaryExpr) event.getGuard());
+        return (Register) expression.getOperand();
     }
 
     private void visit(String text) {

@@ -1,8 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
 
-import com.dat3m.dartagnan.program.event.core.Event;
-
 import java.util.Map;
 import java.util.Set;
 

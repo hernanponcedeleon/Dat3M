@@ -8,16 +8,15 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStore;
-import com.dat3m.dartagnan.program.event.core.rmw.RMWStoreExclusive;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -27,9 +26,9 @@ import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
-import com.dat3m.dartagnan.wmm.definition.Difference;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
+import com.dat3m.dartagnan.wmm.definition.*;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -44,8 +43,8 @@ import static com.dat3m.dartagnan.configuration.Arch.RISCV;
 import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.Register.UsageType.*;
 import static com.dat3m.dartagnan.program.event.Tag.*;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.CO;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.RF;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.CO;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.difference;
 import static com.dat3m.dartagnan.wmm.utils.EventGraph.intersection;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -131,7 +130,7 @@ public class RelationAnalysis {
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
-        logger.info("Finished regular analysis in {}ms", t1 - t0);
+        logger.info("Finished regular analysis in {}", Utils.toTimeString(t1 - t0));
 
         final StringBuilder summary = new StringBuilder()
                 .append("\n======== RelationAnalysis summary ======== \n");
@@ -141,7 +140,7 @@ public class RelationAnalysis {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
             a.runExtended();
-            logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
+            logger.info("Finished extended analysis in {}", Utils.toTimeString(System.currentTimeMillis() - t1));
             summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
             summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }
@@ -217,18 +216,21 @@ public class RelationAnalysis {
 
     private void run() {
         logger.trace("Start");
-        Wmm memoryModel = task.getMemoryModel();
-        Map<Relation, List<Definition>> dependents = new HashMap<>();
+        final Wmm memoryModel = task.getMemoryModel();
+        final Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
                 dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
             }
         }
         // ------------------------------------------------
-        Initializer initializer = new Initializer();
-        Map<Relation, List<Delta>> qGlobal = new HashMap<>();
+        final Initializer initializer = new Initializer();
+        final Map<Relation, List<Delta>> qGlobal = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             Knowledge k = r.getDefinition().accept(initializer);
+            if (!enableMustSets) {
+                k = new Knowledge(k.getMaySet(), EventGraph.empty());
+            }
             knowledgeMap.put(r, k);
             if (!k.may.isEmpty() || !k.must.isEmpty()) {
                 qGlobal.computeIfAbsent(r, x -> new ArrayList<>(1))
@@ -236,7 +238,7 @@ public class RelationAnalysis {
             }
         }
         // ------------------------------------------------
-        Propagator propagator = new Propagator();
+        final Propagator propagator = new Propagator();
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
             logger.trace("Regular analysis for component {}", scc);
             Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
@@ -256,17 +258,30 @@ public class RelationAnalysis {
             while (!qLocal.isEmpty()) {
                 Relation relation = qLocal.keySet().iterator().next();
                 logger.trace("Regular knowledge update for '{}'", relation);
-                Delta delta = knowledgeMap.get(relation).joinSet(qLocal.remove(relation));
-                if (delta.may.isEmpty() && delta.must.isEmpty()) {
-                    continue;
+
+                //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
+                //  In our current propagation approach, whenever a relation r gets updated,
+                //  we compute for each dependent relation "r' = r op x" an update U(r, x, r') that needs to get applied.
+                //  When r' gets processed, the update U(r, x, r') is applied as is to r'.
+                //  However, depending on whether x is before or after r in the stratification, the computed update
+                //  may be different. In particular, we compute updates to r' before all its dependencies were computed
+                //  and thus our computation does not strictly follow the stratification.
+                //  This does not matter if the update function U(r, x, r') is monotonic in r/x but if it is not,
+                //  an early computed update may be too large!
+                //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
+                // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
+                //  We should reconsider our algorithm.
+                Delta toAdd = Delta.combine(qLocal.remove(relation));
+                if (relation.getDefinition() instanceof Difference difference) {
+                    // Our propagated update may be "too large" so we reduce it.
+                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
+                    toAdd.may.removeAll(k.must);
+                    toAdd.must.removeAll(k.may);
                 }
 
-                // TODO: Quick fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
-                //  (doesn't affect parent relations, a proper fix needed)
-                if (relation.getDefinition() instanceof Difference difference) {
-                    Knowledge k = knowledgeMap.get(difference.complement);
-                    knowledgeMap.get(relation).may.removeAll(k.must);
-                    knowledgeMap.get(relation).must.removeAll(k.may);
+                Delta delta = knowledgeMap.get(relation).joinSet(List.of(toAdd));
+                if (delta.may.isEmpty() && delta.must.isEmpty()) {
+                    continue;
                 }
 
                 propagator.source = relation;
@@ -391,7 +406,7 @@ public class RelationAnalysis {
                 if (!(c instanceof Definition)) {
                     continue;
                 }
-                for (Map.Entry<Relation, ExtendedDelta> e : ((Definition) c).accept(propagator).entrySet()) {
+                for (Map.Entry<Relation, ExtendedDelta> e : c.accept(propagator).entrySet()) {
                     q.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
                 }
             }
@@ -406,6 +421,19 @@ public class RelationAnalysis {
         Delta(EventGraph maySet, EventGraph mustSet) {
             may = maySet;
             must = mustSet;
+        }
+
+        private static Delta combine(List<Delta> deltas) {
+            if (deltas.size() == 1) {
+                return deltas.get(0);
+            }
+            EventGraph mayDelta = new EventGraph();
+            EventGraph mustDelta = new EventGraph();
+            for (Delta d : deltas) {
+                mayDelta.addAll(d.may);
+                mustDelta.addAll(d.must);
+            }
+            return new Delta(mayDelta, mustDelta);
         }
     }
 
@@ -439,12 +467,30 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitDefinition(Relation r, List<? extends Relation> d) {
-            return defaultKnowledge != null && !r.isInternal() ? defaultKnowledge : new Knowledge(new EventGraph(), new EventGraph());
+        public Knowledge visitDefinition(Definition def) {
+            return defaultKnowledge != null && !def.getDefinedRelation().isInternal() ? defaultKnowledge
+                    : new Knowledge(new EventGraph(), new EventGraph());
         }
 
         @Override
-        public Knowledge visitProduct(Relation rel, Filter domain, Filter range) {
+        public Knowledge visitFree(Free def) {
+            final List<Event> visibleEvents = program.getThreadEventsWithAllTags(VISIBLE);
+            EventGraph must = EventGraph.empty();
+            EventGraph may = new EventGraph();
+
+            for (Event e1 : visibleEvents) {
+                for (Event e2 : visibleEvents) {
+                    may.add(e1, e2);
+                }
+            }
+
+            return new Knowledge(may, must);
+        }
+
+        @Override
+        public Knowledge visitProduct(CartesianProduct prod) {
+            final Filter domain = prod.getFirstFilter();
+            final Filter range = prod.getSecondFilter();
             EventGraph must = new EventGraph();
             List<Event> l1 = program.getThreadEvents().stream().filter(domain::apply).toList();
             List<Event> l2 = program.getThreadEvents().stream().filter(range::apply).toList();
@@ -454,22 +500,19 @@ public class RelationAnalysis {
                         .collect(toSet());
                 must.addRange(e1, rangeEvents);
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitIdentity(Relation rel, Filter set) {
+        public Knowledge visitSetIdentity(SetIdentity id) {
+            final Filter set = id.getFilter();
             EventGraph must = new EventGraph();
-            for (Event e : program.getThreadEvents()) {
-                if (set.apply(e)) {
-                    must.add(e, e);
-                }
-            }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            program.getThreadEvents().stream().filter(set::apply).forEach(e -> must.add(e, e));
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitExternal(Relation rel) {
+        public Knowledge visitExternal(External ext) {
             EventGraph must = new EventGraph();
             List<Thread> threads = program.getThreads();
             for (int i = 0; i < threads.size(); i++) {
@@ -486,11 +529,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitInternal(Relation rel) {
+        public Knowledge visitInternal(Internal internal) {
             EventGraph must = new EventGraph();
             for (Thread t : program.getThreads()) {
                 List<Event> events = visibleEvents(t);
@@ -501,11 +544,12 @@ public class RelationAnalysis {
                     must.addRange(e1, rangeEvents);
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitProgramOrder(Relation rel, Filter type) {
+        public Knowledge visitProgramOrder(ProgramOrder po) {
+            final Filter type = po.getFilter();
             EventGraph must = new EventGraph();
             for (Thread t : program.getThreads()) {
                 List<Event> events = t.getEvents().stream().filter(type::apply).toList();
@@ -519,11 +563,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitControl(Relation rel) {
+        public Knowledge visitControlDependency(DirectControlDependency ctrlDep) {
             //TODO: We can restrict the codomain to visible events as the only usage of this Relation is in
             // ctrl := idd^+;ctrlDirect & (R*V)
             EventGraph must = new EventGraph();
@@ -550,22 +594,23 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitAddressDependency(Relation rel) {
+        public Knowledge visitAddressDependency(DirectAddressDependency addrDep) {
             return computeInternalDependencies(EnumSet.of(ADDR));
         }
 
         @Override
-        public Knowledge visitInternalDataDependency(Relation rel) {
+        public Knowledge visitInternalDataDependency(DirectDataDependency idd) {
             // FIXME: Our "internal data dependency" relation is quite odd an contains all but address dependencies.
             return computeInternalDependencies(EnumSet.of(DATA, CTRL, OTHER));
         }
 
         @Override
-        public Knowledge visitFences(Relation rel, Filter fence) {
+        public Knowledge visitFences(Fences fenceDef) {
+            final Filter fence = fenceDef.getFilter();
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
             for (Thread t : program.getThreads()) {
@@ -580,24 +625,24 @@ public class RelationAnalysis {
                         if (exec.areMutuallyExclusive(x, f)) {
                             continue;
                         }
-                        boolean implies = enableMustSets && exec.isImplied(x, f);
+                        boolean implies = exec.isImplied(x, f);
                         for (Event y : events.subList(i + 1, end)) {
                             if (exec.areMutuallyExclusive(x, y) || exec.areMutuallyExclusive(f, y)) {
                                 continue;
                             }
                             may.add(x, y);
-                            if (implies || enableMustSets && exec.isImplied(y, f)) {
+                            if (implies || exec.isImplied(y, f)) {
                                 must.add(x, y);
                             }
                         }
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitCompareAndSwapDependency(Relation rel) {
+        public Knowledge visitCASDependency(CASDependency casDep) {
             EventGraph must = new EventGraph();
             for (Event e : program.getThreadEvents()) {
                 if (e.hasTag(IMM.CASDEPORIGIN)) {
@@ -605,19 +650,17 @@ public class RelationAnalysis {
                     must.add(e, e.getSuccessor());
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
-        public Knowledge visitCriticalSections(Relation rel) {
+        public Knowledge visitLinuxCriticalSections(LinuxCriticalSections rscs) {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
             //assume locks and unlocks are distinct
             Map<Event, Set<Event>> mayMap = new HashMap<>();
             Map<Event, Set<Event>> mustMap = new HashMap<>();
             for (Thread thread : program.getThreads()) {
-                // assume order by cId
-                // assume cId describes a topological sorting over the control flow
                 List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()));
                 for (Event unlock : thread.getEvents()) {
                     if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
@@ -632,7 +675,7 @@ public class RelationAnalysis {
                                         .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
                             continue;
                         }
-                        boolean noIntermediary = enableMustSets &&
+                        boolean noIntermediary =
                                 mayMap.getOrDefault(unlock, Set.of()).stream()
                                         .allMatch(e -> exec.areMutuallyExclusive(lock, e)) &&
                                 mayMap.getOrDefault(lock, Set.of()).stream()
@@ -648,11 +691,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitReadModifyWrites(Relation rel) {
+        public Knowledge visitReadModifyWrites(ReadModifyWrites rmw) {
             //NOTE: Changes to the semantics of this method may need to be reflected in RMWGraph for Refinement!
             // ----- Compute must set -----
             EventGraph must = new EventGraph();
@@ -663,7 +706,7 @@ public class RelationAnalysis {
 
             // Atomics blocks: BeginAtomic -> EndAtomic
             for (EndAtomic end : program.getThreadEvents(EndAtomic.class)) {
-                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).collect(toList());
+                List<Event> block = end.getBlock().stream().filter(x -> x.hasTag(VISIBLE)).toList();
                 for (int i = 0; i < block.size(); i++) {
                     Event e = block.get(i);
                     for (int j = i + 1; j < block.size(); j++) {
@@ -698,19 +741,18 @@ public class RelationAnalysis {
                             continue;
                         }
                         may.add(load, store);
-                        if (enableMustSets &&
-                                intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
+                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
                                 (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
                             must.add(load, store);
                         }
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitCoherence(Relation rel) {
+        public Knowledge visitCoherence(Coherence co) {
             logger.trace("Computing knowledge about memory order");
             List<Store> nonInitWrites = program.getThreadEvents(Store.class);
             nonInitWrites.removeIf(Init.class::isInstance);
@@ -724,7 +766,7 @@ public class RelationAnalysis {
                 }
             }
             EventGraph must = new EventGraph();
-            (enableMustSets ? may : EventGraph.empty()).apply((e1, e2) -> {
+            may.apply((e1, e2) -> {
                 MemoryCoreEvent w1 = (MemoryCoreEvent) e1;
                 MemoryCoreEvent w2 = (MemoryCoreEvent) e2;
                 if (!w2.hasTag(INIT) && alias.mustAlias(w1, w2) && w1.hasTag(INIT)) {
@@ -733,7 +775,7 @@ public class RelationAnalysis {
             });
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
-                (enableMustSets ? may : EventGraph.empty()).apply((e1, e2) -> {
+                may.apply((e1, e2) -> {
                     MemoryCoreEvent w1 = (MemoryCoreEvent) e1;
                     MemoryCoreEvent w2 = (MemoryCoreEvent) e2;
                     if (alias.mustAlias(w1, w2) && Tuple.isForward(e1, e2)) {
@@ -748,11 +790,11 @@ public class RelationAnalysis {
             }
 
             logger.debug("Initial may set size for memory order: {}", may.size());
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitReadFrom(Relation rel) {
+        public Knowledge visitReadFrom(ReadFrom rf) {
             logger.trace("Computing knowledge about read-from");
             final BranchEquivalence eq = analysisContext.requires(BranchEquivalence.class);
             EventGraph may = new EventGraph();
@@ -864,11 +906,11 @@ public class RelationAnalysis {
             }
 
             logger.debug("Initial may set size for read-from: {}", may.size());
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitSameAddress(Relation rel) {
+        public Knowledge visitSameLocation(SameLocation loc) {
             EventGraph may = new EventGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
             for (MemoryCoreEvent e1 : events) {
@@ -879,24 +921,19 @@ public class RelationAnalysis {
                 }
             }
             EventGraph must = new EventGraph();
-            (enableMustSets ? may : EventGraph.empty()).apply((e1, e2) -> {
+            may.apply((e1, e2) -> {
                 if (alias.mustAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)) {
                     must.add(e1, e2);
                 }
             });
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         private Knowledge computeInternalDependencies(Set<UsageType> usageTypes) {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
 
-            for (Event regReaderEvent : program.getThreadEvents()) {
-                //TODO: Once "Event" is an interface and RegReader inherits from it,
-                // we can use program.getEvents(RegReader.class) here.
-                if (!(regReaderEvent instanceof RegReader regReader)) {
-                    continue;
-                }
+            for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
                 for (Register.Read regRead : regReader.getRegisterReads()) {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
@@ -910,12 +947,12 @@ public class RelationAnalysis {
                     if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
                         continue;
                     }
-                    Dependency.State r = dep.of(regReaderEvent, register);
+                    Dependency.State r = dep.of(regReader, register);
                     for (Event regWriter : r.may) {
-                        may.add(regWriter, regReaderEvent);
+                        may.add(regWriter, regReader);
                     }
-                    for (Event regWriter : enableMustSets ? r.must : List.<Event>of()) {
-                        must.add(regWriter, regReaderEvent);
+                    for (Event regWriter : r.must) {
+                        must.add(regWriter, regReader);
                     }
                 }
             }
@@ -931,11 +968,12 @@ public class RelationAnalysis {
                 }
             }
 
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitSameScope(Relation rel, String specificScope) {
+        public Knowledge visitSameScope(SameScope sc) {
+            final String specificScope = sc.getSpecificScope();
             EventGraph must = new EventGraph();
             List<Event> events = program.getThreadEvents().stream()
                     .filter(e -> e.hasTag(VISIBLE) && e.getThread().hasScope())
@@ -965,7 +1003,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSyncBarrier(Relation sync_bar) {
+        public Knowledge visitSyncBarrier(SyncBar syncBar) {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
             List<FenceWithId> fenceEvents = program.getThreadEvents(FenceWithId.class);
@@ -986,8 +1024,9 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Knowledge visitSyncFence(Relation sync_fen) {
+        public Knowledge visitSyncFence(SyncFence syncFence) {
             EventGraph may = new EventGraph();
+            EventGraph must = EventGraph.empty();
             List<Event> fenceEventsSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
             for (Event e1 : fenceEventsSC) {
                 for (Event e2 : fenceEventsSC) {
@@ -996,11 +1035,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitVirtualLocation(Relation rel) {
+        public Knowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
             EventGraph must = new EventGraph();
             EventGraph may = new EventGraph();
             List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
@@ -1016,11 +1055,11 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, may);
+            return new Knowledge(may, must);
         }
 
         @Override
-        public Knowledge visitSyncWith(Relation rel) {
+        public Knowledge visitSyncWith(SyncWith syncWith) {
             EventGraph must = new EventGraph();
             List<Event> events = new ArrayList<>(program.getThreadEventsWithAllTags(VISIBLE));
             events.removeIf(Init.class::isInstance);
@@ -1036,7 +1075,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
     }
 
@@ -1071,57 +1110,54 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Delta visitUnion(Relation rel, Relation... operands) {
-            if (Arrays.asList(operands).contains(source)) {
-                return new Delta(may, enableMustSets ? must : EventGraph.empty());
+        public Delta visitUnion(Union union) {
+            if (union.getOperands().contains(source)) {
+                return new Delta(may, must);
             }
             return EMPTY;
         }
 
         @Override
-        public Delta visitIntersection(Relation rel, Relation... operands) {
-            if (Arrays.asList(operands).contains(source)) {
-                EventGraph maySet = Arrays.stream(operands)
+        public Delta visitIntersection(Intersection inter) {
+            final List<Relation> operands = inter.getOperands();
+            if (operands.contains(source)) {
+                EventGraph maySet = operands.stream()
                         .map(r -> source.equals(r) ? may : knowledgeMap.get(r).may)
                         .sorted(Comparator.comparingInt(EventGraph::size))
                         .reduce(EventGraph::intersection)
                         .orElseThrow();
-                EventGraph mustSet = Arrays.stream(operands)
+                EventGraph mustSet = operands.stream()
                         .map(r -> source.equals(r) ? must : knowledgeMap.get(r).must)
                         .sorted(Comparator.comparingInt(EventGraph::size))
                         .reduce(EventGraph::intersection)
                         .orElseThrow();
-                return new Delta(maySet, enableMustSets ? mustSet : EventGraph.empty());
+                return new Delta(maySet, mustSet);
             }
             return EMPTY;
         }
 
         @Override
-        public Delta visitDifference(Relation rel, Relation r1, Relation r2) {
-            if (r1.equals(source)) {
-                Knowledge k = knowledgeMap.get(r2);
-                return new Delta(
-                        enableMustSets ? difference(may, k.must) : may,
-                        enableMustSets ? difference(must, k.may) : EventGraph.empty());
+        public Delta visitDifference(Difference diff) {
+            if (diff.getMinuend().equals(source)) {
+                Knowledge k = knowledgeMap.get(diff.getSubtrahend());
+                return new Delta(difference(may, k.must), difference(must, k.may));
             }
             return EMPTY;
         }
 
         @Override
-        public Delta visitComposition(Relation rel, Relation r1, Relation r2) {
+        public Delta visitComposition(Composition comp) {
+            final Relation r1 = comp.getLeftOperand();
+            final Relation r2 = comp.getRightOperand();
             EventGraph maySet = new EventGraph();
             EventGraph mustSet = new EventGraph();
             if (r1.equals(source)) {
                 computeComposition(maySet, may, knowledgeMap.get(r2).may, true);
-                if (enableMustSets) {
-                    computeComposition(mustSet, must, knowledgeMap.get(r2).must, false);
-                }
+                computeComposition(mustSet, must, knowledgeMap.get(r2).must, false);
             }
             if (r2.equals(source)) {
                 computeComposition(maySet, knowledgeMap.get(r1).may, may, true);
-                if (enableMustSets) {
-                    computeComposition(mustSet, knowledgeMap.get(r1).must, must, false);
-                }
+                computeComposition(mustSet, knowledgeMap.get(r1).must, must, false);
             }
             return new Delta(maySet, mustSet);
         }
@@ -1143,50 +1179,52 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Delta visitDomainIdentity(Relation rel, Relation r1) {
-            if (r1.equals(source)) {
+        public Delta visitDomainIdentity(DomainIdentity domId) {
+            if (domId.getOperand().equals(source)) {
                 EventGraph maySet = new EventGraph();
                 may.getDomain().forEach(e -> maySet.add(e, e));
-                EventGraph mustSet = enableMustSets ? new EventGraph() : EventGraph.empty();
-                if (enableMustSets) {
-                    must.getDomain().forEach(e -> mustSet.add(e, e));
-                }
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e1, e2)) {
+                        mustSet.add(e1, e1);
+                    }
+                });
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
         }
 
         @Override
-        public Delta visitRangeIdentity(Relation rel, Relation r1) {
-            if (r1.equals(source)) {
+        public Delta visitRangeIdentity(RangeIdentity rangeId) {
+            if (rangeId.getOperand().equals(source)) {
                 EventGraph maySet = new EventGraph();
                 may.getRange().forEach(e -> maySet.add(e, e));
-                EventGraph mustSet = enableMustSets ? new EventGraph() : EventGraph.empty();
-                if (enableMustSets) {
-                    must.getRange().forEach(e -> mustSet.add(e, e));
-                }
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e2, e1)) {
+                        mustSet.add(e2, e2);
+                    }
+                });
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
         }
 
         @Override
-        public Delta visitInverse(Relation rel, Relation r1) {
-            if (r1.equals(source)) {
-                return new Delta(may.inverse(), enableMustSets ? must.inverse() : EventGraph.empty());
+        public Delta visitInverse(Inverse inv) {
+            if (inv.getOperand().equals(source)) {
+                return new Delta(may.inverse(), must.inverse());
             }
             return EMPTY;
         }
 
         @Override
-        public Delta visitTransitiveClosure(Relation rel, Relation r1) {
-            if (r1.equals(source)) {
+        public Delta visitTransitiveClosure(TransitiveClosure trans) {
+            final Relation rel = trans.getDefinedRelation();
+            if (trans.getOperand().equals(source)) {
                 EventGraph maySet = computeTransitiveClosure(knowledgeMap.get(rel).may, may, true);
-                if (enableMustSets) {
-                    EventGraph mustSet = computeTransitiveClosure(knowledgeMap.get(rel).must, must, false);
-                    return new Delta(maySet, mustSet);
-                }
-                return new Delta(maySet, EventGraph.empty());
+                EventGraph mustSet = computeTransitiveClosure(knowledgeMap.get(rel).must, must, false);
+                return new Delta(maySet, mustSet);
             }
             return EMPTY;
         }
@@ -1227,22 +1265,24 @@ public class RelationAnalysis {
         EventGraph enabled;
 
         @Override
-        public Map<Relation, ExtendedDelta> visitDefinition(Relation rel, List<? extends Relation> dependencies) {
+        public Map<Relation, ExtendedDelta> visitDefinition(Definition def) {
             return Map.of();
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitUnion(Relation rel, Relation... operands) {
+        public Map<Relation, ExtendedDelta> visitUnion(Union union) {
+            final Relation rel = union.getDefinedRelation();
+            final List<Relation> operands = union.getOperands();
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(rel)) {
                 for (Relation o : operands) {
                     map.put(o, new ExtendedDelta(disabled, EventGraph.empty()));
                 }
             }
-            if (List.of(operands).contains(origin)) {
+            if (operands.contains(origin)) {
                 EventGraph d = new EventGraph();
                 disabled.apply((e1, e2) -> {
-                    if (Arrays.stream(operands).noneMatch(o -> knowledgeMap.get(o).getMaySet().contains(e1, e2))) {
+                    if (operands.stream().noneMatch(o -> knowledgeMap.get(o).getMaySet().contains(e1, e2))) {
                         d.add(e1, e2);
                     }
                 });
@@ -1252,11 +1292,13 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitIntersection(Relation rel, Relation... operands) {
+        public Map<Relation, ExtendedDelta> visitIntersection(Intersection inter) {
+            final Relation rel = inter.getDefinedRelation();
+            final List<Relation> operands = inter.getOperands();
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(rel)) {
                 for (Relation o : operands) {
-                    EventGraph d = Arrays.stream(operands)
+                    EventGraph d = operands.stream()
                             .map(r -> o.equals(r) ? disabled : knowledgeMap.get(r).must)
                             .sorted(Comparator.comparingInt(EventGraph::size))
                             .reduce(EventGraph::intersection)
@@ -1264,8 +1306,8 @@ public class RelationAnalysis {
                     map.putIfAbsent(o, new ExtendedDelta(d, enabled));
                 }
             }
-            if (List.of(operands).contains(origin)) {
-                EventGraph e = Arrays.stream(operands)
+            if (operands.contains(origin)) {
+                EventGraph e = operands.stream()
                         .map(r -> origin.equals(r) ? enabled : knowledgeMap.get(r).must)
                         .sorted(Comparator.comparingInt(EventGraph::size))
                         .reduce(EventGraph::intersection)
@@ -1276,7 +1318,10 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitDifference(Relation r0, Relation r1, Relation r2) {
+        public Map<Relation, ExtendedDelta> visitDifference(Difference diff) {
+            final Relation r0 = diff.getDefinedRelation();
+            final Relation r1 = diff.getMinuend();
+            final Relation r2 = diff.getSubtrahend();
             Map<Relation, ExtendedDelta> map = new HashMap<>();
             if (origin.equals(r0)) {
                 map.put(r1, new ExtendedDelta(difference(disabled, knowledgeMap.get(r2).may), enabled));
@@ -1294,7 +1339,10 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitComposition(Relation r0, Relation r1, Relation r2) {
+        public Map<Relation, ExtendedDelta> visitComposition(Composition comp) {
+            final Relation r0 = comp.getDefinedRelation();
+            final Relation r1 = comp.getLeftOperand();
+            final Relation r2 = comp.getRightOperand();
             EventGraph d0 = new EventGraph();
             EventGraph e0 = new EventGraph();
             EventGraph d1 = new EventGraph();
@@ -1415,7 +1463,9 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitInverse(Relation r0, Relation r1) {
+        public Map<Relation, ExtendedDelta> visitInverse(Inverse inv) {
+            final Relation r0 = inv.getDefinedRelation();
+            final Relation r1 = inv.getOperand();
             if (origin.equals(r0)) {
                 return Map.of(r1, new ExtendedDelta(disabled.inverse(), EventGraph.empty()));
             }
@@ -1426,7 +1476,9 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitTransitiveClosure(Relation r0, Relation r1) {
+        public Map<Relation, ExtendedDelta> visitTransitiveClosure(TransitiveClosure trans) {
+            final Relation r0 = trans.getDefinedRelation();
+            final Relation r1 = trans.getOperand();
             EventGraph d0 = new EventGraph();
             EventGraph e0 = new EventGraph();
             EventGraph d1 = new EventGraph();
@@ -1515,7 +1567,7 @@ public class RelationAnalysis {
         }
 
         @Override
-        public Map<Relation, ExtendedDelta> visitCoherence(Relation co) {
+        public Map<Relation, ExtendedDelta> visitCoherence(Coherence coDef) {
             if (disabled.isEmpty()) {
                 return Map.of();
             }
@@ -1526,7 +1578,7 @@ public class RelationAnalysis {
                     e.add(y, x);
                 }
             });
-            return Map.of(co, new ExtendedDelta(EventGraph.empty(), e));
+            return Map.of(coDef.getDefinedRelation(), new ExtendedDelta(EventGraph.empty(), e));
         }
     }
 

@@ -1,26 +1,22 @@
 package com.dat3m.dartagnan.solver.caat.reasoning;
 
 import com.dat3m.dartagnan.solver.caat.predicates.sets.Element;
-import com.dat3m.dartagnan.utils.logic.AbstractDataLiteral;
+import com.dat3m.dartagnan.solver.caat.predicates.sets.SetPredicate;
 
-public class ElementLiteral extends AbstractDataLiteral<CAATLiteral, Element> implements CAATLiteral {
+public final class ElementLiteral extends CAATLiteralBase<SetPredicate, Element> {
 
-    public Element getElement() {
-        return data;
-    }
-
-    public ElementLiteral(String name, Element ele, boolean isNegative) {
-        super(name, ele, isNegative);
+    public ElementLiteral(SetPredicate set, Element element, boolean isPositive) {
+        super(set, element, isPositive);
     }
 
     @Override
     public ElementLiteral negated() {
-        return new ElementLiteral(name, data, !isNegative);
+        return new ElementLiteral(predicate, data, !isPositive);
     }
 
     @Override
     public String toString() {
-        return toStringBase() + "(" + data + ")";
+        return getName() + "(" + data + ")";
     }
 
 }

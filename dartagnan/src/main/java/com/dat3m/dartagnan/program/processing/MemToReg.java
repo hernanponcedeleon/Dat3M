@@ -2,32 +2,23 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.lang.Alloc;
-import com.dat3m.dartagnan.program.event.visitors.EventVisitor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /*
  * Replaces memory accesses that involve addresses that are only used by one thread.
@@ -106,11 +97,11 @@ public class MemToReg implements FunctionProcessor {
             if (event instanceof Load load) {
                 final Register reg = load.getResultRegister();
                 assert load.getUsers().isEmpty();
-                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(registers.get(access.offset), reg.getType())));
+                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(registers.get((int)access.offset), reg.getType())));
                 loadCount++;
             }
             if (event instanceof Store store) {
-                final Register reg = registers.get(access.offset);
+                final Register reg = registers.get((int)access.offset);
                 assert store.getUsers().isEmpty();
                 store.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(store.getMemValue(), reg.getType())));
                 storeCount++;
@@ -129,7 +120,7 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private List<Type> getPrimitiveReplacementTypes(Alloc allocation) {
-        if (!(allocation.getArraySize() instanceof IValue sizeExpression)) {
+        if (!(allocation.getArraySize() instanceof IntLiteral sizeExpression)) {
             return null;
         }
         final int size = sizeExpression.getValueAsInt();
@@ -151,14 +142,14 @@ public class MemToReg implements FunctionProcessor {
     }
 
     // Invariant: base != null
-    private record AddressOffset(RegWriter base, int offset) {
-        private AddressOffset increase(int o) {
+    private record AddressOffset(RegWriter base, long offset) {
+        private AddressOffset increase(long o) {
             return o == 0 ? this : new AddressOffset(base, offset + o);
         }
     }
 
     // Invariant: register != null
-    private record RegisterOffset(Register register, int offset) {}
+    private record RegisterOffset(Register register, long offset) {}
 
     // Processes events in program order.
     // Returns a label, if it is program-ordered before the current event and its symbolic state was updated.
@@ -336,15 +327,15 @@ public class MemToReg implements FunctionProcessor {
         }
 
         private RegisterOffset matchGEP(Expression expression) {
-            int sum = 0;
+            long sum = 0;
             while (!(expression instanceof Register register)) {
-                if (!(expression instanceof IExprBin bin) ||
-                        bin.getOp() != IOpBin.ADD ||
-                        !(bin.getRHS() instanceof IValue offset)) {
+                if (!(expression instanceof IntBinaryExpr bin) ||
+                        bin.getKind() != IntBinaryOp.ADD ||
+                        !(bin.getRight() instanceof IntLiteral offset)) {
                     return null;
                 }
-                sum += offset.getValueAsInt();
-                expression = bin.getLHS();
+                sum += offset.getValueAsLong();
+                expression = bin.getLeft();
             }
             return new RegisterOffset(register, sum);
         }

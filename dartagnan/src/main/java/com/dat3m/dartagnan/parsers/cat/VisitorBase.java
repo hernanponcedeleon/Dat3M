@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.parsers.CatParser.*;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
@@ -19,7 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.program.event.Tag.VISIBLE;
-import static com.dat3m.dartagnan.wmm.relation.RelationNameRepository.ID;
+import static com.dat3m.dartagnan.wmm.RelationNameRepository.ID;
 
 class VisitorBase extends CatBaseVisitor<Object> {
 
@@ -32,8 +33,6 @@ class VisitorBase extends CatBaseVisitor<Object> {
     private final Map<String, Integer> nameOccurrenceCounter = new HashMap<>();
     // Used to handle recursive definitions properly
     private Relation relationToBeDefined;
-    // Used as optimization to avoid creating multiple relations with (structurally) identical definitions.
-    private final Map<String, Relation> termMap = new HashMap<>();
 
     VisitorBase() {
         this.wmm = new Wmm();
@@ -143,10 +142,15 @@ class VisitorBase extends CatBaseVisitor<Object> {
     }
 
     @Override
+    public Object visitExprNew(ExprNewContext ctx) {
+        return addDefinition(new Free(wmm.newRelation()));
+    }
+
+    @Override
     public Object visitExprBasic(ExprBasicContext ctx) {
         String name = ctx.n.getText();
         Object predicate = namespace.computeIfAbsent(name,
-                k -> wmm.containsRelation(k) ? wmm.getRelation(k) : Filter.byTag(k));
+                k -> RelationNameRepository.contains(name) ? wmm.getOrCreatePredefinedRelation(k) : Filter.byTag(k));
         return predicate;
     }
 
@@ -210,60 +214,52 @@ class VisitorBase extends CatBaseVisitor<Object> {
 
     @Override
     public Relation visitExprInverse(ExprInverseContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new Inverse(r0, r1));
     }
 
     @Override
     public Relation visitExprTransitive(ExprTransitiveContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new TransitiveClosure(r0, r1));
     }
 
     @Override
     public Relation visitExprTransRef(ExprTransRefContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
-        Relation r1 = wmm.newRelation();
-        Relation r2 = wmm.getRelation(ID);
-        Relation r3 = parseAsRelation(c.e);
-        return addDefinition(new TransitiveClosure(r0, addDefinition(new Union(r1, r2, r3))));
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
+        Relation r1 = parseAsRelation(c.e);
+        Relation transClosure = addDefinition(new TransitiveClosure(wmm.newRelation(), r1));
+        return addDefinition(new Union(r0, transClosure, wmm.getOrCreatePredefinedRelation(ID)));
     }
 
     @Override
     public Relation visitExprDomainIdentity(ExprDomainIdentityContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new DomainIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprRangeIdentity(ExprRangeIdentityContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
         return addDefinition(new RangeIdentity(r0, r1));
     }
 
     @Override
     public Relation visitExprOptional(ExprOptionalContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Relation r1 = parseAsRelation(c.e);
-        return addDefinition(new Union(r0, wmm.getRelation(ID), r1));
+        return addDefinition(new Union(r0, r1, wmm.getOrCreatePredefinedRelation(ID)));
     }
 
     @Override
     public Relation visitExprIdentity(ExprIdentityContext c) {
-        checkNoRecursion(c);
-        Relation r0 = wmm.newRelation();
+        Relation r0 = getAndResetRelationToBeDefined().orElseGet(wmm::newRelation);
         Filter s1 = parseAsFilter(c.e);
-        return addDefinition(new Identity(r0, s1));
+        return addDefinition(new SetIdentity(r0, s1));
     }
 
     @Override
@@ -286,19 +282,7 @@ class VisitorBase extends CatBaseVisitor<Object> {
     // ============================ Utility ============================
 
     private Relation addDefinition(Definition definition) {
-        Relation definedRelation = definition.getDefinedRelation();
-        String term = definition.getTerm();
-        Relation mappedRelation = termMap.get(definition.getTerm());
-        if (mappedRelation == null) {
-            // This is a new definition.
-            termMap.put(term, definedRelation);
-            return wmm.addDefinition(definition);
-        } else {
-            // We created an already existing definition, so we do not add this definition
-            // to the Wmm and instead delete the relation it is defining (redundantly)
-            wmm.deleteRelation(definedRelation);
-            return mappedRelation;
-        }
+        return wmm.addDefinition(definition);
     }
 
     private void checkNoRecursion(ExpressionContext c) {

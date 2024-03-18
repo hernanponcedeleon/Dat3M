@@ -1,19 +1,17 @@
 package com.dat3m.dartagnan.program.event.lang;
 
-import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.processing.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.AbstractEvent;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.BooleanFormula;
 
 import java.math.BigInteger;
 import java.util.HashSet;
@@ -31,14 +29,17 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private Type allocationType;
     private Expression arraySize;
     private boolean isHeapAllocation;
+    private boolean doesZeroOutMemory;
 
-    public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation) {
+    public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation,
+                 boolean doesZeroOutMemory) {
         Preconditions.checkArgument(resultRegister.getType() == TypeFactory.getInstance().getArchType());
         Preconditions.checkArgument(arraySize.getType() instanceof IntegerType);
         this.resultRegister = resultRegister;
         this.arraySize = arraySize;
         this.allocationType = allocType;
         this.isHeapAllocation = isHeapAllocation;
+        this.doesZeroOutMemory = doesZeroOutMemory;
     }
 
     protected Alloc(Alloc other) {
@@ -47,6 +48,7 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
         this.allocationType = other.allocationType;
         this.arraySize = other.arraySize;
         this.isHeapAllocation = other.isHeapAllocation;
+        this.doesZeroOutMemory = other.doesZeroOutMemory;
     }
 
     @Override
@@ -57,21 +59,23 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public Type getAllocationType() { return allocationType; }
     public Expression getArraySize() { return arraySize; }
     public boolean isHeapAllocation() { return isHeapAllocation; }
+    public boolean doesZeroOutMemory() { return doesZeroOutMemory; }
 
-    public boolean isSimpleAllocation() { return (arraySize instanceof IValue size && size.isOne()); }
+    public boolean isSimpleAllocation() { return (arraySize instanceof IntLiteral size && size.isOne()); }
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
+
 
     public Expression getAllocationSize() {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         final TypeFactory types = TypeFactory.getInstance();
         final Expression allocationSize;
-        if (arraySize instanceof IValue value) {
+        if (arraySize instanceof IntLiteral value) {
             allocationSize = expressions.makeValue(
                     BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)).multiply(value.getValue()),
                     types.getArchType()
             );
         } else {
-            allocationSize = expressions.makeMUL(
+            allocationSize = expressions.makeMul(
                     expressions.makeValue(
                             BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)),
                             (IntegerType) arraySize.getType()),
@@ -99,9 +103,4 @@ public class Alloc extends AbstractEvent implements RegReader, RegWriter {
 
     @Override
     public Alloc getCopy() { return new Alloc(this); }
-
-    @Override
-    public BooleanFormula encodeExec(EncodingContext context) {
-        throw new UnsupportedOperationException("Cannot encode alloc events.");
-    }
 }

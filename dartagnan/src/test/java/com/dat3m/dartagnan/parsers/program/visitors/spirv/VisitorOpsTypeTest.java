@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
@@ -303,8 +303,8 @@ public class VisitorOpsTypeTest {
     }
 
     private void addIntConstant(String id, int value) {
-        IntegerType type = FACTORY.getIntegerType();
-        IValue iValue = new IValue(new BigInteger(Integer.toString(value)), type);
+        IntegerType type = FACTORY.getIntegerType(64);
+        IntLiteral iValue = new IntLiteral(type, new BigInteger(Integer.toString(value)));
         builder.addExpression(id, iValue);
     }
 }

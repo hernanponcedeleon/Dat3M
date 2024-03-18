@@ -1,44 +1,42 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.exception.MalformedProgramException;
-import com.dat3m.dartagnan.expression.*;
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.Event;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.UnsignedInteger;
-import com.google.common.primitives.UnsignedLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
-
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 
+import java.math.BigInteger;
+import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.dat3m.dartagnan.configuration.OptionNames.REMOVE_ASSERTION_OF_TYPE;
 
 /**
  * Manages a collection of all functions that the verifier can define itself,
@@ -65,9 +63,6 @@ public class Intrinsics {
 
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
-
-    // TODO: This id should be part of Program
-    private int constantId;
 
     private Intrinsics() {
     }
@@ -182,7 +177,7 @@ public class Intrinsics {
         VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineSpinStart),
         VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineSpinEnd),
         VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
-        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineUserAssert),
+        VERIFIER_ASSERT("__VERIFIER_assert", false, false, true, true, Intrinsics::inlineUserAssert),
         VERIFIER_NONDET(List.of("__VERIFIER_nondet_bool",
                 "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -372,7 +367,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue()));
+        return List.of(EventFactory.newAbortIf(expressions.makeTrue()));
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {
@@ -511,12 +506,11 @@ public class Intrinsics {
     private List<Event> inlinePthreadCondTimedwait(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_cond_timedwait
         final Register errorRegister = getResultRegisterAndCheckArguments(3, call);
+        final IntegerType errorType = (IntegerType) errorRegister.getType();
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
         //final Expression timespec = call.getArguments().get(2);
-        final var errorValue = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
-        errorValue.setMin(BigInteger.ZERO);
-        call.getFunction().getProgram().addConstant(errorValue);
+        final var errorValue = call.getFunction().getProgram().newConstant(errorType);
         return List.of(
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
@@ -524,7 +518,8 @@ public class Intrinsics {
                 // Re-lock.
                 EventFactory.Pthread.newLock(lockAddress.toString(), lockAddress),
                 //TODO proper error code: ETIMEDOUT
-                EventFactory.newLocal(errorRegister, errorValue)
+                EventFactory.newLocal(errorRegister, errorValue),
+                EventFactory.newAssume(expressions.makeGTE(errorRegister, expressions.makeZero(errorType), true))
         );
     }
 
@@ -554,9 +549,9 @@ public class Intrinsics {
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
-                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
+                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
                 EventFactory.newStore(keyAddress, storageAddressRegister),
-                EventFactory.newStore(expressions.makeADD(storageAddressRegister, destructorOffset), destructor),
+                EventFactory.newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -579,7 +574,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeADD(key, offset))
+                EventFactory.newLoad(result, expressions.makeAdd(key, offset))
         );
     }
 
@@ -591,7 +586,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newStore(expressions.makeADD(key, offset), value),
+                EventFactory.newStore(expressions.makeAdd(key, offset), value),
                 assignSuccess(errorRegister)
         );
     }
@@ -733,8 +728,7 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Expression lockAddress = call.getArguments().get(0);
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
-        final var error = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
-        call.getFunction().getProgram().addConstant(error);
+        final Expression error = call.getFunction().getProgram().newConstant(errorRegister.getType());
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         return List.of(
                 // Write-lock only if unlocked.
@@ -762,8 +756,7 @@ public class Intrinsics {
         final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final var expected = new INonDet(constantId++, getRwlockDatatype(), true);
-        call.getFunction().getProgram().addConstant(expected);
+        final Expression expected = call.getFunction().getProgram().newConstant(getRwlockDatatype());
         return List.of(
                 // Expect any other value than write-locked.
                 EventFactory.newAssume(expressions.makeNEQ(expected, getRwlockWriteLockedValue())),
@@ -783,10 +776,8 @@ public class Intrinsics {
         final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final var expected = new INonDet(constantId++, getRwlockDatatype(), true);
-        call.getFunction().getProgram().addConstant(expected);
-        final var error = new INonDet(constantId++, (IntegerType) errorRegister.getType(), true);
-        call.getFunction().getProgram().addConstant(error);
+        final Expression expected = call.getFunction().getProgram().newConstant(getRwlockDatatype());
+        final Expression error = call.getFunction().getProgram().newConstant(errorRegister.getType());
         final Expression success = expressions.makeGeneralZero(errorRegister.getType());
         return List.of(
                 // Expect any other value than write-locked.
@@ -807,10 +798,10 @@ public class Intrinsics {
                 successRegister,
                 lockAddress,
                 expected,
-                expressions.makeConditional(
+                expressions.makeITE(
                         expressions.makeEQ(expected, getRwlockUnlockedValue()),
                         expressions.makeValue(BigInteger.TWO, getRwlockDatatype()),
-                        expressions.makeADD(expected, expressions.makeOne(getRwlockDatatype()))
+                        expressions.makeAdd(expected, expressions.makeOne(getRwlockDatatype()))
                 ),
                 Tag.C11.MO_ACQUIRE
         );
@@ -821,16 +812,15 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         final Register oldValueRegister = call.getFunction().newRegister(getRwlockDatatype());
         final Expression lockAddress = call.getArguments().get(0);
-        final var decrement = new INonDet(constantId++, getRwlockDatatype(), true);
-        call.getFunction().getProgram().addConstant(decrement);
+        final Expression decrement = call.getCalledFunction().getProgram().newConstant(getRwlockDatatype());
         final Expression one = expressions.makeOne(getRwlockDatatype());
         final Expression two = expressions.makeValue(BigInteger.TWO, getRwlockDatatype());
         final Expression lastReader = expressions.makeEQ(oldValueRegister, two);
-        final Expression properDecrement = expressions.makeConditional(lastReader, two, one);
+        final Expression properDecrement = expressions.makeITE(lastReader, two, one);
         //TODO does not recognize whether the calling thread is allowed to unlock
         return List.of(
                 // decreases the lock value by 1, if not the last reader, or else 2.
-                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, decrement, IOpBin.SUB, Tag.C11.MO_RELEASE),
+                EventFactory.Llvm.newRMW(oldValueRegister, lockAddress, decrement, IntBinaryOp.SUB, Tag.C11.MO_RELEASE),
                 EventFactory.newAssume(expressions.makeEQ(decrement, properDecrement)),
                 assignSuccess(errorRegister)
         );
@@ -840,13 +830,13 @@ public class Intrinsics {
         return types.getArchType();
     }
 
-    private IValue getRwlockUnlockedValue() {
+    private IntLiteral getRwlockUnlockedValue() {
         //FIXME this assumes that the lock is initialized with pthread_rwlock_init,
         // but some programs may explicitly initialize it with other platform-dependent values.
         return expressions.makeZero(getRwlockDatatype());
     }
 
-    private IValue getRwlockWriteLockedValue() {
+    private IntLiteral getRwlockWriteLockedValue() {
         return expressions.makeOne(getRwlockDatatype());
     }
 
@@ -872,19 +862,21 @@ public class Intrinsics {
 
     private List<Event> inlineMalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
+        final Type allocType = types.getByteType();
         final Expression totalSize = call.getArguments().get(0);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                EventFactory.newAlloc(resultRegister, allocType, totalSize, true, false)
         );
     }
 
     private List<Event> inlineCalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Type allocType = types.getByteType();
         final Expression elementCount = call.getArguments().get(0);
         final Expression elementSize = call.getArguments().get(1);
-        final Expression totalSize = expressions.makeMUL(elementCount, elementSize);
+        final Expression totalSize = expressions.makeMul(elementCount, elementSize);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                EventFactory.newAlloc(resultRegister, allocType, totalSize, true, true)
         );
     }
 
@@ -899,8 +891,22 @@ public class Intrinsics {
         return List.of(assertion, abort);
     }
 
+    private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
+        if(notToInline.contains(skip)) {
+            return List.of();
+        }
+        assert call.getArguments().size() == 1;
+        final Expression condition = call.getArguments().get(0);
+        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        return List.of(assertion);
+    }
+
     private List<Event> inlineUserAssert(FunctionCall call) {
-        return inlineAssert(call, AssertionType.USER, "user assertion");
+        if (call.getCalledFunction().getIntrinsicInfo() == Info.VERIFIER_ASSERT) {
+            return inlineVerifierAssert(call, AssertionType.USER, "user assertion");
+        } else {
+            return inlineAssert(call, AssertionType.USER, "user assertion");
+        }
     }
 
     private List<Event> inlineIntegerOverflow(FunctionCall call) {
@@ -967,7 +973,7 @@ public class Intrinsics {
                 "Non-integer %s type for \"llvm.ctlz\".", type);
         checkArgument(input.getType().equals(type),
                 "Return type %s of \"llvm.ctlz\" must match argument type %s.", type, input.getType());
-        final Expression resultExpression = expressions.makeCTLZ(input, (IntegerType) type);
+        final Expression resultExpression = expressions.makeCTLZ(input);
         final Event assignment = EventFactory.newLocal(resultReg, resultExpression);
         return List.of(assignment);
     }
@@ -978,7 +984,7 @@ public class Intrinsics {
         // TODO: Handle the second parameter as well
         final Register resultReg = call.getResultRegister();
         final IntegerType type = (IntegerType) resultReg.getType();
-        final Expression increment = expressions.makeADD(resultReg, expressions.makeOne(type));
+        final Expression increment = expressions.makeAdd(resultReg, expressions.makeOne(type));
 
         final List<Event> replacement = new ArrayList<>();
         replacement.add(EventFactory.newLocal(resultReg, expressions.makeZero(type)));
@@ -988,10 +994,10 @@ public class Intrinsics {
             final Expression testMask = expressions.makeValue(BigInteger.ONE.shiftLeft(i), type);
             //TODO: dedicated test-bit expressions might yield better results, and they are supported by the SMT backend
             // in the form of extract operations.
-            final Expression testBit = expressions.makeEQ(expressions.makeAND(input, testMask), testMask);
+            final Expression testBit = expressions.makeEQ(expressions.makeIntAnd(input, testMask), testMask);
 
             replacement.add(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(testBit, increment, resultReg))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(testBit, increment, resultReg))
             );
         }
 
@@ -1007,7 +1013,7 @@ public class Intrinsics {
         final boolean signed = name.startsWith("llvm.smax.") || name.startsWith("llvm.smin.");
         final boolean isMax = name.startsWith("llvm.smax.") || name.startsWith("llvm.umax.");
         final Expression isLess = expressions.makeLT(left, right, signed);
-        final Expression result = expressions.makeConditional(isLess, isMax ? right : left, isMax ? left : right);
+        final Expression result = expressions.makeITE(isLess, isMax ? right : left, isMax ? left : right);
         return List.of(EventFactory.newLocal(call.getResultRegister(), result));
     }
 
@@ -1040,18 +1046,18 @@ public class Intrinsics {
             final Expression leftIsNegative = expressions.makeLT(x, expressions.makeZero(type), true);
             final Expression noOverflow = expressions.makeEQ(
                     leftIsNegative,
-                    expressions.makeLT(y, expressions.makeSUB(x, resultReg), true)
+                    expressions.makeLT(y, expressions.makeSub(x, resultReg), true)
             );
 
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeSUB(x, y), resultReg))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(leftIsNegative, min, max)),
+                    EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeSub(x, y), resultReg))
             );
         } else {
             final Expression noUnderflow = expressions.makeGT(x, y, false);
             final Expression zero = expressions.makeZero(type);
             return List.of(
-                    EventFactory.newLocal(resultReg, expressions.makeConditional(noUnderflow, expressions.makeSUB(x, y), zero))
+                    EventFactory.newLocal(resultReg, expressions.makeITE(noUnderflow, expressions.makeSub(x, y), zero))
             );
         }
     }
@@ -1083,28 +1089,28 @@ public class Intrinsics {
                 expressions.makeFalse();
         final Expression noOverflow = expressions.makeEQ(
                 leftIsNegative,
-                expressions.makeGT(y, expressions.makeSUB(resultReg, x), isSigned)
+                expressions.makeGT(y, expressions.makeSub(resultReg, x), isSigned)
         );
 
         return List.of(
-                EventFactory.newLocal(resultReg, expressions.makeConditional(leftIsNegative, min, max)),
-                EventFactory.newLocal(resultReg, expressions.makeConditional(noOverflow, expressions.makeADD(x, y), resultReg))
+                EventFactory.newLocal(resultReg, expressions.makeITE(leftIsNegative, min, max)),
+                EventFactory.newLocal(resultReg, expressions.makeITE(noOverflow, expressions.makeAdd(x, y), resultReg))
         );
     }
 
     private List<Event> inlineLLVMSAddWithOverflow(ValueFunctionCall call) {
-        return inlineLLVMSOpWithOverflow(call, IOpBin.ADD);
+        return inlineLLVMSOpWithOverflow(call, IntBinaryOp.ADD);
     }
 
     private List<Event> inlineLLVMSSubWithOverflow(ValueFunctionCall call) {
-        return inlineLLVMSOpWithOverflow(call, IOpBin.SUB);
+        return inlineLLVMSOpWithOverflow(call, IntBinaryOp.SUB);
     }
 
     private List<Event> inlineLLVMSMulWithOverflow(ValueFunctionCall call) {
-        return inlineLLVMSOpWithOverflow(call, IOpBin.MUL);
+        return inlineLLVMSOpWithOverflow(call, IntBinaryOp.MUL);
     }
 
-    private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IOpBin op) {
+    private List<Event> inlineLLVMSOpWithOverflow(ValueFunctionCall call, IntBinaryOp op) {
         final Register resultReg = call.getResultRegister();
         final List<Expression> arguments = call.getArguments();
         final Expression x = arguments.get(0);
@@ -1118,7 +1124,7 @@ public class Intrinsics {
 
         // Check for integer encoding
         final IntegerType iType = (IntegerType) x.getType();
-        final Expression result = expressions.makeBinary(x, op, y);
+        final Expression result = expressions.makeIntBinary(x, op, y);
         final Expression rangeCheck = checkIfValueInRangeOfType(result, iType, true);
 
         // Check for BV encoding. From LLVM's language manual:
@@ -1130,7 +1136,7 @@ public class Intrinsics {
         final Expression xExt = expressions.makeCast(x, types.getIntegerType(width + 1), true);
         final Expression yExt = expressions.makeCast(y, types.getIntegerType(width + 1), true);
         final Expression resultExt = expressions.makeCast(result, types.getIntegerType(width + 1), true);
-        final Expression bvCheck = expressions.makeEQ(expressions.makeBinary(xExt, op, yExt), resultExt);
+        final Expression bvCheck = expressions.makeEQ(expressions.makeIntBinary(xExt, op, yExt), resultExt);
 
         final Expression flag = expressions.makeCast(
                 expressions.makeNot(expressions.makeAnd(bvCheck, rangeCheck)),
@@ -1164,53 +1170,53 @@ public class Intrinsics {
         final Expression p3 = args.size() > 3 ? args.get(3) : null;
 
         final String mo;
-        final IOpBin op;
+        final IntBinaryOp op;
         final List<Event> result = new ArrayList<>();
         switch (call.getCalledFunction().getName()) {
             case "__LKMM_LOAD" -> {
-                checkArgument(p1 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p1).getValueAsInt());
+                checkArgument(p1 instanceof IntLiteral, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IntLiteral) p1).getValueAsInt());
                 result.add(EventFactory.Linux.newLKMMLoad(reg, p0, mo));
             }
             case "__LKMM_STORE" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
+                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
                 result.add(EventFactory.Linux.newLKMMStore(p0, p1, mo.equals(Tag.Linux.MO_MB) ? Tag.Linux.MO_ONCE : mo));
                 if (mo.equals(Tag.Linux.MO_MB)) {
                     result.add(EventFactory.Linux.newMemoryBarrier());
                 }
             }
             case "__LKMM_XCHG" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
+                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWExchange(p0, reg, p1, mo));
             }
             case "__LKMM_CMPXCHG" -> {
-                checkArgument(p3 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p3).getValueAsInt());
+                checkArgument(p3 instanceof IntLiteral, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IntLiteral) p3).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWCompareExchange(p0, reg, p1, p2, mo));
             }
             case "__LKMM_ATOMIC_FETCH_OP" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
-                checkArgument(p3 instanceof IConst, "No support for variable operator.");
-                op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
+                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
+                checkArgument(p3 instanceof IntLiteral, "No support for variable operator.");
+                op = IntBinaryOp.intToOp(((IntLiteral) p3).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWFetchOp(p0, reg, p1, op, mo));
             }
             case "__LKMM_ATOMIC_OP_RETURN" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable memory order.");
-                mo = Tag.Linux.intToMo(((IConst) p2).getValueAsInt());
-                checkArgument(p3 instanceof IConst, "No support for variable operator.");
-                op = IOpBin.intToOp(((IConst) p3).getValueAsInt());
+                checkArgument(p2 instanceof IntLiteral, "No support for variable memory order.");
+                mo = Tag.Linux.intToMo(((IntLiteral) p2).getValueAsInt());
+                checkArgument(p3 instanceof IntLiteral, "No support for variable operator.");
+                op = IntBinaryOp.intToOp(((IntLiteral) p3).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWOpReturn(p0, reg, p1, op, mo));
             }
             case "__LKMM_ATOMIC_OP" -> {
-                checkArgument(p2 instanceof IConst, "No support for variable operator.");
-                op = IOpBin.intToOp(((IConst) p2).getValueAsInt());
+                checkArgument(p2 instanceof IntLiteral, "No support for variable operator.");
+                op = IntBinaryOp.intToOp(((IntLiteral) p2).getValueAsInt());
                 result.add(EventFactory.Linux.newRMWOp(p0, p1, op));
             }
             case "__LKMM_FENCE" -> {
-                String fence = Tag.Linux.intToMo(((IConst) p0).getValueAsInt());
+                String fence = Tag.Linux.intToMo(((IntLiteral) p0).getValueAsInt());
                 result.add(EventFactory.Linux.newLKMMFence(fence));
             }
             case "__LKMM_SPIN_LOCK" -> {
@@ -1230,7 +1236,6 @@ public class Intrinsics {
     // Simple late intrinsics
 
     private void inlineLate(Program program) {
-        constantId = 0;
         program.getThreads().forEach(this::inlineLate);
     }
 
@@ -1251,6 +1256,7 @@ public class Intrinsics {
 
     private List<Event> inlineNonDet(FunctionCall call) {
         assert call.isDirectCall() && call instanceof ValueFunctionCall;
+        final Program program = call.getFunction().getProgram();
         Register register = ((ValueFunctionCall) call).getResultRegister();
         String name = call.getCalledFunction().getName();
         final String separator = "nondet_";
@@ -1260,9 +1266,8 @@ public class Intrinsics {
 
         // Nondeterministic booleans
         if (suffix.equals("bool")) {
-            BooleanType booleanType = types.getBooleanType();
-            var nondeterministicExpression = new BNonDet(booleanType);
-            Expression cast = expressions.makeCast(nondeterministicExpression, register.getType());
+            final Expression value = program.newConstant(types.getBooleanType());
+            final Expression cast = expressions.makeCast(value, register.getType());
             return List.of(EventFactory.newLocal(register, cast));
         }
 
@@ -1271,32 +1276,18 @@ public class Intrinsics {
             case "int", "short", "long", "char" -> true;
             default -> false;
         };
-        final BigInteger min = switch (suffix) {
-            case "long" -> BigInteger.valueOf(Long.MIN_VALUE);
-            case "int" -> BigInteger.valueOf(Integer.MIN_VALUE);
-            case "short" -> BigInteger.valueOf(Short.MIN_VALUE);
-            case "char" -> BigInteger.valueOf(Byte.MIN_VALUE);
-            default -> BigInteger.ZERO;
-        };
-        final BigInteger max = switch (suffix) {
-            case "int" -> BigInteger.valueOf(Integer.MAX_VALUE);
-            case "uint", "unsigned_int" -> UnsignedInteger.MAX_VALUE.bigIntegerValue();
-            case "short" -> BigInteger.valueOf(Short.MAX_VALUE);
-            case "ushort", "unsigned_short" -> BigInteger.valueOf(65535);
-            case "long" -> BigInteger.valueOf(Long.MAX_VALUE);
-            case "ulong" -> UnsignedLong.MAX_VALUE.bigIntegerValue();
-            case "char" -> BigInteger.valueOf(Byte.MAX_VALUE);
-            case "uchar" -> BigInteger.valueOf(255);
+
+        final int bits = switch (suffix) {
+            case "long", "ulong" -> 64;
+            case "int", "uint", "unsigned_int" -> 32;
+            case "short", "ushort", "unsigned_short" -> 16;
+            case "char", "uchar" -> 8;
             default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
         };
-        if (!(register.getType() instanceof IntegerType type)) {
-            throw new MalformedProgramException(String.format("Non-integer result register %s.", register));
-        }
-        var expression = new INonDet(constantId++, type, signed);
-        expression.setMin(min);
-        expression.setMax(max);
-        call.getFunction().getProgram().addConstant(expression);
-        return List.of(EventFactory.newLocal(register, expression));
+
+        final NonDetValue value = (NonDetValue) call.getFunction().getProgram().newConstant(types.getIntegerType(bits));
+        value.setIsSigned(signed);
+        return List.of(EventFactory.newLocal(register, expressions.makeCast(value, register.getType(), signed)));
     }
 
     //FIXME: The following support for memcpy, memcmp, and memset is unsound
@@ -1310,7 +1301,7 @@ public class Intrinsics {
         final Expression countExpr = call.getArguments().get(2);
         // final Expression isVolatile = call.getArguments.get(3) // LLVM's memcpy has an extra argument
 
-        if (!(countExpr instanceof IValue countValue)) {
+        if (!(countExpr instanceof IntLiteral countValue)) {
             final String error = "Cannot handle memcpy with dynamic count argument: " + call;
             throw new UnsupportedOperationException(error);
         }
@@ -1319,8 +1310,8 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeADD(src, offset);
-            final Expression destAddr = expressions.makeADD(dest, offset);
+            final Expression srcAddr = expressions.makeAdd(src, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 
@@ -1344,7 +1335,7 @@ public class Intrinsics {
         final Expression numExpr = call.getArguments().get(2);
         final Register returnReg = ((ValueFunctionCall)call).getResultRegister();
 
-        if (!(numExpr instanceof IValue numValue)) {
+        if (!(numExpr instanceof IntLiteral numValue)) {
             final String error = "Cannot handle memcmp with dynamic num argument: " + call;
             throw new UnsupportedOperationException(error);
         }
@@ -1354,8 +1345,8 @@ public class Intrinsics {
         final Label endCmp = EventFactory.newLabel("__memcmp_end");
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression src1Addr = expressions.makeADD(src1, offset);
-            final Expression src2Addr = expressions.makeADD(src2, offset);
+            final Expression src1Addr = expressions.makeAdd(src1, offset);
+            final Expression src2Addr = expressions.makeAdd(src2, offset);
             //FIXME: This method should properly load byte chunks and compare them (unsigned).
             // This requires proper mixed-size support though
             final Register regSrc1 = caller.getOrNewRegister("__memcmp_src1_" + i, returnReg.getType());
@@ -1364,7 +1355,7 @@ public class Intrinsics {
             replacement.addAll(List.of(
                     EventFactory.newLoad(regSrc1, src1Addr),
                     EventFactory.newLoad(regSrc2, src2Addr),
-                    EventFactory.newLocal(returnReg, expressions.makeSUB(src1, src2)),
+                    EventFactory.newLocal(returnReg, expressions.makeSub(src1, src2)),
                     EventFactory.newJump(expressions.makeNEQ(src1, src2), endCmp)
             ));
         }
@@ -1388,11 +1379,11 @@ public class Intrinsics {
             logger.warn("Treating call to \"__memset_chk\" as call to \"memset\": skipping bound checks.");
         }
 
-        if (!(countExpr instanceof IValue countValue)) {
+        if (!(countExpr instanceof IntLiteral countValue)) {
             final String error = "Cannot handle memset with dynamic count argument: " + call;
             throw new UnsupportedOperationException(error);
         }
-        if (!(fillExpr instanceof IValue fillValue && fillValue.isZero())) {
+        if (!(fillExpr instanceof IntLiteral fillValue && fillValue.isZero())) {
             //FIXME: We can soundly handle only 0 (and possibly -1) because the concatenation of
             // byte-sized 0's results in 0's of larger types. This makes the value robust against mixed-sized accesses.
             final String error = "Cannot handle memset with non-zero fill argument: " + call;
@@ -1406,7 +1397,7 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>( count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeADD(dest, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
 
             replacement.add(EventFactory.newStore(destAddr, zero));
         }

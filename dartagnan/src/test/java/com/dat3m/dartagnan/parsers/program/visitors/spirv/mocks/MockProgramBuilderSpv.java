@@ -1,11 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
@@ -59,19 +61,19 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     public Expression mockConstant(String id, String typeId, Object value) {
         Type type = getType(typeId);
         if (type instanceof BooleanType) {
-            BConst bConst = EXPR_FACTORY.makeValue((boolean) value);
+            Expression bConst = EXPR_FACTORY.makeValue((boolean) value);
             return addExpression(id, bConst);
         } else if (type instanceof IntegerType iType) {
-            IValue iValue = EXPR_FACTORY.makeValue((int) value, iType);
+            Expression iValue = EXPR_FACTORY.makeValue((int) value, iType);
             return addExpression(id, iValue);
         } else if (type instanceof ArrayType aType) {
             Type elementType = aType.getElementType();
             List<Expression> elements = mockConstantArrayElements(elementType, value);
-            Construction construction = EXPR_FACTORY.makeArray(elementType, elements, true);
+            Expression construction = EXPR_FACTORY.makeArray(elementType, elements, true);
             return addExpression(id, construction);
         } else if (type instanceof AggregateType) {
             List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
-            Construction construction = EXPR_FACTORY.makeConstruct(members);
+            Expression construction = EXPR_FACTORY.makeConstruct(members);
             return addExpression(id, construction);
         }
         throw new UnsupportedOperationException("Unsupported mock constant type " + typeId);

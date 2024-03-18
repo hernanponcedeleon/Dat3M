@@ -1,22 +1,28 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
-import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.Load;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
+import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.axiom.Acyclic;
+import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,13 +64,13 @@ public final class EncodingContext {
     @Option(name = MERGE_CF_VARS,
             description = "Merges control flow variables of events with identical control-flow behaviour.",
             secure = true)
-    private boolean shouldMergeCFVars = true;
+    //private boolean shouldMergeCFVars = true;
+    private boolean shouldMergeCFVars = false;
 
     @Option(name = USE_INTEGERS,
             description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
             secure = true)
-    boolean useIntegers = true;
-    //boolean useIntegers = false;
+    boolean useIntegers = false;
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
@@ -92,8 +98,8 @@ public final class EncodingContext {
         if (logger.isInfoEnabled()) {
             logger.info("Number of encoded edges for acyclicity: {}",
                     task.getMemoryModel().getAxioms().stream()
-                            .filter(Acyclic.class::isInstance)
-                            .mapToInt(a -> ((Acyclic) a).getEncodeGraphSize(analysisContext))
+                            .filter(Acyclicity.class::isInstance)
+                            .mapToInt(a -> ((Acyclicity) a).getEncodeGraphSize(analysisContext))
                             .sum());
         }
         return context;
@@ -131,38 +137,39 @@ public final class EncodingContext {
         return new ExpressionEncoder(this, event).encode(expression);
     }
 
-    public BooleanFormula encodeComparison(COpBin op, Formula lhs, Formula rhs) {
+    public BooleanFormula encodeComparison(IntCmpOp op, Formula lhs, Formula rhs) {
         if (lhs instanceof BooleanFormula l && rhs instanceof BooleanFormula r) {
+            BooleanFormulaManager bmgr = booleanFormulaManager;
             return switch (op) {
-                case EQ -> booleanFormulaManager.equivalence(l, r);
-                case NEQ -> booleanFormulaManager.not(booleanFormulaManager.equivalence(l, r));
+                case EQ -> bmgr.equivalence(l, r);
+                case NEQ -> bmgr.not(bmgr.equivalence(l, r));
                 default -> throw new UnsupportedOperationException(
-                        String.format("Encoding of COpBin operation %s not supported on boolean formulas.", op));
+                        String.format("Encoding of IntCmpOp operation %s not supported on boolean formulas.", op));
             };
         }
         if (lhs instanceof IntegerFormula l && rhs instanceof IntegerFormula r) {
-            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
+            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
             return switch (op) {
-                case EQ -> integerFormulaManager.equal(l, r);
-                case NEQ -> booleanFormulaManager.not(integerFormulaManager.equal(l, r));
-                case LT, ULT -> integerFormulaManager.lessThan(l, r);
-                case LTE, ULTE -> integerFormulaManager.lessOrEquals(l, r);
-                case GT, UGT -> integerFormulaManager.greaterThan(l, r);
-                case GTE, UGTE -> integerFormulaManager.greaterOrEquals(l, r);
+                case EQ -> imgr.equal(l, r);
+                case NEQ -> booleanFormulaManager.not(imgr.equal(l, r));
+                case LT, ULT -> imgr.lessThan(l, r);
+                case LTE, ULTE -> imgr.lessOrEquals(l, r);
+                case GT, UGT -> imgr.greaterThan(l, r);
+                case GTE, UGTE -> imgr.greaterOrEquals(l, r);
             };
         }
         if (lhs instanceof BitvectorFormula l && rhs instanceof BitvectorFormula r) {
-            BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
             return switch (op) {
-                case EQ -> bitvectorFormulaManager.equal(l, r);
-                case NEQ -> booleanFormulaManager.not(bitvectorFormulaManager.equal(l, r));
-                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(COpBin.LT));
-                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(COpBin.LTE));
-                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(COpBin.GT));
-                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(COpBin.GTE));
+                case EQ -> bvmgr.equal(l, r);
+                case NEQ -> booleanFormulaManager.not(bvmgr.equal(l, r));
+                case LT, ULT -> bvmgr.lessThan(l, r, op.equals(IntCmpOp.LT));
+                case LTE, ULTE -> bvmgr.lessOrEquals(l, r, op.equals(IntCmpOp.LTE));
+                case GT, UGT -> bvmgr.greaterThan(l, r, op.equals(IntCmpOp.GT));
+                case GTE, UGTE -> bvmgr.greaterOrEquals(l, r, op.equals(IntCmpOp.GTE));
             };
         }
-        throw new UnsupportedOperationException("Encoding not supported for COpBin: " + lhs + " " + op + " " + rhs);
+        throw new UnsupportedOperationException("Encoding not supported for IntCmpOp: " + lhs + " " + op + " " + rhs);
     }
 
     public BooleanFormula controlFlow(Event event) {
@@ -210,8 +217,11 @@ public final class EncodingContext {
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
-        //TODO match this with the actual type.
-        return formulaManager.getBitvectorFormulaManager().makeVariable(64, name);
+        //TODO match this with the actual type stored at the memory address
+        // (we do not know and guess the arch type right now)
+        TypeFactory types = TypeFactory.getInstance();
+        int archSize = types.getMemorySizeInBytes(types.getArchType()) * 8;
+        return formulaManager.getBitvectorFormulaManager().makeVariable(archSize, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
@@ -220,22 +230,20 @@ public final class EncodingContext {
         // for otherwise, we might get an under-constrained value for val(r) (e.g., its upper bits might be unconstrained,
         // if we truncate it to smaller size of the store value).
         if (left instanceof IntegerFormula l) {
-            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
-            return integerFormulaManager.equal(l, toInteger(right));
+            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
+            return imgr.equal(l, toInteger(right));
         }
         if (right instanceof IntegerFormula r) {
-            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
-            return integerFormulaManager.equal(toInteger(left), r);
+            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
+            return imgr.equal(toInteger(left), r);
         }
         if (left instanceof BitvectorFormula l) {
-            BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
-            int length = bitvectorFormulaManager.getLength(l);
-            return bitvectorFormulaManager.equal(l, toBitvector(right, length));
+            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
+            return bvmgr.equal(l, toBitvector(right, bvmgr.getLength(l)));
         }
         if (right instanceof BitvectorFormula r) {
-            BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
-            int length = bitvectorFormulaManager.getLength(r);
-            return bitvectorFormulaManager.equal(toBitvector(left, length), r);
+            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
+            return bvmgr.equal(toBitvector(left, bvmgr.getLength(r)), r);
         }
         if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
             return booleanFormulaManager.equivalence(l, r);
@@ -248,30 +256,29 @@ public final class EncodingContext {
             return f;
         }
         if (formula instanceof BooleanFormula f) {
-            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
-            IntegerFormula zero = integerFormulaManager.makeNumber(0);
-            IntegerFormula one = integerFormulaManager.makeNumber(1);
+            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
+            IntegerFormula zero = imgr.makeNumber(0);
+            IntegerFormula one = imgr.makeNumber(1);
             return booleanFormulaManager.ifThenElse(f, one, zero);
         }
         if (formula instanceof BitvectorFormula f) {
-            BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
-            return bitvectorFormulaManager.toIntegerFormula(f, false);
+            return formulaManager.getBitvectorFormulaManager().toIntegerFormula(f, false);
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toInteger(%s).", formula));
     }
 
     private BitvectorFormula toBitvector(Formula formula, int length) {
-        BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
+        BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
         if (formula instanceof BitvectorFormula f) {
-            int formulaLength = bitvectorFormulaManager.getLength(f);
+            int formulaLength = bvmgr.getLength(f);
             // FIXME: Signedness may be wrong here.
             return formulaLength >= length ?
-                    bitvectorFormulaManager.extract(f, length - 1, 0)
-                    : bitvectorFormulaManager.extend(f, length - formulaLength, false);
+                    bvmgr.extract(f, length - 1, 0)
+                    : bvmgr.extend(f, length - formulaLength, false);
         }
         if (formula instanceof BooleanFormula f) {
-            BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
-            BitvectorFormula one = bitvectorFormulaManager.makeBitvector(length, 1);
+            BitvectorFormula zero = bvmgr.makeBitvector(length, 0);
+            BitvectorFormula one = bvmgr.makeBitvector(length, 1);
             return booleanFormulaManager.ifThenElse(f, one, zero);
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toBitvector(%s,%s).", formula, length));
@@ -282,13 +289,12 @@ public final class EncodingContext {
             return booleanFormulaManager.not(f);
         }
         if (formula instanceof IntegerFormula f) {
-            IntegerFormulaManager integerFormulaManager = formulaManager.getIntegerFormulaManager();
-            return integerFormulaManager.equal(f, integerFormulaManager.makeNumber(0));
+            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
+            return imgr.equal(f, imgr.makeNumber(0));
         }
         if (formula instanceof BitvectorFormula f) {
-            BitvectorFormulaManager bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
-            int length = bitvectorFormulaManager.getLength(f);
-            return bitvectorFormulaManager.equal(f, bitvectorFormulaManager.makeBitvector(length, 0));
+            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
+            return bvmgr.equal(f, bvmgr.makeBitvector(bvmgr.getLength(f), 0));
         }
         throw new UnsupportedOperationException(String.format("Unknown type for equalZero(%s).", formula));
     }
@@ -355,11 +361,11 @@ public final class EncodingContext {
             return booleanFormulaManager.makeBoolean(!value.equals(BigInteger.ZERO));
         }
         if (type instanceof IntegerType integerType) {
-            if (useIntegers || integerType.isMathematical()) {
+            if (useIntegers) {
                 return formulaManager.getIntegerFormulaManager().makeNumber(value);
+            } else {
+                return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
             }
-            int bitWidth = integerType.getBitWidth();
-            return formulaManager.getBitvectorFormulaManager().makeBitvector(bitWidth, value);
         }
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
@@ -409,12 +415,12 @@ public final class EncodingContext {
             return booleanFormulaManager.makeVariable(name);
         }
         if (type instanceof IntegerType integerType) {
-            if (useIntegers || integerType.isMathematical()) {
+            if (useIntegers) {
                 return formulaManager.getIntegerFormulaManager().makeVariable(name);
+            } else {
+                return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
             }
-            int bitWidth = integerType.getBitWidth();
-            return formulaManager.getBitvectorFormulaManager().makeVariable(bitWidth, name);
         }
-        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
+        throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }
 }

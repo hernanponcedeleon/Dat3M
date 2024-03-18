@@ -19,7 +19,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 
 import java.io.File;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
@@ -47,7 +47,7 @@ public class BuildWitnessTest {
             WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res, "user assertion");
             config.inject(witnessBuilder);
             WitnessGraph graph = witnessBuilder.build();
-            File witnessFile = new File(getOutputDirectory() + "/witness.graphml");
+            File witnessFile = new File(getOrCreateOutputDirectory() + "/witness.graphml");
             // The file should not exist
             assertFalse(witnessFile.exists());
             // Write to file

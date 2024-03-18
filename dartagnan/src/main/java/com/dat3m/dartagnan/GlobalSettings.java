@@ -37,12 +37,26 @@ public class GlobalSettings {
 
     public static final CoreReasoner.SymmetricLearning REFINEMENT_SYMMETRIC_LEARNING = CoreReasoner.SymmetricLearning.FULL;
 
+    private static final boolean USE_TEST_PATH = isJUnitTest();
+
     // --------------------
 
-    public static void LogGlobalSettings() {
+    public static void logGlobalSettings() {
         // Refinement settings
-        logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: " + REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
-        logger.info("REFINEMENT_SYMMETRIC_LEARNING: " + REFINEMENT_SYMMETRIC_LEARNING.name());
+        logger.info("REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES: {}", REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES);
+        logger.info("REFINEMENT_SYMMETRIC_LEARNING: {}", REFINEMENT_SYMMETRIC_LEARNING.name());
+    }
+
+    public static String getHomeDirectory() {
+        if (USE_TEST_PATH) {
+            return "target";
+        }
+        String env = System.getenv("DAT3M_HOME");
+        if (env == null) {
+            logger.warn("Environment variable DAT3M_HOME not set. Default to empty path.");
+            return "";
+        }
+        return env;
     }
 
     public static String getOrCreateOutputDirectory() throws IOException {
@@ -52,12 +66,16 @@ public class GlobalSettings {
     }
 
     public static String getOutputDirectory() {
-        if (isJUnitTest()) {
+        if (USE_TEST_PATH) {
             return "target/output";
         }
         String env = System.getenv("DAT3M_OUTPUT");
         if (env != null) {
             return env;
+        }
+        String home = getHomeDirectory();
+        if (!home.isEmpty()) {
+            return home + "/output";
         }
         return "";
     }

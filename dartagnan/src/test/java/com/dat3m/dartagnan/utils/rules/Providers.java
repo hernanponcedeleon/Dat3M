@@ -12,6 +12,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.ShutdownNotifier;
 import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 
@@ -72,12 +73,12 @@ public class Providers {
 
     // =========================== Solving related providers ==============================
 
-    public static Provider<SolverContext> createSolverContext(Supplier<ShutdownNotifier> shutdownNotifierSupplier) {
-        return Provider.fromSupplier(() -> TestHelper.createContextWithShutdownNotifier(shutdownNotifierSupplier.get()));
+    public static Provider<SolverContext> createSolverContext(Supplier<ShutdownNotifier> shutdownNotifierSupplier, Supplier<Solvers> solverSupplier) {
+        return Provider.fromSupplier(() -> TestHelper.createContextWithShutdownNotifier(shutdownNotifierSupplier.get(), solverSupplier.get()));
     }
 
-    public static Provider<SolverContext> createSolverContextFromManager(Supplier<ShutdownManager> shutdownManagerSupplier) {
-        return Provider.fromSupplier(() -> TestHelper.createContextWithShutdownNotifier(shutdownManagerSupplier.get().getNotifier()));
+    public static Provider<SolverContext> createSolverContextFromManager(Supplier<ShutdownManager> shutdownManagerSupplier, Supplier<Solvers> solverSupplier) {
+        return Provider.fromSupplier(() -> TestHelper.createContextWithShutdownNotifier(shutdownManagerSupplier.get().getNotifier(), solverSupplier.get()));
     }
 
     public static Provider<ProverEnvironment> createProver(Supplier<SolverContext> contextSupplier, Supplier<SolverContext.ProverOptions[]> optionsSupplier) {

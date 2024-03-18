@@ -2,18 +2,18 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IExprBin;
-import com.dat3m.dartagnan.expression.IExprUn;
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import org.junit.Test;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.*;
-import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -26,7 +26,7 @@ public class VisitorOpsArithmeticTest {
         doTestOpsIntegerUn("OpSNegate", MINUS, -2);
     }
 
-    private void doTestOpsIntegerUn(String name, IOpUn op, int value) {
+    private void doTestOpsIntegerUn(String name, IntUnaryOp op, int value) {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
@@ -34,12 +34,12 @@ public class VisitorOpsArithmeticTest {
         String input = String.format("%%expr = %s %%int %%value", name);
 
         // when
-        IExprUn expr = (IExprUn) visit(builder, input);
+        IntUnaryExpr expr = (IntUnaryExpr) visit(builder, input);
 
         // then
         assertEquals(builder.getExpression("%expr"), expr);
-        assertEquals(builder.getExpression("%value"), expr.getInner());
-        assertEquals(op, expr.getOp());
+        assertEquals(builder.getExpression("%value"), expr.getOperand());
+        assertEquals(op, expr.getKind());
     }
 
     @Test
@@ -49,10 +49,9 @@ public class VisitorOpsArithmeticTest {
         doTestOpsIntegerBin("OpIMul", MUL, 2, 3);
         doTestOpsIntegerBin("OpUDiv", UDIV, 4, 2);
         doTestOpsIntegerBin("OpSDiv", DIV, 4, -2);
-        doTestOpsIntegerBin("OpUMod", MOD, 3, 2);
     }
 
-    private void doTestOpsIntegerBin(String name, IOpBin op, int v1, int v2) {
+    private void doTestOpsIntegerBin(String name, IntBinaryOp op, int v1, int v2) {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
@@ -61,13 +60,13 @@ public class VisitorOpsArithmeticTest {
         String input = String.format("%%expr = %s %%int %%v1 %%v2", name);
 
         // when
-        IExprBin expr = (IExprBin) visit(builder, input);
+        IntBinaryExpr expr = (IntBinaryExpr) visit(builder, input);
 
         // then
         assertEquals(builder.getExpression("%expr"), expr);
-        assertEquals(builder.getExpression("%v1"), expr.getLHS());
-        assertEquals(builder.getExpression("%v2"), expr.getRHS());
-        assertEquals(op, expr.getOp());
+        assertEquals(builder.getExpression("%v1"), expr.getLeft());
+        assertEquals(builder.getExpression("%v2"), expr.getRight());
+        assertEquals(op, expr.getKind());
     }
 
     @Test
