@@ -1,6 +1,6 @@
 package com.dat3m.dartagnan.spirv;
 
-import com.dat3m.dartagnan.expression.IValue;
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.parsers.program.ParserSpirv;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Location;
@@ -361,19 +361,20 @@ public class SpirvHeaderTest {
         AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getLeft();
         AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getRight();
         Location e1 = (Location) astAnda1a1.getLeft();
-        IValue v1 = (IValue) astAnda1a1.getRight();
+        Expression v1 = astAnda1a1.getRight();
         Location e2 = (Location) astAnda1a2.getLeft();
-        IValue v2 = (IValue) astAnda1a2.getRight();
+        Expression v2 = astAnda1a2.getRight();
         Location e3 = (Location) astAnda2.getLeft();
-        IValue v3 = (IValue) astAnda2.getRight();
+        Expression v3 = astAnda2.getRight();
+        int byteWidth = e1.getMemoryObject().getType().getBitWidth() / 8;
         assert (e1.getName().equals("%v3v"));
-        assert (e1.getOffset() == 0);
+        assert (e1.getOffset() / byteWidth == 0);
         assert (v1.toString().equals("bv64(77)"));
         assert (e2.getName().equals("%v3v"));
-        assert (e2.getOffset() == 1);
+        assert (e2.getOffset() / byteWidth == 1);
         assert (v2.toString().equals("bv64(88)"));
         assert (e3.getName().equals("%v3v"));
-        assert (e3.getOffset() == 2);
+        assert (e3.getOffset() / byteWidth == 2);
         assert (v3.toString().equals("bv64(99)"));
     }
 
@@ -392,19 +393,20 @@ public class SpirvHeaderTest {
         AssertBasic astAnda1a1 = (AssertBasic) astAnda1.getLeft();
         AssertBasic astAnda1a2 = (AssertBasic) astAnda1.getRight();
         Location e1 = (Location) astAnda1a1.getLeft();
-        IValue v1 = (IValue) astAnda1a1.getRight();
+        Expression v1 = astAnda1a1.getRight();
         Location e2 = (Location) astAnda1a2.getLeft();
-        IValue v2 = (IValue) astAnda1a2.getRight();
+        Expression v2 = astAnda1a2.getRight();
         Location e3 = (Location) astAnda2.getLeft();
-        IValue v3 = (IValue) astAnda2.getRight();
+        Expression v3 = astAnda2.getRight();
+        int byteWidth = e1.getMemoryObject().getType().getBitWidth() / 8;
         assert (e1.getName().equals("%v3v"));
-        assert (e1.getOffset() == 0);
+        assert (e1.getOffset() / byteWidth == 0);
         assert (v1.toString().equals("bv64(77)"));
         assert (e2.getName().equals("%v3v"));
-        assert (e2.getOffset() == 256);
+        assert (e2.getOffset() / byteWidth == 256);
         assert (v2.toString().equals("bv64(88)"));
         assert (e3.getName().equals("%v3v"));
-        assert (e3.getOffset() == 1000);
+        assert (e3.getOffset() / byteWidth == 1000);
         assert (v3.toString().equals("bv64(99)"));
     }
 
