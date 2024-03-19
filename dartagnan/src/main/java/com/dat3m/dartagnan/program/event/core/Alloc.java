@@ -24,9 +24,6 @@ import java.util.Set;
 /*
     Alloc represents any dynamic allocation performed in the program, i.e., both heap and stack allocations.
     Each allocation has a type and an array size (equals 1 for simple allocations).
-
-    NOTE: We consider this a "language" event rather than a "core" event, because we replace this event
-    in the processing.
  */
 public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private Register resultRegister;
@@ -35,7 +32,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     private boolean isHeapAllocation;
     private boolean doesZeroOutMemory;
 
-    // This will be set right before the encoding stage.
+    // This will be set at the end of the program processing.
     private transient MemoryObject allocatedObject;
 
     public Alloc(Register resultRegister, Type allocType, Expression arraySize, boolean isHeapAllocation,
@@ -74,11 +71,11 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public boolean isArrayAllocation() { return !isSimpleAllocation(); }
 
     public void setAllocatedObject(MemoryObject obj) { this.allocatedObject = obj; }
-    // WARNING: This should only be accessed during encoding.
+    // WARNING: This should only be accessed after program processing.
     public MemoryObject getAllocatedObject() {
         Preconditions.checkState(allocatedObject != null,
                 "Cannot access the allocated object of '%s': no memory object associated. " +
-                        "This method shall only be called during encoding.");
+                        "This method shall only be called after program processing.");
         return allocatedObject;
     }
 
@@ -90,13 +87,11 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
         if (arraySize instanceof IntLiteral value) {
             allocationSize = expressions.makeValue(
                     BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)).multiply(value.getValue()),
-                    types.getArchType()
+                    (IntegerType) arraySize.getType()
             );
         } else {
             allocationSize = expressions.makeMul(
-                    expressions.makeValue(
-                            BigInteger.valueOf(types.getMemorySizeInBytes(allocationType)),
-                            (IntegerType) arraySize.getType()),
+                    expressions.makeValue(types.getMemorySizeInBytes(allocationType), (IntegerType) arraySize.getType()),
                     arraySize
             );
         }
@@ -131,6 +126,7 @@ public final class Alloc extends AbstractEvent implements RegReader, RegWriter {
     public BooleanFormula encodeExec(EncodingContext ctx) {
         return ctx.getBooleanFormulaManager().and(
                 super.encodeExec(ctx),
-                ctx.equal(ctx.result(this), ctx.encodeExpressionAt(allocatedObject, this)));
+                ctx.equal(ctx.result(this), ctx.encodeExpressionAt(getAllocatedObject(), this))
+        );
     }
 }
