@@ -144,9 +144,15 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     @Override
     public Program visitOp(SpirvParser.OpContext ctx) {
         String name = parseOpName(ctx);
+        if (builder.getNextOps() != null) {
+            if (!builder.getNextOps().contains(name)) {
+                throw new ParsingException("Unexpected operation '%s'", name);
+            }
+            builder.clearNextOps();
+        }
         SpirvBaseVisitor<?> visitor = visitors.get(name);
         if (visitor == null) {
-            throw new ParsingException("Unsupported operation %s", name);
+            throw new ParsingException("Unsupported operation '%s'", name);
         }
         Object result = ctx.accept(visitor);
         if (isSpecConstantOp(ctx)) {
@@ -154,7 +160,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 specConstantVisitor.visitOpSpecConstantOp(register);
             } else {
                 throw new ParsingException(
-                        "Illegal result type for OpSpecConstantOp %s", name);
+                        "Illegal result type for OpSpecConstantOp '%s'", name);
             }
         }
         return null;

@@ -1,8 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.BConst;
-import com.dat3m.dartagnan.expression.BExprUn;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -126,30 +127,21 @@ public class VisitorOpsControlFlowTest {
     }
 
     @Test
-    public void testOpBranchConditionalStructured() {
+    public void testStructuredBranch() {
         // given
         String input = """
                 %label0 = OpLabel
-                OpSelectionMerge %label1 None
-                OpBranchConditional %value1 %label2 %label3
-                %label2 = OpLabel
-                OpSelectionMerge %label4 None
-                OpBranchConditional %value2 %label5 %label6
-                %label5 = OpLabel
-                OpBranch %label6
-                %label6 = OpLabel
-                OpBranch %label4
-                %label4 = OpLabel
-                OpBranch %label3
-                %label3 = OpLabel
-                OpBranch %label1
+                OpSelectionMerge %label2 None
+                OpBranchConditional %value %label1 %label2
                 %label1 = OpLabel
+                OpBranch %label2
+                %label2 = OpLabel
                 OpReturn
                 """;
+
         builder.mockFunctionStart();
         builder.mockBoolType("%bool");
-        builder.mockRegister("%value1", "%bool");
-        builder.mockRegister("%value2", "%bool");
+        builder.mockRegister("%value", "%bool");
 
         // when
         visit(input);
@@ -157,17 +149,359 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        IfAsJump event1 = (IfAsJump) events.get(1);
-        assertEquals("%value1", getGuardRegister(event1).getName());
-        assertEquals(builder.getOrCreateLabel("%label3"), event1.getLabel());
-        assertEquals(builder.getOrCreateLabel("%label1"), event1.getEndIf());
+        Label label0 = (Label) events.get(0);
+        IfAsJump ifJump = (IfAsJump) events.get(1);
+        Label label1 = (Label) events.get(2);
+        CondJump jump = (CondJump) events.get(3);
+        Label label2 = (Label) events.get(4);
+        Return ret = (Return) events.get(5);
 
-        IfAsJump event2 = (IfAsJump) events.get(3);
-        assertEquals("%value2", getGuardRegister(event2).getName());
-        assertEquals(builder.getOrCreateLabel("%label6"), event2.getLabel());
-        assertEquals(builder.getOrCreateLabel("%label4"), event2.getEndIf());
+        Label label2End = builder.getCfDefinition().get(label2);
 
-        assertTrue(builder.getBlocks().isEmpty());
+        assertEquals(label2, ifJump.getLabel());
+        assertEquals(label2End, ifJump.getEndIf());
+        assertTrue(jump.isGoto());
+        assertEquals(label2, jump.getLabel());
+
+        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
+        assertEquals(jump, builder.getBlockEndEvents().get(label1));
+        assertEquals(ret, builder.getBlockEndEvents().get(label2));
+    }
+
+    @Test
+    public void testStructuredBranchNestedTrue() {
+        // given
+        String input = """
+                %label0 = OpLabel
+                OpSelectionMerge %label2 None
+                OpBranchConditional %value %label1 %label2
+                %label1 = OpLabel
+                OpSelectionMerge %label2_inner None
+                OpBranchConditional %value %label1_inner %label2_inner
+                %label1_inner = OpLabel
+                OpBranch %label2_inner
+                %label2_inner = OpLabel
+                OpBranch %label2
+                %label2 = OpLabel
+                OpReturn
+                """;
+
+        builder.mockFunctionStart();
+        builder.mockBoolType("%bool");
+        builder.mockRegister("%value", "%bool");
+
+        // when
+        visit(input);
+
+        // then
+        List<Event> events = builder.getCurrentFunction().getEvents();
+
+        Label label0 = (Label) events.get(0);
+        IfAsJump ifJump = (IfAsJump) events.get(1);
+        Label label1 = (Label) events.get(2);
+        IfAsJump ifJumpInner = (IfAsJump) events.get(3);
+        Label label1Inner = (Label) events.get(4);
+        CondJump jumpInner = (CondJump) events.get(5);
+        Label label2Inner = (Label) events.get(6);
+        CondJump jump = (CondJump) events.get(7);
+        Label label2 = (Label) events.get(8);
+        Return ret = (Return) events.get(9);
+
+        Label label2End = builder.getCfDefinition().get(label2);
+        Label label2EndInner = builder.getCfDefinition().get(label2Inner);
+
+        assertEquals(label2, ifJump.getLabel());
+        assertEquals(label2End, ifJump.getEndIf());
+        assertEquals(label2Inner, ifJumpInner.getLabel());
+        assertEquals(label2EndInner, ifJumpInner.getEndIf());
+
+        assertTrue(jump.isGoto());
+        assertEquals(label2, jump.getLabel());
+        assertTrue(jumpInner.isGoto());
+        assertEquals(label2Inner, jumpInner.getLabel());
+
+        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
+        assertEquals(ifJumpInner, builder.getBlockEndEvents().get(label1));
+        assertEquals(jumpInner, builder.getBlockEndEvents().get(label1Inner));
+        assertEquals(jump, builder.getBlockEndEvents().get(label2Inner));
+        assertEquals(ret, builder.getBlockEndEvents().get(label2));
+    }
+
+    @Test
+    public void testStructuredBranchNestedFalse() {
+        // given
+        String input = """
+                %label0 = OpLabel
+                OpSelectionMerge %label2 None
+                OpBranchConditional %value %label1 %label2
+                %label1 = OpLabel
+                OpBranch %label2
+                %label2 = OpLabel
+                OpSelectionMerge %label2_inner None
+                OpBranchConditional %value %label1_inner %label2_inner
+                %label1_inner = OpLabel
+                OpBranch %label2_inner
+                %label2_inner = OpLabel
+                OpReturn
+                """;
+
+        builder.mockFunctionStart();
+        builder.mockBoolType("%bool");
+        builder.mockRegister("%value", "%bool");
+
+        // when
+        visit(input);
+
+        // then
+        List<Event> events = builder.getCurrentFunction().getEvents();
+
+        Label label0 = (Label) events.get(0);
+        IfAsJump ifJump = (IfAsJump) events.get(1);
+        Label label1 = (Label) events.get(2);
+        CondJump jump = (CondJump) events.get(3);
+        Label label2 = (Label) events.get(4);
+        IfAsJump ifJumpInner = (IfAsJump) events.get(5);
+        Label label1Inner = (Label) events.get(6);
+        CondJump jumpInner = (CondJump) events.get(7);
+        Label label2Inner = (Label) events.get(8);
+        Return ret = (Return) events.get(9);
+
+        Label label2End = builder.getCfDefinition().get(label2);
+        Label label2EndInner = builder.getCfDefinition().get(label2Inner);
+
+        assertEquals(label2, ifJump.getLabel());
+        assertEquals(label2End, ifJump.getEndIf());
+        assertEquals(label2Inner, ifJumpInner.getLabel());
+        assertEquals(label2EndInner, ifJumpInner.getEndIf());
+
+        assertTrue(jump.isGoto());
+        assertEquals(label2, jump.getLabel());
+        assertTrue(jumpInner.isGoto());
+        assertEquals(label2Inner, jumpInner.getLabel());
+
+        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
+        assertEquals(jump, builder.getBlockEndEvents().get(label1));
+        assertEquals(ifJumpInner, builder.getBlockEndEvents().get(label2));
+        assertEquals(jumpInner, builder.getBlockEndEvents().get(label1Inner));
+        assertEquals(ret, builder.getBlockEndEvents().get(label2Inner));
+    }
+
+    @Test
+    public void testStructuredBranchNestedSameLabel() {
+        // given
+        String input = """
+                %label0 = OpLabel
+                OpSelectionMerge %label2 None
+                OpBranchConditional %value %label1 %label2
+                %label1 = OpLabel
+                OpSelectionMerge %label2 None
+                OpBranchConditional %value %label1_inner %label2
+                %label1_inner = OpLabel
+                OpBranch %label2
+                %label2 = OpLabel
+                OpReturn
+                """;
+
+        builder.mockFunctionStart();
+        builder.mockBoolType("%bool");
+        builder.mockRegister("%value", "%bool");
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Overlapping blocks with endpoint in label '%label2'",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testStructuredLoop() {
+        // given
+        String input = """
+                %label0 = OpLabel
+                OpLoopMerge %label1 %label0 None
+                OpBranchConditional %value %label1 %label0
+                %label1 = OpLabel
+                OpReturn
+                """;
+
+        builder.mockFunctionStart();
+        builder.mockBoolType("%bool");
+        builder.mockRegister("%value", "%bool");
+
+        // when
+        visit(input);
+
+        // then
+        List<Event> events = builder.getCurrentFunction().getEvents();
+
+        Label label0 = (Label) events.get(0);
+        IfAsJump ifJump = (IfAsJump) events.get(1);
+        CondJump jump = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        Return ret = (Return) events.get(4);
+
+        assertTrue(builder.getCfDefinition().isEmpty());
+
+        assertEquals(label1, ifJump.getLabel());
+        assertEquals(label1, ifJump.getEndIf());
+        assertTrue(jump.isGoto());
+        assertEquals(label0, jump.getLabel());
+
+        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
+        assertEquals(ret, builder.getBlockEndEvents().get(label1));
+    }
+
+    @Test
+    public void testStructuredBranchBackwardTrue() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpSelectionMerge %label1 None
+                        OpBranchConditional %value1 %label0 %label1
+                        %label1 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal backward jump to label '%label0' " +
+                        "from a structured branch");
+    }
+
+    @Test
+    public void testStructuredBranchBackwardFalse() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpSelectionMerge %label0 None
+                        OpBranchConditional %value1 %label1 %label0
+                        %label1 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal backward jump to label '%label0' " +
+                        "from a structured branch");
+    }
+
+    @Test
+    public void testLoopMergeBackward() {
+        doTestIllegalStructuredBranch("""
+                        %label2 = OpLabel
+                        OpBranch %label0
+                        %label0 = OpLabel
+                        OpLoopMerge %label2 %label0 None
+                        OpBranchConditional %value1 %label2 %label0
+                        %label1 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal backward jump to label '%label2' " +
+                        "from a structured branch");
+    }
+
+    @Test
+    public void testLoopContinueForward() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpLoopMerge %label1 %label2 None
+                        OpBranchConditional %value1 %label1 %label2
+                        %label1 = OpLabel
+                        OpBranch %label2
+                        %label2 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal forward jump to label '%label2' " +
+                        "from a structured loop");
+    }
+
+    @Test
+    public void testStructuredBranchIllegalMergeLabel() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpSelectionMerge %label3 None
+                        OpBranchConditional %value1 %label1 %label2
+                        %label1 = OpLabel
+                        OpBranch %label2
+                        %label2 = OpLabel
+                        OpBranch %label3
+                        %label3 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal last label in conditional branch, " +
+                        "expected '%label3' but received '%label2'");
+    }
+
+    @Test
+    public void testStructuredBranchLabelsIllegalOrder() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpSelectionMerge %label1 None
+                        OpBranchConditional %value1 %label2 %label1
+                        %label1 = OpLabel
+                        OpBranch %label2
+                        %label2 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal label, expected '%label2' but received '%label1'");
+    }
+
+    @Test
+    public void testOpLoopLabelsIllegalContinueLabel() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpLoopMerge %label1 %label2 None
+                        OpBranchConditional %value1 %label1 %label0
+                        %label1 = OpLabel
+                        OpBranch %label2
+                        %label2 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal labels, expected mergeLabel='%label1' " +
+                        "and continueLabel='%label2' but received " +
+                        "mergeLabel='%label1' and continueLabel='%label0'");
+    }
+
+    @Test
+    public void testOpLoopLabelsIllegalMergeLabel() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpLoopMerge %label2 %label0 None
+                        OpBranchConditional %value1 %label1 %label0
+                        %label1 = OpLabel
+                        OpBranch %label2
+                        %label2 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal labels, expected mergeLabel='%label2' " +
+                        "and continueLabel='%label0' but received " +
+                        "mergeLabel='%label1' and continueLabel='%label0'");
+    }
+
+    @Test
+    public void testOpLoopLabelsIllegalOrder() {
+        doTestIllegalStructuredBranch("""
+                        %label0 = OpLabel
+                        OpLoopMerge %label1 %label0 None
+                        OpBranchConditional %value1 %label0 %label1
+                        %label1 = OpLabel
+                        OpReturn
+                        """,
+                "Illegal labels, expected mergeLabel='%label1' " +
+                        "and continueLabel='%label0' but received " +
+                        "mergeLabel='%label0' and continueLabel='%label1'");
+    }
+
+    private void doTestIllegalStructuredBranch(String input, String error) {
+        // given
+        builder.mockFunctionStart();
+        builder.mockBoolType("%bool");
+        builder.mockRegister("%value1", "%bool");
+
+        try {
+            // when
+            visit(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals(error, e.getMessage());
+        }
     }
 
     @Test
@@ -194,11 +528,19 @@ public class VisitorOpsControlFlowTest {
 
         CondJump event1 = (CondJump) events.get(1);
         assertEquals("%value1", getGuardRegister(event1).getName());
-        assertEquals(builder.getOrCreateLabel("%label3"), event1.getLabel());
+        assertEquals(builder.getOrCreateLabel("%label2"), event1.getLabel());
 
-        CondJump event2 = (CondJump) events.get(3);
-        assertEquals("%value2", getGuardRegister(event2).getName());
-        assertEquals(builder.getOrCreateLabel("%label1"), event2.getLabel());
+        CondJump event2 = (CondJump) events.get(2);
+        assertEquals("%value1", getGuardRegister(event2).getName());
+        assertEquals(builder.getOrCreateLabel("%label3"), event2.getLabel());
+
+        CondJump event4 = (CondJump) events.get(4);
+        assertEquals("%value2", getGuardRegister(event4).getName());
+        assertEquals(builder.getOrCreateLabel("%label3"), event4.getLabel());
+
+        CondJump event5 = (CondJump) events.get(5);
+        assertEquals("%value2", getGuardRegister(event5).getName());
+        assertEquals(builder.getOrCreateLabel("%label1"), event5.getLabel());
 
         assertTrue(builder.getBlocks().isEmpty());
     }
@@ -325,8 +667,14 @@ public class VisitorOpsControlFlowTest {
     }
 
     private Register getGuardRegister(CondJump event) {
-        BExprUn expression = ((BExprUn) event.getGuard());
-        return (Register) expression.getInner();
+        Expression guard = event.getGuard();
+        if (guard instanceof Register register) {
+            return register;
+        }
+        if (guard instanceof BoolUnaryExpr expr) {
+            return (Register) expr.getOperand();
+        }
+        throw new RuntimeException("Unexpected expression type");
     }
 
     private void visit(String text) {

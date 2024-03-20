@@ -11,12 +11,19 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MockProgramBuilderSpv extends ProgramBuilderSpv {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+
+    @Override
+    public void setNextOps(Set<String> nextOps) {
+        // The value of nextOps is reset by the parent SpirvVisitor,
+        // so we skip it in unit tests of child visitors
+    }
 
     public VoidType mockVoidType(String id) {
         return (VoidType) addType(id, TYPE_FACTORY.getVoidType());

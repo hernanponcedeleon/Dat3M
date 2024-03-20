@@ -37,37 +37,67 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvTest {
 
-    // TODO: Replace with Vulkan when RA is fixed
-    private final String modelPath = getRootPath("cat/sc.cat");
+    private final String modelPath = getRootPath("cat/spirv.cat");
     private final String programPath;
+    private final int bound;
     private final Result expected;
 
-    public SpirvTest(String file, Result expected) {
+    public SpirvTest(String file, int bound, Result expected) {
         this.programPath = getTestResourcePath("spirv/" + file);
+        this.bound = bound;
         this.expected = expected;
     }
 
-    @Parameterized.Parameters(name = "{index}: {0}, {1}")
+    @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"empty-exists-false.spv.dis", FAIL},
-                {"empty-exists-true.spv.dis", PASS},
-                {"empty-forall-false.spv.dis", FAIL},
-                {"empty-forall-true.spv.dis", PASS},
-                {"empty-not-exists-false.spv.dis", PASS},
-                {"empty-not-exists-true.spv.dis", FAIL},
-                {"init-forall.spv.dis", PASS},
-                {"init-forall-split.spv.dis", PASS},
-                {"init-forall-not-exists.spv.dis", PASS},
-                {"init-forall-not-exists-fail.spv.dis", FAIL},
-                {"read-write.spv.dis", PASS},
-                {"vector-init.spv.dis", PASS},
-                {"vector.spv.dis", PASS},
-                {"array.spv.dis", PASS},
-                {"array-of-vector.spv.dis", PASS},
-                {"array-of-vector1.spv.dis", PASS},
-                {"vector-read-write.spv.dis", PASS},
-                {"ids.spv.dis", PASS},
+                {"empty-exists-false.spv.dis", 1, FAIL},
+                {"empty-exists-true.spv.dis", 1, PASS},
+                {"empty-forall-false.spv.dis", 1, FAIL},
+                {"empty-forall-true.spv.dis", 1, PASS},
+                {"empty-not-exists-false.spv.dis", 1, PASS},
+                {"empty-not-exists-true.spv.dis", 1, FAIL},
+                {"init-forall.spv.dis", 1, PASS},
+                {"init-forall-split.spv.dis", 1, PASS},
+                {"init-forall-not-exists.spv.dis", 1, PASS},
+                {"init-forall-not-exists-fail.spv.dis", 1, FAIL},
+                {"read-write.spv.dis", 1, PASS},
+                {"vector-init.spv.dis", 1, PASS},
+                {"vector.spv.dis", 1, PASS},
+                {"array.spv.dis", 1, PASS},
+                {"array-of-vector.spv.dis", 1, PASS},
+                {"array-of-vector1.spv.dis", 1, PASS},
+                {"vector-read-write.spv.dis", 1, PASS},
+                {"ids.spv.dis", 1, PASS},
+                {"branch-cond-ff.spv.dis", 1, PASS},
+                {"branch-cond-ff-inverted.spv.dis", 1, PASS},
+                {"branch-cond-bf.spv.dis", 1, FAIL},
+                {"branch-cond-bf.spv.dis", 2, PASS},
+                {"branch-cond-bf.spv.dis", 3, PASS},
+                {"branch-cond-fb.spv.dis", 1, FAIL},
+                {"branch-cond-fb.spv.dis", 2, PASS},
+                {"branch-cond-fb.spv.dis", 3, PASS},
+                {"branch-cond-struct.spv.dis", 1, PASS},
+                {"branch-cond-struct-read-write.spv.dis", 1, PASS},
+                {"branch-race.spv.dis", 1, PASS},
+                {"branch-loop.spv.dis", 2, FAIL},
+                {"branch-loop.spv.dis", 3, PASS},
+                {"branch-loop.spv.dis", 4, PASS},
+                {"loop-struct-cond.spv.dis", 1, FAIL},
+                {"loop-struct-cond.spv.dis", 2, PASS},
+                {"loop-struct-cond.spv.dis", 3, PASS},
+                {"loop-struct-cond-suffix.spv.dis", 1, FAIL},
+                {"loop-struct-cond-suffix.spv.dis", 2, PASS},
+                {"loop-struct-cond-suffix.spv.dis", 3, PASS},
+                {"loop-struct-cond-sequence.spv.dis", 2, FAIL},
+                {"loop-struct-cond-sequence.spv.dis", 3, PASS},
+                {"loop-struct-cond-sequence.spv.dis", 4, PASS},
+                {"loop-struct-cond-nested.spv.dis", 2, FAIL},
+                {"loop-struct-cond-nested.spv.dis", 3, PASS},
+                {"loop-struct-cond-nested.spv.dis", 4, PASS},
+                {"phi.spv.dis", 1, PASS},
+                {"phi-unstruct-true.spv.dis", 1, PASS},
+                {"phi-unstruct-false.spv.dis", 1, PASS}
         });
     }
 
@@ -102,7 +132,9 @@ public class SpirvTest {
     }
 
     private VerificationTask mkTask() throws Exception {
-        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder().withTarget(Arch.VULKAN);
+        VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+                .withBound(bound)
+                .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
         return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
