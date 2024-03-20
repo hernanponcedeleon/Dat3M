@@ -13,6 +13,8 @@ import java.util.Set;
 
 public class VisitorOpsType extends SpirvBaseVisitor<Type> {
 
+    // TODO: Validate that size is a multiple of 8 + tests
+
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
 
     private final ProgramBuilderSpv builder;

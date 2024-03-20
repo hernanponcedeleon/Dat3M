@@ -1,0 +1,22 @@
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+        %ext = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %ids
+               OpSource GLSL 450
+       %void = OpTypeVoid
+       %bool = OpTypeBool
+       %func = OpTypeFunction %void
+      %value1 = OpConstantTrue %bool
+       %main = OpFunction %void None %func
+     %label0 = OpLabel
+               OpSelectionMerge %label2 None
+               OpBranchConditional %value1 %label1 %label2
+     %value2 = OpLogicalNot %bool %value1 ; illegal
+     %label1 = OpLabel
+               OpBranch %label2
+     %label2 = OpLabel
+               OpReturn
+               OpFunctionEnd

@@ -58,8 +58,9 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             throw new ParsingException("Missing initial value for runtime variable '%s'", id);
         }
 
+        // TODO: Resolve for each element if virtual
         int size = TYPE_FACTORY.getMemorySizeInBytes(type);
-        MemoryObject memObj = builder.allocateMemory(size);
+        MemoryObject memObj = builder.allocateMemoryVirtual(size);
         memObj.setName(id);
         if (isThreadLocal(ctx.storageClass())) {
             memObj.setIsThreadLocal(true);

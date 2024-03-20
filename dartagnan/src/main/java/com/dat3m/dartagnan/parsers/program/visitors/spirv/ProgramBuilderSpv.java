@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
@@ -44,10 +45,11 @@ public class ProgramBuilderSpv {
     private final Map<String, Type> variableTypes = new HashMap<>();
     private final Map<String, Expression> expressions = new HashMap<>();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
-    private final Map<Label, Map<Register, String>> phiDefinitions = new HashMap<>();
-    private final Map<Label, Event> phiBlocks = new HashMap<>();
     private final Map<String, Label> labels = new HashMap<>();
     private final Deque<Label> blocks = new ArrayDeque<>();
+    private final Map<Label, Event> blockEndEvents = new HashMap<>();
+    private final Map<Label, Map<Register, String>> phiDefinitions = new HashMap<>();
+    private final Map<Label, Label> cfDefinitions = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
     private final Map<String, Expression> inputs = new HashMap<>();
     private final Program program;
@@ -55,14 +57,31 @@ public class ProgramBuilderSpv {
     private List<Integer> threadGrid = List.of(1, 1, 1);
     private String entryPointId;
     private int nextFunctionId = 0;
+    private Set<String> nextOps;
 
     public ProgramBuilderSpv() {
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
     }
 
+    public Set<String> getNextOps() {
+        return nextOps;
+    }
+
+    public void setNextOps(Set<String> nextOps) {
+        if (this.nextOps != null) {
+            throw new ParsingException("Illegal attempt to override next ops");
+        }
+        this.nextOps = nextOps;
+    }
+
+    public void clearNextOps() {
+        this.nextOps = null;
+    }
+
     public Program build() {
         validateBeforeBuild();
-        // TODO: append Phi Definitions
+        preprocessBlocks();
+
         Function entry = getEntryPointFunction();
         for (int z = 0; z < threadGrid.get(2); z++) {
             for (int y = 0; y < threadGrid.get(1); y++) {
@@ -167,17 +186,18 @@ public class ProgramBuilderSpv {
     }
 
     public void startBlock(Label label) {
-        if (phiBlocks.containsKey(label)) {
+        if (blockEndEvents.containsKey(label)) {
             throw new ParsingException("Attempt to redefine label '%s'", label.getName());
         }
         blocks.push(label);
     }
 
-    public void endBlock(Event event) {
+    public Event endBlock(Event event) {
         if (blocks.isEmpty()) {
             throw new ParsingException("Attempt to exit block while not in a block definition");
         }
-        phiBlocks.put(blocks.pop(), event);
+        blockEndEvents.put(blocks.pop(), event);
+        return event;
     }
 
     public Event addEvent(Event event) {
@@ -197,6 +217,10 @@ public class ProgramBuilderSpv {
 
     public MemoryObject allocateMemory(int bytes) {
         return program.getMemory().allocate(bytes);
+    }
+
+    public MemoryObject allocateMemoryVirtual(int bytes) {
+        return program.getMemory().allocateVirtual(bytes, true, null);
     }
 
     public Type getType(String name) {
@@ -248,6 +272,14 @@ public class ProgramBuilderSpv {
         }
         variableTypes.put(name, type);
         return type;
+    }
+
+    public Label makeBranchBackJumpLabel(Label label) {
+        String id = label.getName() + "_back";
+        if (labels.containsKey(id)) {
+            throw new ParsingException("Overlapping blocks with back jump in label '%s'", label.getName());
+        }
+        return getOrCreateLabel(id);
     }
 
     public Expression getExpression(String name) {
@@ -303,6 +335,14 @@ public class ProgramBuilderSpv {
 
     public Register addRegister(String id, String typeId) {
         return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
+    }
+
+    public boolean hasBlock(String id) {
+        if (!labels.containsKey(id)) {
+            return false;
+        }
+        Label label = labels.get(id);
+        return blockEndEvents.containsKey(label) || blocks.contains(label);
     }
 
     public Label getOrCreateLabel(String id) {
@@ -421,6 +461,54 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Unclosed blocks for labels %s",
                     String.join(",", blocks.stream().map(Label::getName).toList()));
         }
+        if (nextOps != null) {
+            throw new ParsingException("Missing expected op: %s",
+                    String.join(",", nextOps));
+        }
+        // TODO: Validate no event refers to an undefined label
+    }
+
+    private void preprocessBlocks() {
+        Map<Event, Label> blockEndToLabelMap = new HashMap<>();
+        for (Map.Entry<Label, Event> entry : blockEndEvents.entrySet()) {
+            if (blockEndToLabelMap.containsKey(entry.getValue())) {
+                throw new ParsingException("Malformed control flow, " +
+                        "multiple block refer to the same end event " + entry.getValue());
+            }
+            blockEndToLabelMap.put(entry.getValue(), entry.getKey());
+        }
+        insertPhiDefinitions(blockEndToLabelMap);
+        insertBlockEndLabels(blockEndToLabelMap);
+    }
+
+    private void insertPhiDefinitions(Map<Event, Label> blockEndToLabelMap) {
+        for (Function function : program.getFunctions()) {
+            for (Event event : function.getEvents()) {
+                Label label = blockEndToLabelMap.get(event.getSuccessor());
+                if (label != null) {
+                    Map<Register, String> phi = phiDefinitions.get(label);
+                    if (phi != null) {
+                        for (Map.Entry<Register, String> entry : phi.entrySet()) {
+                            event.insertAfter(new Local(entry.getKey(), getExpression(entry.getValue())));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void insertBlockEndLabels(Map<Event, Label> blockEndToLabelMap) {
+        for (Function function : program.getFunctions()) {
+            for (Event event : function.getEvents()) {
+                Label label = blockEndToLabelMap.get(event.getSuccessor());
+                if (label != null) {
+                    Label endLabel = cfDefinitions.get(label);
+                    if (endLabel != null) {
+                        event.insertAfter(endLabel);
+                    }
+                }
+            }
+        }
     }
 
     private Function getEntryPointFunction() {
@@ -449,6 +537,24 @@ public class ProgramBuilderSpv {
 
     public Set<Function> getForwardFunctions() {
         return Set.copyOf(forwardFunctions.values());
+    }
+
+    public Map<Label, Event> getBlockEndEvents() {
+        return Map.copyOf(blockEndEvents);
+    }
+
+    public Map<Label, Label> getCfDefinition() {
+        return Map.copyOf(cfDefinitions);
+    }
+
+    public Label makeBranchEndLabel(Label label) {
+        String id = label.getName() + "_end";
+        if (labels.containsKey(id)) {
+            throw new ParsingException("Overlapping blocks with endpoint in label '%s'", label.getName());
+        }
+        Label endLabel = getOrCreateLabel(id);
+        cfDefinitions.put(label, endLabel);
+        return endLabel;
     }
 
     public Map<Register, String> getPhiDefinitions(Label label) {

@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +31,13 @@ public class MemoryTransformer extends ExprTransformer {
     public Expression visitLeafExpression(LeafExpression expr) {
         if (expr instanceof MemoryObject memObj) {
             if (memObj.isThreadLocal() && !mapping.containsKey(memObj)) {
-                MemoryObject copy = memory.allocate(memObj.size());
+                MemoryObject copy;
+                if (memObj instanceof VirtualMemoryObject) {
+                    // TODO: alias
+                    copy = memory.allocateVirtual(memObj.size(), true, null);
+                } else {
+                    copy = memory.allocate(memObj.size());
+                }
                 copy.setName(String.format("%s@T%s", memObj.getName(), tid));
                 for (Integer i : memObj.getInitializedFields()){
                     copy.setInitialValue(i, memObj.getInitialValue(i));
