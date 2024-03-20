@@ -3,6 +3,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -10,6 +13,8 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
+
+import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
@@ -94,8 +99,21 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
             throw new ParsingException("Uninitialized location %s", name);
         }
         TerminalNode offset = ctx.ModeHeader_PositiveInteger();
-        int byteWidth = base.getType().getBitWidth() / 8;
+        Type type = builder.getVariableType(name);
+        int bitWidth = TYPE_FACTORY.getMemorySizeInBytes(type);
+        int numElements = getAggregateNumElements(type);
+        int byteWidth = bitWidth / numElements;
         int o = offset == null ? 0 : Integer.parseInt(offset.getText()) * byteWidth;
         return right && offset == null ? base : new Location(name, base, o);
+    }
+
+    private int getAggregateNumElements(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            return arrayType.getNumElements();
+        } else if (type instanceof AggregateType aggregateType) {
+            List<Type> types = aggregateType.getDirectFields();
+            return types.stream().mapToInt(this::getAggregateNumElements).sum();
+        }
+        return 1;
     }
 }
