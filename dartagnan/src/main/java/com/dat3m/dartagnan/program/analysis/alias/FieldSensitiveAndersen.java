@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
@@ -74,19 +71,13 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        return true;
-        /*
         return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
-         */
     }
 
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        return false;
-        /*
         Set<Location> a = getMaxAddressSet(x);
         return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
-         */
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
