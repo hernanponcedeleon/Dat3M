@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
-import com.dat3m.dartagnan.parsers.LitmusCParser.BasicTypeSpecifierContext;
-import com.dat3m.dartagnan.parsers.LitmusCParser.PointerTypeSpecifierContext;
 import com.dat3m.dartagnan.parsers.program.utils.AssertionHelper;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Program;
@@ -181,22 +179,13 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     @Override
     public Object visitThreadArguments(LitmusCParser.ThreadArgumentsContext ctx){
         if(ctx != null){
-            int id = 0;
             for(LitmusCParser.VarNameContext varName : ctx.varName()){
+                // TODO: Possibly parse attributes/type modifiers (const, atomic, ...)
+                //  For now, herd7 also seems to ignore most modifiers, in particular the atomic one.
                 String name = varName.getText();
                 MemoryObject object = programBuilder.getOrNewMemoryObject(name);
-                PointerTypeSpecifierContext pType = ctx.pointerTypeSpecifier(id);
-                if(pType != null) {
-                    BasicTypeSpecifierContext bType = pType.basicTypeSpecifier();
-                    if(bType != null) {
-                        if(bType.AtomicInt() != null) {
-                            object.markAsAtomic();
-                        }
-                    }
-                }
                 Register register = programBuilder.getOrNewRegister(scope, name, archType);
                 programBuilder.addChild(currentThread, EventFactory.newLocal(register, object));
-                id++;
             }
         }
         return null;
