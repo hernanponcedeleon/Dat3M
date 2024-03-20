@@ -116,11 +116,7 @@ public class SpirvHeaderFormatTest extends AbstractSpirvHeaderTest {
     @Test
     public void testValidFormatHeader() {
         if (passed) {
-            try {
-                parse();
-            } catch (Exception e) {
-                fail(msg);
-            }
+            parse();
         } else {
             try {
                 parse();
