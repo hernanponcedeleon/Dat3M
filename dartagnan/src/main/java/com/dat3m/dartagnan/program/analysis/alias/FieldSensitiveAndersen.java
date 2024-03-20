@@ -71,15 +71,13 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        return true;
-        //return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
+        return !Sets.intersection(getMaxAddressSet(x), getMaxAddressSet(y)).isEmpty();
     }
 
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        return false;
-        //Set<Location> a = getMaxAddressSet(x);
-        //return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
+        Set<Location> a = getMaxAddressSet(x);
+        return a.size() == 1 && a.containsAll(getMaxAddressSet(y));
     }
 
     private ImmutableSet<Location> getMaxAddressSet(MemoryEvent e) {
