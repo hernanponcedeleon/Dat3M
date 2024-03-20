@@ -5,9 +5,9 @@ name: Build
 
 on:
   push:
-    branches: [ master, development ]
+    branches: [ master, development, spirv-visitor ]
   pull_request:
-    branches: [ master, development ]
+    branches: [ master, development, spirv-visitor ]
   workflow_dispatch:
 
 jobs:

@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.ImmutableSet;
@@ -339,11 +336,11 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
                 if (l.address != null || r.address != null) {
                     return null;
                 }
-                return new Result(null,
-                        null,
-                        l.offset.multiply(r.offset),
-                        min(min(l.alignment, l.register) * r.offset.intValue(),
-                                min(r.alignment, r.register) * l.offset.intValue()));
+                int lAlign = min(l.alignment, l.register != null ? 1 : 0) * r.offset.intValue();
+                int rAlign = min(r.alignment, r.register != null ? 1 : 0) * l.offset.intValue();
+                int newAlign = min(lAlign, rAlign);
+                BigInteger newOffset = l.offset.multiply(r.offset);
+                return new Result(null, null, newOffset, newAlign);
             }
             if (x.getKind() == ADD || x.getKind() == SUB) {
                 if (l.address != null && r.address != null) {
