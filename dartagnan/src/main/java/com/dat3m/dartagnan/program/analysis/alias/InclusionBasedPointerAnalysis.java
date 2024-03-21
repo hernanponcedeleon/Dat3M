@@ -14,10 +14,11 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
-import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.visualization.Graphviz;
 import com.dat3m.dartagnan.verification.Context;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,6 +73,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private final Map<List<RegWriter>, Offset<Variable>> variableMap = new HashMap<>();
 
     private final Dependency dependency;
+    private final Supplier<SyntacticContextAnalysis> synContext;
 
     private static final class Variable {
         private final List<Offset<Variable>> includes = new ArrayList<>();
@@ -92,7 +94,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     public static InclusionBasedPointerAnalysis fromConfig(Program program, Context analysisContext, Configuration config)
             throws InvalidConfigurationException {
-        final var analysis = new InclusionBasedPointerAnalysis(analysisContext.requires(Dependency.class));
+        final var analysis = new InclusionBasedPointerAnalysis(program, analysisContext.requires(Dependency.class));
         analysis.run(program);
         logger.debug("variable count: {}", analysis.totalVariables);
         logger.debug("replacement count: {}", analysis.totalReplacements);
@@ -101,7 +103,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return analysis;
     }
 
-    private InclusionBasedPointerAnalysis(Dependency d) { dependency = d; }
+    private InclusionBasedPointerAnalysis(Program p, Dependency d) {
+        dependency = d;
+        synContext = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(p));
+    }
 
     // ================================ API ================================
 
@@ -162,9 +167,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             algorithm(variable, edges);
         }
         printGraph();
-        final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
         for (final Map.Entry<MemoryCoreEvent, Offset<Variable>> entry : eventAddressSpaceMap.entrySet()) {
-            postProcess(entry, synContext);
+            postProcess(entry);
         }
         constantMap.clear();
         variableMap.clear();
@@ -184,7 +188,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         } else if (event instanceof Load load) {
             final Offset<Variable> address = getResultVariable(load.getAddress(), load);
             if (address == null) {
-                logger.warn("null pointer address for {}: {}", event.getMetadata(SourceLocation.class), event);
+                logger.warn("null pointer address for {}", synContext.get().getContextInfo(event));
                 return;
             }
             eventAddressSpaceMap.put(load, address);
@@ -211,7 +215,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         final Offset<Variable> address = getResultVariable(event.getAddress(), event);
         if (address == null) {
-            logger.warn("null pointer address for {}", event);
+            logger.warn("null pointer address for {}", synContext.get().getContextInfo(event));
             return;
         }
         eventAddressSpaceMap.put(event, address);
@@ -278,7 +282,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    private void postProcess(Map.Entry<MemoryCoreEvent, Offset<Variable>> entry, SyntacticContextAnalysis synContext) {
+    private void postProcess(Map.Entry<MemoryCoreEvent, Offset<Variable>> entry) {
         logger.trace("{}", entry);
         final Offset<Variable> address = entry.getValue();
         if (address == null) {
@@ -293,7 +297,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // In a well-structured program, all address expressions refer to at least one memory object.
         if (logger.isWarnEnabled() && address.base.object == null &&
                 address.base.includes.stream().allMatch(i -> i.base.object == null)) {
-            logger.warn("empty pointer set for {}", synContext.getContextInfo(entry.getKey()));
+            logger.warn("empty pointer set for {}", synContext.get().getContextInfo(entry.getKey()));
         }
         if (address.base.includes.size() != 1) {
             return;
