@@ -30,9 +30,9 @@ initCollectionValue : ModeHeader_LBrace initValues ModeHeader_RBrace;
 initValues : initValue (ModeHeader_Comma initValue)*;
 
 assertionList
-    :   ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
-    |   ModeHeader_AssertionNot ModeHeader_AssertionExists ast = assertion ModeHeader_Comma?
-    |   ModeHeader_AssertionForall ast = assertion ModeHeader_Comma?
+    :   ModeHeader_AssertionExists assertion ModeHeader_Comma?
+    |   ModeHeader_AssertionNot ModeHeader_AssertionExists assertion ModeHeader_Comma?
+    |   ModeHeader_AssertionForall assertion ModeHeader_Comma?
     ;
 
 assertion

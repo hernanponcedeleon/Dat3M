@@ -5,9 +5,6 @@ import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-
-import java.util.stream.Collectors;
 
 public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
@@ -19,19 +16,11 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitInitList(SpirvParser.InitListContext ctx) {
-        for (SpirvParser.InitContext init : ctx.init()) {
-            visit(init);
-        }
-        return null;
-    }
-
-    @Override
     public Expression visitInit(SpirvParser.InitContext ctx) {
         String varName = ctx.varName().getText();
         Expression expr = visit(ctx.initValue());
         builder.addInput(varName, expr);
-        return visitChildren(ctx);
+        return null;
     }
 
     @Override
@@ -48,6 +37,6 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     public Expression visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
         return EXPR_FACTORY.makeConstruct(ctx.initValues().initValue().stream()
                 .map(this::visitInitValue)
-                .collect(Collectors.toList()));
+                .toList());
     }
 }
