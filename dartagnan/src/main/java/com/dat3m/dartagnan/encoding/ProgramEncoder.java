@@ -26,6 +26,7 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -140,28 +141,61 @@ public class ProgramEncoder implements Encoder {
         return bmgr.and(enc);
     }
 
-    // Assigns each Address a fixed memory address.
+    // Encodes the address values of memory objects.
     public BooleanFormula encodeMemory() {
-        logger.info("Encoding fixed memory");
+        logger.info("Encoding memory");
         final Memory memory = context.getTask().getProgram().getMemory();
         final FormulaManager fmgr = context.getFormulaManager();
+        // TODO: Once we want to encode dynamic memory layouts (e.g., due to dynamically-sized mallocs)
+        //  we need to compute a Map<MemoryObject, Formula> where each formula describes a
+        //  unique, properly aligned, and non-overlapping address of the memory object.
+        final Map<MemoryObject, BigInteger> memObj2Addr = computeStaticMemoryLayout(memory);
 
-        // For all objects, their 'final' value fetched here represents their constant value.
-        final var addrExprs = new ArrayList<BooleanFormula>();
-        for (final MemoryObject object : memory.getObjects()) {
-            final BigInteger addressInteger = object.getAddress();
-            final Formula addressVariable = context.encodeFinalExpression(object);
+        final var enc = new ArrayList<BooleanFormula>();
+        for (final MemoryObject memObj : memory.getObjects()) {
+            // For all objects, their 'final' value fetched here represents their constant value.
+            final Formula addressVariable = context.encodeFinalExpression(memObj);
+            final BigInteger addressInteger = memObj2Addr.get(memObj);
+
             if (addressVariable instanceof BitvectorFormula bitvectorVariable) {
                 final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
                 final int length = bvmgr.getLength(bitvectorVariable);
-                addrExprs.add(bvmgr.equal(bitvectorVariable, bvmgr.makeBitvector(length, addressInteger)));
+                enc.add(bvmgr.equal(bitvectorVariable, bvmgr.makeBitvector(length, addressInteger)));
             } else {
                 assert addressVariable instanceof IntegerFormula;
                 final IntegerFormulaManager imgr = fmgr.getIntegerFormulaManager();
-                addrExprs.add(imgr.equal((IntegerFormula) addressVariable, imgr.makeNumber(addressInteger)));
+                enc.add(imgr.equal((IntegerFormula) addressVariable, imgr.makeNumber(addressInteger)));
             }
         }
-        return fmgr.getBooleanFormulaManager().and(addrExprs);
+        return fmgr.getBooleanFormulaManager().and(enc);
+    }
+
+    /*
+        Computes a static memory layout, i.e., a mapping from memory objects to fixed addresses.
+     */
+    private Map<MemoryObject, BigInteger> computeStaticMemoryLayout(Memory memory) {
+        // Addresses are typically at least two byte aligned
+        //      https://stackoverflow.com/questions/23315939/why-2-lsbs-of-32-bit-arm-instruction-address-not-used
+        // Many algorithms rely on this assumption for correctness.
+        // Many objects have even stricter alignment requirements and need up to 8-byte alignment.
+        final BigInteger alignment = BigInteger.valueOf(8);
+
+        Map<MemoryObject, BigInteger> memObj2Addr = new HashMap<>();
+        BigInteger nextAddr = alignment;
+        for(MemoryObject memObj : memory.getObjects()) {
+            memObj2Addr.put(memObj, nextAddr);
+
+            // Compute next aligned address as follows:
+            //  nextAddr = curAddr + size + padding = k*alignment   // Alignment requirement
+            //  => padding = k*alignment - curAddr - size
+            //  => padding mod alignment = (-size) mod alignment    // k*alignment and curAddr are 0 mod alignment.
+            //  => padding = (-size) mod alignment                  // Because padding < alignment
+            final BigInteger memObjSize = BigInteger.valueOf(memObj.size());
+            final BigInteger padding = memObjSize.negate().mod(alignment);
+            nextAddr = nextAddr.add(memObjSize).add(padding);
+        }
+
+        return memObj2Addr;
     }
 
     /**

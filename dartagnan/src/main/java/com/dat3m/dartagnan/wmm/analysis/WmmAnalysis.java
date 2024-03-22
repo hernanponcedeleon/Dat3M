@@ -6,7 +6,7 @@ import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;
-import com.dat3m.dartagnan.wmm.definition.*;
+import com.dat3m.dartagnan.wmm.definition.Difference;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -66,12 +66,7 @@ public class WmmAnalysis {
         for (Set<DependencyGraph<Relation>.Node> scc : depGraph.getSCCs()) {
             for (DependencyGraph<Relation>.Node node : scc) {
                 final Definition d = node.getContent().getDefinition();
-                if ((d instanceof Inverse || d instanceof DomainIdentity || d instanceof RangeIdentity || d instanceof TransitiveClosure) && scc.size() > 1) {
-                    // Unary relations are not implemented in recursions right now
-                    throw new UnsupportedOperationException(String.format(
-                            "Unary relation %s not supported in recursive definitions.", node.getContent()
-                    ));
-                } else if (d instanceof Difference diff && scc.contains(depGraph.get(diff.getSubtrahend()))) {
+                if (d instanceof Difference diff && scc.contains(depGraph.get(diff.getSubtrahend()))) {
                     // Non-monotonic recursion gives ill-defined memory models.
                     throw new MalformedMemoryModelException(String.format(
                             "Non-monotonic recursion is not supported: %s", node.getContent()
