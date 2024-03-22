@@ -22,12 +22,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -60,6 +55,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private int totalReplacements = 0;
     private int failedAddInto = 0;
     private int succeededAddInto = 0;
+    private Graphviz graphviz;
 
     ///When a pointer set gains new content, it is added to this queue
     private final LinkedHashMap<Variable, List<Offset<Variable>>> queue = new LinkedHashMap<>();
@@ -92,10 +88,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // ================================ Construction ================================
 
-    public static InclusionBasedPointerAnalysis fromConfig(Program program, Context analysisContext, Configuration config)
-            throws InvalidConfigurationException {
+    public static InclusionBasedPointerAnalysis fromConfig(Program program, Context analysisContext, AliasAnalysis.Config config) {
         final var analysis = new InclusionBasedPointerAnalysis(program, analysisContext.requires(Dependency.class));
-        analysis.run(program);
+        analysis.run(program, config);
         logger.debug("variable count: {}", analysis.totalVariables);
         logger.debug("replacement count: {}", analysis.totalReplacements);
         logger.debug("alignment sizes: {}", analysis.totalAlignmentSizes);
@@ -143,9 +138,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 vx.alignment.isEmpty() && vy.alignment.isEmpty();
     }
 
+    @Override
+    public Graphviz getGraphVisualization() {
+        return graphviz;
+    }
+
     // ================================ Processing ================================
 
-    private void run(Program program) {
+    private void run(Program program, AliasAnalysis.Config configuration) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
         // Pre-processing:
         for (final MemoryObject object : program.getMemory().getObjects()) {
@@ -166,7 +166,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             logger.trace("dequeue {}", variable);
             algorithm(variable, edges);
         }
-        printGraph();
+        if (configuration.graphvizInternal) {
+            generateGraph();
+        }
         for (final Map.Entry<MemoryCoreEvent, Offset<Variable>> entry : eventAddressSpaceMap.entrySet()) {
             postProcess(entry);
         }
@@ -740,7 +742,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Green-labeled nodes represent memory objects.
     // Red-labeled nodes are address variables that do not include any memory objects (probably a bug).
     // Blue-labeled nodes are variables where transitivity is broken (certainly a bug).
-    private void printGraph() {
+    private void generateGraph() {
         final Set<Variable> seen = new HashSet<>(constantMap.values());
         for (Set<Variable> news = seen; !news.isEmpty();) {
             final var next = new HashSet<Variable>();
@@ -790,7 +792,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
         }
         problematic.removeAll(transitionBlocker);
-        final var graphviz = new Graphviz();
+        graphviz = new Graphviz();
         graphviz.beginDigraph("internal alias");
         for (final Variable v : constantMap.values()) {
             graphviz.addNode("\"" + v.name + "\"", "fontcolor=mediumseagreen");
@@ -814,15 +816,5 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         graphviz.addEdges(stores);
         graphviz.end();
         graphviz.end();
-        var file = new File("z_out/temp.dot");
-        try {
-            try (FileWriter writer = new FileWriter(file)) {
-                graphviz.generateOutput(writer);
-            }
-            Graphviz.convert(file);
-            logger.info("generated graph at \"{}\"", file.getAbsolutePath());
-        } catch (IOException | InterruptedException x) {
-            logger.error("Could not create alias graph", x);
-        }
     }
 }
