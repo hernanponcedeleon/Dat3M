@@ -6,11 +6,11 @@ target triple = "arm64-apple-macosx13.0.0"
 @array = dso_local global [10 x i32] zeroinitializer, align 4, !dbg !0
 @__func__.main = private unnamed_addr constant [5 x i8] c"main\00", align 1
 @.str = private unnamed_addr constant [13 x i8] c"uninitRead.c\00", align 1
-@.str.1 = private unnamed_addr constant [18 x i8] c"array[SIZE] == 42\00", align 1
+@.str.1 = private unnamed_addr constant [27 x i8] c"array[SIZE + 100000] == 42\00", align 1
 
 ; Function Attrs: noinline nounwind ssp uwtable
 define dso_local i32 @main() #0 !dbg !21 {
-  %1 = load volatile i32, i32* getelementptr inbounds ([10 x i32], [10 x i32]* @array, i64 1, i64 0), align 4, !dbg !24
+  %1 = load volatile i32, i32* getelementptr inbounds ([10 x i32], [10 x i32]* @array, i64 10001, i64 0), align 4, !dbg !24
   %2 = icmp eq i32 %1, 42, !dbg !24
   %3 = xor i1 %2, true, !dbg !24
   %4 = zext i1 %3 to i32, !dbg !24
@@ -18,7 +18,7 @@ define dso_local i32 @main() #0 !dbg !21 {
   br i1 %3, label %6, label %7, !dbg !24
 
 6:                                                ; preds = %0
-  call void @__assert_rtn(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i32 15, i8* getelementptr inbounds ([18 x i8], [18 x i8]* @.str.1, i64 0, i64 0)) #2, !dbg !24
+  call void @__assert_rtn(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @__func__.main, i64 0, i64 0), i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i32 16, i8* getelementptr inbounds ([27 x i8], [27 x i8]* @.str.1, i64 0, i64 0)) #2, !dbg !24
   unreachable, !dbg !24
 
 7:                                                ; preds = %0
@@ -37,7 +37,7 @@ attributes #2 = { cold noreturn }
 !llvm.ident = !{!20}
 
 !0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
-!1 = distinct !DIGlobalVariable(name: "array", scope: !2, file: !6, line: 11, type: !7, isLocal: false, isDefinition: true)
+!1 = distinct !DIGlobalVariable(name: "array", scope: !2, file: !6, line: 12, type: !7, isLocal: false, isDefinition: true)
 !2 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: "Homebrew clang version 12.0.1", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, globals: !5, nameTableKind: None, sysroot: "/Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk", sdk: "MacOSX13.sdk")
 !3 = !DIFile(filename: "/Users/thomashaas/IdeaProjects/Dat3M/benchmarks/c/miscellaneous/uninitRead.c", directory: "/Users/thomashaas/IdeaProjects/Dat3M")
 !4 = !{}
@@ -57,8 +57,8 @@ attributes #2 = { cold noreturn }
 !18 = !{i32 1, !"sign-return-address-with-bkey", i32 0}
 !19 = !{i32 7, !"PIC Level", i32 2}
 !20 = !{!"Homebrew clang version 12.0.1"}
-!21 = distinct !DISubprogram(name: "main", scope: !6, file: !6, line: 13, type: !22, scopeLine: 14, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
+!21 = distinct !DISubprogram(name: "main", scope: !6, file: !6, line: 14, type: !22, scopeLine: 15, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
 !22 = !DISubroutineType(types: !23)
 !23 = !{!9}
-!24 = !DILocation(line: 15, column: 5, scope: !21)
-!25 = !DILocation(line: 16, column: 5, scope: !21)
+!24 = !DILocation(line: 16, column: 5, scope: !21)
+!25 = !DILocation(line: 17, column: 5, scope: !21)
