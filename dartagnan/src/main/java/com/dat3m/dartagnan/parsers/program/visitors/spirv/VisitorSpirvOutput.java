@@ -70,8 +70,8 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
 
     @Override
     public AbstractAssert visitAssertionBasic(SpirvParser.AssertionBasicContext ctx) {
-        Expression expr1 = acceptAssertionValue(ctx.assertionValue(0), false);
-        Expression expr2 = acceptAssertionValue(ctx.assertionValue(1), true);
+        Expression expr1 = acceptAssertionValue(ctx.assertionValue(0));
+        Expression expr2 = acceptAssertionValue(ctx.assertionValue(1));
         if (ctx.assertionCompare().ModeHeader_EqualEqual() != null) {
             return new AssertBasic(expr1, EQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_NotEqual() != null) {
@@ -89,7 +89,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         }
     }
 
-    private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx, boolean right) {
+    private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx) {
         if (ctx.initBaseValue() != null) {
             return EXPR_FACTORY.parseValue(ctx.initBaseValue().getText(), TYPE_FACTORY.getArchType());
         }
@@ -100,7 +100,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         }
         TerminalNode offset = ctx.ModeHeader_PositiveInteger();
         if (offset == null) {
-            return right ? base : new Location(name, base, 0);
+            return new Location(name, base, 0);
         }
         Type type = builder.getVariableType(name);
         int bitWidth = TYPE_FACTORY.getMemorySizeInBytes(type);
