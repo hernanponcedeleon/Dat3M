@@ -99,9 +99,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getLeft());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getLeft());
 
-        assertEquals("%v1", ((MemoryObject) ast1.getRight()).getCVar());
-        assertEquals("%v2", ((MemoryObject) ast2.getRight()).getCVar());
-        assertEquals("%v3", ((MemoryObject) ast3.getRight()).getCVar());
+        assertEquals("%v1", ((Location) ast1.getRight()).getName());
+        assertEquals("%v2", ((Location) ast2.getRight()).getName());
+        assertEquals("%v3", ((Location) ast3.getRight()).getName());
     }
 
     @Test
@@ -456,6 +456,72 @@ public class SpirvHeaderSingleTest {
         assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
         assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
         assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+    }
+
+    @Test
+    public void testByteWidth() {
+        // given
+        String wholeSpv = """
+            ; @Input: %v4 = {0, 0, 0}
+            ; @Output: forall (%v4[0]==1 and %v4[1]==2 and %v4[2]==3)
+                           OpCapability Shader
+                    %ext = OpExtInstImport "GLSL.std.450"
+                           OpMemoryModel Logical GLSL450
+                           OpEntryPoint GLCompute %main "main"
+                           OpSource GLSL 450
+                   %void = OpTypeVoid
+                   %func = OpTypeFunction %void
+                 %uint16 = OpTypeInt 16 0
+                 %uint32 = OpTypeInt 32 0
+                 %uint64 = OpTypeInt 64 0
+
+                     %c0 = OpConstant %uint16 0
+                     %c1 = OpConstant %uint32 1
+                     %c2 = OpConstant %uint64 2
+
+                 %struct = OpTypeStruct %uint16 %uint32 %uint64
+             %ptr_struct = OpTypePointer Uniform %struct
+            
+               %ptr_uint16 = OpTypePointer Uniform %uint16
+               %ptr_uint32 = OpTypePointer Uniform %uint32
+               %ptr_uint64 = OpTypePointer Uniform %uint64
+              
+                    %v4 = OpVariable %ptr_struct Uniform
+                   %main = OpFunction %void None %func
+                  %label = OpLabel
+                    %el0 = OpAccessChain %ptr_uint16 %v4 %c0
+                    %el1 = OpAccessChain %ptr_uint32 %v4 %c1
+                    %el2 = OpAccessChain %ptr_uint64 %v4 %c2
+                           OpStore %el0 %c0
+                           OpStore %el1 %c1
+                           OpStore %el2 %c2
+                           OpReturn
+                           OpFunctionEnd
+                 """;
+        // when
+        Program program = localParse(wholeSpv);
+        AssertCompositeAnd ast = (AssertCompositeAnd) program.getSpecification();
+
+        // then
+        assertEquals(ASSERT_TYPE_FORALL, ast.getType());
+
+        AssertBasic ast1 = (AssertBasic) ((AssertCompositeAnd) ast.getLeft()).getLeft();
+        AssertBasic ast2 = (AssertBasic) ((AssertCompositeAnd) ast.getLeft()).getRight();
+        AssertBasic ast3 = (AssertBasic) ast.getRight();
+
+        IntegerType int64 = TYPE_FACTORY.getIntegerType(64);
+
+        assertEquals(EXPR_FACTORY.makeValue(1, int64), ast1.getRight());
+        assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
+        assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
+
+        assertEquals("%v4[0]", ((Location) ast1.getLeft()).getName());
+        assertEquals("%v4[1]", ((Location) ast2.getLeft()).getName());
+        assertEquals("%v4[2]", ((Location) ast3.getLeft()).getName());
+
+        assertEquals(0, ((Location) ast1.getLeft()).getOffset());
+        assertEquals(2, ((Location) ast2.getLeft()).getOffset());
+        assertEquals(6, ((Location) ast3.getLeft()).getOffset());
     }
 
     private Program localParse(String wholeSpv) {

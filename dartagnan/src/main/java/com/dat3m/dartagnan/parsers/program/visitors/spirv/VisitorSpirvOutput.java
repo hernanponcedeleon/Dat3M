@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
@@ -103,20 +104,33 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
             return new Location(name, base, 0);
         }
         Type type = builder.getVariableType(name);
-        int bitWidth = TYPE_FACTORY.getMemorySizeInBytes(type);
-        int numElements = getAggregateNumElements(type);
-        int byteWidth = bitWidth / numElements;
-        int o = Integer.parseInt(offset.getText()) * byteWidth;
+        int ind = Integer.parseInt(offset.getText());
+        List<Type> types = unrollType(type);
+        if (ind >= types.size()) {
+            throw new ParsingException("Index out of bounds: %s", offset.getText());
+        }
+        int o = 0;
+        for (int i = 0; i < ind; i++) {
+            o += TYPE_FACTORY.getMemorySizeInBytes(types.get(i));
+        }
         return new Location(name + "[" + offset.getText() + "]", base, o);
     }
 
-    private int getAggregateNumElements(Type type) {
+    private List<Type> unrollType(Type type) {
         if (type instanceof ArrayType arrayType) {
-            return arrayType.getNumElements();
+            List<Type> result = new ArrayList<>();
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                result.addAll(unrollType(arrayType.getElementType()));
+            }
+            return result;
         } else if (type instanceof AggregateType aggregateType) {
-            List<Type> types = aggregateType.getDirectFields();
-            return types.stream().mapToInt(this::getAggregateNumElements).sum();
+            List<Type> result = new ArrayList<>();
+            for (Type fieldType : aggregateType.getDirectFields()) {
+                result.addAll(unrollType(fieldType));
+            }
+            return result;
+        } else {
+            return List.of(type);
         }
-        return 1;
     }
 }
