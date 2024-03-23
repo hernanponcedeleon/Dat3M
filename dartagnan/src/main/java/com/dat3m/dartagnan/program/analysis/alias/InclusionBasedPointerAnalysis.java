@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Program;
@@ -9,10 +10,7 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.visualization.Graphviz;
@@ -179,7 +177,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private void processWriter(RegWriter event) {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
-                event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) : null;
+                        event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
+                        event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
         final Offset<Variable> value;
         if (expr != null) {
             final Event pov = event instanceof ThreadArgument arg ? arg.getCreator() : event;
