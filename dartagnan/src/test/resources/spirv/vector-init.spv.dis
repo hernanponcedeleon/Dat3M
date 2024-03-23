@@ -1,5 +1,5 @@
-; @Input: %v3v = Vector {2, 1, 0}
-; @Output: forall (%v3v[0]==2 and %v3v[8]==1 and %v3v[16]==0)
+; @Input: %v3v = {2, 1, 0}
+; @Output: forall (%v3v[0]==2 and %v3v[1]==1 and %v3v[2]==0)
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0
