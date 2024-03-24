@@ -32,6 +32,11 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean constantPropagation = true;
 
+    @Option(name = FLATTENNING,
+            description = "Simplifies chains of local computations within the same block.",
+            secure = true)
+    private boolean flattening = true;
+
     @Option(name = DEAD_ASSIGNMENT_ELIMINATION,
             description = "Performs dead code elimination.",
             secure = true)
@@ -106,6 +111,7 @@ public class ProcessingManager implements ProgramProcessor {
                         FunctionProcessor.chain(
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
                                 sccp,
+                                flattening ? Flattener.newInstance() : null,
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                                 RemoveDeadCondJumps.fromConfig(config)
                         ), Target.FUNCTIONS, true
