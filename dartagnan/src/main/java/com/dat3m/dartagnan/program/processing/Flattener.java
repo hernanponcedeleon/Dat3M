@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 
@@ -24,6 +25,7 @@ public class Flattener implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
+        propagationMap = new HashMap<>();
         final ExpressionPropagator propagator = new ExpressionPropagator();
         for (Event cur : function.getEvents()) {
             if(cur instanceof Label) {
@@ -32,8 +34,12 @@ public class Flattener implements FunctionProcessor {
             if (cur instanceof RegReader regReader) {
                 regReader.transformExpressions(propagator);
             }
-            if(cur instanceof Local loc && !loc.getExpr().getRegs().contains(loc.getResultRegister())) {
+            if(cur instanceof Local loc) {
                 propagationMap.put(loc.getResultRegister(), loc.getExpr());
+            }
+            if (cur instanceof RegWriter writer) {
+                // Invalidate all expressions that were touched.
+                propagationMap.values().removeIf(v -> v.getRegs().contains(writer.getResultRegister()));
             }
         }
     }
