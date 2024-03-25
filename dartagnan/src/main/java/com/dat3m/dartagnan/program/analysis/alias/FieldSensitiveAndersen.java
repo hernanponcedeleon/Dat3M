@@ -132,7 +132,7 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
 
 
     protected void processRegs(Event e) {
-        if (!(e instanceof Local || e instanceof ThreadArgument)) {
+        if (!(e instanceof Local || e instanceof ThreadArgument || e instanceof Alloc)) {
             return;
         }
         assert e instanceof RegWriter;
@@ -140,6 +140,8 @@ public class FieldSensitiveAndersen implements AliasAnalysis {
         final Expression expr;
         if (e instanceof Local local) {
             expr = local.getExpr();
+        } else if (e instanceof Alloc alloc) {
+            expr = alloc.getAllocatedObject();
         } else {
             final ThreadArgument arg = (ThreadArgument) e;
             expr = arg.getCreator().getArguments().get(arg.getIndex());

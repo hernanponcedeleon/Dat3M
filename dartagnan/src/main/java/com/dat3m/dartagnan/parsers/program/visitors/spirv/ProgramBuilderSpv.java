@@ -196,7 +196,7 @@ public class ProgramBuilderSpv {
     }
 
     public MemoryObject allocateMemory(int bytes) {
-        return program.getMemory().allocate(bytes, true);
+        return program.getMemory().allocate(bytes);
     }
 
     public Type getType(String name) {
@@ -469,7 +469,7 @@ public class ProgramBuilderSpv {
 
     public MemoryObject getMemoryObject(String id) {
         return program.getMemory().getObjects().stream()
-                .filter(o -> o.getCVar().equals(id))
+                .filter(o -> o.getName().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new ParsingException("Undefined memory object '%s'", id));
     }

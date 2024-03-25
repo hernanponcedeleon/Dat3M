@@ -60,7 +60,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
         int size = TYPE_FACTORY.getMemorySizeInBytes(type);
         MemoryObject memObj = builder.allocateMemory(size);
-        memObj.setCVar(id);
+        memObj.setName(id);
         if (isThreadLocal(ctx.storageClass())) {
             memObj.setIsThreadLocal(true);
         }

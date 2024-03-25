@@ -30,12 +30,12 @@ public class MemoryTransformer extends ExprTransformer {
     public Expression visitLeafExpression(LeafExpression expr) {
         if (expr instanceof MemoryObject memObj) {
             if (memObj.isThreadLocal() && !mapping.containsKey(memObj)) {
-                MemoryObject copy = memory.allocate(memObj.size(), true);
-                copy.setCVar(String.format("%s@T%s", memObj.getCVar(), tid));
-                for (int i = 0; i < memObj.size(); i++) {
+                MemoryObject copy = memory.allocate(memObj.size());
+                copy.setName(String.format("%s@T%s", memObj.getName(), tid));
+                for (Integer i : memObj.getInitializedFields()){
                     copy.setInitialValue(i, memObj.getInitialValue(i));
                 }
-                builtInDecoration.decorate(memObj.getCVar(), copy, types.get(memObj.getCVar()));
+                builtInDecoration.decorate(memObj.getName(), copy, types.get(memObj.getName()));
                 mapping.put(memObj, copy);
             }
             return mapping.getOrDefault(memObj, memObj);

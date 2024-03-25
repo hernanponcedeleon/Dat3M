@@ -70,9 +70,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getName());
+        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getName());
+        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getName());
     }
 
     @Test
@@ -424,9 +424,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getName());
+        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getName());
+        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getName());
     }
 
     @Test
@@ -453,9 +453,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getName());
+        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getName());
+        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getName());
     }
 
     @Test

@@ -95,7 +95,7 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     public MemoryObject mockVariable(String id, String typeId) {
         int bytes = TYPE_FACTORY.getMemorySizeInBytes(getType(typeId));
         MemoryObject memObj = allocateMemory(bytes);
-        memObj.setCVar(id);
+        memObj.setName(id);
         addExpression(id, memObj);
         return memObj;
     }
