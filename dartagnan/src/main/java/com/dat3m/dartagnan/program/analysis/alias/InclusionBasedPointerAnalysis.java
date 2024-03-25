@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
@@ -153,8 +153,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final RegWriter writer : program.getThreadEvents(RegWriter.class)) {
             processWriter(writer);
         }
-        for (final MemoryCoreEvent store : program.getThreadEvents(MemoryCoreEvent.class)) {
-            processMemoryEvent(store);
+        for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
+            processMemoryEvent(memoryEvent);
         }
         // Fixed-point computation:
         while (!queue.isEmpty()) {
@@ -181,8 +181,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                         event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
         final Offset<Variable> value;
         if (expr != null) {
-            final Event pov = event instanceof ThreadArgument arg ? arg.getCreator() : event;
-            value = getResultVariable(expr, pov);
+            assert event instanceof RegReader;
+            final RegReader reader = event instanceof ThreadArgument arg ? arg.getCreator() : (RegReader) event;
+            value = getResultVariable(expr, reader);
             if (value == null) {
                 return;
             }
@@ -193,7 +194,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 return;
             }
             eventAddressSpaceMap.put(load, address);
-            final var result = newVariable("ld" + load.getGlobalId() + "(" + load.getResultRegister().getName() + ")");
+            final Variable result = newVariable("ld" + load.getGlobalId() + "(" + load.getResultRegister().getName() + ")");
             addInto(address.base.loads, new Offset<>(result, address.offset, address.alignment));
             result.seeAlso.add(address.base);
             value = new Offset<>(result, 0, List.of());
@@ -320,7 +321,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Also closes the inclusion relation transitively on the left.
     private void addEdge(Variable v1, Variable v2, int o, List<Integer> a) {
         // When adding a self-loop, try to accelerate it immediately: 'v -+1> v' means 'v -+1x> v'.
-        final var edge = tryAccelerateEdge(new Offset<>(v1, o, a), v2);
+        final Offset<Variable> edge = tryAccelerateEdge(new Offset<>(v1, o, a), v2);
         if (!addInto(v2.includes, edge)) {
             return;
         }
@@ -337,7 +338,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         while (!stack.empty()) {
             final Offset<Variable> e = stack.pop();
             for (final Offset<Variable> edgeBefore : List.copyOf(e.base.includes)) {
-                final var joinedEdge = tryAccelerateEdge(join(edgeBefore, e.offset, e.alignment), v2);
+                final Offset<Variable> joinedEdge = tryAccelerateEdge(join(edgeBefore, e.offset, e.alignment), v2);
                 if (addInto(v2.includes, joinedEdge)) {
                     edgeBefore.base.seeAlso.add(v2);
                     edges.add(joinedEdge);
@@ -584,7 +585,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // The result refers to an existing variable,
     // if the expression has a static base, or if the expression has a dynamic base with exactly one writer.
     // Otherwise, it refers to a new variable with proper incoming edges.
-    private Offset<Variable> getResultVariable(Expression expression, Event event) {
+    private Offset<Variable> getResultVariable(Expression expression, RegReader reader) {
         final var collector = new Collector();
         final Result result = expression.accept(collector);
         final Offset<Variable> main;
@@ -596,7 +597,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         } else if (result.register == null) {
             main = null;
         } else {
-            main = join(getPhiNodeVariable(result.register, event), offset, result.alignment);
+            main = join(getPhiNodeVariable(result.register, reader), offset, result.alignment);
         }
         if (main != null &&
                 collector.address.stream().noneMatch(a -> a != result.address) &&
@@ -606,7 +607,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (main == null && collector.address.isEmpty() && collector.register.isEmpty()) {
             return null;
         }
-        final var variable = newVariable("re" + event.getGlobalId() + "(" + expression + ")");
+        final Variable variable = newVariable("re" + reader.getGlobalId() + "(" + expression + ")");
         if (main != null) {
             addEdge(main.base, variable, main.offset, main.alignment);
         }
@@ -617,7 +618,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final Register register : collector.register) {
             if (result == null || register != result.register) {
-                final Offset<Variable> registerVariable = getPhiNodeVariable(register, event);
+                final Offset<Variable> registerVariable = getPhiNodeVariable(register, reader);
                 addEdge(registerVariable.base, variable, 0, TOP);
             }
         }
@@ -626,17 +627,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Fetches the node for address values that can be read from a register at a specific program point.
     // Constructs a new node, if there are multiple writers.
-    private Offset<Variable> getPhiNodeVariable(Register r, Event e) {
-        final List<RegWriter> writers = dependency.of(e, r).may;
+    private Offset<Variable> getPhiNodeVariable(Register register, RegReader reader) {
+        final List<RegWriter> writers = dependency.of(reader, register).may;
         final Offset<Variable> find = variableMap.get(writers);
         if (find != null) {
             return find;
         }
-        final var result = newVariable("jn" + e.getGlobalId() + "(" + r.getName() + ")");
+        final Variable result = newVariable("jn" + reader.getGlobalId() + "(" + register.getName() + ")");
         for (final RegWriter writer : writers.size() == 1 ? List.<RegWriter>of() : writers) {
             // The variables created here will be replaced later, if the events are out of order.
             final Offset<Variable> writerVariable = variableMap.computeIfAbsent(List.of(writer),
-                    k -> new Offset<>(newVariable("ph" + e.getGlobalId()), 0, List.of()));
+                    k -> new Offset<>(newVariable("ph" + reader.getGlobalId()), 0, List.of()));
             addEdge(writerVariable.base, result, writerVariable.offset, writerVariable.alignment);
         }
         return variableMap.compute(writers, (k, v) -> new Offset<>(result, 0, List.of()));
@@ -669,7 +670,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     right.register == null && right.alignment.isEmpty()) {
                 // TODO: Make sure that the type of normalization does not break this code.
                 //  Maybe always do signed normalization?
-                return new Result(null, null, kind.apply(left.offset, right.offset, x.getType().getBitWidth()), List.of());
+                final BigInteger result = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
+                return new Result(null, null, result, List.of());
             }
             return switch (kind) {
                 case MUL -> {
@@ -783,9 +785,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
         }
         final Set<String> transitionBlocker = new HashSet<>();
-        for (final var e : map.values()) {
-            for (final var v2 : e) {
-                if (!e.containsAll(map.getOrDefault(v2, Set.of()))) {
+        for (final Set<String> outSet : map.values()) {
+            for (final String v2 : outSet) {
+                if (!outSet.containsAll(map.getOrDefault(v2, Set.of()))) {
                     transitionBlocker.add(v2);
                 }
             }
