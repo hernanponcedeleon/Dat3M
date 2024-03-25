@@ -50,11 +50,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Expression value = getOpVariableInitialValue(ctx, type);
         if (value != null) {
             type = validateVariableType(id, value, type, value.getType());
-        } else if (type instanceof ArrayType aType && aType.getNumElements() == -1) {
+        } else if (!isFixedSize(type)) {
             throw new ParsingException("Missing initial value for runtime variable '%s'", id);
         }
 
-        // TODO: Resolve for each element if virtual
         int size = TYPE_FACTORY.getMemorySizeInBytes(type);
         MemoryObject memObj = builder.allocateMemoryVirtual(size);
         memObj.setName(id);
@@ -83,6 +82,27 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             return builder.getExpression(ctx.initializer().getText());
         }
         return null;
+    }
+
+    // TODO: Unit test for a nested runtime type
+    private boolean isFixedSize(Type type) {
+        if (type instanceof BooleanType
+                || type instanceof IntegerType
+                || type instanceof FloatType) {
+            return true;
+        }
+        if (type instanceof ArrayType aType) {
+            return aType.hasKnownNumElements() && isFixedSize(aType.getElementType());
+        }
+        if (type instanceof AggregateType aType) {
+            for (Type elType : aType.getDirectFields()) {
+                if (!isFixedSize(elType)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        throw new ParsingException("Unexpected variable type '%s'", type);
     }
 
     private Expression castInput(String id, Type type, Expression value) {
