@@ -1,4 +1,4 @@
-; @Input:  %_ = Struct{ Vector {0, 1, 2, 3, 4, 5, 6, 7}}
+; @Input:  %_ = {{0, 1, 2, 3, 4, 5, 6, 7}}
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0

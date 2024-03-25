@@ -12,11 +12,11 @@ public class AssertCompositeAnd extends AbstractAssert {
     private final AbstractAssert a1;
     private final AbstractAssert a2;
 
-    public AbstractAssert getA1() {
+    public AbstractAssert getLeft() {
         return a1;
     }
 
-    public AbstractAssert getA2() {
+    public AbstractAssert getRight() {
         return a2;
     }
 

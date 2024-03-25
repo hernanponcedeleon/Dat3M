@@ -21,6 +21,14 @@ public class AssertBasic extends AbstractAssert {
         this.op = op;
     }
 
+    public Expression getLeft() {
+        return e1;
+    }
+
+    public Expression getRight() {
+        return e2;
+    }
+
     @Override
     public BooleanFormula encode(EncodingContext context) {
         return context.encodeComparison(op,
