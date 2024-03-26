@@ -9,12 +9,71 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
 import java.util.List;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorVulkan extends VisitorBase {
+
+    @Override
+    public List<Event> visitSpirvLoad(SpirvLoad e) {
+        Load load = newLoadWithMo(e.getResultRegister(), e.getAddress(), e.getMo());
+        this.propagateTags(e, load);
+        return eventSequence(
+                load
+        );
+    }
+
+    @Override
+    public List<Event> visitSpirvStore(SpirvStore e) {
+        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo());
+        this.propagateTags(e, store);
+        return eventSequence(
+                store
+        );
+    }
+
+    @Override
+    public List<Event> visitSpirvRMW(SpirvRmw e) {
+        Register resultRegister = e.getResultRegister();
+        String mo = e.getMo();
+        Expression address = e.getAddress();
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address,
+                expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), Tag.Vulkan.storeMO(mo));
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
+        return eventSequence(
+                load,
+                store,
+                newLocal(resultRegister, dummy)
+        );
+    }
+
+    @Override
+    public List<Event> visitSpirvXchg(SpirvXchg e) {
+        Register resultRegister = e.getResultRegister();
+        String mo = e.getMo();
+        Expression address = e.getAddress();
+        Register dummy = e.getFunction().newRegister(resultRegister.getType());
+        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
+        return eventSequence(
+                load,
+                store,
+                newLocal(resultRegister, dummy)
+        );
+    }
+
+    @Override
+    public List<Event> visitSpirvCmpXchg(SpirvCmpXchg e) {
+        return visitMemEvent(e);
+    }
 
     @Override
     public List<Event> visitVulkanRMW(VulkanRMW e) {
