@@ -47,35 +47,53 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final List<Integer> TOP = List.of(1);
 
+    // Debug: count inclusion tests grouped by complexity.
     private final Map<Integer, int[]> totalAlignmentSizes = logger.isDebugEnabled() ? new HashMap<>() : null;
-
+    // Debug: count created variables.
     private int totalVariables = 0;
+    // Debug: count variable substitutions.
     private int totalReplacements = 0;
+    // Debug: count new edges already covered by existing ones.
     private int failedAddInto = 0;
+    // Debug: count times a piece of new information was added to the graph.
     private int succeededAddInto = 0;
+
+    // If enabled, the algorithm describes its internal graph to be written into a file.
     private Graphviz graphviz;
 
-    ///When a pointer set gains new content, it is added to this queue
+    // When a variable gains an includes-edge, it is added to this queue for later processing.
     private final LinkedHashMap<Variable, List<Offset<Variable>>> queue = new LinkedHashMap<>();
 
-    ///Result sets
-    private final Map<MemoryCoreEvent, Offset<Variable>> eventAddressSpaceMap = new HashMap<>();
+    // Maps memory events to variables representing their pointer set.
+    private final Map<MemoryCoreEvent, Offset<Variable>> addressVariables = new HashMap<>();
 
-    // These instances should never get incoming edges.
-    private final Map<MemoryObject, Variable> constantMap = new HashMap<>();
+    // Maps memory objects to variables representing their base address.
+    // These Variables should always have empty includes-sets.
+    private final Map<MemoryObject, Variable> objectVariables = new HashMap<>();
 
-    private final Map<List<RegWriter>, Offset<Variable>> variableMap = new HashMap<>();
+    // Maps dependent sets of a register to variables representing their phi node's value set.
+    // Singletons are mapped to their output set.
+    // Offsets are for Local output sets; non-singletons and singletons of loads should have zero offset.
+    private final Map<List<RegWriter>, Offset<Variable>> registerVariables = new HashMap<>();
 
+    // This analysis depends on the results of a Dependency analysis, mapping used registers to a list of possible writers.
     private final Dependency dependency;
+
+    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
     private final Supplier<SyntacticContextAnalysis> synContext;
 
     private static final class Variable {
+        // Any value contained in these Variables is also contained (+ offset).
         private final List<Offset<Variable>> includes = new ArrayList<>();
+        // There is some load event using this (+ offset) as pointer set and the other variable as output set.
         private final List<Offset<Variable>> loads = new ArrayList<>();
+        // There is some store event using this (+ offset1) as pointer set and the other variable (+ offset2) as value set.
         private final List<Offset<Offset<Variable>>> stores = new ArrayList<>();
-        // all variables that have a direct link to this
+        // All variables that have a direct (includes/loads/stores) link to this.
         private final HashSet<Variable> seeAlso = new HashSet<>();
+        // If nonnull, this variable represents that object's base address.
         private final MemoryObject object;
+        // For visualization.
         private final String name;
         private Variable(MemoryObject o, String n) {
             object = o;
@@ -105,8 +123,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mayAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        final Offset<Variable> vx = eventAddressSpaceMap.get(x);
-        final Offset<Variable> vy = eventAddressSpaceMap.get(y);
+        final Offset<Variable> vx = addressVariables.get(x);
+        final Offset<Variable> vy = addressVariables.get(y);
         if (vx == null || vy == null) {
             return true;
         }
@@ -130,8 +148,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     @Override
     public boolean mustAlias(MemoryCoreEvent x, MemoryCoreEvent y) {
-        final Offset<Variable> vx = eventAddressSpaceMap.get(x);
-        final Offset<Variable> vy = eventAddressSpaceMap.get(y);
+        final Offset<Variable> vx = addressVariables.get(x);
+        final Offset<Variable> vy = addressVariables.get(y);
         return vx != null && vy != null && vx.base == vy.base && vx.offset == vy.offset &&
                 vx.alignment.isEmpty() && vy.alignment.isEmpty();
     }
@@ -146,10 +164,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private void run(Program program, AliasAnalysis.Config configuration) {
         checkArgument(program.isCompiled(), "The program must be compiled first.");
         // Pre-processing:
+        // Each memory object gets a variable representing its base address value.
         for (final MemoryObject object : program.getMemory().getObjects()) {
             totalVariables++;
-            constantMap.put(object, new Variable(object, object.toString()));
+            objectVariables.put(object, new Variable(object, object.toString()));
         }
+        // Each expression gets a "re" variable representing its result value set.
+        // Each register writer set gets a "ph" variable representing its phi-node's value set.
+        // Each register writer gets a "ld" variable representing its return value set.
+        // Variables may fulfill multiple roles, e.g. the "ld" of a Local is the "re" of its expression, etc.
         for (final RegWriter writer : program.getThreadEvents(RegWriter.class)) {
             processWriter(writer);
         }
@@ -167,13 +190,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (configuration.graphvizInternal) {
             generateGraph();
         }
-        for (final Map.Entry<MemoryCoreEvent, Offset<Variable>> entry : eventAddressSpaceMap.entrySet()) {
+        for (final Map.Entry<MemoryCoreEvent, Offset<Variable>> entry : addressVariables.entrySet()) {
             postProcess(entry);
         }
-        constantMap.clear();
-        variableMap.clear();
+        objectVariables.clear();
+        registerVariables.clear();
     }
 
+    // Declares the "ld" variable of 'event' and inserts initial 'includes' and 'loads' edges.
+    // Also declares "re" and "ph" variables, if needed.
     private void processWriter(RegWriter event) {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
@@ -193,7 +218,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 logger.warn("null pointer address for {}", synContext.get().getContextInfo(event));
                 return;
             }
-            eventAddressSpaceMap.put(load, address);
+            addressVariables.put(load, address);
             final Variable result = newVariable("ld" + load.getGlobalId() + "(" + load.getResultRegister().getName() + ")");
             addInto(address.base.loads, new Offset<>(result, address.offset, address.alignment));
             result.seeAlso.add(address.base);
@@ -201,7 +226,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         } else {
             return;
         }
-        final Offset<Variable> old = variableMap.put(List.of(event), value);
+        final Offset<Variable> old = registerVariables.put(List.of(event), value);
         if (old != null) {
             // this might happen if events are iterated out of order
             assert old.offset == 0 && old.alignment.isEmpty();
@@ -209,6 +234,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
+    // Declares the "re" variables of the address of 'event', if needed, and inserts 'stores' relationships.
+    // Also propagates communications to loads, if both directly access the same variable.
     private void processMemoryEvent(MemoryCoreEvent event) {
         logger.trace("{}", event);
         if (event instanceof Load) {
@@ -220,7 +247,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             logger.warn("null pointer address for {}", synContext.get().getContextInfo(event));
             return;
         }
-        eventAddressSpaceMap.put(event, address);
+        addressVariables.put(event, address);
         if (event instanceof Store store) {
             final Offset<Variable> value = getResultVariable(store.getMemValue(), store);
             if (value != null) {
@@ -245,6 +272,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
+    // Closes the "includes" relation transitively and tests for new communications.
     private void algorithm(Variable variable, List<Offset<Variable>> edges) {
         logger.trace("{} includes {}", variable, edges);
         // 'A -> variable -> B' implies 'A -> B'.
@@ -284,6 +312,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
+    // Removes information from the internal graph, which are no longer needed after the algorithm has finished.
+    // This simplifies alias queries and releases memory resources.
     private void postProcess(Map.Entry<MemoryCoreEvent, Offset<Variable>> entry) {
         logger.trace("{}", entry);
         final Offset<Variable> address = entry.getValue();
@@ -362,12 +392,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // In this case, the mapping stays but all outgoing edges are removed from that variable.
     private void replace(Variable old, Offset<Variable> replacement) {
         assert old != replacement.base;
-        assert !constantMap.containsValue(old);
+        assert !objectVariables.containsValue(old);
         totalReplacements++;
         logger.trace("{} -> {}", old, replacement);
         // likely / most frequent case
-        eventAddressSpaceMap.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.offset, v.alignment));
-        variableMap.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.offset, v.alignment));
+        addressVariables.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.offset, v.alignment));
+        registerVariables.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.offset, v.alignment));
         for (final Variable out : old.seeAlso) {
             out.includes.replaceAll(e -> e.base != old ? e : join(replacement, e.offset, e.alignment));
             out.loads.replaceAll(e -> e.base != old ? e : join(replacement, e.offset, e.alignment));
@@ -395,6 +425,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         old.stores.clear();
     }
 
+    // Find "may read from" relationships and deduce new 'includes' edges for the internal graph.
     private void processCommunication(Collection<Offset<Offset<Variable>>> stores, Collection<Offset<Variable>> loads) {
         logger.trace("{} vs {}", stores, loads);
         if (loads.isEmpty()) {
@@ -413,8 +444,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         @Override public String toString() { return String.format("%s+%d+%sx", base, offset, alignment); }
     }
 
-    // checks if leftAlignment contains all linear combinations of offset + rightAlignment
+    // Checks if leftAlignment contains all linear combinations of offset + rightAlignment.
+    // Is allowed to have false negatives, as such only lead to more memory usage of the analysis.
     private boolean includes(int offset, List<Integer> leftAlignment, List<Integer> rightAlignment) {
+        // DEBUG: Count this test.
         if (totalAlignmentSizes != null) {
             totalAlignmentSizes.computeIfAbsent(leftAlignment.size() + rightAlignment.size(), k -> new int[1])[0]++;
         }
@@ -423,15 +456,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final Integer a : leftAlignment) {
             if (a < 0) {
-                final int l = absGcd(leftAlignment);
-                final int r = absGcd(rightAlignment);
+                final int l = reduceAbsGCD(leftAlignment);
+                final int r = reduceAbsGCD(rightAlignment);
                 return offset % l == 0 && r % l == 0;
             }
         }
         for (final Integer a : rightAlignment) {
             if (a < 0) {
-                final int l = absGcd(leftAlignment);
-                final int r = absGcd(rightAlignment);
+                final int l = reduceAbsGCD(leftAlignment);
+                final int r = reduceAbsGCD(rightAlignment);
                 return offset % l == 0 && r % l == 0;
             }
         }
@@ -447,7 +480,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return offset % alignment == 0;
         }
         // Case of multiple dynamic indexes with pairwise indivisible alignments.
-        final int gcd = IntMath.gcd(gcd(rightAlignment), Math.abs(offset));
+        final int gcd = IntMath.gcd(reduceGCD(rightAlignment), Math.abs(offset));
         if (gcd == 0) {
             return true;
         }
@@ -473,11 +506,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return mem[Math.abs(offset)/gcd];
     }
 
-    // checks if leftAlignment contains some linear combination of offset + rightAlignment
+    // Checks if leftAlignment contains some linear combination of offset + rightAlignment
+    // Allowed to have false positives.
     private static boolean overlaps(int offset, List<Integer> leftAlignment, List<Integer> rightAlignment) {
         // exists non-negative integers x, y with leftOffset + x * leftAlignment == rightOffset + y * rightAlignment
-        final int left = gcd(leftAlignment);
-        final int right = gcd(rightAlignment);
+        final int left = reduceGCD(leftAlignment);
+        final int right = reduceGCD(rightAlignment);
         if (left == 0 && right == 0) {
             return offset == 0;
         }
@@ -486,6 +520,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return nonNegativeIndexes && offset % divisor == 0;
     }
 
+    // Tries to insert an element into a set of edges.
+    // If the edge is already covered by the set, this operation has no effect and returns false.
+    // If the edge is inserted, any existing elements that are covered by it are removed to form a set of minimal elements.
     private <T> boolean addInto(List<Offset<T>> set, Offset<T> element) {
         //NOTE The Stream API is too costly here
         for (final Offset<T> o : set) {
@@ -501,7 +538,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return true;
     }
 
-    private static int absGcd(List<Integer> alignment) {
+    // Computes the greatest common divisor of the absolute values of the operands.
+    // This gets called only if there is at least one negative dynamic offset.
+    // Positive values assume non-negative multipliers and thus enable the precision of the previous analysis.
+    // Negative values indicate that the multiplier can also be negative.
+    private static int reduceAbsGCD(List<Integer> alignment) {
         if (alignment.isEmpty()) {
             return 0;
         }
@@ -512,7 +553,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return result;
     }
 
-    private static int gcd(List<Integer> alignment) {
+    // Computes the greatest common divisor of the operands.
+    private static int reduceGCD(List<Integer> alignment) {
         if (alignment.isEmpty()) {
             return 0;
         }
@@ -523,6 +565,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return result;
     }
 
+    // Merges two sets of pairwise-indivisible dynamic offsets.
     private static List<Integer> join(List<Integer> left, List<Integer> right) {
         if (left.isEmpty() || right.isEmpty()) {
             return right.isEmpty() ? left : right;
@@ -545,6 +588,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return result;
     }
 
+    // Checks if value is no multiple of any element in the list.
     private static boolean hasNoDivisorsInList(int value, List<Integer> candidates) {
         for (final Integer candidate : candidates) {
             if (value % candidate == 0) {
@@ -554,14 +598,18 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return true;
     }
 
+    // Adds a single value to a set of dynamic offsets.
     private static List<Integer> join(List<Integer> left, int right) {
         return right == 0 ? left : join(left, List.of(right));
     }
 
+    // Adds an optional register to a set of dynamic offsets.
+    // If the register is present, it may contain any value.
     private static List<Integer> join(List<Integer> left, Register right) {
         return right == null ? left : TOP;
     }
 
+    // Applies another offset to an existing labeled edge.
     private static <T> Offset<T> join(Offset<T> other, int offset, List<Integer> alignment) {
         if (offset == 0 && alignment.isEmpty()) {
             return other;
@@ -569,6 +617,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return new Offset<>(other.base, other.offset + offset, join(other.alignment, alignment));
     }
 
+    // Multiplies all dynamic offsets with another factor.
     private static List<Integer> mul(List<Integer> a, int factor) {
         return factor == 0 ? List.of() : a.stream().map(i -> i * factor).toList();
     }
@@ -593,7 +642,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (result == null) {
             main = null;
         } else if (result.address != null) {
-            main = new Offset<>(constantMap.get(result.address), offset, result.alignment);
+            main = new Offset<>(objectVariables.get(result.address), offset, result.alignment);
         } else if (result.register == null) {
             main = null;
         } else {
@@ -613,7 +662,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final MemoryObject object : collector.address) {
             if (result == null || object != result.address) {
-                addEdge(constantMap.get(object), variable, 0, TOP);
+                addEdge(objectVariables.get(object), variable, 0, TOP);
             }
         }
         for (final Register register : collector.register) {
@@ -629,18 +678,18 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Constructs a new node, if there are multiple writers.
     private Offset<Variable> getPhiNodeVariable(Register register, RegReader reader) {
         final List<RegWriter> writers = dependency.of(reader, register).may;
-        final Offset<Variable> find = variableMap.get(writers);
+        final Offset<Variable> find = registerVariables.get(writers);
         if (find != null) {
             return find;
         }
         final Variable result = newVariable("jn" + reader.getGlobalId() + "(" + register.getName() + ")");
         for (final RegWriter writer : writers.size() == 1 ? List.<RegWriter>of() : writers) {
             // The variables created here will be replaced later, if the events are out of order.
-            final Offset<Variable> writerVariable = variableMap.computeIfAbsent(List.of(writer),
+            final Offset<Variable> writerVariable = registerVariables.computeIfAbsent(List.of(writer),
                     k -> new Offset<>(newVariable("ph" + reader.getGlobalId()), 0, List.of()));
             addEdge(writerVariable.base, result, writerVariable.offset, writerVariable.alignment);
         }
-        return variableMap.compute(writers, (k, v) -> new Offset<>(result, 0, List.of()));
+        return registerVariables.compute(writers, (k, v) -> new Offset<>(result, 0, List.of()));
     }
 
     private Variable newVariable(String name) {
@@ -744,7 +793,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Red-labeled nodes are address variables that do not include any memory objects (probably a bug).
     // Blue-labeled nodes are variables where transitivity is broken (certainly a bug).
     private void generateGraph() {
-        final Set<Variable> seen = new HashSet<>(constantMap.values());
+        final Set<Variable> seen = new HashSet<>(objectVariables.values());
         for (Set<Variable> news = seen; !news.isEmpty();) {
             final var next = new HashSet<Variable>();
             for (final Variable v : news) {
@@ -778,9 +827,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
         }
         final Set<String> problematic = new HashSet<>();
-        for (final Offset<Variable> a : eventAddressSpaceMap.values()) {
-            if (!constantMap.containsValue(a.base) &&
-                    a.base.includes.stream().noneMatch(i -> constantMap.containsValue(i.base))) {
+        for (final Offset<Variable> a : addressVariables.values()) {
+            if (!objectVariables.containsValue(a.base) &&
+                    a.base.includes.stream().noneMatch(i -> objectVariables.containsValue(i.base))) {
                 problematic.add("\"" + a.base.name + "\"");
             }
         }
@@ -795,7 +844,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         problematic.removeAll(transitionBlocker);
         graphviz = new Graphviz();
         graphviz.beginDigraph("internal alias");
-        for (final Variable v : constantMap.values()) {
+        for (final Variable v : objectVariables.values()) {
             graphviz.addNode("\"" + v.name + "\"", "fontcolor=mediumseagreen");
         }
         for (final String v : problematic) {
