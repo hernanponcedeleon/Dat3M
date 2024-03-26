@@ -243,7 +243,7 @@ public class Dartagnan extends BaseOptions {
 
         StringBuilder summary = new StringBuilder();
 
-        if (p.getFormat() == SourceLanguage.LLVM) {
+        if (p.getFormat() != SourceLanguage.LITMUS) {
             if (hasViolations) {
 
                 final SyntacticContextAnalysis synContext = newInstance(p);
