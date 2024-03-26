@@ -13,6 +13,8 @@ import static com.dat3m.dartagnan.program.event.Tag.Spirv.*;
 
 public class SpirvCmpXchg extends RMWCmpXchgBase {
 
+    private static final List<String> moStrength = List.of(RELAXED, ACQUIRE, RELEASE, ACQ_REL, SEQ_CST);
+
     private final String scope;
     private final String eqMo;
     private final Set<String> eqTags;
@@ -63,13 +65,12 @@ public class SpirvCmpXchg extends RMWCmpXchgBase {
     }
 
     private void validateMemoryOrder() {
-        List<String> moTags = getMoTags();
         if (mo.equals(RELEASE) || mo.equals(ACQ_REL)) {
             throw new IllegalArgumentException(
                     String.format("%s cannot have unequal memory order '%s'",
                             getClass().getSimpleName(), mo));
         }
-        if (moTags.indexOf(mo) > moTags.indexOf(eqMo)) {
+        if (moStrength.indexOf(mo) > moStrength.indexOf(eqMo)) {
             throw new IllegalArgumentException(
                     String.format("Unequal semantics '%s' is stronger than equal semantics '%s'", mo, eqMo));
         }

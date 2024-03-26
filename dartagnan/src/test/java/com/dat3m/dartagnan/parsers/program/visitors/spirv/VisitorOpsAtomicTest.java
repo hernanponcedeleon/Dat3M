@@ -136,28 +136,28 @@ public class VisitorOpsAtomicTest {
     public void testIllegalMemoryOrder() {
         doTestIllegalMemoryOrder(68, 0,
                 "%result = OpAtomicLoad %int %ptr %scope %eq",
-                "SpirvLoad cannot have memory order 'RELEASE'");
+                String.format("SpirvLoad cannot have memory order '%s'", RELEASE));
         doTestIllegalMemoryOrder(72, 0,
                 "%result = OpAtomicLoad %int %ptr %scope %eq",
-                "SpirvLoad cannot have memory order 'ACQ_REL'");
+                String.format("SpirvLoad cannot have memory order '%s'", ACQ_REL));
         doTestIllegalMemoryOrder(66, 0,
                 "OpAtomicStore %ptr %scope %eq %value",
-                "SpirvStore cannot have memory order 'ACQUIRE'");
+                String.format("SpirvStore cannot have memory order '%s'", ACQUIRE));
         doTestIllegalMemoryOrder(72, 0,
                 "OpAtomicStore %ptr %scope %eq %value",
-                "SpirvStore cannot have memory order 'ACQ_REL'");
+                String.format("SpirvStore cannot have memory order '%s'", ACQ_REL));
         doTestIllegalMemoryOrder(72, 68,
                 "%result = OpAtomicCompareExchange %int %ptr %scope %eq %neq %value %cmp",
-                "SpirvCmpXchg cannot have unequal memory order 'RELEASE'");
+                String.format("SpirvCmpXchg cannot have unequal memory order '%s'", RELEASE));
         doTestIllegalMemoryOrder(72, 72,
                 "%result = OpAtomicCompareExchange %int %ptr %scope %eq %neq %value %cmp",
-                "SpirvCmpXchg cannot have unequal memory order 'ACQ_REL'");
+                String.format("SpirvCmpXchg cannot have unequal memory order '%s'", ACQ_REL));
         doTestIllegalMemoryOrder(64, 66,
                 "%result = OpAtomicCompareExchange %int %ptr %scope %eq %neq %value %cmp",
-                "Unequal semantics 'ACQUIRE' is stronger than equal semantics 'RELAXED'");
+                String.format("Unequal semantics '%s' is stronger than equal semantics '%s'", ACQUIRE, RELAXED));
         doTestIllegalMemoryOrder(72, 80,
                 "%result = OpAtomicCompareExchange %int %ptr %scope %eq %neq %value %cmp",
-                "Unequal semantics 'SEQ_CST' is stronger than equal semantics 'ACQ_REL'");
+                String.format("Unequal semantics '%s' is stronger than equal semantics '%s'", SEQ_CST, ACQ_REL));
     }
 
     private void doTestIllegalMemoryOrder(int eq, int neq, String input, String error) {
