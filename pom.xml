@@ -46,6 +46,7 @@
         <guava.version>32.1.2-jre</guava.version>
         <junit.version>4.13.2</junit.version>
         <log4j.version>2.23.0</log4j.version>
+        <mockito.version>5.11.0</mockito.version>
         <rsyntaxtextarea.version>3.3.4</rsyntaxtextarea.version>
 
         <!-- 3rd party plugin versions -->

@@ -46,5 +46,10 @@ public class SpirvStore extends StoreBase {
                     String.format("%s cannot have memory order '%s'",
                             getClass().getSimpleName(), mo));
         }
+        if (getTags().contains(SEM_VISIBLE)) {
+            throw new IllegalArgumentException(
+                    String.format("%s cannot have semantics '%s'",
+                            getClass().getSimpleName(), SEM_VISIBLE));
+        }
     }
 }
