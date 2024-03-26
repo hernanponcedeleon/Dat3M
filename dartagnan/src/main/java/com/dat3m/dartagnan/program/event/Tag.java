@@ -12,42 +12,52 @@ import java.util.Set;
         (2) Tags used only internally (prefixed with a double underscore "__");
  */
 public final class Tag {
-    private Tag() { }
-
-    public static final String VISIBLE          = "_";
-    public static final String INIT             = "IW";
-    public static final String READ             = "R";
-    public static final String WRITE            = "W";
-    public static final String MEMORY           = "M";
-    public static final String FENCE            = "F";
-    public static final String STRONG           = "STRONG"; // TODO: Maybe move to C11 or IMM?
-    public static final String RMW              = "RMW";
-
+    public static final String VISIBLE = "_";
+    public static final String INIT = "IW";
+    public static final String READ = "R";
+    public static final String WRITE = "W";
+    public static final String MEMORY = "M";
+    public static final String FENCE = "F";
+    public static final String STRONG = "STRONG"; // TODO: Maybe move to C11 or IMM?
+    public static final String RMW = "RMW";
     // ---------- Internally used tags (not referenced in CAT) ----------
-    public static final String EXCL             = "__EXCL";
+    public static final String EXCL = "__EXCL";
     // Marks the event that is reachable IFF a loop has not been fully unrolled.
-    public static final String BOUND            = "__BOUND";
+    public static final String BOUND = "__BOUND";
     // Marks jumps that somehow terminate a thread earlier than "normally"
     // This can be bound events, spinning events, assertion violations, etc.
     public static final String EARLYTERMINATION = "__EARLYTERMINATION";
     // Marks jumps that terminate a thread due to spinning behaviour, i.e. side-effect-free loop iterations
-    public static final String SPINLOOP         = "__SPINLOOP";
+    public static final String SPINLOOP = "__SPINLOOP";
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
-    public static final String NOOPT            = "__NOOPT";
-    public static final String STARTLOAD        = "__STARTLOAD";
+    public static final String NOOPT = "__NOOPT";
+    public static final String STARTLOAD = "__STARTLOAD";
+    private Tag() {
+    }
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
     // =============================================================================================
 
+    public static String getScopeTag(Event e, Arch arch) {
+        return switch (arch) {
+            case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
+            default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
+        };
+    }
+
+    // =============================================================================================
+    // =========================================== RISCV ===========================================
+    // =============================================================================================
+
     public static final class ARMv8 {
+        public static final String MO_RX = "RX";
+        public static final String MO_REL = "L";
+        public static final String MO_ACQ = "A";
+        public static final String MO_ACQ_PC = "Q";
         private ARMv8() {
         }
-
-        public static final String MO_RX        = "RX";
-        public static final String MO_REL       = "L";
-        public static final String MO_ACQ       = "A";
-        public static final String MO_ACQ_PC    = "Q";
 
         public static String extractStoreMoFromCMo(String cMo) {
             return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : MO_RX;
@@ -72,19 +82,18 @@ public final class Tag {
     }
 
     // =============================================================================================
-    // =========================================== RISCV ===========================================
+    // ============================================ TSO ============================================
     // =============================================================================================
 
     public static final class RISCV {
+        public static final String MO_ACQ = "Acq";
+        public static final String MO_REL = "Rel";
+        public static final String MO_ACQ_REL = "AcqRel";
+        // Store conditional
+        public static final String STCOND = "X";
+
         private RISCV() {
         }
-
-        public static final String MO_ACQ       = "Acq";
-        public static final String MO_REL       = "Rel";
-        public static final String MO_ACQ_REL   = "AcqRel";
-
-        // Store conditional
-        public static final String STCOND       = "X";
 
         public static String extractStoreMoFromCMo(String cMo) {
             return cMo.equals(C11.MO_SC) || cMo.equals(C11.MO_RELEASE) || cMo.equals(C11.MO_ACQUIRE_RELEASE) ? MO_REL : "";
@@ -97,42 +106,46 @@ public final class Tag {
     }
 
     // =============================================================================================
-    // ============================================ TSO ============================================
-    // =============================================================================================
-
-    public static final class TSO {
-        private TSO() {
-        }
-
-        public static final String ATOM = "A";
-    }
-
-    // =============================================================================================
     // ============================================ C11 ============================================
     // =============================================================================================
 
+    public static final class TSO {
+        public static final String ATOM = "A";
+
+        private TSO() {
+        }
+    }
+
+    // =============================================================================================
+    // =========================================== Linux ===========================================
+    // =============================================================================================
+
     public static final class C11 {
+        public static final String ATOMIC = "A";
+        public static final String NONATOMIC = "NA";
+        public static final String MO_RELAXED = "RLX";
+        public static final String MO_CONSUME = "CON";
+        public static final String MO_ACQUIRE = "ACQ";
+        public static final String MO_RELEASE = "REL";
+        public static final String MO_ACQUIRE_RELEASE = "ACQ_REL";
+        public static final String MO_SC = "SC";
         private C11() {
         }
 
-        public static final String ATOMIC               = "A";
-        public static final String NONATOMIC            = "NA";
-
-        public static final String MO_RELAXED           = "RLX";
-        public static final String MO_CONSUME           = "CON";
-        public static final String MO_ACQUIRE           = "ACQ";
-        public static final String MO_RELEASE           = "REL";
-        public static final String MO_ACQUIRE_RELEASE   = "ACQ_REL";
-        public static final String MO_SC                 = "SC";
-
         public static String intToMo(int i) {
             switch (i) {
-                case 0: return MO_RELAXED;
-                case 1: return MO_CONSUME;
-                case 2: return MO_ACQUIRE;
-                case 3: return MO_RELEASE;
-                case 4: return MO_ACQUIRE_RELEASE;
-                case 5: return MO_SC;
+                case 0:
+                    return MO_RELAXED;
+                case 1:
+                    return MO_CONSUME;
+                case 2:
+                    return MO_ACQUIRE;
+                case 3:
+                    return MO_RELEASE;
+                case 4:
+                    return MO_ACQUIRE_RELEASE;
+                case 5:
+                    return MO_SC;
                 default:
                     throw new UnsupportedOperationException("The memory order is not recognized");
             }
@@ -158,38 +171,38 @@ public final class Tag {
     }
 
     // =============================================================================================
-    // =========================================== Linux ===========================================
+    // ========================================== SVCOMP ===========================================
     // =============================================================================================
 
     public static final class Linux {
-        private Linux() { }
-
-        public static final String NORETURN                 = "Noreturn";
-        public static final String RCU_SYNC                 = "Sync-rcu";
-        public static final String RCU_LOCK                 = "Rcu-lock";
-        public static final String RCU_UNLOCK               = "Rcu-unlock";
-        public static final String SRCU_SYNC                = "Sync-srcu";
-        public static final String SRCU_LOCK                = "Srcu-lock";
-        public static final String SRCU_UNLOCK              = "Srcu-unlock";
-        public static final String AFTER_SRCU_READ_UNLOCK   = "After-srcu-read-unlock";
-        public static final String MO_MB                    = "Mb";
-        public static final String MO_RMB                   = "Rmb";
-        public static final String MO_WMB                   = "Wmb";
-        public static final String BARRIER                  = "Barrier";
-        public static final String MO_RELAXED               = "Relaxed";
-        public static final String MO_RELEASE               = "Release";
-        public static final String MO_ACQUIRE               = "Acquire";
-        public static final String MO_ONCE                  = "Once";
-        public static final String LOCK_READ                = "LKR";
-        public static final String LOCK_WRITE               = "LKW";
-        public static final String UNLOCK                   = "UL";
-        public static final String LOCK_FAIL                = "LF";
-        public static final String READ_LOCKED              = "RL";
-        public static final String READ_UNLOCKED            = "RU";
-        public static final String BEFORE_ATOMIC            = "Before-atomic";
-        public static final String AFTER_ATOMIC             = "After-atomic";
-        public static final String AFTER_SPINLOCK           = "After-spinlock";
-        public static final String AFTER_UNLOCK_LOCK        = "After-unlock-lock";
+        public static final String NORETURN = "Noreturn";
+        public static final String RCU_SYNC = "Sync-rcu";
+        public static final String RCU_LOCK = "Rcu-lock";
+        public static final String RCU_UNLOCK = "Rcu-unlock";
+        public static final String SRCU_SYNC = "Sync-srcu";
+        public static final String SRCU_LOCK = "Srcu-lock";
+        public static final String SRCU_UNLOCK = "Srcu-unlock";
+        public static final String AFTER_SRCU_READ_UNLOCK = "After-srcu-read-unlock";
+        public static final String MO_MB = "Mb";
+        public static final String MO_RMB = "Rmb";
+        public static final String MO_WMB = "Wmb";
+        public static final String BARRIER = "Barrier";
+        public static final String MO_RELAXED = "Relaxed";
+        public static final String MO_RELEASE = "Release";
+        public static final String MO_ACQUIRE = "Acquire";
+        public static final String MO_ONCE = "Once";
+        public static final String LOCK_READ = "LKR";
+        public static final String LOCK_WRITE = "LKW";
+        public static final String UNLOCK = "UL";
+        public static final String LOCK_FAIL = "LF";
+        public static final String READ_LOCKED = "RL";
+        public static final String READ_UNLOCKED = "RU";
+        public static final String BEFORE_ATOMIC = "Before-atomic";
+        public static final String AFTER_ATOMIC = "After-atomic";
+        public static final String AFTER_SPINLOCK = "After-spinlock";
+        public static final String AFTER_UNLOCK_LOCK = "After-unlock-lock";
+        private Linux() {
+        }
 
         public static String loadMO(String mo) {
             return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_ONCE;
@@ -199,7 +212,7 @@ public final class Tag {
             return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_ONCE;
         }
 
-        // NOTE: The order below needs to be in sync with /include/lkmm.h 
+        // NOTE: The order below needs to be in sync with /include/lkmm.h
         public static String intToMo(int i) {
             return switch (i) {
                 case 0 -> MO_RELAXED;
@@ -233,37 +246,41 @@ public final class Tag {
     }
 
     // =============================================================================================
-    // ========================================== SVCOMP ===========================================
-    // =============================================================================================
-
-    public static final class SVCOMP {
-        private SVCOMP() { }
-
-        public static final String SVCOMPATOMIC = "__A-SVCOMP";
-    }
-
-    // =============================================================================================
     // =========================================== IMM =============================================
     // =============================================================================================
 
-    public static final class IMM {
-        private IMM() { }
+    public static final class SVCOMP {
+        public static final String SVCOMPATOMIC = "__A-SVCOMP";
 
+        private SVCOMP() {
+        }
+    }
+
+    public static final class IMM {
         public static final String CASDEPORIGIN = "__CASDEPORIGIN";
+
+        private IMM() {
+        }
 
         public static String extractStoreMo(String cMo) {
             switch (cMo) {
-                case C11.MO_ACQUIRE_RELEASE:    return C11.MO_RELEASE;
-                case C11.MO_ACQUIRE:            return C11.MO_RELAXED;
-                default:                        return cMo;
+                case C11.MO_ACQUIRE_RELEASE:
+                    return C11.MO_RELEASE;
+                case C11.MO_ACQUIRE:
+                    return C11.MO_RELAXED;
+                default:
+                    return cMo;
             }
         }
 
         public static String extractLoadMo(String cMo) {
             switch (cMo) {
-                case C11.MO_ACQUIRE_RELEASE:    return C11.MO_ACQUIRE;
-                case C11.MO_RELEASE:            return C11.MO_RELAXED;
-                default:                        return cMo;
+                case C11.MO_ACQUIRE_RELEASE:
+                    return C11.MO_ACQUIRE;
+                case C11.MO_RELEASE:
+                    return C11.MO_RELAXED;
+                default:
+                    return cMo;
             }
         }
     }
@@ -368,55 +385,140 @@ public final class Tag {
     // ========================================= Spir-V ============================================
     // =============================================================================================
     public static final class Spirv {
-        // Memory order
-        public static final String RELAXED = "RELAXED";
-        public static final String ACQUIRE = "ACQUIRE";
-        public static final String RELEASE = "RELEASE";
-        public static final String ACQ_REL = "ACQ_REL";
-        public static final String SEQ_CST = "SEQ_CST";
+        // Barriers
+        public static final String CONTROL = "SPV_CONTROL";
 
-        // Memory Order semantics
-        public static final String SEM_UNIFORM = "SEM_UNIFORM";
-        public static final String SEM_SUBGROUP = "SEM_SUBGROUP";
-        public static final String SEM_WORKGROUP = "SEM_WORKGROUP";
-        public static final String SEM_CROSS_WORKGROUP = "SEM_CROSS_WORKGROUP";
-        public static final String SEM_ATOMIC_COUNTER = "SEM_ATOMIC_COUNTER";
-        public static final String SEM_IMAGE = "SEM_IMAGE";
-        public static final String SEM_OUTPUT = "SEM_OUTPUT";
-        public static final String SEM_AVAILABLE = "SEM_AVAILABLE";
-        public static final String SEM_VISIBLE = "SEM_VISIBLE";
-        public static final String SEM_VOLATILE = "SEM_VOLATILE";
+        // Memory order
+        public static final String RELAXED = "SPV_RELAXED";
+        public static final String ACQUIRE = "SPV_ACQUIRE";
+        public static final String RELEASE = "SPV_RELEASE";
+        public static final String ACQ_REL = "SPV_ACQ_REL";
+        public static final String SEQ_CST = "SPV_SEQ_CST";
 
         // Scope
-        public static final String CROSS_DEVICE = "CROSS_DEVICE";
-        public static final String DEVICE = "DEVICE";
-        public static final String WORKGROUP = "WORKGROUP";
-        public static final String SUBGROUP = "SUBGROUP";
-        public static final String INVOCATION = "INVOCATION";
-        public static final String QUEUE_FAMILY = "QUEUE_FAMILY";
-        public static final String SHADER_CALL = "SHADER_CALL";
+        public static final String CROSS_DEVICE = "SPV_CROSS_DEVICE";
+        public static final String DEVICE = "SPV_DEVICE";
+        public static final String WORKGROUP = "SPV_WORKGROUP";
+        public static final String SUBGROUP = "SPV_SUBGROUP";
+        public static final String INVOCATION = "SPV_INVOCATION";
+        public static final String QUEUE_FAMILY = "SPV_QUEUE_FAMILY";
+        public static final String SHADER_CALL = "SPV_SHADER_CALL";
 
-        public static List<String> getMoTags() {
-            return List.of(RELAXED, ACQUIRE, RELEASE, ACQ_REL, SEQ_CST);
+        // Memory access (non-atomic)
+        public static final String MEM_VOLATILE = "SPV_MEM_VOLATILE";
+        public static final String MEM_NON_TEMPORAL = "SPV_MEM_NON_TEMPORAL";
+        public static final String MEM_NON_PRIVATE = "SPV_MEM_NON_PRIVATE";
+        public static final String MEM_AVAILABLE = "SPV_MEM_AVAILABLE";
+        public static final String MEM_VISIBLE = "SPV_MEM_VISIBLE";
+
+        // Memory semantics (atomic)
+        public static final String SEM_AVAILABLE = "SPV_SEM_AVAILABLE";
+        public static final String SEM_VISIBLE = "SPV_SEM_VISIBLE";
+        public static final String SEM_VOLATILE = "SPV_SEM_VOLATILE";
+
+        // Memory semantics storage class (atomic)
+        public static final String SEM_UNIFORM = "SPV_SEM_UNIFORM";
+        public static final String SEM_SUBGROUP = "SPV_SEM_SUBGROUP";
+        public static final String SEM_WORKGROUP = "SPV_SEM_WORKGROUP";
+        public static final String SEM_CROSS_WORKGROUP = "SPV_SEM_CROSS_WORKGROUP";
+        public static final String SEM_ATOMIC_COUNTER = "SPV_SEM_ATOMIC_COUNTER";
+        public static final String SEM_IMAGE = "SPV_SEM_IMAGE";
+        public static final String SEM_OUTPUT = "SPV_SEM_OUTPUT";
+        private static final Set<String> scopeTags = Set.of(
+                INVOCATION,
+                SUBGROUP,
+                WORKGROUP,
+                DEVICE,
+                CROSS_DEVICE,
+                QUEUE_FAMILY,
+                SHADER_CALL
+        );
+        private static final Set<String> moTags = Set.of(
+                RELAXED,
+                ACQUIRE,
+                RELEASE,
+                ACQ_REL,
+                SEQ_CST
+        );
+
+        // TODO:  "AVDEVICE", "VISDEVICE", "SC0", "SC1"
+        public static String toVulkan(String tag) {
+            return switch (tag) {
+                // Barriers
+                case CONTROL -> Vulkan.CBAR;
+
+                // Memory order
+                case RELAXED -> null; // ignore
+                case ACQUIRE -> Vulkan.ACQUIRE;
+                case RELEASE -> Vulkan.RELEASE;
+                case ACQ_REL -> Vulkan.ACQ_REL;
+                case SEQ_CST -> throw new IllegalArgumentException(
+                        String.format("Non-Vulkan memory order '%s'", SEQ_CST));
+
+                // Scope
+                case INVOCATION -> null; // ignore
+                case SUBGROUP -> Vulkan.SUB_GROUP;
+                case WORKGROUP -> Vulkan.WORK_GROUP;
+                case DEVICE -> Vulkan.DEVICE;
+                case CROSS_DEVICE -> Vulkan.DEVICE; // TODO: exists in the tests
+                //throw new UnsupportedOperationException(
+                //String.format("Unsupported Vulkan scope '%s'", CROSS_DEVICE));
+                case QUEUE_FAMILY -> Vulkan.QUEUE_FAMILY;
+                // TODO: The cat file has shader but defined using the device scope ..
+                case SHADER_CALL -> throw new UnsupportedOperationException(
+                        String.format("Unsupported Vulkan scope '%s'", SHADER_CALL));
+
+                // Memory access (non-atomic)
+                case MEM_VOLATILE -> null; // ignore
+                case MEM_NON_TEMPORAL -> null; // ignore
+                case MEM_NON_PRIVATE -> Vulkan.NON_PRIVATE;
+                case MEM_AVAILABLE -> Vulkan.AVAILABLE;
+                case MEM_VISIBLE -> Vulkan.VISIBLE;
+
+                // Memory semantics
+                case SEM_VOLATILE -> null; // ignore
+                case SEM_AVAILABLE -> Vulkan.SEM_AVAILABLE;
+                case SEM_VISIBLE -> Vulkan.SEM_VISIBLE;
+
+                // Memory semantics (storage class)
+                case SEM_UNIFORM -> Vulkan.SEMSC0;
+                case SEM_SUBGROUP -> throw new UnsupportedOperationException(
+                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_SUBGROUP));
+                case SEM_WORKGROUP -> Vulkan.SEMSC1;
+                case SEM_CROSS_WORKGROUP -> throw new UnsupportedOperationException(
+                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_CROSS_WORKGROUP));
+                case SEM_ATOMIC_COUNTER -> throw new UnsupportedOperationException(
+                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_ATOMIC_COUNTER));
+                case SEM_IMAGE -> throw new UnsupportedOperationException(
+                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_IMAGE));
+                case SEM_OUTPUT -> throw new UnsupportedOperationException(
+                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_OUTPUT));
+
+                default -> null;
+            };
         }
 
-        public static List<String> getScopeTags() {
-            return List.of(CROSS_DEVICE, DEVICE, WORKGROUP, SUBGROUP, INVOCATION, QUEUE_FAMILY, SHADER_CALL);
+        public static boolean isSpirvTag(String tag) {
+            return tag != null && tag.startsWith("SPV_");
         }
 
         public static String getMoTag(Set<String> tags) {
-            return getMoTags().stream()
-                    .filter(tags::contains)
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("Cannot find a memory order tag"));
+            return filterOne("memory order", tags, moTags);
         }
-    }
 
-    public static String getScopeTag(Event e, Arch arch) {
-        return switch (arch) {
-            case PTX -> PTX.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
-            case VULKAN -> Vulkan.getScopeTags().stream().filter(e::hasTag).findFirst().orElse("");
-            default -> throw new UnsupportedOperationException("Scope tags not implemented for architecture " + arch);
-        };
+        public static String getScopeTag(Set<String> tags) {
+            return filterOne("scope", tags, scopeTags);
+        }
+
+        private static String filterOne(String type, Set<String> tags, Set<String> filter) {
+            List<String> filtered = tags.stream().filter(filter::contains).toList();
+            if (filtered.isEmpty()) {
+                throw new IllegalArgumentException("Cannot find a tag for " + type);
+            }
+            if (filtered.size() > 1) {
+                throw new IllegalArgumentException("Multiple tags for " + type);
+            }
+            return filtered.get(0);
+        }
     }
 }

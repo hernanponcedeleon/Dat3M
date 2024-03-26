@@ -3,76 +3,136 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.RMWStore;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 
 public class VisitorVulkan extends VisitorBase {
 
     @Override
+    public List<Event> visitLoad(Load e) {
+        return eventSequence(replaceTags(e));
+    }
+
+    @Override
+    public List<Event> visitStore(Store e) {
+        return eventSequence(replaceTags(e));
+    }
+
+    @Override
     public List<Event> visitSpirvLoad(SpirvLoad e) {
-        Load load = newLoadWithMo(e.getResultRegister(), e.getAddress(), e.getMo());
-        this.propagateTags(e, load);
-        return eventSequence(
-                load
-        );
+        Load load = newLoadWithMo(e.getResultRegister(), e.getAddress(), moTagVulkan(e));
+        load.setFunction(e.getFunction());
+        load.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
+        load.addTags(toVulkanTags(e.getTags()));
+        return eventSequence(load);
     }
 
     @Override
     public List<Event> visitSpirvStore(SpirvStore e) {
-        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo());
-        this.propagateTags(e, store);
-        return eventSequence(
-                store
-        );
-    }
-
-    @Override
-    public List<Event> visitSpirvRMW(SpirvRmw e) {
-        Register resultRegister = e.getResultRegister();
-        String mo = e.getMo();
-        Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address,
-                expressions.makeIntBinary(dummy, e.getOperator(), e.getOperand()), Tag.Vulkan.storeMO(mo));
-        this.propagateTags(e, load);
-        this.propagateTags(e, store);
-        return eventSequence(
-                load,
-                store,
-                newLocal(resultRegister, dummy)
-        );
+        Store store = newStoreWithMo(e.getAddress(), e.getMemValue(), moTagVulkan(e));
+        store.setFunction(e.getFunction());
+        store.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
+        store.addTags(toVulkanTags(e.getTags()));
+        return eventSequence(store);
     }
 
     @Override
     public List<Event> visitSpirvXchg(SpirvXchg e) {
-        Register resultRegister = e.getResultRegister();
-        String mo = e.getMo();
-        Expression address = e.getAddress();
-        Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummy, address, Tag.Vulkan.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), Tag.Vulkan.storeMO(mo));
-        this.propagateTags(e, load);
-        this.propagateTags(e, store);
-        return eventSequence(
-                load,
-                store,
-                newLocal(resultRegister, dummy)
-        );
+        VulkanRMW rmw = EventFactory.Vulkan.newRMW(e.getAddress(), e.getResultRegister(),
+                e.getValue(), moTagVulkan(e), scopeTagVulkan(e));
+        rmw.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
+        rmw.addTags(toVulkanTags(e.getTags()));
+        rmw.setFunction(e.getFunction());
+        return visitVulkanRMW(rmw);
+    }
+
+    @Override
+    public List<Event> visitSpirvRMW(SpirvRmw e) {
+        VulkanRMWOp rmwOp = EventFactory.Vulkan.newRMWOp(e.getAddress(), e.getResultRegister(),
+                e.getOperand(), e.getOperator(), moTagVulkan(e), scopeTagVulkan(e));
+        rmwOp.setFunction(e.getFunction());
+        rmwOp.addTags(Tag.Vulkan.ATOM, Tag.Vulkan.NON_PRIVATE);
+        rmwOp.addTags(toVulkanTags(e.getTags()));
+        return visitVulkanRMWOp(rmwOp);
     }
 
     @Override
     public List<Event> visitSpirvCmpXchg(SpirvCmpXchg e) {
-        return visitMemEvent(e);
+        // TODO: Implementation (legal according to the Spir-V spec)
+        throw new UnsupportedOperationException(
+                "Spir-V CmpXchg operations are not supported for Vulkan memory model");
+    }
+
+    @Override
+    public List<Event> visitGenericVisibleEvent(GenericVisibleEvent e) {
+        if (e.getTags().contains(Tag.Spirv.ACQ_REL)) {
+            e.addTags(Tag.Spirv.ACQUIRE, Tag.Spirv.RELEASE);
+            e.removeTags(Tag.Spirv.ACQ_REL);
+        }
+        return eventSequence(replaceTags(e));
+    }
+
+    @Override
+    public List<Event> visitFenceWithId(FenceWithId e) {
+        if (e.getTags().contains(Tag.Spirv.ACQ_REL)) {
+            e.addTags(Tag.Spirv.ACQUIRE, Tag.Spirv.RELEASE);
+            e.removeTags(Tag.Spirv.ACQ_REL);
+        }
+        return eventSequence(replaceTags(e));
+    }
+
+    private String moTagVulkan(Event e) {
+        // There is no dedicated Vulkan tag for relaxed memory order
+        if (Tag.Spirv.RELAXED.equals(Tag.Spirv.getMoTag(e.getTags()))) {
+            return Tag.Vulkan.ATOM;
+        }
+        return Tag.Spirv.toVulkan(Tag.Spirv.getMoTag(e.getTags()));
+    }
+
+    private String scopeTagVulkan(Event e) {
+        return Tag.Spirv.toVulkan(Tag.Spirv.getScopeTag(e.getTags()));
+    }
+
+    private Event replaceTags(Event e) {
+        Set<String> tags = new HashSet<>();
+        for (String tag : e.getTags()) {
+            if (Tag.Spirv.isSpirvTag(tag)) {
+                String vTag = Tag.Spirv.toVulkan(tag);
+                if (vTag != null) {
+                    tags.add(vTag);
+                }
+            } else {
+                tags.add(tag);
+            }
+        }
+        e.removeTags(e.getTags());
+        e.addTags(tags);
+        return e;
+    }
+
+    private Set<String> toVulkanTags(Set<String> tags) {
+        Set<String> vTags = new HashSet<>();
+        tags.forEach(tag -> {
+            if (Tag.Spirv.isSpirvTag(tag)) {
+                String vTag = Tag.Spirv.toVulkan(tag);
+                if (vTag != null) {
+                    vTags.add(vTag);
+                }
+            } else {
+                vTags.add(tag);
+            }
+        });
+        return vTags;
     }
 
     @Override
@@ -142,7 +202,7 @@ public class VisitorVulkan extends VisitorBase {
             if (source.hasTag(Tag.Vulkan.SEM_AVAILABLE)) {
                 target.addTags(Tag.Vulkan.SEM_AVAILABLE);
             }
-            // If a RMW is a acquire, we do not propagate semscX to the write
+            // If a RMW is an acquire, we do not propagate semscX to the write
             if (!(source.hasTag(Tag.Vulkan.RELEASE) || source.hasTag(Tag.Vulkan.ACQ_REL))) {
                 if (target.hasTag(Tag.Vulkan.SEMSC0)) {
                     target.removeTags(Tag.Vulkan.SEMSC0);

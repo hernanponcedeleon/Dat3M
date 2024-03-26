@@ -18,7 +18,7 @@ public class SpirvLoad extends LoadBase {
         this.scope = scope;
         addTags(scope);
         addTags(tags);
-        validateMemoryOrder();
+        validate();
     }
 
     private SpirvLoad(SpirvLoad other) {
@@ -41,11 +41,16 @@ public class SpirvLoad extends LoadBase {
         return visitor.visitSpirvLoad(this);
     }
 
-    private void validateMemoryOrder() {
+    private void validate() {
         if (mo.equals(RELEASE) || mo.equals(ACQ_REL)) {
             throw new IllegalArgumentException(
                     String.format("%s cannot have memory order '%s'",
                             getClass().getSimpleName(), mo));
+        }
+        if (getTags().contains(SEM_AVAILABLE)) {
+            throw new IllegalArgumentException(
+                    String.format("%s cannot have semantics '%s'",
+                            getClass().getSimpleName(), SEM_AVAILABLE));
         }
     }
 }

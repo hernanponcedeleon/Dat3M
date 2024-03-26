@@ -26,11 +26,10 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
-import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
-import com.dat3m.dartagnan.program.specification.AssertCompositeOr;
-import com.dat3m.dartagnan.program.specification.AssertNot;
+import com.dat3m.dartagnan.program.specification.*;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,6 +40,8 @@ import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 
 public class ProgramBuilderSpv {
+
+    private static final Logger logger = LogManager.getLogger(ProgramBuilderSpv.class);
 
     private final HelperTags helperTags = new HelperTags();
     private final HelperDecorations helperDecorations = new HelperDecorations();
@@ -95,6 +96,8 @@ public class ProgramBuilderSpv {
             }
         }
         // TODO: Cleanup old function and its thread-local variables
+
+        checkSpecification();
         return program;
     }
 
@@ -361,6 +364,10 @@ public class ProgramBuilderSpv {
         return helperTags.visitScope(id, getExpression(id));
     }
 
+    public boolean isSemanticsNone(String id) {
+        return helperTags.isMemorySemanticsNone(id, getExpression(id));
+    }
+
     public Set<String> getSemantics(String id) {
         return helperTags.visitIdMemorySemantics(id, getExpression(id));
     }
@@ -483,6 +490,16 @@ public class ProgramBuilderSpv {
         }
         insertPhiDefinitions(blockEndToLabelMap);
         insertBlockEndLabels(blockEndToLabelMap);
+    }
+
+    private void checkSpecification() {
+        if (program.getSpecification() == null) {
+            logger.warn("The program has no explicitly defined specification, " +
+                    "setting a trivial assertion");
+            AssertTrue ast = new AssertTrue();
+            ast.setType(ASSERT_TYPE_FORALL);
+            program.setSpecification(ast);
+        }
     }
 
     private void insertPhiDefinitions(Map<Event, Label> blockEndToLabelMap) {

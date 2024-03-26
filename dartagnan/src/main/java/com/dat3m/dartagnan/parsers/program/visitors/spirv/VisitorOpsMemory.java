@@ -3,16 +3,23 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,18 +36,28 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpStore(SpirvParser.OpStoreContext ctx) {
-        // TODO: Handle memoryAccess
         Expression pointer = builder.getExpression(ctx.pointer().getText());
         Expression value = builder.getExpression(ctx.object().getText());
-        return builder.addEvent(new Store(pointer, value));
+        Event event = EventFactory.newStore(pointer, value);
+        Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
+        if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
+            event.addTags(tags);
+            return builder.addEvent(event);
+        }
+        throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
     }
 
     @Override
     public Event visitOpLoad(SpirvParser.OpLoadContext ctx) {
-        // TODO: Handle memoryAccess
         Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
         Expression pointer = builder.getExpression(ctx.pointer().getText());
-        return builder.addEvent(new Load(register, pointer));
+        Event event = EventFactory.newLoad(register, pointer);
+        Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
+        if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
+            event.addTags(tags);
+            return builder.addEvent(event);
+        }
+        throw new ParsingException("OpLoad cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE);
     }
 
     @Override
@@ -309,6 +326,32 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             return offsetExpr;
         }
         throw new ParsingException("Unsupported non-constant offset in access chain '%s'", id);
+    }
+
+    private Set<String> parseMemoryAccessTags(SpirvParser.MemoryAccessContext ctx) {
+        if (ctx == null || ctx.None() != null) {
+            return Set.of();
+        }
+        Set<String> tags = new HashSet<>();
+        if (ctx.idScope() != null) {
+            tags.add(builder.getScope(ctx.idScope().getText()));
+            if (ctx.MakePointerAvailable() != null || ctx.MakePointerAvailableKHR() != null) {
+                tags.add(Tag.Spirv.MEM_AVAILABLE);
+            }
+            if (ctx.MakePointerVisible() != null || ctx.MakePointerVisibleKHR() != null) {
+                tags.add(Tag.Spirv.MEM_VISIBLE);
+            }
+        } else if (ctx.Volatile() != null) {
+            tags.add(Tag.Spirv.MEM_VOLATILE);
+        } else if (ctx.Nontemporal() != null) {
+            tags.add(Tag.Spirv.MEM_NON_TEMPORAL);
+        } else if (ctx.NonPrivatePointer() != null || ctx.NonPrivatePointerKHR() != null) {
+            tags.add(Tag.Spirv.MEM_NON_PRIVATE);
+        } else {
+            throw new ParsingException("Unsupported memory access tag '%s'",
+                    String.join(" ", ctx.children.stream().map(ParseTree::getText).toList()));
+        }
+        return tags;
     }
 
     public Set<String> getSupportedOps() {

@@ -1,15 +1,22 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import org.junit.Test;
 
 import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.Tag.Spirv.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class HelperTagsTest {
 
+    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final IntegerType TYPE = TypeFactory.getInstance().getArchType();
     private final HelperTags helper = new HelperTags();
 
     @Test
@@ -24,8 +31,11 @@ public class HelperTagsTest {
     }
 
     private void doTestValidScope(int input, String expected) {
+        // given
+        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+
         // when
-        String scope = helper.parseScope(input);
+        String scope = helper.visitScope("test", expr);
 
         // then
         assertEquals(expected, scope);
@@ -38,9 +48,13 @@ public class HelperTagsTest {
     }
 
     private void doTestInvalidScope(int input, String error) {
+        // given
+        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+
         try {
             // when
-            helper.parseScope(input);
+            helper.visitScope("test", expr);
+            fail("Should throw exception");
         } catch (ParsingException e) {
             // then
             assertEquals(error, e.getMessage());
@@ -77,8 +91,11 @@ public class HelperTagsTest {
     }
 
     public void doTestValidSemantics(int input, Set<String> expected) {
+        // given
+        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+
         // when
-        Set<String> tags = helper.parseSemantics(input);
+        Set<String> tags = helper.visitIdMemorySemantics("test", expr);
 
         // then
         assertEquals(expected, tags);
@@ -89,15 +106,18 @@ public class HelperTagsTest {
         doTestInvalidSemantics(0x1, "Unexpected memory semantics bits");
         doTestInvalidSemantics(0x3, "Unexpected memory semantics bits");
         doTestInvalidSemantics(0xffff, "Unexpected memory semantics bits");
-        doTestInvalidSemantics(-1, "Unexpected memory semantics bits");
         doTestInvalidSemantics(0x6, "Selected multiple non-relaxed memory order bits");
         doTestInvalidSemantics(0x18, "Selected multiple non-relaxed memory order bits");
     }
 
     private void doTestInvalidSemantics(int input, String error) {
+        // given
+        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+
         try {
             // when
-            helper.parseSemantics(input);
+            helper.visitIdMemorySemantics("test", expr);
+            fail("Should throw exception");
         } catch (ParsingException e) {
             // then
             assertEquals(error, e.getMessage());

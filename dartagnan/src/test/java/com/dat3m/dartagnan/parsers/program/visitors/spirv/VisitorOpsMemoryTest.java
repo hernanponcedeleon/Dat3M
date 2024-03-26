@@ -13,12 +13,14 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
@@ -45,10 +47,54 @@ public class VisitorOpsMemoryTest {
         assertNotNull(load);
         assertEquals(memObj, load.getAddress());
         assertEquals(iType, load.getAccessType());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ), load.getTags());
 
         Register register = load.getResultRegister();
         assertEquals("%result", register.getName());
         assertEquals(register, builder.getExpression("%result"));
+    }
+
+    @Test
+    public void testLoadWithTags() {
+        // given
+        String input = "%result = OpLoad %int %ptr MakePointerVisible %scope";
+        IntegerType iType = builder.mockIntType("%int", 32);
+        MemoryObject memObj = builder.mockVariable("%ptr", "%int");
+        builder.mockConstant("%scope", "%int", 3);
+
+        // when
+        parse(input);
+
+        // then
+        Load load = (Load) builder.getLastEvent();
+        assertNotNull(load);
+        assertEquals(memObj, load.getAddress());
+        assertEquals(iType, load.getAccessType());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ,
+                Tag.Spirv.SUBGROUP, Tag.Spirv.MEM_VISIBLE), load.getTags());
+
+        Register register = load.getResultRegister();
+        assertEquals("%result", register.getName());
+        assertEquals(register, builder.getExpression("%result"));
+    }
+
+    @Test
+    public void testLoadWithIllegalTags() {
+        // given
+        String input = "%result = OpLoad %int %ptr MakePointerAvailable %scope";
+        builder.mockIntType("%int", 32);
+        builder.mockVariable("%ptr", "%int");
+        builder.mockConstant("%scope", "%int", 3);
+
+        try {
+            // when
+            parse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals(String.format("OpLoad cannot contain tag '%s'",
+                    Tag.Spirv.MEM_AVAILABLE), e.getMessage());
+        }
     }
 
     @Test
@@ -68,6 +114,49 @@ public class VisitorOpsMemoryTest {
         assertEquals(memObj, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE), store.getTags());
+    }
+
+    @Test
+    public void testStoreWithTags() {
+        // given
+        String input = "OpStore %ptr %value MakePointerAvailable %scope";
+        IntegerType iType = builder.mockIntType("%int", 32);
+        MemoryObject memObj = builder.mockVariable("%ptr", "%int");
+        Expression value = builder.mockConstant("%value", "%int", 123);
+        builder.mockConstant("%scope", "%int", 2);
+
+        // when
+        parse(input);
+
+        // then
+        Store store = (Store) builder.getLastEvent();
+        assertNotNull(store);
+        assertEquals(memObj, store.getAddress());
+        assertEquals(iType, store.getAccessType());
+        assertEquals(value, store.getMemValue());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE,
+                Tag.Spirv.WORKGROUP, Tag.Spirv.MEM_AVAILABLE), store.getTags());
+    }
+
+    @Test
+    public void testStoreWithIllegalTags() {
+        // given
+        String input = "OpStore %ptr %value MakePointerVisible %scope";
+        builder.mockIntType("%int", 32);
+        builder.mockVariable("%ptr", "%int");
+        builder.mockConstant("%value", "%int", 123);
+        builder.mockConstant("%scope", "%int", 2);
+
+        try {
+            // when
+            parse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals(String.format("OpStore cannot contain tag '%s'",
+                    Tag.Spirv.MEM_VISIBLE), e.getMessage());
+        }
     }
 
     @Test
