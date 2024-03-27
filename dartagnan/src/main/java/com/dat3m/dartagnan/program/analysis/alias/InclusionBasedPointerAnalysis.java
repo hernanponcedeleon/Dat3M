@@ -31,15 +31,29 @@ import static com.google.common.base.Verify.verify;
  * Offset- and alignment-enhanced inclusion-based pointer analysis based on Andersen's.
  * This implementation is insensitive to control-flow, but field-sensitive.
  * <p>
- * The edges of the inclusion graph are labeled with sets of offset-alignment pairs.
- * Expressions with well-defined behavior have the form `base [+ constant * register]* + constant`.
- * Bases are either {@link Register variables} or {@link MemoryObject direct references to structures}.
- * Non-conforming expressions are probed for bases, which contribute in the most general manner:
- * Given the base refers to an object {@code x},
- * then the expression may return a pointer to any byte of {@code x},
- * even outside its bounds.
- * <p>
- * Structures, that never occurs in any expression, are considered unreachable.
+ * The analysis populates a directed inclusion graph over expressions of the program.
+ * An edge means that any value returned by one expression can also be returned by the other.
+ * The edges have labels, that describe value transformations involved in the inclusion.
+ * <ol>
+ * <li>
+ *     Nodes are created and assigned to relevant expressions.
+ *     There is a node for each memory object, two for each Local, Load and Store, etc.
+ *     Whenever a phi node would be required for SSA form, it also gets a node.
+ * <li>
+ *     Initial edges depend on the structure of expressions.
+ *     E.g. if an assignment is of the form {@code p:=array+i*8+4},
+ *     the result node for {@code p} initially includes the local node of {@code array} labeled with {@code +4+8X}.
+ * <li>
+ *     The edges are then propagated until convergence:
+ *     If register R somewhere gets loaded from address A,
+ *     expression V elsewhere gets stored into address B,
+ *     and both addresses A and B may overlap (i.e. the events may alias),
+ *     then the load event may read from that store event and R can now include V.
+ * <li>
+ *     To guarantee termination, cyclic inclusion relationships get accelerated using variable offsets:
+ *     E.g. if A includes B and B includes A+2,
+ *     then A includes {@code A+2X}, B includes {@code A+2+2X} and both include {@code B+2X}.
+ * </ol>
  */
 public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
@@ -169,10 +183,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             totalVariables++;
             objectVariables.put(object, new Variable(object, object.toString()));
         }
-        // Each expression gets a "re" variable representing its result value set.
-        // Each register writer set gets a "ph" variable representing its phi-node's value set.
-        // Each register writer gets a "ld" variable representing its return value set.
-        // Variables may fulfill multiple roles, e.g. the "ld" of a Local is the "re" of its expression, etc.
+        // Each expression gets a "res" variable representing its result value set.
+        // Each register writer gets an "out" variable ("ld" for loads) representing its return value set.
+        // If needed, a register gets a "phi" variable representing its phi-node's value set.
+        // Variables may fulfill multiple roles, e.g. the "out" of a Local is the "res" of its expression, etc.
         for (final RegWriter writer : program.getThreadEvents(RegWriter.class)) {
             processWriter(writer);
         }
@@ -197,8 +211,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         registerVariables.clear();
     }
 
-    // Declares the "ld" variable of 'event' and inserts initial 'includes' and 'loads' edges.
-    // Also declares "re" and "ph" variables, if needed.
+    // Declares the "out" variable of 'event' and inserts initial 'includes' and 'loads' edges.
+    // Also declares "res" and "phi" variables, if needed.
     private void processWriter(RegWriter event) {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
@@ -233,7 +247,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    // Declares the "re" variables of the address of 'event', if needed, and inserts 'stores' relationships.
+    // Declares the "res" variables of the address of 'event', if needed, and inserts 'stores' relationships.
     // Also propagates communications to loads, if both directly access the same variable.
     private void processMemoryEvent(MemoryCoreEvent event) {
         logger.trace("{}", event);
@@ -655,7 +669,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (main == null && collector.address.isEmpty() && collector.register.isEmpty()) {
             return null;
         }
-        final Variable variable = newVariable("re" + reader.getGlobalId() + "(" + expression + ")");
+        final Variable variable = newVariable("res" + reader.getGlobalId() + "(" + expression + ")");
         if (main != null) {
             addEdge(main.base, variable, main.offset, main.alignment);
         }
@@ -681,11 +695,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (find != null) {
             return find;
         }
-        final Variable result = newVariable("jn" + reader.getGlobalId() + "(" + register.getName() + ")");
+        final Variable result = newVariable("phi" + reader.getGlobalId() + "(" + register.getName() + ")");
         for (final RegWriter writer : writers.size() == 1 ? List.<RegWriter>of() : writers) {
             // The variables created here will be replaced later, if the events are out of order.
             final Offset<Variable> writerVariable = registerVariables.computeIfAbsent(List.of(writer),
-                    k -> new Offset<>(newVariable("ph" + reader.getGlobalId()), 0, List.of()));
+                    k -> new Offset<>(newVariable("out" + writer.getGlobalId()), 0, List.of()));
             addEdge(writerVariable.base, result, writerVariable.offset, writerVariable.alignment);
         }
         return registerVariables.compute(writers, (k, v) -> new Offset<>(result, 0, List.of()));
