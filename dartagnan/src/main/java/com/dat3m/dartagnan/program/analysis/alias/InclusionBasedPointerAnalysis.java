@@ -206,7 +206,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                         event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
         final Offset<Variable> value;
         if (expr != null) {
-            assert event instanceof RegReader;
             final RegReader reader = event instanceof ThreadArgument arg ? arg.getCreator() : (RegReader) event;
             value = getResultVariable(expr, reader);
             if (value == null) {
