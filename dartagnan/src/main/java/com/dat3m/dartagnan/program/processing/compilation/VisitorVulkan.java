@@ -115,6 +115,12 @@ public class VisitorVulkan extends VisitorBase {
                 tags.add(tag);
             }
         }
+        if (e.getTags().contains(Tag.Spirv.MEM_AVAILABLE) && e.getTags().contains(Tag.Spirv.DEVICE)) {
+            tags.add(Tag.Vulkan.AVDEVICE);
+        }
+        if (e.getTags().contains(Tag.Spirv.MEM_VISIBLE) && e.getTags().contains(Tag.Spirv.DEVICE)) {
+            tags.add(Tag.Vulkan.VISDEVICE);
+        }
         e.removeTags(e.getTags());
         e.addTags(tags);
         return e;
@@ -132,6 +138,12 @@ public class VisitorVulkan extends VisitorBase {
                 vTags.add(tag);
             }
         });
+        if (tags.contains(Tag.Spirv.MEM_AVAILABLE) && tags.contains(Tag.Spirv.DEVICE)) {
+            vTags.add(Tag.Vulkan.AVDEVICE);
+        }
+        if (tags.contains(Tag.Spirv.MEM_VISIBLE) && tags.contains(Tag.Spirv.DEVICE)) {
+            vTags.add(Tag.Vulkan.VISDEVICE);
+        }
         return vTags;
     }
 

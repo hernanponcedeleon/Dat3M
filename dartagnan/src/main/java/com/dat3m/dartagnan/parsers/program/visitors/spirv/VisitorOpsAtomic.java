@@ -32,6 +32,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression ptr = getPointer(ctx.pointer().getText());
         String scope = builder.getScope(ctx.memory().getText());
         Set<String> tags = builder.getSemantics(ctx.semantics().getText());
+        tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
         SpirvLoad event = newSpirvLoad(register, ptr, scope, tags);
         return builder.addEvent(event);
     }
@@ -42,6 +43,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
         String scope = builder.getScope(ctx.memory().getText());
         Set<String> tags = builder.getSemantics(ctx.semantics().getText());
+        tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
         SpirvStore event = newSpirvStore(ptr, value, scope, tags);
         return builder.addEvent(event);
     }
@@ -53,6 +55,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
         String scope = builder.getScope(ctx.memory().getText());
         Set<String> tags = builder.getSemantics(ctx.semantics().getText());
+        tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
         SpirvXchg event = newSpirvXchg(register, ptr, value, scope, tags);
         return builder.addEvent(event);
     }
@@ -126,7 +129,11 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression ptr = getPointer(ptrCtx.getText());
         String scope = builder.getScope(scopeCtx.getText());
         Set<String> eqTags = builder.getSemantics(eqCtx.getText());
+
+        eqTags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
+
         Set<String> neqTags = builder.getSemantics(neqCtx.getText());
+        neqTags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
         Expression value = builder.getExpression(valCtx.getText());
         Expression cmp = builder.getExpression(cmpCtx.getText());
         SpirvCmpXchg event = newSpirvCmpXchg(register, ptr, cmp, value, scope, eqTags, neqTags);
@@ -172,6 +179,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
         Expression ptr = getPointer(ptrCtx.getText());
         String scope = builder.getScope(scopeCtx.getText());
         Set<String> tags = builder.getSemantics(tagsCtx.getText());
+        tags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
         SpirvRmw event = newSpirvRmw(register, ptr, op, value, scope, tags);
         return builder.addEvent(event);
     }

@@ -71,6 +71,7 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
             if (idx < argTypes.size() && type.equals(argTypes.get(idx))) {
                 if (!currentArgs.contains(id)) {
                     currentArgs.add(id);
+                    builder.addStorageClassForExpr(id, typeName);
                     if (currentArgs.size() == currentType.getParameterTypes().size()) {
                         createFunction();
                     }

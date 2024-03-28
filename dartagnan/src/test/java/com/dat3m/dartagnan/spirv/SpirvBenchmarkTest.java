@@ -52,6 +52,12 @@ public class SpirvBenchmarkTest {
     public static Iterable<Object[]> data() throws IOException {
         // TODO: Bounds and expected results
         return Arrays.asList(new Object[][]{
+                {"MP.spv.dis", 1, PASS},
+                {"MP-no-avvis.spv.dis", 1, FAIL},
+                {"MP-acq2rx.spv.dis", 1, FAIL},
+                {"MP-rel2rx.spv.dis", 1, FAIL},
+
+                {"CORR.spv.dis", 1, PASS},
                 {"caslock.spv.dis", 1, PASS},
                 {"caslock-acq2rx.spv.dis", 1, PASS},
                 {"caslock-rel2rx.spv.dis", 1, PASS},
@@ -84,23 +90,20 @@ public class SpirvBenchmarkTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        mkTask();
-
-        // TODO: Enable verification tests when ready
-        /*
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        }/*
+        // TODO: Support for vloc
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        }*/
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
              ProverEnvironment prover2 = mkProver(ctx)) {
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, mkTask()).getResult());
-        }*/
+        }
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {

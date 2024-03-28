@@ -37,9 +37,8 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         return (IntegerType) addType(id, TYPE_FACTORY.getIntegerType(bitWidth));
     }
 
-    public IntegerType mockPtrType(String id, String pointedTypeId) {
-        addPointedType(id, getType(pointedTypeId));
-        return (IntegerType) addType(id, TYPE_FACTORY.getPointerType());
+    public IntegerType mockPtrType(String id, String pointedTypeId, String storageClass) {
+        return (IntegerType) addPointerType(id, pointedTypeId, storageClass);
     }
 
     public ArrayType mockVectorType(String id, String innerTypeId, int size) {
@@ -102,6 +101,7 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         MemoryObject memObj = allocateMemory(bytes);
         memObj.setCVar(id);
         addExpression(id, memObj);
+        addStorageClassForExpr(id, typeId);
         return memObj;
     }
 

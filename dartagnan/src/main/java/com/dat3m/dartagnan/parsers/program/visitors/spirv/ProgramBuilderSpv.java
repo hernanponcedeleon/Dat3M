@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
@@ -48,6 +48,8 @@ public class ProgramBuilderSpv {
     private final Map<String, Type> types = new HashMap<>();
     private final Map<String, Type> pointedTypes = new HashMap<>();
     private final Map<String, Type> variableTypes = new HashMap<>();
+    private final Map<String, String> pointerClasses = new HashMap<>();
+    private final Map<String, String> registerClasses = new HashMap<>();
     private final Map<String, Expression> expressions = new HashMap<>();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Label> labels = new HashMap<>();
@@ -242,6 +244,26 @@ public class ProgramBuilderSpv {
         if (types.containsKey(name) || expressions.containsKey(name)) {
             throw new ParsingException("Duplicated definition '%s'", name);
         }
+        if (TypeFactory.getInstance().isPointerType(type)) {
+            throw new ParsingException("Unexpected pointer type '%s'", name);
+        }
+        types.put(name, type);
+        return type;
+    }
+
+    public Type addPointerType(String name, String innerTypeId, String cls) {
+        if (types.containsKey(name) || expressions.containsKey(name)) {
+            throw new ParsingException("Duplicated definition '%s'", name);
+        }
+        if (pointedTypes.containsKey(name)) {
+            throw new ParsingException("Duplicated pointer type definition '%s'", name);
+        }
+        pointedTypes.put(name, getType(innerTypeId));
+        if (pointerClasses.containsKey(name)) {
+            throw new ParsingException("Duplicated variable storage class definition '%s'", name);
+        }
+        pointerClasses.put(name, getStorageClass(cls));
+        Type type = TypeFactory.getInstance().getPointerType();
         types.put(name, type);
         return type;
     }
@@ -254,14 +276,6 @@ public class ProgramBuilderSpv {
             }
             throw new ParsingException("Type '%s' is not a pointer type", name);
         }
-        return type;
-    }
-
-    public Type addPointedType(String name, Type type) {
-        if (pointedTypes.containsKey(name)) {
-            throw new ParsingException("Duplicated pointer type definition '%s'", name);
-        }
-        pointedTypes.put(name, type);
         return type;
     }
 
@@ -279,6 +293,14 @@ public class ProgramBuilderSpv {
         }
         variableTypes.put(name, type);
         return type;
+    }
+
+    public String getExpressionStorageClass(String name) {
+        String storageClass = registerClasses.get(name);
+        if (storageClass == null) {
+            throw new ParsingException("Reference to undefined pointer '%s'", name);
+        }
+        return storageClass;
     }
 
     public Label makeBranchBackJumpLabel(Label label) {
@@ -341,7 +363,21 @@ public class ProgramBuilderSpv {
     }
 
     public Register addRegister(String id, String typeId) {
+        addStorageClassForExpr(id, typeId);
         return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
+    }
+
+    public void addStorageClassForExpr(String id, String typeId) {
+        if (pointedTypes.containsKey(typeId)) {
+            String storageClass = pointerClasses.get(typeId);
+            if (storageClass == null) {
+                throw new ParsingException("Missing storage class for pointer '%s'", typeId);
+            }
+            if (registerClasses.containsKey(id)) {
+                throw new ParsingException("Duplicated storage class definition  for expression'%s'", id);
+            }
+            registerClasses.put(id, storageClass);
+        }
     }
 
     public boolean hasBlock(String id) {
@@ -370,6 +406,10 @@ public class ProgramBuilderSpv {
 
     public Set<String> getSemantics(String id) {
         return helperTags.visitIdMemorySemantics(id, getExpression(id));
+    }
+
+    public String getStorageClass(String raw) {
+        return helperTags.visitStorageClass(raw);
     }
 
     public Decoration getDecoration(DecorationType type) {

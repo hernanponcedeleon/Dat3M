@@ -21,7 +21,8 @@ public class VisitorOpsAtomicTest {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%scope", "%int", 1);
         builder.mockConstant("%tags", "%int", 66);
         String input = "%result = OpAtomicLoad %int %ptr %scope %tags";
@@ -34,7 +35,7 @@ public class VisitorOpsAtomicTest {
         assertEquals(builder.getType("%int"), event.getResultRegister().getType());
         assertEquals(builder.getExpression("%ptr"), event.getAddress());
         assertEquals(ACQUIRE, event.getMo());
-        assertEquals(Set.of(ACQUIRE, SEM_UNIFORM, DEVICE, READ, MEMORY, VISIBLE), event.getTags());
+        assertEquals(Set.of(ACQUIRE, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, MEMORY, VISIBLE), event.getTags());
     }
 
     @Test
@@ -42,7 +43,8 @@ public class VisitorOpsAtomicTest {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%scope", "%int", 1);
         builder.mockConstant("%tags", "%int", 68);
         builder.mockConstant("%value", "%int", 123);
@@ -55,7 +57,7 @@ public class VisitorOpsAtomicTest {
         assertEquals(builder.getExpression("%ptr"), event.getAddress());
         assertEquals(builder.getExpression("%value"), event.getMemValue());
         assertEquals(RELEASE, event.getMo());
-        assertEquals(Set.of(RELEASE, SEM_UNIFORM, DEVICE, WRITE, MEMORY, VISIBLE), event.getTags());
+        assertEquals(Set.of(RELEASE, SEM_UNIFORM, SC_UNIFORM, DEVICE, WRITE, MEMORY, VISIBLE), event.getTags());
     }
 
     @Test
@@ -63,7 +65,8 @@ public class VisitorOpsAtomicTest {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%scope", "%int", 1);
         builder.mockConstant("%tags", "%int", 72);
@@ -78,7 +81,7 @@ public class VisitorOpsAtomicTest {
         assertEquals(builder.getExpression("%ptr"), event.getAddress());
         assertEquals(builder.getExpression("%value"), event.getValue());
         assertEquals(ACQ_REL, event.getMo());
-        assertEquals(Set.of(ACQ_REL, SEM_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
+        assertEquals(Set.of(ACQ_REL, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
     }
 
     @Test
@@ -86,7 +89,8 @@ public class VisitorOpsAtomicTest {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%cmp", "%int", 456);
         builder.mockConstant("%scope", "%int", 1);
@@ -104,8 +108,8 @@ public class VisitorOpsAtomicTest {
         assertEquals(builder.getExpression("%value"), event.getStoreValue());
         assertEquals(builder.getExpression("%cmp"), event.getExpectedValue());
         assertEquals(ACQUIRE, event.getMo());
-        assertEquals(Set.of(ACQUIRE, SEM_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
-        assertEquals(Set.of(ACQ_REL, SEM_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getEqTags());
+        assertEquals(Set.of(ACQUIRE, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
+        assertEquals(Set.of(ACQ_REL, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getEqTags());
     }
 
     @Test
@@ -113,7 +117,8 @@ public class VisitorOpsAtomicTest {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%scope", "%int", 1);
         builder.mockConstant("%tags", "%int", 64);
@@ -129,7 +134,7 @@ public class VisitorOpsAtomicTest {
         assertEquals(builder.getExpression("%value"), event.getOperand());
         assertEquals(IOpBin.ADD, event.getOperator());
         assertEquals(RELAXED, event.getMo());
-        assertEquals(Set.of(RELAXED, SEM_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
+        assertEquals(Set.of(RELAXED, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
     }
 
     @Test
@@ -163,9 +168,9 @@ public class VisitorOpsAtomicTest {
     private void doTestIllegalMemoryOrder(int eq, int neq, String input, String error) {
         // given
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
-        builder = new MockProgramBuilderSpv();
         builder.mockIntType("%int", 64);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%cmp", "%int", 456);
         builder.mockConstant("%scope", "%int", 1);

@@ -98,13 +98,10 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
 
     @Override
     public Type visitOpTypePointer(SpirvParser.OpTypePointerContext ctx) {
-        // TODO: Handle StorageClass
         String id = ctx.idResult().getText();
-        Type type = TYPE_FACTORY.getPointerType();
-        builder.addType(id, type);
-        Type inner = builder.getType(ctx.type().getText());
-        builder.addPointedType(id, inner);
-        return type;
+        String inner = ctx.type().getText();
+        String storageClass = ctx.storageClass().getText();
+        return builder.addPointerType(id, inner, storageClass);
     }
 
     @Override

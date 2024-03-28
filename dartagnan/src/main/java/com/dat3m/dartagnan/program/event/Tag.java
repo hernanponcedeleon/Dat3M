@@ -424,6 +424,21 @@ public final class Tag {
         public static final String SEM_ATOMIC_COUNTER = "SPV_SEM_ATOMIC_COUNTER";
         public static final String SEM_IMAGE = "SPV_SEM_IMAGE";
         public static final String SEM_OUTPUT = "SPV_SEM_OUTPUT";
+
+        // Storage class
+        public static final String SC_UNIFORM_CONSTANT = "SPV_SC_UNIFORM_CONSTANT";
+        public static final String SC_INPUT = "SPV_SC_INPUT";
+        public static final String SC_UNIFORM = "SPV_SC_UNIFORM";
+        public static final String SC_OUTPUT = "SPV_SC_OUTPUT";
+        public static final String SC_WORKGROUP = "SPV_SC_WORKGROUP";
+        public static final String SC_CROSS_WORKGROUP = "SPV_SC_CROSS_WORKGROUP";
+        public static final String SC_PRIVATE = "SPV_SC_PRIVATE";
+        public static final String SC_FUNCTION = "SPV_SC_FUNCTION";
+        public static final String SC_GENERIC = "SPV_SC_GENERIC";
+        public static final String SC_PUSH_CONSTANT = "SPV_SC_PUSH_CONSTANT";
+        public static final String SC_STORAGE_BUFFER = "SPV_CS_STORAGE_BUFFER";
+        public static final String SC_PHYS_STORAGE_BUFFER = "SPV_CS_PHYS_STORAGE_BUFFER";
+
         private static final Set<String> scopeTags = Set.of(
                 INVOCATION,
                 SUBGROUP,
@@ -441,7 +456,6 @@ public final class Tag {
                 SEQ_CST
         );
 
-        // TODO:  "AVDEVICE", "VISDEVICE", "SC0", "SC1"
         public static String toVulkan(String tag) {
             return switch (tag) {
                 // Barriers
@@ -459,14 +473,11 @@ public final class Tag {
                 case INVOCATION -> null; // ignore
                 case SUBGROUP -> Vulkan.SUB_GROUP;
                 case WORKGROUP -> Vulkan.WORK_GROUP;
-                case DEVICE -> Vulkan.DEVICE;
-                case CROSS_DEVICE -> Vulkan.DEVICE; // TODO: exists in the tests
-                //throw new UnsupportedOperationException(
-                //String.format("Unsupported Vulkan scope '%s'", CROSS_DEVICE));
                 case QUEUE_FAMILY -> Vulkan.QUEUE_FAMILY;
-                // TODO: The cat file has shader but defined using the device scope ..
-                case SHADER_CALL -> throw new UnsupportedOperationException(
-                        String.format("Unsupported Vulkan scope '%s'", SHADER_CALL));
+                // TODO: Refactoring of the cat model
+                //  In the cat file AV/VISSHADER uses device domain,
+                //  and device domain is mapped to AV/VISDEVICE
+                case SHADER_CALL, DEVICE, CROSS_DEVICE -> Vulkan.DEVICE;
 
                 // Memory access (non-atomic)
                 case MEM_VOLATILE -> null; // ignore
@@ -482,20 +493,29 @@ public final class Tag {
 
                 // Memory semantics (storage class)
                 case SEM_UNIFORM -> Vulkan.SEMSC0;
-                case SEM_SUBGROUP -> throw new UnsupportedOperationException(
-                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_SUBGROUP));
+                case SEM_SUBGROUP -> errorVulkanUnsupported(SEM_SUBGROUP);
                 case SEM_WORKGROUP -> Vulkan.SEMSC1;
-                case SEM_CROSS_WORKGROUP -> throw new UnsupportedOperationException(
-                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_CROSS_WORKGROUP));
-                case SEM_ATOMIC_COUNTER -> throw new UnsupportedOperationException(
-                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_ATOMIC_COUNTER));
-                case SEM_IMAGE -> throw new UnsupportedOperationException(
-                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_IMAGE));
-                case SEM_OUTPUT -> throw new UnsupportedOperationException(
-                        String.format("Unsupported Vulkan storage class semantics '%s'", SEM_OUTPUT));
+                case SEM_CROSS_WORKGROUP -> errorVulkanUnsupported(SEM_CROSS_WORKGROUP);
+                case SEM_ATOMIC_COUNTER -> errorVulkanUnsupported(SEM_ATOMIC_COUNTER);
+                case SEM_IMAGE -> errorVulkanUnsupported(SEM_IMAGE);
+                case SEM_OUTPUT -> errorVulkanUnsupported(SEM_OUTPUT);
+
+                // Storage class
+                case SC_UNIFORM_CONSTANT, SC_INPUT, SC_PUSH_CONSTANT -> null; // read-only
+                case SC_UNIFORM, SC_STORAGE_BUFFER, SC_PHYS_STORAGE_BUFFER -> Vulkan.SC0;
+                case SC_OUTPUT -> errorVulkanUnsupported(SC_OUTPUT);
+                case SC_WORKGROUP -> Vulkan.SC1;
+                case SC_CROSS_WORKGROUP -> errorVulkanUnsupported(SC_CROSS_WORKGROUP);
+                case SC_PRIVATE, SC_FUNCTION -> null; // private
+                case SC_GENERIC -> errorVulkanUnsupported(SC_GENERIC);
 
                 default -> null;
             };
+        }
+
+        private static String errorVulkanUnsupported(String tag) {
+            throw new UnsupportedOperationException(
+                    String.format("Vulkan conversion is not supported for tag '%s'", tag));
         }
 
         public static boolean isSpirvTag(String tag) {
