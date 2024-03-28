@@ -159,11 +159,11 @@ fenceInstruction
     ;
 
 memoryBarrier
-    :   MemoryBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList
+    :   MemoryBarrier mo? scope? storageClassSemanticList avvisSemanticList
     ;
 
 controlBarrier
-    :   ControlBarrier mo? avvis? scope? storageClassSemanticList avvisSemanticList value
+    :   ControlBarrier mo? scope? storageClassSemanticList avvisSemanticList value
     ;
 
 deviceOperation

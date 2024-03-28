@@ -44,7 +44,8 @@ public class ProgramBuilderSpv {
     private final Map<String, Type> types = new HashMap<>();
     private final Map<String, Type> pointedTypes = new HashMap<>();
     private final Map<String, Type> variableTypes = new HashMap<>();
-    private final Map<String, String> variableClasses = new HashMap<>();
+    private final Map<String, String> pointerClasses = new HashMap<>();
+    public final Map<String, String> registerClasses = new HashMap<>();
     private final Map<String, Expression> expressions = new HashMap<>();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Label> labels = new HashMap<>();
@@ -85,6 +86,9 @@ public class ProgramBuilderSpv {
         preprocessBlocks();
 
         Function entry = getEntryPointFunction();
+        entry.getEvents().forEach(e -> System.out.println(e + " " + e.getTags()));
+
+
         for (int z = 0; z < threadGrid.get(2); z++) {
             for (int y = 0; y < threadGrid.get(1); y++) {
                 for (int x = 0; x < threadGrid.get(0); x++) {
@@ -278,12 +282,19 @@ public class ProgramBuilderSpv {
         return type;
     }
 
-    public String addVariableStorageClass(String name, String cls) {
-        if (variableClasses.containsKey(name)) {
+    public String getStorageClassForPointer(String name) {
+        String cls = registerClasses.get(name);
+        if (cls == null) {
+            throw new ParsingException("Reference to undefined pointer '%s'", name);
+        }
+        return cls;
+    }
+
+    public void addPointerClass(String name, String cls) {
+        if (pointerClasses.containsKey(name)) {
             throw new ParsingException("Duplicated variable storage class definition '%s'", name);
         }
-        variableClasses.put(name, cls);
-        return cls;
+        pointerClasses.put(name, cls);
     }
 
     public Label makeBranchBackJumpLabel(Label label) {
@@ -346,7 +357,27 @@ public class ProgramBuilderSpv {
     }
 
     public Register addRegister(String id, String typeId) {
-        return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
+        Register register = getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
+        if (pointedTypes.containsKey(typeId)) {
+            String cls = pointerClasses.get(typeId);
+            if (cls == null) {
+                throw new ParsingException("No cls!!!");
+            }
+            // TODO: validate no duplicates
+            registerClasses.put(id, cls);
+        }
+        return register;
+    }
+
+    public void addStorageClassForExpr(String id, String typeId) {
+        if (pointedTypes.containsKey(typeId)) {
+            String cls = pointerClasses.get(typeId);
+            if (cls == null) {
+                throw new ParsingException("No cls!!!");
+            }
+            // TODO: validate no duplicates
+            registerClasses.put(id, cls);
+        }
     }
 
     public boolean hasBlock(String id) {

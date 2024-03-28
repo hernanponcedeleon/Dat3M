@@ -84,7 +84,7 @@ public class SpirvBenchmarkTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        mkTask();
+        //mkTask();
 
         // TODO: Enable verification tests when ready
         /*
@@ -93,10 +93,11 @@ public class SpirvBenchmarkTest {
         }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        }*/
+
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        }/*
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
              ProverEnvironment prover2 = mkProver(ctx)) {
             assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, mkTask()).getResult());

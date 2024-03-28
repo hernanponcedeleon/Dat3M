@@ -43,6 +43,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
             event.addTags(tags);
+            event.addTags(builder.getStorageClassForPointer(ctx.pointer().getText()));
             return builder.addEvent(event);
         }
         throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
@@ -56,6 +57,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
             event.addTags(tags);
+            event.addTags(builder.getStorageClassForPointer(ctx.pointer().getText()));
             return builder.addEvent(event);
         }
         throw new ParsingException("OpLoad cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE);
@@ -86,10 +88,13 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (Tag.Spirv.SC_GENERIC.equals(storageClass)) {
             throw new ParsingException("Illegal variable storage class '%s'", storageClass);
         }
+        // TODO: Validate that storage class matches the pointer
 
         builder.addExpression(id, memObj);
         builder.addVariableType(id, type);
-        builder.addVariableStorageClass(id, storageClass);
+        builder.addStorageClassForExpr(id, ctx.idResultType().getText());
+        // TODO:
+        //builder.addStorageClass(id, storageClass);
         return null;
     }
 
@@ -279,6 +284,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 .map(c -> builder.getExpression(c.getText()))
                 .toList();
         // TODO: Merge with GEPExpression?
+        builder.addStorageClassForExpr(id, typeId);
         Expression expression = EXPR_FACTORY.makeBinary(base, ADD, getMemberPtr(id, resultType, baseType, indexes));
         builder.addExpression(id, expression);
     }

@@ -321,32 +321,28 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
     @Override
     public Object visitMemoryBarrier(LitmusVulkanParser.MemoryBarrierContext ctx) {
         String mo = (ctx.mo() != null) ? ctx.mo().content : "";
-        String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)
-                && !avvis.equals(Tag.Vulkan.AVAILABLE) && !avvis.equals(Tag.Vulkan.VISIBLE)) {
+                // TODO: sem avvis?
+                /*&& !avvis.equals(Tag.Vulkan.AVAILABLE) && !avvis.equals(Tag.Vulkan.VISIBLE)*/) {
             throw new ParsingException("Fences must be acquire, release, acq_rel, available or visible");
         }
         Event fence = EventFactory.newFence(ctx.getText().toLowerCase());
         if (!mo.isEmpty()) {
             fence.addTags(mo);
         }
-        if (!avvis.isEmpty()) {
-            fence.addTags(avvis);
-        }
         if (!scope.isEmpty()) {
             fence.addTags(scope);
         }
-        tagControl(fence, false, mo, avvis, scope, "", storageClassSemantics, avvisSemantics);
+        tagControl(fence, false, mo, "", scope, "", storageClassSemantics, avvisSemantics);
         return programBuilder.addChild(mainThread, fence);
     }
 
     @Override
     public Object visitControlBarrier(LitmusVulkanParser.ControlBarrierContext ctx) {
         String mo = (ctx.mo() != null) ? ctx.mo().content : "";
-        String avvis = (ctx.avvis() != null) ? ctx.avvis().content : "";
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
@@ -360,13 +356,10 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         if (!mo.isEmpty()) {
             fence.addTags(mo);
         }
-        if (!avvis.isEmpty()) {
-            fence.addTags(avvis);
-        }
         if (!scope.isEmpty()) {
             fence.addTags(scope);
         }
-        tagControl(fence, false, mo, avvis, scope, "", storageClassSemantics, avvisSemantics);
+        tagControl(fence, false, mo, "", scope, "", storageClassSemantics, avvisSemantics);
         return programBuilder.addChild(mainThread, fence);
     }
 
@@ -403,7 +396,7 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         return programBuilder.addChild(mainThread, EventFactory.newGoto(label));
     }
 
-    private void tagControl(Event e, Boolean atomic, String mo, String avvis, String scope, String storageClass,
+    private void tagControl(Event e, boolean atomic, String mo, String avvis, String scope, String storageClass,
                             List<String> storageClassSemantics, List<String> avvisSemantics) {
         e.addTags(storageClass);
         e.addTags(storageClassSemantics);
@@ -426,11 +419,9 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         // Atomics implicitly have AV/VIS ops, hence they are implicitly nonpriv
         if (atomic && e instanceof Store) {
             e.addTags(Tag.Vulkan.AVAILABLE);
-            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
         if (atomic && e instanceof Load) {
             e.addTags(Tag.Vulkan.VISIBLE);
-            e.addTags(Tag.Vulkan.NON_PRIVATE);
         }
     }
 }
