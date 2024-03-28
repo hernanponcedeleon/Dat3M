@@ -47,6 +47,7 @@ public class OptionNames {
     public static final String ALIAS_GRAPHVIZ = "program.analysis.generateAliasGraph";
     public static final String ALIAS_GRAPHVIZ_SPLIT_BY_THREAD = "program.analysis.generateAliasGraph.splitByThread";
     public static final String ALIAS_GRAPHVIZ_SHOW_ALL = "program.analysis.generateAliasGraph.showAllEvents";
+    public static final String ALIAS_GRAPHVIZ_INTERNAL = "program.analysis.generateAliasGraph.internal";
     public static final String ALWAYS_SPLIT_ON_JUMPS = "program.analysis.cf.alwaysSplitOnJump";
     public static final String MERGE_BRANCHES = "program.analysis.cf.mergeBranches";
 

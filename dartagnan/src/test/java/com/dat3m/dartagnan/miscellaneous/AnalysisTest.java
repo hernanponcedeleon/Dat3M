@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.dat3m.dartagnan.program.processing.MemoryAllocation;
+import com.dat3m.dartagnan.program.processing.ProcessingManager;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.verification.Context;
 import org.junit.Test;
@@ -28,8 +29,7 @@ import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
 import java.util.List;
 
-import static com.dat3m.dartagnan.configuration.Alias.FIELD_INSENSITIVE;
-import static com.dat3m.dartagnan.configuration.Alias.FIELD_SENSITIVE;
+import static com.dat3m.dartagnan.configuration.Alias.*;
 import static com.dat3m.dartagnan.configuration.OptionNames.ALIAS_METHOD;
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static org.junit.Assert.*;
@@ -110,6 +110,11 @@ public class AnalysisTest {
         program0(FIELD_INSENSITIVE, MAY, NONE, MAY, NONE, MAY, NONE);
     }
 
+    @Test
+    public void full0() throws InvalidConfigurationException {
+        program0(FULL, MAY, MAY, NONE, NONE, NONE, NONE);
+    }
+
     private void program0(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
 
@@ -131,9 +136,6 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -158,6 +160,11 @@ public class AnalysisTest {
         program1(FIELD_INSENSITIVE, NONE, NONE, MUST, MAY, MAY, MAY);
     }
 
+    @Test
+    public void full1() throws InvalidConfigurationException {
+        program1(FULL, NONE, NONE, MUST, MUST, NONE, NONE);
+    }
+
     private void program1(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.newMemoryObject("x", 3);
@@ -175,9 +182,6 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -200,6 +204,11 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive2() throws InvalidConfigurationException {
         program2(FIELD_INSENSITIVE, NONE, NONE, NONE, MAY, MAY, MAY);
+    }
+
+    @Test
+    public void full2() throws InvalidConfigurationException {
+        program2(FULL, NONE, NONE, NONE, MAY, NONE, MAY);
     }
 
     private void program2(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -229,9 +238,6 @@ public class AnalysisTest {
         b.addChild(0, l0);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -256,6 +262,11 @@ public class AnalysisTest {
         program3(FIELD_INSENSITIVE, MUST, NONE, NONE, MAY, MAY, MAY);
     }
 
+    @Test
+    public void full3() throws InvalidConfigurationException {
+        program3(FULL, MUST, NONE, NONE, MAY, MAY, MAY);
+    }
+
     private void program3(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.newMemoryObject("x", 3);
@@ -273,9 +284,6 @@ public class AnalysisTest {
         b.addChild(0, e3);
 
         Program program = b.build();
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        MemoryAllocation.newInstance().run(program);
         AliasAnalysis a = analyze(program, method);
         MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
         MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
@@ -298,6 +306,11 @@ public class AnalysisTest {
     @Test
     public void fieldinsensitive4() throws InvalidConfigurationException {
         program4(FIELD_INSENSITIVE, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
+    @Test
+    public void full4() throws InvalidConfigurationException {
+        program4(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
     }
 
     private void program4(Alias method, Result... expect) throws InvalidConfigurationException {
@@ -344,6 +357,11 @@ public class AnalysisTest {
         program5(FIELD_INSENSITIVE, MUST, NONE, NONE, NONE, NONE, NONE);
     }
 
+    @Test
+    public void full5() throws InvalidConfigurationException {
+        program5(FULL, NONE, MUST, NONE, NONE, NONE, NONE);
+    }
+
     private void program5(Alias method, Result... expect) throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
         MemoryObject x = b.newMemoryObject("x", 1);
@@ -378,6 +396,91 @@ public class AnalysisTest {
         assertAlias(expect[5], a, me2, me3);
     }
 
+    @Test
+    public void fullPropagation0() throws InvalidConfigurationException {
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+        MemoryObject y = b.newMemoryObject("y", 1);
+        x.setInitialValue(0, y);
+        y.setInitialValue(0, x);
+
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Register r2 = b.getOrNewRegister(0, "r2");
+        Register r3 = b.getOrNewRegister(0, "r3");
+        Load e0 = newLoad(r0, y); // reads x
+        b.addChild(0, e0);
+        Load e1 = newLoad(r1, r0); // reads y
+        b.addChild(0, e1);
+        Load e2 = newLoad(r2, r1); // reads x
+        b.addChild(0, e2);
+        Load e3 = newLoad(r3, r2); // reads y
+        b.addChild(0, e3);
+        Store e4 = newStore(y, r3); // stores y
+        b.addChild(0, e4);
+
+        Program program = b.build();
+        AliasAnalysis a = analyze(program, FULL);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
+
+        assertAlias(MAY, a, me0, me1);
+        assertAlias(MAY, a, me0, me2);
+        assertAlias(MAY, a, me1, me2);
+        assertAlias(MAY, a, me0, me3);
+        assertAlias(MAY, a, me1, me3);
+        assertAlias(MAY, a, me2, me3);
+    }
+
+    @Test
+    public void fullPropagation1() throws InvalidConfigurationException {
+        ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
+        MemoryObject x = b.newMemoryObject("x", 1);
+        MemoryObject y = b.newMemoryObject("y", 1);
+        x.setInitialValue(0, y);
+        y.setInitialValue(0, x);
+
+        b.newThread(0);
+        Register r0 = b.getOrNewRegister(0, "r0");
+        Register r1 = b.getOrNewRegister(0, "r1");
+        Register r2 = b.getOrNewRegister(0, "r2");
+        Load e0 = newLoad(r0, y); // reads x
+        b.addChild(0, e0);
+        Label l0 = newLabel("l0");
+        b.addChild(0, newJump(expressions.makeEQ(r0, x), l0));
+        Load e1 = newLoad(r0, x); // reads y
+        b.addChild(0, e1);
+        b.addChild(0, l0);
+        Load e2 = newLoad(r1, r0); // reads x
+        b.addChild(0, e2);
+        Load e3 = newLoad(r2, r1); // reads y
+        b.addChild(0, e3);
+        Store e4 = newStore(r0, r2); // stores y
+        b.addChild(0, e4);
+
+        Program program = b.build();
+        AliasAnalysis a = analyze(program, FULL);
+        MemoryCoreEvent me0 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e0);
+        MemoryCoreEvent me1 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e1);
+        MemoryCoreEvent me2 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e2);
+        MemoryCoreEvent me3 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e3);
+        MemoryCoreEvent me4 = (MemoryCoreEvent) findMatchingEventAfterProcessing(program, e4);
+
+        assertAlias(NONE, a, me0, me1);
+        assertAlias(MAY, a, me0, me2);
+        assertAlias(MAY, a, me1, me2);
+        assertAlias(MAY, a, me0, me3);
+        assertAlias(MAY, a, me1, me3);
+        assertAlias(MAY, a, me2, me3);
+        assertAlias(MAY, a, me0, me4);
+        assertAlias(MAY, a, me1, me4);
+        assertAlias(MUST, a, me2, me4);
+        assertAlias(MAY, a, me3, me4);
+    }
+
     private Load newLoad(Register value, Expression address) {
         return EventFactory.newLoad(value, address);
     }
@@ -403,9 +506,15 @@ public class AnalysisTest {
     }
 
     private AliasAnalysis analyze(Program program, Alias method) throws InvalidConfigurationException {
-        Compilation.newInstance().run(program);
-        LoopUnrolling.newInstance().run(program);
-        return AliasAnalysis.fromConfig(program, Configuration.builder().setOption(ALIAS_METHOD, method.asStringOption()).build());
+        Configuration configuration = Configuration.builder()
+                .setOption(ALIAS_METHOD, method.asStringOption())
+                .build();
+        ProcessingManager.fromConfig(configuration).run(program);
+        Context analysisContext = Context.create();
+        analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, configuration));
+        analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, configuration));
+        return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }
 
     private void assertAlias(Result expect, AliasAnalysis a, MemoryCoreEvent x, MemoryCoreEvent y) {
