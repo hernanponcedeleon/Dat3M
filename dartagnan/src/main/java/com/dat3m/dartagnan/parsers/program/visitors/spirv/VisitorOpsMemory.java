@@ -43,6 +43,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
             event.addTags(tags);
+            event.addTags(builder.getExpressionStorageClass(ctx.pointer().getText()));
             return builder.addEvent(event);
         }
         throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
@@ -56,6 +57,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
             event.addTags(tags);
+            event.addTags(builder.getExpressionStorageClass(ctx.pointer().getText()));
             return builder.addEvent(event);
         }
         throw new ParsingException("OpLoad cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE);
@@ -82,8 +84,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             setInitialValue(memObj, 0, value);
         }
 
+        String storageClass = builder.getStorageClass(ctx.storageClass().getText());
+        if (Tag.Spirv.SC_GENERIC.equals(storageClass)) {
+            throw new ParsingException("Illegal variable storage class '%s'", storageClass);
+        }
         builder.addExpression(id, memObj);
         builder.addVariableType(id, type);
+        // TODO: Validate that variable storage class matches the pointer
+        builder.addStorageClassForExpr(id, ctx.idResultType().getText());
         return null;
     }
 
@@ -273,6 +281,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 .map(c -> builder.getExpression(c.getText()))
                 .toList();
         // TODO: Merge with GEPExpression?
+        builder.addStorageClassForExpr(id, typeId);
         Expression expression = EXPR_FACTORY.makeBinary(base, ADD, getMemberPtr(id, resultType, baseType, indexes));
         builder.addExpression(id, expression);
     }
@@ -336,6 +345,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Set<String> tags = new HashSet<>();
         if (ctx.idScope() != null) {
             tags.add(builder.getScope(ctx.idScope().getText()));
+            tags.add(Tag.Spirv.MEM_NON_PRIVATE);
             if (ctx.MakePointerAvailable() != null || ctx.MakePointerAvailableKHR() != null) {
                 tags.add(Tag.Spirv.MEM_AVAILABLE);
             }

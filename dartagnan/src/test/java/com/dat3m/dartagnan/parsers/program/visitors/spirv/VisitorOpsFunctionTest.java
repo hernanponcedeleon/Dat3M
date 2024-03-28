@@ -48,7 +48,7 @@ public class VisitorOpsFunctionTest {
                 %param_arr = OpFunctionParameter %arr
                 """;
         Type typeInt = builder.mockIntType("%int", 64);
-        Type typePtr = builder.mockPtrType("%ptr", "%int");
+        Type typePtr = builder.mockPtrType("%ptr", "%int", "Uniform");
         Type typeArr = builder.mockVectorType("%arr", "%int", 10);
         Type typeFunction = builder.mockFunctionType("%int_func", "%int", "%int", "%ptr", "%arr");
 
@@ -162,7 +162,7 @@ public class VisitorOpsFunctionTest {
 
     private void doTestFunctionParameters(String input, String error) {
         builder.mockIntType("%int", 64);
-        builder.mockPtrType("%ptr", "%int");
+        builder.mockPtrType("%ptr", "%int", "Uniform");
         builder.mockVectorType("%arr", "%int", 10);
         builder.mockFunctionType("%int_func", "%int", "%int", "%ptr", "%arr");
 

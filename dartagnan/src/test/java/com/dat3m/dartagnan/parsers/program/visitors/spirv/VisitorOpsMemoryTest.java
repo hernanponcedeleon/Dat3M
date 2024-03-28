@@ -38,7 +38,8 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%result = OpLoad %int %ptr";
         IntegerType iType = builder.mockIntType("%int", 32);
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
 
         // when
         parse(input);
@@ -48,7 +49,7 @@ public class VisitorOpsMemoryTest {
         assertNotNull(load);
         assertEquals(memObj, load.getAddress());
         assertEquals(iType, load.getAccessType());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_UNIFORM), load.getTags());
 
         Register register = load.getResultRegister();
         assertEquals("%result", register.getName());
@@ -60,7 +61,8 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%result = OpLoad %int %ptr MakePointerVisible %scope";
         IntegerType iType = builder.mockIntType("%int", 32);
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%scope", "%int", 3);
 
         // when
@@ -71,8 +73,8 @@ public class VisitorOpsMemoryTest {
         assertNotNull(load);
         assertEquals(memObj, load.getAddress());
         assertEquals(iType, load.getAccessType());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ,
-                Tag.Spirv.SUBGROUP, Tag.Spirv.MEM_VISIBLE), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_UNIFORM,
+                Tag.Spirv.SUBGROUP, Tag.Spirv.MEM_VISIBLE, Tag.Spirv.MEM_NON_PRIVATE), load.getTags());
 
         Register register = load.getResultRegister();
         assertEquals("%result", register.getName());
@@ -84,7 +86,8 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%result = OpLoad %int %ptr MakePointerAvailable %scope";
         builder.mockIntType("%int", 32);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%scope", "%int", 3);
 
         try {
@@ -103,7 +106,8 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "OpStore %ptr %value";
         IntegerType iType = builder.mockIntType("%int", 32);
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
         Expression value = builder.mockConstant("%value", "%int", 123);
 
         // when
@@ -115,7 +119,7 @@ public class VisitorOpsMemoryTest {
         assertEquals(memObj, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE), store.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM), store.getTags());
     }
 
     @Test
@@ -123,7 +127,8 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "OpStore %ptr %value MakePointerAvailable %scope";
         IntegerType iType = builder.mockIntType("%int", 32);
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
         Expression value = builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%scope", "%int", 2);
 
@@ -136,8 +141,8 @@ public class VisitorOpsMemoryTest {
         assertEquals(memObj, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE,
-                Tag.Spirv.WORKGROUP, Tag.Spirv.MEM_AVAILABLE), store.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM,
+                Tag.Spirv.WORKGROUP, Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_NON_PRIVATE), store.getTags());
     }
 
     @Test
@@ -145,7 +150,8 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "OpStore %ptr %value MakePointerVisible %scope";
         builder.mockIntType("%int", 32);
-        builder.mockVariable("%ptr", "%int");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%scope", "%int", 2);
 
@@ -177,10 +183,10 @@ public class VisitorOpsMemoryTest {
                 builder.mockAggregateType("%struct", "%bool", "%int", "%v3int")
         };
 
-        builder.mockPtrType("%b_ptr", "%bool");
-        builder.mockPtrType("%i_ptr", "%int");
-        builder.mockPtrType("%v3int_ptr", "%v3int");
-        builder.mockPtrType("%struct_ptr", "%struct");
+        builder.mockPtrType("%b_ptr", "%bool", "Uniform");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
+        builder.mockPtrType("%v3int_ptr", "%v3int", "Uniform");
+        builder.mockPtrType("%struct_ptr", "%struct", "Uniform");
 
         // when
         parse(input);
@@ -247,10 +253,10 @@ public class VisitorOpsMemoryTest {
 
     private void doTestInitializedVariable(String input) {
         // given
-        builder.mockPtrType("%b_ptr", "%bool");
-        builder.mockPtrType("%i_ptr", "%int");
-        builder.mockPtrType("%v3int_ptr", "%v3int");
-        builder.mockPtrType("%struct_ptr", "%struct");
+        builder.mockPtrType("%b_ptr", "%bool", "Uniform");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
+        builder.mockPtrType("%v3int_ptr", "%v3int", "Uniform");
+        builder.mockPtrType("%struct_ptr", "%struct", "Uniform");
 
         // when
         parse(input);
@@ -306,9 +312,9 @@ public class VisitorOpsMemoryTest {
         builder.mockVectorType("%v3ra", "%ra", 3);
         builder.mockAggregateType("%s1i1ra", "%int", "%ra");
 
-        builder.mockPtrType("%v1_ptr", "%ra");
-        builder.mockPtrType("%v2_ptr", "%v3ra");
-        builder.mockPtrType("%v3_ptr", "%s1i1ra");
+        builder.mockPtrType("%v1_ptr", "%ra", "Uniform");
+        builder.mockPtrType("%v2_ptr", "%v3ra", "Uniform");
+        builder.mockPtrType("%v3_ptr", "%s1i1ra", "Uniform");
 
         IntegerType archType = TYPE_FACTORY.getArchType();
         Type aType = TYPE_FACTORY.getArrayType(archType, 2);
@@ -375,7 +381,7 @@ public class VisitorOpsMemoryTest {
         builder.mockIntType("%int", 32);
         builder.mockVectorType("%ra", "%int", -1);
         builder.mockVectorType("%i2a", "%int", 2);
-        builder.mockPtrType("%ra_ptr", "%ra");
+        builder.mockPtrType("%ra_ptr", "%ra", "Uniform");
 
         ConstructExpr arr = (ConstructExpr) builder.mockConstant("%value", "%i2a", List.of(1, 2));
 
@@ -400,8 +406,8 @@ public class VisitorOpsMemoryTest {
 
         IntegerType iType = builder.mockIntType("%int", 64);
         builder.mockVectorType("%ra", "%int", -1);
-        builder.mockPtrType("%v1_ptr", "%ra");
-        builder.mockPtrType("%v2_ptr", "%ra");
+        builder.mockPtrType("%v1_ptr", "%ra", "Uniform");
+        builder.mockPtrType("%v2_ptr", "%ra", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, iType);
         Expression i2 = EXPR_FACTORY.makeValue(2, iType);
@@ -437,7 +443,7 @@ public class VisitorOpsMemoryTest {
         String input = "%v = OpVariable %arr_ptr Private";
         builder.mockIntType("%int", 32);
         builder.mockVectorType("%arr", "%int", -1);
-        builder.mockPtrType("%arr_ptr", "%arr");
+        builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
 
         try {
             // when
@@ -473,7 +479,7 @@ public class VisitorOpsMemoryTest {
 
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 32);
-        builder.mockPtrType("%i_ptr", "%int");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
         builder.mockConstant("%const", "%bool", true);
 
         try {
@@ -494,7 +500,7 @@ public class VisitorOpsMemoryTest {
 
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
-        builder.mockPtrType("%i_ptr", "%int");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, iType);
         Expression i2 = EXPR_FACTORY.makeValue(2, iType);
@@ -526,7 +532,7 @@ public class VisitorOpsMemoryTest {
         builder.mockVectorType("%arr1int", "%int", 2);
         builder.mockVectorType("%arr2int", "%arr1int", 2);
 
-        builder.mockPtrType("%arr2int_ptr", "%arr2int");
+        builder.mockPtrType("%arr2int_ptr", "%arr2int", "Uniform");
 
         Expression bool = EXPR_FACTORY.makeTrue();
         Expression arr1 = EXPR_FACTORY.makeArray(bType, List.of(bool, bool), true);
@@ -557,7 +563,7 @@ public class VisitorOpsMemoryTest {
         builder.mockAggregateType("%struct1", "%bool", "%int16");
         builder.mockAggregateType("%struct2", "%bool", "%struct1");
 
-        builder.mockPtrType("%struct2_ptr", "%struct2");
+        builder.mockPtrType("%struct2_ptr", "%struct2", "Uniform");
 
         Expression bool = EXPR_FACTORY.makeTrue();
         Expression int32 = EXPR_FACTORY.makeValue(1, i32Type);
@@ -583,7 +589,7 @@ public class VisitorOpsMemoryTest {
         String input = "%v = OpVariable %i_ptr Uniform %i_const";
 
         IntegerType iType = builder.mockIntType("%int", 32);
-        builder.mockPtrType("%i_ptr", "%int");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
 
         builder.mockConstant("%i_const", "%int", 1);
         builder.addInput("%v", EXPR_FACTORY.makeValue(2, iType));
@@ -611,8 +617,8 @@ public class VisitorOpsMemoryTest {
         ArrayType v2iType = builder.mockVectorType("%v2i", "%int", 2);
         ArrayType v2v2iType = builder.mockVectorType("%v2v2i", "%v2i", 2);
         builder.mockVectorType("%v2v2v2i", "%v2v2i", 2);
-        builder.mockPtrType("%i_ptr", "%int");
-        builder.mockPtrType("%v2v2v2i_ptr", "%v2v2v2i");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
+        builder.mockPtrType("%v2v2v2i_ptr", "%v2v2v2i", "Uniform");
 
         Expression i32 = EXPR_FACTORY.makeValue(1, iType);
         Expression arr1 = EXPR_FACTORY.makeArray(iType, List.of(i32, i32), true);
@@ -655,8 +661,8 @@ public class VisitorOpsMemoryTest {
 
         builder.mockAggregateType("%agg1", "%bool", "%int16", "%int32", "%int64");
         builder.mockAggregateType("%agg2", "%bool", "%int16", "%int32", "%int64", "%agg1");
-        builder.mockPtrType("%i32_ptr", "%int32");
-        builder.mockPtrType("%agg2_ptr", "%agg2");
+        builder.mockPtrType("%i32_ptr", "%int32", "Uniform");
+        builder.mockPtrType("%agg2_ptr", "%agg2", "Uniform");
 
         Expression b = EXPR_FACTORY.makeFalse();
         Expression i16 = EXPR_FACTORY.makeValue(1, i16Type);
@@ -693,8 +699,8 @@ public class VisitorOpsMemoryTest {
 
         IntegerType i32Type = builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
-        builder.mockPtrType("%v2i_ptr", "%v2i");
-        builder.mockPtrType("%i_ptr", "%int");
+        builder.mockPtrType("%v2i_ptr", "%v2i", "Uniform");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, i32Type);
         Expression i2 = EXPR_FACTORY.makeValue(2, i32Type);
@@ -727,8 +733,8 @@ public class VisitorOpsMemoryTest {
         IntegerType i32Type = builder.mockIntType("%int32", 32);
         builder.mockAggregateType("%agg", "%int16", "%int32");
 
-        builder.mockPtrType("%i16_ptr", "%int16");
-        builder.mockPtrType("%agg_ptr", "%agg");
+        builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
+        builder.mockPtrType("%agg_ptr", "%agg", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, i16Type);
         Expression i2 = EXPR_FACTORY.makeValue(2, i32Type);
@@ -762,8 +768,8 @@ public class VisitorOpsMemoryTest {
 
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
-        builder.mockPtrType("%i_ptr", "%int");
-        builder.mockPtrType("%v2i_ptr", "%v2i");
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
+        builder.mockPtrType("%v2i_ptr", "%v2i", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, iType);
         Expression i2 = EXPR_FACTORY.makeValue(2, iType);
@@ -792,9 +798,9 @@ public class VisitorOpsMemoryTest {
 
         IntegerType i32Type = builder.mockIntType("%int32", 32);
         builder.mockVectorType("%v2i", "%int32", 2);
-        builder.mockPtrType("%v2i_ptr", "%v2i");
+        builder.mockPtrType("%v2i_ptr", "%v2i", "Uniform");
         builder.mockIntType("%int16", 16);
-        builder.mockPtrType("%i16_ptr", "%int16");
+        builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, i32Type);
         Expression i2 = EXPR_FACTORY.makeValue(2, i32Type);
@@ -826,8 +832,8 @@ public class VisitorOpsMemoryTest {
         IntegerType i32Type = builder.mockIntType("%int32", 32);
         builder.mockAggregateType("%agg", "%int16", "%int32");
 
-        builder.mockPtrType("%i16_ptr", "%int16");
-        builder.mockPtrType("%agg_ptr", "%agg");
+        builder.mockPtrType("%i16_ptr", "%int16", "Uniform");
+        builder.mockPtrType("%agg_ptr", "%agg", "Uniform");
 
         Expression i1 = EXPR_FACTORY.makeValue(1, i16Type);
         Expression i2 = EXPR_FACTORY.makeValue(2, i32Type);

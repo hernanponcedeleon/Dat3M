@@ -83,7 +83,25 @@ public class HelperTags {
         if (value >= 0 && value < scopes.size()) {
             return scopes.get(value);
         }
-        throw new ParsingException(String.format("Illegal scope value %d", value));
+        throw new ParsingException("Illegal scope value %d", value);
+    }
+
+    public String visitStorageClass(String cls) {
+        return switch (cls) {
+            case "UniformConstant" -> SC_UNIFORM_CONSTANT;
+            case "Input" -> SC_INPUT;
+            case "Uniform" -> SC_UNIFORM;
+            case "Output" -> SC_OUTPUT;
+            case "Workgroup" -> SC_WORKGROUP;
+            case "CrossWorkgroup" -> SC_CROSS_WORKGROUP;
+            case "Private" -> SC_PRIVATE;
+            case "Function" -> SC_FUNCTION;
+            case "Generic" -> SC_GENERIC;
+            case "PushConstant" -> SC_PUSH_CONSTANT;
+            case "StorageBuffer" -> SC_STORAGE_BUFFER;
+            case "PhysicalStorageBuffer" -> SC_PHYS_STORAGE_BUFFER;
+            default -> throw new ParsingException("Unsupported storage class '%s'", cls);
+        };
     }
 
     private int getIntValue(String id, Expression expr) {

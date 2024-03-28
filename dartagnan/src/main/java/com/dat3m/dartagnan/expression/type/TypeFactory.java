@@ -21,7 +21,8 @@ public final class TypeFactory {
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
+        //TODO insert proper pointer and difference types
+        pointerDifferenceType = new IntegerType(64);
     }
 
     //TODO make this part of the program.
@@ -40,7 +41,7 @@ public final class TypeFactory {
     }
 
     public boolean isPointerType(Type type) {
-        return pointerDifferenceType.equals(type);
+        return pointerDifferenceType == type;
     }
 
     public IntegerType getIntegerType(int bitWidth) {
