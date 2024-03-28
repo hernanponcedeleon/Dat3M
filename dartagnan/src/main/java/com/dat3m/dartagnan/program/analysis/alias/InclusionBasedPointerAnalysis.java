@@ -30,31 +30,42 @@ import static com.google.common.base.Verify.verify;
 /**
  * Offset- and alignment-enhanced inclusion-based pointer analysis based on Andersen's.
  * This implementation is insensitive to control-flow, but field-sensitive.
- * <p>
- * The analysis populates a directed inclusion graph over expressions of the program.
- * An edge means that any value returned by one expression can also be returned by the other.
- * The edges have labels, that describe value transformations involved in the inclusion.
- * <ol>
- * <li>
- *     Nodes are created and assigned to relevant expressions.
- *     There is a node for each memory object, two for each Local, Load and Store, etc.
- *     Whenever a phi node would be required for SSA form, it also gets a node.
- * <li>
- *     Initial edges depend on the structure of expressions.
- *     E.g. if an assignment is of the form {@code p:=array+i*8+4},
- *     the result node for {@code p} initially includes the local node of {@code array} labeled with {@code +4+8X}.
- * <li>
- *     The edges are then propagated until convergence:
- *     If register R somewhere gets loaded from address A,
- *     expression V elsewhere gets stored into address B,
- *     and both addresses A and B may overlap (i.e. the events may alias),
- *     then the load event may read from that store event and R can now include V.
- * <li>
- *     To guarantee termination, cyclic inclusion relationships get accelerated using variable offsets:
- *     E.g. if A includes B and B includes A+2,
- *     then A includes {@code A+2X}, B includes {@code A+2+2X} and both include {@code B+2X}.
- * </ol>
  */
+/*
+    The analysis constructs a directed inclusion graph over expressions of the program.
+    The nodes abstractly represent the values an expression (at a program location) could take over all executions.
+    There is a node (also called variable in the code) for each memory object (addr), two for each Local (result and rhs), Load (result and addr), and Store (addr and value).
+    These nodes are not just per expression but also per program location to achieve an SSA-like form (*).
+
+    Edges between two nodes A and B describe one of three relationships:
+    (1) An edge "A -f_includes-> B" means that "f(A) \subseteq B" holds (where A/B are understood as sets of values).
+    Rather than arbitrary functions "f", we use multi-linear expressions "f(A) = A + k1*x1 + k2*x2 + ... kn*xn + o" where ki and o are constants.
+    For simplicity, we write "k*x + o" where k=(k1,...,kn) and x=(x1,...,xn) are understood as vectors, and drop the _includes suffix (i.e. write A -f-> B).
+    The (sub)expression "k*x + o" describes the set of values {k*x + o | x \in Z^n} that can be obtained by varying x freely (**).
+    (2) An edge "A -stores-> B" means that there exists a store that stores at address-expression A the value-expression B.
+    (3) An edge "A -loads-> R" means that there exists a load that loads from address-expression A and puts its result into R (R is the node of a register).
+
+    Initially, the graph has the following edges
+    - For every "store(A, V)" event, it has a "A -stores-> V" edge
+    - For every "R = load(A)" event, it has a "A -loads-> R" edge.
+    - For every assignment "R := B + k*x + o", we have a "B -(k*x+o)-> R" edge
+    For too complex assignments that do not match the structure, say "R := h(B1, B2, .., Bn)" where h is complex, we introduce edges "Bi -1x+0-> R".
+
+    On this initial graph, two rules are applied until saturation
+    (1) Transitivity: A -f_includes-> B AND B -g_includes-> C IMPLIES A -fg_includes-> C (notice that we need to compose the labels as well).
+    (2) Communication: if A -loads-> R and B -stores-> V and A and B can overlap (i.e. the corresponding Load/Store events can alias), then V -0x+0-> R (all values in V are included in R)
+
+    It can happen that these rules generate an edge A -f-> B although another edge A -g-> B already exists.
+    In this case, the edges get merged by a join operation.
+    To guarantee termination, the saturation of cyclic inclusion relationships get accelerated:
+    E.g. if A includes B (B -0x+0-> A) and B includes A+2 (A -0x+2-> B)
+    then A includes A+2x, B includes A+2x+2 and both include B+2x.
+
+    (*) We also generate special phi nodes that can improve precision on code that is not in SSA form.
+    (**) In the implementation we make an unsound assumption that x is non-negative.
+    This disallows negative (dynamic) indexing into arrays/pointers but gives additional precision in other cases.
+    Note that "o" can be negative which is sufficient to support "containerof" functionality.
+*/
 public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
