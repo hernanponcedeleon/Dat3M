@@ -1,8 +1,8 @@
-; @Input: %14 = {{0}}
-; @Input: %15 = {{0}}
-; @Input: %16 = {{0}}
 ; @Input: %17 = {{0}}
-; @Output: forall (%16[0] != 0 or %17[0] == 1)
+; @Input: %18 = {{0}}
+; @Input: %19 = {{0}}
+; @Input: %20 = {{0}}
+; @Output: forall (%19[0] != 1 or %20[0] == 1)
 ; @Config: 2, 1, 1
 ; SPIR-V
 ; Version: 1.0
@@ -18,8 +18,8 @@
                OpSource OpenCL_C 200
          %62 = OpString "test"
          %63 = OpString " __kernel"
-         %66 = OpString "f"
-         %69 = OpString "x"
+         %66 = OpString "flag"
+         %69 = OpString "data"
          %72 = OpString "r0"
          %76 = OpString "r1"
                OpMemberDecorate %_struct_3 0 Offset 0
@@ -90,7 +90,7 @@
                OpBranchConditional %39 %42 %46
          %42 = OpLabel
                OpStore %28 %uint_1
-               OpAtomicStore %27 %uint_1 %uint_64 %uint_0
+               OpAtomicStore %27 %uint_1 %uint_64 %uint_1
                OpBranch %46
          %46 = OpLabel
          %47 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0
