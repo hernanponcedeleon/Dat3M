@@ -82,8 +82,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             setInitialValue(memObj, 0, value);
         }
 
+        String storageClass = builder.getStorageClass(ctx.storageClass().getText());
+        if (Tag.Spirv.SC_GENERIC.equals(storageClass)) {
+            throw new ParsingException("Illegal variable storage class '%s'", storageClass);
+        }
+
         builder.addExpression(id, memObj);
         builder.addVariableType(id, type);
+        builder.addVariableStorageClass(id, storageClass);
         return null;
     }
 

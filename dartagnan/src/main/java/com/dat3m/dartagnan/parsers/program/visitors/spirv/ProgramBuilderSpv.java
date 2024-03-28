@@ -44,6 +44,7 @@ public class ProgramBuilderSpv {
     private final Map<String, Type> types = new HashMap<>();
     private final Map<String, Type> pointedTypes = new HashMap<>();
     private final Map<String, Type> variableTypes = new HashMap<>();
+    private final Map<String, String> variableClasses = new HashMap<>();
     private final Map<String, Expression> expressions = new HashMap<>();
     private final Map<String, Function> forwardFunctions = new HashMap<>();
     private final Map<String, Label> labels = new HashMap<>();
@@ -277,6 +278,14 @@ public class ProgramBuilderSpv {
         return type;
     }
 
+    public String addVariableStorageClass(String name, String cls) {
+        if (variableClasses.containsKey(name)) {
+            throw new ParsingException("Duplicated variable storage class definition '%s'", name);
+        }
+        variableClasses.put(name, cls);
+        return cls;
+    }
+
     public Label makeBranchBackJumpLabel(Label label) {
         String id = label.getName() + "_back";
         if (labels.containsKey(id)) {
@@ -366,6 +375,10 @@ public class ProgramBuilderSpv {
 
     public Set<String> getSemantics(String id) {
         return helperTags.visitIdMemorySemantics(id, getExpression(id));
+    }
+
+    public String getStorageClass(String raw) {
+        return helperTags.visitStorageClass(raw);
     }
 
     public Decoration getDecoration(DecorationType type) {
