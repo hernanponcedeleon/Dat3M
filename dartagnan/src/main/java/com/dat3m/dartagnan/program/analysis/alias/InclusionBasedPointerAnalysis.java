@@ -303,6 +303,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final boolean hasStores = !variable.stores.isEmpty();
         if (hasLoads || hasStores) {
             for (final Offset<Variable> edge : edges) {
+                if (edge.base.object == null) {
+                    continue;
+                }
                 final Set<Offset<Variable>> loads = new HashSet<>(edge.base.loads);
                 final Set<Offset<Offset<Variable>>> stores = new HashSet<>(edge.base.stores);
                 for (final Variable out : edge.base.seeAlso) {
