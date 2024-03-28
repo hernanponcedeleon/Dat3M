@@ -537,8 +537,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Allowed to have false positives.
     private static boolean overlaps(int offset, List<Integer> leftAlignment, List<Integer> rightAlignment) {
         // exists non-negative integers x, y with leftOffset + x * leftAlignment == rightOffset + y * rightAlignment
-        final int left = reduceGCD(leftAlignment);
-        final int right = reduceGCD(rightAlignment);
+        final int left = reduceAbsGCD(leftAlignment);
+        final int right = reduceAbsGCD(rightAlignment);
         if (left == 0 && right == 0) {
             return offset == 0;
         }
