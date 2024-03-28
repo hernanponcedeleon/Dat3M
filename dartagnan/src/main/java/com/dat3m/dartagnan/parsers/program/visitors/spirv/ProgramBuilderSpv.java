@@ -86,7 +86,7 @@ public class ProgramBuilderSpv {
         preprocessBlocks();
 
         Function entry = getEntryPointFunction();
-        entry.getEvents().forEach(e -> System.out.println(e + " " + e.getTags()));
+        //entry.getEvents().forEach(e -> System.out.println(e + " " + e.getTags()));
 
 
         for (int z = 0; z < threadGrid.get(2); z++) {

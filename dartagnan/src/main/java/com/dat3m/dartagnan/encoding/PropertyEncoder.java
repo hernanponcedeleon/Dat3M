@@ -197,6 +197,7 @@ public class PropertyEncoder implements Encoder {
                 isLast = bmgr.and(isLast, isAfter);
             }
             BooleanFormula lastCoExpr = lastCoVar(w1);
+            //System.out.println("NNN " + bmgr.equivalence(lastCoExpr, isLast));
             enc.add(bmgr.equivalence(lastCoExpr, isLast));
             if (doEncodeFinalAddressValues && Arch.coIsTotal(program.getArch())) {
                 // ---- Encode final values of addresses ----
@@ -207,6 +208,10 @@ public class PropertyEncoder implements Encoder {
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
                     Formula v2 = context.lastValue(init.getBase(), init.getOffset());
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
+                    //System.out.println("NNN " + bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
+                    //System.out.println("NNNN " + sameValue);
+                    //System.out.println("NNNNN " + context.value(w1));
+                    //System.out.println("NNNNN " + v2);
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
                 }
             }

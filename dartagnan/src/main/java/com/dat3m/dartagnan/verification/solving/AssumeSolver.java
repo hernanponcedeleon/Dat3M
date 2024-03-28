@@ -45,6 +45,7 @@ public class AssumeSolver extends ModelChecker {
 
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
+        System.out.println(new Printer().setShowInitThreads(true).setShowAuxiliaryEvents(true).print(task.getProgram()));
         preprocessMemoryModel(task, config);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
@@ -56,22 +57,33 @@ public class AssumeSolver extends ModelChecker {
         SymmetryEncoder symmetryEncoder = SymmetryEncoder.withContext(context);
 
         logger.info("Starting encoding using " + ctx.getVersion());
-        prover.addConstraint(programEncoder.encodeFullProgram());
-        prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
+
+        BooleanFormula program = programEncoder.encodeFullProgram();
+        System.out.println("Encoding program " + program);
+        prover.addConstraint(program);
+
+        BooleanFormula mm = wmmEncoder.encodeFullMemoryModel();
+        System.out.println("Encoding memory model " + mm);
+        prover.addConstraint(mm);
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
-        prover.addConstraint(task.getWitness().encode(context));
-        prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
+        System.out.println("Should be empty " + task.getWitness().encode(context));
+        //prover.addConstraint(task.getWitness().encode(context));
+        System.out.println("Should be empty " + symmetryEncoder.encodeFullSymmetryBreaking());
+        //prover.addConstraint(symmetryEncoder.encodeFullSymmetryBreaking());
 
         BooleanFormulaManager bmgr = ctx.getFormulaManager().getBooleanFormulaManager();
         BooleanFormula assumptionLiteral = bmgr.makeVariable("DAT3M_spec_assumption");
         BooleanFormula propertyEncoding = propertyEncoder.encodeProperties(task.getProperty());
         BooleanFormula assumedSpec = bmgr.implication(assumptionLiteral, propertyEncoding);
+        System.out.println("Encoding spec " + assumedSpec);
         prover.addConstraint(assumedSpec);
         
         logger.info("Starting first solver.check()");
         if(prover.isUnsatWithAssumptions(singletonList(assumptionLiteral))) {
-			prover.addConstraint(propertyEncoder.encodeBoundEventExec());
+            BooleanFormula boundEnd = propertyEncoder.encodeBoundEventExec();
+            System.out.println("bound enc " + boundEnd);
+			prover.addConstraint(boundEnd);
             logger.info("Starting second solver.check()");
             res = prover.isUnsat()? PASS : Result.UNKNOWN;
         } else {

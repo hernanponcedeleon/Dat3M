@@ -57,6 +57,7 @@
        %bool = OpTypeBool
      %uint_1 = OpConstant %uint 1
     %uint_64 = OpConstant %uint 64
+    %uint_66 = OpConstant %uint 66
     %uint_68 = OpConstant %uint 68
       %false = OpConstantFalse %bool
        %true = OpConstantTrue %bool
@@ -81,10 +82,10 @@
                OpSelectionMerge %41 None
                OpBranchConditional %32 %35 %41
          %35 = OpLabel
-         %38 = OpAtomicLoad %uint %24 %uint_1 %uint_64
-               OpStore %26 %38
+         %38 = OpAtomicLoad %uint %24 %uint_1 %uint_66
+               OpStore %26 %38 ; r0
          %39 = OpLoad %uint %25
-               OpStore %27 %39
+               OpStore %27 %39 ; r1
                OpBranch %41
          %41 = OpLabel
          %42 = OpPhi %bool %false %35 %true %21

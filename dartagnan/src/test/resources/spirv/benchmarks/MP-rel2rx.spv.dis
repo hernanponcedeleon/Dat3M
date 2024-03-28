@@ -1,3 +1,9 @@
+; @Input: %14 = {{1}}
+; @Input: %15 = {{0}}
+; @Input: %16 = {{0}}
+; @Input: %17 = {{0}}
+; @Output: forall (%16[0] != 0 or %17[0] == 1)
+; @Config: 2, 1, 1
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Google Clspv; 0

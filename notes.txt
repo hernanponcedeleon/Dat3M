@@ -1,0 +1,13 @@
+last_val_at_&%16_0: 0
+last_val_at_&%17_0: 0
+co_last(33): true
+co_last(31): true
+
+(=> |co_last(33)| (= |%39(33)| last_val_at_&%17_0))
+(=> true (= |%39(33)| |%39(32_result)|))
+%39(33): 0
+
+(=> |co_last(31)| (= |%38(31)| last_val_at_&%16_0))
+(=> true (= |%38(31)| |%38(30_result)|))
+%38(31): 0
+

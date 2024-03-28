@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public class SpirvBenchmarkTest {
 
-    private final String modelPath = getRootPath("cat/spirv.cat");
+    private final String modelPath = getRootPath("cat/sc.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
@@ -52,6 +52,14 @@ public class SpirvBenchmarkTest {
     public static Iterable<Object[]> data() throws IOException {
         // TODO: Bounds and expected results
         return Arrays.asList(new Object[][]{
+                {"tmp.spv.dis", 1, PASS},
+
+                {"MP.spv.dis", 1, PASS},
+                {"MP-acq2rx.spv.dis", 1, PASS},
+                {"MP-rel2rx.spv.dis", 1, PASS},
+                {"MP-rel2acq.spv.dis", 1, PASS},
+                {"CORR.spv.dis", 1, PASS},
+
                 {"caslock.spv.dis", 1, PASS},
                 {"caslock-acq2rx.spv.dis", 1, PASS},
                 {"caslock-rel2rx.spv.dis", 1, PASS},
@@ -96,7 +104,11 @@ public class SpirvBenchmarkTest {
         }*/
 
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
-            assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
+            AssumeSolver s = AssumeSolver.run(ctx, prover, mkTask());
+            if (s.hasModel()) {
+                prover.getModel().forEach(a -> System.out.println(a));
+            }
+            assertEquals(expected, s.getResult());
         }/*
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
              ProverEnvironment prover2 = mkProver(ctx)) {

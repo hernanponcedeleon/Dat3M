@@ -97,6 +97,7 @@ public class HelperTags {
             case "Private" -> SC_PRIVATE;
             case "Function" -> SC_FUNCTION;
             case "Generic" -> SC_GENERIC;
+            case "PushConstant" -> SC_PUSH_CONSTANT;
             case "StorageBuffer" -> SC_STORAGE_BUFFER;
             case "PhysicalStorageBuffer" -> SC_PHYS_STORAGE_BUFFER;
             default -> throw new ParsingException("Unsupported storage class '%s'", cls);

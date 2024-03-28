@@ -418,6 +418,7 @@ public final class Tag {
         public static final String SC_PRIVATE = "SPV_SC_PRIVATE";
         public static final String SC_FUNCTION = "SPV_SC_FUNCTION";
         public static final String SC_GENERIC = "SPV_SC_GENERIC";
+        public static final String SC_PUSH_CONSTANT = "SPV_SC_PUSH_CONSTANT";
         public static final String SC_STORAGE_BUFFER = "SPV_CS_STORAGE_BUFFER";
         public static final String SC_PHYS_STORAGE_BUFFER = "SPV_CS_PHYS_STORAGE_BUFFER";
 
@@ -486,7 +487,7 @@ public final class Tag {
                 case SEM_OUTPUT -> errorVulkanUnsupported(SEM_OUTPUT);
 
                 // Storage class
-                case SC_UNIFORM_CONSTANT, SC_INPUT -> null; // read-only
+                case SC_UNIFORM_CONSTANT, SC_INPUT, SC_PUSH_CONSTANT -> null; // read-only
                 case SC_UNIFORM, SC_STORAGE_BUFFER, SC_PHYS_STORAGE_BUFFER -> Vulkan.SC0;
                 case SC_OUTPUT -> errorVulkanUnsupported(SC_OUTPUT);
                 case SC_WORKGROUP -> Vulkan.SC1;
