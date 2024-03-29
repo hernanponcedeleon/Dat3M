@@ -68,9 +68,25 @@ public class VisitorVulkan extends VisitorBase {
 
     @Override
     public List<Event> visitSpirvCmpXchg(SpirvCmpXchg e) {
-        // TODO: Implementation (legal according to the Spir-V spec)
-        throw new UnsupportedOperationException(
-                "Spir-V CmpXchg operations are not supported for Vulkan memory model");
+        if (!e.getTags().equals(e.getEqTags())) {
+            throw new UnsupportedOperationException(
+                    "Spir-V CmpXchg operations with unequal tag sets are not supported");
+        }
+        String mo = moTagVulkan(e);
+        Set<String> tags = toVulkanTags(e.getEqTags());
+        Register resultRegister = e.getResultRegister();
+        Expression address = e.getAddress();
+        Expression expected = e.getExpectedValue();
+        Expression newValue = e.getStoreValue();
+        Load load = newRMWLoadWithMo(resultRegister, address, Tag.Vulkan.loadMO(mo));
+        load.addTags(tags);
+        Expression storeValue = expressions.makeITE(expressions.makeEQ(resultRegister, expected),
+                newValue, resultRegister);
+        RMWStore store = newRMWStoreWithMo(load, address, storeValue, Tag.Vulkan.storeMO(mo));
+        store.addTags(tags);
+        this.propagateTags(e, load);
+        this.propagateTags(e, store);
+        return eventSequence(load, store);
     }
 
     @Override
