@@ -126,6 +126,12 @@ Authors and Contact
 
 Please feel free to [contact us](mailto:hernanl.leon@huawei.com) in case of questions or to send feedback.
 
+Awards
+======
+- Distinguished Paper @ OOPSLA 2023
+- Gold Medal @ SVCOMP 2023
+- Gold Medal (x2) @ SVCOMP 2024
+
 References
 ======
 [1] Hernán Ponce de León, Florian Furbach, Keijo Heljanko, Roland Meyer: [**Portability Analysis for Weak Memory Models. PORTHOS: One Tool for all Models**](https://hernanponcedeleon.github.io/pdfs/sas2017.pdf). SAS 2017.
