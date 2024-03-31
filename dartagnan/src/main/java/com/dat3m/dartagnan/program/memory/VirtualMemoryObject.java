@@ -40,4 +40,15 @@ public class VirtualMemoryObject extends MemoryObject {
     public VirtualMemoryObject getPhysicalAddress() {
         return physicalAddress;
     }
+
+    // TODO: Something smarter than identity??
+    @Override
+    public boolean equals(Object o) {
+        return this == o;
+    }
+
+    @Override
+    public int hashCode() {
+        return System.identityHashCode(this);
+    }
 }
