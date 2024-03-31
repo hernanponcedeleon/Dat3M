@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -748,6 +749,11 @@ public class EventFactory {
         public static VulkanRMWOp newRMWOp(Expression address, Register register, Expression value,
                                            IntBinaryOp op, String mo, String scope) {
             return new VulkanRMWOp(register, address, op, value, mo, scope);
+        }
+
+        public static VulkanCmpXchg newVulkanCmpXchg(Expression address, Register register, Expression expected,
+                                                     Expression value, String mo, String scope) {
+            return new VulkanCmpXchg(register, address, expected, value, mo, scope);
         }
     }
 
