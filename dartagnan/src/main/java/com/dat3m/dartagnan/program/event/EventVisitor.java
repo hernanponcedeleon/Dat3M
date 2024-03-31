@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
@@ -105,6 +106,7 @@ public interface EventVisitor<T> {
     default T visitPtxAtomExch(PTXAtomExch e) { return visitMemEvent(e); }
     default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
+    default T visitVulkanCmpXchg(VulkanCmpXchg e) { return visitMemEvent(e); }
 
     // ------------------ Spir-V Events ------------------
     default T visitSpirvLoad(SpirvLoad e) { return visitMemEvent(e); }

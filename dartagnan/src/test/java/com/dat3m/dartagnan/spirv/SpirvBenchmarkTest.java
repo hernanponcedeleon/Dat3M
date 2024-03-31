@@ -53,7 +53,6 @@ public class SpirvBenchmarkTest {
         // TODO: Bounds and expected results
         return Arrays.asList(new Object[][]{
                 {"MP.spv.dis", 1, PASS},
-                {"MP-no-avvis.spv.dis", 1, FAIL},
                 {"MP-acq2rx.spv.dis", 1, FAIL},
                 {"MP-rel2rx.spv.dis", 1, FAIL},
 

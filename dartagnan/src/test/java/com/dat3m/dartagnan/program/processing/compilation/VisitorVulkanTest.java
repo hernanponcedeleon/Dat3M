@@ -12,10 +12,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
-import com.dat3m.dartagnan.program.event.lang.spirv.SpirvLoad;
-import com.dat3m.dartagnan.program.event.lang.spirv.SpirvRmw;
-import com.dat3m.dartagnan.program.event.lang.spirv.SpirvStore;
-import com.dat3m.dartagnan.program.event.lang.spirv.SpirvXchg;
+import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -44,6 +41,10 @@ public class VisitorVulkanTest {
         doTestLoad(
                 Set.of(Tag.Spirv.MEM_VISIBLE, Tag.Spirv.MEM_NON_PRIVATE),
                 Set.of(Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE)
+        );
+        doTestLoad(
+                Set.of(Tag.Spirv.MEM_VISIBLE, Tag.Vulkan.NON_PRIVATE, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE)
         );
     }
 
@@ -78,6 +79,10 @@ public class VisitorVulkanTest {
                 Set.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_NON_PRIVATE),
                 Set.of(Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
         );
+        doTestStore(
+                Set.of(Tag.Spirv.MEM_AVAILABLE, Tag.Vulkan.NON_PRIVATE, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE)
+        );
     }
 
     private void doTestStore(Set<String> spvTags, Set<String> vulTags) {
@@ -101,25 +106,28 @@ public class VisitorVulkanTest {
     public void testSpirvLoad() {
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_VISIBLE),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEM_VISIBLE, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEM_VISIBLE)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_VISIBLE),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_VISIBLE, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_VISIBLE)
         );
         doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_WORKGROUP, Tag.Spirv.SEM_VISIBLE),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC1, Tag.Vulkan.SEM_VISIBLE, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC1, Tag.Vulkan.SEM_VISIBLE)
         );
-        // TODO: Cases for storage class
+        doTestSpirvLoad(
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE)
+        );
     }
 
     private void doTestSpirvLoad(Set<String> spvTags, Set<String> vulTags) {
@@ -129,7 +137,6 @@ public class VisitorVulkanTest {
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvLoad e = EventFactory.Spirv.newSpirvLoad(register, address, scope, spvTags);
         e.setFunction(mock(Function.class));
-        e.addTags(spvTags);
 
         // when
         List<Event> seq = visitor.visitSpirvLoad(e);
@@ -137,7 +144,8 @@ public class VisitorVulkanTest {
         // then
         assertEquals(1, seq.size());
         Load load = (Load) seq.get(0);
-        Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Vulkan.ATOM);
+        Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Vulkan.ATOM,
+                Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseTags, vulTags), load.getTags());
     }
 
@@ -156,7 +164,6 @@ public class VisitorVulkanTest {
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvLoad e = EventFactory.Spirv.newSpirvLoad(register, address, scope, spvTags);
         e.setFunction(mock(Function.class));
-        e.addTags(spvTags);
 
         try {
             // when
@@ -172,25 +179,28 @@ public class VisitorVulkanTest {
     public void testSpirvStore() {
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_AVAILABLE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEM_AVAILABLE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEM_AVAILABLE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_AVAILABLE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_AVAILABLE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC0, Tag.Vulkan.SEM_AVAILABLE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SEM_WORKGROUP, Tag.Spirv.SEM_AVAILABLE),
                 Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SEMSC1, Tag.Vulkan.SEM_AVAILABLE, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
         );
-        // TODO: Cases for storage class
+        doTestSpirvStore(
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE)
+        );
     }
 
     private void doTestSpirvStore(Set<String> spvTags, Set<String> vulTags) {
@@ -200,7 +210,6 @@ public class VisitorVulkanTest {
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvStore e = EventFactory.Spirv.newSpirvStore(address, value, scope, spvTags);
         e.setFunction(mock(Function.class));
-        e.addTags(spvTags);
 
         // when
         List<Event> seq = visitor.visitSpirvStore(e);
@@ -208,7 +217,8 @@ public class VisitorVulkanTest {
         // then
         assertEquals(1, seq.size());
         Store store = (Store) seq.get(0);
-        Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Vulkan.ATOM);
+        Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Vulkan.ATOM,
+                Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseTags, vulTags), store.getTags());
     }
 
@@ -227,7 +237,6 @@ public class VisitorVulkanTest {
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvStore e = EventFactory.Spirv.newSpirvStore(address, value, scope, spvTags);
         e.setFunction(mock(Function.class));
-        e.addTags(spvTags);
 
         try {
             // when
@@ -243,25 +252,29 @@ public class VisitorVulkanTest {
     public void testSpirvXchg() {
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP),
+                Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP)
         );
-        // TODO: Cases for storage class
+        doTestSpirvXchg(
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE)
+        );
     }
 
     private void doTestSpirvXchg(Set<String> spvTags, Set<String> loadTags, Set<String> storeTags) {
@@ -273,7 +286,6 @@ public class VisitorVulkanTest {
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvXchg e = EventFactory.Spirv.newSpirvXchg(register, address, value, scope, spvTags);
         e.setFunction(function);
-        e.addTags(spvTags);
 
         // when
         List<Event> seq = visitor.visitSpirvXchg(e);
@@ -281,10 +293,12 @@ public class VisitorVulkanTest {
         // then
         assertEquals(3, seq.size());
         Load load = (Load) seq.get(0);
-        Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM);
+        Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM,
+                Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(1);
-        Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW, Tag.Vulkan.ATOM);
+        Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW, Tag.Vulkan.ATOM,
+                Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());
         Local local = (Local) seq.get(2);
         assertEquals(register, local.getResultRegister());
@@ -294,25 +308,29 @@ public class VisitorVulkanTest {
     public void testSpirvRmw() {
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SUB_GROUP),
+                Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP)
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP),
-                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE),
-                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP)
         );
-        // TODO: Cases for storage class
+        doTestSpirvRmw(
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.DEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE)
+        );
     }
 
     private void doTestSpirvRmw(Set<String> spvTags, Set<String> loadTags, Set<String> storeTags) {
@@ -325,7 +343,6 @@ public class VisitorVulkanTest {
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvRmw e = EventFactory.Spirv.newSpirvRmw(register, address, IntBinaryOp.ADD, value, scope, spvTags);
         e.setFunction(function);
-        e.addTags(spvTags);
 
         // when
         List<Event> seq = visitor.visitSpirvRMW(e);
@@ -333,34 +350,145 @@ public class VisitorVulkanTest {
         // then
         assertEquals(3, seq.size());
         Load load = (Load) seq.get(0);
-        Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM);
+        Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW, Tag.Vulkan.ATOM,
+                Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
         Store store = (Store) seq.get(1);
-        Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW, Tag.Vulkan.ATOM);
+        Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW, Tag.Vulkan.ATOM,
+                Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());
         Local local = (Local) seq.get(2);
         assertEquals(register, local.getResultRegister());
     }
 
     @Test
+    public void testSpirvCmpXchg() {
+        doTestSpirvCmpXchg(
+                Tag.Spirv.WORKGROUP,
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP));
+        doTestSpirvCmpXchg(
+                Tag.Spirv.WORKGROUP,
+                Set.of(Tag.Spirv.ACQUIRE),
+                Set.of(Tag.Spirv.ACQUIRE),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.WORK_GROUP));
+        doTestSpirvCmpXchg(
+                Tag.Spirv.WORKGROUP,
+                Set.of(Tag.Spirv.RELEASE),
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP));
+        doTestSpirvCmpXchg(
+                Tag.Spirv.WORKGROUP,
+                Set.of(Tag.Spirv.ACQ_REL),
+                Set.of(Tag.Spirv.ACQUIRE),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP));
+        doTestSpirvCmpXchg(
+                Tag.Spirv.DEVICE,
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.VISDEVICE),
+                Set.of(Tag.Vulkan.DEVICE, Tag.Vulkan.AVDEVICE));
+    }
+
+    private void doTestSpirvCmpXchg(String scope, Set<String> eqTags, Set<String> neqTags, Set<String> loadTags, Set<String> storeTags) {
+        // given
+        IntegerType type = TypeFactory.getInstance().getArchType();
+        Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
+        Register register = function.newRegister(type);
+        Expression cmp = ExpressionFactory.getInstance().makeValue(0, type);
+        Expression value = ExpressionFactory.getInstance().makeValue(1, type);
+        MemoryObject address = mock(MemoryObject.class);
+        SpirvCmpXchg e = EventFactory.Spirv.newSpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
+        e.setFunction(function);
+
+        // when
+        List<Event> seq = visitor.visitSpirvCmpXchg(e);
+
+        // then
+        assertEquals(2, seq.size());
+        Load load = (Load) seq.get(0);
+        Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW,
+                Tag.Vulkan.ATOM, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
+        assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
+        Store store = (Store) seq.get(1);
+        Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW,
+                Tag.Vulkan.ATOM, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
+        assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());
+    }
+
+    @Test
+    public void testCmpXchgIllegal() {
+        doTestSpirvCmpXchgIllegal(
+                Set.of(Tag.Spirv.SEQ_CST),
+                Set.of(Tag.Spirv.RELAXED),
+                "Non-Vulkan memory order 'SPV_SEQ_CST'");
+        doTestSpirvCmpXchgIllegal(
+                Set.of(Tag.Spirv.SEQ_CST),
+                Set.of(Tag.Spirv.SEQ_CST),
+                "Non-Vulkan memory order 'SPV_SEQ_CST'");
+        doTestSpirvCmpXchgIllegal(
+                Set.of(Tag.Spirv.ACQUIRE),
+                Set.of(Tag.Spirv.RELAXED),
+                "Spir-V CmpXchg with unequal tag sets is not supported");
+        doTestSpirvCmpXchgIllegal(
+                Set.of(Tag.Spirv.ACQ_REL),
+                Set.of(Tag.Spirv.RELAXED),
+                "Spir-V CmpXchg with unequal tag sets is not supported");
+        doTestSpirvCmpXchgIllegal(
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SEM_UNIFORM),
+                Set.of(Tag.Spirv.RELAXED),
+                "Spir-V CmpXchg with unequal tag sets is not supported");
+        doTestSpirvCmpXchgIllegal(
+                Set.of(Tag.Spirv.RELAXED),
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SEM_UNIFORM),
+                "Spir-V CmpXchg with unequal tag sets is not supported");
+    }
+
+    private void doTestSpirvCmpXchgIllegal(Set<String> eqTags, Set<String> neqTags, String error) {
+        // given
+        IntegerType type = TypeFactory.getInstance().getArchType();
+        Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
+        Register register = function.newRegister(type);
+        Expression cmp = ExpressionFactory.getInstance().makeValue(0, type);
+        Expression value = ExpressionFactory.getInstance().makeValue(1, type);
+        MemoryObject address = mock(MemoryObject.class);
+        SpirvCmpXchg e = EventFactory.Spirv.newSpirvCmpXchg(register,
+                address, cmp, value, Tag.Spirv.WORKGROUP, eqTags, neqTags);
+        e.setFunction(function);
+
+        try {
+            // when
+            visitor.visitSpirvCmpXchg(e);
+            fail("Should throw exception");
+        } catch (Exception ex) {
+            // then
+            assertEquals(error, ex.getMessage());
+        }
+    }
+
+    @Test
     public void testSpirvMemoryBarrier() {
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQUIRE),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELEASE),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvMemoryBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQ_REL),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
-        // TODO: Cases for storage class
     }
 
     private void doTestSpirvMemoryBarrier(Set<String> spvTags, Set<String> expected) {
@@ -374,32 +502,32 @@ public class VisitorVulkanTest {
         // then
         assertEquals(1, seq.size());
         GenericVisibleEvent barrier = (GenericVisibleEvent) seq.get(0);
-        assertEquals(expected, barrier.getTags());
+        Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.FENCE);
+        assertEquals(Sets.union(baseTags, expected), barrier.getTags());
     }
 
     @Test
     public void testSpirvControlBarrier() {
         doTestSpirvControlBarrier(
                 Set.of(),
-                Set.of(Tag.VISIBLE, Tag.Vulkan.CBAR)
+                Set.of()
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELAXED),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.CBAR, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQUIRE),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.CBAR, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.RELEASE),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.RELEASE, Tag.Vulkan.CBAR, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.RELEASE, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
         doTestSpirvControlBarrier(
-                Set.of(Tag.Spirv.SUBGROUP, Tag.Spirv.ACQ_REL),
-                Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.CBAR, Tag.Vulkan.SUB_GROUP)
+                Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
-        // TODO: Cases for storage class
     }
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expected) {
@@ -418,6 +546,7 @@ public class VisitorVulkanTest {
         // then
         assertEquals(1, seq.size());
         FenceWithId barrier = (FenceWithId) seq.get(0);
-        assertEquals(expected, barrier.getTags());
+        Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.Vulkan.CBAR);
+        assertEquals(Sets.union(baseTags, expected), barrier.getTags());
     }
 }
