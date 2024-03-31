@@ -985,7 +985,7 @@ public class RelationAnalysis {
                     }
                     Thread thread1 = e1.getThread();
                     Thread thread2 = e2.getThread();
-                    if (specificScope != null) { // scope specified
+                    if (specificScope != null) {
                         if (thread1.getScopeHierarchy().canSyncAtScope(thread2.getScopeHierarchy(), specificScope)) {
                             must.add(e1, e2);
                         }
@@ -1042,19 +1042,17 @@ public class RelationAnalysis {
         public Knowledge visitSameVirtualLocation(SameVirtualLocation vloc) {
             EventGraph must = new EventGraph();
             EventGraph may = new EventGraph();
-            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
-            for (MemoryCoreEvent e1 : events) {
-                for (MemoryCoreEvent e2 : events) {
-                    if (sameGenericAddress(e1, e2) && !exec.areMutuallyExclusive(e1, e2)) {
-                        if (alias.mustAlias(e1, e2)) {
-                            must.add(e1, e2);
-                        }
-                        if (alias.mayAlias(e1, e2)) {
-                            may.add(e1, e2);
-                        }
+            Map<MemoryCoreEvent, VirtualMemoryObject> map = computeViltualAddressMap();
+            map.forEach((e1, a1) -> map.forEach((e2, a2) -> {
+                if (a1.equals(a2) && !exec.areMutuallyExclusive(e1, e2)) {
+                    if (alias.mustAlias(e1, e2)) {
+                        must.add(e1, e2);
+                    }
+                    if (alias.mayAlias(e1, e2)) {
+                        may.add(e1, e2);
                     }
                 }
-            }
+            }));
             return new Knowledge(may, must);
         }
 
@@ -1076,6 +1074,22 @@ public class RelationAnalysis {
                 }
             }
             return new Knowledge(must, new EventGraph(must));
+        }
+
+        private Map<MemoryCoreEvent, VirtualMemoryObject> computeViltualAddressMap() {
+            Map<MemoryCoreEvent, VirtualMemoryObject> map = new HashMap<>();
+            program.getThreadEvents(MemoryCoreEvent.class).forEach(e -> {
+                Set<VirtualMemoryObject> s = e.getAddress().getVirtualAddresses();
+                if (s.size() > 1) {
+                    throw new UnsupportedOperationException(
+                            "Expressions with multiple virtual addresses are not supported");
+                }
+                if (!s.isEmpty()) {
+                    VirtualMemoryObject a = s.stream().findFirst().orElseThrow().getGenericAddress();
+                    map.put(e, a);
+                }
+            });
+            return map;
         }
     }
 
@@ -1592,18 +1606,5 @@ public class RelationAnalysis {
 
     private long countMustSet() {
         return knowledgeMap.values().stream().mapToLong(k -> k.must.size()).sum();
-    }
-
-    // GPU memory models make use of virtual addresses.
-    // This models same_alias_r from the PTX Alloy model
-    // Checking address1 and address2 hold the same generic address
-    private boolean sameGenericAddress(MemoryCoreEvent e1, MemoryCoreEvent e2) {
-        // TODO: Add support for pointers, i.e. if `x` and `y` virtually alias,
-        // then `x + offset` and `y + offset` should too
-        if (!(e1.getAddress() instanceof VirtualMemoryObject addr1)
-                || !(e2.getAddress() instanceof VirtualMemoryObject addr2)) {
-            return false;
-        }
-        return addr1.getGenericAddress() == addr2.getGenericAddress();
     }
 }
