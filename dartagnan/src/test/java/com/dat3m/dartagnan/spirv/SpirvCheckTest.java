@@ -58,6 +58,7 @@ public class SpirvCheckTest {
                 {"MP-acq2rx.spv.dis", 1, PASS},
                 {"MP-rel2rx.spv.dis", 1, PASS},
                 {"ticketlock.spv.dis", 1, PASS},
+                {"SB.spv.dis", 1, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, PASS},
                 {"ticketlock-rel2rx.spv.dis", 1, PASS},
                 // {"ttaslock.spv.dis", 1, PASS},
