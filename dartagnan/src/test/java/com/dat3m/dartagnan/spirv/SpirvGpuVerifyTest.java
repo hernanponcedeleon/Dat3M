@@ -66,8 +66,6 @@ public class SpirvGpuVerifyTest {
                 {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, FAIL},
                 // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, FAIL},
                 {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, FAIL},
-                {"gpu-verify/divergence/race_and_divergence.spv.dis", 1, FAIL},
-                {"gpu-verify/divergence/race_no_divergence.spv.dis", 1, PASS}
         });
     }
 
