@@ -18,8 +18,9 @@ static void unlock(global atomic_uint* l) {
     atomic_store_explicit(l, 0, mo_unlock);
 }
 
-__kernel void mutex_test(global atomic_uint* l, global uint* x) {
+__kernel void mutex_test(global atomic_uint* l, global uint* x, global atomic_uint* d) {
     lock(l);
     *x = *x + 1;
     unlock(l);
+    atomic_fetch_add_explicit(d, 1, memory_order_relaxed);
 } 
