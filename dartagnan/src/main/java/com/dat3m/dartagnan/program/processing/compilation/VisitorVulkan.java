@@ -150,6 +150,12 @@ public class VisitorVulkan extends VisitorBase {
         if (tags.contains(Tag.Spirv.MEM_VISIBLE) && tags.contains(Tag.Spirv.DEVICE)) {
             vTags.add(Tag.Vulkan.VISDEVICE);
         }
+        if (tags.contains(Tag.Spirv.RELAXED)) {
+            vTags.remove(Tag.Vulkan.SEMSC0);
+            vTags.remove(Tag.Vulkan.SEMSC1);
+            vTags.remove(Tag.Vulkan.SEM_VISIBLE);
+            vTags.remove(Tag.Vulkan.SEM_AVAILABLE);
+        }
         return vTags;
     }
 
