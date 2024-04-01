@@ -107,7 +107,12 @@ public class ProcessingManager implements ProgramProcessor {
                                 ResolveLLVMObjectSizeCalls.fromConfig(config),
                                 sccp,
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
-                                RemoveDeadCondJumps.fromConfig(config)
+                                RemoveDeadCondJumps.fromConfig(config),
+                                // === test code ===
+                                AssignmentInlining.newInstance(),
+                                sccp,
+                                dce ? DeadAssignmentElimination.fromConfig(config) : null
+                                // === test code ===
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
