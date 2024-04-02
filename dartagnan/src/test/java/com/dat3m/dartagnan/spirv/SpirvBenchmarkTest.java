@@ -30,8 +30,7 @@ import java.util.EnumSet;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -52,7 +51,9 @@ public class SpirvBenchmarkTest {
     public static Iterable<Object[]> data() throws IOException {
         // TODO: Bounds and expected results
         return Arrays.asList(new Object[][]{
-                {"caslock.spv.dis", 1, PASS},
+                // The spinloop has side-effects thus we cannot fully unroll
+                // We use B=2 to at least get two iterations
+                {"caslock.spv.dis", 2, UNKNOWN},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
                 // TODO: Unsupported decoration 'WorkgroupId'
