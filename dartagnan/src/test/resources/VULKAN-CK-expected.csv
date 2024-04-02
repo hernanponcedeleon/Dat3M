@@ -237,3 +237,4 @@ litmus/VULKAN/Manual/PC-bar-acq-rel-priv.litmus,1
 litmus/VULKAN/Manual/PC-bar-atom.litmus,1
 litmus/VULKAN/Manual/PC-bar-nonpriv.litmus,1
 litmus/VULKAN/Manual/OOTA.litmus,1
+litmus/VULKAN/Manual/IRIW.litmus,1
