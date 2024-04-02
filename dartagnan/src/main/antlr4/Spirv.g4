@@ -58,9 +58,12 @@ assertionCompare
     ;
 
 assertionValue
-    :   varName ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket
-    |   varName
+    :   varName indexValue*
     |   initBaseValue
+    ;
+
+indexValue
+    :   ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket
     ;
 
 varName

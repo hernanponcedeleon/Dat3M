@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
@@ -83,6 +82,10 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         }
     }
 
+    private Integer acceptIndexValue(SpirvParser.IndexValueContext ctx) {
+        return Integer.parseInt(ctx.ModeHeader_PositiveInteger().getText());
+    }
+
     private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx) {
         if (ctx.initBaseValue() != null) {
             return EXPR_FACTORY.parseValue(ctx.initBaseValue().getText(), TYPE_FACTORY.getArchType());
@@ -92,38 +95,52 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         if (base == null) {
             throw new ParsingException("Uninitialized location %s", name);
         }
-        TerminalNode offset = ctx.ModeHeader_PositiveInteger();
-        if (offset == null) {
+        if(ctx.indexValue().isEmpty()) {
             return new Location(name, base, 0);
         }
-        Type type = builder.getVariableType(name);
-        int ind = Integer.parseInt(offset.getText());
-        List<Type> types = unrollType(type);
-        if (ind >= types.size()) {
-            throw new ParsingException("Index out of bounds: %s", offset.getText());
+        List<Integer> indexes = new ArrayList<>();
+        for (SpirvParser.IndexValueContext index : ctx.indexValue()) {
+            indexes.add(acceptIndexValue(index));
         }
-        int o = 0;
-        for (int i = 0; i < ind; i++) {
-            o += TYPE_FACTORY.getMemorySizeInBytes(types.get(i));
-        }
-        return new Location(name + "[" + offset.getText() + "]", base, o);
+        int offset = getOffset(name, indexes);
+        String offsetName = name + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
+        return new Location(offsetName, base, offset);
     }
 
-    private List<Type> unrollType(Type type) {
+    private int getOffset(String name, List<Integer> indexes) {
+        Type type = builder.getVariableType(name);
+        int offset = 0;
+        for (int index : indexes) {
+            validateIndex(name, type, index);
+            if (type instanceof ArrayType arrayType) {
+                Type elementType = arrayType.getElementType();
+                int byteWidth = TYPE_FACTORY.getMemorySizeInBytes(elementType);
+                offset += index * byteWidth;
+                type = elementType;
+            } else if (type instanceof AggregateType aggregateType) {
+                for (int i = 0; i < index; i++) {
+                    offset += TYPE_FACTORY.getMemorySizeInBytes(aggregateType.getDirectFields().get(i));
+                }
+                type = aggregateType.getDirectFields().get(index);
+            }
+        }
+        if (type instanceof ArrayType || type instanceof AggregateType) {
+            throw new ParsingException("Illegal assertion for variable '%s', index not deep enough", name);
+        }
+        return offset;
+    }
+
+    private void validateIndex(String name, Type type, int index) {
         if (type instanceof ArrayType arrayType) {
-            List<Type> result = new ArrayList<>();
-            for (int i = 0; i < arrayType.getNumElements(); i++) {
-                result.addAll(unrollType(arrayType.getElementType()));
+            if (index >= arrayType.getNumElements()) {
+                throw new ParsingException("Illegal assertion for variable '%s', index out of bounds", name);
             }
-            return result;
         } else if (type instanceof AggregateType aggregateType) {
-            List<Type> result = new ArrayList<>();
-            for (Type fieldType : aggregateType.getDirectFields()) {
-                result.addAll(unrollType(fieldType));
+            if (index >= aggregateType.getDirectFields().size()) {
+                throw new ParsingException("Illegal assertion for variable '%s', index out of bounds", name);
             }
-            return result;
         } else {
-            return List.of(type);
+            throw new ParsingException("Illegal assertion for variable '%s', index too deep", name);
         }
     }
 }
