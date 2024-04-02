@@ -58,6 +58,7 @@ public class SpirvBenchmarkTest {
                 // TODO: Unsupported decoration 'WorkgroupId'
                 // TODO: Check expected result
                 // {"CORR.spv.dis", 1, PASS},
+                {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, PASS},
                 {"MP-acq2rx.spv.dis", 1, FAIL},
                 {"MP-rel2rx.spv.dis", 1, FAIL},

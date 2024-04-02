@@ -54,6 +54,7 @@ public class SpirvCheckTest {
                 {"caslock-acq2rx.spv.dis", 1, PASS},
                 {"caslock-rel2rx.spv.dis", 1, PASS},
                 // {"CORR.spv.dis", 1, PASS},
+                {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, PASS},
                 {"MP-acq2rx.spv.dis", 1, PASS},
                 {"MP-rel2rx.spv.dis", 1, PASS},
