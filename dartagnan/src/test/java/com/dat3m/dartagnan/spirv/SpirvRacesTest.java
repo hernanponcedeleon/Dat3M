@@ -34,14 +34,14 @@ import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvCheckTest {
+public class SpirvRacesTest {
 
-    private final String modelPath = getRootPath("cat/spirv-check.cat");
+    private final String modelPath = getRootPath("cat/spirv.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public SpirvCheckTest(String file, int bound, Result expected) {
+    public SpirvRacesTest(String file, int bound, Result expected) {
         this.programPath = getTestResourcePath("spirv/benchmarks/" + file);
         this.bound = bound;
         this.expected = expected;
@@ -67,20 +67,21 @@ public class SpirvCheckTest {
                 // {"ttaslock.spv.dis", 1, PASS},
                 // {"ttaslock-acq2rx.spv.dis", 1, PASS},
                 // {"ttaslock-rel2rx.spv.dis", 1, PASS},
-                {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, PASS},
+                // TODO: Assertions, intial values, config
+                {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, FAIL},
                 {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
-                // {"gpu-verify/atomics/displaced.spv.dis", 1, PASS},
-                {"gpu-verify/atomics/forloop.spv.dis", 1, PASS},
-                // {"gpu-verify/atomics/pointers.spv.dis", 1, PASS},
-                {"gpu-verify/barrier_intervals/test1.spv.dis", 1, FAIL},
+                // {"gpu-verify/atomics/displaced.spv.dis", 1, FAIL},
+                {"gpu-verify/atomics/forloop.spv.dis", 1, FAIL},
+                // {"gpu-verify/atomics/pointers.spv.dis", 1, FAIL},
+                {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
                 {"gpu-verify/barrier_intervals/test2.spv.dis", 1, FAIL},
-                {"gpu-verify/barrier_intervals/test3.spv.dis", 1, FAIL},
-                {"gpu-verify/barrier_intervals/test4.spv.dis", 2, FAIL},
-                {"gpu-verify/beningn_race_tests/fail/writeafterread_addition.spv.dis", 1, PASS},
-                {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, PASS},
-                // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, PASS},
-                {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, PASS},
+                {"gpu-verify/barrier_intervals/test3.spv.dis", 1, PASS},
+                {"gpu-verify/barrier_intervals/test4.spv.dis", 1, PASS},
+                {"gpu-verify/beningn_race_tests/fail/writeafterread_addition.spv.dis", 1, FAIL},
+                {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, FAIL},
+                // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, FAIL},
+                {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, FAIL},
         });
     }
 
