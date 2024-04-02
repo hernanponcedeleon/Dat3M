@@ -19,9 +19,11 @@ static void unlock(global atomic_uint* owner) {
     atomic_store_explicit(owner, current + 1, mo_unlock);
 }
 
-__kernel void mutex_test(global atomic_uint* owner, global atomic_uint* next, global uint* x, global atomic_uint* d) {
+__kernel void mutex_test(global atomic_uint* owner, global atomic_uint* next, global int* x, global int* A) {
+    int a;
     lock(owner, next);
-    *x = *x + 1;
+    a = *x;
+    *x = a + 1;
     unlock(owner);
-    atomic_fetch_add_explicit(d, 1, memory_order_relaxed);
+    A[get_local_id(0)] = a;
 } 
