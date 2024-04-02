@@ -731,6 +731,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
         @Override
         public Result visitExpression(Expression expr) {
+            register.addAll(expr.getRegs());
             return null;
         }
 
@@ -785,6 +786,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final Result result = x.getOperand().accept(this);
             return result == null ? null : x.getKind() != IntUnaryOp.MINUS ? result :
                     new Result(null, null, result.offset.negate(), result.alignment.isEmpty() ? TOP : result.alignment);
+        }
+
+        @Override
+        public Result visitIntSizeCastExpression(IntSizeCast expr) {
+            // We assume type casts do not affect the value of pointers.
+            final Result result = expr.getOperand().accept(this);
+            return expr.isExtension() && !expr.preservesSign() ? result : null;
         }
 
         @Override
