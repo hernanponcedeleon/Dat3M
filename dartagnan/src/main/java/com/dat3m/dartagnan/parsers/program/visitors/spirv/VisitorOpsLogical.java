@@ -3,25 +3,24 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.op.BOpBin;
-import com.dat3m.dartagnan.expression.op.BOpUn;
-import com.dat3m.dartagnan.expression.op.COpBin;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Local;
 
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.dat3m.dartagnan.expression.op.BOpBin.AND;
-import static com.dat3m.dartagnan.expression.op.BOpBin.OR;
-import static com.dat3m.dartagnan.expression.op.BOpUn.NOT;
-import static com.dat3m.dartagnan.expression.op.COpBin.*;
-
-public class VisitorOpsLogical extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
 
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
 
@@ -32,75 +31,94 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitOpLogicalOr(SpirvParser.OpLogicalOrContext ctx) {
-        return visitLogicalBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), OR);
+    public Event visitOpLogicalOr(SpirvParser.OpLogicalOrContext ctx) {
+        return visitLogicalBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), BoolBinaryOp.OR);
     }
 
     @Override
-    public Expression visitOpLogicalAnd(SpirvParser.OpLogicalAndContext ctx) {
-        return visitLogicalBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), AND);
+    public Event visitOpLogicalAnd(SpirvParser.OpLogicalAndContext ctx) {
+        return visitLogicalBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), BoolBinaryOp.AND);
     }
 
     @Override
-    public Expression visitOpLogicalNot(SpirvParser.OpLogicalNotContext ctx) {
-        return visitLogicalUnExpression(ctx.idResult(), ctx.idResultType(), ctx.operand(), NOT);
+    public Event visitOpLogicalNot(SpirvParser.OpLogicalNotContext ctx) {
+        return visitLogicalUnExpression(ctx.idResult(), ctx.idResultType(), ctx.operand(), BoolUnaryOp.NOT);
     }
 
     @Override
-    public Expression visitOpIEqual(SpirvParser.OpIEqualContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), EQ);
+    public Event visitOpSelect(SpirvParser.OpSelectContext ctx) {
+        String id = ctx.idResult().getText();
+        Expression cond = getOperandBoolean(id, ctx.condition().getText());
+        Expression op1 = builder.getExpression(ctx.object1().getText());
+        Expression op2 = builder.getExpression(ctx.object2().getText());
+        Type type = builder.getType(ctx.idResultType().getText());
+        Register register = builder.addRegister(id, ctx.idResultType().getText());
+        if (!op1.getType().equals(type) || !op2.getType().equals(type)) {
+            throw new ParsingException("Illegal definition for '%s', " +
+                    "expected two operands type '%s but received '%s' and '%s'",
+                    id, type, op1.getType(), op2.getType());
+        }
+        if (op1.getType() instanceof IntegerType) {
+            return builder.addEvent(new Local(register, EXPR_FACTORY.makeITE(cond, op1, op2)));
+        }throw new ParsingException("Illegal definition for '%s', " +
+                "operands must be integers or arrays of booleans", id);
     }
 
     @Override
-    public Expression visitOpINotEqual(SpirvParser.OpINotEqualContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), NEQ);
+    public Event visitOpIEqual(SpirvParser.OpIEqualContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.EQ);
     }
 
     @Override
-    public Expression visitOpUGreaterThan(SpirvParser.OpUGreaterThanContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), UGT);
+    public Event visitOpINotEqual(SpirvParser.OpINotEqualContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.NEQ);
     }
 
     @Override
-    public Expression visitOpSGreaterThan(SpirvParser.OpSGreaterThanContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), GT);
+    public Event visitOpUGreaterThan(SpirvParser.OpUGreaterThanContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.UGT);
     }
 
     @Override
-    public Expression visitOpUGreaterThanEqual(SpirvParser.OpUGreaterThanEqualContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), UGTE);
+    public Event visitOpSGreaterThan(SpirvParser.OpSGreaterThanContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.GT);
     }
 
     @Override
-    public Expression visitOpSGreaterThanEqual(SpirvParser.OpSGreaterThanEqualContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), GTE);
+    public Event visitOpUGreaterThanEqual(SpirvParser.OpUGreaterThanEqualContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.UGTE);
     }
 
     @Override
-    public Expression visitOpULessThan(SpirvParser.OpULessThanContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), ULT);
+    public Event visitOpSGreaterThanEqual(SpirvParser.OpSGreaterThanEqualContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.GTE);
     }
 
     @Override
-    public Expression visitOpSLessThan(SpirvParser.OpSLessThanContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), LT);
+    public Event visitOpULessThan(SpirvParser.OpULessThanContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.ULT);
     }
 
     @Override
-    public Expression visitOpULessThanEqual(SpirvParser.OpULessThanEqualContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), ULTE);
+    public Event visitOpSLessThan(SpirvParser.OpSLessThanContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.LT);
     }
 
     @Override
-    public Expression visitOpSLessThanEqual(SpirvParser.OpSLessThanEqualContext ctx) {
-        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), LTE);
+    public Event visitOpULessThanEqual(SpirvParser.OpULessThanEqualContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.ULTE);
     }
 
-    private Expression visitLogicalUnExpression(
+    @Override
+    public Event visitOpSLessThanEqual(SpirvParser.OpSLessThanEqualContext ctx) {
+        return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.LTE);
+    }
+
+    private Event visitLogicalUnExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.OperandContext opCtx,
-            BOpUn op) {
+            BoolUnaryOp op) {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), bType -> {
             Expression operand = getOperandBoolean(id, opCtx.getText());
@@ -108,12 +126,12 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Expression> {
         });
     }
 
-    private Expression visitLogicalBinExpression(
+    private Event visitLogicalBinExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.Operand1Context op1Ctx,
             SpirvParser.Operand2Context op2Ctx,
-            BOpBin op) {
+            BoolBinaryOp op) {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), bType -> {
             Expression op1 = getOperandBoolean(id, op1Ctx.getText());
@@ -122,18 +140,18 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Expression> {
         });
     }
 
-    private Expression visitIntegerBinExpression(
+    private Event visitIntegerBinExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.Operand1Context op1Ctx,
             SpirvParser.Operand2Context op2Ctx,
-            COpBin op) {
+            IntCmpOp op) {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), bType -> {
             Expression op1 = getOperandInteger(id, op1Ctx.getText());
             Expression op2 = getOperandInteger(id, op2Ctx.getText());
             if (op1.getType().equals(op2.getType())) {
-                return EXPR_FACTORY.makeBinary(op1, op, op2);
+                return EXPR_FACTORY.makeIntCmp(op1, op, op2);
             }
             throw new ParsingException("Illegal definition for '%s', " +
                     "operands have different types: '%s' is '%s' and '%s' is '%s'",
@@ -141,10 +159,12 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Expression> {
         });
     }
 
-    private Expression forType(String id, String typeId, Function<BooleanType, Expression> f) {
+    private Event forType(String id, String typeId, Function<BooleanType, Expression> f) {
         Type type = builder.getType(typeId);
+        Register register = builder.addRegister(id, typeId);
         if (type instanceof BooleanType bType) {
-            return builder.addExpression(id, f.apply(bType));
+            Local event = EventFactory.newLocal(register, f.apply(bType));
+            return builder.addEvent(event);
         }
         if (type instanceof ArrayType) {
             throw new ParsingException("Unsupported result type for '%s', " +
@@ -176,6 +196,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Expression> {
                 "OpLogicalOr",
                 "OpLogicalAnd",
                 "OpLogicalNot",
+                "OpSelect",
                 "OpIEqual",
                 "OpINotEqual",
                 "OpUGreaterThan",

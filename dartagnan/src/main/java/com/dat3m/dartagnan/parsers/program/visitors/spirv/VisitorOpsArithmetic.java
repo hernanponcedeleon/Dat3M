@@ -3,20 +3,23 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.op.IOpBin;
-import com.dat3m.dartagnan.expression.op.IOpUn;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Local;
 
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.dat3m.dartagnan.expression.op.IOpBin.*;
-import static com.dat3m.dartagnan.expression.op.IOpUn.MINUS;
+import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
+import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 
 public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
 
@@ -58,11 +61,11 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), DIV);
     }
 
-    private Expression visitIntegerUnExpression(
+    private Event visitIntegerUnExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.OperandContext opCtx,
-            IOpUn op
+            IntUnaryOp op
     ) {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), iType -> {
@@ -81,7 +84,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.Operand1Context op1Ctx,
             SpirvParser.Operand2Context op2Ctx,
-            IOpBin op
+            IntBinaryOp op
     ) {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), iType -> {
