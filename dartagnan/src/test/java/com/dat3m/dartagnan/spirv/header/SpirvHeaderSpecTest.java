@@ -65,7 +65,7 @@ public class SpirvHeaderSpecTest extends AbstractSpirvHeaderTest {
         String[] msgSplit = msg.split(":");
         String specType = msgSplit[0];
         String spec = msgSplit[1];
-        assertEquals(program.getSpecification().toString(), spec);
-        assertEquals(program.getSpecification().getType(), specType);
+        assertEquals(spec, program.getSpecification().toString());
+        assertEquals(specType, program.getSpecification().getType());
     }
 }

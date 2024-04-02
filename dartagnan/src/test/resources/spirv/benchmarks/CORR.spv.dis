@@ -3,7 +3,7 @@
 ; @Input: %19 = {{0}}
 ; @Input: %20 = {{0}}
 ; @Input: %21 = {{0}}
-; @Output: not exists (%18 == 2 and %19 == 1 and %20 == 1 and %21 == 2)
+; @Output: not exists (%18[0][0] == 2 and %19[0][0] == 1 and %20[0][0] == 1 and %21[0][0] == 2)
 ; @Config: 1, 4, 1
 ; SPIR-V
 ; Version: 1.0
