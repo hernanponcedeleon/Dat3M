@@ -27,22 +27,21 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
+import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SpirvGpuVerifyTest {
+public class SpirvAssertionsTest {
 
     private final String modelPath = getRootPath("cat/spirv.cat");
     private final String programPath;
     private final int bound;
     private final Result expected;
 
-    public SpirvGpuVerifyTest(String file, int bound, Result expected) {
+    public SpirvAssertionsTest(String file, int bound, Result expected) {
         this.programPath = getTestResourcePath("spirv/benchmarks/" + file);
         this.bound = bound;
         this.expected = expected;
@@ -50,22 +49,27 @@ public class SpirvGpuVerifyTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
+        // TODO: Bounds and expected results
         return Arrays.asList(new Object[][]{
-                // TODO: Assertions, intial values, config
-                {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, FAIL},
-                {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
-                // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
-                // {"gpu-verify/atomics/displaced.spv.dis", 1, FAIL},
-                {"gpu-verify/atomics/forloop.spv.dis", 1, FAIL},
-                // {"gpu-verify/atomics/pointers.spv.dis", 1, FAIL},
-                {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
-                {"gpu-verify/barrier_intervals/test2.spv.dis", 1, FAIL},
-                {"gpu-verify/barrier_intervals/test3.spv.dis", 1, PASS},
-                {"gpu-verify/barrier_intervals/test4.spv.dis", 1, PASS},
-                {"gpu-verify/beningn_race_tests/fail/writeafterread_addition.spv.dis", 1, FAIL},
-                {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, FAIL},
-                // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, FAIL},
-                {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, FAIL},
+                // The spinloop has side-effects thus we cannot fully unroll
+                // We use B=2 to at least get two iterations
+                {"caslock.spv.dis", 2, UNKNOWN},
+                {"caslock-acq2rx.spv.dis", 1, FAIL},
+                {"caslock-rel2rx.spv.dis", 1, FAIL},
+                // TODO: Unsupported decoration 'WorkgroupId'
+                // TODO: Check expected result
+                // {"CORR.spv.dis", 1, PASS},
+                {"IRIW.spv.dis", 1, PASS},
+                {"MP.spv.dis", 1, PASS},
+                {"MP-acq2rx.spv.dis", 1, FAIL},
+                {"MP-rel2rx.spv.dis", 1, FAIL},
+                {"SB.spv.dis", 1, PASS},
+                {"ticketlock.spv.dis", 1, PASS},
+                {"ticketlock-acq2rx.spv.dis", 1, FAIL},
+                {"ticketlock-rel2rx.spv.dis", 1, FAIL},
+                {"ttaslock.spv.dis", 2, PASS},
+                {"ttaslock-acq2rx.spv.dis", 1, FAIL},
+                {"ttaslock-rel2rx.spv.dis", 1, FAIL},
         });
     }
 
@@ -106,6 +110,6 @@ public class SpirvGpuVerifyTest {
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
         Wmm mcm = new ParserCat().parse(new File(modelPath));
-        return builder.build(program, mcm, EnumSet.of(CAT_SPEC));
+        return builder.build(program, mcm, EnumSet.of(PROGRAM_SPEC));
     }
 }
