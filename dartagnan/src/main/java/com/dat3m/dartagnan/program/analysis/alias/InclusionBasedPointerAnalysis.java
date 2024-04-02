@@ -740,11 +740,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final Result left = x.getLeft().accept(this);
             final Result right = x.getRight().accept(this);
             final IntBinaryOp kind = x.getKind();
-            if (left == null || right == null || kind == IntBinaryOp.RSHIFT) {
-                return null;
-            }
-            if (left.address == null && left.register == null && left.alignment.isEmpty() && right.address == null &&
-                    right.register == null && right.alignment.isEmpty()) {
+            if (left != null && left.address == null && left.register == null && left.alignment.isEmpty() &&
+                    right != null && right.address == null && right.register == null && right.alignment.isEmpty() &&
+                    kind != IntBinaryOp.RSHIFT) {
                 // TODO: Make sure that the type of normalization does not break this code.
                 //  Maybe always do signed normalization?
                 final BigInteger result = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
@@ -752,15 +750,21 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             }
             return switch (kind) {
                 case MUL -> {
-                    if (left.address != null || right.address != null) {
+                    if (left == null && right == null ||
+                            left != null && left.address != null ||
+                            right != null && right.address != null) {
                         yield null;
+                    }
+                    if (left == null || right == null) {
+                        final Result factor = left == null ? right : left;
+                        yield new Result(null, null, BigInteger.ZERO, join(factor.alignment, factor.offset.intValue()));
                     }
                     final List<Integer> leftAlignment = mul(join(left.alignment, left.register), right.offset.intValue());
                     final List<Integer> rightAlignment = mul(join(right.alignment, right.register), left.offset.intValue());
                     yield new Result(null, null, left.offset.multiply(right.offset), join(leftAlignment, rightAlignment));
                 }
                 case ADD, SUB -> {
-                    if (left.address != null && right.address != null) {
+                    if (left == null || right == null || left.address != null && right.address != null) {
                         yield null;
                     }
                     final MemoryObject base = left.address != null ? left.address : right.address;
