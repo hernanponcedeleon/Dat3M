@@ -9,11 +9,15 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.core.Local;
 
 import java.util.Set;
 import java.util.function.Function;
 
-public class VisitorOpsBits extends SpirvBaseVisitor<Expression> {
+public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
 
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
 
@@ -24,21 +28,21 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitOpShiftLeftLogical(SpirvParser.OpShiftLeftLogicalContext ctx) {
+    public Event visitOpShiftLeftLogical(SpirvParser.OpShiftLeftLogicalContext ctx) {
         return visitShiftBinExpression(ctx.idResult(), ctx.idResultType(), ctx.base(), ctx.shift(), IntBinaryOp.LSHIFT);
     }
 
     @Override
-    public Expression visitOpShiftRightLogical(SpirvParser.OpShiftRightLogicalContext ctx) {
+    public Event visitOpShiftRightLogical(SpirvParser.OpShiftRightLogicalContext ctx) {
         return visitShiftBinExpression(ctx.idResult(), ctx.idResultType(), ctx.base(), ctx.shift(), IntBinaryOp.RSHIFT);
     }
 
     @Override
-    public Expression visitOpShiftRightArithmetic(SpirvParser.OpShiftRightArithmeticContext ctx) {
+    public Event visitOpShiftRightArithmetic(SpirvParser.OpShiftRightArithmeticContext ctx) {
         return visitShiftBinExpression(ctx.idResult(), ctx.idResultType(), ctx.base(), ctx.shift(), IntBinaryOp.ARSHIFT);
     }
 
-    private Expression visitShiftBinExpression(
+    private Event visitShiftBinExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.BaseContext op1Ctx,
@@ -52,10 +56,12 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Expression> {
         });
     }
 
-    private Expression forType(String id, String typeId, Function<IntegerType, Expression> f) {
+    private Event forType(String id, String typeId, Function<IntegerType, Expression> f) {
         Type type = builder.getType(typeId);
         if (type instanceof IntegerType bType) {
-            return builder.addExpression(id, f.apply(bType));
+            Register register = builder.addRegister(id, typeId);
+            Local event = EventFactory.newLocal(register, f.apply(bType));
+            return builder.addEvent(event);
         }
         if (type instanceof ArrayType) {
             throw new ParsingException("Unsupported result type for '%s', " +

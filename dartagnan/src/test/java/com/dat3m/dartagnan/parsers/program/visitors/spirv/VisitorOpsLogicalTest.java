@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
@@ -9,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.program.event.core.Local;
 import org.junit.Test;
 
 import java.util.List;
@@ -33,13 +33,14 @@ public class VisitorOpsLogicalTest {
         MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
         builder.mockBoolType("%bool");
         builder.mockConstant("%value", "%bool", value);
-        String input = "%expr = OpLogicalNot %bool %value";
+        String input = "%reg = OpLogicalNot %bool %value";
 
         // when
-        BoolUnaryExpr expr = (BoolUnaryExpr) visit(builder, input);
+        Local local = visit(builder, input);
 
         // then
-        assertEquals(builder.getExpression("%expr"), expr);
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        BoolUnaryExpr expr = (BoolUnaryExpr) local.getExpr();
         assertEquals(builder.getExpression("%value"), expr.getOperand());
         assertEquals(NOT, expr.getKind());
     }
@@ -58,13 +59,14 @@ public class VisitorOpsLogicalTest {
         builder.mockBoolType("%bool");
         builder.mockConstant("%v1", "%bool", v1);
         builder.mockConstant("%v2", "%bool", v2);
-        String input = String.format("%%expr = %s %%bool %%v1 %%v2", name);
+        String input = String.format("%%reg = %s %%bool %%v1 %%v2", name);
 
         // when
-        BoolBinaryExpr expr = (BoolBinaryExpr) visit(builder, input);
+        Local local = visit(builder, input);
 
         // then
-        assertEquals(builder.getExpression("%expr"), expr);
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        BoolBinaryExpr expr = (BoolBinaryExpr) local.getExpr();
         assertEquals(builder.getExpression("%v1"), expr.getLeft());
         assertEquals(builder.getExpression("%v2"), expr.getRight());
         assertEquals(op, expr.getKind());
@@ -91,13 +93,14 @@ public class VisitorOpsLogicalTest {
         builder.mockIntType("%int", 64);
         builder.mockConstant("%v1", "%int", v1);
         builder.mockConstant("%v2", "%int", v2);
-        String input = String.format("%%expr = %s %%bool %%v1 %%v2", name);
+        String input = String.format("%%reg = %s %%bool %%v1 %%v2", name);
 
         // when
-        IntCmpExpr expr = (IntCmpExpr) visit(builder, input);
+        Local local = visit(builder, input);
 
         // then
-        assertEquals(builder.getExpression("%expr"), expr);
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        IntCmpExpr expr = (IntCmpExpr) local.getExpr();
         assertEquals(builder.getExpression("%v1"), expr.getLeft());
         assertEquals(builder.getExpression("%v2"), expr.getRight());
         assertEquals(op, expr.getKind());
@@ -110,7 +113,7 @@ public class VisitorOpsLogicalTest {
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value", "%int", 123);
-        String input = "%expr = OpLogicalNot %bool %value";
+        String input = "%reg = OpLogicalNot %bool %value";
 
         try {
             // when
@@ -118,7 +121,7 @@ public class VisitorOpsLogicalTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Illegal definition for '%expr', " +
+            assertEquals("Illegal definition for '%reg', " +
                     "operand '%value' must be a boolean", e.getMessage());
         }
     }
@@ -131,7 +134,7 @@ public class VisitorOpsLogicalTest {
         builder.mockIntType("%int", 64);
         builder.mockConstant("%v1", "%int", 123);
         builder.mockConstant("%v2", "%bool", true);
-        String input = "%expr = OpLogicalAnd %bool %v1 %v2";
+        String input = "%reg = OpLogicalAnd %bool %v1 %v2";
 
         try {
             // when
@@ -139,7 +142,7 @@ public class VisitorOpsLogicalTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Illegal definition for '%expr', " +
+            assertEquals("Illegal definition for '%reg', " +
                     "operand '%v1' must be a boolean", e.getMessage());
         }
     }
@@ -152,7 +155,7 @@ public class VisitorOpsLogicalTest {
         builder.mockIntType("%int", 64);
         builder.mockConstant("%v1", "%int", 123);
         builder.mockConstant("%v2", "%bool", true);
-        String input = "%expr = OpIEqual %bool %v1 %v2";
+        String input = "%reg = OpIEqual %bool %v1 %v2";
 
         try {
             // when
@@ -160,7 +163,7 @@ public class VisitorOpsLogicalTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Illegal definition for '%expr', " +
+            assertEquals("Illegal definition for '%reg', " +
                     "operand '%v2' must be an integer", e.getMessage());
         }
     }
@@ -174,7 +177,7 @@ public class VisitorOpsLogicalTest {
         builder.mockIntType("%int64", 64);
         builder.mockConstant("%v1", "%int32", 123);
         builder.mockConstant("%v2", "%int64", 456);
-        String input = "%expr = OpIEqual %bool %v1 %v2";
+        String input = "%reg = OpIEqual %bool %v1 %v2";
 
         try {
             // when
@@ -182,7 +185,7 @@ public class VisitorOpsLogicalTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Illegal definition for '%expr', " +
+            assertEquals("Illegal definition for '%reg', " +
                     "operands have different types: " +
                     "'%v1' is 'bv32' and '%v2' is 'bv64'", e.getMessage());
         }
@@ -195,7 +198,7 @@ public class VisitorOpsLogicalTest {
         builder.mockBoolType("%bool");
         builder.mockVectorType("%vector", "%bool", 4);
         builder.mockConstant("%value", "%vector", List.of(true, false, true, false));
-        String input = "%expr = OpLogicalNot %vector %value";
+        String input = "%reg = OpLogicalNot %vector %value";
 
         try {
             // when
@@ -203,7 +206,7 @@ public class VisitorOpsLogicalTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Unsupported result type for '%expr', " +
+            assertEquals("Unsupported result type for '%reg', " +
                     "vector types are not supported", e.getMessage());
         }
     }
@@ -215,7 +218,7 @@ public class VisitorOpsLogicalTest {
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 64);
         builder.mockConstant("%value", "%bool", true);
-        String input = "%expr = OpLogicalNot %int %value";
+        String input = "%reg = OpLogicalNot %int %value";
 
         try {
             // when
@@ -223,11 +226,13 @@ public class VisitorOpsLogicalTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Illegal result type for '%expr'", e.getMessage());
+            assertEquals("Illegal result type for '%reg'", e.getMessage());
         }
     }
 
-    private Expression visit(ProgramBuilderSpv builder, String input) {
-        return new MockSpirvParser(input).op().accept(new VisitorOpsLogical(builder));
+    private Local visit(MockProgramBuilderSpv builder, String input) {
+        builder.mockFunctionStart();
+        builder.mockLabel();
+        return (Local) new MockSpirvParser(input).op().accept(new VisitorOpsLogical(builder));
     }
 }
