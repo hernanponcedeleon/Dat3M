@@ -1,5 +1,5 @@
 ; @Input: %v3v = {{0}, {0}, {0}}
-; @Output: forall (%v3v[0]==0 and %v3v[1]==1 and %v3v[2]==2)
+; @Output: forall (%v3v[0][0]==0 and %v3v[1][0]==1 and %v3v[2][0]==2)
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0

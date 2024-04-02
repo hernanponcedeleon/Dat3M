@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.spirv.header;
 
+import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -16,6 +17,7 @@ import org.junit.Test;
 
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class SpirvHeaderSingleTest {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
@@ -285,7 +287,7 @@ public class SpirvHeaderSingleTest {
         // given
         String wholeSpv = """
                 ; @Input: %v4 = {{0, 0}, {0}}
-                ; @Output: forall (%v4[0]==1 and %v4[1]==2 and %v4[2]==3)
+                ; @Output: forall (%v4[0][0]==1 and %v4[0][1]==2 and %v4[1][0]==3)
                                OpCapability Shader
                         %ext = OpExtInstImport "GLSL.std.450"
                                OpMemoryModel Logical GLSL450
@@ -331,9 +333,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v4[0]", ((Location) ast1.getLeft()).getName());
-        assertEquals("%v4[1]", ((Location) ast2.getLeft()).getName());
-        assertEquals("%v4[2]", ((Location) ast3.getLeft()).getName());
+        assertEquals("%v4[0][0]", ((Location) ast1.getLeft()).getName());
+        assertEquals("%v4[0][1]", ((Location) ast2.getLeft()).getName());
+        assertEquals("%v4[1][0]", ((Location) ast3.getLeft()).getName());
 
         assertEquals(0, ((Location) ast1.getLeft()).getOffset());
         assertEquals(8, ((Location) ast2.getLeft()).getOffset());
@@ -345,7 +347,7 @@ public class SpirvHeaderSingleTest {
         // given
         String wholeSpv = """
                     ; @Input: %v4 = {{0, 0}, {0}}
-                    ; @ Output: forall (1==%v4[0] and 2==%v4[1] and 3==%v4[2])
+                    ; @ Output: forall (1==%v4[0][0] and 2==%v4[0][1] and 3==%v4[1][0])
                               OpCapability Shader
                        %ext = OpExtInstImport "GLSL.std.450"
                               OpMemoryModel Logical GLSL450
@@ -391,9 +393,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getLeft());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getLeft());
 
-        assertEquals("%v4[0]", ((Location) ast1.getRight()).getName());
-        assertEquals("%v4[1]", ((Location) ast2.getRight()).getName());
-        assertEquals("%v4[2]", ((Location) ast3.getRight()).getName());
+        assertEquals("%v4[0][0]", ((Location) ast1.getRight()).getName());
+        assertEquals("%v4[0][1]", ((Location) ast2.getRight()).getName());
+        assertEquals("%v4[1][0]", ((Location) ast3.getRight()).getName());
 
         assertEquals(0, ((Location) ast1.getRight()).getOffset());
         assertEquals(8, ((Location) ast2.getRight()).getOffset());
@@ -522,6 +524,47 @@ public class SpirvHeaderSingleTest {
         assertEquals(0, ((Location) ast1.getLeft()).getOffset());
         assertEquals(2, ((Location) ast2.getLeft()).getOffset());
         assertEquals(6, ((Location) ast3.getLeft()).getOffset());
+    }
+
+    @Test
+    public void testIllegalVectorIndex() {
+        doTestIllegalVectorIndex("%var[0][0][0]==0",
+                "Illegal assertion for variable '%var', index too deep");
+        doTestIllegalVectorIndex("%var[0]==0", "Illegal assertion for variable '%var', index not deep enough");
+        doTestIllegalVectorIndex("%var[1][0]==0", "Illegal assertion for variable '%var', index out of bounds");
+        doTestIllegalVectorIndex("%var[0][1]==0", "Illegal assertion for variable '%var', index out of bounds");
+    }
+
+    private void doTestIllegalVectorIndex(String ast, String error) {
+        String input = """
+        ; @Input: %var = {{0}}
+        ; @Output: forall (<<ast>>)
+                       OpCapability Shader
+                %ext = OpExtInstImport "GLSL.std.450"
+                       OpMemoryModel Logical GLSL450
+                       OpEntryPoint GLCompute %main "main"
+                       OpSource GLSL 450
+               %void = OpTypeVoid
+               %func = OpTypeFunction %void
+             %uint64 = OpTypeInt 64 0
+            %v1_type = OpTypeVector %uint64 1
+            %v2_type = OpTypeVector %v1_type 1
+           %ptr_type = OpTypePointer Uniform %v2_type
+                %var = OpVariable %ptr_type Uniform
+               %main = OpFunction %void None %func
+              %label = OpLabel
+                       OpReturn
+                       OpFunctionEnd
+             """.replace("<<ast>>", ast);
+
+        try {
+            // when
+            localParse(input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals(error, e.getMessage());
+        }
     }
 
     private Program localParse(String wholeSpv) {
