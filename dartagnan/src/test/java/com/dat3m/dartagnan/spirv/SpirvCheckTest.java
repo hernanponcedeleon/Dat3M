@@ -50,9 +50,11 @@ public class SpirvCheckTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock.spv.dis", 1, PASS},
-                {"caslock-acq2rx.spv.dis", 1, PASS},
-                {"caslock-rel2rx.spv.dis", 1, PASS},
+                // The spinloop has side-effects thus we cannot fully unroll
+                // We use B=2 to at least get two iterations
+                {"caslock.spv.dis", 2, UNKNOWN},
+                {"caslock-acq2rx.spv.dis", 2, UNKNOWN},
+                {"caslock-rel2rx.spv.dis", 2, UNKNOWN},
                 // {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, PASS},
@@ -74,7 +76,7 @@ public class SpirvCheckTest {
                 {"gpu-verify/barrier_intervals/test1.spv.dis", 1, FAIL},
                 {"gpu-verify/barrier_intervals/test2.spv.dis", 1, FAIL},
                 {"gpu-verify/barrier_intervals/test3.spv.dis", 1, FAIL},
-                {"gpu-verify/barrier_intervals/test4.spv.dis", 1, FAIL},
+                {"gpu-verify/barrier_intervals/test4.spv.dis", 2, FAIL},
                 {"gpu-verify/beningn_race_tests/fail/writeafterread_addition.spv.dis", 1, PASS},
                 {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, PASS},
                 // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, PASS},
