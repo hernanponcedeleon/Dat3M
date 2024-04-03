@@ -19,6 +19,11 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
 
+    public MockProgramBuilderSpv() {
+        super();
+        this.addBuiltInDecorationIfAbsent();
+    }
+
     @Override
     public void setNextOps(Set<String> nextOps) {
         // The value of nextOps is reset by the parent SpirvVisitor,

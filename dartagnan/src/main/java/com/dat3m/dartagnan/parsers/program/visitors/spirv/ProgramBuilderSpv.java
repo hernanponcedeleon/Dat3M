@@ -655,5 +655,12 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Thread grid dimensions must be less than 128");
         }
         this.threadGrid = threadGrid;
+        BuiltIn builtIn = new BuiltIn(threadGrid.get(0), threadGrid.get(1), threadGrid.get(2));
+        helperDecorations.addDecorationIfAbsent(DecorationType.BUILT_IN, builtIn);
+    }
+
+    public void addBuiltInDecorationIfAbsent() {
+        BuiltIn builtIn = new BuiltIn(this.threadGrid.get(0), this.threadGrid.get(1), this.threadGrid.get(2));
+        helperDecorations.addDecorationIfAbsent(DecorationType.BUILT_IN, builtIn);
     }
 }

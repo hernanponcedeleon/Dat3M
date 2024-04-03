@@ -17,12 +17,7 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     private final ProgramBuilderSpv builder = new ProgramBuilderSpv();
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
-    private final VisitorOpsConstant specConstantVisitor;
-
-    public VisitorSpirv() {
-        this.initializeVisitors();
-        this.specConstantVisitor = getSpecConstantVisitor();
-    }
+    private VisitorOpsConstant specConstantVisitor;
 
     static String parseOpName(SpirvParser.OpContext ctx) {
         ParseTree innerCtx = ctx.getChild(0);
@@ -105,6 +100,9 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
                 this.visit(header);
             }
         }
+        builder.addBuiltInDecorationIfAbsent();
+        this.initializeVisitors();
+        this.specConstantVisitor = getSpecConstantVisitor();
         visitSpvInstructions(ctx.spvInstructions());
         for (SpirvParser.OutputHeaderContext outputHeader : outputHeaders) {
             visitOutputHeader(outputHeader);
@@ -130,10 +128,10 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
-        int workGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(0).getText());
-        int subGroupID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(1).getText());
-        int threadID = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(2).getText());
-        List<Integer> threadGrid = List.of(workGroupID, subGroupID, threadID);
+        int threadAmount = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(0).getText());
+        int subGroupAmount = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(1).getText());
+        int workGroupAmount = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(2).getText());
+        List<Integer> threadGrid = List.of(threadAmount, subGroupAmount, workGroupAmount);
         builder.setThreadGrid(threadGrid);
         return null;
     }

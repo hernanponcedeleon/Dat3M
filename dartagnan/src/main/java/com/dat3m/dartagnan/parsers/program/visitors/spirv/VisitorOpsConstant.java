@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.SpecId;
 import com.dat3m.dartagnan.program.Register;
@@ -20,11 +21,13 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
-    private final SpecId decorator;
+    private final SpecId specIdDecorator;
+    private final BuiltIn builtInDecorator;
 
     public VisitorOpsConstant(ProgramBuilderSpv builder) {
         this.builder = builder;
-        this.decorator = (SpecId) builder.getDecoration(DecorationType.SPEC_ID);
+        this.specIdDecorator = (SpecId) builder.getDecoration(DecorationType.SPEC_ID);
+        this.builtInDecorator = (BuiltIn) builder.getDecoration(DecorationType.BUILT_IN);
     }
 
     @Override
@@ -61,7 +64,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     public Expression visitOpSpecConstant(SpirvParser.OpSpecConstantContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
-        String value = decorator.getValue(id);
+        String value = specIdDecorator.getValue(id);
         if (value == null) {
             value = ctx.valueLiteralContextDependentNumber().getText();
         }
@@ -79,7 +82,13 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                         "from base composite constant '%s'", elementId, id);
             }
         }
-        return builder.addConstant(id, makeConstantComposite(id, type, elementIds));
+        if (builtInDecorator.hasDecoration(id, "WorkgroupSize")) {
+            Expression value = makeConstantComposite(id, type, elementIds);
+            value = builtInDecorator.decorate(id, value, type);
+            return builder.addSpecConstant(id, value);
+        } else {
+            return builder.addConstant(id, makeConstantComposite(id, type, elementIds));
+        }
     }
 
     @Override
@@ -93,7 +102,13 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                         "from spec composite constant '%s'", elementId, id);
             }
         }
-        return builder.addSpecConstant(id, makeConstantComposite(id, type, elementIds));
+        if (builtInDecorator.hasDecoration(id, "WorkgroupSize")) {
+            Expression value = makeConstantComposite(id, type, elementIds);
+            value = builtInDecorator.decorate(id, value, type);
+            return builder.addSpecConstant(id, value);
+        } else {
+            return builder.addSpecConstant(id, makeConstantComposite(id, type, elementIds));
+        }
     }
 
     @Override
@@ -118,7 +133,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression makeBooleanSpecConstant(String id, boolean value) {
-        String decoration = decorator.getValue(id);
+        String decoration = specIdDecorator.getValue(id);
         if (decoration != null) {
             value = !"0".equals(decoration);
         }
