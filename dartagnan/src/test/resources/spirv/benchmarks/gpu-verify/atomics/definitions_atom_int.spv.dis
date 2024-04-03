@@ -2,16 +2,14 @@
 ; @Input: %13 = {{0}}
 ; @Config: 2, 1, 1
 ; SPIR-V
-; Version: 1.0
+; Version: 1.6
 ; Generator: Google Clspv; 0
 ; Bound: 100
 ; Schema: 0
                OpCapability Shader
-               OpExtension "SPV_KHR_storage_buffer_storage_class"
-               OpExtension "SPV_KHR_non_semantic_info"
          %80 = OpExtInstImport "NonSemantic.ClspvReflection.5"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %24 "definitions"
+               OpEntryPoint GLCompute %24 "definitions" %8 %12 %13 %17 %21
                OpSource OpenCL_C 200
          %81 = OpString "definitions"
          %82 = OpString " kernel"
