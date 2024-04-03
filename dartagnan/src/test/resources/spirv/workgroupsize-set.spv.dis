@@ -1,0 +1,30 @@
+; @ Output: forall (%size[0]==2 and %size[1]==1 and %size[2]==2)
+; @ Config: 2, 1, 2
+; SPIR-V
+; Version: 1.0
+; Schema: 0
+               OpCapability Shader
+        %ext = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpSource GLSL 450
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+       %uint = OpTypeInt 64 0
+     %v3uint = OpTypeVector %uint 3
+ %ptr_v3uint = OpTypePointer Uniform %v3uint
+   %ptr_uint = OpTypePointer Uniform %uint
+         %c0 = OpConstant %uint 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+       %size = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+       %main = OpFunction %void None %func
+      %label = OpLabel
+     %id_ptr = OpAccessChain %ptr_uint %size %c0
+         %id = OpLoad %uint %id_ptr
+               OpReturn
+               OpFunctionEnd

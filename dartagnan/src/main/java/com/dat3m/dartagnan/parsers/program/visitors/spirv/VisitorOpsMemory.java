@@ -9,6 +9,8 @@ import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -30,9 +32,11 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
+    private final BuiltIn builtInDecorator;
 
     public VisitorOpsMemory(ProgramBuilderSpv builder) {
         this.builder = builder;
+        this.builtInDecorator = (BuiltIn) builder.getDecoration(DecorationType.BUILT_IN);
     }
 
     @Override
@@ -74,6 +78,10 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             throw new ParsingException("Missing initial value for runtime variable '%s'", id);
         } else {
             value = builder.newUndefinedValue(type);
+        }
+        if (builtInDecorator.hasDecoration(id, "WorkgroupSize")) {
+            value = builtInDecorator.decorate(id, value, type);
+            type = value.getType();
         }
 
         int size = TYPE_FACTORY.getMemorySizeInBytes(type);
