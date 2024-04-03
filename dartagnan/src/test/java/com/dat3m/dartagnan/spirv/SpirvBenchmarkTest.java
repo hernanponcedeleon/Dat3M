@@ -63,7 +63,7 @@ public class SpirvBenchmarkTest {
                 {"MP.spv.dis", 1, PASS},
                 {"MP-acq2rx.spv.dis", 1, FAIL},
                 {"MP-rel2rx.spv.dis", 1, FAIL},
-                {"SB.spv.dis", 1, FAIL},
+                {"SB.spv.dis", 1, PASS},
                 {"ticketlock.spv.dis", 1, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
