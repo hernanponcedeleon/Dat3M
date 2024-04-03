@@ -69,7 +69,7 @@ public final class EncodingContext {
     @Option(name = USE_INTEGERS,
             description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
             secure = true)
-    boolean useIntegers = true;
+    boolean useIntegers = false;
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
