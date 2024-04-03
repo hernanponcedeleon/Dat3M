@@ -201,7 +201,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         Label falseEnd = builder.makeBranchBackJumpLabel(falseLabel);
 
         Event trueJump = builder.addEvent(EventFactory.newJump(guard, trueEnd));
-        builder.addEvent(EventFactory.newJumpUnless(guard, falseLabel));
+        builder.addEvent(EventFactory.newJumpUnless(guard, falseEnd));
         builder.addEvent(trueEnd);
         builder.addEvent(EventFactory.newGoto(trueLabel));
         builder.addEvent(falseEnd);

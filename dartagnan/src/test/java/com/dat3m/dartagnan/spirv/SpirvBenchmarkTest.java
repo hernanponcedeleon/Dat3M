@@ -67,10 +67,9 @@ public class SpirvBenchmarkTest {
                 {"ticketlock.spv.dis", 1, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
-                // TODO: Loop entry label has multiple back edge
-                // {"ttaslock.spv.dis", 1, PASS},
-                // {"ttaslock-acq2rx.spv.dis", 1, FAIL},
-                // {"ttaslock-rel2rx.spv.dis", 1, FAIL},
+                {"ttaslock.spv.dis", 1, PASS},
+                {"ttaslock-acq2rx.spv.dis", 1, FAIL},
+                {"ttaslock-rel2rx.spv.dis", 1, FAIL},
         });
     }
 
