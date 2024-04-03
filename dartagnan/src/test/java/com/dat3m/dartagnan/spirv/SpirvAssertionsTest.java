@@ -49,10 +49,8 @@ public class SpirvAssertionsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
-        // TODO: Bounds and expected results
         return Arrays.asList(new Object[][]{
-                // The spinloop has side-effects thus we cannot fully unroll
-                // We use B=2 to at least get two iterations
+                // Cannot fully unroll due to spin-loop side effects
                 {"caslock.spv.dis", 2, UNKNOWN},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
@@ -77,11 +75,10 @@ public class SpirvAssertionsTest {
     public void testAllSolvers() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
-        }/*
-        // TODO: Support for vloc
+        }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }*/
+        }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
