@@ -9,12 +9,12 @@
 #define mo_rel memory_order_release
 #endif
 
-__kernel void test(global atomic_uint* f, global uint* x, global uint* r0, global uint* r1) {
-    if (get_local_id(0) == 0) {
-        *x = 1;
-        atomic_store_explicit(f, 0, mo_rel);
+__kernel void test(global atomic_uint* flag, global uint* data, global uint* r0, global uint* r1) {
+    if (get_global_id(0) == 0) {
+        *data = 1;
+        atomic_store_explicit(flag, 1, mo_rel);
     } else {
-        *r0 = atomic_load_explicit(f, mo_acq);
-        *r1 = *x;
+        *r0 = atomic_load_explicit(flag, mo_acq);
+        *r1 = *data;
     }
 }
