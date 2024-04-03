@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -132,7 +133,11 @@ public class SpirvTest {
     }
 
     private VerificationTask mkTask() throws Exception {
+        Configuration config = Configuration.builder()
+                .setOption(USE_INTEGERS, "true")
+                .build();
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
+                .withConfig(config)
                 .withBound(bound)
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));
