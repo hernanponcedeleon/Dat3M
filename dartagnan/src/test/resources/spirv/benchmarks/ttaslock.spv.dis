@@ -4,16 +4,14 @@
 ; @Output: forall (%16[0][0] == -1 or %16[0][1] == -1 or (%16[0][0] == 0 and %16[0][1] == 1) or (%16[0][0] == 1 and %16[0][1] == 0))
 ; @Config: 2, 1, 1
 ; SPIR-V
-; Version: 1.0
+; Version: 1.6
 ; Generator: Google Clspv; 0
 ; Bound: 76
 ; Schema: 0
                OpCapability Shader
-               OpExtension "SPV_KHR_storage_buffer_storage_class"
-               OpExtension "SPV_KHR_non_semantic_info"
          %60 = OpExtInstImport "NonSemantic.ClspvReflection.5"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %19 "mutex_test" %gl_LocalInvocationID
+               OpEntryPoint GLCompute %19 "mutex_test" %gl_LocalInvocationID %10 %14 %15 %16
                OpSource OpenCL_C 200
          %61 = OpString "mutex_test"
          %62 = OpString " __kernel"
