@@ -7,16 +7,14 @@
 ; @Output: exists (%16 == 1 and %17 == 0 and %18 == 1 and %19 == 0)
 ; @Config: 4, 1, 1
 ; SPIR-V
-; Version: 1.0
+; Version: 1.6
 ; Generator: Google Clspv; 0
 ; Bound: 103
 ; Schema: 0
                OpCapability Shader
-               OpExtension "SPV_KHR_storage_buffer_storage_class"
-               OpExtension "SPV_KHR_non_semantic_info"
          %77 = OpExtInstImport "NonSemantic.ClspvReflection.5"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %22 "test" %gl_LocalInvocationID
+               OpEntryPoint GLCompute %22 "test" %gl_LocalInvocationID %10 %14 %15 %16 %17 %18 %19
                OpSource OpenCL_C 200
          %78 = OpString "test"
          %79 = OpString " __kernel"
