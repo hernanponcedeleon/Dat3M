@@ -312,8 +312,19 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                         }
                     }
                 }
-                processCommunication(variable.stores, loads);
-                processCommunication(stores, variable.loads);
+                final boolean isTrivial = isTrivial(edge.modifier);
+                final List<LoadEdge> variableLoads = isTrivial ? variable.loads : new ArrayList<>(variable.loads.size());
+                final List<StoreEdge> variableStores = isTrivial ? variable.stores : new ArrayList<>(variable.stores.size());
+                if (!isTrivial) {
+                    for (final LoadEdge load : variable.loads) {
+                        variableLoads.add(new LoadEdge(load.result, join(load.addressModifier, edge.modifier)));
+                    }
+                    for (final StoreEdge store : variable.stores) {
+                        variableStores.add(new StoreEdge(store.value, join(store.addressModifier, edge.modifier)));
+                    }
+                }
+                processCommunication(variableStores, loads);
+                processCommunication(stores, variableLoads);
             }
         }
     }
