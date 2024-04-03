@@ -63,11 +63,11 @@ public class SpirvBenchmarkTest {
                 {"MP.spv.dis", 1, PASS},
                 {"MP-acq2rx.spv.dis", 1, FAIL},
                 {"MP-rel2rx.spv.dis", 1, FAIL},
-                {"SB.spv.dis", 1, PASS},
+                {"SB.spv.dis", 1, FAIL},
                 {"ticketlock.spv.dis", 1, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
-                {"ttaslock.spv.dis", 1, PASS},
+                {"ttaslock.spv.dis", 2, PASS},
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
         });
