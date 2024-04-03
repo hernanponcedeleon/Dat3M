@@ -98,7 +98,11 @@ public class SpirvTest {
                 {"loop-struct-cond-nested.spv.dis", 4, PASS},
                 {"phi.spv.dis", 1, PASS},
                 {"phi-unstruct-true.spv.dis", 1, PASS},
-                {"phi-unstruct-false.spv.dis", 1, PASS}
+                {"phi-unstruct-false.spv.dis", 1, PASS},
+                {"workgroupsize-set.spv.dis", 1, PASS},
+                {"workgroupsize-unset.spv.dis", 1, PASS},
+                {"workgroupsize-constant.spv.dis", 1, PASS},
+                {"workgroupsize-variable.spv.dis", 1, PASS}
         });
     }
 
