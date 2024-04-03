@@ -232,6 +232,7 @@ public class ExecutionGraphVisualizer {
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),
                 tag)
+                .replace("%", "\\%")
                 .replace("\"", "\\\""); // We need to escape quotes inside the string
         return "\"" + nodeString + "\"";
     }
