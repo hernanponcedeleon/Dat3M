@@ -16,10 +16,10 @@
  %ptr_v3uint = OpTypePointer Uniform %v3uint
    %ptr_uint = OpTypePointer Uniform %uint
          %c0 = OpConstant %uint 0
-          %2 = OpConstant %uint 1
-          %3 = OpConstant %uint 1
-          %4 = OpConstant %uint 1
-%gl_WorkGroupSize = OpConstantComposite %v3uint %2 %3 %4
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
 %_ptr_Private_v3uint = OpTypePointer Private %v3uint
        %size = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
        %main = OpFunction %void None %func

@@ -79,10 +79,6 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         } else {
             value = builder.newUndefinedValue(type);
         }
-        if (builtInDecorator.hasDecoration(id, "WorkgroupSize")) {
-            value = builtInDecorator.decorate(id, value, type);
-            type = value.getType();
-        }
 
         int size = TYPE_FACTORY.getMemorySizeInBytes(type);
         MemoryObject memObj = builder.allocateMemoryVirtual(size);
@@ -106,11 +102,18 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     private Expression getOpVariableInitialValue(SpirvParser.OpVariableContext ctx, Type type) {
         String id = ctx.idResult().getText();
         if (builder.hasInput(id)) {
-            if (ctx.initializer() == null) {
-                return castInput(id, type, builder.getInput(id));
+            if (builtInDecorator.hasDecoration(id) || ctx.initializer() != null) {
+                throw new ParsingException("The original value of variable '%s' " +
+                        "cannot be overwritten by an external input", id);
             }
-            throw new ParsingException("Variable '%s' has a constant initializer " +
-                    "and cannot accept an external input", id);
+            return castInput(id, type, builder.getInput(id));
+        }
+        if (builtInDecorator.hasDecoration(id)) {
+            if (ctx.initializer() != null) {
+                throw new ParsingException("The original value of variable '%s' " +
+                        "cannot be overwritten by a decoration", id);
+            }
+            return builtInDecorator.getDecoration(id, type);
         }
         if (ctx.initializer() != null) {
             return builder.getExpression(ctx.initializer().getText());

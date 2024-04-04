@@ -57,9 +57,7 @@ public class SpirvAssertionsTest {
                 // Re-enable once support for builtins is merged
                 // {"caslock-dv2wg.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
-                // TODO: Unsupported decoration 'WorkgroupId'
-                // TODO: Check expected result
-                // {"CORR.spv.dis", 1, PASS},
+                {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, PASS},
                 {"MP-acq2rx.spv.dis", 1, FAIL},

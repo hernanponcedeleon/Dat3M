@@ -1,9 +1,11 @@
-; @Output: forall (%out[0]==0 and %out[1]==0 and %out[2]==0 and %out[3]==1)
-; @Output: forall (%out[4]==0 and %out[5]==0 and %out[6]==0 and %out[7]==1)
-; @Output: forall (%out[8]==0 and %out[9]==1 and %out[10]==1 and %out[11]==0)
-; @Output: forall (%out[12]==0 and %out[13]==0 and %out[14]==1 and %out[15]==1)
-; @Output: forall (%out[16]==0 and %out[17]==1 and %out[18]==0 and %out[19]==1)
-; @Output: forall (%out[20]==1 and %out[21]==1 and %out[22]==1 and %out[23]==1)
+; @Output: forall (%out[0]==0 and %out[1]==0 and %out[2]==0)
+; @Output: forall (%out[3]==1 and %out[4]==0 and %out[5]==0)
+; @Output: forall (%out[6]==0 and %out[7]==1 and %out[8]==0)
+; @Output: forall (%out[9]==1 and %out[10]==1 and %out[11]==0)
+; @Output: forall (%out[12]==0 and %out[13]==0 and %out[14]==1)
+; @Output: forall (%out[15]==1 and %out[16]==0 and %out[17]==1)
+; @Output: forall (%out[18]==0 and %out[19]==1 and %out[20]==1)
+; @Output: forall (%out[21]==1 and %out[22]==1 and %out[23]==1)
 ; @Config: 2, 2, 2
 ; SPIR-V
 ; Version: 1.0
