@@ -32,6 +32,7 @@ public final class Tag {
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT = "__NOOPT";
     public static final String STARTLOAD = "__STARTLOAD";
+
     private Tag() {
     }
 
@@ -56,6 +57,7 @@ public final class Tag {
         public static final String MO_REL = "L";
         public static final String MO_ACQ = "A";
         public static final String MO_ACQ_PC = "Q";
+
         private ARMv8() {
         }
 
@@ -129,6 +131,7 @@ public final class Tag {
         public static final String MO_RELEASE = "REL";
         public static final String MO_ACQUIRE_RELEASE = "ACQ_REL";
         public static final String MO_SC = "SC";
+
         private C11() {
         }
 
@@ -201,6 +204,7 @@ public final class Tag {
         public static final String AFTER_ATOMIC = "After-atomic";
         public static final String AFTER_SPINLOCK = "After-spinlock";
         public static final String AFTER_UNLOCK_LOCK = "After-unlock-lock";
+
         private Linux() {
         }
 
@@ -439,6 +443,20 @@ public final class Tag {
         public static final String SC_STORAGE_BUFFER = "SPV_CS_STORAGE_BUFFER";
         public static final String SC_PHYS_STORAGE_BUFFER = "SPV_CS_PHYS_STORAGE_BUFFER";
 
+        private static final Set<String> storageClassTags = Set.of(
+                SC_UNIFORM_CONSTANT,
+                SC_INPUT,
+                SC_UNIFORM,
+                SC_OUTPUT,
+                SC_WORKGROUP,
+                SC_CROSS_WORKGROUP,
+                SC_PRIVATE,
+                SC_FUNCTION,
+                SC_GENERIC,
+                SC_PUSH_CONSTANT,
+                SC_STORAGE_BUFFER,
+                SC_PHYS_STORAGE_BUFFER
+        );
         private static final Set<String> scopeTags = Set.of(
                 INVOCATION,
                 SUBGROUP,
@@ -522,12 +540,16 @@ public final class Tag {
             return tag != null && tag.startsWith("SPV_");
         }
 
-        public static String getMoTag(Set<String> tags) {
-            return filterOne("memory order", tags, moTags);
+        public static String getStorageClassTag(Set<String> tags) {
+            return filterOne("storage class", tags, storageClassTags);
         }
 
         public static String getScopeTag(Set<String> tags) {
             return filterOne("scope", tags, scopeTags);
+        }
+
+        public static String getMoTag(Set<String> tags) {
+            return filterOne("memory order", tags, moTags);
         }
 
         private static String filterOne(String type, Set<String> tags, Set<String> filter) {
