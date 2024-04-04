@@ -16,14 +16,14 @@ public class MemoryTransformer extends ExprTransformer {
 
     private final int tid;
     private final Memory memory;
-    private final Map<String, Type> types;
+    private final Map<String, Type> typesMap;
     private final BuiltIn builtInDecoration;
     private final Map<Expression, Expression> mapping = new HashMap<>();
 
     public MemoryTransformer(int tid, Memory memory, Map<String, Type> types, BuiltIn builtInDecoration) {
         this.tid = tid;
         this.memory = memory;
-        this.types = types;
+        this.typesMap = types;
         this.builtInDecoration = builtInDecoration;
     }
 
@@ -42,7 +42,7 @@ public class MemoryTransformer extends ExprTransformer {
                 for (Integer i : memObj.getInitializedFields()){
                     copy.setInitialValue(i, memObj.getInitialValue(i));
                 }
-                builtInDecoration.decorate(memObj.getName(), copy, types.get(memObj.getName()));
+                builtInDecoration.decorate(memObj.getName(), copy, typesMap.get(memObj.getName()));
                 mapping.put(memObj, copy);
             }
             return mapping.getOrDefault(memObj, memObj);

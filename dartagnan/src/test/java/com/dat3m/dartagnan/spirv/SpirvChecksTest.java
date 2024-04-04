@@ -55,8 +55,7 @@ public class SpirvChecksTest {
                 {"caslock.spv.dis", 2, UNKNOWN},
                 {"caslock-acq2rx.spv.dis", 2, UNKNOWN},
                 {"caslock-rel2rx.spv.dis", 2, UNKNOWN},
-                // TODO: Unsupported decoration 'WorkgroupId'
-                // {"CORR.spv.dis", 1, PASS},
+                {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, PASS},
                 {"MP-acq2rx.spv.dis", 1, PASS},

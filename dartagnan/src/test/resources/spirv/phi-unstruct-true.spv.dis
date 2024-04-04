@@ -1,4 +1,3 @@
-; @Input:  %ids = {0, 0, 0}
 ; @Input:  %out = 0
 ; @Output: forall (%out==11)
 ; @Config: 1, 1, 1
