@@ -599,8 +599,8 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Variable '%v' has a constant initializer " +
-                    "and cannot accept an external input", e.getMessage());
+            assertEquals("The original value of variable '%v' " +
+                    "cannot be overwritten by an external input", e.getMessage());
         }
     }
 

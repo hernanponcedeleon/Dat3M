@@ -82,13 +82,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                         "from base composite constant '%s'", elementId, id);
             }
         }
-        if (builtInDecorator.hasDecoration(id, "WorkgroupSize")) {
-            Expression value = makeConstantComposite(id, type, elementIds);
-            value = builtInDecorator.decorate(id, value, type);
-            return builder.addSpecConstant(id, value);
-        } else {
-            return builder.addConstant(id, makeConstantComposite(id, type, elementIds));
-        }
+        return builder.addConstant(id, makeConstantComposite(id, type, elementIds));
     }
 
     @Override
@@ -102,13 +96,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
                         "from spec composite constant '%s'", elementId, id);
             }
         }
-        if (builtInDecorator.hasDecoration(id, "WorkgroupSize")) {
-            Expression value = makeConstantComposite(id, type, elementIds);
-            value = builtInDecorator.decorate(id, value, type);
-            return builder.addSpecConstant(id, value);
-        } else {
-            return builder.addSpecConstant(id, makeConstantComposite(id, type, elementIds));
+        Expression value = builtInDecorator.getDecoration(id, type);
+        if (value == null) {
+            value = makeConstantComposite(id, type, elementIds);
         }
+        return builder.addSpecConstant(id, value);
     }
 
     @Override
