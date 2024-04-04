@@ -87,7 +87,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private Graphviz graphviz;
 
     // When a variable gains an includes-edge, it is added to this queue for later processing.
-    private final LinkedHashMap<Variable, List<DerivedVariable>> queue = new LinkedHashMap<>();
+    private final LinkedHashMap<Variable, List<IncludeEdge>> queue = new LinkedHashMap<>();
 
     // Maps memory events to variables representing their pointer set.
     private final Map<MemoryCoreEvent, DerivedVariable> addressVariables = new HashMap<>();
@@ -136,13 +136,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         if (vx.base == vy.base && isConstant(vx.modifier) && isConstant(vy.modifier)) {
             return vx.modifier.offset == vy.modifier.offset;
         }
-        final List<DerivedVariable> ox = new ArrayList<>(vx.base.includes);
-        ox.add(derive(vx.base));
-        final List<DerivedVariable> oy = new ArrayList<>(vy.base.includes);
-        oy.add(derive(vy.base));
-        for (final DerivedVariable ax : ox) {
-            for (final DerivedVariable ay : oy) {
-                if (ax.base == ay.base && overlaps(join(ax.modifier, vx.modifier), join(ay.modifier, vy.modifier))) {
+        final List<IncludeEdge> ox = new ArrayList<>(vx.base.includes);
+        ox.add(new IncludeEdge(vx.base, TRIVIAL_MODIFIER));
+        final List<IncludeEdge> oy = new ArrayList<>(vy.base.includes);
+        oy.add(new IncludeEdge(vy.base, TRIVIAL_MODIFIER));
+        for (final IncludeEdge ax : ox) {
+            for (final IncludeEdge ay : oy) {
+                if (ax.source == ay.source && overlaps(join(ax.modifier, vx.modifier), join(ay.modifier, vy.modifier))) {
                     return true;
                 }
             }
@@ -187,7 +187,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         while (!queue.isEmpty()) {
             //TODO replace with removeFirst() when using java 21 or newer
             final Variable variable = queue.keySet().iterator().next();
-            final List<DerivedVariable> edges = queue.remove(variable);
+            final List<IncludeEdge> edges = queue.remove(variable);
             logger.trace("dequeue {}", variable);
             algorithm(variable, edges);
         }
@@ -262,10 +262,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     if (includer.loads.isEmpty()) {
                         continue;
                     }
-                    for (final DerivedVariable i : includer.includes) {
-                        if (i.base == address.base) {
+                    for (final IncludeEdge includeEdge : includer.includes) {
+                        if (includeEdge.source == address.base) {
                             for (final LoadEdge load : includer.loads) {
-                                loads.add(join(load, i.modifier));
+                                loads.add(join(load, includeEdge.modifier));
                             }
                         }
                     }
@@ -276,12 +276,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Closes the "includes" relation transitively and tests for new communications.
-    private void algorithm(Variable variable, List<DerivedVariable> edges) {
+    private void algorithm(Variable variable, List<IncludeEdge> edges) {
         logger.trace("{} includes {}", variable, edges);
         // 'A -> variable -> B' implies 'A -> B'.
         for (final Variable user : List.copyOf(variable.seeAlso)) {
-            for (final DerivedVariable edgeAfter : user.includes.stream().filter(e -> e.base == variable).toList()) {
-                for (final DerivedVariable edge : edges) {
+            for (final IncludeEdge edgeAfter : user.includes.stream().filter(e -> e.source == variable).toList()) {
+                for (final IncludeEdge edge : edges) {
                     addInclude(user, join(edge, edgeAfter.modifier));
                 }
             }
@@ -292,20 +292,20 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final boolean hasLoads = !variable.loads.isEmpty();
         final boolean hasStores = !variable.stores.isEmpty();
         if (hasLoads || hasStores) {
-            for (final DerivedVariable edge : edges) {
-                if (edge.base.object == null) {
+            for (final IncludeEdge edge : edges) {
+                if (edge.source.object == null) {
                     continue;
                 }
-                final List<LoadEdge> loads = new ArrayList<>(edge.base.loads);
-                final List<StoreEdge> stores = new ArrayList<>(edge.base.stores);
-                for (final Variable out : edge.base.seeAlso) {
-                    for (final DerivedVariable edge1 : out.includes) {
-                        if (hasStores && edge1.base == edge.base) {
+                final List<LoadEdge> loads = new ArrayList<>(edge.source.loads);
+                final List<StoreEdge> stores = new ArrayList<>(edge.source.stores);
+                for (final Variable out : edge.source.seeAlso) {
+                    for (final IncludeEdge edge1 : out.includes) {
+                        if (hasStores && edge1.source == edge.source) {
                             for (final LoadEdge load : out.loads) {
                                 loads.add(join(load, edge1.modifier));
                             }
                         }
-                        if (hasLoads && edge1.base == edge.base) {
+                        if (hasLoads && edge1.source == edge.source) {
                             for (final StoreEdge store : out.stores) {
                                 stores.add(join(store, edge1.modifier));
                             }
@@ -339,35 +339,36 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return;
         }
         // Remove all obsolete inclusion relationships between register states.
-        address.base.includes.removeIf(i -> i.base.object == null);
+        address.base.includes.removeIf(i -> i.source.object == null);
         address.base.loads.clear();
         address.base.stores.clear();
         address.base.seeAlso.clear();
         // In a well-structured program, all address expressions refer to at least one memory object.
         if (logger.isWarnEnabled() && address.base.object == null &&
-                address.base.includes.stream().allMatch(i -> i.base.object == null)) {
+                address.base.includes.stream().allMatch(i -> i.source.object == null)) {
             logger.warn("empty pointer set for {}", synContext.get().getContextInfo(entry.getKey()));
         }
         if (address.base.includes.size() != 1) {
             return;
         }
-        final DerivedVariable included = join(address.base.includes.get(0), address.modifier);
-        assert included.base.object != null;
+        final IncludeEdge includeEdge = address.base.includes.get(0);
+        final Modifier modifier = join(includeEdge.modifier, address.modifier);
+        assert includeEdge.source.object != null;
         // If the only included address refers to the last element, treat it as a direct static offset instead.
-        final int remainingSize = included.base.object.size() - included.modifier.offset;
-        for (final Integer a : included.modifier.alignment) {
+        final int remainingSize = includeEdge.source.object.size() - modifier.offset;
+        for (final Integer a : modifier.alignment) {
             if (a < remainingSize) {
                 return;
             }
         }
-        entry.setValue(derive(included.base, included.modifier.offset, List.of()));
+        entry.setValue(derive(includeEdge.source, modifier.offset, List.of()));
     }
 
     // ================================ Internals ================================
 
     private static final class Variable {
         // Any value contained in these Variables is also contained (+ offset).
-        private final List<DerivedVariable> includes = new ArrayList<>();
+        private final List<IncludeEdge> includes = new ArrayList<>();
         // There is some load event using this (+ offset) as pointer set and the other variable as output set.
         private final List<LoadEdge> loads = new ArrayList<>();
         // There is some store event using this (+ offset1) as pointer set and the other variable (+ offset2) as value set.
@@ -384,6 +385,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         @Override public String toString() { return name; }
     }
+
+    private record IncludeEdge(Variable source, Modifier modifier) {}
 
     private record StoreEdge(DerivedVariable value, Modifier addressModifier) {}
 
@@ -413,6 +416,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return new DerivedVariable(base, new Modifier(offset, alignment));
     }
 
+    private static IncludeEdge includeEdge(DerivedVariable variable) {
+        return new IncludeEdge(variable.base, variable.modifier);
+    }
+
     private Variable newVariable(String name) {
         totalVariables++;
         return new Variable(null, name);
@@ -421,31 +428,31 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Inserts a single inclusion relationship into the graph.
     // Also detects and eliminates cycles, assuming that the graph was already closed transitively.
     // Also closes the inclusion relation transitively on the left.
-    private void addInclude(Variable variable, DerivedVariable includeEdge) {
+    private void addInclude(Variable variable, IncludeEdge includeEdge) {
         // When adding a self-loop, try to accelerate it immediately: 'v -+1> v' means 'v -+1x> v'.
-        final DerivedVariable edge = tryAccelerateEdge(includeEdge, variable);
+        final IncludeEdge edge = tryAccelerateEdge(includeEdge, variable);
         if (!addInto(variable.includes, edge)) {
             return;
         }
-        final Variable v1 = includeEdge.base;
+        final Variable v1 = includeEdge.source;
         v1.seeAlso.add(variable);
-        final List<DerivedVariable> edges = queue.computeIfAbsent(variable, k -> new ArrayList<>());
+        final List<IncludeEdge> edges = queue.computeIfAbsent(variable, k -> new ArrayList<>());
         if (edges.isEmpty()) {
             logger.trace("enqueue {}", variable);
         }
         edges.add(edge);
         // 'variable includes v1' and 'v1 includes v2' implies 'variable includes v2'.
         // Cases of 'variable == v2' or 'v1 == v2' require recursion.
-        final var stack = new Stack<DerivedVariable>();
+        final var stack = new Stack<IncludeEdge>();
         stack.push(edge);
         while (!stack.empty()) {
-            final DerivedVariable e = stack.pop();
-            for (final DerivedVariable edgeBefore : List.copyOf(e.base.includes)) {
-                final DerivedVariable joinedEdge = tryAccelerateEdge(join(edgeBefore, e.modifier), variable);
+            final IncludeEdge e = stack.pop();
+            for (final IncludeEdge edgeBefore : List.copyOf(e.source.includes)) {
+                final IncludeEdge joinedEdge = tryAccelerateEdge(join(edgeBefore, e.modifier), variable);
                 if (addInto(variable.includes, joinedEdge)) {
-                    edgeBefore.base.seeAlso.add(variable);
+                    edgeBefore.source.seeAlso.add(variable);
                     edges.add(joinedEdge);
-                    if (edgeBefore.base == v1 || edgeBefore.base == variable) {
+                    if (edgeBefore.source == v1 || edgeBefore.source == variable) {
                         stack.push(joinedEdge);
                     }
                 }
@@ -454,10 +461,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Called before adding an 'include' edge.  For self-loops, promotes the static modifier to a dynamic modifier.
-    private static DerivedVariable tryAccelerateEdge(DerivedVariable edge, Variable v2) {
+    private static IncludeEdge tryAccelerateEdge(IncludeEdge edge, Variable v2) {
         // FIXME if 0+[1]x is not able to include -1, then self-loops will not terminate
         // therefore, negative edge.offset get passed as-is into join.
-        return v2 != edge.base ? edge : derive(v2, 0, join(edge.modifier.alignment, edge.modifier.offset));
+        return v2 != edge.source ? edge : new IncludeEdge(v2, new Modifier(0, join(edge.modifier.alignment, edge.modifier.offset)));
     }
 
     // Called when a placeholder variable for a register writer is to be replaced by the proper variable.
@@ -472,15 +479,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         addressVariables.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.modifier));
         registerVariables.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.modifier));
         for (final Variable out : old.seeAlso) {
-            out.includes.replaceAll(e -> e.base != old ? e : join(replacement, e.modifier));
+            out.includes.replaceAll(e -> e.source != old ? e : includeEdge(join(replacement, e.modifier)));
             assert out.loads.stream().noneMatch(e -> e.result == old);
             out.stores.replaceAll(e -> e.value.base != old ? e :
                     new StoreEdge(join(replacement, e.value.modifier), e.addressModifier));
         }
         replacement.base.seeAlso.addAll(old.seeAlso);
-        for (final DerivedVariable edge : old.includes) {
-            edge.base.seeAlso.remove(old);
-            edge.base.seeAlso.add(replacement.base);
+        for (final IncludeEdge edge : old.includes) {
+            edge.source.seeAlso.remove(old);
+            edge.source.seeAlso.add(replacement.base);
         }
         // Redirect load and store relationships.
         // This could enable more communications, but replacement.
@@ -507,7 +514,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final StoreEdge store : stores) {
             for (final LoadEdge load : loads) {
                 if (overlaps(store.addressModifier, load.addressModifier)) {
-                    addInclude(load.result, store.value);
+                    addInclude(load.result, includeEdge(store.value));
                 }
             }
         }
@@ -594,15 +601,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Tries to insert an element into a set of edges.
     // If the edge is already covered by the set, this operation has no effect and returns false.
     // If the edge is inserted, any existing elements that are covered by it are removed to form a set of minimal elements.
-    private boolean addInto(List<DerivedVariable> set, DerivedVariable element) {
+    private boolean addInto(List<IncludeEdge> set, IncludeEdge element) {
         //NOTE The Stream API is too costly here
-        for (final DerivedVariable o : set) {
-            if (element.base.equals(o.base) && includes(o.modifier, element.modifier)) {
+        for (final IncludeEdge o : set) {
+            if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
                 failedAddInto++;
                 return false;
             }
         }
-        set.removeIf(o -> element.base.equals(o.base) && includes(element.modifier, o.modifier));
+        set.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
         set.add(element);
         succeededAddInto++;
         return true;
@@ -688,6 +695,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return isTrivial(modifier) ? other : new DerivedVariable(other.base, join(other.modifier, modifier));
     }
 
+    private static IncludeEdge join(IncludeEdge other, Modifier modifier) {
+        return isTrivial(modifier) ? other : new IncludeEdge(other.source, join(other.modifier, modifier));
+    }
+
     private static LoadEdge join(LoadEdge other, Modifier modifier) {
         return isTrivial(modifier) ? other : new LoadEdge(other.result, join(other.addressModifier, modifier));
     }
@@ -737,17 +748,17 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         final Variable variable = newVariable("res" + reader.getGlobalId() + "(" + expression + ")");
         if (main != null) {
-            addInclude(variable, main);
+            addInclude(variable, includeEdge(main));
         }
         for (final MemoryObject object : collector.address) {
             if (result == null || object != result.address) {
-                addInclude(variable, new DerivedVariable(objectVariables.get(object), RELAXED_MODIFIER));
+                addInclude(variable, new IncludeEdge(objectVariables.get(object), RELAXED_MODIFIER));
             }
         }
         for (final Register register : collector.register) {
             if (result == null || register != result.register) {
                 final DerivedVariable registerVariable = getPhiNodeVariable(register, reader);
-                addInclude(variable, new DerivedVariable(registerVariable.base, RELAXED_MODIFIER));
+                addInclude(variable, new IncludeEdge(registerVariable.base, RELAXED_MODIFIER));
             }
         }
         return derive(variable);
@@ -766,7 +777,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             // The variables created here will be replaced later, if the events are out of order.
             final DerivedVariable writerVariable = registerVariables.computeIfAbsent(List.of(writer),
                     k -> derive(newVariable("out" + writer.getGlobalId())));
-            addInclude(result, writerVariable);
+            addInclude(result, includeEdge(writerVariable));
         }
         return registerVariables.compute(writers, (k, v) -> derive(result));
     }
@@ -884,7 +895,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final var next = new HashSet<Variable>();
             for (final Variable v : news) {
                 next.addAll(v.seeAlso);
-                v.includes.forEach(o -> next.add(o.base));
+                v.includes.forEach(o -> next.add(o.source));
                 v.loads.forEach(o -> next.add(o.result));
                 v.stores.forEach(o -> next.add(o.value.base));
             }
@@ -899,9 +910,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             if (v == null) {
                 continue;
             }
-            for (final DerivedVariable i : v.includes) {
-                verify(i.base.seeAlso.contains(v));
-                map.computeIfAbsent("\"" + i.base.name + "\"", k -> new HashSet<>()).add("\"" + v.name + "\"");
+            for (final IncludeEdge i : v.includes) {
+                verify(i.source.seeAlso.contains(v));
+                map.computeIfAbsent("\"" + i.source.name + "\"", k -> new HashSet<>()).add("\"" + v.name + "\"");
             }
             for (final LoadEdge i : v.loads) {
                 verify(i.result.seeAlso.contains(v));
@@ -915,7 +926,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final Set<String> problematic = new HashSet<>();
         for (final DerivedVariable a : addressVariables.values()) {
             if (!objectVariables.containsValue(a.base) &&
-                    a.base.includes.stream().noneMatch(i -> objectVariables.containsValue(i.base))) {
+                    a.base.includes.stream().noneMatch(i -> objectVariables.containsValue(i.source))) {
                 problematic.add("\"" + a.base.name + "\"");
             }
         }
