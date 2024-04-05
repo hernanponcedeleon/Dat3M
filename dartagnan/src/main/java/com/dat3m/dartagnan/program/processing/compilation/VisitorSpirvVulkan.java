@@ -224,11 +224,11 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
             case Tag.Spirv.SC_PRIVATE,
                     Tag.Spirv.SC_FUNCTION -> null; // private
             case Tag.Spirv.SC_UNIFORM,
+                    Tag.Spirv.SC_OUTPUT,
                     Tag.Spirv.SC_STORAGE_BUFFER,
                     Tag.Spirv.SC_PHYS_STORAGE_BUFFER -> Tag.Vulkan.SC0;
             case Tag.Spirv.SC_WORKGROUP -> Tag.Vulkan.SC1;
-            case Tag.Spirv.SC_OUTPUT,
-                    Tag.Spirv.SC_CROSS_WORKGROUP,
+            case Tag.Spirv.SC_CROSS_WORKGROUP,
                     Tag.Spirv.SC_GENERIC -> throw new UnsupportedOperationException(
                     String.format("Spir-V storage class '%s' " +
                             "is not supported by Vulkan memory model", tag));

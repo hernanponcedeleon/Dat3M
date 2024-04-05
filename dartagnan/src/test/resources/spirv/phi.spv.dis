@@ -13,7 +13,7 @@
        %void = OpTypeVoid
        %bool = OpTypeBool
        %func = OpTypeFunction %void
-       %uint = OpTypeInt 64 0
+       %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
      %v2uint = OpTypeVector %uint 2
    %ptr_uint = OpTypePointer Input %uint

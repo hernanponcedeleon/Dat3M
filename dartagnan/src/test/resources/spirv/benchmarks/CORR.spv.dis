@@ -4,7 +4,7 @@
 ; @Input: %20 = {{0}}
 ; @Input: %21 = {{0}}
 ; @Output: not exists (%18[0][0] == 2 and %19[0][0] == 1 and %20[0][0] == 1 and %21[0][0] == 2)
-; @Config: 1, 4, 1
+; @Config: 1, 1, 4
 ; SPIR-V
 ; Version: 1.6
 ; Generator: Google Clspv; 0
