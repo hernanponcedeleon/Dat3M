@@ -37,6 +37,11 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean dce = true;
 
+    @Option(name = FLATTENING,
+            description = "Performs flattening of local computations.",
+            secure = true)
+    private boolean flattening = true;
+
     @Option(name = DYNAMIC_SPINLOOP_DETECTION,
             description = "Instruments loops to terminate early when spinning.",
             secure = true)
@@ -109,7 +114,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null,
                                 RemoveDeadCondJumps.fromConfig(config),
                                 // === test code ===
-                                AssignmentInlining.newInstance(),
+                                flattening ? AssignmentInlining.newInstance() :  null,
                                 sccp,
                                 dce ? DeadAssignmentElimination.fromConfig(config) : null
                                 // === test code ===
