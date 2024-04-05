@@ -436,7 +436,7 @@ public class ProgramBuilderSpv {
 
         // Create thread-local variables
         BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
-        ExprTransformer transformer = new MemoryTransformer(tid, program, variableTypes, builtIn.setHierarchy(x, y, z));
+        ExprTransformer transformer = new MemoryTransformer(tid, program, variableTypes, builtIn.setHierarchy(x, y, z, 0));
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         return thread;
     }
@@ -655,12 +655,12 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Thread grid dimensions must be less than 128");
         }
         this.threadGrid = threadGrid;
-        BuiltIn builtIn = new BuiltIn(threadGrid.get(0), threadGrid.get(1), threadGrid.get(2));
+        BuiltIn builtIn = new BuiltIn(threadGrid.get(0), threadGrid.get(1), threadGrid.get(2), 1);
         helperDecorations.addDecorationIfAbsent(DecorationType.BUILT_IN, builtIn);
     }
 
     public void addBuiltInDecorationIfAbsent() {
-        BuiltIn builtIn = new BuiltIn(this.threadGrid.get(0), this.threadGrid.get(1), this.threadGrid.get(2));
+        BuiltIn builtIn = new BuiltIn(this.threadGrid.get(0), this.threadGrid.get(1), this.threadGrid.get(2), 1);
         helperDecorations.addDecorationIfAbsent(DecorationType.BUILT_IN, builtIn);
     }
 }

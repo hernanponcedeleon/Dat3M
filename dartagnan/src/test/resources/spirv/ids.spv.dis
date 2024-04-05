@@ -13,12 +13,14 @@
                OpCapability Shader
         %ext = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %main "main" %ids
+               OpEntryPoint GLCompute %main "main"
                OpSource GLSL 450
-               OpDecorate %ids BuiltIn GlobalInvocationId
+               OpDecorate %x_scalar BuiltIn SubgroupLocalInvocationId
+               OpDecorate %y_scalar BuiltIn SubgroupId
+               OpDecorate %z_arr BuiltIn WorkgroupId
        %void = OpTypeVoid
        %func = OpTypeFunction %void
-       %uint = OpTypeInt 64 0
+       %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
     %v24uint = OpTypeVector %uint 24
    %ptr_uint = OpTypePointer Input %uint
@@ -29,15 +31,15 @@
          %c2 = OpConstant %uint 2
          %c3 = OpConstant %uint 3
          %c4 = OpConstant %uint 4
-        %ids = OpVariable %ptr_v3uint Input
+   %x_scalar = OpVariable %ptr_uint Input
+   %y_scalar = OpVariable %ptr_uint Input
+      %z_arr = OpVariable %ptr_v3uint Input
         %out = OpVariable %ptr_v24uint Output
        %main = OpFunction %void None %func
       %label = OpLabel
-      %x_ptr = OpAccessChain %ptr_uint %ids %c0
-      %y_ptr = OpAccessChain %ptr_uint %ids %c1
-      %z_ptr = OpAccessChain %ptr_uint %ids %c2
-      %x_val = OpLoad %uint %x_ptr
-      %y_val = OpLoad %uint %y_ptr
+      %x_val = OpLoad %uint %x_scalar
+      %y_val = OpLoad %uint %y_scalar
+      %z_ptr = OpAccessChain %ptr_uint %z_arr %c0
       %z_val = OpLoad %uint %z_ptr
           %1 = OpIMul %uint %z_val %c4
           %2 = OpIMul %uint %y_val %c2
