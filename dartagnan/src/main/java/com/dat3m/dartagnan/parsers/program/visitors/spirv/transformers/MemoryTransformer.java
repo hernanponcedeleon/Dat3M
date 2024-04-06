@@ -5,9 +5,10 @@ import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
-import com.dat3m.dartagnan.program.memory.Memory;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.program.misc.NonDetValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,14 +16,14 @@ import java.util.Map;
 public class MemoryTransformer extends ExprTransformer {
 
     private final int tid;
-    private final Memory memory;
+    private final Program program;
     private final Map<String, Type> types;
     private final BuiltIn builtInDecoration;
     private final Map<Expression, Expression> mapping = new HashMap<>();
 
-    public MemoryTransformer(int tid, Memory memory, Map<String, Type> types, BuiltIn builtInDecoration) {
+    public MemoryTransformer(int tid, Program program, Map<String, Type> types, BuiltIn builtInDecoration) {
         this.tid = tid;
-        this.memory = memory;
+        this.program = program;
         this.types = types;
         this.builtInDecoration = builtInDecoration;
     }
@@ -34,13 +35,17 @@ public class MemoryTransformer extends ExprTransformer {
                 MemoryObject copy;
                 if (memObj instanceof VirtualMemoryObject) {
                     // TODO: alias
-                    copy = memory.allocateVirtual(memObj.size(), true, null);
+                    copy = program.getMemory().allocateVirtual(memObj.size(), true, null);
                 } else {
-                    copy = memory.allocate(memObj.size());
+                    copy = program.getMemory().allocate(memObj.size());
                 }
                 copy.setName(String.format("%s@T%s", memObj.getName(), tid));
                 for (Integer i : memObj.getInitializedFields()){
-                    copy.setInitialValue(i, memObj.getInitialValue(i));
+                    Expression initValue = memObj.getInitialValue(i);
+                    if (initValue instanceof NonDetValue) {
+                        initValue = program.newConstant(initValue.getType());
+                    }
+                    copy.setInitialValue(i, initValue);
                 }
                 builtInDecoration.decorate(memObj.getName(), copy, types.get(memObj.getName()));
                 mapping.put(memObj, copy);
