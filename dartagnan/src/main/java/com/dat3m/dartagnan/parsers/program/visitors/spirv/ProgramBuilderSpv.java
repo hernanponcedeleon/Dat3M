@@ -232,6 +232,10 @@ public class ProgramBuilderSpv {
         return program.getMemory().allocateVirtual(bytes, true, null);
     }
 
+    public Expression newUndefinedValue(Type type) {
+        return program.newConstant(type);
+    }
+
     public Type getType(String name) {
         Type type = types.get(name);
         if (type == null) {
@@ -429,11 +433,10 @@ public class ProgramBuilderSpv {
         ScopeHierarchy scope = ScopeHierarchyForVulkan(0, z, y);
         Thread thread = createThread(tid, scope, function);
         copyEvents(tid, thread, function);
-        Memory memory = program.getMemory();
 
         // Create thread-local variables
         BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
-        ExprTransformer transformer = new MemoryTransformer(tid, memory, variableTypes, builtIn.setHierarchy(x, y, z));
+        ExprTransformer transformer = new MemoryTransformer(tid, program, variableTypes, builtIn.setHierarchy(x, y, z));
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         return thread;
     }
