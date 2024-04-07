@@ -70,6 +70,9 @@ public class SpirvRacesTest {
                 {"ttaslock.spv.dis", 2, PASS},
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
+                // Unsupported decoration 'WorkgroupId'
+                // {"xf-barrier.spv.dis", 1, PASS},
+                // {"xf-barrier-opt.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},

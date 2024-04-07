@@ -1,4 +1,4 @@
-#ifdef RX
+#ifdef OPTIMIZE
 #define mo_acq memory_order_relaxed
 #define mo_rel memory_order_relaxed
 #else

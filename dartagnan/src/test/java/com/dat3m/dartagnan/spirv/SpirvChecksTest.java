@@ -69,6 +69,9 @@ public class SpirvChecksTest {
                 {"ttaslock.spv.dis", 2, UNKNOWN},
                 {"ttaslock-acq2rx.spv.dis", 2, UNKNOWN},
                 {"ttaslock-rel2rx.spv.dis", 2, UNKNOWN},
+                // Unsupported decoration 'WorkgroupId'
+                // {"xf-barrier.spv.dis", 1, PASS},
+                // {"xf-barrier-opt.spv.dis", 1, PASS},
 
                 // TODO: Support missing semantics
                 // {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, PASS},
