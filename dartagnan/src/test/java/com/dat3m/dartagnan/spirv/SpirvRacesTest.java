@@ -55,24 +55,25 @@ public class SpirvRacesTest {
                 {"caslock.spv.dis", 2, PASS},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
-                /*
                 // TODO: Unsupported decoration 'WorkgroupId'
                 // {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
-                {"MP.spv.dis", 1, PASS},
-                {"MP-acq2rx.spv.dis", 1, PASS},
-                {"MP-rel2rx.spv.dis", 1, PASS},
-                {"SB.spv.dis", 1, PASS},*/
+                {"MP.spv.dis", 1, FAIL},
+                {"MP-acq2rx.spv.dis", 1, FAIL},
+                {"MP-rel2rx.spv.dis", 1, FAIL},
+                {"SB.spv.dis", 1, PASS},
                 {"ticketlock.spv.dis", 2, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
                 {"ttaslock.spv.dis", 2, PASS},
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
+
                 // Unsupported decoration 'WorkgroupId'
                 // {"xf-barrier.spv.dis", 1, PASS},
                 // {"xf-barrier-opt.spv.dis", 1, PASS},
                 // {"gpu-verify/alignement/race_location.spv.dis", 1, FAIL},
+
                 // {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
