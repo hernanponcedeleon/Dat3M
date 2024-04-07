@@ -73,11 +73,13 @@ public class SpirvRacesTest {
                 // Unsupported decoration 'WorkgroupId'
                 // {"xf-barrier.spv.dis", 1, PASS},
                 // {"xf-barrier-opt.spv.dis", 1, PASS},
+                // {"gpu-verify/alignement/race_location.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/displaced.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/forloop.spv.dis", 1, FAIL},
+                // {"gpu-verify/atomics/histo.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/pointers.spv.dis", 1, FAIL},
 
                 {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
@@ -89,6 +91,9 @@ public class SpirvRacesTest {
                 {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, FAIL},
                 // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, FAIL},
                 {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, FAIL},
+                {"gpu-verify/globalarray-fail.spv.dis", 1, FAIL},
+                {"gpu-verify/globalarray-pass.spv.dis", 1, PASS},
+                {"gpu-verify/globalarray-pass2.spv.dis", 1, PASS},
         });
     }
 

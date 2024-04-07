@@ -74,11 +74,13 @@ public class SpirvChecksTest {
                 // {"xf-barrier-opt.spv.dis", 1, PASS},
 
                 // TODO: Support missing semantics
+                // {"gpu-verify/alignement/race_location.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/displaced.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/forloop.spv.dis", 1, PASS},
+                // {"gpu-verify/atomics/histo.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/pointers.spv.dis", 1, PASS},
 
                 /*
@@ -96,6 +98,9 @@ public class SpirvChecksTest {
                 // TODO: Support missing semantics
                 // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, PASS},
                 {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, PASS},
+                {"gpu-verify/globalarray-fail.spv.dis", 1, PASS},
+                {"gpu-verify/globalarray-pass.spv.dis", 1, PASS},
+                {"gpu-verify/globalarray-pass2.spv.dis", 1, PASS},
         });
     }
 
