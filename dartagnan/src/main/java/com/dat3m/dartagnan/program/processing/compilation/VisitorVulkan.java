@@ -56,16 +56,21 @@ public class VisitorVulkan extends VisitorBase {
         String mo = e.getMo();
         Expression address = e.getAddress();
         Expression expected = e.getExpectedValue();
-        Expression newValue = e.getStoreValue();
-        Expression storeValue = expressions.makeITE(expressions.makeEQ(resultRegister, expected),
-                newValue, resultRegister);
+        Expression value = e.getStoreValue();
+        Register cmpResultRegister = e.getFunction().newRegister(types.getBooleanType());
+        Label casEnd = newLabel("CAS_end");
         Load load = newRMWLoadWithMo(resultRegister, address, Tag.Vulkan.loadMO(mo));
-        RMWStore store = newRMWStoreWithMo(load, address, storeValue, Tag.Vulkan.storeMO(mo));
+        RMWStore store = newRMWStoreWithMo(load, address, value, Tag.Vulkan.storeMO(mo));
+        Local local = newLocal(cmpResultRegister, expressions.makeEQ(resultRegister, expected));
+        CondJump condJump = newJumpUnless(cmpResultRegister, casEnd);
         this.propagateTags(e, load);
         this.propagateTags(e, store);
         return eventSequence(
                 load,
-                store
+                local,
+                condJump,
+                store,
+                casEnd
         );
     }
 

@@ -51,8 +51,7 @@ public class SpirvAssertionsTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                // Cannot fully unroll due to spin-loop side effects
-                {"caslock.spv.dis", 2, UNKNOWN},
+                {"caslock.spv.dis", 2, PASS},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
                 // TODO: Unsupported decoration 'WorkgroupId'

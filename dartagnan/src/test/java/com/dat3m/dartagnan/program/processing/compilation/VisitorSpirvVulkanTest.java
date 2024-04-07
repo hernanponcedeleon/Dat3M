@@ -394,12 +394,12 @@ public class VisitorSpirvVulkanTest {
         List<Event> seq = visitor.visitSpirvCmpXchg(e);
 
         // then
-        assertEquals(2, seq.size());
+        assertEquals(5, seq.size());
         Load load = (Load) seq.get(0);
         Set<String> baseLoadTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.RMW,
                 Tag.Vulkan.ATOM, Tag.Vulkan.VISIBLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseLoadTags, loadTags), load.getTags());
-        Store store = (Store) seq.get(1);
+        Store store = (Store) seq.get(3);
         Set<String> baseStoreTags = Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.RMW,
                 Tag.Vulkan.ATOM, Tag.Vulkan.AVAILABLE, Tag.Vulkan.NON_PRIVATE);
         assertEquals(Sets.union(baseStoreTags, storeTags), store.getTags());

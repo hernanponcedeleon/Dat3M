@@ -102,7 +102,11 @@ public class SpirvTest {
                 {"loop-struct-cond-nested.spv.dis", 4, PASS},
                 {"phi.spv.dis", 1, PASS},
                 {"phi-unstruct-true.spv.dis", 1, PASS},
-                {"phi-unstruct-false.spv.dis", 1, PASS}
+                {"phi-unstruct-false.spv.dis", 1, PASS},
+                {"cmpxchg-const-const.spv.dis", 1, PASS},
+                {"cmpxchg-const-reg.spv.dis", 1, PASS},
+                {"cmpxchg-reg-const.spv.dis", 1, PASS},
+                {"cmpxchg-reg-reg.spv.dis", 1, PASS}
         });
     }
 
