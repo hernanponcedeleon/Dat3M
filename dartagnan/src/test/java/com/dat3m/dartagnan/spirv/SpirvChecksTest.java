@@ -51,10 +51,9 @@ public class SpirvChecksTest {
     @Parameterized.Parameters(name = "{index}: {0}, {1}, {2}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                // Cannot fully unroll due to spin-loop side effects
-                {"caslock.spv.dis", 2, UNKNOWN},
-                {"caslock-acq2rx.spv.dis", 2, UNKNOWN},
-                {"caslock-rel2rx.spv.dis", 2, UNKNOWN},
+                {"caslock.spv.dis", 2, PASS},
+                {"caslock-acq2rx.spv.dis", 1, PASS},
+                {"caslock-rel2rx.spv.dis", 1, PASS},
                 // TODO: Unsupported decoration 'WorkgroupId'
                 // {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
@@ -62,7 +61,7 @@ public class SpirvChecksTest {
                 {"MP-acq2rx.spv.dis", 1, PASS},
                 {"MP-rel2rx.spv.dis", 1, PASS},
                 {"SB.spv.dis", 1, PASS},
-                {"ticketlock.spv.dis", 1, PASS},
+                {"ticketlock.spv.dis", 2, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, PASS},
                 {"ticketlock-rel2rx.spv.dis", 1, PASS},
                 // TODO: Why UNKNOWN if concrete result for assertions
