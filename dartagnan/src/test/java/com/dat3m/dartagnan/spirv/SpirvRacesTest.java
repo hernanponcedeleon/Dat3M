@@ -94,6 +94,28 @@ public class SpirvRacesTest {
                 {"gpu-verify/globalarray-fail.spv.dis", 1, FAIL},
                 {"gpu-verify/globalarray-pass.spv.dis", 1, PASS},
                 {"gpu-verify/globalarray-pass2.spv.dis", 1, PASS},
+
+                // TODO: Support missing semantics
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spv.dis", 1, FAIL},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_write_then_read.spv.dis", 1, FAIL},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, FAIL},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/missing_global_barrier_flag.spv.dis", 1, FAIL},
+                {"gpu-verify/inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, FAIL},
+                {"gpu-verify/inter_group_and_barrier_flag_tests/fail/no_barrier_flag.spv.dis", 1, FAIL},
+                {"gpu-verify/inter_group_and_barrier_flag_tests/fail/sync.spv.dis", 1, FAIL},
+                // TODO: Support missing semantics
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/sync_within_group_wong_flag.spv.dis", 1, PASS},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/global_barrier.spv.dis", 1, PASS},
+                
+                // Check why FAIL 
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, PASS},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spv.dis", 1, PASS},
+               
+                // TODO: Support missing semantics
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/read_then_write.spv.dis", 1, PASS},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/sync_within_group.spv.dis", 1, PASS},
+                // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/write_then_read.spv.dis", 1, PASS},
+
         });
     }
 
