@@ -474,68 +474,6 @@ public final class Tag {
                 SEQ_CST
         );
 
-        public static String toVulkan(String tag) {
-            return switch (tag) {
-                // Barriers
-                case CONTROL -> Vulkan.CBAR;
-
-                // Memory order
-                case RELAXED -> null; // ignore
-                case ACQUIRE -> Vulkan.ACQUIRE;
-                case RELEASE -> Vulkan.RELEASE;
-                case ACQ_REL -> Vulkan.ACQ_REL;
-                case SEQ_CST -> throw new IllegalArgumentException(
-                        String.format("Non-Vulkan memory order '%s'", SEQ_CST));
-
-                // Scope
-                case INVOCATION -> null; // ignore
-                case SUBGROUP -> Vulkan.SUB_GROUP;
-                case WORKGROUP -> Vulkan.WORK_GROUP;
-                case QUEUE_FAMILY -> Vulkan.QUEUE_FAMILY;
-                // TODO: Refactoring of the cat model
-                //  In the cat file AV/VISSHADER uses device domain,
-                //  and device domain is mapped to AV/VISDEVICE
-                case SHADER_CALL, DEVICE, CROSS_DEVICE -> Vulkan.DEVICE;
-
-                // Memory access (non-atomic)
-                case MEM_VOLATILE -> null; // ignore
-                case MEM_NON_TEMPORAL -> null; // ignore
-                case MEM_NON_PRIVATE -> Vulkan.NON_PRIVATE;
-                case MEM_AVAILABLE -> Vulkan.AVAILABLE;
-                case MEM_VISIBLE -> Vulkan.VISIBLE;
-
-                // Memory semantics
-                case SEM_VOLATILE -> null; // ignore
-                case SEM_AVAILABLE -> Vulkan.SEM_AVAILABLE;
-                case SEM_VISIBLE -> Vulkan.SEM_VISIBLE;
-
-                // Memory semantics (storage class)
-                case SEM_UNIFORM -> Vulkan.SEMSC0;
-                case SEM_SUBGROUP -> errorVulkanUnsupported(SEM_SUBGROUP);
-                case SEM_WORKGROUP -> Vulkan.SEMSC1;
-                case SEM_CROSS_WORKGROUP -> errorVulkanUnsupported(SEM_CROSS_WORKGROUP);
-                case SEM_ATOMIC_COUNTER -> errorVulkanUnsupported(SEM_ATOMIC_COUNTER);
-                case SEM_IMAGE -> errorVulkanUnsupported(SEM_IMAGE);
-                case SEM_OUTPUT -> errorVulkanUnsupported(SEM_OUTPUT);
-
-                // Storage class
-                case SC_UNIFORM_CONSTANT, SC_INPUT, SC_PUSH_CONSTANT -> null; // read-only
-                case SC_UNIFORM, SC_STORAGE_BUFFER, SC_PHYS_STORAGE_BUFFER -> Vulkan.SC0;
-                case SC_OUTPUT -> errorVulkanUnsupported(SC_OUTPUT);
-                case SC_WORKGROUP -> Vulkan.SC1;
-                case SC_CROSS_WORKGROUP -> errorVulkanUnsupported(SC_CROSS_WORKGROUP);
-                case SC_PRIVATE, SC_FUNCTION -> null; // private
-                case SC_GENERIC -> errorVulkanUnsupported(SC_GENERIC);
-
-                default -> null;
-            };
-        }
-
-        private static String errorVulkanUnsupported(String tag) {
-            throw new UnsupportedOperationException(
-                    String.format("Vulkan conversion is not supported for tag '%s'", tag));
-        }
-
         public static boolean isSpirvTag(String tag) {
             return tag != null && tag.startsWith("SPV_");
         }
