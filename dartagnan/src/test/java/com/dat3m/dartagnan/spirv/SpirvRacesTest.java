@@ -80,6 +80,13 @@ public class SpirvRacesTest {
                 // {"gpu-verify/atomics/displaced.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/forloop.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/histo.spv.dis", 1, PASS},
+
+                {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, FAIL},
+                // TODO: Check me
+                // {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
+                // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
+                // {"gpu-verify/atomics/displaced.spv.dis", 1, FAIL},
+                {"gpu-verify/atomics/forloop.spv.dis", 1, FAIL},
                 // {"gpu-verify/atomics/pointers.spv.dis", 1, FAIL},
 
                 {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},

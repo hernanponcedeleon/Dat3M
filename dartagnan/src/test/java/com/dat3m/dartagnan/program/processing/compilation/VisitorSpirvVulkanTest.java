@@ -109,6 +109,10 @@ public class VisitorSpirvVulkanTest {
                 Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvLoad(
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+        );
+        doTestSpirvLoad(
                 Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
@@ -142,36 +146,14 @@ public class VisitorSpirvVulkanTest {
     }
 
     @Test
-    public void testSpirvLoadIllegal() {
-        doTestSpirvLoadIllegal(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP),
-                String.format("Non-Vulkan memory order '%s'", Tag.Spirv.SEQ_CST)
-        );
-    }
-
-    private void doTestSpirvLoadIllegal(Set<String> spvTags, String error) {
-        // given
-        Register register = mock(Register.class);
-        MemoryObject address = mock(MemoryObject.class);
-        String scope = Tag.Spirv.getScopeTag(spvTags);
-        SpirvLoad e = EventFactory.Spirv.newSpirvLoad(register, address, scope, spvTags);
-        e.setFunction(mock(Function.class));
-
-        try {
-            // when
-            visitor.visitSpirvLoad(e);
-            fail("Should throw exception");
-        } catch (Exception ex) {
-            // then
-            assertEquals(error, ex.getMessage());
-        }
-    }
-
-    @Test
     public void testSpirvStore() {
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+        );
+        doTestSpirvStore(
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
         doTestSpirvStore(
                 Set.of(Tag.Spirv.RELEASE, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
@@ -207,32 +189,6 @@ public class VisitorSpirvVulkanTest {
     }
 
     @Test
-    public void testSpirvStoreIllegal() {
-        doTestSpirvStoreIllegal(
-                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP),
-                String.format("Non-Vulkan memory order '%s'", Tag.Spirv.SEQ_CST)
-        );
-    }
-
-    private void doTestSpirvStoreIllegal(Set<String> spvTags, String error) {
-        // given
-        Expression value = mock(Expression.class);
-        MemoryObject address = mock(MemoryObject.class);
-        String scope = Tag.Spirv.getScopeTag(spvTags);
-        SpirvStore e = EventFactory.Spirv.newSpirvStore(address, value, scope, spvTags);
-        e.setFunction(mock(Function.class));
-
-        try {
-            // when
-            visitor.visitSpirvStore(e);
-            fail("Should throw exception");
-        } catch (Exception ex) {
-            // then
-            assertEquals(error, ex.getMessage());
-        }
-    }
-
-    @Test
     public void testSpirvXchg() {
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SUBGROUP, Tag.Spirv.SC_WORKGROUP),
@@ -251,6 +207,11 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvXchg(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+        );
+        doTestSpirvXchg(
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
                 Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
@@ -307,6 +268,11 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvRmw(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+        );
+        doTestSpirvRmw(
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.WORKGROUP, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
                 Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
         );
@@ -372,6 +338,12 @@ public class VisitorSpirvVulkanTest {
                 Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
                 Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
         doTestSpirvCmpXchg(
+                Tag.Spirv.WORKGROUP,
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SC_WORKGROUP),
+                Set.of(Tag.Spirv.ACQUIRE, Tag.Spirv.SC_WORKGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE),
+                Set.of(Tag.Vulkan.RELEASE, Tag.Vulkan.WORK_GROUP, Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE));
+        doTestSpirvCmpXchg(
                 Tag.Spirv.DEVICE,
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
                 Set.of(Tag.Spirv.RELAXED, Tag.Spirv.SC_WORKGROUP),
@@ -407,14 +379,6 @@ public class VisitorSpirvVulkanTest {
 
     @Test
     public void testCmpXchgIllegal() {
-        doTestSpirvCmpXchgIllegal(
-                Set.of(Tag.Spirv.SEQ_CST),
-                Set.of(Tag.Spirv.RELAXED),
-                "Non-Vulkan memory order 'SPV_SEQ_CST'");
-        doTestSpirvCmpXchgIllegal(
-                Set.of(Tag.Spirv.SEQ_CST),
-                Set.of(Tag.Spirv.SEQ_CST),
-                "Non-Vulkan memory order 'SPV_SEQ_CST'");
         doTestSpirvCmpXchgIllegal(
                 Set.of(Tag.Spirv.ACQUIRE),
                 Set.of(Tag.Spirv.RELAXED),
@@ -473,6 +437,10 @@ public class VisitorSpirvVulkanTest {
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
                 Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
+        doTestSpirvMemoryBarrier(
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+        );
     }
 
     private void doTestSpirvMemoryBarrier(Set<String> spvTags, Set<String> expected) {
@@ -510,6 +478,10 @@ public class VisitorSpirvVulkanTest {
         );
         doTestSpirvControlBarrier(
                 Set.of(Tag.Spirv.ACQ_REL, Tag.Spirv.SUBGROUP),
+                Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
+        );
+        doTestSpirvControlBarrier(
+                Set.of(Tag.Spirv.SEQ_CST, Tag.Spirv.SUBGROUP),
                 Set.of(Tag.FENCE, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE, Tag.Vulkan.SUB_GROUP)
         );
     }
