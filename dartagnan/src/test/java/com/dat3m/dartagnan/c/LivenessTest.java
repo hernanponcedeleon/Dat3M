@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
@@ -23,11 +22,6 @@ public class LivenessTest extends AbstractCTest {
 
     public LivenessTest(String name, Arch target, Result expected) {
         super(name, target, expected);
-    }
-
-    @Override
-    protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath(name + ".ll"));
     }
 
     @Override

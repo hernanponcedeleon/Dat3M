@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -11,12 +11,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.IMM;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
@@ -44,7 +42,7 @@ public class IMMLFDSTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/imm.cat"))));
+        return Providers.createWmmFromArch(() -> IMM);
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -57,7 +55,7 @@ public class IMMLFDSTest extends AbstractCTest {
                 {"treiber", IMM, UNKNOWN},
                 {"treiber-CAS-relaxed", IMM, FAIL},
                 {"chase-lev", IMM, PASS},
-                // These ones have an extra thief that violate the assertion
+                // These have an extra thief that violate the assertion
                 {"chase-lev-fail", IMM, FAIL},
                 {"hash_table", IMM, PASS},
                 {"hash_table-fail", IMM, FAIL},

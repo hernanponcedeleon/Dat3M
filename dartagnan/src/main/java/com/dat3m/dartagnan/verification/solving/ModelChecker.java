@@ -22,6 +22,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
+import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.api.Model;
@@ -75,8 +76,9 @@ public abstract class ModelChecker {
             computeSpecificationFromProgramAssertions(program);
         }
     }
-    public static void preprocessMemoryModel(VerificationTask task) {
-        task.getMemoryModel().simplify();
+    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
+        final Wmm memoryModel = task.getMemoryModel();
+        WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
 
     /**

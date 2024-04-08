@@ -4,7 +4,10 @@ import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.AbstractEvent;
+import com.dat3m.dartagnan.program.event.EventVisitor;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 
@@ -53,11 +56,7 @@ public class Local extends AbstractEvent implements RegWriter, RegReader {
 
     @Override
     public String defaultString() {
-        String str = register + " <- " + expr;
-        if (this.hasTag(Tag.Std.MALLOC)) {
-            str = str + "\t### " + Tag.Std.MALLOC;
-        }
-        return str;
+        return String.format("%s <- %s", register, expr);
     }
 
     @Override

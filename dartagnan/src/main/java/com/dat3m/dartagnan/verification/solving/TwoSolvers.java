@@ -21,7 +21,7 @@ public class TwoSolvers extends ModelChecker {
     private static final Logger logger = LogManager.getLogger(TwoSolvers.class);
 
     private final SolverContext ctx;
-    private final ProverEnvironment prover1,prover2;
+    private final ProverEnvironment prover1, prover2;
     private final VerificationTask task;
 
     private TwoSolvers(SolverContext c, ProverEnvironment p1, ProverEnvironment p2, VerificationTask t) {
@@ -44,8 +44,8 @@ public class TwoSolvers extends ModelChecker {
         Configuration config = task.getConfig();
 
         memoryModel.configureAll(config);
-    	preprocessProgram(task, config);
-        preprocessMemoryModel(task);
+        preprocessProgram(task, config);
+        preprocessMemoryModel(task, config);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 
@@ -59,15 +59,15 @@ public class TwoSolvers extends ModelChecker {
         BooleanFormula encodeProg = programEncoder.encodeFullProgram();
         prover1.addConstraint(encodeProg);
         prover2.addConstraint(encodeProg);
-        
+
         BooleanFormula encodeWmm = wmmEncoder.encodeFullMemoryModel();
-		prover1.addConstraint(encodeWmm);
+        prover1.addConstraint(encodeWmm);
         prover2.addConstraint(encodeWmm);
-       	
+
         // For validation this contains information.
         // For verification graph.encode() just returns ctx.mkTrue()
         BooleanFormula encodeWitness = task.getWitness().encode(context);
-		prover1.addConstraint(encodeWitness);
+        prover1.addConstraint(encodeWitness);
         prover2.addConstraint(encodeWitness);
 
         BooleanFormula encodeSymm = symmetryEncoder.encodeFullSymmetryBreaking();
@@ -77,21 +77,21 @@ public class TwoSolvers extends ModelChecker {
         prover1.addConstraint(propertyEncoder.encodeProperties(task.getProperty()));
 
         logger.info("Starting first solver.check()");
-        if(prover1.isUnsat()) {
-			prover2.addConstraint(propertyEncoder.encodeBoundEventExec());
+        if (prover1.isUnsat()) {
+            prover2.addConstraint(propertyEncoder.encodeBoundEventExec());
             logger.info("Starting second solver.check()");
             res = prover2.isUnsat() ? PASS : UNKNOWN;
         } else {
-        	res = FAIL;
+            res = FAIL;
             saveFlaggedPairsOutput(memoryModel, wmmEncoder, prover1, context, task.getProgram());
         }
 
-        if(logger.isDebugEnabled()) {
-    		String smtStatistics = "\n ===== SMT Statistics ===== \n";
-    		for(String key : prover1.getStatistics().keySet()) {
-    			smtStatistics += String.format("\t%s -> %s\n", key, prover1.getStatistics().get(key));
-    		}
-    		logger.debug(smtStatistics);
+        if (logger.isDebugEnabled()) {
+            String smtStatistics = "\n ===== SMT Statistics ===== \n";
+            for (String key : prover1.getStatistics().keySet()) {
+                smtStatistics += String.format("\t%s -> %s\n", key, prover1.getStatistics().get(key));
+            }
+            logger.debug(smtStatistics);
         }
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS

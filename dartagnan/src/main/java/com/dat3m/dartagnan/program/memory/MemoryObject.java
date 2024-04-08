@@ -1,16 +1,15 @@
 package com.dat3m.dartagnan.program.memory;
 
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.program.event.core.Alloc;
 
-import java.math.BigInteger;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -18,51 +17,34 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<IntegerType> {
+public class MemoryObject extends LeafExpressionBase<Type> {
 
-    private final int index;
+    // TODO: (TH) I think <id> is mostly useless.
+    //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
+    private final int id;
+    // TODO: Generalize <size> to Expression
     private final int size;
-    BigInteger address;
-    private String cVar;
-    private boolean isThreadLocal;
+    private final Alloc allocationSite;
 
-    //TODO
-    // Right now we assume that either the whole object is atomic or it is not.
-    // Generally, this is not necessarily true for structs, but right now we
-    // only use this for litmus format where we do not have structs. 
-    private boolean atomic = false;
+    private String name = null;
+    private boolean isThreadLocal = false;
 
-    private final boolean isStatic;
+    private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    private final HashMap<Integer, Expression> initialValues = new HashMap<>();
-
-    MemoryObject(int index, int size, boolean isStaticallyAllocated) {
-        super(TypeFactory.getInstance().getArchType());
-        this.index = index;
+    MemoryObject(int id, int size, Alloc allocationSite, Type ptrType) {
+        super(ptrType);
+        this.id = id;
         this.size = size;
-        this.isStatic = isStaticallyAllocated;
-        this.isThreadLocal = false;
-
-        if (isStaticallyAllocated) {
-            // Static allocations are default-initialized
-            initialValues.put(0, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
-        }
+        this.allocationSite = allocationSite;
     }
 
-    public String getCVar() { return cVar; }
-    public void setCVar(String name) { this.cVar = name; }
+    public boolean hasName() { return name != null; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public boolean isStaticallyAllocated() { return isStatic; }
-    public boolean isDynamicallyAllocated() { return !isStatic; }
-
-    // Should only be called for statically allocated objects.
-    public Set<Integer> getStaticallyInitializedFields() {
-        checkState(this.isStaticallyAllocated(), "Unexpected dynamic object %s", this);
-        return initialValues.keySet();
-    }
-
-    public BigInteger getAddress() { return this.address; }
-    public void setAddress(BigInteger addr) { this.address = addr; }
+    public boolean isStaticallyAllocated() { return allocationSite == null; }
+    public boolean isDynamicallyAllocated() { return !isStaticallyAllocated(); }
+    public Alloc getAllocationSite() { return allocationSite; }
 
     public boolean isThreadLocal() { return this.isThreadLocal; }
     public void setIsThreadLocal(boolean value) { this.isThreadLocal = value;}
@@ -72,6 +54,10 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
      */
     public int size() { return size; }
 
+    public Set<Integer> getInitializedFields() {
+        return initialValues.keySet();
+    }
+
     /**
      * Initial value at a certain field of this array.
      *
@@ -80,7 +66,8 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
      */
     public Expression getInitialValue(int offset) {
         checkArgument(offset >= 0 && offset < size, "array index out of bounds");
-        return initialValues.getOrDefault(offset, ExpressionFactory.getInstance().makeZero(TypeFactory.getInstance().getArchType()));
+        checkState(initialValues.containsKey(offset), "%s[%s] has no init value", this, offset);
+        return initialValues.get(offset);
     }
 
     /**
@@ -94,20 +81,14 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
         initialValues.put(offset, value);
     }
 
-    public boolean isAtomic() {
-        return atomic;
-    }
-    public void markAsAtomic() {
-        this.atomic = true;
-    }
-
     @Override
     public String toString() {
-        return cVar != null ? cVar : ("&mem" + index);
+        final String name = this.name != null ? this.name : ("mem" + id);
+        return String.format("&%s%s", name, isDynamicallyAllocated() ? "@E" + allocationSite.getGlobalId() : "");
     }
 
     @Override
-    public int hashCode() { return index; }
+    public int hashCode() { return id; }
 
     @Override
     public boolean equals(Object obj) {
@@ -117,7 +98,7 @@ public class MemoryObject extends LeafExpressionBase<IntegerType> {
             return false;
         }
 
-        return index == ((MemoryObject) obj).index;
+        return id == ((MemoryObject) obj).id;
     }
 
     @Override

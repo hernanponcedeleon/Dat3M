@@ -43,7 +43,7 @@ public class IncrementalSolver extends ModelChecker {
 
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
-        preprocessMemoryModel(task);
+        preprocessMemoryModel(task, config);
         performStaticProgramAnalyses(task, analysisContext, config);
         performStaticWmmAnalyses(task, analysisContext, config);
 

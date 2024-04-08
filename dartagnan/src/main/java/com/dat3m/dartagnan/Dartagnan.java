@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.options.BaseOptions;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
@@ -43,8 +44,8 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
 
-import static com.dat3m.dartagnan.GlobalSettings.LogGlobalSettings;
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.logGlobalSettings;
 import static com.dat3m.dartagnan.configuration.OptionInfo.collectOptions;
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
@@ -85,7 +86,7 @@ public class Dartagnan extends BaseOptions {
         Dartagnan o = new Dartagnan(config);
 
         GlobalSettings.configure(config);
-        LogGlobalSettings();
+        logGlobalSettings();
 
         File fileProgram = new File(Arrays.stream(args).filter(a -> supportedFormats.stream().anyMatch(a::endsWith))
                 .findFirst()
@@ -192,7 +193,7 @@ public class Dartagnan extends BaseOptions {
                 long endTime = System.currentTimeMillis();
                 String summary = generateResultSummary(task, prover, modelChecker);
                 System.out.print(summary);
-                System.out.println("Total verification time(ms): " + (endTime - startTime));
+                System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
                 if (!o.runValidator()) {
                     // We only generate witnesses if we are not validating one.
@@ -215,7 +216,7 @@ public class Dartagnan extends BaseOptions {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && properties.contains(PROGRAM_SPEC)) {
+                && properties.contains(PROGRAM_SPEC) && properties.size() == 1) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
                         modelChecker.getResult(), summary);

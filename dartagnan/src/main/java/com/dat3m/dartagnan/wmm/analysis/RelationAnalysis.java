@@ -16,6 +16,7 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
+import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -129,7 +130,7 @@ public class RelationAnalysis {
         long t0 = System.currentTimeMillis();
         a.run();
         long t1 = System.currentTimeMillis();
-        logger.info("Finished regular analysis in {}ms", t1 - t0);
+        logger.info("Finished regular analysis in {}", Utils.toTimeString(t1 - t0));
 
         final StringBuilder summary = new StringBuilder()
                 .append("\n======== RelationAnalysis summary ======== \n");
@@ -139,7 +140,7 @@ public class RelationAnalysis {
             long mayCount = a.countMaySet();
             long mustCount = a.countMustSet();
             a.runExtended();
-            logger.info("Finished extended analysis in {}ms", System.currentTimeMillis() - t1);
+            logger.info("Finished extended analysis in {}", Utils.toTimeString(System.currentTimeMillis() - t1));
             summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
             summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }
@@ -215,18 +216,21 @@ public class RelationAnalysis {
 
     private void run() {
         logger.trace("Start");
-        Wmm memoryModel = task.getMemoryModel();
-        Map<Relation, List<Definition>> dependents = new HashMap<>();
+        final Wmm memoryModel = task.getMemoryModel();
+        final Map<Relation, List<Definition>> dependents = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             for (Relation d : r.getDependencies()) {
                 dependents.computeIfAbsent(d, k -> new ArrayList<>()).add(r.getDefinition());
             }
         }
         // ------------------------------------------------
-        Initializer initializer = new Initializer();
-        Map<Relation, List<Delta>> qGlobal = new HashMap<>();
+        final Initializer initializer = new Initializer();
+        final Map<Relation, List<Delta>> qGlobal = new HashMap<>();
         for (Relation r : memoryModel.getRelations()) {
             Knowledge k = r.getDefinition().accept(initializer);
+            if (!enableMustSets) {
+                k = new Knowledge(k.getMaySet(), EventGraph.empty());
+            }
             knowledgeMap.put(r, k);
             if (!k.may.isEmpty() || !k.must.isEmpty()) {
                 qGlobal.computeIfAbsent(r, x -> new ArrayList<>(1))
@@ -234,7 +238,7 @@ public class RelationAnalysis {
             }
         }
         // ------------------------------------------------
-        Propagator propagator = new Propagator();
+        final Propagator propagator = new Propagator();
         for (Set<DependencyGraph<Relation>.Node> scc : DependencyGraph.from(memoryModel.getRelations()).getSCCs()) {
             logger.trace("Regular analysis for component {}", scc);
             Set<Relation> stratum = scc.stream().map(DependencyGraph.Node::getContent).collect(toSet());
@@ -254,17 +258,30 @@ public class RelationAnalysis {
             while (!qLocal.isEmpty()) {
                 Relation relation = qLocal.keySet().iterator().next();
                 logger.trace("Regular knowledge update for '{}'", relation);
-                Delta delta = knowledgeMap.get(relation).joinSet(qLocal.remove(relation));
-                if (delta.may.isEmpty() && delta.must.isEmpty()) {
-                    continue;
+
+                //  A fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
+                //  In our current propagation approach, whenever a relation r gets updated,
+                //  we compute for each dependent relation "r' = r op x" an update U(r, x, r') that needs to get applied.
+                //  When r' gets processed, the update U(r, x, r') is applied as is to r'.
+                //  However, depending on whether x is before or after r in the stratification, the computed update
+                //  may be different. In particular, we compute updates to r' before all its dependencies were computed
+                //  and thus our computation does not strictly follow the stratification.
+                //  This does not matter if the update function U(r, x, r') is monotonic in r/x but if it is not,
+                //  an early computed update may be too large!
+                //  We fix this problem by reducing the potentially too large update U(r, x, r') before applying it to r'.
+                // TODO: The necessity of the fix suggests that our propagation algorithm is flawed.
+                //  We should reconsider our algorithm.
+                Delta toAdd = Delta.combine(qLocal.remove(relation));
+                if (relation.getDefinition() instanceof Difference difference) {
+                    // Our propagated update may be "too large" so we reduce it.
+                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
+                    toAdd.may.removeAll(k.must);
+                    toAdd.must.removeAll(k.may);
                 }
 
-                // TODO: Quick fix for https://github.com/hernanponcedeleon/Dat3M/issues/523
-                //  (doesn't affect parent relations, a proper fix needed)
-                if (relation.getDefinition() instanceof Difference difference) {
-                    Knowledge k = knowledgeMap.get(difference.getSubtrahend());
-                    knowledgeMap.get(relation).may.removeAll(k.must);
-                    knowledgeMap.get(relation).must.removeAll(k.may);
+                Delta delta = knowledgeMap.get(relation).joinSet(List.of(toAdd));
+                if (delta.may.isEmpty() && delta.must.isEmpty()) {
+                    continue;
                 }
 
                 propagator.source = relation;
@@ -405,6 +422,19 @@ public class RelationAnalysis {
             may = maySet;
             must = mustSet;
         }
+
+        private static Delta combine(List<Delta> deltas) {
+            if (deltas.size() == 1) {
+                return deltas.get(0);
+            }
+            EventGraph mayDelta = new EventGraph();
+            EventGraph mustDelta = new EventGraph();
+            for (Delta d : deltas) {
+                mayDelta.addAll(d.may);
+                mustDelta.addAll(d.must);
+            }
+            return new Delta(mayDelta, mustDelta);
+        }
     }
 
     //FIXME should be visible only to implementations of Constraint
@@ -443,6 +473,21 @@ public class RelationAnalysis {
         }
 
         @Override
+        public Knowledge visitFree(Free def) {
+            final List<Event> visibleEvents = program.getThreadEventsWithAllTags(VISIBLE);
+            EventGraph must = EventGraph.empty();
+            EventGraph may = new EventGraph();
+
+            for (Event e1 : visibleEvents) {
+                for (Event e2 : visibleEvents) {
+                    may.add(e1, e2);
+                }
+            }
+
+            return new Knowledge(may, must);
+        }
+
+        @Override
         public Knowledge visitProduct(CartesianProduct prod) {
             final Filter domain = prod.getFirstFilter();
             final Filter range = prod.getSecondFilter();
@@ -455,19 +500,15 @@ public class RelationAnalysis {
                         .collect(toSet());
                 must.addRange(e1, rangeEvents);
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
         public Knowledge visitSetIdentity(SetIdentity id) {
             final Filter set = id.getFilter();
             EventGraph must = new EventGraph();
-            for (Event e : program.getThreadEvents()) {
-                if (set.apply(e)) {
-                    must.add(e, e);
-                }
-            }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            program.getThreadEvents().stream().filter(set::apply).forEach(e -> must.add(e, e));
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
@@ -488,7 +529,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
@@ -503,7 +544,7 @@ public class RelationAnalysis {
                     must.addRange(e1, rangeEvents);
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
@@ -522,7 +563,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
@@ -553,7 +594,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
@@ -584,20 +625,20 @@ public class RelationAnalysis {
                         if (exec.areMutuallyExclusive(x, f)) {
                             continue;
                         }
-                        boolean implies = enableMustSets && exec.isImplied(x, f);
+                        boolean implies = exec.isImplied(x, f);
                         for (Event y : events.subList(i + 1, end)) {
                             if (exec.areMutuallyExclusive(x, y) || exec.areMutuallyExclusive(f, y)) {
                                 continue;
                             }
                             may.add(x, y);
-                            if (implies || enableMustSets && exec.isImplied(y, f)) {
+                            if (implies || exec.isImplied(y, f)) {
                                 must.add(x, y);
                             }
                         }
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -609,7 +650,7 @@ public class RelationAnalysis {
                     must.add(e, e.getSuccessor());
                 }
             }
-            return new Knowledge(must, enableMustSets ? new EventGraph(must) : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
 
         @Override
@@ -620,8 +661,6 @@ public class RelationAnalysis {
             Map<Event, Set<Event>> mayMap = new HashMap<>();
             Map<Event, Set<Event>> mustMap = new HashMap<>();
             for (Thread thread : program.getThreads()) {
-                // assume order by cId
-                // assume cId describes a topological sorting over the control flow
                 List<Event> locks = reverse(thread.getEvents().stream().filter(e -> e.hasTag(Linux.RCU_LOCK)).collect(toList()));
                 for (Event unlock : thread.getEvents()) {
                     if (!unlock.hasTag(Linux.RCU_UNLOCK)) {
@@ -636,7 +675,7 @@ public class RelationAnalysis {
                                         .anyMatch(e -> exec.isImplied(lock, e) || exec.isImplied(unlock, e))) {
                             continue;
                         }
-                        boolean noIntermediary = enableMustSets &&
+                        boolean noIntermediary =
                                 mayMap.getOrDefault(unlock, Set.of()).stream()
                                         .allMatch(e -> exec.areMutuallyExclusive(lock, e)) &&
                                 mayMap.getOrDefault(lock, Set.of()).stream()
@@ -652,7 +691,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -702,15 +741,14 @@ public class RelationAnalysis {
                             continue;
                         }
                         may.add(load, store);
-                        if (enableMustSets &&
-                                intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
+                        if (intermediaries.stream().allMatch(e -> exec.areMutuallyExclusive(load, e)) &&
                                 (store.doesRequireMatchingAddresses() || alias.mustAlias((Load) load, store))) {
                             must.add(load, store);
                         }
                     }
                 }
             }
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -728,7 +766,7 @@ public class RelationAnalysis {
                 }
             }
             EventGraph must = new EventGraph();
-            (enableMustSets ? may : EventGraph.empty()).apply((e1, e2) -> {
+            may.apply((e1, e2) -> {
                 MemoryCoreEvent w1 = (MemoryCoreEvent) e1;
                 MemoryCoreEvent w2 = (MemoryCoreEvent) e2;
                 if (!w2.hasTag(INIT) && alias.mustAlias(w1, w2) && w1.hasTag(INIT)) {
@@ -737,7 +775,7 @@ public class RelationAnalysis {
             });
             if (wmmAnalysis.isLocallyConsistent()) {
                 may.removeIf(Tuple::isBackward);
-                (enableMustSets ? may : EventGraph.empty()).apply((e1, e2) -> {
+                may.apply((e1, e2) -> {
                     MemoryCoreEvent w1 = (MemoryCoreEvent) e1;
                     MemoryCoreEvent w2 = (MemoryCoreEvent) e2;
                     if (alias.mustAlias(w1, w2) && Tuple.isForward(e1, e2)) {
@@ -752,7 +790,7 @@ public class RelationAnalysis {
             }
 
             logger.debug("Initial may set size for memory order: {}", may.size());
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -868,7 +906,7 @@ public class RelationAnalysis {
             }
 
             logger.debug("Initial may set size for read-from: {}", may.size());
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -883,24 +921,19 @@ public class RelationAnalysis {
                 }
             }
             EventGraph must = new EventGraph();
-            (enableMustSets ? may : EventGraph.empty()).apply((e1, e2) -> {
+            may.apply((e1, e2) -> {
                 if (alias.mustAlias((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)) {
                     must.add(e1, e2);
                 }
             });
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         private Knowledge computeInternalDependencies(Set<UsageType> usageTypes) {
             EventGraph may = new EventGraph();
             EventGraph must = new EventGraph();
 
-            for (Event regReaderEvent : program.getThreadEvents()) {
-                //TODO: Once "Event" is an interface and RegReader inherits from it,
-                // we can use program.getEvents(RegReader.class) here.
-                if (!(regReaderEvent instanceof RegReader regReader)) {
-                    continue;
-                }
+            for (RegReader regReader : program.getThreadEvents(RegReader.class)) {
                 for (Register.Read regRead : regReader.getRegisterReads()) {
                     if (!usageTypes.contains(regRead.usageType())) {
                         continue;
@@ -914,12 +947,12 @@ public class RelationAnalysis {
                     if (program.getArch().equals(RISCV) && register.getName().equals("x0")) {
                         continue;
                     }
-                    Dependency.State r = dep.of(regReaderEvent, register);
+                    Dependency.State r = dep.of(regReader, register);
                     for (Event regWriter : r.may) {
-                        may.add(regWriter, regReaderEvent);
+                        may.add(regWriter, regReader);
                     }
-                    for (Event regWriter : enableMustSets ? r.must : List.<Event>of()) {
-                        must.add(regWriter, regReaderEvent);
+                    for (Event regWriter : r.must) {
+                        must.add(regWriter, regReader);
                     }
                 }
             }
@@ -935,7 +968,7 @@ public class RelationAnalysis {
                 }
             }
 
-            return new Knowledge(may, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -993,6 +1026,7 @@ public class RelationAnalysis {
         @Override
         public Knowledge visitSyncFence(SyncFence syncFence) {
             EventGraph may = new EventGraph();
+            EventGraph must = EventGraph.empty();
             List<Event> fenceEventsSC = program.getThreadEventsWithAllTags(VISIBLE, FENCE, PTX.SC);
             for (Event e1 : fenceEventsSC) {
                 for (Event e2 : fenceEventsSC) {
@@ -1001,7 +1035,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(may, EventGraph.empty());
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -1021,7 +1055,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, may);
+            return new Knowledge(may, must);
         }
 
         @Override
@@ -1041,7 +1075,7 @@ public class RelationAnalysis {
                     }
                 }
             }
-            return new Knowledge(must, enableMustSets ? must : EventGraph.empty());
+            return new Knowledge(must, new EventGraph(must));
         }
     }
 
@@ -1078,7 +1112,7 @@ public class RelationAnalysis {
         @Override
         public Delta visitUnion(Union union) {
             if (union.getOperands().contains(source)) {
-                return new Delta(may, enableMustSets ? must : EventGraph.empty());
+                return new Delta(may, must);
             }
             return EMPTY;
         }
@@ -1097,7 +1131,7 @@ public class RelationAnalysis {
                         .sorted(Comparator.comparingInt(EventGraph::size))
                         .reduce(EventGraph::intersection)
                         .orElseThrow();
-                return new Delta(maySet, enableMustSets ? mustSet : EventGraph.empty());
+                return new Delta(maySet, mustSet);
             }
             return EMPTY;
         }
@@ -1106,9 +1140,7 @@ public class RelationAnalysis {
         public Delta visitDifference(Difference diff) {
             if (diff.getMinuend().equals(source)) {
                 Knowledge k = knowledgeMap.get(diff.getSubtrahend());
-                return new Delta(
-                        enableMustSets ? difference(may, k.must) : may,
-                        enableMustSets ? difference(must, k.may) : EventGraph.empty());
+                return new Delta(difference(may, k.must), difference(must, k.may));
             }
             return EMPTY;
         }
@@ -1121,15 +1153,11 @@ public class RelationAnalysis {
             EventGraph mustSet = new EventGraph();
             if (r1.equals(source)) {
                 computeComposition(maySet, may, knowledgeMap.get(r2).may, true);
-                if (enableMustSets) {
-                    computeComposition(mustSet, must, knowledgeMap.get(r2).must, false);
-                }
+                computeComposition(mustSet, must, knowledgeMap.get(r2).must, false);
             }
             if (r2.equals(source)) {
                 computeComposition(maySet, knowledgeMap.get(r1).may, may, true);
-                if (enableMustSets) {
-                    computeComposition(mustSet, knowledgeMap.get(r1).must, must, false);
-                }
+                computeComposition(mustSet, knowledgeMap.get(r1).must, must, false);
             }
             return new Delta(maySet, mustSet);
         }
@@ -1155,10 +1183,12 @@ public class RelationAnalysis {
             if (domId.getOperand().equals(source)) {
                 EventGraph maySet = new EventGraph();
                 may.getDomain().forEach(e -> maySet.add(e, e));
-                EventGraph mustSet = enableMustSets ? new EventGraph() : EventGraph.empty();
-                if (enableMustSets) {
-                    must.getDomain().forEach(e -> mustSet.add(e, e));
-                }
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e1, e2)) {
+                        mustSet.add(e1, e1);
+                    }
+                });
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
@@ -1169,10 +1199,12 @@ public class RelationAnalysis {
             if (rangeId.getOperand().equals(source)) {
                 EventGraph maySet = new EventGraph();
                 may.getRange().forEach(e -> maySet.add(e, e));
-                EventGraph mustSet = enableMustSets ? new EventGraph() : EventGraph.empty();
-                if (enableMustSets) {
-                    must.getRange().forEach(e -> mustSet.add(e, e));
-                }
+                EventGraph mustSet = new EventGraph();
+                must.apply((e1, e2) -> {
+                    if (exec.isImplied(e2, e1)) {
+                        mustSet.add(e2, e2);
+                    }
+                });
                 return new Delta(maySet, mustSet);
             }
             return EMPTY;
@@ -1181,7 +1213,7 @@ public class RelationAnalysis {
         @Override
         public Delta visitInverse(Inverse inv) {
             if (inv.getOperand().equals(source)) {
-                return new Delta(may.inverse(), enableMustSets ? must.inverse() : EventGraph.empty());
+                return new Delta(may.inverse(), must.inverse());
             }
             return EMPTY;
         }
@@ -1191,11 +1223,8 @@ public class RelationAnalysis {
             final Relation rel = trans.getDefinedRelation();
             if (trans.getOperand().equals(source)) {
                 EventGraph maySet = computeTransitiveClosure(knowledgeMap.get(rel).may, may, true);
-                if (enableMustSets) {
-                    EventGraph mustSet = computeTransitiveClosure(knowledgeMap.get(rel).must, must, false);
-                    return new Delta(maySet, mustSet);
-                }
-                return new Delta(maySet, EventGraph.empty());
+                EventGraph mustSet = computeTransitiveClosure(knowledgeMap.get(rel).must, must, false);
+                return new Delta(maySet, mustSet);
             }
             return EMPTY;
         }

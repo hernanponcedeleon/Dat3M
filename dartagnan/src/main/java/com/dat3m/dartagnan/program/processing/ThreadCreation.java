@@ -123,8 +123,9 @@ public class ThreadCreation implements ProgramProcessor {
 
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
                         final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
-                        final MemoryObject comAddress = program.getMemory().allocate(1, true);
-                        comAddress.setCVar("__com" + nextTid + "__" + targetFunction.getName());
+                        final MemoryObject comAddress = program.getMemory().allocate(1);
+                        comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
+                        comAddress.setInitialValue(0, expressions.makeZero(archType));
 
                         final List<Event> replacement = eventSequence(
                                 createEvent,
@@ -344,11 +345,12 @@ public class ThreadCreation implements ProgramProcessor {
             @Override
             public Expression visitMemoryObject(MemoryObject memObj) {
                 if (memObj.isThreadLocal() && !global2ThreadLocal.containsKey(memObj)) {
-                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size(), true);
-                    final String varName = String.format("%s@T%s", memObj.getCVar(), thread.getId());
-                    threadLocalCopy.setCVar(varName);
-                    for (int i = 0; i < memObj.size(); i++) {
-                        threadLocalCopy.setInitialValue(i, memObj.getInitialValue(i));
+                    final MemoryObject threadLocalCopy = memory.allocate(memObj.size());
+                    assert memObj.hasName();
+                    final String varName = String.format("%s@T%s", memObj.getName(), thread.getId());
+                    threadLocalCopy.setName(varName);
+                    for (int field : memObj.getInitializedFields()) {
+                        threadLocalCopy.setInitialValue(field, memObj.getInitialValue(field));
                     }
                     global2ThreadLocal.put(memObj, threadLocalCopy);
                 }
