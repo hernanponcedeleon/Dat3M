@@ -15,8 +15,8 @@
        %func = OpTypeFunction %void
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
-   %ptr_uint = OpTypePointer Uniform %uint
- %ptr_v3uint = OpTypePointer Uniform %v3uint
+   %ptr_uint = OpTypePointer Output %uint
+ %ptr_v3uint = OpTypePointer Input %v3uint
          %c0 = OpConstant %uint 0
         %c11 = OpConstant %uint 11
         %c22 = OpConstant %uint 22

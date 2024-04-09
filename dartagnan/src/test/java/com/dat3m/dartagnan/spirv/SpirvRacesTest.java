@@ -89,8 +89,8 @@ public class SpirvRacesTest {
                 {"gpu-verify/atomics/forloop.spv.dis", 1, FAIL},
                 {"gpu-verify/atomics/histo.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/pointers.spv.dis", 1, FAIL},
-                // TODO: Local memory
-                // {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
+                {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
+                // TODO: Check me
                 // {"gpu-verify/barrier_intervals/test2.spv.dis", 1, FAIL},
 
                 // TODO: Implement unrolling for control barriers

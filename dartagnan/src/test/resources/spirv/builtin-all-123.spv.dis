@@ -1,10 +1,10 @@
 ; @Output: forall (%out_SubgroupLocalInvocationId==0)
 
-; @Output: forall (%out_LocalInvocationId[0]>=0 and %out_LocalInvocationId[0]<=5)
+; @Output: forall (%out_LocalInvocationId[0]>=0 and %out_LocalInvocationId[0]<=1)
 ; @Output: forall (%out_LocalInvocationId[1]==0)
 ; @Output: forall (%out_LocalInvocationId[2]==0)
 
-; @Output: forall (%out_LocalInvocationIndex>=0 and %out_LocalInvocationIndex<=5)
+; @Output: forall (%out_LocalInvocationIndex>=0 and %out_LocalInvocationIndex<=1)
 
 ; @Output: forall (%out_GlobalInvocationId[0]>=0 and %out_GlobalInvocationId[0]<=5)
 ; @Output: forall (%out_GlobalInvocationId[1]==0)
@@ -17,8 +17,6 @@
 ; @Output: forall (%out_WorkgroupId[0]>=0 and %out_WorkgroupId[0]<=2)
 ; @Output: forall (%out_WorkgroupId[1]==0)
 ; @Output: forall (%out_WorkgroupId[2]==0)
-
-; @Output: forall (%out_InvocationId==0)
 
 ; @Output: forall (%out_SubgroupSize==1)
 
@@ -42,7 +40,6 @@
                                  OpDecorate %gl_DeviceIndex BuiltIn DeviceIndex
                                  OpDecorate %gl_SubgroupId BuiltIn SubgroupId
                                  OpDecorate %gl_WorkgroupId BuiltIn WorkgroupId
-                                 OpDecorate %gl_InvocationId BuiltIn InvocationId
                                  OpDecorate %gl_SubgroupSize BuiltIn SubgroupSize
                                  OpDecorate %gl_WorkgroupSize BuiltIn WorkgroupSize
                          %void = OpTypeVoid
@@ -69,7 +66,6 @@
                %gl_DeviceIndex = OpVariable %_ptr_Input_uint Input
                 %gl_SubgroupId = OpVariable %_ptr_Input_uint Input
                %gl_WorkgroupId = OpVariable %_ptr_Input_v3uint Input
-              %gl_InvocationId = OpVariable %_ptr_Input_uint Input
               %gl_SubgroupSize = OpVariable %_ptr_Input_uint Input
              %gl_WorkgroupSize = OpVariable %_ptr_Input_v3uint Input
 
@@ -80,7 +76,6 @@
               %out_DeviceIndex = OpVariable %_ptr_Output_uint Output %init
                %out_SubgroupId = OpVariable %_ptr_Output_uint Output %init
               %out_WorkgroupId = OpVariable %_ptr_Output_v3uint Output %v3init
-             %out_InvocationId = OpVariable %_ptr_Output_uint Output %init
              %out_SubgroupSize = OpVariable %_ptr_Output_uint Output %init
             %out_WorkgroupSize = OpVariable %_ptr_Output_v3uint Output %v3init
 
@@ -137,9 +132,6 @@
                                  OpAtomicStore %out0_ptr_WorkgroupId %c1 %c64 %v0_WorkgroupId
                                  OpAtomicStore %out1_ptr_WorkgroupId %c1 %c64 %v1_WorkgroupId
                                  OpAtomicStore %out2_ptr_WorkgroupId %c1 %c64 %v2_WorkgroupId
-
-              %in_InvocationId = OpLoad %uint %gl_InvocationId
-                                 OpAtomicStore %out_InvocationId %c1 %c64 %in_InvocationId
 
               %in_SubgroupSize = OpLoad %uint %gl_SubgroupSize
                                  OpAtomicStore %out_SubgroupSize %c1 %c64 %in_SubgroupSize

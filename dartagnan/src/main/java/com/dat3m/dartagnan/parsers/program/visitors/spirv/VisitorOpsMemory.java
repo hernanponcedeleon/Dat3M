@@ -70,7 +70,8 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpVariable(SpirvParser.OpVariableContext ctx) {
         String id = ctx.idResult().getText();
-        Type type = builder.getPointedType(ctx.idResultType().getText());
+        String typeId = ctx.idResultType().getText();
+        Type type = builder.getPointedType(typeId);
         Expression value = getOpVariableInitialValue(ctx, type);
         if (value != null) {
             type = validateVariableType(id, value, type, value.getType());
@@ -79,23 +80,13 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         } else {
             value = builder.newUndefinedValue(type);
         }
-
         int size = TYPE_FACTORY.getMemorySizeInBytes(type);
         MemoryObject memObj = builder.allocateMemoryVirtual(size);
         memObj.setName(id);
         setInitialValue(memObj, 0, value);
-        if (isThreadLocal(ctx.storageClass())) {
-            memObj.setIsThreadLocal(true);
-        }
-
-        String storageClass = builder.getStorageClass(ctx.storageClass().getText());
-        if (Tag.Spirv.SC_GENERIC.equals(storageClass)) {
-            throw new ParsingException("Illegal variable storage class '%s'", storageClass);
-        }
         builder.addExpression(id, memObj);
         builder.addVariableType(id, type);
-        // TODO: Validate that variable storage class matches the pointer
-        builder.addStorageClassForExpr(id, ctx.idResultType().getText());
+        addVariableStorageClass(id, typeId, ctx.storageClass().getText());
         return null;
     }
 
@@ -238,12 +229,6 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                 "expected '%s' but received '%s'", id, varType, valType);
     }
 
-    private boolean isThreadLocal(SpirvParser.StorageClassContext ctx) {
-        // TODO: More fine-grained handling
-        // TODO: Input has to be thread-local only if set from BuiltIn
-        return ctx.Input() != null || ctx.Private() != null || ctx.Function() != null;
-    }
-
     private void setInitialValue(MemoryObject memObj, int offset, Expression value) {
         if (value.getType() instanceof ArrayType aType) {
             ConstructExpr cValue = (ConstructExpr) value;
@@ -266,6 +251,20 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             memObj.setInitialValue(offset, value);
         } else {
             throw new ParsingException("Illegal variable value type '%s'", value.getType());
+        }
+    }
+
+    // TODO: Unit tests for this
+    private void addVariableStorageClass(String id, String typeId, String classToken) {
+        String ptrStorageClass = builder.addStorageClassForExpr(id, typeId);
+        String varStorageClass = builder.getStorageClass(classToken);
+        if (!varStorageClass.equals(ptrStorageClass)) {
+            throw new ParsingException("Mismatching storage class for variable '%s', " +
+                    "definition storage class is '%s' but pointer storage class is '%s'",
+                    id, varStorageClass, ptrStorageClass);
+        }
+        if (Tag.Spirv.SC_GENERIC.equals(ptrStorageClass)) {
+            throw new ParsingException("Illegal variable storage class '%s'", ptrStorageClass);
         }
     }
 

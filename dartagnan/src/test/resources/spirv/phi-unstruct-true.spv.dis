@@ -16,11 +16,11 @@
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
      %v2uint = OpTypeVector %uint 2
-   %ptr_uint = OpTypePointer Uniform %uint
- %ptr_v3uint = OpTypePointer Uniform %v3uint
+   %ptr_uint = OpTypePointer Output %uint
+ %ptr_v3uint = OpTypePointer Input %v3uint
          %c0 = OpConstant %uint 0
         %ids = OpVariable %ptr_v3uint Input
-        %out = OpVariable %ptr_uint Uniform
+        %out = OpVariable %ptr_uint Output
        %main = OpFunction %void None %func
     %label_1 = OpLabel
      %id_ptr = OpAccessChain %ptr_uint %ids %c0

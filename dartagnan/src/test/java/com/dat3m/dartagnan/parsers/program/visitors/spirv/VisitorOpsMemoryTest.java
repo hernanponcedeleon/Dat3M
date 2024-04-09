@@ -170,9 +170,9 @@ public class VisitorOpsMemoryTest {
     public void testVariable() {
         // given
         String input = """
-                %v1 = OpVariable %b_ptr Function
-                %v2 = OpVariable %i_ptr Private
-                %v3 = OpVariable %v3int_ptr Output
+                %v1 = OpVariable %b_ptr Uniform
+                %v2 = OpVariable %i_ptr Uniform
+                %v3 = OpVariable %v3int_ptr Uniform
                 %v4 = OpVariable %struct_ptr Uniform
                 """;
 
@@ -203,9 +203,9 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testInitializedVariableConstant() {
         String input = """
-                %v1 = OpVariable %b_ptr Function %b_const
-                %v2 = OpVariable %i_ptr Private %i_const
-                %v3 = OpVariable %v3int_ptr Output %v3int_const
+                %v1 = OpVariable %b_ptr Uniform %b_const
+                %v2 = OpVariable %i_ptr Uniform %i_const
+                %v3 = OpVariable %v3int_ptr Uniform %v3int_const
                 %v4 = OpVariable %struct_ptr Uniform %struct_const
                 """;
 
@@ -225,9 +225,9 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testInitializedVariableInput() {
         String input = """
-                %v1 = OpVariable %b_ptr Function
-                %v2 = OpVariable %i_ptr Private
-                %v3 = OpVariable %v3int_ptr Output
+                %v1 = OpVariable %b_ptr Uniform
+                %v2 = OpVariable %i_ptr Uniform
+                %v3 = OpVariable %v3int_ptr Uniform
                 %v4 = OpVariable %struct_ptr Uniform
                 """;
 
@@ -440,7 +440,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testUninitializedRuntimeVariable() {
         // given
-        String input = "%v = OpVariable %arr_ptr Private";
+        String input = "%v = OpVariable %arr_ptr Uniform";
         builder.mockIntType("%int", 32);
         builder.mockVectorType("%arr", "%int", -1);
         builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
@@ -459,7 +459,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testVariableNotPointerType() {
         // given
-        String input = "%v = OpVariable %int Private";
+        String input = "%v = OpVariable %int Uniform";
         builder.mockIntType("%int", 32);
 
         try {
@@ -475,7 +475,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testMismatchingValueTypeConstant() {
         // given
-        String input = "%v = OpVariable %i_ptr Private %const";
+        String input = "%v = OpVariable %i_ptr Uniform %const";
 
         builder.mockBoolType("%bool");
         builder.mockIntType("%int", 32);
@@ -522,7 +522,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testMismatchingValueTypeInNestedArray() {
         // given
-        String input = "%v = OpVariable %arr2int_ptr Private %const";
+        String input = "%v = OpVariable %arr2int_ptr Uniform %const";
 
         Type bType = builder.mockBoolType("%bool");
         Type a1Type = builder.mockVectorType("%arr1bool", "%bool", 2);
@@ -554,7 +554,7 @@ public class VisitorOpsMemoryTest {
     @Test
     public void testMismatchingValueTypeInNestedStruct() {
         // given
-        String input = "%v = OpVariable %struct2_ptr Private %const";
+        String input = "%v = OpVariable %struct2_ptr Uniform %const";
 
         builder.mockBoolType("%bool");
         builder.mockIntType("%int16", 16);
@@ -609,7 +609,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainArray() {
         // given
         String input = """
-                %variable = OpVariable %v2v2v2i_ptr Private %const
+                %variable = OpVariable %v2v2v2i_ptr Uniform %const
                 %element = OpAccessChain %i_ptr %variable %1 %0 %1
                 """;
 
@@ -650,7 +650,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainStruct() {
         // given
         String input = """
-                %variable = OpVariable %agg2_ptr Private %const
+                %variable = OpVariable %agg2_ptr Uniform %const
                 %element = OpAccessChain %i32_ptr %variable %4 %2
                 """;
 
@@ -693,7 +693,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainArrayRegister() {
         // given
         String input = """
-                %variable = OpVariable %v2i_ptr Private %const
+                %variable = OpVariable %v2i_ptr Uniform %const
                 %element = OpAccessChain %i_ptr %variable %register
                 """;
 
@@ -725,7 +725,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainStructureRegister() {
         // given
         String input = """
-                %variable = OpVariable %agg_ptr Private %const
+                %variable = OpVariable %agg_ptr Uniform %const
                 %element = OpAccessChain %i16_ptr %variable %register
                 """;
 
@@ -762,7 +762,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainWrongDepth() {
         // given
         String input = """
-                %variable = OpVariable %v2i_ptr Private %const
+                %variable = OpVariable %v2i_ptr Uniform %const
                 %element = OpAccessChain %i_ptr %variable %0 %0
                 """;
 
@@ -792,7 +792,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainMismatchingTypeArray() {
         // given
         String input = """
-                %variable = OpVariable %v2i_ptr Private %const
+                %variable = OpVariable %v2i_ptr Uniform %const
                 %element = OpAccessChain %i16_ptr %variable %0
                 """;
 
@@ -824,7 +824,7 @@ public class VisitorOpsMemoryTest {
     public void testAccessChainMismatchingTypeStructure() {
         // given
         String input = """
-                %variable = OpVariable %agg_ptr Private %const
+                %variable = OpVariable %agg_ptr Uniform %const
                 %element = OpAccessChain %i16_ptr %variable %1
                 """;
 
