@@ -91,11 +91,11 @@ public class SpirvRacesTest {
                 {"gpu-verify/barrier_intervals/test4.spv.dis", 2, PASS},
 
                 // TODO: Support missing semantics
-                {"gpu-verify/beningn_race_tests/fail/writeafterread_addition.spv.dis", 1, FAIL},
-                {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, FAIL},
-                // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, FAIL},
-                // {"gpu-verify/beningn_race_tests/fail/writewritearray_adversarial.spv.dis", 1, FAIL},
-                {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, FAIL},
+                {"gpu-verify/benign_race_tests/fail/writeafterread_addition.spv.dis", 1, FAIL},
+                {"gpu-verify/benign_race_tests/fail/writeafterread_otherval.spv.dis", 1, FAIL},
+                // {"gpu-verify/benign_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, FAIL},
+                // {"gpu-verify/benign_race_tests/fail/writewritearray_adversarial.spv.dis", 1, FAIL},
+                {"gpu-verify/benign_race_tests/fail/writezero_nobening.spv.dis", 1, FAIL},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spv.dis", 1, FAIL},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_write_then_read.spv.dis", 1, FAIL},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, FAIL},
@@ -125,7 +125,7 @@ public class SpirvRacesTest {
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
         }/*
-        // TODO: Fails to find beningn_race_tests races
+        // TODO: Fails to find benign_race_tests races
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }*/
