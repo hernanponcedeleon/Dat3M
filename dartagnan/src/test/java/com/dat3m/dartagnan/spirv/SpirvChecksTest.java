@@ -98,6 +98,7 @@ public class SpirvChecksTest {
                 {"gpu-verify/beningn_race_tests/fail/writeafterread_addition.spv.dis", 1, PASS},
                 {"gpu-verify/beningn_race_tests/fail/writeafterread_otherval.spv.dis", 1, PASS},
                 // {"gpu-verify/beningn_race_tests/fail/writetiddiv64_offbyone.spv.dis", 1, PASS},
+                // {"gpu-verify/beningn_race_tests/fail/writewritearray_adversarial.spv.dis", 1, PASS},
                 {"gpu-verify/beningn_race_tests/fail/writezero_nobening.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_write_then_read.spv.dis", 1, PASS},
