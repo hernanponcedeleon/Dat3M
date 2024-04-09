@@ -99,8 +99,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     private void progressPropagation() {
         if (!openPropagations.isEmpty()) {
-            backend.propagateConsequence(new BooleanFormula[0],
-                    bmgr.not(bmgr.and(openPropagations.poll().assignment().toArray(new BooleanFormula[0]))));
+            backend.propagateConsequence(new BooleanFormula[0], bmgr.not(openPropagations.poll().toFormula(bmgr)));
         }
     }
 
@@ -116,13 +115,14 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
         if (result.status == CAATSolver.Status.INCONSISTENT) {
             final List<Refiner.Conflict> conflicts = refiner.computeConflicts(result.coreReasons, encodingContext);
+            assert !conflicts.isEmpty();
             boolean isFirst = true;
             for (Refiner.Conflict conflict : conflicts) {
                 // The second part of the check is for symmetric clauses that are not yet conflicts.
                 final boolean isConflict = isFirst &&
-                        conflict.assignment().stream().allMatch(l -> partialModel.getOrDefault(l, false));
+                        conflict.getVariables().stream().allMatch(partialModel::containsKey);
                 if (isConflict) {
-                    backend.propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
+                    backend.propagateConflict(conflict.getVariables().toArray(new BooleanFormula[0]));
                     isFirst = false;
                 } else {
                    openPropagations.add(conflict);
