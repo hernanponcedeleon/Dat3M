@@ -52,7 +52,9 @@ public class SpirvRacesTest {
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
                 // TODO: Confirm expected result with some other tool!
-                {"caslock.spv.dis", 2, PASS},
+                // Re-enable once support for builtins is merged
+                // {"caslock-1.1.2.spv.dis", 2, PASS},
+                {"caslock-2.1.1.spv.dis", 2, PASS},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
                 // TODO: Unsupported decoration 'WorkgroupId'
@@ -62,10 +64,14 @@ public class SpirvRacesTest {
                 {"MP-acq2rx.spv.dis", 1, FAIL},
                 {"MP-rel2rx.spv.dis", 1, FAIL},
                 {"SB.spv.dis", 1, PASS},
-                {"ticketlock.spv.dis", 2, PASS},
+                // Re-enable once support for builtins is merged
+                // {"ticketlock-1.1.2.spv.dis", 2, PASS},
+                {"ticketlock-2.1.1.spv.dis", 2, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
-                {"ttaslock.spv.dis", 2, PASS},
+                // Re-enable once support for builtins is merged
+                // {"ttaslock-1.1.2.spv.dis", 2, PASS},
+                {"ttaslock-2.1.1.spv.dis", 2, PASS},
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
 
