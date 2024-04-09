@@ -55,6 +55,7 @@ public class SpirvChecksTest {
                 {"caslock-1.1.2.spv.dis", 2, PASS},
                 {"caslock-2.1.1.spv.dis", 2, PASS},
                 {"caslock-acq2rx.spv.dis", 1, PASS},
+                {"caslock-dv2wg.spv.dis", 1, PASS},
                 {"caslock-rel2rx.spv.dis", 1, PASS},
                 // TODO: Unsupported decoration 'WorkgroupId'
                 // {"CORR.spv.dis", 1, PASS},
@@ -66,11 +67,13 @@ public class SpirvChecksTest {
                 {"ticketlock-1.1.2.spv.dis", 2, PASS},
                 {"ticketlock-2.1.1.spv.dis", 2, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, PASS},
+                {"ticketlock-dv2wg.spv.dis", 1, PASS},
                 {"ticketlock-rel2rx.spv.dis", 1, PASS},
                 // TODO: Why UNKNOWN if concrete result for assertions
                 {"ttaslock-1.1.2.spv.dis", 2, UNKNOWN},
                 {"ttaslock-2.1.1.spv.dis", 2, UNKNOWN},
                 {"ttaslock-acq2rx.spv.dis", 2, UNKNOWN},
+                {"ttaslock-dv2wg.spv.dis", 2, UNKNOWN},
                 {"ttaslock-rel2rx.spv.dis", 2, UNKNOWN},
 
                 // Unsupported decoration 'WorkgroupId'
