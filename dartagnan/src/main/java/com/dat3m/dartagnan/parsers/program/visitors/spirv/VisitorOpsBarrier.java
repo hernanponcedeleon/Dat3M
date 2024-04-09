@@ -2,7 +2,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.event.Event;
@@ -14,7 +16,10 @@ import java.util.Set;
 
 public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
 
+    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private final IntegerType barrierIdType = TypeFactory.getInstance().getArchType();
     private final ProgramBuilderSpv builder;
+    private int nextBarrierId = 0;
 
     public VisitorOpsBarrier(ProgramBuilderSpv builder) {
         this.builder = builder;
@@ -22,19 +27,16 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpControlBarrier(SpirvParser.OpControlBarrierContext ctx) {
-        // TODO: Is MM incorrect here?
-        //  This is not an arbitrary value but a scope at which threads have to wait
-        Expression value = builder.getExpression(ctx.execution().getText());
-        if (!(value instanceof IntLiteral)) {
-            throw new ParsingException("Non-constant execution scope " +
-                    "of control barrier is not supported");
+        if (!ctx.execution().getText().equals(ctx.memory().getText())) {
+            throw new ParsingException("Unequal scopes in OpControlBarrier are not supported");
         }
-        Event fence = EventFactory.newFenceWithId("cbar", value);
+        Expression barId = EXPR_FACTORY.makeValue(nextBarrierId++, barrierIdType);
+        Event fence = EventFactory.newFenceWithId("cbar", barId);
         fence.addTags(Tag.Spirv.CONTROL);
+        fence.addTags(builder.getScope(ctx.execution().getText()));
         if (builder.isSemanticsNone(ctx.semantics().getText())) {
             fence.removeTags(Tag.FENCE);
         } else {
-            fence.addTags(builder.getScope(ctx.memory().getText()));
             fence.addTags(builder.getSemantics(ctx.semantics().getText()));
         }
         return builder.addEvent(fence);

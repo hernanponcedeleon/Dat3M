@@ -1,5 +1,5 @@
 ; @Input: %18 = {{0}}
-; @Config: 2, 1, 1
+; @Config: 2, 1, 2
 ; SPIR-V
 ; Version: 1.6
 ; Generator: Google Clspv; 0

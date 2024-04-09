@@ -75,7 +75,7 @@ public class SpirvAssertionsTest {
                 // Re-enable once support for builtins is merged
                 // {"ttaslock-dv2wg.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
-                // Unsupported decoration 'WorkgroupId'
+                // TODO: Fix tests
                 // {"xf-barrier.spv.dis", 1, PASS},
                 // {"xf-barrier-opt.spv.dis", 1, PASS},
         });
