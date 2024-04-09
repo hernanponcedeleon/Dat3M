@@ -15,6 +15,8 @@ import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TY
 
 public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
 
+    // TODO: Verify that variables in assertions are in the device scope
+
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
     private final ProgramBuilderSpv builder;

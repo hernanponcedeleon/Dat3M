@@ -46,7 +46,7 @@ public class ProgramBuilderSpv {
     private final HelperTags helperTags = new HelperTags();
     private final HelperDecorations helperDecorations = new HelperDecorations();
     private final Map<String, Type> types = new HashMap<>();
-    private final Map<String, Type> pointedTypes = new HashMap<>();
+    private final Map<String, String> pointedTypes = new HashMap<>();
     private final Map<String, Type> variableTypes = new HashMap<>();
     private final Map<String, String> pointerClasses = new HashMap<>();
     private final Map<String, String> registerClasses = new HashMap<>();
@@ -90,14 +90,16 @@ public class ProgramBuilderSpv {
         preprocessBlocks();
 
         Function entry = getEntryPointFunction();
+        BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
+        MemoryTransformer transformer = new MemoryTransformer(program, builtIn, variableTypes, registerClasses);
         for (int z = 0; z < threadGrid.get(2); z++) {
             for (int y = 0; y < threadGrid.get(1); y++) {
                 for (int x = 0; x < threadGrid.get(0); x++) {
-                    program.addThread(createThreadFromFunction(entry, x, y, z));
+                    program.addThread(createThreadFromFunction(entry, transformer, x, y, z));
                 }
             }
         }
-        // TODO: Cleanup old function and its thread-local variables
+        // TODO: Cleanup local memory, old functions and undefined expressions from local memory
 
         checkSpecification();
         return program;
@@ -262,7 +264,8 @@ public class ProgramBuilderSpv {
         if (pointedTypes.containsKey(name)) {
             throw new ParsingException("Duplicated pointer type definition '%s'", name);
         }
-        pointedTypes.put(name, getType(innerTypeId));
+        getType(innerTypeId);
+        pointedTypes.put(name, innerTypeId);
         if (pointerClasses.containsKey(name)) {
             throw new ParsingException("Duplicated variable storage class definition '%s'", name);
         }
@@ -273,14 +276,14 @@ public class ProgramBuilderSpv {
     }
 
     public Type getPointedType(String name) {
-        Type type = pointedTypes.get(name);
-        if (type == null) {
+        String typeId = pointedTypes.get(name);
+        if (typeId == null) {
             if (!types.containsKey(name)) {
                 throw new ParsingException("Reference to undefined pointer type '%s'", name);
             }
             throw new ParsingException("Type '%s' is not a pointer type", name);
         }
-        return type;
+        return getType(typeId);
     }
 
     public Type getVariableType(String name) {
@@ -371,7 +374,7 @@ public class ProgramBuilderSpv {
         return getCurrentFunctionOrThrowError().newRegister(id, getType(typeId));
     }
 
-    public void addStorageClassForExpr(String id, String typeId) {
+    public String addStorageClassForExpr(String id, String typeId) {
         if (pointedTypes.containsKey(typeId)) {
             String storageClass = pointerClasses.get(typeId);
             if (storageClass == null) {
@@ -381,7 +384,10 @@ public class ProgramBuilderSpv {
                 throw new ParsingException("Duplicated storage class definition  for expression'%s'", id);
             }
             registerClasses.put(id, storageClass);
+            return storageClass;
         }
+        // TODO:
+        return null;
     }
 
     public boolean hasBlock(String id) {
@@ -428,15 +434,14 @@ public class ProgramBuilderSpv {
                 "outside of a function definition");
     }
 
-    private Thread createThreadFromFunction(Function function, int x, int y, int z) {
+    private Thread createThreadFromFunction(Function function, MemoryTransformer transformer, int x, int y, int z) {
         int tid = x + y * threadGrid.get(0) + z * threadGrid.get(0) * threadGrid.get(1);
         ScopeHierarchy scope = ScopeHierarchyForVulkan(0, z, y);
         Thread thread = createThread(tid, scope, function);
         copyEvents(tid, thread, function);
 
         // Create thread-local variables
-        BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
-        ExprTransformer transformer = new MemoryTransformer(tid, program, variableTypes, builtIn.setHierarchy(x, y, z, 0));
+        transformer.setHierarchy(List.of(x, y, z, 0));
         thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
         return thread;
     }

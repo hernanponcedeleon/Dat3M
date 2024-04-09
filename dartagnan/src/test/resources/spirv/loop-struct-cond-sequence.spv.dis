@@ -1,5 +1,5 @@
-; @Input:  %out = 0
-; @Output: forall (%out==75)
+; @Input:  %var = 0
+; @Output: forall (%var==75)
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0
@@ -16,21 +16,20 @@
                %uint = OpTypeInt 64 0
              %v3uint = OpTypeVector %uint 3
            %ptr_uint = OpTypePointer Uniform %uint
-         %ptr_v3uint = OpTypePointer Uniform %v3uint
                  %c0 = OpConstant %uint 0
                  %c1 = OpConstant %uint 1
                  %c2 = OpConstant %uint 2
                  %c5 = OpConstant %uint 5
-                %out = OpVariable %ptr_uint Output
-            %count_1 = OpVariable %ptr_uint Private %c0
-            %count_2 = OpVariable %ptr_uint Private %c0
+                %var = OpVariable %ptr_uint Uniform
+            %count_1 = OpVariable %ptr_uint Uniform %c0
+            %count_2 = OpVariable %ptr_uint Uniform %c0
                %main = OpFunction %void None %func
 
                        ; loop 1
             %label_1 = OpLabel
-              %val_1 = OpLoad %uint %out
+              %val_1 = OpLoad %uint %var
           %val_1_new = OpIAdd %uint %val_1 %c1
-                       OpStore %out %val_1_new
+                       OpStore %var %val_1_new
         %val_count_1 = OpLoad %uint %count_1
     %val_count_1_new = OpIAdd %uint %val_count_1 %c1
                        OpStore %count_1 %val_count_1_new
@@ -43,9 +42,9 @@
 
                        ; loop 2
             %label_3 = OpLabel
-              %val_2 = OpLoad %uint %out
+              %val_2 = OpLoad %uint %var
           %val_2_new = OpIMul %uint %val_2 %c5
-                       OpStore %out %val_2_new
+                       OpStore %var %val_2_new
         %val_count_2 = OpLoad %uint %count_2
     %val_count_2_new = OpIAdd %uint %val_count_2 %c1
                        OpStore %count_2 %val_count_2_new

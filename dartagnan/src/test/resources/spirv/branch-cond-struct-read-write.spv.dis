@@ -16,7 +16,7 @@
        %uint = OpTypeInt 32 0
      %v3uint = OpTypeVector %uint 3
      %v2uint = OpTypeVector %uint 2
-   %ptr_uint = OpTypePointer Input %uint
+   %ptr_uint = OpTypePointer Private %uint
  %ptr_v3uint = OpTypePointer Input %v3uint
  %ptr_v2uint = OpTypePointer Output %v2uint
          %c0 = OpConstant %uint 0

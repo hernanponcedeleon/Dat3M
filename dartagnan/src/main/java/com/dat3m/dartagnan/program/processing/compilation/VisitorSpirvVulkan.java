@@ -207,11 +207,10 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
             case Tag.Spirv.SEM_VISIBLE -> Tag.Vulkan.SEM_VISIBLE;
 
             // Memory semantics (storage class)
-            case Tag.Spirv.SEM_UNIFORM -> Tag.Vulkan.SEMSC0;
+            case Tag.Spirv.SEM_UNIFORM, Tag.Spirv.SEM_OUTPUT -> Tag.Vulkan.SEMSC0;
             case Tag.Spirv.SEM_WORKGROUP -> Tag.Vulkan.SEMSC1;
             case Tag.Spirv.SEM_SUBGROUP,
                     Tag.Spirv.SEM_CROSS_WORKGROUP,
-                    Tag.Spirv.SEM_OUTPUT,
                     Tag.Spirv.SEM_ATOMIC_COUNTER,
                     Tag.Spirv.SEM_IMAGE -> throw new UnsupportedOperationException(
                     String.format("Spir-V memory semantics '%s' " +
@@ -219,9 +218,9 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
 
             // Storage class
             case Tag.Spirv.SC_UNIFORM_CONSTANT,
-                    Tag.Spirv.SC_INPUT,
                     Tag.Spirv.SC_PUSH_CONSTANT -> null; // read-only
-            case Tag.Spirv.SC_PRIVATE,
+            case Tag.Spirv.SC_INPUT,
+                    Tag.Spirv.SC_PRIVATE,
                     Tag.Spirv.SC_FUNCTION -> null; // private
             case Tag.Spirv.SC_UNIFORM,
                     Tag.Spirv.SC_OUTPUT,

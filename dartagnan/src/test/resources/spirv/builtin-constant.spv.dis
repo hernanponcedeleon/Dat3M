@@ -22,10 +22,10 @@
                 %c64 = OpConstant %uint 64
                 %sc0 = OpSpecConstant %uint 0
    %gl_WorkGroupSize = OpSpecConstantComposite %v3uint %sc0 %sc0 %sc0
-%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+  %_ptr_Input_v3uint = OpTypePointer Input %v3uint
  %_ptr_Output_v3uint = OpTypePointer Output %v3uint
-               %size = OpVariable %_ptr_Private_v3uint Input %gl_WorkGroupSize
-                %out = OpVariable %_ptr_Private_v3uint Output
+               %size = OpVariable %_ptr_Input_v3uint Input %gl_WorkGroupSize
+                %out = OpVariable %_ptr_Output_v3uint Output
                %main = OpFunction %void None %func
               %label = OpLabel
             %in0_ptr = OpAccessChain %ptr_uint %size %c0
