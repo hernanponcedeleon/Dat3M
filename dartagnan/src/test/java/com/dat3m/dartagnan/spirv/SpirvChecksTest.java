@@ -74,10 +74,8 @@ public class SpirvChecksTest {
                 {"ttaslock-acq2rx.spv.dis", 2, UNKNOWN},
                 {"ttaslock-dv2wg.spv.dis", 2, UNKNOWN},
                 {"ttaslock-rel2rx.spv.dis", 2, UNKNOWN},
-
-                // Unsupported decoration 'WorkgroupId'
-                // {"xf-barrier.spv.dis", 1, PASS},
-                // {"xf-barrier-opt.spv.dis", 1, PASS},
+                {"xf-barrier.spv.dis", 1, PASS},
+                {"xf-barrier-opt.spv.dis", 1, PASS},
 
                 // TODO: Support missing semantics
                 // {"gpu-verify/alignement/race_location.spv.dis", 1, PASS},
@@ -88,16 +86,12 @@ public class SpirvChecksTest {
                 {"gpu-verify/atomics/forloop.spv.dis", 1, PASS},
                 {"gpu-verify/atomics/histo.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/pointers.spv.dis", 1, PASS},
-
-                /*
-                TODO: Fails checks:
-                // flag ~empty scbarinstIsPo as checkScbarinstIsPo
-                // flag ~empty scbarinstIsPo2 as checkScbarinstIsPo2
                 {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
                 {"gpu-verify/barrier_intervals/test2.spv.dis", 1, PASS},
-                {"gpu-verify/barrier_intervals/test3.spv.dis", 2, UNKNOWN},
-                {"gpu-verify/barrier_intervals/test4.spv.dis", 2, UNKNOWN},
-                 */
+
+                // TODO: Implement unrolling for control barriers
+                // {"gpu-verify/barrier_intervals/test3.spv.dis", 2, UNKNOWN},
+                // {"gpu-verify/barrier_intervals/test4.spv.dis", 2, UNKNOWN},
 
                 // TODO: Support missing semantics
                 {"gpu-verify/benign_race_tests/fail/writeafterread_addition.spv.dis", 1, PASS},
@@ -107,11 +101,16 @@ public class SpirvChecksTest {
                 {"gpu-verify/benign_race_tests/fail/writezero_nobening.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_read_then_write.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/bad_write_then_read.spv.dis", 1, PASS},
-                // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, PASS},
+                {"gpu-verify/inter_group_and_barrier_flag_tests/fail/local_id.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/missing_global_barrier_flag.spv.dis", 1, PASS},
                 {"gpu-verify/inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag.spv.dis", 1, PASS},
-                // TODO: Check why FAIL checkRelIsSem
+
+                // Fails check checkRelIsSem for a barrier with semantics 0x8 (rel_acq, no storage class semantics),
+                // which was compiled from OpenCL barrier(0).
+                // Was it intended to compile into semantics 0x0, such that it has no OpMemoryBarrier semantics?
+                // https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html#OpControlBarrier
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/no_barrier_flag.spv.dis", 1, PASS},
+
                 {"gpu-verify/inter_group_and_barrier_flag_tests/fail/sync.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/fail/sync_within_group_wrong_flag.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/global_barrier.spv.dis", 1, PASS},
@@ -123,7 +122,6 @@ public class SpirvChecksTest {
                 {"gpu-verify/globalarray-fail.spv.dis", 1, PASS},
                 {"gpu-verify/globalarray-pass.spv.dis", 1, PASS},
                 {"gpu-verify/globalarray-pass2.spv.dis", 1, PASS},
-
         });
     }
 

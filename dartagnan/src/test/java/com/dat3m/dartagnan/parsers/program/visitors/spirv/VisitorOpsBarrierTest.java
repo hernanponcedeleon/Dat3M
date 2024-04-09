@@ -46,7 +46,7 @@ public class VisitorOpsBarrierTest {
         FenceWithId event = (FenceWithId) visit(input);
 
         // then
-        assertEquals(Set.of(Tag.VISIBLE, Tag.Spirv.CONTROL), event.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.Spirv.CONTROL, Tag.Spirv.WORKGROUP), event.getTags());
     }
 
     @Test
