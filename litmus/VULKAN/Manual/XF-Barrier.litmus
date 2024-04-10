@@ -1,0 +1,24 @@
+Vulkan XF-Barrier
+"Adapted from Figure 2 in 
+Portable Inter-workgroup Barrier Synchronisation for GPUs
+https://dl.acm.org/doi/pdf/10.1145/2983990.2984032"
+{
+x=0;
+y=0;
+f=0;
+P0:r0=0;
+P1:r0=0;
+}
+ P0@sg 0, wg 0, qf 0             | P1@sg 0, wg 1, qf 0             | P2@sg 0, wg 1, qf 0 ;
+ st.av.dv.sc0 x, 1               | st.av.dv.sc0 y, 1               | cbar.wg 1           ;
+ LC00:                           | cbar.wg 1                       | cbar.wg 2           ;
+ ld.atom.acq.dv.sc0.semsc0 r2, f | st.atom.rel.dv.sc0.semsc0 f, 1  |                     ;
+ bne r2, 0, LC01                 | LC10:                           |                     ;
+ goto LC00                       | ld.atom.acq.dv.sc0.semsc0 r2, f |                     ;
+ LC01:                           | bne r2, 1, LC11                 |                     ;
+ cbar.wg 1                       | goto LC10                       |                     ;
+ st.atom.rel.dv.sc0.semsc0 f, 0  | LC11:                           |                     ;
+ ld.vis.dv.sc0 r1, y             | cbar.wg 2                       |                     ;
+                                 | ld.vis.dv.sc0 r1, x             |                     ;
+exists
+((P0:r2 != 0 /\ P0:r1 == 0) \/ (P1:r2 != 1 /\ P1:r1 == 0))
