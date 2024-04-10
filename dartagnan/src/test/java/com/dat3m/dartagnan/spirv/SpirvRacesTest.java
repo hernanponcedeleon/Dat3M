@@ -110,8 +110,10 @@ public class SpirvRacesTest {
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/global_barrier.spv.dis", 1, PASS},
                 // TODO: Check me
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/local_barrier_flag.spv.dis", 1, PASS},
-                // TODO: Check me
-                //{"gpu-verify/inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write.spv.dis", 1, PASS},
+
+                {"gpu-verify/inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write-2.1.1.spv.dis", 1, PASS},
+                {"gpu-verify/inter_group_and_barrier_flag_tests/pass/local_id_benign_write_write-1.1.2.spv.dis", 1, FAIL},
+
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/read_then_write.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/sync_within_group.spv.dis", 1, PASS},
                 // {"gpu-verify/inter_group_and_barrier_flag_tests/pass/write_then_read.spv.dis", 1, PASS},
