@@ -70,21 +70,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private static final Logger logger = LogManager.getLogger(InclusionBasedPointerAnalysis.class);
 
-    private static final List<Integer> TOP = List.of(1);
+    // This analysis depends on the results of a Dependency analysis, mapping used registers to a list of possible writers.
+    private final Dependency dependency;
 
-    // Debug: count inclusion tests grouped by complexity.
-    private final Map<Integer, int[]> totalAlignmentSizes = logger.isDebugEnabled() ? new HashMap<>() : null;
-    // Debug: count created variables.
-    private int totalVariables = 0;
-    // Debug: count variable substitutions.
-    private int totalReplacements = 0;
-    // Debug: count new edges already covered by existing ones.
-    private int failedAddInto = 0;
-    // Debug: count times a piece of new information was added to the graph.
-    private int succeededAddInto = 0;
-
-    // If enabled, the algorithm describes its internal graph to be written into a file.
-    private Graphviz graphviz;
+    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
+    private final Supplier<SyntacticContextAnalysis> synContext;
 
     // When a variable gains an includes-edge, it is added to this queue for later processing.
     private final LinkedHashMap<Variable, List<IncludeEdge>> queue = new LinkedHashMap<>();
@@ -96,16 +86,29 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // These Variables should always have empty includes-sets.
     private final Map<MemoryObject, Variable> objectVariables = new HashMap<>();
 
-    // Maps dependent sets of a register to variables representing their phi node's value set.
-    // Singletons are mapped to their output set.
-    // Offsets are for Local output sets; non-singletons and singletons of loads should have zero offset.
+    // Maps a set of same-register writers to a variable representing their combined result sets (~phi node).
+    // Non-trivial modifiers may only appear for singleton Locals.
     private final Map<List<RegWriter>, DerivedVariable> registerVariables = new HashMap<>();
 
-    // This analysis depends on the results of a Dependency analysis, mapping used registers to a list of possible writers.
-    private final Dependency dependency;
+    // If enabled, the algorithm describes its internal graph to be written into a file.
+    private Graphviz graphviz;
 
-    // For providing helpful error messages, this analysis prints call-stack and loop information for events.
-    private final Supplier<SyntacticContextAnalysis> synContext;
+    // ================================ Debugging ================================
+
+    private record IntPair(int x, int y) {
+        @Override public String toString() {return x + "," + y;}
+    }
+
+    // Count inclusion tests grouped by complexity.
+    private final Map<IntPair, Integer> totalAlignmentSizes = logger.isDebugEnabled() ? new HashMap<>() : null;
+    // Count created variables.
+    private int totalVariables = 0;
+    // Count variable substitutions.
+    private int totalReplacements = 0;
+    // Count new edges already covered by existing ones.
+    private int failedAddInto = 0;
+    // Count times a piece of new information was added to the graph.
+    private int succeededAddInto = 0;
 
     // ================================ Construction ================================
 
@@ -142,7 +145,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         oy.add(new IncludeEdge(vy.base, TRIVIAL_MODIFIER));
         for (final IncludeEdge ax : ox) {
             for (final IncludeEdge ay : oy) {
-                if (ax.source == ay.source && overlaps(join(ax.modifier, vx.modifier), join(ay.modifier, vy.modifier))) {
+                if (ax.source == ay.source && overlaps(compose(ax.modifier, vx.modifier), compose(ay.modifier, vy.modifier))) {
                     return true;
                 }
             }
@@ -265,7 +268,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     for (final IncludeEdge includeEdge : includer.includes) {
                         if (includeEdge.source == address.base) {
                             for (final LoadEdge load : includer.loads) {
-                                loads.add(join(load, includeEdge.modifier));
+                                loads.add(compose(load, includeEdge.modifier));
                             }
                         }
                     }
@@ -282,7 +285,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final Variable user : List.copyOf(variable.seeAlso)) {
             for (final IncludeEdge edgeAfter : user.includes.stream().filter(e -> e.source == variable).toList()) {
                 for (final IncludeEdge edge : edges) {
-                    addInclude(user, join(edge, edgeAfter.modifier));
+                    addInclude(user, compose(edge, edgeAfter.modifier));
                 }
             }
         }
@@ -302,12 +305,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     for (final IncludeEdge edge1 : out.includes) {
                         if (hasStores && edge1.source == edge.source) {
                             for (final LoadEdge load : out.loads) {
-                                loads.add(join(load, edge1.modifier));
+                                loads.add(compose(load, edge1.modifier));
                             }
                         }
                         if (hasLoads && edge1.source == edge.source) {
                             for (final StoreEdge store : out.stores) {
-                                stores.add(join(store, edge1.modifier));
+                                stores.add(compose(store, edge1.modifier));
                             }
                         }
                     }
@@ -317,10 +320,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 final List<StoreEdge> variableStores = isTrivial ? variable.stores : new ArrayList<>(variable.stores.size());
                 if (!isTrivial) {
                     for (final LoadEdge load : variable.loads) {
-                        variableLoads.add(new LoadEdge(load.result, join(load.addressModifier, edge.modifier)));
+                        variableLoads.add(new LoadEdge(load.result, compose(load.addressModifier, edge.modifier)));
                     }
                     for (final StoreEdge store : variable.stores) {
-                        variableStores.add(new StoreEdge(store.value, join(store.addressModifier, edge.modifier)));
+                        variableStores.add(new StoreEdge(store.value, compose(store.addressModifier, edge.modifier)));
                     }
                 }
                 processCommunication(variableStores, loads);
@@ -352,7 +355,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return;
         }
         final IncludeEdge includeEdge = address.base.includes.get(0);
-        final Modifier modifier = join(includeEdge.modifier, address.modifier);
+        final Modifier modifier = compose(includeEdge.modifier, address.modifier);
         assert includeEdge.source.object != null;
         // If the only included address refers to the last element, treat it as a direct static offset instead.
         final int remainingSize = includeEdge.source.object.size() - modifier.offset;
@@ -367,11 +370,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ Internals ================================
 
     private static final class Variable {
-        // Any value contained in these Variables is also contained (+ offset).
+        // Any value contained in the referred variables is also contained (+ modifier).
+        // Visualized as ingoing edges.
         private final List<IncludeEdge> includes = new ArrayList<>();
-        // There is some load event using this (+ offset) as pointer set and the other variable as output set.
+        // There is some load event using this (+ address modifier) as pointer set and the referred variable as result set.
+        // Visualized as outgoing edges.
         private final List<LoadEdge> loads = new ArrayList<>();
-        // There is some store event using this (+ offset1) as pointer set and the other variable (+ offset2) as value set.
+        // There is some store event using this (+ address modifier) as pointer set and the derived variable as value set.
+        // Visualized as outgoing edges.
         private final List<StoreEdge> stores = new ArrayList<>();
         // All variables that have a direct (includes/loads/stores) link to this.
         private final Set<Variable> seeAlso = new HashSet<>();
@@ -388,9 +394,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     private record IncludeEdge(Variable source, Modifier modifier) {}
 
-    private record StoreEdge(DerivedVariable value, Modifier addressModifier) {}
-
     private record LoadEdge(Variable result, Modifier addressModifier) {}
+
+    private record StoreEdge(DerivedVariable value, Modifier addressModifier) {}
 
     private record Modifier(int offset, List<Integer> alignment) {}
 
@@ -403,6 +409,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private static boolean isTrivial(Modifier modifier) {
         return modifier.offset == 0 && isConstant(modifier);
     }
+
+    private static final List<Integer> TOP = List.of(1);
 
     private static final Modifier RELAXED_MODIFIER = new Modifier(0, TOP);
 
@@ -448,7 +456,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         while (!stack.empty()) {
             final IncludeEdge e = stack.pop();
             for (final IncludeEdge edgeBefore : List.copyOf(e.source.includes)) {
-                final IncludeEdge joinedEdge = tryAccelerateEdge(join(edgeBefore, e.modifier), variable);
+                final IncludeEdge joinedEdge = tryAccelerateEdge(compose(edgeBefore, e.modifier), variable);
                 if (addInto(variable.includes, joinedEdge)) {
                     edgeBefore.source.seeAlso.add(variable);
                     edges.add(joinedEdge);
@@ -464,7 +472,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private static IncludeEdge tryAccelerateEdge(IncludeEdge edge, Variable v2) {
         // FIXME if 0+[1]x is not able to include -1, then self-loops will not terminate
         // therefore, negative edge.offset get passed as-is into join.
-        return v2 != edge.source ? edge : new IncludeEdge(v2, new Modifier(0, join(edge.modifier.alignment, edge.modifier.offset)));
+        return v2 != edge.source ? edge : new IncludeEdge(v2, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
     }
 
     // Called when a placeholder variable for a register writer is to be replaced by the proper variable.
@@ -476,13 +484,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         totalReplacements++;
         logger.trace("{} -> {}", old, replacement);
         // likely / most frequent case
-        addressVariables.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.modifier));
-        registerVariables.replaceAll((k, v) -> v.base != old ? v : join(replacement, v.modifier));
+        addressVariables.replaceAll((k, v) -> v.base != old ? v : compose(replacement, v.modifier));
+        registerVariables.replaceAll((k, v) -> v.base != old ? v : compose(replacement, v.modifier));
         for (final Variable out : old.seeAlso) {
-            out.includes.replaceAll(e -> e.source != old ? e : includeEdge(join(replacement, e.modifier)));
+            out.includes.replaceAll(e -> e.source != old ? e : includeEdge(compose(replacement, e.modifier)));
             assert out.loads.stream().noneMatch(e -> e.result == old);
             out.stores.replaceAll(e -> e.value.base != old ? e :
-                    new StoreEdge(join(replacement, e.value.modifier), e.addressModifier));
+                    new StoreEdge(compose(replacement, e.value.modifier), e.addressModifier));
         }
         replacement.base.seeAlso.addAll(old.seeAlso);
         for (final IncludeEdge edge : old.includes) {
@@ -492,11 +500,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Redirect load and store relationships.
         // This could enable more communications, but replacement.
         for (final LoadEdge load : old.loads) {
-            replacement.base.loads.add(join(load, replacement.modifier));
+            replacement.base.loads.add(compose(load, replacement.modifier));
             load.result.seeAlso.add(replacement.base);
         }
         for (final StoreEdge store : old.stores) {
-            replacement.base.stores.add(join(store, replacement.modifier));
+            replacement.base.stores.add(compose(store, replacement.modifier));
             store.value.base.seeAlso.add(replacement.base);
         }
         old.seeAlso.clear();
@@ -526,7 +534,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         int offset = right.offset - left.offset;
         // DEBUG: Count this test.
         if (totalAlignmentSizes != null) {
-            totalAlignmentSizes.computeIfAbsent(left.alignment.size() + right.alignment.size(), k -> new int[1])[0]++;
+            totalAlignmentSizes.merge(new IntPair(left.alignment.size(), right.alignment.size()), 1, Integer::sum);
         }
         if (left.alignment.isEmpty()) {
             return right.alignment.isEmpty() && offset == 0;
@@ -643,7 +651,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Merges two sets of pairwise-indivisible dynamic offsets.
-    private static List<Integer> join(List<Integer> left, List<Integer> right) {
+    private static List<Integer> compose(List<Integer> left, List<Integer> right) {
         if (left.isEmpty() || right.isEmpty()) {
             return right.isEmpty() ? left : right;
         }
@@ -675,36 +683,36 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return true;
     }
 
-    private static Modifier join(Modifier left, Modifier right) {
-        return new Modifier(left.offset + right.offset, join(left.alignment, right.alignment));
+    private static Modifier compose(Modifier left, Modifier right) {
+        return new Modifier(left.offset + right.offset, compose(left.alignment, right.alignment));
     }
 
     // Adds a single value to a set of dynamic offsets.
-    private static List<Integer> join(List<Integer> left, int right) {
-        return right == 0 ? left : join(left, List.of(right));
+    private static List<Integer> compose(List<Integer> left, int right) {
+        return right == 0 ? left : compose(left, List.of(right));
     }
 
     // Adds an optional register to a set of dynamic offsets.
     // If the register is present, it may contain any value.
-    private static List<Integer> join(List<Integer> left, Register right) {
+    private static List<Integer> compose(List<Integer> left, Register right) {
         return right == null ? left : TOP;
     }
 
     // Applies another offset to an existing labeled edge.
-    private static DerivedVariable join(DerivedVariable other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new DerivedVariable(other.base, join(other.modifier, modifier));
+    private static DerivedVariable compose(DerivedVariable other, Modifier modifier) {
+        return isTrivial(modifier) ? other : new DerivedVariable(other.base, compose(other.modifier, modifier));
     }
 
-    private static IncludeEdge join(IncludeEdge other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new IncludeEdge(other.source, join(other.modifier, modifier));
+    private static IncludeEdge compose(IncludeEdge other, Modifier modifier) {
+        return isTrivial(modifier) ? other : new IncludeEdge(other.source, compose(other.modifier, modifier));
     }
 
-    private static LoadEdge join(LoadEdge other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new LoadEdge(other.result, join(other.addressModifier, modifier));
+    private static LoadEdge compose(LoadEdge other, Modifier modifier) {
+        return isTrivial(modifier) ? other : new LoadEdge(other.result, compose(other.addressModifier, modifier));
     }
 
-    private static StoreEdge join(StoreEdge other, Modifier modifier) {
-        return isTrivial(modifier) ? other : new StoreEdge(other.value, join(other.addressModifier, modifier));
+    private static StoreEdge compose(StoreEdge other, Modifier modifier) {
+        return isTrivial(modifier) ? other : new StoreEdge(other.value, compose(other.addressModifier, modifier));
     }
 
     // Multiplies all dynamic offsets with another factor.
@@ -736,7 +744,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         } else if (result.register == null) {
             main = null;
         } else {
-            main = join(getPhiNodeVariable(result.register, reader), new Modifier(offset, result.alignment));
+            main = compose(getPhiNodeVariable(result.register, reader), new Modifier(offset, result.alignment));
         }
         if (main != null &&
                 collector.address.stream().noneMatch(a -> a != result.address) &&
@@ -767,12 +775,14 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Fetches the node for address values that can be read from a register at a specific program point.
     // Constructs a new node, if there are multiple writers.
     private DerivedVariable getPhiNodeVariable(Register register, RegReader reader) {
+        // We assume here that uninitialized values carry no meaningful address to any memory object.
         final List<RegWriter> writers = dependency.of(reader, register).may;
         final DerivedVariable find = registerVariables.get(writers);
         if (find != null) {
             return find;
         }
         final Variable result = newVariable("phi" + reader.getGlobalId() + "(" + register.getName() + ")");
+        // If writers is a singleton here, its "phi" node will be replaced later.  Otherwise, the "out" nodes.
         for (final RegWriter writer : writers.size() == 1 ? List.<RegWriter>of() : writers) {
             // The variables created here will be replaced later, if the events are out of order.
             final DerivedVariable writerVariable = registerVariables.computeIfAbsent(List.of(writer),
@@ -815,11 +825,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     }
                     if (left == null || right == null) {
                         final Result factor = left == null ? right : left;
-                        yield new Result(null, null, BigInteger.ZERO, join(factor.alignment, factor.offset.intValue()));
+                        yield new Result(null, null, BigInteger.ZERO, compose(factor.alignment, factor.offset.intValue()));
                     }
-                    final List<Integer> leftAlignment = mul(join(left.alignment, left.register), right.offset.intValue());
-                    final List<Integer> rightAlignment = mul(join(right.alignment, right.register), left.offset.intValue());
-                    yield new Result(null, null, left.offset.multiply(right.offset), join(leftAlignment, rightAlignment));
+                    final List<Integer> leftAlignment = mul(compose(left.alignment, left.register), right.offset.intValue());
+                    final List<Integer> rightAlignment = mul(compose(right.alignment, right.register), left.offset.intValue());
+                    yield new Result(null, null, left.offset.multiply(right.offset), compose(leftAlignment, rightAlignment));
                 }
                 case ADD, SUB -> {
                     if (left == null || right == null || left.address != null && right.address != null) {
@@ -828,15 +838,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     final MemoryObject base = left.address != null ? left.address : right.address;
                     final BigInteger offset = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
                     if (base != null) {
-                        final List<Integer> leftAlignment = join(left.alignment, left.register);
-                        final List<Integer> rightAlignment = join(right.alignment, right.register);
-                        yield new Result(base, null, offset, join(leftAlignment, rightAlignment));
+                        final List<Integer> leftAlignment = compose(left.alignment, left.register);
+                        final List<Integer> rightAlignment = compose(right.alignment, right.register);
+                        yield new Result(base, null, offset, compose(leftAlignment, rightAlignment));
                     }
                     if (left.register != null && right.register != null) {
                         yield null;
                     }
                     final Register register = left.register != null ? left.register : right.register;
-                    final List<Integer> alignment = join(left.alignment, right.alignment);
+                    final List<Integer> alignment = compose(left.alignment, right.alignment);
                     yield new Result(null, register, offset, alignment);
                 }
                 default -> null;
