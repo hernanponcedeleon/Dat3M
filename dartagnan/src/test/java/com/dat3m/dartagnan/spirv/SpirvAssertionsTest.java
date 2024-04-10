@@ -54,9 +54,8 @@ public class SpirvAssertionsTest {
                 {"caslock-1.1.2.spv.dis", 2, PASS},
                 {"caslock-2.1.1.spv.dis", 2, PASS},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
-                // Re-enable once support for builtins is merged
-                // {"caslock-dv2wg.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
+                {"caslock-dv2wg.spv.dis", 1, FAIL},
                 {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, PASS},
@@ -66,15 +65,13 @@ public class SpirvAssertionsTest {
                 {"ticketlock-1.1.2.spv.dis", 1, PASS},
                 {"ticketlock-2.1.1.spv.dis", 1, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
-                // Re-enable once support for builtins is merged
-                // {"ticketlock-dv2wg.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
+                {"ticketlock-dv2wg.spv.dis", 1, FAIL},
                 {"ttaslock-1.1.2.spv.dis", 2, PASS},
                 {"ttaslock-2.1.1.spv.dis", 2, PASS},
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
-                // Re-enable once support for builtins is merged
-                // {"ttaslock-dv2wg.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
+                {"ttaslock-dv2wg.spv.dis", 1, FAIL},
                 // TODO: Fix tests
                 // {"xf-barrier.spv.dis", 1, PASS},
                 // {"xf-barrier-opt.spv.dis", 1, PASS},
