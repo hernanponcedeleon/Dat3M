@@ -138,8 +138,18 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
                 vTags.add(tag);
             }
         });
+        return adjustVulkanTags(tags, vTags);
+    }
+
+    private Set<String> adjustVulkanTags(Set<String> tags, Set<String> vTags) {
         if (tags.contains(Tag.MEMORY) && toVulkanTag(Tag.Spirv.getStorageClassTag(tags)) != null) {
             vTags.add(Tag.Vulkan.NON_PRIVATE);
+            if (vTags.contains(Tag.READ)) {
+                vTags.add(Tag.Vulkan.VISIBLE);
+            }
+            if (vTags.contains(Tag.WRITE)) {
+                vTags.add(Tag.Vulkan.AVAILABLE);
+            }
         }
         if (tags.contains(Tag.Spirv.MEM_AVAILABLE) && tags.contains(Tag.Spirv.DEVICE)) {
             vTags.add(Tag.Vulkan.AVDEVICE);

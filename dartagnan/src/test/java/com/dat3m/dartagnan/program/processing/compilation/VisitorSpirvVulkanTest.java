@@ -36,7 +36,7 @@ public class VisitorSpirvVulkanTest {
         );
         doTestLoad(
                 Set.of(Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.VISIBLE)
         );
         doTestLoad(
                 Set.of(Tag.Spirv.MEM_VISIBLE, Tag.Spirv.SC_UNIFORM),
@@ -73,7 +73,7 @@ public class VisitorSpirvVulkanTest {
         );
         doTestStore(
                 Set.of(Tag.Spirv.SC_WORKGROUP),
-                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE)
+                Set.of(Tag.Vulkan.SC1, Tag.Vulkan.NON_PRIVATE, Tag.Vulkan.AVAILABLE)
         );
         doTestStore(
                 Set.of(Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.SC_UNIFORM),
