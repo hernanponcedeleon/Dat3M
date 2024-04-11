@@ -86,8 +86,11 @@ public class SpirvRacesTest {
                 {"gpu-verify/atomics/histo.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/pointers.spv.dis", 1, FAIL},
                 {"gpu-verify/barrier_intervals/test1.spv.dis", 1, PASS},
-                // TODO: Check me
-                // {"gpu-verify/barrier_intervals/test2.spv.dis", 1, FAIL},
+
+                // In the gpu-verify tool, verification fails for this test
+                // on barrier divergence. However, divergent barriers do not
+                // lead to a data race.
+                {"gpu-verify/barrier_intervals/test2.spv.dis", 1, PASS},
 
                 // TODO: Implement unrolling for control barriers
                 // {"gpu-verify/barrier_intervals/test3.spv.dis", 2, PASS},
