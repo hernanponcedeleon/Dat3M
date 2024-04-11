@@ -72,8 +72,19 @@ public class SpirvRacesTest {
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
                 {"ttaslock-dv2wg.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
-                {"xf-barrier.spv.dis", 1, PASS},
-                {"xf-barrier-opt.spv.dis", 1, PASS},
+                {"xf-barrier-1.1.2.spv.dis", 1, PASS},
+                {"xf-barrier-2.1.1.spv.dis", 1, PASS},
+                // This race happens because both spinloops could hang (this is allowed by lack
+                // of forward progress guarantees, making some control barrier not to execute
+                // and thus missing com cbar relation. Our implementation allows this even if we
+                // don't support weak forward progress because we find a violation. If we would
+                // require to report races only when no bound event is executed and disable the
+                // dynamic spinloop detection pass, we would not find such violation.
+                {"xf-barrier-2.1.2.spv.dis", 1, FAIL},
+                {"xf-barrier-fail1.spv.dis", 1, FAIL},
+                {"xf-barrier-fail2.spv.dis", 1, FAIL},
+                {"xf-barrier-fail3.spv.dis", 1, FAIL},
+                {"xf-barrier-fail4.spv.dis", 1, FAIL},
 
                 // TODO: Support missing semantics
                 // {"gpu-verify/alignement/race_location.spv.dis", 1, FAIL},
@@ -129,8 +140,9 @@ public class SpirvRacesTest {
     public void testAllSolvers() throws Exception {
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
-        }/*
-        // TODO: Fails to find benign_race_tests races
+        }
+        /*
+        // Using this solver is useless because the CAAT solver cannot deal with Property.CAT_SPEC
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         }*/

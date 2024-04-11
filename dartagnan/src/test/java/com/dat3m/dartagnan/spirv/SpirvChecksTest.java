@@ -74,8 +74,13 @@ public class SpirvChecksTest {
                 {"ttaslock-acq2rx.spv.dis", 2, UNKNOWN},
                 {"ttaslock-rel2rx.spv.dis", 2, UNKNOWN},
                 {"ttaslock-dv2wg.spv.dis", 2, UNKNOWN},
-                {"xf-barrier.spv.dis", 1, PASS},
-                {"xf-barrier-opt.spv.dis", 1, PASS},
+                {"xf-barrier-1.1.2.spv.dis", 1, PASS},
+                {"xf-barrier-2.1.1.spv.dis", 1, PASS},
+                {"xf-barrier-2.1.2.spv.dis", 1, PASS},
+                {"xf-barrier-fail1.spv.dis", 1, PASS},
+                {"xf-barrier-fail2.spv.dis", 1, PASS},
+                {"xf-barrier-fail3.spv.dis", 1, PASS},
+                {"xf-barrier-fail4.spv.dis", 1, PASS},
 
                 // TODO: Support missing semantics
                 // {"gpu-verify/alignement/race_location.spv.dis", 1, PASS},
@@ -131,9 +136,10 @@ public class SpirvChecksTest {
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
         }
-        try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
-            assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
-        }
+        // Using this solver is useless because the CAAT solver cannot deal with Property.CAT_SPEC
+        // try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
+        //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
+        // }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
