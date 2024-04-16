@@ -320,9 +320,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
                 }
                 assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
+                // https://llvm.org/docs/LangRef.html#difile suggests that "file" and "directory" 
+                // are mandatory fields and thus the ElseThrow
                 final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
                 final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
-                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
+                // Field "line" is optional. When missing we assume value 0
+                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
+                        .orElse(new MdGenericValue<BigInteger>(BigInteger.ZERO)).value().intValue();
                 metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
             }
         }
