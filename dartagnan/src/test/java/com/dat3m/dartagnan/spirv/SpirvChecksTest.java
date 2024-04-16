@@ -87,6 +87,7 @@ public class SpirvChecksTest {
                 {"gpu-verify/atomics/atomic_read_race.spv.dis", 1, PASS},
                 {"gpu-verify/atomics/counter.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/definitions_atom_int.spv.dis", 1, PASS},
+                 {"gpu-verify/atomics/definitions_atom_int1.spv.dis", 1, PASS},
                 // {"gpu-verify/atomics/displaced.spv.dis", 1, PASS},
                 {"gpu-verify/atomics/forloop.spv.dis", 1, PASS},
                 {"gpu-verify/atomics/histo.spv.dis", 1, PASS},

@@ -5,6 +5,8 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
@@ -13,6 +15,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
+import java.math.BigInteger;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.Spirv.*;
@@ -29,7 +32,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpAtomicLoad(SpirvParser.OpAtomicLoadContext ctx) {
         Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
-        Expression ptr = getPointer(ctx.pointer().getText());
+        Expression ptr = builder.getExpression(ctx.pointer().getText());
         String scope = builder.getScope(ctx.memory().getText());
         Set<String> tags = builder.getSemantics(ctx.semantics().getText());
         tags.add(builder.getExpressionStorageClass(ctx.pointer().getText()));
@@ -39,7 +42,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
 
     @Override
     public Event visitOpAtomicStore(SpirvParser.OpAtomicStoreContext ctx) {
-        Expression ptr = getPointer(ctx.pointer().getText());
+        Expression ptr = builder.getExpression(ctx.pointer().getText());
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
         String scope = builder.getScope(ctx.memory().getText());
         Set<String> tags = builder.getSemantics(ctx.semantics().getText());
@@ -51,7 +54,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpAtomicExchange(SpirvParser.OpAtomicExchangeContext ctx) {
         Register register = builder.addRegister(ctx.idResult().getText(), ctx.idResultType().getText());
-        Expression ptr = getPointer(ctx.pointer().getText());
+        Expression ptr = builder.getExpression(ctx.pointer().getText());
         Expression value = builder.getExpression(ctx.valueIdRef().getText());
         String scope = builder.getScope(ctx.memory().getText());
         Set<String> tags = builder.getSemantics(ctx.semantics().getText());
@@ -113,6 +116,59 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     public Event visitOpAtomicXor(SpirvParser.OpAtomicXorContext ctx) {
         return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
                 ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.XOR);
+    }
+
+    @Override
+    public Event visitOpAtomicSMax(SpirvParser.OpAtomicSMaxContext ctx) {
+        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.GT);
+    }
+
+    @Override
+    public Event visitOpAtomicSMin(SpirvParser.OpAtomicSMinContext ctx) {
+        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.LT);
+    }
+
+    @Override
+    public Event visitOpAtomicUMax(SpirvParser.OpAtomicUMaxContext ctx) {
+        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.UGT);
+    }
+
+    @Override
+    public Event visitOpAtomicUMin(SpirvParser.OpAtomicUMinContext ctx) {
+        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.ULT);
+    }
+
+    private Event visitOpAtomicExtremum(
+            SpirvParser.IdResultContext idCtx,
+            SpirvParser.IdResultTypeContext typeCtx,
+            SpirvParser.PointerContext ptrCtx,
+            SpirvParser.MemoryContext scopeCtx,
+            SpirvParser.SemanticsContext tagsCtx,
+            SpirvParser.ValueIdRefContext valCtx,
+            IntCmpOp kind
+    ) {
+        Register register = builder.addRegister(idCtx.getText(), typeCtx.getText());
+        Expression ptr = getPointer(ptrCtx.getText());
+        Expression value = builder.getExpression(valCtx.getText());
+        if (!(ptr.getType() instanceof IntegerType) || !(value.getType() instanceof IntegerType)) {
+            throw new ParsingException("Unexpected type at '%s' or '%s', expected integer but received '%s' and '%s'",
+                    ptrCtx.getText(), valCtx.getText(), ptr.getType(), value.getType());
+        }
+        String scope = builder.getScope(scopeCtx.getText());
+        Set<String> tags = builder.getSemantics(tagsCtx.getText());
+        tags.add(builder.getExpressionStorageClass(ptrCtx.getText()));
+        Expression originalValue = ExpressionFactory.getInstance().makeIntegerCast(ptr, TYPE_FACTORY.getArchType(), true);
+        Expression newValue = ExpressionFactory.getInstance().makeIntegerCast(value, TYPE_FACTORY.getArchType(), true);
+        Expression cmpExpr = ExpressionFactory.getInstance().makeIntCmp(originalValue, kind, newValue);
+        Expression booleanExpr = ExpressionFactory.getInstance().makeBooleanCast(cmpExpr);
+        Expression ite =  ExpressionFactory.getInstance().makeITE(booleanExpr, originalValue, newValue);
+        Expression ite_casted = ExpressionFactory.getInstance().makeIntegerCast(ite, (IntegerType) ptr.getType(), true);
+        SpirvXchg xchg = newSpirvXchg(register, ptr, ite_casted, scope, tags);
+        return builder.addEvent(xchg);
     }
 
     private Event visitOpAtomicCompareExchange(
@@ -214,7 +270,11 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
                 "OpAtomicIDecrement",
                 "OpAtomicAnd",
                 "OpAtomicOr",
-                "OpAtomicXor"
+                "OpAtomicXor",
+                "OpAtomicSMax",
+                "OpAtomicSMin",
+                "OpAtomicUMax",
+                "OpAtomicUMin"
         );
     }
 }

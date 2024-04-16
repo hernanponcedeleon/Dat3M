@@ -1,0 +1,126 @@
+; @Input: %12 = {{0}}
+; @Input: %13 = {{0}}
+; @Config: 1, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 100
+; Schema: 0
+               OpCapability Shader
+         %80 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %24 "definitions" %8 %12 %13 %17 %21
+               OpSource OpenCL_C 200
+         %81 = OpString "definitions"
+         %82 = OpString " kernel"
+         %85 = OpString "C"
+         %89 = OpString "D"
+         %93 = OpString "A"
+         %96 = OpString "B"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %_struct_10 0 Offset 0
+               OpDecorate %_struct_10 Block
+               OpDecorate %12 DescriptorSet 0
+               OpDecorate %12 Binding 0
+               OpDecorate %13 DescriptorSet 0
+               OpDecorate %13 Binding 1
+               OpDecorate %14 SpecId 3
+               OpDecorate %18 SpecId 4
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+ %_struct_10 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer__struct_10 = OpTypePointer StorageBuffer %_struct_10
+         %14 = OpSpecConstant %uint 1
+%_arr_uint_14 = OpTypeArray %uint %14
+%_ptr_Workgroup__arr_uint_14 = OpTypePointer Workgroup %_arr_uint_14
+         %18 = OpSpecConstant %uint 1
+%_arr_uint_18 = OpTypeArray %uint %18
+%_ptr_Workgroup__arr_uint_18 = OpTypePointer Workgroup %_arr_uint_18
+       %void = OpTypeVoid
+         %23 = OpTypeFunction %void
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+     %uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+     %uint_1 = OpConstant %uint 1
+    %uint_80 = OpConstant %uint 80
+    %uint_10 = OpConstant %uint 10
+     %uint_4 = OpConstant %uint 4
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %12 = OpVariable %_ptr_StorageBuffer__struct_10 StorageBuffer
+         %13 = OpVariable %_ptr_StorageBuffer__struct_10 StorageBuffer
+         %17 = OpVariable %_ptr_Workgroup__arr_uint_14 Workgroup
+         %21 = OpVariable %_ptr_Workgroup__arr_uint_18 Workgroup
+         %24 = OpFunction %void None %23
+         %25 = OpLabel
+         %28 = OpAccessChain %_ptr_Workgroup_uint %17 %uint_0
+         %29 = OpAccessChain %_ptr_Workgroup_uint %21 %uint_0
+         %31 = OpAccessChain %_ptr_StorageBuffer_uint %12 %uint_0 %uint_0
+         %32 = OpAccessChain %_ptr_StorageBuffer_uint %13 %uint_0 %uint_0
+         %36 = OpAtomicIAdd %uint %28 %uint_1 %uint_80 %uint_10
+         %37 = OpAtomicISub %uint %28 %uint_1 %uint_80 %uint_10
+         %38 = OpAtomicExchange %uint %28 %uint_1 %uint_80 %uint_10
+         %39 = OpAtomicSMin %uint %28 %uint_1 %uint_80 %uint_10
+         %40 = OpAtomicSMax %uint %28 %uint_1 %uint_80 %uint_10
+         %41 = OpAtomicAnd %uint %28 %uint_1 %uint_80 %uint_10
+         %42 = OpAtomicOr %uint %28 %uint_1 %uint_80 %uint_10
+         %43 = OpAtomicXor %uint %28 %uint_1 %uint_80 %uint_10
+         %44 = OpAtomicIIncrement %uint %28 %uint_1 %uint_80
+         %45 = OpAtomicIDecrement %uint %28 %uint_1 %uint_80
+         %46 = OpAtomicCompareExchange %uint %28 %uint_1 %uint_80 %uint_80 %uint_10 %uint_10
+         %47 = OpAtomicIAdd %uint %29 %uint_1 %uint_80 %uint_10
+         %48 = OpAtomicISub %uint %29 %uint_1 %uint_80 %uint_10
+         %49 = OpAtomicExchange %uint %29 %uint_1 %uint_80 %uint_10
+         %50 = OpAtomicUMin %uint %29 %uint_1 %uint_80 %uint_10
+         %51 = OpAtomicUMax %uint %29 %uint_1 %uint_80 %uint_10
+         %52 = OpAtomicAnd %uint %29 %uint_1 %uint_80 %uint_10
+         %53 = OpAtomicOr %uint %29 %uint_1 %uint_80 %uint_10
+         %54 = OpAtomicXor %uint %29 %uint_1 %uint_80 %uint_10
+         %55 = OpAtomicIIncrement %uint %29 %uint_1 %uint_80
+         %56 = OpAtomicIDecrement %uint %29 %uint_1 %uint_80
+         %57 = OpAtomicCompareExchange %uint %29 %uint_1 %uint_80 %uint_80 %uint_10 %uint_10
+         %58 = OpAtomicIAdd %uint %31 %uint_1 %uint_80 %uint_10
+         %59 = OpAtomicISub %uint %31 %uint_1 %uint_80 %uint_10
+         %60 = OpAtomicExchange %uint %31 %uint_1 %uint_80 %uint_10
+         %61 = OpAtomicSMin %uint %31 %uint_1 %uint_80 %uint_10
+         %62 = OpAtomicSMax %uint %31 %uint_1 %uint_80 %uint_10
+         %63 = OpAtomicAnd %uint %31 %uint_1 %uint_80 %uint_10
+         %64 = OpAtomicOr %uint %31 %uint_1 %uint_80 %uint_10
+         %65 = OpAtomicXor %uint %31 %uint_1 %uint_80 %uint_10
+         %66 = OpAtomicIIncrement %uint %31 %uint_1 %uint_80
+         %67 = OpAtomicIDecrement %uint %31 %uint_1 %uint_80
+         %68 = OpAtomicCompareExchange %uint %31 %uint_1 %uint_80 %uint_80 %uint_10 %uint_10
+         %69 = OpAtomicIAdd %uint %32 %uint_1 %uint_80 %uint_10
+         %70 = OpAtomicISub %uint %32 %uint_1 %uint_80 %uint_10
+         %71 = OpAtomicExchange %uint %32 %uint_1 %uint_80 %uint_10
+         %72 = OpAtomicUMin %uint %32 %uint_1 %uint_80 %uint_10
+         %73 = OpAtomicUMax %uint %32 %uint_1 %uint_80 %uint_10
+         %74 = OpAtomicAnd %uint %32 %uint_1 %uint_80 %uint_10
+         %75 = OpAtomicOr %uint %32 %uint_1 %uint_80 %uint_10
+         %76 = OpAtomicXor %uint %32 %uint_1 %uint_80 %uint_10
+         %77 = OpAtomicIIncrement %uint %32 %uint_1 %uint_80
+         %78 = OpAtomicIDecrement %uint %32 %uint_1 %uint_80
+         %79 = OpAtomicCompareExchange %uint %32 %uint_1 %uint_80 %uint_80 %uint_10 %uint_10
+               OpReturn
+               OpFunctionEnd
+         %84 = OpExtInst %void %80 Kernel %24 %81 %uint_4 %uint_0 %82
+         %86 = OpExtInst %void %80 ArgumentInfo %85
+         %88 = OpExtInst %void %80 ArgumentStorageBuffer %84 %uint_2 %uint_0 %uint_0 %86
+         %90 = OpExtInst %void %80 ArgumentInfo %89
+         %92 = OpExtInst %void %80 ArgumentStorageBuffer %84 %uint_3 %uint_0 %uint_1 %90
+         %94 = OpExtInst %void %80 ArgumentInfo %93
+         %95 = OpExtInst %void %80 ArgumentWorkgroup %84 %uint_0 %uint_3 %uint_4 %94
+         %97 = OpExtInst %void %80 ArgumentInfo %96
+         %98 = OpExtInst %void %80 ArgumentWorkgroup %84 %uint_1 %uint_4 %uint_4 %97
+         %99 = OpExtInst %void %80 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2
