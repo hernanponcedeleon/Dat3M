@@ -46,7 +46,7 @@ public class ReadFromGraph extends StaticWMMGraph {
         if (e.isWrite()) {
             return dir == EdgeDirection.INGOING ? Stream.empty() :
                     model.getWriteReadsMap().get(e).stream().map(read -> makeEdge(id, read.getId()));
-        } else if (e.isRead()) {
+        } else if (e.isRead() && e.getReadFrom() != null) {
             return dir == EdgeDirection.INGOING ?
                     Stream.of(new Edge(e.getReadFrom().getId(), id)) : Stream.empty();
         } else {

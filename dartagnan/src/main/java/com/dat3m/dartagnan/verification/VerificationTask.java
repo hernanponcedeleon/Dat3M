@@ -44,7 +44,7 @@ public class VerificationTask {
     public Wmm getMemoryModel() { return memoryModel; }
     public Configuration getConfig() { return this.config; }
     public WitnessGraph getWitness() { return witness; }
-	public EnumSet<Property> getProperty() { return property; }
+    public EnumSet<Property> getProperty() { return property; }
 
 
     // ==================== Builder =====================

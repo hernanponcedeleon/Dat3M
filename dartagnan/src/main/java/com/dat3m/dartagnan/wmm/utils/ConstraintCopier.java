@@ -4,10 +4,7 @@ import com.dat3m.dartagnan.wmm.Assumption;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
-import com.dat3m.dartagnan.wmm.axiom.Emptiness;
-import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
-import com.dat3m.dartagnan.wmm.axiom.Irreflexivity;
+import com.dat3m.dartagnan.wmm.axiom.*;
 import com.dat3m.dartagnan.wmm.definition.*;
 import com.google.common.base.Preconditions;
 
@@ -37,18 +34,24 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
         return translation;
     }
 
+    private <T extends Axiom> T copyName(T original, T copy) {
+        copy.setName(original.getName());
+        return copy;
+    }
+
+    @Override
     public Emptiness visitEmptiness(Emptiness axiom) {
-        return new Emptiness(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged());
+        return copyName(axiom, new Emptiness(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
     }
 
     @Override
     public Irreflexivity visitIrreflexivity(Irreflexivity axiom) {
-        return new Irreflexivity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged());
+        return copyName(axiom, new Irreflexivity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
     }
 
     @Override
     public Acyclicity visitAcyclicity(Acyclicity axiom) {
-        return new Acyclicity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged());
+        return copyName(axiom, new Acyclicity(translate(axiom.getRelation()), axiom.isNegated(), axiom.isFlagged()));
     }
 
     @Override
@@ -58,7 +61,12 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
 
     @Override
     public ForceEncodeAxiom visitForceEncodeAxiom(ForceEncodeAxiom forceEncode) {
-        return new ForceEncodeAxiom(forceEncode.getRelation(), forceEncode.isNegated(), forceEncode.isFlagged());
+        return new ForceEncodeAxiom(translate(forceEncode.getRelation()), forceEncode.isNegated(), forceEncode.isFlagged());
+    }
+
+    @Override
+    public Constraint visitFree(Free def) {
+        return new Free(translate(def.getDefinedRelation()));
     }
 
     @Override
@@ -195,7 +203,7 @@ public final class ConstraintCopier implements Constraint.Visitor<Constraint> {
 
     @Override
     public SameScope visitSameScope(SameScope sc) {
-        return new SameScope(translate(sc.getDefinedRelation()));
+        return new SameScope(translate(sc.getDefinedRelation()), sc.getSpecificScope());
     }
 
     @Override

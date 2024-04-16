@@ -162,7 +162,7 @@ public class OnlineRefinementSolver extends ModelChecker {
         removeFlaggedAxiomsAndReduce(memoryModel);
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
-        preprocessMemoryModel(task);
+        preprocessMemoryModel(task, config);
 
         performStaticProgramAnalyses(task, analysisContext, config);
         // Copy context without WMM analyses because we want to analyse a second model later
@@ -338,7 +338,6 @@ public class OnlineRefinementSolver extends ModelChecker {
         List.copyOf(memoryModel.getAxioms()).stream()
                 .filter(Axiom::isFlagged)
                 .forEach(memoryModel::removeConstraint);
-        memoryModel.removeUnconstrainedRelations();
     }
 
     // ================================================================================================================

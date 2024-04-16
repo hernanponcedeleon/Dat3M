@@ -15,6 +15,8 @@ public class OptionNames {
     // Modeling Options
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
     public static final String RECURSION_BOUND = "modeling.recursionBound";
+    public static final String MEMORY_IS_ZEROED = "modeling.memoryIsZeroed";
+    public static final String INIT_DYNAMIC_ALLOCATIONS = "modeling.initDynamicAllocations";
 
     // Compilation Options
     public static final String USE_RC11_TO_ARCH_SCHEME = "compilation.rc11ToArch";
@@ -36,7 +38,7 @@ public class OptionNames {
     public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
     public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
     public static final String DEAD_ASSIGNMENT_ELIMINATION = "program.processing.dce";
-    public static final String DYNAMIC_PURE_LOOP_CUTTING = "program.processing.dplc";
+    public static final String DYNAMIC_SPINLOOP_DETECTION = "program.processing.spinloops";
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
 

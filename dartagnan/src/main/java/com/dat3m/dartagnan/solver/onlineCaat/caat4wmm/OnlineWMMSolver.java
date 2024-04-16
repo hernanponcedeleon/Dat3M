@@ -81,9 +81,10 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     @Override
     public void onPop(int numLevels) {
-        int backtrackTo = -1;
-        for (int i = numLevels; i > 0; i--) {
+        int backtrackTo = 0;
+        while (numLevels > 0) {
             backtrackTo = backtrackPoints.pop();
+            numLevels--;
         }
 
         int backtrackTime = domain.getId(backtrackTo);
@@ -133,8 +134,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
     private void progressPropagation() {
         if (!openPropagations.isEmpty()) {
-            getBackend().propagateConsequence(new BooleanFormula[0],
-                    bmgr.not(bmgr.and(openPropagations.poll().assignment().toArray(new BooleanFormula[0]))));
+            getBackend().propagateConsequence(new BooleanFormula[0], bmgr.not(openPropagations.poll().toFormula(bmgr)));
         }
     }
 
@@ -154,11 +154,12 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
 
         if (result.status == CAATSolver.Status.INCONSISTENT) {
             final List<Refiner.Conflict> conflicts = refiner.computeConflicts(result.coreReasons, encodingContext);
+            assert !conflicts.isEmpty();
             boolean isFirst = true;
             for (Refiner.Conflict conflict : conflicts) {
                 // The second part of the check is for symmetric clauses that are not yet conflicts.
                 final boolean isConflict = isFirst &&
-                        conflict.assignment().stream().allMatch(l -> partialModel.getOrDefault(l, false));
+                        conflict.getVariables().stream().allMatch(partialModel::containsKey);
                 if (isConflict) {
                     getBackend().propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
                     isFirst = false;

@@ -64,9 +64,6 @@ public class Intrinsics {
     //FIXME This might have concurrency issues if processing multiple programs at the same time.
     private BeginAtomic currentAtomicBegin;
 
-    // TODO: This id should be part of Program
-    private int constantId;
-
     private Intrinsics() {
     }
 
@@ -180,7 +177,7 @@ public class Intrinsics {
         VERIFIER_SPIN_START("__VERIFIER_spin_start", false, false, true, true, Intrinsics::inlineSpinStart),
         VERIFIER_SPIN_END("__VERIFIER_spin_end", false, false, true, true, Intrinsics::inlineSpinEnd),
         VERIFIER_ASSUME("__VERIFIER_assume", false, false, true, true, Intrinsics::inlineAssume),
-        VERIFIER_ASSERT("__VERIFIER_assert", false, false, false, false, Intrinsics::inlineUserAssert),
+        VERIFIER_ASSERT("__VERIFIER_assert", false, false, true, true, Intrinsics::inlineUserAssert),
         VERIFIER_NONDET(List.of("__VERIFIER_nondet_bool",
                 "__VERIFIER_nondet_int", "__VERIFIER_nondet_uint", "__VERIFIER_nondet_unsigned_int",
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
@@ -370,7 +367,7 @@ public class Intrinsics {
     }
 
     private List<Event> inlineExit(FunctionCall ignored) {
-        return List.of(EventFactory.newAbortIf(ExpressionFactory.getInstance().makeTrue()));
+        return List.of(EventFactory.newAbortIf(expressions.makeTrue()));
     }
 
     private List<Event> inlineLoopBegin(FunctionCall ignored) {
@@ -552,7 +549,7 @@ public class Intrinsics {
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
-                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true),
+                EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
                 EventFactory.newStore(keyAddress, storageAddressRegister),
                 EventFactory.newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
@@ -865,19 +862,21 @@ public class Intrinsics {
 
     private List<Event> inlineMalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(1, call);
+        final Type allocType = types.getByteType();
         final Expression totalSize = call.getArguments().get(0);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                EventFactory.newAlloc(resultRegister, allocType, totalSize, true, false)
         );
     }
 
     private List<Event> inlineCalloc(FunctionCall call) {
         final Register resultRegister = getResultRegisterAndCheckArguments(2, call);
+        final Type allocType = types.getByteType();
         final Expression elementCount = call.getArguments().get(0);
         final Expression elementSize = call.getArguments().get(1);
         final Expression totalSize = expressions.makeMul(elementCount, elementSize);
         return List.of(
-                EventFactory.newAlloc(resultRegister, TypeFactory.getInstance().getByteType(), totalSize, true)
+                EventFactory.newAlloc(resultRegister, allocType, totalSize, true, true)
         );
     }
 
@@ -892,8 +891,22 @@ public class Intrinsics {
         return List.of(assertion, abort);
     }
 
+    private List<Event> inlineVerifierAssert(FunctionCall call, AssertionType skip, String errorMsg) {
+        if(notToInline.contains(skip)) {
+            return List.of();
+        }
+        assert call.getArguments().size() == 1;
+        final Expression condition = call.getArguments().get(0);
+        final Event assertion = EventFactory.newAssert(condition, errorMsg);
+        return List.of(assertion);
+    }
+
     private List<Event> inlineUserAssert(FunctionCall call) {
-        return inlineAssert(call, AssertionType.USER, "user assertion");
+        if (call.getCalledFunction().getIntrinsicInfo() == Info.VERIFIER_ASSERT) {
+            return inlineVerifierAssert(call, AssertionType.USER, "user assertion");
+        } else {
+            return inlineAssert(call, AssertionType.USER, "user assertion");
+        }
     }
 
     private List<Event> inlineIntegerOverflow(FunctionCall call) {
@@ -1223,7 +1236,6 @@ public class Intrinsics {
     // Simple late intrinsics
 
     private void inlineLate(Program program) {
-        constantId = 0;
         program.getThreads().forEach(this::inlineLate);
     }
 

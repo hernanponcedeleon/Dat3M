@@ -71,7 +71,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             Memory memory, FunctionCollector functionCollector, FunctionToAddressTransformer toAddressTransformer
     ) {
         for (MemoryObject memoryObject : memory.getObjects()) {
-            for (Integer field : memoryObject.getStaticallyInitializedFields()) {
+            for (Integer field : memoryObject.getInitializedFields()) {
                 functionCollector.reset();
                 final Expression initValue = memoryObject.getInitialValue(field).accept(functionCollector);
 

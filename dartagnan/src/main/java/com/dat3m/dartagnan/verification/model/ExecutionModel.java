@@ -459,7 +459,7 @@ public class ExecutionModel {
             } else if (regWriter instanceof RegReader regReader) {
                 // Note: This code might work for more cases than we check for here,
                 // but we want to throw an exception if an unexpected event appears.
-                assert regWriter instanceof Local;
+                assert regWriter instanceof Local || regWriter instanceof Alloc;
                 // ---- internal data dependency ----
                 final Set<EventData> dataDeps = new HashSet<>();
                 for (Register.Read regRead : regReader.getRegisterReads()) {
@@ -493,9 +493,6 @@ public class ExecutionModel {
             for (EventData read : addressedReads.getValue()) {
                 for (EventData write : addressWritesMap.get(address)) {
                     BooleanFormula rfExpr = rf.encode(write.getEvent(), read.getEvent());
-                    // The null check in isTrue is important: Currently there are cases where no rf-edge between
-                    // init writes and loads get encoded (in case of arrays/structs). This is usually no problem,
-                    // since in a well-initialized program, the init write should not be readable anyway.
                     if (isTrue(rfExpr)) {
                         readWriteMap.put(read, write);
                         read.setReadFrom(write);

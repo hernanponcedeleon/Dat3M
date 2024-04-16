@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static com.dat3m.dartagnan.GlobalSettings.getOutputDirectory;
+import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static java.util.Arrays.asList;
 
 public class Compilation {
@@ -49,8 +49,8 @@ public class Compilation {
         return new File(outputFileName);
     }
 
-    private static String getOutputName(File file, String postfix) {
-        return getOutputDirectory() + "/" +
+    private static String getOutputName(File file, String postfix) throws IOException {
+        return getOrCreateOutputDirectory() + "/" +
                 file.getName().substring(0, file.getName().lastIndexOf('.')) + postfix;
     }
 

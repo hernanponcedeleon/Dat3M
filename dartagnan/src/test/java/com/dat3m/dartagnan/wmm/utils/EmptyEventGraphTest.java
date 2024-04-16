@@ -63,14 +63,14 @@ public class EmptyEventGraphTest {
         EventGraph.empty().add(e1, e2);
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testRemove() {
         // given
         Event e1 = new Skip();
         Event e2 = new Skip();
 
         // when
-        EventGraph.empty().remove(e1, e2);
+        assertFalse(EventGraph.empty().remove(e1, e2));
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -92,7 +92,7 @@ public class EmptyEventGraphTest {
         EventGraph.empty().addAll(EventGraph.empty());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testRemoveAll() {
         // given
         Event e1 = new Skip();
@@ -102,17 +102,11 @@ public class EmptyEventGraphTest {
         nonEmpty.add(e1, e2);
 
         // when
-        EventGraph.empty().removeAll(nonEmpty);
+        assertFalse(EventGraph.empty().removeAll(nonEmpty));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testRemoveAllEmpty() {
-        // when
-        EventGraph.empty().removeAll(EventGraph.empty());
-    }
-
-    @Test(expected = UnsupportedOperationException.class)
-    public void testRetainAll() {
         // given
         Event e1 = new Skip();
         Event e2 = new Skip();
@@ -121,13 +115,20 @@ public class EmptyEventGraphTest {
         nonEmpty.add(e1, e2);
 
         // when
-        EventGraph.empty().retainAll(nonEmpty);
+        assertFalse(EventGraph.empty().removeAll(nonEmpty));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testRetainAllEmpty() {
+        // given
+        Event e1 = new Skip();
+        Event e2 = new Skip();
+
+        EventGraph nonEmpty = new EventGraph();
+        nonEmpty.add(e1, e2);
+
         // when
-        EventGraph.empty().retainAll(EventGraph.empty());
+        assertFalse(EventGraph.empty().retainAll(nonEmpty));
     }
 
     @Test
@@ -321,22 +322,22 @@ public class EmptyEventGraphTest {
         set.add(e);
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testRemoveIfTrue() {
         // given
         EventGraph empty = EventGraph.empty();
 
         // when
-        empty.removeIf((x, y) -> true);
+        assertFalse(empty.removeIf((x, y) -> true));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testRemoveIfFalse() {
         // given
         EventGraph empty = EventGraph.empty();
 
         // when
-        empty.removeIf((x, y) -> false);
+        assertFalse(empty.removeIf((x, y) -> false));
     }
 
     @Test

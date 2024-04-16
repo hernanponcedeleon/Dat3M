@@ -1,9 +1,9 @@
 package com.dat3m.dartagnan.c;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
+import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -11,12 +11,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
-import static com.dat3m.dartagnan.utils.ResourceHelper.*;
+import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
@@ -39,7 +38,7 @@ public class C11LocksTest extends AbstractCTest {
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Provider.fromSupplier(() -> new ParserCat().parse(new File(getRootPath("cat/c11.cat"))));
+        return Providers.createWmmFromName(() -> "c11");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
@@ -82,8 +81,7 @@ public class C11LocksTest extends AbstractCTest {
         assertEquals(expected, s.getResult());
     }
 
-    // CAAT might not yet work for C11 
-    // @Test
+    @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
