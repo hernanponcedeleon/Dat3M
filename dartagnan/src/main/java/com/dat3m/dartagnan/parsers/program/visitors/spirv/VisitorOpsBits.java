@@ -42,11 +42,40 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return visitShiftBinExpression(ctx.idResult(), ctx.idResultType(), ctx.base(), ctx.shift(), IntBinaryOp.ARSHIFT);
     }
 
+    @Override
+    public Event visitOpBitwiseAnd(SpirvParser.OpBitwiseAndContext ctx) {
+        return visitBitwiseExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntBinaryOp.AND);
+    }
+
+    @Override
+    public Event visitOpBitwiseOr(SpirvParser.OpBitwiseOrContext ctx) {
+        return visitBitwiseExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntBinaryOp.OR);
+    }
+
+    @Override
+    public Event visitOpBitwiseXor(SpirvParser.OpBitwiseXorContext ctx) {
+        return visitBitwiseExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntBinaryOp.XOR);
+    }
+
     private Event visitShiftBinExpression(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
             SpirvParser.BaseContext op1Ctx,
             SpirvParser.ShiftContext op2Ctx,
+            IntBinaryOp op) {
+        String id = idCtx.getText();
+        return forType(id, typeCtx.getText(), bType -> {
+            Expression op1 = getOperandInteger(id, op1Ctx.getText());
+            Expression op2 = getOperandInteger(id, op2Ctx.getText());
+            return EXPR_FACTORY.makeBinary(op1, op, op2);
+        });
+    }
+
+    private Event visitBitwiseExpression(
+            SpirvParser.IdResultContext idCtx,
+            SpirvParser.IdResultTypeContext typeCtx,
+            SpirvParser.Operand1Context op1Ctx,
+            SpirvParser.Operand2Context op2Ctx,
             IntBinaryOp op) {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), bType -> {
@@ -83,9 +112,10 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return Set.of(
                 "OpShiftLeftLogical",
                 "OpShiftRightLogical",
-                "opShiftRightArithmetic"
+                "opShiftRightArithmetic",
+                "OpBitwiseAnd",
+                "OpBitwiseOr",
+                "OpBitwiseXor"
         );
     }
-
-    // TODO: Testing
 }
