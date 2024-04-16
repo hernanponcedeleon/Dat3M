@@ -46,6 +46,25 @@ public class VisitorOpsLogicalTest {
     }
 
     @Test
+    public void testOpSelect() {
+        // given
+        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%int", 64);
+        builder.mockConstant("%cond", "%bool", true);
+        builder.mockConstant("%v1", "%int", 123);
+        builder.mockConstant("%v2", "%int", 456);
+        String input = "%reg = OpSelect %int %cond %v1 %v2";
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        assertEquals(builder.mockITE(builder.getExpression("%cond"), "%v1", "%v2"), local.getExpr());
+    }
+
+    @Test
     public void testOpsLogicalBin() {
         doTestOpsLogicalBin("OpLogicalAnd", AND, true, true);
         doTestOpsLogicalBin("OpLogicalAnd", AND, false, true);

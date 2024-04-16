@@ -120,7 +120,7 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         return EXPR_FACTORY.makeBooleanCast(cmpExpr);
     }
 
-    public Expression mockITE(String id, Expression cond, String thenId, String elseId) {
+    public Expression mockITE(Expression cond, String thenId, String elseId) {
         Expression thenExpr = getExpression(thenId);
         Expression elseExpr = getExpression(elseId);
         return EXPR_FACTORY.makeITE(cond, thenExpr, elseExpr);

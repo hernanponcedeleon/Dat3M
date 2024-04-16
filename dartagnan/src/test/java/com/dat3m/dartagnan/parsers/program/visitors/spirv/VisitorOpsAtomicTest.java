@@ -151,7 +151,7 @@ public class VisitorOpsAtomicTest {
         builder.mockConstant("%value", "%int", 123);
         String input = "%result = OpAtomicSMax %int %ptr %scope %semantic %value";
         Expression cond = builder.mockCondition("%ptr", IntCmpOp.GT, "%value");
-        Expression ite = builder.mockITE("%ptr", cond, "%ptr", "%value");
+        Expression ite = builder.mockITE(cond, "%ptr", "%value");
 
         // when
         SpirvXchg event = (SpirvXchg) visit(builder, input);
