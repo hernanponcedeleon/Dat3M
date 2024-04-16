@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.solver.onlineCaat;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.utils.EventGraph;

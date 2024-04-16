@@ -1,12 +1,12 @@
-package com.dat3m.dartagnan.solver.onlineCaat;
+package com.dat3m.dartagnan.solver.onlineCaat.caat4wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.AddressLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.ExecLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.RelLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.RefinementModel;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.AddressLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.ExecLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.RelLiteral;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.wmm.Relation;

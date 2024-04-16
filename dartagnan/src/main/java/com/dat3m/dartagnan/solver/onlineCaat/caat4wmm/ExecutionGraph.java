@@ -1,15 +1,15 @@
-package com.dat3m.dartagnan.solver.onlineCaat;
+package com.dat3m.dartagnan.solver.onlineCaat.caat4wmm;
 
-import com.dat3m.dartagnan.solver.caat.CAATModel;
-import com.dat3m.dartagnan.solver.caat.constraints.AcyclicityConstraint;
-import com.dat3m.dartagnan.solver.caat.constraints.Constraint;
-import com.dat3m.dartagnan.solver.caat.constraints.EmptinessConstraint;
-import com.dat3m.dartagnan.solver.caat.constraints.IrreflexivityConstraint;
-import com.dat3m.dartagnan.solver.caat.domain.Domain;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.RelationGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.derived.*;
-import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.CAATModel;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.constraints.AcyclicityConstraint;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.constraints.Constraint;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.constraints.EmptinessConstraint;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.constraints.IrreflexivityConstraint;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.RefinementModel;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.predicates.relationGraphs.base.SimpleGraph;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.domain.Domain;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.predicates.relationGraphs.RelationGraph;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.predicates.relationGraphs.derived.*;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.Wmm;

@@ -1,19 +1,24 @@
-package com.dat3m.dartagnan.solver.onlineCaat;
+package com.dat3m.dartagnan.solver.onlineCaat.caat4wmm;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.solver.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.caat.domain.GenericDomain;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.Edge;
-import com.dat3m.dartagnan.solver.caat.predicates.relationGraphs.base.SimpleGraph;
-import com.dat3m.dartagnan.solver.caat.reasoning.CAATLiteral;
-import com.dat3m.dartagnan.solver.caat4wmm.RefinementModel;
-import com.dat3m.dartagnan.solver.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.Decoder;
+import com.dat3m.dartagnan.solver.onlineCaat.EdgeInfo;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.domain.Domain;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.domain.GenericDomain;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.predicates.relationGraphs.Edge;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.reasoning.CAATLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.RefinementModel;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.onlineCaat.caat.predicates.relationGraphs.base.SimpleGraph;
+import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.CoreReasoner;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 import org.sosy_lab.java_smt.api.PropagatorBackend;
@@ -31,6 +36,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final Refiner refiner;
     private final BooleanFormulaManager bmgr;
     private final RefinementModel refinementModel;
+    private final RelationAnalysis relationAnalysis;
 
     public OnlineWMMSolver(RefinementModel refinementModel, Context analysisContext, EncodingContext encCtx) {
         this.refinementModel = refinementModel;
@@ -41,6 +47,9 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         this.refiner = new Refiner(refinementModel);
         this.solver = CAATSolver.create();
         this.bmgr = encCtx.getFormulaManager().getBooleanFormulaManager();
+        this.relationAnalysis = analysisContext.requires(RelationAnalysis.class);
+
+        executionGraph.initializeToDomain(domain);
     }
 
     // ------------------------------------------------------------------------------------------------------
@@ -50,6 +59,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final Deque<BooleanFormula> knownValues = new ArrayDeque<>();
     private final Map<BooleanFormula, Boolean> partialModel = new HashMap<>();
     private final Set<BooleanFormula> trueValues = new HashSet<>();
+    private final Domain<Event> domain = new GenericDomain<>();
 
     @Override
     public void initializeWithBackend(PropagatorBackend backend) {
@@ -65,25 +75,30 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     @Override
     public void onPush() {
         backtrackPoints.push(knownValues.size());
-        //System.out.println("Pushed: " + backtrackPoints.size());
+        domain.push();
+        System.out.println("########Pushed: " + backtrackPoints.getFirst());
     }
 
     @Override
     public void onPop(int numLevels) {
-        int backtrackTo = 0;
-        while (numLevels > 0) {
+        int backtrackTo = -1;
+        for (int i = numLevels; i > 0; i--) {
             backtrackTo = backtrackPoints.pop();
-            numLevels--;
         }
+
+        int backtrackTime = domain.getId(backtrackTo);
+        domain.resetElements(numLevels);
 
         while (knownValues.size() > backtrackTo) {
             final BooleanFormula revertedAssignment = knownValues.pop();
             if (partialModel.remove(revertedAssignment)) {
                 trueValues.remove(revertedAssignment);
             }
+            // use max event id as edge time
+            executionGraph.backtrackTo(backtrackTo);
         }
 
-        //System.out.printf("Backtracked %d levels to level %d\n", popLevels, backtrackPoints.size());
+        System.out.printf("***********Backtracked %d levels to level %d\n", numLevels, backtrackPoints.size());
     }
 
     @Override
@@ -92,8 +107,25 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         partialModel.put(expr, value);
         if (value) {
             trueValues.add(expr);
+            Decoder.Info info = decoder.decode(expr);
+            for (Event event : info.events()) {
+                if (event.hasTag(Tag.VISIBLE)) {
+                    domain.addElement(event);
+                }
+            }
+            for (EdgeInfo edge : info.edges()) {
+                final Relation relInFullModel = refinementModel.translateToOriginal(edge.relation());
+                final SimpleGraph graph = (SimpleGraph) executionGraph.getRelationGraph(relInFullModel);
+                // use max event id as edge time
+                if (graph != null) {
+                    int sourceId = domain.getId(edge.source());
+                    int targetId = domain.getId(edge.target());
+                    graph.add(new Edge(sourceId, targetId).withTime(Math.max(sourceId, targetId)));
+                }
+            }
         }
-
+        Result result = check();
+        processResult(result);
         progressPropagation();
     }
 
@@ -113,6 +145,10 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     @Override
     public void onFinalCheck() {
         Result result = check();
+        processResult(result);
+    }
+
+    private void processResult (Result result) {
         checkCounter++;
         totalModelExtractionTime += result.stats.modelExtractionTime;
 
@@ -127,7 +163,7 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
                     getBackend().propagateConflict(conflict.assignment().toArray(new BooleanFormula[0]));
                     isFirst = false;
                 } else {
-                   openPropagations.add(conflict);
+                    openPropagations.add(conflict);
                 }
             }
             assert !isFirst;
@@ -142,46 +178,16 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         System.out.println("------------------------------------");
     }
 
-    private void initModel() {
-        List<Event> executedEvents = new ArrayList<>();
-        List<EdgeInfo> edges = new ArrayList<>();
-        for (BooleanFormula assigned : trueValues) {
-            Decoder.Info info = decoder.decode(assigned);
-            executedEvents.addAll(info.events());
-            edges.addAll(info.edges());
-        }
-
-        // Init domain
-        executedEvents.removeIf(e -> !e.hasTag(Tag.VISIBLE));
-        GenericDomain<Event> domain = new GenericDomain<>(executedEvents);
-        executionGraph.initializeToDomain(domain);
-
-        // Setup base relation graphs
-        for (EdgeInfo edge : edges) {
-            final Relation relInFullModel = refinementModel.translateToOriginal(edge.relation());
-            final SimpleGraph graph = (SimpleGraph) executionGraph.getRelationGraph(relInFullModel);
-            if (graph != null) {
-                graph.add(new Edge(domain.getId(edge.source()), domain.getId(edge.target())));
-            }
-        }
-    }
-
     private Result check() {
-        // ============ Extract CAAT base model ==============
-        long curTime = System.currentTimeMillis();
-        initModel();
-        long extractTime = System.currentTimeMillis() - curTime;
-
         // ============== Run the CAATSolver ==============
         CAATSolver.Result caatResult = solver.check(executionGraph.getCAATModel());
         Result result = Result.fromCAATResult(caatResult);
         Statistics stats = result.stats;
-        stats.modelExtractionTime = extractTime;
         stats.modelSize = executionGraph.getDomain().size();
 
         if (result.getStatus() == CAATSolver.Status.INCONSISTENT) {
             // ============== Compute Core reasons ==============
-            curTime = System.currentTimeMillis();
+            long curTime = System.currentTimeMillis();
             List<Conjunction<CoreLiteral>> coreReasons = new ArrayList<>(caatResult.getBaseReasons().getNumberOfCubes());
             for (Conjunction<CAATLiteral> baseReason : caatResult.getBaseReasons().getCubes()) {
                 coreReasons.addAll(reasoner.toCoreReasons(baseReason));
