@@ -1295,12 +1295,22 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return pointerType;
     }
 
-    private boolean parseBoolean(TerminalNode node) {
-        return Boolean.parseBoolean(node.getText());
-    }
-
     private BigInteger parseBigInteger(TerminalNode node) {
-        return new BigInteger(node.getText());
+        final String nodeString = node.getText();
+        final int radix;
+        final String valueString;
+        // Hexa numbers are used for floating point in llvm.
+        // Prefix "u" is used to force interpreting them as hexa ints
+        // https://stackoverflow.com/questions/16310509/is-it-possible-to-specify-a-hexadecimal-number-in-llvm-ir-code
+        if (nodeString.startsWith("u0x")) {
+           radix = 16;
+           // Get rid of u0x prefix
+           valueString = nodeString.substring(3);
+        } else {
+           radix = 10;
+           valueString = nodeString;
+        }
+        return new BigInteger(valueString, radix);
     }
 
     private String parseQuotedString(TerminalNode node) {
