@@ -8,8 +8,10 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.analysis.ThreadSymmetry;
+import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
+import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.OriginalId;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.solver.caat.CAATSolver;
@@ -48,6 +50,7 @@ import org.sosy_lab.java_smt.api.*;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
@@ -230,21 +233,23 @@ public class RefinementSolver extends ModelChecker {
         final RefinementTrace propertyTrace = runRefinement(task, prover, solver, refiner);
         SMTStatus smtStatus = propertyTrace.getFinalResult();
 
+        if (smtStatus == SMTStatus.UNKNOWN) {
+            // Refinement got no result (should not be able to happen), so we cannot proceed further.
+            logger.warn("Refinement procedure was inconclusive. Trying to find reason of inconclusiveness.");
+            analyzeInconclusiveness(task, propertyTrace, analysisContext);
+            throw new RuntimeException("Terminated verification due to inconclusiveness (bug?).");
+        }
+
         if (logger.isInfoEnabled()) {
             final String message = switch (smtStatus) {
-                case UNKNOWN -> "SMT Solver was inconclusive (bug?).";
                 case SAT -> propertyType == Property.Type.SAFETY ? "Specification violation found."
                         : "Specification witness found.";
                 case UNSAT -> propertyType == Property.Type.SAFETY ? "Bounded specification proven."
                         : "Bounded specification falsified.";
+                // Cannot be reached due to the above checks.
+                default -> throw new RuntimeException("unreachable");
             };
             logger.info(message);
-        }
-
-        if (smtStatus == SMTStatus.UNKNOWN) {
-            // Refinement got no result (should not be able to happen), so we cannot proceed further.
-            res = UNKNOWN;
-            return;
         }
 
         RefinementTrace combinedTrace = propertyTrace;
@@ -301,6 +306,63 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Verification finished with result " + res);
     }
 
+    private void analyzeInconclusiveness(VerificationTask task, RefinementTrace propertyTrace, Context analysisContext) {
+        final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
+        if (alias == null) {
+            return;
+        }
+        SyntacticContextAnalysis synContext = analysisContext.get(SyntacticContextAnalysis.class);
+        if (synContext == null) {
+            synContext = newInstance(task.getProgram());
+        }
+
+        final DNF<CoreLiteral> lastReasons = propertyTrace.getFinalIteration().inconsistencyReasons;
+        for (Conjunction<CoreLiteral> reason : lastReasons.getCubes()) {
+            for (CoreLiteral literal : reason.getLiterals()) {
+                if (literal instanceof RelLiteral relLit && doesViolateAliasingRules(relLit, alias)) {
+                    final Event e1 = relLit.getSource();
+                    final Event e2 = relLit.getTarget();
+
+                    final StringBuilder builder = new StringBuilder();
+                    builder.append("Found aliasing problem between:\n");
+
+                    final String ctx1 = makeContextString(synContext.getContextInfo(e1).getContextStack(), " -> ");
+                    final String ctx2 = makeContextString(synContext.getContextInfo(e2).getContextStack(), " -> ");
+                    builder
+                            .append("\tE").append(e1.getGlobalId())
+                            .append(":\t")
+                            .append(ctx1.isEmpty() ? ctx1 : ctx1 + " -> ")
+                            .append(getSourceLocationString(e1))
+                            .append("\n");
+                    builder.append("AND\n");
+                    builder
+                            .append("\tE").append(e2.getGlobalId())
+                            .append(":\t")
+                            .append(ctx2.isEmpty() ? ctx2 : ctx2 + " -> ")
+                            .append(getSourceLocationString(e2))
+                            .append("\n");
+                    builder.append("Possible out-of-bounds access in source code or error in alias analysis.");
+
+                    logger.warn(builder.toString());
+                    return;
+                }
+            }
+        }
+    }
+
+    private boolean doesViolateAliasingRules(RelLiteral lit, AliasAnalysis alias) {
+        final Predicate<Relation> isMemRel = r -> r.getDefinition() instanceof ReadFrom
+                || r.getDefinition() instanceof Coherence;
+
+        if (lit.isPositive() && isMemRel.test(lit.getRelation())) {
+            final MemoryCoreEvent e1 = (MemoryCoreEvent) lit.getSource();
+            final MemoryCoreEvent e2 = (MemoryCoreEvent) lit.getTarget();
+            return !alias.mayAlias(e1, e2);
+        } else {
+            return false;
+        }
+    }
+
     // ================================================================================================================
     // Refinement core algorithm
 
@@ -314,7 +376,7 @@ public class RefinementSolver extends ModelChecker {
 
             final RefinementIteration iteration = doRefinementIteration(prover, solver, refiner);
             trace.add(iteration);
-            isFinalIteration = iteration.isConclusive();
+            isFinalIteration = !checkProgress(trace) || iteration.isConclusive();
 
             // ------------------------- Debugging/Logging -------------------------
             if (REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES) {
@@ -354,6 +416,15 @@ public class RefinementSolver extends ModelChecker {
         }
 
         return new RefinementTrace(trace);
+    }
+
+    private boolean checkProgress(List<RefinementIteration> trace) {
+        if (trace.size() < 2) {
+            return true;
+        }
+        final RefinementIteration last = trace.get(trace.size() - 1);
+        final RefinementIteration prev = trace.get(trace.size() - 2);
+        return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
 
     private RefinementIteration doRefinementIteration(ProverEnvironment prover, WMMSolver solver, Refiner refiner)
