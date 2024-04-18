@@ -324,7 +324,7 @@ public class RefinementSolver extends ModelChecker {
                     final Event e2 = relLit.getTarget();
 
                     final StringBuilder builder = new StringBuilder();
-                    builder.append("Found aliasing problem between:\n");
+                    builder.append("Found unexpected aliasing between:\n");
                     builder.append("\t")
                             .append(synContext.getSourceLocationWithContext(e1, true))
                             .append("\n")
