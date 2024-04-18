@@ -98,4 +98,15 @@ public class TwoSolvers extends ModelChecker {
         res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
         logger.info("Verification finished with result " + res);
     }
+
+    @Override
+    public boolean hasModel() {
+        if (res == UNKNOWN) {
+            // FIXME: Dirty fix, because if we return true, the caller tries to get the
+            // model from the first prover, but the second has it. So we claim no model
+            // instead.
+            return false;
+        }
+        return super.hasModel();
+    }
 }
