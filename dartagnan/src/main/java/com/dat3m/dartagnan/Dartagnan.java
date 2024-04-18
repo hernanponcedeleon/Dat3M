@@ -216,7 +216,8 @@ public class Dartagnan extends BaseOptions {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && properties.contains(PROGRAM_SPEC) && properties.size() == 1) {
+                && properties.contains(PROGRAM_SPEC) && properties.size() == 1
+                && modelChecker.getResult() != UNKNOWN) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
                         modelChecker.getResult(), summary);
@@ -244,9 +245,8 @@ public class Dartagnan extends BaseOptions {
         StringBuilder summary = new StringBuilder();
 
         if (p.getFormat() != SourceLanguage.LITMUS) {
+            final SyntacticContextAnalysis synContext = newInstance(p);
             if (hasViolations) {
-
-                final SyntacticContextAnalysis synContext = newInstance(p);
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
@@ -302,6 +302,19 @@ public class Dartagnan extends BaseOptions {
                     // because it is the only property that got encoded.
                     summary.append("Program specification witness found.").append("\n");
                 }
+            } else if (result == UNKNOWN && modelChecker.hasModel()) {
+                // We reached unrolling bounds.
+                summary.append("=========== Not fully unrolled loops ============\n");
+                for (Event ev : p.getThreadEventsWithAllTags(Tag.BOUND)) {
+                    final boolean isReached = TRUE.equals(model.evaluate(encCtx.execution(ev)));
+                    if (isReached) {
+                        summary
+                                .append("\t")
+                                .append(synContext.getSourceLocationWithContext(ev, true))
+                                .append("\n");
+                    }
+                }
+                summary.append("=================================================\n");
             }
             summary.append(result).append("\n");
         } else {

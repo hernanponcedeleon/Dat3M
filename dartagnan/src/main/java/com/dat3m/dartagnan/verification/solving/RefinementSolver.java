@@ -410,7 +410,7 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private boolean checkProgress(List<RefinementIteration> trace) {
-        if (trace.size() < 2 || trace.getLast().isConclusive()) {
+        if (trace.size() < 2 || trace.get(trace.size() - 1).isConclusive()) {
             return true;
         }
         final RefinementIteration last = trace.get(trace.size() - 1);
