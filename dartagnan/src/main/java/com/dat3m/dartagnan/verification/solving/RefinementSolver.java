@@ -325,21 +325,12 @@ public class RefinementSolver extends ModelChecker {
 
                     final StringBuilder builder = new StringBuilder();
                     builder.append("Found aliasing problem between:\n");
-
-                    final String ctx1 = makeContextString(synContext.getContextInfo(e1).getContextStack(), " -> ");
-                    final String ctx2 = makeContextString(synContext.getContextInfo(e2).getContextStack(), " -> ");
-                    builder
-                            .append("\tE").append(e1.getGlobalId())
-                            .append(":\t")
-                            .append(ctx1.isEmpty() ? ctx1 : ctx1 + " -> ")
-                            .append(getSourceLocationString(e1))
-                            .append("\n");
-                    builder.append("AND\n");
-                    builder
-                            .append("\tE").append(e2.getGlobalId())
-                            .append(":\t")
-                            .append(ctx2.isEmpty() ? ctx2 : ctx2 + " -> ")
-                            .append(getSourceLocationString(e2))
+                    builder.append("\t")
+                            .append(synContext.getSourceLocationWithContext(e1, true))
+                            .append("\n")
+                            .append("AND\n")
+                            .append("\t")
+                            .append(synContext.getSourceLocationWithContext(e2, true))
                             .append("\n");
                     builder.append("Possible out-of-bounds access in source code or error in alias analysis.");
 
@@ -423,6 +414,9 @@ public class RefinementSolver extends ModelChecker {
             return true;
         }
         final RefinementIteration last = trace.get(trace.size() - 1);
+        if (last.isConclusive()) {
+            return true;
+        }
         final RefinementIteration prev = trace.get(trace.size() - 2);
         return !last.inconsistencyReasons.equals(prev.inconsistencyReasons);
     }
