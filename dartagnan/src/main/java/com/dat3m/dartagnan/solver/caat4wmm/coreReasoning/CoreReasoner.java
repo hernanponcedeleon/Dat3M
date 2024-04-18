@@ -21,8 +21,8 @@ import com.dat3m.dartagnan.wmm.definition.Fences;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
 // The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver.
@@ -43,8 +43,111 @@ public class CoreReasoner {
         this.exec = analysisContext.requires(ExecutionAnalysis.class);
         this.ra = analysisContext.requires(RelationAnalysis.class);
         this.symm = analysisContext.requires(ThreadSymmetry.class);
-        this.learningOption = REFINEMENT_SYMMETRIC_LEARNING;
+        this.learningOption = SymmetricLearning.LINEAR;
         this.symmPermutations = computeSymmetryPermutations();
+    }
+
+    public Set<Conjunction<CoreLiteral>> toCoreReasonsNew(Conjunction<CAATLiteral> baseReason) {
+        final EventDomain domain = executionGraph.getDomain();
+        final List<Function<Event, Event>> symmGenerators = symmPermutations;
+
+        final Set<List<CoreLiteral>> orbit = new HashSet<>();
+        final Deque<List<CoreLiteral>> workqueue = new ArrayDeque<>();
+        workqueue.add(asUnreducedCoreReason(baseReason, domain));
+
+        while (!workqueue.isEmpty()) {
+            final List<CoreLiteral> reason = workqueue.removeFirst();
+            for (Function<Event, Event> generator : symmGenerators) {
+                final List<CoreLiteral> permuted = getPermuted(reason, generator);
+                if (orbit.add(permuted)) {
+                    workqueue.add(permuted);
+                }
+            }
+        }
+
+        return orbit.stream().map(this::simplify).map(Conjunction::new).collect(Collectors.toSet());
+    }
+
+    private List<CoreLiteral> simplify(List<CoreLiteral> reason) {
+        final List<CoreLiteral> simplified = new ArrayList<>();
+        for (CoreLiteral lit : reason) {
+            if (lit instanceof ExecLiteral execLiteral) {
+                simplified.add(execLiteral);
+            } else if (lit instanceof RelLiteral relLiteral) {
+                final Event e1 = relLiteral.getSource();
+                final Event e2 = relLiteral.getTarget();
+                final Relation rel = relLiteral.getRelation();
+                if (relLiteral.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
+                    addExecReason(e1, e2, simplified);
+                } else if (relLiteral.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
+
+                } else {
+                    String name = rel.getName().orElse(null);
+                    if (RF.equals(name) || CO.equals(name) || executionGraph.getCutRelations().contains(rel)) {
+                        simplified.add(lit);
+                    } else if (LOC.equals(name)) {
+                        simplified.add(new AddressLiteral(e1, e2, lit.isPositive()));
+                    } else if (rel.getDefinition() instanceof Fences) {
+                        // This is a special case since "fencerel(F) = po;[F];po".
+                        // We should do this transformation directly on the Wmm to avoid this special reasoning
+                        if (lit.isNegative()) {
+                            throw new UnsupportedOperationException(String.format("FenceRel %s is not allowed on the rhs of differences.", rel));
+                        }
+                        FenceGraph fenceGraph = (FenceGraph) executionGraph.getRelationGraph(rel);
+                        EventDomain domain = executionGraph.getDomain();
+                        EventData ed1 = domain.getExecution().getData(e1).get();
+                        EventData f = fenceGraph.getNextFence(ed1);
+
+                        simplified.add(new ExecLiteral(f.getEvent()));
+                        if (!exec.isImplied(f.getEvent(), e1)) {
+                            simplified.add(new ExecLiteral(e1));
+                        }
+                        if (!exec.isImplied(f.getEvent(), e2)) {
+                            simplified.add(new ExecLiteral(e2));
+                        }
+                    } else {
+                        throw new UnsupportedOperationException(String.format("Literals of type %s are not supported.", rel));
+                    }
+                }
+            }
+        }
+
+        minimize(simplified);
+        return simplified;
+    }
+
+    private List<CoreLiteral> getPermuted(List<CoreLiteral> reason, Function<Event, Event> perm) {
+        final List<CoreLiteral> permuted = new ArrayList<>(reason.size());
+
+        for (CoreLiteral lit : reason) {
+            if (lit instanceof ExecLiteral execLiteral) {
+                final Event e = perm.apply(execLiteral.getEvent());
+                permuted.add(new ExecLiteral(e, execLiteral.isPositive()));
+            } else if (lit instanceof RelLiteral relLiteral) {
+                final Event e1 = perm.apply(relLiteral.getSource());
+                final Event e2 = perm.apply(relLiteral.getTarget());
+                permuted.add(new RelLiteral(relLiteral.getRelation(), e1, e2, relLiteral.isPositive()));
+            } else {
+                assert false;
+            }
+        }
+        return permuted;
+    }
+
+    private List<CoreLiteral> asUnreducedCoreReason(Conjunction<CAATLiteral> baseReason, EventDomain domain) {
+        final List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
+        for (CAATLiteral lit : baseReason.getLiterals()) {
+            if (lit instanceof ElementLiteral eleLit) {
+                final Event e = domain.getObjectById(eleLit.getData().getId()).getEvent();
+                coreReason.add(new ExecLiteral(e, lit.isPositive()));
+            } else if (lit instanceof EdgeLiteral edgeLit) {
+                final Event e1 = domain.getObjectById(edgeLit.getData().getFirst()).getEvent();
+                final Event e2 = domain.getObjectById(edgeLit.getData().getSecond()).getEvent();
+                final Relation rel = executionGraph.getRelationGraphMap().inverse().get(edgeLit.getPredicate());
+                coreReason.add(new RelLiteral(rel, e1, e2, edgeLit.isPositive()));
+            }
+        }
+        return coreReason;
     }
 
     // Returns the (reduced) core reason of a base reason. If symmetry reasoning is enabled,
@@ -52,6 +155,10 @@ public class CoreReasoner {
     public Set<Conjunction<CoreLiteral>> toCoreReasons(Conjunction<CAATLiteral> baseReason) {
         final EventDomain domain = executionGraph.getDomain();
         final Set<Conjunction<CoreLiteral>> symmetricReasons = new HashSet<>();
+
+        final Set<Conjunction<CoreLiteral>> test = toCoreReasonsNew(baseReason);
+        return test;
+        /*
 
         //TODO: A specialized algorithm that computes the orbit under permutation may be better,
         // since most violations involve only few threads and hence the orbit is far smaller than the full
@@ -99,7 +206,7 @@ public class CoreReasoner {
             symmetricReasons.add(new Conjunction<>(coreReason));
         }
 
-        return symmetricReasons;
+        return symmetricReasons;*/
     }
 
 

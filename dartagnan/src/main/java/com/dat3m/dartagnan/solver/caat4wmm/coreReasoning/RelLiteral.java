@@ -39,7 +39,7 @@ public final class RelLiteral implements CoreLiteral {
 
     @Override
     public String toString() {
-        return getName() + "(" + e1.getGlobalId() + "," + e2.getGlobalId() + ")";
+        return (isNegative() ? "!" : "") + getName() + "(" + e1.getGlobalId() + "," + e2.getGlobalId() + ")";
     }
 
     @Override
