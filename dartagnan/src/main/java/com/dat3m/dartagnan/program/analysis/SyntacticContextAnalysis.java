@@ -124,6 +124,19 @@ public class SyntacticContextAnalysis {
         return new SyntacticContextAnalysis();
     }
 
+    public String getSourceLocationWithContext(Event e, boolean addGlobalId) {
+        final StringBuilder builder = new StringBuilder();
+        final String ctx = makeContextString(this.getContextInfo(e).getContextStack(), " -> ");
+        if (addGlobalId) {
+            builder.append("E").append(e.getGlobalId()).append(": \t");
+        }
+        builder
+                .append(ctx.isEmpty() ? ctx : ctx + " -> ")
+                .append(getSourceLocationString(e));
+
+        return builder.toString();
+    }
+
     // ============================================================================
     // ============================== Analysis logic ==============================
     // ============================================================================
