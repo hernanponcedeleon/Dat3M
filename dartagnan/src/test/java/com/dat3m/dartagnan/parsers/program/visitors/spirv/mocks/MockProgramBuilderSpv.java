@@ -1,6 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks;
 
-import com.dat3m.dartagnan.expression.*;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
 import com.dat3m.dartagnan.program.Function;
@@ -108,6 +111,19 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         addExpression(id, memObj);
         addStorageClassForExpr(id, typeId);
         return memObj;
+    }
+
+    public Expression mockCondition(String left, IntCmpOp kind, String right) {
+        Expression leftExpr = getExpression(left);
+        Expression rightExpr = getExpression(right);
+        Expression cmpExpr = EXPR_FACTORY.makeIntCmp(leftExpr, kind, rightExpr);
+        return EXPR_FACTORY.makeBooleanCast(cmpExpr);
+    }
+
+    public Expression mockITE(Expression cond, String thenId, String elseId) {
+        Expression thenExpr = getExpression(thenId);
+        Expression elseExpr = getExpression(elseId);
+        return EXPR_FACTORY.makeITE(cond, thenExpr, elseExpr);
     }
 
     public Register mockRegister(String id, String typeId) {

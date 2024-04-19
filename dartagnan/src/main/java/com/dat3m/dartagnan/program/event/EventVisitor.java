@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
@@ -105,6 +106,7 @@ public interface EventVisitor<T> {
     default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }
     default T visitPtxAtomExch(PTXAtomExch e) { return visitMemEvent(e); }
     default T visitVulkanRMW(VulkanRMW e) { return visitMemEvent(e); }
+    default T visitVulkanRMWExtremum(VulkanRMWExtremum e) { return visitMemEvent(e); }
     default T visitVulkanRMWOp(VulkanRMWOp e) { return visitMemEvent(e); }
     default T visitVulkanCmpXchg(VulkanCmpXchg e) { return visitMemEvent(e); }
 
@@ -114,4 +116,5 @@ public interface EventVisitor<T> {
     default T visitSpirvRMW(SpirvRmw e) { return visitMemEvent(e); }
     default T visitSpirvXchg(SpirvXchg e) { return visitMemEvent(e); }
     default T visitSpirvCmpXchg(SpirvCmpXchg e) { return visitMemEvent(e); }
+    default T visitSpirvRmwExtremum(SpirvRmwExtremum e) { return visitMemEvent(e); }
 }

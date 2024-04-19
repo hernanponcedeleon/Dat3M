@@ -1,6 +1,7 @@
-package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.expression.op.IOpBin;
+import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.core.Event;
@@ -135,6 +136,30 @@ public class VisitorOpsAtomicTest {
         assertEquals(IOpBin.ADD, event.getOperator());
         assertEquals(RELAXED, event.getMo());
         assertEquals(Set.of(RELAXED, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
+    }
+
+    @Test
+    public void testOpAtomicSMax() {
+        // given
+        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        builder.mockIntType("%int", 64);
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockVariable("%ptr", "%int_ptr");
+        builder.mockConstant("%scope", "%int", 1);
+        builder.mockConstant("%semantic", "%int", 66);
+        builder.mockConstant("%value", "%int", 123);
+        String input = "%result = OpAtomicSMax %int %ptr %scope %semantic %value";
+        Expression cond = builder.mockCondition("%ptr", IntCmpOp.GT, "%value");
+        Expression ite = builder.mockITE(cond, "%ptr", "%value");
+
+        // when
+        SpirvRmwExtremum event = (SpirvRmwExtremum) visit(builder, input);
+
+        // then
+        assertEquals("%result", event.getResultRegister().getName());
+        assertEquals(builder.getType("%int"), event.getResultRegister().getType());
+        assertEquals(builder.getExpression("%ptr"), event.getAddress());
+        assertEquals(IntCmpOp.GT, event.getOperator());
     }
 
     @Test

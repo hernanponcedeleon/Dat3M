@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -18,6 +19,7 @@ import com.dat3m.dartagnan.program.event.arch.ptx.PTXRedOp;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
@@ -753,6 +755,11 @@ public class EventFactory {
             return new VulkanRMWOp(register, address, op, value, mo, scope);
         }
 
+        public static VulkanRMWExtremum newRMWExtremum(Expression address, Register register, IntCmpOp op,
+                                                       Expression value, String mo, String scope) {
+            return new VulkanRMWExtremum(register, address, op, value, mo, scope);
+        }
+
         public static VulkanCmpXchg newVulkanCmpXchg(Expression address, Register register, Expression expected,
                                                      Expression value, String mo, String scope) {
             return new VulkanCmpXchg(register, address, expected, value, mo, scope);
@@ -789,6 +796,11 @@ public class EventFactory {
         public static SpirvCmpXchg newSpirvCmpXchg(Register register, Expression address, Expression cmp, Expression value,
                                                    String scope, Set<String> eqTags, Set<String> neqTags) {
             return new SpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
+        }
+
+        public static SpirvRmwExtremum newSpirvRmwExtremum(Register register, Expression address, IntCmpOp op, Expression value,
+                                                           String scope, Set<String> tags) {
+            return new SpirvRmwExtremum(register, address, op, value, scope, tags);
         }
     }
 
