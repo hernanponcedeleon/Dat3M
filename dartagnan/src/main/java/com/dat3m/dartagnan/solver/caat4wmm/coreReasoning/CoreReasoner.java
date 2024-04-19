@@ -9,15 +9,12 @@ import com.dat3m.dartagnan.solver.caat.reasoning.EdgeLiteral;
 import com.dat3m.dartagnan.solver.caat.reasoning.ElementLiteral;
 import com.dat3m.dartagnan.solver.caat4wmm.EventDomain;
 import com.dat3m.dartagnan.solver.caat4wmm.ExecutionGraph;
-import com.dat3m.dartagnan.solver.caat4wmm.basePredicates.FenceGraph;
 import com.dat3m.dartagnan.utils.equivalence.EquivalenceClass;
 import com.dat3m.dartagnan.utils.logic.Conjunction;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
-import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
-import com.dat3m.dartagnan.wmm.definition.Fences;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
@@ -160,13 +157,6 @@ public class CoreReasoner {
                         simplified.add(lit);
                     } else if (LOC.equals(name)) {
                         simplified.add(new AddressLiteral(e1, e2, lit.isPositive()));
-                    } else if (rel.getDefinition() instanceof Fences) {
-                        // This is a special case since "fencerel(F) = po;[F];po".
-                        // We should do this transformation directly on the Wmm to avoid this special reasoning
-                        if (lit.isNegative()) {
-                            throw new UnsupportedOperationException(String.format("FenceRel %s is not allowed on the rhs of differences.", rel));
-                        }
-                        addFenceReason(rel, e1, e2, simplified);
                     } else {
                         throw new UnsupportedOperationException(String.format("Literals of type %s are not supported.", rel));
                     }
@@ -204,20 +194,6 @@ public class CoreReasoner {
             coreReasons.add(new ExecLiteral(e2));
         } else {
             coreReasons.add(new ExecLiteral(e1));
-            coreReasons.add(new ExecLiteral(e2));
-        }
-    }
-
-    private void addFenceReason(Relation rel, Event e1, Event e2, List<CoreLiteral> coreReasons) {
-        final FenceGraph fenceGraph = (FenceGraph) executionGraph.getRelationGraph(rel);
-        final EventData ed1 = executionGraph.getDomain().getExecution().getData(e1).get();
-        final Event f = fenceGraph.getNextFence(ed1).getEvent();
-
-        coreReasons.add(new ExecLiteral(f));
-        if (!exec.isImplied(f, e1)) {
-            coreReasons.add(new ExecLiteral(e1));
-        }
-        if (!exec.isImplied(f, e2)) {
             coreReasons.add(new ExecLiteral(e2));
         }
     }
