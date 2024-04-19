@@ -1,0 +1,63 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 44
+; Schema: 0
+               OpCapability Shader
+         %34 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %15 "foo" %8 %12
+               OpSource OpenCL_C 200
+         %35 = OpString "foo"
+         %36 = OpString " __kernel"
+         %39 = OpString "x"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpMemberDecorate %_struct_9 0 Offset 0
+               OpMemberDecorate %_struct_10 0 Offset 0
+               OpDecorate %_struct_10 Block
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+  %_struct_9 = OpTypeStruct %uint
+ %_struct_10 = OpTypeStruct %_struct_9
+%_ptr_PushConstant__struct_10 = OpTypePointer PushConstant %_struct_10
+       %void = OpTypeVoid
+         %14 = OpTypeFunction %void
+%_ptr_PushConstant__struct_9 = OpTypePointer PushConstant %_struct_9
+     %uint_0 = OpConstant %uint 0
+ %_struct_21 = OpTypeStruct %uint
+       %bool = OpTypeBool
+    %uint_10 = OpConstant %uint 10
+     %uint_2 = OpConstant %uint 2
+   %uint_264 = OpConstant %uint 264
+     %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %12 = OpVariable %_ptr_PushConstant__struct_10 PushConstant
+         %15 = OpFunction %void None %14
+         %16 = OpLabel
+         %19 = OpAccessChain %_ptr_PushConstant__struct_9 %12 %uint_0
+         %20 = OpLoad %_struct_9 %19
+         %22 = OpCopyLogical %_struct_21 %20
+         %23 = OpCompositeExtract %uint %22 0
+         %26 = OpIEqual %bool %23 %uint_10
+               OpSelectionMerge %33 None
+               OpBranchConditional %26 %29 %33
+         %29 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_264
+               OpBranch %33
+         %33 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %38 = OpExtInst %void %34 Kernel %15 %35 %uint_1 %uint_0 %36
+         %40 = OpExtInst %void %34 ArgumentInfo %39
+         %42 = OpExtInst %void %34 ArgumentPodPushConstant %38 %uint_0 %uint_0 %uint_4 %40
+         %43 = OpExtInst %void %34 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

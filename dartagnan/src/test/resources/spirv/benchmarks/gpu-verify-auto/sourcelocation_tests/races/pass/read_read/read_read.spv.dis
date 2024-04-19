@@ -1,0 +1,80 @@
+; @Config: 3, 1, 3
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 59
+; Schema: 0
+               OpCapability Shader
+         %40 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %25 "foo" %gl_LocalInvocationID %10 %14 %18 %22
+               OpSource OpenCL_C 200
+         %41 = OpString "foo"
+         %42 = OpString " __kernel"
+         %45 = OpString "p"
+         %49 = OpString "q"
+         %53 = OpString "r"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %11 SpecId 3
+               OpDecorate %15 SpecId 4
+               OpDecorate %19 SpecId 5
+               OpDecorate %5 SpecId 0
+               OpDecorate %6 SpecId 1
+               OpDecorate %7 SpecId 2
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+          %5 = OpSpecConstant %uint 1
+          %6 = OpSpecConstant %uint 1
+          %7 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %5 %6 %7
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+         %11 = OpSpecConstant %uint 1
+%_arr_uint_11 = OpTypeArray %uint %11
+%_ptr_Workgroup__arr_uint_11 = OpTypePointer Workgroup %_arr_uint_11
+         %15 = OpSpecConstant %uint 1
+%_arr_uint_15 = OpTypeArray %uint %15
+%_ptr_Workgroup__arr_uint_15 = OpTypePointer Workgroup %_arr_uint_15
+         %19 = OpSpecConstant %uint 1
+%_arr_uint_19 = OpTypeArray %uint %19
+%_ptr_Workgroup__arr_uint_19 = OpTypePointer Workgroup %_arr_uint_19
+       %void = OpTypeVoid
+         %24 = OpTypeFunction %void
+%_ptr_Input_uint = OpTypePointer Input %uint
+     %uint_0 = OpConstant %uint 0
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_5 = OpConstant %uint 5
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %10 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %14 = OpVariable %_ptr_Workgroup__arr_uint_11 Workgroup
+         %18 = OpVariable %_ptr_Workgroup__arr_uint_15 Workgroup
+         %22 = OpVariable %_ptr_Workgroup__arr_uint_19 Workgroup
+         %25 = OpFunction %void None %24
+         %26 = OpLabel
+         %29 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %30 = OpLoad %uint %29
+         %32 = OpAccessChain %_ptr_Workgroup_uint %18 %30
+         %33 = OpLoad %uint %32
+         %34 = OpAccessChain %_ptr_Workgroup_uint %14 %30
+               OpStore %34 %33
+         %35 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %36 = OpLoad %uint %35
+         %37 = OpAccessChain %_ptr_Workgroup_uint %18 %36
+         %38 = OpLoad %uint %37
+         %39 = OpAccessChain %_ptr_Workgroup_uint %22 %36
+               OpStore %39 %38
+               OpReturn
+               OpFunctionEnd
+         %44 = OpExtInst %void %40 Kernel %25 %41 %uint_3 %uint_0 %42
+         %46 = OpExtInst %void %40 ArgumentInfo %45
+         %48 = OpExtInst %void %40 ArgumentWorkgroup %44 %uint_0 %uint_3 %uint_4 %46
+         %50 = OpExtInst %void %40 ArgumentInfo %49
+         %52 = OpExtInst %void %40 ArgumentWorkgroup %44 %uint_1 %uint_4 %uint_4 %50
+         %54 = OpExtInst %void %40 ArgumentInfo %53
+         %57 = OpExtInst %void %40 ArgumentWorkgroup %44 %uint_2 %uint_5 %uint_4 %54
+         %58 = OpExtInst %void %40 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2
