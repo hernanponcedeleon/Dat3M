@@ -154,13 +154,13 @@ public class VisitorOpsAtomicTest {
         Expression ite = builder.mockITE(cond, "%ptr", "%value");
 
         // when
-        SpirvXchg event = (SpirvXchg) visit(builder, input);
+        SpirvRmwExtremum event = (SpirvRmwExtremum) visit(builder, input);
 
         // then
         assertEquals("%result", event.getResultRegister().getName());
         assertEquals(builder.getType("%int"), event.getResultRegister().getType());
         assertEquals(builder.getExpression("%ptr"), event.getAddress());
-        assertEquals(ite, event.getValue());
+        assertEquals(IntCmpOp.GT, event.getOperator());
     }
 
     @Test

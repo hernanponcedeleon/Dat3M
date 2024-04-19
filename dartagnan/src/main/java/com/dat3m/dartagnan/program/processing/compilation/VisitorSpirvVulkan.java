@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
+import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
 import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
@@ -106,6 +107,18 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
         cmpXchg.addTags(toVulkanTags(eqTags));
 
         return visitVulkanCmpXchg(cmpXchg);
+    }
+
+    @Override
+    public List<Event> visitSpirvRmwExtremum(SpirvRmwExtremum e) {
+        e.addTags(Tag.Spirv.MEM_VISIBLE, Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_NON_PRIVATE);
+        String mo = moToVulkanTag(Tag.Spirv.getMoTag(e.getTags()));
+        String scope = toVulkanTag(Tag.Spirv.getScopeTag(e.getTags()));
+        VulkanRMWExtremum rmw = EventFactory.Vulkan.newRMWExtremum(e.getAddress(), e.getResultRegister(),
+                e.getOperator(), e.getValue(), mo, scope);
+        rmw.setFunction(e.getFunction());
+        rmw.addTags(toVulkanTags(e.getTags()));
+        return visitVulkanRMWExtremum(rmw);
     }
 
     @Override

@@ -55,16 +55,12 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
         Register register = builder.addRegister(id, ctx.idResultType().getText());
         if (!op1.getType().equals(type) || !op2.getType().equals(type)) {
             throw new ParsingException("Illegal definition for '%s', " +
-                    "operands have different types: '%s' is '%s' and '%s' is '%s'",
-                    id, ctx.object1().getText(), op1.getType(), ctx.object2().getText(), op2.getType());
+                    "expected two operands type '%s but received '%s' and '%s'",
+                    id, type, op1.getType(), op2.getType());
         }
         if (op1.getType() instanceof IntegerType) {
             return builder.addEvent(new Local(register, EXPR_FACTORY.makeITE(cond, op1, op2)));
-        }
-        if (op1.getType() instanceof ArrayType arrayType && arrayType.getElementType() instanceof BooleanType) {
-            return forType(id, ctx.idResultType().getText(), bType -> EXPR_FACTORY.makeITE(cond, op1, op2));
-        }
-        throw new ParsingException("Illegal definition for '%s', " +
+        }throw new ParsingException("Illegal definition for '%s', " +
                 "operands must be integers or arrays of booleans", id);
     }
 
