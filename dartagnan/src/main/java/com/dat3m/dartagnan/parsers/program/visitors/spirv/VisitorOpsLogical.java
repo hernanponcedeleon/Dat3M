@@ -46,6 +46,25 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
     }
 
     @Override
+    public Event visitOpSelect(SpirvParser.OpSelectContext ctx) {
+        String id = ctx.idResult().getText();
+        Expression cond = getOperandBoolean(id, ctx.condition().getText());
+        Expression op1 = builder.getExpression(ctx.object1().getText());
+        Expression op2 = builder.getExpression(ctx.object2().getText());
+        Type type = builder.getType(ctx.idResultType().getText());
+        Register register = builder.addRegister(id, ctx.idResultType().getText());
+        if (!op1.getType().equals(type) || !op2.getType().equals(type)) {
+            throw new ParsingException("Illegal definition for '%s', " +
+                    "expected two operands type '%s but received '%s' and '%s'",
+                    id, type, op1.getType(), op2.getType());
+        }
+        if (op1.getType() instanceof IntegerType) {
+            return builder.addEvent(new Local(register, EXPR_FACTORY.makeITE(cond, op1, op2)));
+        }throw new ParsingException("Illegal definition for '%s', " +
+                "operands must be integers or arrays of booleans", id);
+    }
+
+    @Override
     public Event visitOpIEqual(SpirvParser.OpIEqualContext ctx) {
         return visitIntegerBinExpression(ctx.idResult(), ctx.idResultType(), ctx.operand1(), ctx.operand2(), IntCmpOp.EQ);
     }
@@ -177,6 +196,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                 "OpLogicalOr",
                 "OpLogicalAnd",
                 "OpLogicalNot",
+                "OpSelect",
                 "OpIEqual",
                 "OpINotEqual",
                 "OpUGreaterThan",

@@ -46,6 +46,47 @@ public class VisitorOpsLogicalTest {
     }
 
     @Test
+    public void testOpSelect() {
+        // given
+        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%int", 64);
+        builder.mockConstant("%cond", "%bool", true);
+        builder.mockConstant("%v1", "%int", 123);
+        builder.mockConstant("%v2", "%int", 456);
+        String input = "%reg = OpSelect %int %cond %v1 %v2";
+
+        // when
+        Local local = visit(builder, input);
+
+        // then
+        assertEquals(builder.getExpression("%reg"), local.getResultRegister());
+        assertEquals(builder.mockITE(builder.getExpression("%cond"), "%v1", "%v2"), local.getExpr());
+    }
+
+    @Test
+    public void testOpSelectMismatchingOperandType() {
+        // given
+        MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%int", 64);
+        builder.mockConstant("%cond", "%bool", true);
+        builder.mockConstant("%v1", "%bool", false);
+        builder.mockConstant("%v2", "%int", 456);
+        String input = "%reg = OpSelect %int %cond %v1 %v2";
+
+        try {
+            // when
+            visit(builder, input);
+            fail("Should throw exception");
+        } catch (ParsingException e) {
+            // then
+            assertEquals("Illegal definition for '%reg', " +
+                    "expected two operands type 'bv64 but received 'bool' and 'bv64'", e.getMessage());
+        }
+    }
+
+    @Test
     public void testOpsLogicalBin() {
         doTestOpsLogicalBin("OpLogicalAnd", AND, true, true);
         doTestOpsLogicalBin("OpLogicalAnd", AND, false, true);

@@ -16,7 +16,7 @@ public class AssertNot extends AbstractAssert {
         this.child = child;
     }
 
-    AbstractAssert getChild() {
+    public AbstractAssert getChild() {
         return child;
     }
 

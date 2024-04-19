@@ -112,7 +112,9 @@ public class SpirvTest {
                 {"cmpxchg-const-reg.spv.dis", 1, PASS},
                 {"cmpxchg-reg-const.spv.dis", 1, PASS},
                 {"cmpxchg-reg-reg.spv.dis", 1, PASS},
-                {"memory-scopes.spv.dis", 1, PASS}
+                {"memory-scopes.spv.dis", 1, PASS},
+                {"rmw-extremum-true.spv.dis", 1, PASS},
+                {"rmw-extremum-false.spv.dis", 1, FAIL}
         });
     }
 
