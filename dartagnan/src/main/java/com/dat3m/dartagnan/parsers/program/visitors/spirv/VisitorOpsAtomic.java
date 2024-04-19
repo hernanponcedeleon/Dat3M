@@ -128,18 +128,6 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
                 ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.LT);
     }
 
-    @Override
-    public Event visitOpAtomicUMax(SpirvParser.OpAtomicUMaxContext ctx) {
-        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.UGT);
-    }
-
-    @Override
-    public Event visitOpAtomicUMin(SpirvParser.OpAtomicUMinContext ctx) {
-        return visitOpAtomicExtremum(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntCmpOp.ULT);
-    }
-
     private Event visitOpAtomicExtremum(
             SpirvParser.IdResultContext idCtx,
             SpirvParser.IdResultTypeContext typeCtx,
@@ -264,9 +252,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
                 "OpAtomicOr",
                 "OpAtomicXor",
                 "OpAtomicSMax",
-                "OpAtomicSMin",
-                "OpAtomicUMax",
-                "OpAtomicUMin"
+                "OpAtomicSMin"
         );
     }
 }
