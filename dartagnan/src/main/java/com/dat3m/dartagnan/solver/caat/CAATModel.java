@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.solver.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.caat.predicates.CAATPredicate;
 import com.dat3m.dartagnan.solver.caat.predicates.PredicateHierarchy;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,7 +13,6 @@ public class CAATModel {
 
     // ======================================== Fields ==============================================
 
-    private final Map<String, CAATPredicate> predicateMap;
     private final Set<Constraint> constraints;
     private final PredicateHierarchy hierarchy;
 
@@ -26,7 +24,6 @@ public class CAATModel {
 
         this.constraints = constraints;
         this.hierarchy = hierarchy;
-        this.predicateMap = Maps.uniqueIndex(hierarchy.getPredicateList(), CAATPredicate::getName);
 
         for (Constraint c : this.constraints) {
             hierarchy.addListener(c.getConstrainedPredicate(), c);
@@ -53,10 +50,6 @@ public class CAATModel {
     public Set<Constraint> getConstraints() { return constraints; }
     public Domain<?> getDomain() { return hierarchy.getDomain(); }
     public Set<CAATPredicate> getBasePredicates() { return hierarchy.getBasePredicates(); }
-
-    public CAATPredicate getPredicateByName(String name) {
-        return predicateMap.get(name);
-    }
 
     // ======================================== Initialization ==============================================
 
