@@ -46,8 +46,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Event event = EventFactory.newStore(pointer, value);
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_VISIBLE)) {
+            String storageClass = builder.getExpressionStorageClass(ctx.pointer().getText());
+            String scope = getScope(storageClass);
             event.addTags(tags);
-            event.addTags(builder.getExpressionStorageClass(ctx.pointer().getText()));
+            event.addTags(storageClass);
+            if (scope != null) {
+                event.addTags(Tag.Spirv.MEM_NON_PRIVATE);
+                event.addTags(scope);
+            }
             return builder.addEvent(event);
         }
         throw new ParsingException("OpStore cannot contain tag '%s'", Tag.Spirv.MEM_VISIBLE);
@@ -60,8 +66,14 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         Event event = EventFactory.newLoad(register, pointer);
         Set<String> tags = parseMemoryAccessTags(ctx.memoryAccess());
         if (!tags.contains(Tag.Spirv.MEM_AVAILABLE)) {
+            String storageClass = builder.getExpressionStorageClass(ctx.pointer().getText());
+            String scope = getScope(storageClass);
             event.addTags(tags);
-            event.addTags(builder.getExpressionStorageClass(ctx.pointer().getText()));
+            event.addTags(storageClass);
+            if (scope != null) {
+                event.addTags(Tag.Spirv.MEM_NON_PRIVATE);
+                event.addTags(scope);
+            }
             return builder.addEvent(event);
         }
         throw new ParsingException("OpLoad cannot contain tag '%s'", Tag.Spirv.MEM_AVAILABLE);
@@ -373,6 +385,24 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                     String.join(" ", ctx.children.stream().map(ParseTree::getText).toList()));
         }
         return tags;
+    }
+
+    private String getScope(String storageClass) {
+        return switch (storageClass) {
+            case Tag.Spirv.SC_UNIFORM_CONSTANT,
+                    Tag.Spirv.SC_UNIFORM,
+                    Tag.Spirv.SC_OUTPUT,
+                    Tag.Spirv.SC_PUSH_CONSTANT,
+                    Tag.Spirv.SC_STORAGE_BUFFER,
+                    Tag.Spirv.SC_PHYS_STORAGE_BUFFER -> Tag.Spirv.DEVICE;
+            case Tag.Spirv.SC_PRIVATE,
+                    Tag.Spirv.SC_FUNCTION,
+                    Tag.Spirv.SC_INPUT -> null;
+            case Tag.Spirv.SC_WORKGROUP -> Tag.Spirv.WORKGROUP;
+            case Tag.Spirv.SC_CROSS_WORKGROUP -> Tag.Spirv.QUEUE_FAMILY;
+            default -> throw new UnsupportedOperationException(
+                    "Unsupported storage class " + storageClass);
+        };
     }
 
     public Set<String> getSupportedOps() {
