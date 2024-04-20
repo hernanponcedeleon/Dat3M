@@ -103,7 +103,7 @@ The target architecture is supposed to match (this is responsibility of the user
 Further options can be specified using `--<option>=<value>`. Common options include:
 - `bound`: unrolling bound for the BMC (default is 1).
 - `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
-- `method`: specifies which solving method to use. Option `caat` (the default one) uses a customized solver for memory consistency. Options `incremental` and `assume` solve a monolithic formula using incremental/assume-based SMT solving. 
+- `method`: specifies which solving method to use. Option `lazy` (the default one) uses a customized solver for memory consistency. Option `eager` solves a monolithic formula using SMT solving. 
 
 Dartagnan supports input non-determinism using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) command `__VERIFIER_nondet_X`.
 
