@@ -48,7 +48,8 @@ public class VisitorOpsMemoryTest {
         assertNotNull(load);
         assertEquals(memObj, load.getAddress());
         assertEquals(iType, load.getAccessType());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_UNIFORM), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_UNIFORM,
+                        Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.DEVICE), load.getTags());
 
         Register register = load.getResultRegister();
         assertEquals("%result", register.getName());
@@ -60,9 +61,9 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%result = OpLoad %int %ptr MakePointerVisible %scope";
         IntegerType iType = builder.mockIntType("%int", 32);
-        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
         MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
-        builder.mockConstant("%scope", "%int", 3);
+        builder.mockConstant("%scope", "%int", 2);
 
         // when
         parse(input);
@@ -72,8 +73,9 @@ public class VisitorOpsMemoryTest {
         assertNotNull(load);
         assertEquals(memObj, load.getAddress());
         assertEquals(iType, load.getAccessType());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_UNIFORM,
-                Tag.Spirv.SUBGROUP, Tag.Spirv.MEM_VISIBLE, Tag.Spirv.MEM_NON_PRIVATE), load.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.WORKGROUP,
+                Tag.Spirv.MEM_VISIBLE, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.SC_WORKGROUP), load.getTags());
 
         Register register = load.getResultRegister();
         assertEquals("%result", register.getName());
@@ -118,7 +120,8 @@ public class VisitorOpsMemoryTest {
         assertEquals(memObj, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM), store.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM,
+                Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.DEVICE), store.getTags());
     }
 
     @Test
@@ -126,7 +129,7 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "OpStore %ptr %value MakePointerAvailable %scope";
         IntegerType iType = builder.mockIntType("%int", 32);
-        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockPtrType("%int_ptr", "%int", "Workgroup");
         MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
         Expression value = builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%scope", "%int", 2);
@@ -140,8 +143,9 @@ public class VisitorOpsMemoryTest {
         assertEquals(memObj, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
-        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM,
-                Tag.Spirv.WORKGROUP, Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_NON_PRIVATE), store.getTags());
+        assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.WORKGROUP,
+                Tag.Spirv.MEM_AVAILABLE, Tag.Spirv.MEM_NON_PRIVATE,
+                Tag.Spirv.SC_WORKGROUP), store.getTags());
     }
 
     @Test
