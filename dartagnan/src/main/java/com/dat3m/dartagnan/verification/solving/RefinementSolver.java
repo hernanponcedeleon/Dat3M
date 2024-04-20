@@ -486,8 +486,7 @@ public class RefinementSolver extends ModelChecker {
                         // The following three definitions are "semi-derived" and need to get cut
                         // to get a semi-positive model.
                         || subDef instanceof SetIdentity
-                        || subDef instanceof CartesianProduct
-                        || subDef instanceof Fences) {
+                        || subDef instanceof CartesianProduct) {
                     constraintsToCut.add(subDef);
                 }
             } else if (c instanceof Definition def && def.getDefinedRelation().hasName()) {
@@ -496,6 +495,11 @@ public class RefinementSolver extends ModelChecker {
                 if (name.equals(DATA) || name.equals(CTRL) || name.equals(ADDR) || name.equals(CRIT)) {
                     constraintsToCut.add(c);
                 }
+            } else if (c instanceof Definition def && def instanceof Fences) {
+                // (iii) continued: fencerel(F) is unsupported in CAAT.
+                //  It should get rewritten to "po;[F];po" by our passes,
+                //  but if it was not, we cut it instead.
+                constraintsToCut.add(c);
             }
         }
 
