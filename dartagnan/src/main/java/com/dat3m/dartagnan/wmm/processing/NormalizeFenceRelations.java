@@ -1,10 +1,10 @@
 package com.dat3m.dartagnan.wmm.processing;
 
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.definition.Composition;
 import com.dat3m.dartagnan.wmm.definition.Fences;
-import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.SetIdentity;
 
 import java.util.List;
@@ -23,10 +23,7 @@ public class NormalizeFenceRelations implements WmmProcessor {
 
     @Override
     public void run(Wmm wmm) {
-
-        final Relation po = wmm.getRelations()
-                .stream().filter(r -> r.getDefinition() instanceof ProgramOrder)
-                .findFirst().orElseThrow();
+        final Relation po = wmm.getRelation(RelationNameRepository.PO);
 
         for (Relation rel : List.copyOf(wmm.getRelations())) {
             if (rel.getDefinition() instanceof Fences fence) {

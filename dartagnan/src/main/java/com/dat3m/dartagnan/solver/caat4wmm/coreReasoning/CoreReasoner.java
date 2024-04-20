@@ -45,12 +45,20 @@ public class CoreReasoner {
                 analysisContext.requires(ThreadSymmetry.class), REFINEMENT_SYMMETRIC_LEARNING);
     }
 
+    /*
+        NOTE: When we compute symmetric core reasons, we may generate too many (blow-up)
+        if the program is highly symmetric. To avoid this blow-up, we artificially stop the
+        reason computation at some bound B.
+        This is sound because even a single reason is sufficient to make progress,
+        but it may result in making more refinement iterations.
+        Since we compute only (at most) B core reasons, we try to estimate which
+        base reasons give us the best (smallest) core reasons (Steps (1)-(3)).
+     */
     public Set<Conjunction<CoreLiteral>> toCoreReasons(DNF<CAATLiteral> baseReasons) {
 
-        // (1) Find valuable base reasons by reducing them to simplified core reasons first
-        // and filtering out duplicates
-        BiMap<Conjunction<CAATLiteral>, Conjunction<CoreLiteral>> base2core = HashBiMap.create(baseReasons.getNumberOfCubes());
-        BiMap<Conjunction<CoreLiteral>, Conjunction<CAATLiteral>> core2base = base2core.inverse();
+        // (1) Reduce base reasons to simplified core reasons (without symmetry).
+        final BiMap<Conjunction<CAATLiteral>, Conjunction<CoreLiteral>> base2core =
+                HashBiMap.create(baseReasons.getNumberOfCubes());
         for (Conjunction<CAATLiteral> baseReason : baseReasons.getCubes()) {
             final Conjunction<CoreLiteral> coreReason = toCoreReasonNoSymmetry(baseReason);
             if (!base2core.containsValue(coreReason)) {
@@ -59,14 +67,15 @@ public class CoreReasoner {
         }
 
         // (2) Remove dominated core reasons and sort by reason length
-        List<Conjunction<CoreLiteral>> reducedCoreReasons = new ArrayList<>(new DNF<>(base2core.values()).getCubes());
+        final List<Conjunction<CoreLiteral>> reducedCoreReasons = new ArrayList<>(new DNF<>(base2core.values()).getCubes());
         reducedCoreReasons.sort(Comparator.comparingInt(Conjunction::getSize));
 
         // (3) Translate back to base reasons (we need the original base reasons for symmetry reasoning)
-        List<Conjunction<CAATLiteral>> reducedBaseReasons = reducedCoreReasons.stream().map(core2base::get).toList();
+        final List<Conjunction<CAATLiteral>> reducedBaseReasons =
+                reducedCoreReasons.stream().map(base2core.inverse()::get).toList();
 
         // (4) Recompute core reasons with symmetry reasoning.
-        //  Stop early, if the number of reasons gets too large.
+        //  Stop early, if the number of reasons exceeds a bound.
         final Set<Conjunction<CoreLiteral>> coreReasons = new HashSet<>();
         for (Conjunction<CAATLiteral> baseReason : reducedBaseReasons) {
             coreReasons.addAll(toCoreReasons(baseReason));
@@ -81,10 +90,13 @@ public class CoreReasoner {
     public Set<Conjunction<CoreLiteral>> toCoreReasons(Conjunction<CAATLiteral> baseReason) {
         final EventDomain domain = executionGraph.getDomain();
 
+        // We compute the orbit of <baseReason> under the symmetry group of the program's threads.
+        // We use a standard worklist algorithm to do so.
+        // NOTE: We compute the orbit of an "unreduced" core reason, because
+        // reductions we can apply to a core reason may not be sound for its symmetric counterparts.
         final Set<List<CoreLiteral>> orbit = new HashSet<>();
         final Deque<List<CoreLiteral>> workqueue = new ArrayDeque<>();
         workqueue.add(toUnreducedCoreReason(baseReason, domain));
-
         while (!workqueue.isEmpty()) {
             final List<CoreLiteral> reason = workqueue.removeFirst();
             for (Function<Event, Event> generator : symmGenerators) {
@@ -95,6 +107,7 @@ public class CoreReasoner {
             }
         }
 
+        // Now we can reduce all computed (symmetric) reasons.
         return orbit.stream().map(this::reduce).map(Conjunction::new).collect(Collectors.toSet());
     }
 
@@ -120,10 +133,15 @@ public class CoreReasoner {
         return permuted;
     }
 
+    // An "unreduced" core reason is a faithful (invertible) translation of a base relation to a core reason.
     private List<CoreLiteral> toUnreducedCoreReason(Conjunction<CAATLiteral> baseReason, EventDomain domain) {
         final List<CoreLiteral> coreReason = new ArrayList<>(baseReason.getSize());
         for (CAATLiteral lit : baseReason.getLiterals()) {
             if (lit instanceof ElementLiteral eleLit) {
+                // FIXME: This step is not really faithful because we forget the unary predicate
+                //  from which we derived the exec literals.
+                //  This should be fine for now because all unary sets are static so they behave similarly.
+                //  If we ever support dynamic unary predicates, this code needs to get updated.
                 final Event e = domain.getObjectById(eleLit.getData().getId()).getEvent();
                 coreReason.add(new ExecLiteral(e, lit.isPositive()));
             } else if (lit instanceof EdgeLiteral edgeLit) {

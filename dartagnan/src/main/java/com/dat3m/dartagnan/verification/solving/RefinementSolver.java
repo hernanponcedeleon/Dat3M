@@ -496,8 +496,9 @@ public class RefinementSolver extends ModelChecker {
                     constraintsToCut.add(c);
                 }
             } else if (c instanceof Definition def && def instanceof Fences) {
-                // (iii) continued: fencerel(F) is unsupported in CAAT
-                //  It should get rewritten to "po;[F];po" but if it was not, we cut it instead.
+                // (iii) continued: fencerel(F) is unsupported in CAAT.
+                //  It should get rewritten to "po;[F];po" by our passes,
+                //  but if it was not, we cut it instead.
                 constraintsToCut.add(c);
             }
         }
