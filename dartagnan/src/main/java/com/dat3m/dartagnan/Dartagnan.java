@@ -154,14 +154,6 @@ public class Dartagnan extends BaseOptions {
                 } else {
                     // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
                     switch (o.getMethod()) {
-                        case TWO:
-                            try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                modelChecker = TwoSolvers.run(ctx, prover, prover2, task);
-                            }
-                            break;
-                        case INCREMENTAL:
-                            modelChecker = IncrementalSolver.run(ctx, prover, task);
-                            break;
                         case ASSUME:
                             modelChecker = AssumeSolver.run(ctx, prover, task);
                             break;

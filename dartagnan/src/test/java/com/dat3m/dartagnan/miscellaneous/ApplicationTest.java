@@ -15,23 +15,9 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 public class ApplicationTest {
 
     @Test
-    public void Two() throws Exception {
-        Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                TWO.asStringOption(),
-                Solvers.Z3.toString()));
-    }
-
-    @Test
     public void Assume() throws Exception {
         Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
                 ASSUME.asStringOption(),
-                Solvers.Z3.toString()));
-    }
-
-    @Test
-    public void Incremental() throws Exception {
-        Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                INCREMENTAL.asStringOption(),
                 Solvers.Z3.toString()));
     }
 
