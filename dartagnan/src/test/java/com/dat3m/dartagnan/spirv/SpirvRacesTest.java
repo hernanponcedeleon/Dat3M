@@ -54,8 +54,9 @@ public class SpirvRacesTest {
                 {"caslock-1.1.2.spv.dis", 2, PASS},
                 {"caslock-2.1.1.spv.dis", 2, PASS},
                 {"caslock-acq2rx.spv.dis", 1, FAIL},
-                {"caslock-dv2wg.spv.dis", 1, FAIL},
                 {"caslock-rel2rx.spv.dis", 1, FAIL},
+                {"caslock-dv2wg-2.1.1.spv.dis", 2, PASS},
+                {"caslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
                 {"CORR.spv.dis", 1, PASS},
                 {"IRIW.spv.dis", 1, PASS},
                 {"MP.spv.dis", 1, FAIL},
@@ -65,15 +66,18 @@ public class SpirvRacesTest {
                 {"ticketlock-1.1.2.spv.dis", 2, PASS},
                 {"ticketlock-2.1.1.spv.dis", 2, PASS},
                 {"ticketlock-acq2rx.spv.dis", 1, FAIL},
-                {"ticketlock-dv2wg.spv.dis", 1, FAIL},
                 {"ticketlock-rel2rx.spv.dis", 1, FAIL},
+                {"ticketlock-dv2wg-2.1.1.spv.dis", 2, PASS},
+                {"ticketlock-dv2wg-1.1.2.spv.dis", 1, FAIL},
                 {"ttaslock-1.1.2.spv.dis", 2, PASS},
                 {"ttaslock-2.1.1.spv.dis", 2, PASS},
                 {"ttaslock-acq2rx.spv.dis", 1, FAIL},
-                {"ttaslock-dv2wg.spv.dis", 1, FAIL},
                 {"ttaslock-rel2rx.spv.dis", 1, FAIL},
+                {"ttaslock-dv2wg-2.1.1.spv.dis", 2, PASS},
+                {"ttaslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
                 {"xf-barrier-1.1.2.spv.dis", 1, PASS},
                 {"xf-barrier-2.1.1.spv.dis", 1, PASS},
+
                 // This race happens because both spinloops could hang (this is allowed by lack
                 // of forward progress guarantees, making some control barrier not to execute
                 // and thus missing com cbar relation. Our implementation allows this even if we
