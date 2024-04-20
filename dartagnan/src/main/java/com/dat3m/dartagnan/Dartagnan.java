@@ -154,10 +154,10 @@ public class Dartagnan extends BaseOptions {
                 } else {
                     // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
                     switch (o.getMethod()) {
-                        case ASSUME:
+                        case EAGER:
                             modelChecker = AssumeSolver.run(ctx, prover, task);
                             break;
-                        case CAAT:
+                        case LAZY:
                             modelChecker = RefinementSolver.run(ctx, prover, task);
                             break;
                         default:
