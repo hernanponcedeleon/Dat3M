@@ -105,9 +105,11 @@ Further options can be specified using `--<option>=<value>`. Common options incl
 - `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
 - `method`: specifies which solving method to use. Option `lazy` (the default one) uses a customized solver for memory consistency. Option `eager` solves a monolithic formula using SMT solving. 
 
-Dartagnan supports input non-determinism using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) command `__VERIFIER_nondet_X`. You can set up specific bounds for individual loops in the C code by annotating the loop with `__VERIFIER_loop_bound(...)`. For example,
+Dartagnan supports input non-determinism using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) command `__VERIFIER_nondet_X`.
+
+You can set up specific bounds for individual loops in the C code by annotating the loop with `__VERIFIER_loop_bound(...)`. For example,
 ```
-__VERIFIER_loop_bound(2)
+__VERIFIER_loop_bound(2);
 while(1) {
     ...
 }
