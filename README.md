@@ -107,6 +107,15 @@ Further options can be specified using `--<option>=<value>`. Common options incl
 
 Dartagnan supports input non-determinism using the [SVCOMP](https://sv-comp.sosy-lab.org/2020/index.php) command `__VERIFIER_nondet_X`.
 
+You can set up specific bounds for individual loops in the C code by annotating the loop with `__VERIFIER_loop_bound(...)`. For example,
+```
+__VERIFIER_loop_bound(2);
+while(1) {
+    ...
+}
+```
+will unroll this loop twice and use the bound passed to the `--bound` option for all other loops.
+
 Authors and Contact
 ======
 **Maintainer:**
