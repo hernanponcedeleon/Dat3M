@@ -22,44 +22,35 @@
 #define mo4 memory_order_acquire
 #endif
 
-__kernel void xf_barrier(global atomic_uint *flag, global uint* data_leaders, global uint* read_data_leaders, global uint* data_followers, global uint* read_data_followers, global uint* done_leaders, global uint* done_followers) {
+__kernel void xf_barrier(global atomic_uint *flag, global uint* in, global uint* out) {
 
-        if (get_group_id(0) == 0) {
+        unsigned int group_id = get_group_id(0);
+        unsigned int local_id = get_local_id(0);
+        unsigned int num_groups = get_num_groups(0);
 
-            data_leaders[get_local_id(0)] = 1;
+        unsigned int global_id = get_global_id(0);
+        unsigned int global_size = get_global_size(0);
 
-            // The 2 in the comparison should be eventually replaced by get_num_groups(0) 
-            // and should match the last entry of the config in the spirv code
-            if (get_local_id(0) + 1 < 2) {
-                while (atomic_load_explicit(&flag[get_local_id(0) + 1], mo1) == 0);
+        in[global_id] = 1;
+
+        if (group_id == 0) {
+            if (local_id + 1 < num_groups) {
+                while (atomic_load_explicit(&flag[local_id + 1], mo1) == 0);
             }
-
             barrier(CLK_GLOBAL_MEM_FENCE);
-
-            // The 2 in the comparison should be eventually replaced by get_num_groups(0) 
-            // and should match the last entry of the config in the spirv code
-            if (get_local_id(0) + 1 < 2) {
-                atomic_store_explicit(&flag[get_local_id(0) + 1], 0, mo2);
+            if (local_id + 1 < num_groups) {
+                atomic_store_explicit(&flag[local_id + 1], 0, mo2);
             }
-
-            read_data_followers[get_local_id(0)] = data_followers[get_local_id(0)];
-            done_leaders[get_local_id(0)] = 1;
-
         } else {
-
-            data_followers[get_local_id(0)] = 1;
-
             barrier(CLK_GLOBAL_MEM_FENCE);
-
-            if (get_local_id(0) == 0) {
-                atomic_store_explicit(&flag[get_group_id(0)], 1, mo3);
-                while (atomic_load_explicit(&flag[get_group_id(0)], mo4) == 1);
+            if (local_id == 0) {
+                atomic_store_explicit(&flag[group_id], 1, mo3);
+                while (atomic_load_explicit(&flag[group_id], mo4) == 1);
             }
-
             barrier(CLK_GLOBAL_MEM_FENCE);
+        }
 
-            read_data_leaders[get_local_id(0)] = data_leaders[get_local_id(0)];
-            done_followers[get_local_id(0)] = 1;
-
+        for (unsigned int i = 0; i < global_size; i++) {
+            out[global_id] += in[i];
         }
 }
