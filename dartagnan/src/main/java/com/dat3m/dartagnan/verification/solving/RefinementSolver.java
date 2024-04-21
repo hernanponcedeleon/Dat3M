@@ -613,6 +613,7 @@ public class RefinementSolver extends ModelChecker {
         final Set<Difference> negDiff = separator.negatives().stream()
                 .filter(Difference.class::isInstance).map(Difference.class::cast)
                 .collect(Collectors.toSet());
+        final Map<Relation, Relation> replacements = new HashMap<>();
         for (Difference diff : negDiff) {
             // r = a \ b, r and a are negative (w.r.t. some axiom)
             final Relation r = diff.getDefinedRelation();
@@ -620,9 +621,16 @@ public class RefinementSolver extends ModelChecker {
             final Relation b = diff.getSubtrahend();
             if (!separator.negatives().contains(b.getDefinition())) {
                 // b must be positive, so we instrument.
-                // (1) Create b'
-                final String bPrimeName = b.getName().map(n -> n + "#POS").orElse("__POS" + counter++);
-                final Relation bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName)));
+
+                // (1) Create b' (if not already existing)
+                final Relation bPrime;
+                if (replacements.containsKey(b)) {
+                    bPrime = replacements.get(b);
+                } else {
+                    final String bPrimeName = b.getName().map(n -> n + "#POS").orElse("__POS" + counter++);
+                    bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName)));
+                    replacements.put(b, bPrime);
+                }
                 // (2) Rewrite  r = a \ b  to  r = a \ b'
                 wmm.removeDefinition(r);
                 wmm.addDefinition(new Difference(r, a, bPrime));
