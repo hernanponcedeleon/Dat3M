@@ -180,10 +180,15 @@ public class RefinementSolver extends ModelChecker {
 
         // ------------------------ Preprocessing / Analysis ------------------------
 
-        removeFlaggedAxioms(memoryModel);
+        // TODO: This is a reasonable transformation for all solvers, however,
+        //  our current processing pipelines (WmmProcessor/ProgramProcessor) are unaware of the property
+        //  so we cannot perform property-aware transformation in those pipelines right now.
+        removeFlaggedAxiomsIfNotNeeded(task);
+
         memoryModel.configureAll(config);
         preprocessProgram(task, config);
         preprocessMemoryModel(task, config);
+        instrumentPolaritySeparation(memoryModel);
 
         performStaticProgramAnalyses(task, analysisContext, config);
         // Copy context without WMM analyses because we want to analyse a second model later
@@ -537,14 +542,95 @@ public class RefinementSolver extends ModelChecker {
         }
     }
 
-    private static void removeFlaggedAxioms(Wmm memoryModel) {
-        // We remove flagged axioms.
-        // NOTE: Theoretically, we could cut them but in practice this causes the whole model to get eagerly encoded,
-        // resulting in the worst combination: eagerly encoded model relations + lazy axiom checks.
-        // The performance on, e.g., LKMM is horrendous!!!!
-        List.copyOf(memoryModel.getAxioms()).stream()
-                .filter(Axiom::isFlagged)
-                .forEach(memoryModel::removeConstraint);
+    private static void removeFlaggedAxiomsIfNotNeeded(VerificationTask task) {
+        // We remove flagged axioms if we not check for them.
+        if (!task.getProperty().contains(Property.CAT_SPEC)) {
+            List.copyOf(task.getMemoryModel().getAxioms()).stream()
+                    .filter(Axiom::isFlagged)
+                    .forEach(task.getMemoryModel()::removeConstraint);
+        }
+    }
+
+    // The constraints of the Wmm can be partitioned into positive and negative constraints,
+    // depending on whether the number of negations applied to the constraint/relation is even (=positive)
+    // or odd (=negative).
+    private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
+
+    private PolaritySeparator computePolaritySeparator(Wmm wmm) {
+        final Set<Constraint> positives = new HashSet<>();
+        final Set<Constraint> negatives = new HashSet<>();
+        final Constraint.Visitor<Void> collector = new Constraint.Visitor<>() {
+            private boolean polarity = true;
+
+            @Override
+            public Void visitAxiom(Axiom axiom) {
+                polarity = !axiom.isNegated();
+                process(axiom);
+                return axiom.getRelation().getDefinition().accept(this);
+            }
+
+            @Override
+            public Void visitDefinition(Definition def) {
+                if (process(def)) {
+                    def.getConstrainedRelations().subList(1, def.getConstrainedRelations().size())
+                            .forEach(r -> r.getDefinition().accept(this));
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitDifference(Difference def) {
+                if (process(def)) {
+                    def.getMinuend().getDefinition().accept(this);
+                    polarity = !polarity;
+                    def.getSubtrahend().getDefinition().accept(this);
+                    polarity = !polarity;
+                }
+                return null;
+            }
+
+            private boolean process(Constraint c) {
+                return (polarity ? positives : negatives).add(c);
+            }
+        };
+
+        wmm.getAxioms().forEach(ax -> ax.accept(collector));
+        return new PolaritySeparator(positives, negatives);
+    }
+
+    /*
+        This pass rewrites the memory model so that no positive constraints appear on the rhs-side of a difference.
+        Suppose "r = a \ b" where r and a are negative and b is positive.
+        For example, this is the case if there is a constraint "~empty(r)"
+        We rewrite the model to
+            let b`= free()
+            let r = a \ b' // b' gets cut, but it is effectively a base relation so this causes no large encoding.
+            empty (r & b) // b is now in a positive position and thus not need to get cut
+     */
+    private void instrumentPolaritySeparation(Wmm wmm) {
+        int counter = 0;
+        final PolaritySeparator separator = computePolaritySeparator(wmm);
+        final Set<Difference> negDiff = separator.negatives().stream()
+                .filter(Difference.class::isInstance).map(Difference.class::cast)
+                .collect(Collectors.toSet());
+        for (Difference diff : negDiff) {
+            // r = a \ b, r and a are negative (w.r.t. some axiom)
+            final Relation r = diff.getDefinedRelation();
+            final Relation a = diff.getMinuend();
+            final Relation b = diff.getSubtrahend();
+            if (!separator.negatives().contains(b.getDefinition())) {
+                // b must be positive, so we instrument.
+                // (1) Create b'
+                final String bPrimeName = b.getName().map(n -> n + "#POS").orElse("__POS" + counter++);
+                final Relation bPrime = wmm.addDefinition(new Free(wmm.newRelation(bPrimeName)));
+                // (2) Rewrite  r = a \ b  to  r = a \ b'
+                wmm.removeDefinition(r);
+                wmm.addDefinition(new Difference(r, a, bPrime));
+                // (3) Add empty (r & b)
+                final Relation intersection = wmm.addDefinition(new Intersection(wmm.newRelation(), r, b));
+                wmm.addConstraint(new Emptiness(intersection));
+            }
+        }
     }
 
     // ================================================================================================================
