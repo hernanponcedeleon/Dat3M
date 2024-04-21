@@ -31,8 +31,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -83,13 +83,38 @@ public class SpirvChecksTest {
                 {"ttaslock-dv2wg-1.1.2.spv.dis", 2, UNKNOWN},
                 {"ttaslock-dv2wg-2.2.1.spv.dis", 2, UNKNOWN},
                 {"ttaslock-dv2wg-2.2.2.spv.dis", 2, UNKNOWN},
-                {"xf-barrier-1.1.2.spv.dis", 1, PASS},
-                {"xf-barrier-2.1.1.spv.dis", 1, PASS},
-                {"xf-barrier-2.1.2.spv.dis", 1, PASS},
-                {"xf-barrier-fail1.spv.dis", 1, PASS},
-                {"xf-barrier-fail2.spv.dis", 1, PASS},
-                {"xf-barrier-fail3.spv.dis", 1, PASS},
-                {"xf-barrier-fail4.spv.dis", 1, PASS},
+
+                {"xf-barrier-2.1.2.spv.dis", 4, PASS},
+                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-2.1.1.spv.dis", 2, PASS},
+                {"xf-barrier-1.1.2.spv.dis", 2, PASS},
+                {"xf-barrier-fail1.spv.dis", 4, PASS},
+                {"xf-barrier-fail2.spv.dis", 4, PASS},
+                {"xf-barrier-fail3.spv.dis", 4, PASS},
+                {"xf-barrier-fail4.spv.dis", 4, PASS},
+                {"xf-barrier-weakest.spv.dis", 4, PASS},
+
+                {"xf-barrier-local-2.1.2.spv.dis", 4, PASS},
+                {"xf-barrier-local-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-local-2.1.1.spv.dis", 2, PASS},
+                {"xf-barrier-local-1.1.2.spv.dis", 2, PASS},
+                {"xf-barrier-local-fail1.spv.dis", 4, PASS},
+                {"xf-barrier-local-fail2.spv.dis", 4, PASS},
+                {"xf-barrier-local-fail3.spv.dis", 4, PASS},
+                {"xf-barrier-local-fail4.spv.dis", 4, PASS},
+                {"xf-barrier-local-weakest.spv.dis", 4, PASS},
+
+                // See the comment for no_barrier_flag (below)
+                /*
+                {"xf-barrier-zero-2.1.2.spv.dis", 4, PASS},
+                {"xf-barrier-zero-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-zero-2.1.1.spv.dis", 2, PASS},
+                {"xf-barrier-zero-1.1.2.spv.dis", 2, PASS},
+                {"xf-barrier-zero-fail1.spv.dis", 4, PASS},
+                {"xf-barrier-zero-fail2.spv.dis", 4, PASS},
+                {"xf-barrier-zero-fail3.spv.dis", 4, PASS},
+                {"xf-barrier-zero-fail4.spv.dis", 4, PASS},
+                {"xf-barrier-zero-weakest.spv.dis", 4, PASS}, */
 
                 // TODO: Support missing semantics
                 // {"gpu-verify/alignement/race_location.spv.dis", 1, PASS},

@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
@@ -9,7 +10,9 @@ import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.FenceWithId;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -70,12 +73,34 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFullProgram() {
         return context.getBooleanFormulaManager().and(
+                encodeControlBarrier(),
                 encodeConstants(),
                 encodeMemory(),
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
                 encodeFilter(),
                 encodeDependencies());
+    }
+
+    public BooleanFormula encodeControlBarrier() {
+        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        BooleanFormula enc = bmgr.makeTrue();
+        List<Thread> scopedThreads = context.getTask().getProgram().getThreads().stream().filter(Thread::hasScope).toList();
+        for (Thread t1 : scopedThreads) {
+            for (Thread t2 : scopedThreads) {
+                if (t1.getScopeHierarchy().canSyncAtScope(t2.getScopeHierarchy(), Tag.Vulkan.WORK_GROUP)) {
+                    for (FenceWithId f1 : t1.getEvents(FenceWithId.class)) {
+                        for (FenceWithId f2 : t2.getEvents(FenceWithId.class)) {
+                            Expression id1 = f1.getFenceID();
+                            Expression id2 = f2.getFenceID();
+                            BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, f1), context.encodeExpressionAt(id2, f2));
+                            enc = bmgr.and(enc, bmgr.implication(sameId, bmgr.equivalence(context.execution(f1), context.execution(f2))));
+                        }
+                    }
+                }
+            }
+        }
+        return enc;
     }
 
     public BooleanFormula encodeConstants() {

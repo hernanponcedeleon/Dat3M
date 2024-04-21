@@ -36,13 +36,10 @@
                OpDecorate %_struct_17 Block
                OpDecorate %19 DescriptorSet 0
                OpDecorate %19 Binding 0
-               OpDecorate %19 Coherent
                OpDecorate %20 DescriptorSet 0
                OpDecorate %20 Binding 1
-               OpDecorate %20 Coherent
                OpDecorate %21 DescriptorSet 0
                OpDecorate %21 Binding 2
-               OpDecorate %21 Coherent
                OpDecorate %10 SpecId 0
                OpDecorate %11 SpecId 1
                OpDecorate %12 SpecId 2
@@ -69,7 +66,7 @@
      %uint_1 = OpConstant %uint 1
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
        %bool = OpTypeBool
-    %uint_72 = OpConstant %uint 72
+   %uint_264 = OpConstant %uint 264
     %uint_68 = OpConstant %uint 68
     %uint_66 = OpConstant %uint 66
     %uint_64 = OpConstant %uint 64
@@ -111,7 +108,7 @@
                OpSelectionMerge %75 None
                OpBranchConditional %51 %54 %75
          %54 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_72
+               OpControlBarrier %uint_2 %uint_2 %uint_264
          %56 = OpIEqual %bool %36 %uint_0
                OpSelectionMerge %71 None
                OpBranchConditional %56 %59 %71
@@ -129,7 +126,7 @@
          %71 = OpLabel
                OpBranch %73
          %73 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_72
+               OpControlBarrier %uint_2 %uint_2 %uint_264
                OpBranch %75
          %75 = OpLabel
          %76 = OpPhi %bool %false %73 %true %25
@@ -154,7 +151,7 @@
          %95 = OpLabel
                OpBranch %97
          %97 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_72
+               OpControlBarrier %uint_2 %uint_2 %uint_264
                OpSelectionMerge %105 None
                OpBranchConditional %81 %100 %105
         %100 = OpLabel
