@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.sosy_lab.common.configuration.Configuration;
@@ -42,7 +42,7 @@ public class BuildWitnessTest {
         VerificationTask task = VerificationTask.builder().withConfig(config).build(p, wmm, Property.getDefault());
         try (SolverContext ctx = TestHelper.createContext();
              ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-            IncrementalSolver modelChecker = IncrementalSolver.run(ctx, prover, task);
+            AssumeSolver modelChecker = AssumeSolver.run(ctx, prover, task);
             Result res = modelChecker.getResult();
             WitnessBuilder witnessBuilder = WitnessBuilder.of(modelChecker.getEncodingContext(), prover, res, "user assertion");
             config.inject(witnessBuilder);
