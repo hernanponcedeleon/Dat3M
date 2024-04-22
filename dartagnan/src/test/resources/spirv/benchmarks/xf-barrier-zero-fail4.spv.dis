@@ -36,13 +36,10 @@
                OpDecorate %_struct_17 Block
                OpDecorate %19 DescriptorSet 0
                OpDecorate %19 Binding 0
-               OpDecorate %19 Coherent
                OpDecorate %20 DescriptorSet 0
                OpDecorate %20 Binding 1
-               OpDecorate %20 Coherent
                OpDecorate %21 DescriptorSet 0
                OpDecorate %21 Binding 2
-               OpDecorate %21 Coherent
                OpDecorate %10 SpecId 0
                OpDecorate %11 SpecId 1
                OpDecorate %12 SpecId 2
@@ -69,10 +66,10 @@
      %uint_1 = OpConstant %uint 1
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
        %bool = OpTypeBool
-    %uint_72 = OpConstant %uint 72
+     %uint_8 = OpConstant %uint 8
     %uint_68 = OpConstant %uint 68
-    %uint_66 = OpConstant %uint 66
     %uint_64 = OpConstant %uint 64
+    %uint_66 = OpConstant %uint 66
       %false = OpConstantFalse %bool
        %true = OpConstantTrue %bool
     %uint_12 = OpConstant %uint 12
@@ -111,7 +108,7 @@
                OpSelectionMerge %75 None
                OpBranchConditional %51 %54 %75
          %54 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_72
+               OpControlBarrier %uint_2 %uint_2 %uint_8
          %56 = OpIEqual %bool %36 %uint_0
                OpSelectionMerge %71 None
                OpBranchConditional %56 %59 %71
@@ -120,7 +117,7 @@
                OpAtomicStore %60 %uint_1 %uint_68 %uint_1
                OpBranch %63
          %63 = OpLabel
-         %65 = OpAtomicLoad %uint %60 %uint_1 %uint_66
+         %65 = OpAtomicLoad %uint %60 %uint_1 %uint_64
          %66 = OpINotEqual %bool %65 %uint_1
                OpLoopMerge %69 %63 None
                OpBranchConditional %66 %69 %63
@@ -129,7 +126,7 @@
          %71 = OpLabel
                OpBranch %73
          %73 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_72
+               OpControlBarrier %uint_2 %uint_2 %uint_8
                OpBranch %75
          %75 = OpLabel
          %76 = OpPhi %bool %false %73 %true %25
@@ -138,29 +135,29 @@
          %79 = OpLabel
          %80 = OpIAdd %uint %36 %uint_1
          %81 = OpULessThan %bool %80 %39
-               OpSelectionMerge %95 None
-               OpBranchConditional %81 %84 %95
+               OpSelectionMerge %96 None
+               OpBranchConditional %81 %84 %96
          %84 = OpLabel
          %85 = OpIAdd %uint %36 %uint_1
          %86 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %85
                OpBranch %88
          %88 = OpLabel
-         %89 = OpAtomicLoad %uint %86 %uint_1 %uint_66
-         %90 = OpINotEqual %bool %89 %uint_0
-               OpLoopMerge %93 %88 None
-               OpBranchConditional %90 %93 %88
-         %93 = OpLabel
-               OpBranch %95
-         %95 = OpLabel
-               OpBranch %97
-         %97 = OpLabel
-               OpControlBarrier %uint_2 %uint_2 %uint_72
+         %90 = OpAtomicLoad %uint %86 %uint_1 %uint_66
+         %91 = OpINotEqual %bool %90 %uint_0
+               OpLoopMerge %94 %88 None
+               OpBranchConditional %91 %94 %88
+         %94 = OpLabel
+               OpBranch %96
+         %96 = OpLabel
+               OpBranch %98
+         %98 = OpLabel
+               OpControlBarrier %uint_2 %uint_2 %uint_8
                OpSelectionMerge %105 None
-               OpBranchConditional %81 %100 %105
-        %100 = OpLabel
-        %101 = OpIAdd %uint %36 %uint_1
-        %102 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %101
-               OpAtomicStore %102 %uint_1 %uint_64 %uint_0
+               OpBranchConditional %81 %101 %105
+        %101 = OpLabel
+        %102 = OpIAdd %uint %36 %uint_1
+        %103 = OpAccessChain %_ptr_StorageBuffer_uint %19 %uint_0 %102
+               OpAtomicStore %103 %uint_1 %uint_68 %uint_0
                OpBranch %105
         %105 = OpLabel
                OpBranch %107

@@ -81,20 +81,38 @@ public class SpirvRacesTest {
                 {"ttaslock-dv2wg-1.1.2.spv.dis", 1, FAIL},
                 {"ttaslock-dv2wg-2.2.1.spv.dis", 4, PASS},
                 {"ttaslock-dv2wg-2.2.2.spv.dis", 1, FAIL},
-                {"xf-barrier-1.1.2.spv.dis", 1, PASS},
-                {"xf-barrier-2.1.1.spv.dis", 1, PASS},
 
-                // This race happens because both spinloops could hang (this is allowed by lack
-                // of forward progress guarantees, making some control barrier not to execute
-                // and thus missing com cbar relation. Our implementation allows this even if we
-                // don't support weak forward progress because we find a violation. If we would
-                // require to report races only when no bound event is executed and disable the
-                // dynamic spinloop detection pass, we would not find such violation.
-                {"xf-barrier-2.1.2.spv.dis", 1, FAIL},
-                {"xf-barrier-fail1.spv.dis", 1, FAIL},
-                {"xf-barrier-fail2.spv.dis", 1, FAIL},
-                {"xf-barrier-fail3.spv.dis", 1, FAIL},
-                {"xf-barrier-fail4.spv.dis", 1, FAIL},
+                {"xf-barrier-2.1.2.spv.dis", 4, PASS},
+                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
+                {"xf-barrier-2.1.1.spv.dis", 2, PASS},
+                {"xf-barrier-1.1.2.spv.dis", 2, PASS},
+                {"xf-barrier-fail1.spv.dis", 4, FAIL},
+                {"xf-barrier-fail2.spv.dis", 4, FAIL},
+                {"xf-barrier-fail3.spv.dis", 4, FAIL},
+                {"xf-barrier-fail4.spv.dis", 4, FAIL},
+                {"xf-barrier-weakest.spv.dis", 4, FAIL},
+
+                {"xf-barrier-local-2.1.2.spv.dis", 4, FAIL},
+                {"xf-barrier-local-3.1.3.spv.dis", 9, FAIL},
+                {"xf-barrier-local-2.1.1.spv.dis", 2, FAIL},
+                // one thread in workgroup, barrier semantics doesn't matter
+                {"xf-barrier-local-1.1.2.spv.dis", 2, PASS},
+                {"xf-barrier-local-fail1.spv.dis", 4, FAIL},
+                {"xf-barrier-local-fail2.spv.dis", 4, FAIL},
+                {"xf-barrier-local-fail3.spv.dis", 4, FAIL},
+                {"xf-barrier-local-fail4.spv.dis", 4, FAIL},
+                {"xf-barrier-local-weakest.spv.dis", 4, FAIL},
+
+                {"xf-barrier-zero-2.1.2.spv.dis", 4, FAIL},
+                {"xf-barrier-zero-3.1.3.spv.dis", 9, FAIL},
+                {"xf-barrier-zero-2.1.1.spv.dis", 2, FAIL},
+                // one thread in workgroup, barrier semantics doesn't matter
+                {"xf-barrier-zero-1.1.2.spv.dis", 2, PASS},
+                {"xf-barrier-zero-fail1.spv.dis", 4, FAIL},
+                {"xf-barrier-zero-fail2.spv.dis", 4, FAIL},
+                {"xf-barrier-zero-fail3.spv.dis", 4, FAIL},
+                {"xf-barrier-zero-fail4.spv.dis", 4, FAIL},
+                {"xf-barrier-zero-weakest.spv.dis", 4, FAIL},
 
                 // TODO: Support missing semantics
                 // {"gpu-verify/alignement/race_location.spv.dis", 1, FAIL},
