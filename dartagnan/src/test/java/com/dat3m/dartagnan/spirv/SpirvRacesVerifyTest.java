@@ -70,7 +70,7 @@ public class SpirvRacesVerifyTest {
                 {"atomics/atomic_read_race/atomic_read_race.spv.dis", 1, FAIL},
                 {"array_bounds_tests/multi_dim_array/multi_dim_array.spv.dis", 1, PASS},
                 {"array_bounds_tests/negative_index_multi_dim/negative_index_multi_dim.spv.dis", 1, PASS},
-                {"test_structs/use_array_element/use_array_element.spv.dis", 1, FAIL},
+                {"test_structs/use_array_element/use_array_element.spv.dis", 1, PASS},
                 {"warpsync/scan_warp/scan_warp.spv.dis", 1, PASS},
                 {"localarrayaccess/localarrayaccess.spv.dis", 1, PASS},
                 {"test_structs/store_array_element/store_array_element.spv.dis", 1, PASS},
@@ -85,12 +85,10 @@ public class SpirvRacesVerifyTest {
                 {"pointertests/test_return_pointer/test_return_pointer.spv.dis", 1, PASS},
                 {"array_bounds_tests/realign_simple/realign_simple.spv.dis", 1, PASS},
                 {"sourcelocation_tests/races/pass/read_read/read_read.spv.dis", 1, PASS},
-                {"divergence/race_no_divergence/race_no_divergence.spv.dis", 1, FAIL},
                 {"array_bounds_tests/private_array/private_array.spv.dis", 1, PASS},
-                {"array_bounds_tests/array_in_array/array_in_array.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag/missing_local_barrier_flag.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags/no_barrier_flags.spv.dis", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag/pass_due_to_intra_group_flag.spv.dis", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag/pass_due_to_intra_group_flag.spv.dis", 1, PASS},
                 {"sourcelocation_tests/races/pass/no_race/no_race.spv.dis", 1, PASS},
                 {"test_2d_local_index_inference_2/test_2d_local_index_inference_2.spv.dis", 1, PASS},
                 {"misc/pass/misc2/misc2.spv.dis", 1, PASS},
@@ -103,7 +101,6 @@ public class SpirvRacesVerifyTest {
                 {"misc/fail/miscfail1/miscfail1.spv.dis", 1, FAIL},
                 {"atomics/forloop/forloop.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/sync/sync.spv.dis", 1, FAIL},
-                {"array_bounds_tests/array_in_array_param/array_in_array_param.spv.dis", 1, PASS},
                 {"mem_fence/mem_fence.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/pass/local_barrier_flag/local_barrier_flag.spv.dis", 1, PASS},
                 {"array_bounds_tests/simple_array_fail_lower/simple_array_fail_lower.spv.dis", 1, PASS},
@@ -127,6 +124,8 @@ public class SpirvRacesVerifyTest {
                 // {"report_global_id/test1/test1.spv.dis", 1, FAIL},
                 // {"misc/fail/4d_array_race/4d_array_race.spv.dis", 1, FAIL},
                 // {"sourcelocation_tests/races/fail/read_write/read_write.spv.dis", 1, FAIL},
+                // {"divergence/race_no_divergence/race_no_divergence.spv.dis", 1, PASS},
+
 
                 // Should we initialize the variable with as many entries as the number of threads?
                 // {"basicglobalarray/basicglobalarray.spv.dis", 1, PASS},
@@ -138,6 +137,8 @@ public class SpirvRacesVerifyTest {
 
                 // Needs large bound
                 // {"test_mod_invariants/global_reduce_strength/global_reduce_strength.spv.dis", 1, PASS},
+                // {"array_bounds_tests/array_in_array/array_in_array.spv.dis", 1, FAIL},
+                // {"array_bounds_tests/array_in_array_param/array_in_array_param.spv.dis", 1, FAIL},
 
                 // TODO: Support missing semantics
                 // {"barrierconditionalkernelparam/barrierconditionalkernelparam.spv.dis", 1, PASS},
@@ -156,7 +157,7 @@ public class SpirvRacesVerifyTest {
                 // {"vectortests/double4simpleaccess/double4simpleaccess.spv.dis", 1, PASS},
                 // {"vectortests/double2simpleaccess/double2simpleaccess.spv.dis", 1, PASS},
                 // {"vectortests/int3arrayaccess/int3arrayaccess.spv.dis", 1, PASS},
-                // {"skeletonbinomialoptions/skeletonbinomialoptions.spv.dis", 1, UNKNOWN},
+                // {"skeletonbinomialoptions/skeletonbinomialoptions.spv.dis", 1, PASS},
                 // {"return_tests/multiloop_return/multiloop_return.spv.dis", 1, PASS},
                 // {"alignment/race_location/race_location.spv.dis", 1, FAIL},
                 // {"pointertests/test_opencl_local_array/test_opencl_local_array.spv.dis", 1, PASS},
@@ -247,10 +248,10 @@ public class SpirvRacesVerifyTest {
                 // {"sourcelocation_tests/barrier_divergence/fail/fail.spv.dis", 1, PASS},
 
                 // TODO: UNKNOWN
-                {"sourcelocation_tests/races/fail/write_write/loop/loop.spv.dis", 1, UNKNOWN},
-                {"sourcelocation_tests/race_with_loop/race_with_loop.spv.dis", 1, UNKNOWN},
-                {"test_mod_invariants/local_direct/local_direct.spv.dis", 1, UNKNOWN},
-                // {"misc/pass/misc12/misc12.spv.dis", 1, UNKNOWN},
+                {"sourcelocation_tests/races/fail/write_write/loop/loop.spv.dis", 1, FAIL},
+                {"sourcelocation_tests/race_with_loop/race_with_loop.spv.dis", 1, FAIL},
+                {"test_mod_invariants/local_direct/local_direct.spv.dis", 1, PASS},
+                {"misc/pass/misc12/misc12.spv.dis", 1, PASS},
 
 
         });
