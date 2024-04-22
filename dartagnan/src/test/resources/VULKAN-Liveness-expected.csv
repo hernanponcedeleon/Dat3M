@@ -70,4 +70,4 @@ litmus/VULKAN/CADP/3_threads_4_instructions/103_simple.litmus,1
 litmus/VULKAN/CADP/3_threads_4_instructions/104_simple.litmus,1
 litmus/VULKAN/Manual/XF-Barrier-relacq.litmus,1
 litmus/VULKAN/Manual/XF-Barrier-rlx.litmus,1
-litmus/VULKAN/Manual/XF-Barrier-weak.litmus,0
+litmus/VULKAN/Manual/XF-Barrier-weak.litmus,1
