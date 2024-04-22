@@ -113,27 +113,30 @@ public class SpirvRacesVerifyTest {
                 {"test_structs/use_element/use_element.spv.dis", 1, PASS},
                 // {"sourcelocation_tests/races/fail/write_read/write_read.spv.dis", 1, FAIL},
                 // {"sourcelocation_tests/races/fail/write_write/normal/normal.spv.dis", 1, FAIL},
-                // {"sourcelocation_tests/race_from_call/race_from_call.spv.dis", 1, FAIL},
-                // {"sourcelocation_tests/race_from_call_in_loop/race_from_call_in_loop.spv.dis", 1, FAIL},
-                // {"misc/fail/miscfail8/miscfail8.spv.dis", 1, FAIL},
-                // {"misc/fail/struct_member_race/struct_member_race.spv.dis", 1, FAIL},
                 {"test_structs/use_struct_element/use_struct_element.spv.dis", 1, PASS},
-                // {"sourcelocation_tests/races_from_indirect_calls/races_from_indirect_calls.spv.dis", 1, FAIL},
                 // {"atomics/counter/counter.spv.dis", 1, PASS},
                 // {"misc/fail/4d_array_with_casting/4d_array_with_casting.spv.dis", 1, FAIL},
-                // {"report_global_id/test1/test1.spv.dis", 1, FAIL},
                 // {"misc/fail/4d_array_race/4d_array_race.spv.dis", 1, FAIL},
                 // {"sourcelocation_tests/races/fail/read_write/read_write.spv.dis", 1, FAIL},
-                // {"divergence/race_no_divergence/race_no_divergence.spv.dis", 1, PASS},
 
+                // Our result is correct, the compiler removes the read in foo(p) since it is never used
+                // {"misc/fail/miscfail8/miscfail8.spv.dis", 1, FAIL},
+                // {"sourcelocation_tests/race_from_call/race_from_call.spv.dis", 1, FAIL},
+                // {"sourcelocation_tests/race_from_call_in_loop/race_from_call_in_loop.spv.dis", 1, FAIL},
+                // {"sourcelocation_tests/races_from_indirect_calls/races_from_indirect_calls.spv.dis", 1, FAIL},
+
+                // Uses get_global_id(X) with X!=0
+                // {"report_global_id/test1/test1.spv.dis", 1, FAIL},
 
                 // Should we initialize the variable with as many entries as the number of threads?
                 // {"basicglobalarray/basicglobalarray.spv.dis", 1, PASS},
+                // {"misc/fail/struct_member_race/struct_member_race.spv.dis", 1, FAIL},
 
                 // Looks like a race to me (H)
                 // {"misc/pass/misc13/misc13.spv.dis", 1, PASS},
                 // {"atomics/refined_atomic_abstraction/intra_local_counters/intra_local_counters.spv.dis", 1, PASS},
                 {"atomics/refined_atomic_abstraction/bad_local_counters/bad_local_counters.spv.dis", 1, FAIL},
+                // {"divergence/race_no_divergence/race_no_divergence.spv.dis", 1, PASS},
 
                 // Needs large bound
                 // {"test_mod_invariants/global_reduce_strength/global_reduce_strength.spv.dis", 1, PASS},
