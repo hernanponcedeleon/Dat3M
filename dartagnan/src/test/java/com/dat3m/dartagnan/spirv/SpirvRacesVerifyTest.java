@@ -112,20 +112,21 @@ public class SpirvRacesVerifyTest {
                 // {"sourcelocation_tests/races/fail/write_write/normal/normal.spv.dis", 1, FAIL},
                 {"test_structs/use_struct_element/use_struct_element.spv.dis", 1, PASS},
                 // {"atomics/counter/counter.spv.dis", 1, PASS},
-                // {"misc/fail/4d_array_with_casting/4d_array_with_casting.spv.dis", 1, FAIL},
-                // {"misc/fail/4d_array_race/4d_array_race.spv.dis", 1, FAIL},
                 // {"sourcelocation_tests/races/fail/read_write/read_write.spv.dis", 1, FAIL},
-                // {"saturate/sadd/sadd.spv.dis", 1, PASS},
-                // {"checkarrays/pass/specifyall/specifyall.spv.dis", 1, PASS},
-                // {"saturate/ssub/ssub.spv.dis", 1, PASS},
-                {"no_log/pass/pass.spv.dis", 1, PASS}, // Causes a race, but with --only-log this is not reported
-                {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag/pass_due_to_intra_group_flag.spv.dis", 1, PASS}, // this test checks that the flag to check only intra-group races is working
+                {"saturate/sadd/sadd.spv.dis", 1, PASS},
+                {"checkarrays/pass/specifyall/specifyall.spv.dis", 1, PASS},
+                {"saturate/ssub/ssub.spv.dis", 1, PASS},
+                {"no_log/pass/pass.spv.dis", 1, FAIL},
+                {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag/pass_due_to_intra_group_flag.spv.dis", 1, FAIL},
 
-                // Our result is correct, the compiler removes the read in foo(p) since it is never used
-                // {"misc/fail/miscfail8/miscfail8.spv.dis", 1, FAIL},
-                // {"sourcelocation_tests/race_from_call/race_from_call.spv.dis", 1, FAIL},
-                // {"sourcelocation_tests/race_from_call_in_loop/race_from_call_in_loop.spv.dis", 1, FAIL},
-                // {"sourcelocation_tests/races_from_indirect_calls/races_from_indirect_calls.spv.dis", 1, FAIL},
+                // The compiler removes the read in foo(p) since it is never used
+                // Trivially DRF
+                {"misc/fail/miscfail8/miscfail8.spv.dis", 1, PASS},
+                {"sourcelocation_tests/race_from_call/race_from_call.spv.dis", 1, PASS},
+                {"sourcelocation_tests/race_from_call_in_loop/race_from_call_in_loop.spv.dis", 1, PASS},
+                {"sourcelocation_tests/races_from_indirect_calls/races_from_indirect_calls.spv.dis", 1, PASS},
+                {"misc/fail/4d_array_race/4d_array_race.spv.dis", 1, PASS},
+                {"misc/fail/4d_array_with_casting/4d_array_with_casting.spv.dis", 1, PASS},
 
                 // Uses get_global_id(X) with X!=0
                 // {"report_global_id/test1/test1.spv.dis", 1, FAIL},
@@ -144,6 +145,8 @@ public class SpirvRacesVerifyTest {
                 // {"test_mod_invariants/global_reduce_strength/global_reduce_strength.spv.dis", 1, PASS},
                 // {"array_bounds_tests/array_in_array/array_in_array.spv.dis", 1, FAIL},
                 // {"array_bounds_tests/array_in_array_param/array_in_array_param.spv.dis", 1, FAIL},
+                // {"sourcelocation_tests/race_with_loop/race_with_loop.spv.dis", 1, FAIL},
+                // {"test_mod_invariants/local_direct/local_direct.spv.dis", 1, PASS},
 
                 // TODO: Support missing semantics
                 // {"barrierconditionalkernelparam/barrierconditionalkernelparam.spv.dis", 1, PASS},
@@ -257,12 +260,10 @@ public class SpirvRacesVerifyTest {
                 // TODO: Support barrier inside loop
                 // {"test_2d_global_index_inference/test_2d_global_index_inference.spv.dis", 1, PASS},
                 // {"sourcelocation_tests/barrier_divergence/fail/fail.spv.dis", 1, PASS},
+                // {"misc/pass/misc12/misc12.spv.dis", 1, PASS},
 
                 // TODO: UNKNOWN
-                {"sourcelocation_tests/races/fail/write_write/loop/loop.spv.dis", 1, FAIL},
-                {"sourcelocation_tests/race_with_loop/race_with_loop.spv.dis", 1, FAIL},
-                {"test_mod_invariants/local_direct/local_direct.spv.dis", 1, PASS},
-                {"misc/pass/misc12/misc12.spv.dis", 1, PASS},
+                // {"sourcelocation_tests/races/fail/write_write/loop/loop.spv.dis", 1, FAIL},
 
 
         });
