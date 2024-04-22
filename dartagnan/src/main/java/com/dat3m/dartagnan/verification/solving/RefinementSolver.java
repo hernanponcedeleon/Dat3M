@@ -285,6 +285,7 @@ public class RefinementSolver extends ModelChecker {
             }
         } else {
             res = FAIL;
+            saveFlaggedPairsOutput(baselineModel, baselineEncoder, prover, context, task.getProgram());
         }
 
         // -------------------------- Report statistics summary --------------------------
