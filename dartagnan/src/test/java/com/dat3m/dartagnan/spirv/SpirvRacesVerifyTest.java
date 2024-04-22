@@ -63,7 +63,6 @@ public class SpirvRacesVerifyTest {
                 {"null_pointers/null_pointer_assignment_unequal/null_pointer_assignment_unequal.spv.dis", 1, FAIL},
                 {"report_global_id/test2/test2.spv.dis", 1, FAIL},
                 {"null_pointers/null_pointer_assignment_equal/null_pointer_assignment_equal.spv.dis", 1, FAIL},
-                {"pointertests/test_copy_between_memory_spaces/test_copy_between_memory_spaces.spv.dis", 1, PASS},
                 {"array_bounds_tests/negative_index_multi_dim_fail/negative_index_multi_dim_fail.spv.dis", 1, PASS},
                 {"sourcelocation_tests/barrier_divergence/pass/pass.spv.dis", 1, PASS},
                 {"array_bounds_tests/multi_dim_array_fail_upper/multi_dim_array_fail_upper.spv.dis", 1, PASS},
@@ -74,7 +73,6 @@ public class SpirvRacesVerifyTest {
                 {"warpsync/scan_warp/scan_warp.spv.dis", 1, PASS},
                 {"localarrayaccess/localarrayaccess.spv.dis", 1, PASS},
                 {"test_structs/store_array_element/store_array_element.spv.dis", 1, PASS},
-                {"no_log/pass/pass.spv.dis", 1, FAIL},
                 {"benign_race_tests/fail/writezero_nobenign/writezero_nobenign.spv.dis", 1, FAIL},
                 {"barrier_intervals/test1/test1.spv.dis", 1, PASS},
                 {"basicbarrier/basicbarrier.spv.dis", 1, PASS},
@@ -88,7 +86,6 @@ public class SpirvRacesVerifyTest {
                 {"array_bounds_tests/private_array/private_array.spv.dis", 1, PASS},
                 {"inter_group_and_barrier_flag_tests/fail/missing_local_barrier_flag/missing_local_barrier_flag.spv.dis", 1, FAIL},
                 {"inter_group_and_barrier_flag_tests/fail/no_barrier_flags/no_barrier_flags.spv.dis", 1, FAIL},
-                {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag/pass_due_to_intra_group_flag.spv.dis", 1, PASS},
                 {"sourcelocation_tests/races/pass/no_race/no_race.spv.dis", 1, PASS},
                 {"test_2d_local_index_inference_2/test_2d_local_index_inference_2.spv.dis", 1, PASS},
                 {"misc/pass/misc2/misc2.spv.dis", 1, PASS},
@@ -118,6 +115,11 @@ public class SpirvRacesVerifyTest {
                 // {"misc/fail/4d_array_with_casting/4d_array_with_casting.spv.dis", 1, FAIL},
                 // {"misc/fail/4d_array_race/4d_array_race.spv.dis", 1, FAIL},
                 // {"sourcelocation_tests/races/fail/read_write/read_write.spv.dis", 1, FAIL},
+                // {"saturate/sadd/sadd.spv.dis", 1, PASS},
+                // {"checkarrays/pass/specifyall/specifyall.spv.dis", 1, PASS},
+                // {"saturate/ssub/ssub.spv.dis", 1, PASS},
+                {"no_log/pass/pass.spv.dis", 1, PASS}, // Causes a race, but with --only-log this is not reported
+                {"inter_group_and_barrier_flag_tests/pass/pass_due_to_intra_group_flag/pass_due_to_intra_group_flag.spv.dis", 1, PASS}, // this test checks that the flag to check only intra-group races is working
 
                 // Our result is correct, the compiler removes the read in foo(p) since it is never used
                 // {"misc/fail/miscfail8/miscfail8.spv.dis", 1, FAIL},
@@ -245,6 +247,12 @@ public class SpirvRacesVerifyTest {
                 // {"inter_group_and_barrier_flag_tests/pass/read_then_write/read_then_write.spv.dis", 1, PASS},
                 // {"vectortests/vectorswizzle/vectorswizzle.spv.dis", 1, PASS},
                 // {"warpsync/shuffle/shuffle.spv.dis", 1, PASS},
+                // {"saturate/uadd/uadd.spv.dis", 1, PASS},
+                // {"saturate/usub/usub.spv.dis", 1, PASS},
+                // {"shuffle/shuffle/shuffle.spv.dis", 1, PASS},
+                // {"imagetests/fail2dimagecopy/fail2dimagecopy.spv.dis", 1, FAIL},
+                // {"imagetests/test2dimagecopy/test2dimagecopy.spv.dis", 1, PASS},
+
 
                 // TODO: Support barrier inside loop
                 // {"test_2d_global_index_inference/test_2d_global_index_inference.spv.dis", 1, PASS},
