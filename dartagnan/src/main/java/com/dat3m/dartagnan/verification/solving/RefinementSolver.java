@@ -552,9 +552,14 @@ public class RefinementSolver extends ModelChecker {
         }
     }
 
-    // The constraints of the Wmm can be partitioned into positive and negative constraints,
-    // depending on whether the number of negations applied to the constraint/relation is even (=positive)
-    // or odd (=negative).
+    /*
+    The constraints/relations of the Wmm can be categorised into positive and negative,
+    depending on whether the number of negations applied to the constraint/relation is even (=positive)
+    or odd (=negative).
+    A relation can be both negative and positive if it is used multiple times,
+    once with odd negations and once with even negations.
+    It can also be neither, if the relation is dead (i.e., irrelevant for all axioms).
+     */
     private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
 
     private PolaritySeparator computePolaritySeparator(Wmm wmm) {
