@@ -196,25 +196,31 @@ public class SpirvRacesTest {
                 {"gpu-verify-auto/barrier_intervals/test4/test4.spv.dis", 3, PASS},
 
                 // TODO: Check
-                // {"gpu-verify-auto/test_structs/use_element/use_element.spv.dis", 1, PASS},
+                {"gpu-verify-auto/test_structs/use_element/use_element.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/sourcelocation_tests/races/fail/write_read/write_read.spv.dis", 1, FAIL},
                 // {"gpu-verify-auto/sourcelocation_tests/races/fail/write_write/normal/normal.spv.dis", 1, FAIL},
                 // {"gpu-verify-auto/sourcelocation_tests/race_from_call/race_from_call.spv.dis", 1, FAIL},
-                // {"gpu-verify-auto/test_mod_invariants/global_reduce_strength/global_reduce_strength.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/sourcelocation_tests/race_from_call_in_loop/race_from_call_in_loop.spv.dis", 1, FAIL},
-                // {"gpu-verify-auto/misc/pass/misc13/misc13.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/misc/fail/miscfail8/miscfail8.spv.dis", 1, FAIL},
-                // {"gpu-verify-auto/atomics/refined_atomic_abstraction/intra_local_counters/intra_local_counters.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/misc/fail/struct_member_race/struct_member_race.spv.dis", 1, FAIL},
-                // {"gpu-verify-auto/test_structs/use_struct_element/use_struct_element.spv.dis", 1, PASS},
+                {"gpu-verify-auto/test_structs/use_struct_element/use_struct_element.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/sourcelocation_tests/races_from_indirect_calls/races_from_indirect_calls.spv.dis", 1, FAIL},
                 // {"gpu-verify-auto/atomics/counter/counter.spv.dis", 1, PASS},
-                // {"gpu-verify-auto/atomics/refined_atomic_abstraction/bad_local_counters/bad_local_counters.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/misc/fail/4d_array_with_casting/4d_array_with_casting.spv.dis", 1, FAIL},
                 // {"gpu-verify-auto/report_global_id/test1/test1.spv.dis", 1, FAIL},
-                // {"gpu-verify-auto/basicglobalarray/basicglobalarray.spv.dis", 1, PASS},
                 // {"gpu-verify-auto/misc/fail/4d_array_race/4d_array_race.spv.dis", 1, FAIL},
                 // {"gpu-verify-auto/sourcelocation_tests/races/fail/read_write/read_write.spv.dis", 1, FAIL},
+
+                // Should we initialize the variable with as many entries as the number of threads?
+                // {"gpu-verify-auto/basicglobalarray/basicglobalarray.spv.dis", 1, PASS},
+
+                // Looks like a race to me (H)
+                // {"gpu-verify-auto/misc/pass/misc13/misc13.spv.dis", 1, PASS},
+                // {"gpu-verify-auto/atomics/refined_atomic_abstraction/intra_local_counters/intra_local_counters.spv.dis", 1, PASS},
+                // {"gpu-verify-auto/atomics/refined_atomic_abstraction/bad_local_counters/bad_local_counters.spv.dis", 1, PASS},
+
+                // Needs large bound
+                // {"gpu-verify-auto/test_mod_invariants/global_reduce_strength/global_reduce_strength.spv.dis", 1, PASS},
 
                 // TODO: Support missing semantics
                 // {"gpu-verify-auto/barrierconditionalkernelparam/barrierconditionalkernelparam.spv.dis", 1, PASS},
