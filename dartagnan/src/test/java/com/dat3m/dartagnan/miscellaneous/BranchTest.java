@@ -8,7 +8,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.TestHelper;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.TwoSolvers;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
@@ -94,14 +94,13 @@ public class BranchTest {
     @Test
     public void test() {
         try (SolverContext ctx = TestHelper.createContext();
-             ProverEnvironment prover1 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS);
-             ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+             ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
             Program program = new ProgramParser().parse(new File(path));
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .withTarget(Arch.LKMM)
                     .build(program, wmm, Property.getDefault());
-            TwoSolvers s = TwoSolvers.run(ctx, prover1, prover2, task);
+            AssumeSolver s = AssumeSolver.run(ctx, prover, task);
             assertEquals(expected, s.getResult());
         } catch (Exception e) {
             fail("Missing resource file");

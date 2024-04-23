@@ -26,6 +26,7 @@ public class WmmProcessingManager implements WmmProcessor {
     private WmmProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
         processors.addAll(Arrays.asList(
+                NormalizeFenceRelations.newInstance(),
                 AddInitReadHandling.newInstance(),
                 RemoveDeadRelations.newInstance(),
                 MergeEquivalentRelations.newInstance(),

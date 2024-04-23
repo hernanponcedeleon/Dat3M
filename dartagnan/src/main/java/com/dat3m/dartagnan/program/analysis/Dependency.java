@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.verification.Context;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,7 +36,10 @@ public final class Dependency {
     private final HashMap<Event, Map<Register, State>> map = new HashMap<>();
     private final Map<Register, State> finalWriters = new HashMap<>();
 
-    private Dependency() {
+    private final Supplier<SyntacticContextAnalysis> synCtx;
+
+    private Dependency(Program program) {
+        synCtx = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(program));
     }
 
     /**
@@ -51,7 +56,7 @@ public final class Dependency {
     public static Dependency fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         logger.info("Analyze dependencies");
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        Dependency result = new Dependency();
+        Dependency result = new Dependency(program);
         for (Thread t : program.getThreads()) {
             result.process(t, exec);
         }
@@ -126,10 +131,9 @@ public final class Dependency {
                     } else {
                         writers = process(event, state, register, exec);
                         if (!writers.initialized) {
-                            logger.warn("Uninitialized register {} read by event {} of thread {}",
-                                    register,
-                                    event,
-                                    thread.getId());
+                            logger.warn("Uninitialized register {} read by event {}\n {}",
+                                    register, event,
+                                    synCtx.get().getSourceLocationWithContext(event, true));
                         }
                     }
                     result.put(register, writers);
@@ -170,7 +174,7 @@ public final class Dependency {
                 .filter(e -> e.register.equals(register))
                 .map(e -> e.event)
                 .filter(e -> reader == null || !exec.areMutuallyExclusive(reader, e))
-                .collect(toList());
+                .toList();
         //NOTE if candidates is empty, the reader is unreachable
         List<RegWriter> mays = candidates.stream()
                 .filter(Objects::nonNull)
