@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.utils.visualization.Graphviz;
 import com.dat3m.dartagnan.verification.Context;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Lists;
 import com.google.common.math.IntMath;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -628,14 +629,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Positive values assume non-negative multipliers and thus enable the precision of the previous analysis.
     // Negative values indicate that the multiplier can also be negative.
     private static int reduceAbsGCD(List<Integer> alignment) {
-        if (alignment.isEmpty()) {
-            return 0;
-        }
-        int result = Math.abs(alignment.get(0));
-        for (final Integer a : alignment.subList(1, alignment.size())) {
-            result = IntMath.gcd(result, Math.abs(a));
-        }
-        return result;
+        return reduceGCD(Lists.transform(alignment, Math::abs));
     }
 
     // Computes the greatest common divisor of the operands.
@@ -722,6 +716,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Describes (constant address or register or zero) + offset + alignment * (variable)
     private record Result(MemoryObject address, Register register, BigInteger offset, List<Integer> alignment) {
+        private boolean isConstant() {
+            return address == null && register == null && alignment.isEmpty();
+        }
         @Override
         public String toString() {
             return String.format("%s+%s+%sx", address != null ? address : register, offset, alignment);
@@ -736,19 +733,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final var collector = new Collector();
         final Result result = expression.accept(collector);
         final DerivedVariable main;
-        final int offset = result == null ? 0 : result.offset.intValue();
-        if (result == null) {
-            main = null;
-        } else if (result.address != null) {
-            main = derive(objectVariables.get(result.address), offset, result.alignment);
-        } else if (result.register == null) {
-            main = null;
+        if (result != null && (result.address != null || result.register != null)) {
+            final DerivedVariable base = result.address != null ? derive(objectVariables.get(result.address)) :
+                    getPhiNodeVariable(result.register, reader);
+            main = compose(base, new Modifier(result.offset.intValue(), result.alignment));
         } else {
-            main = compose(getPhiNodeVariable(result.register, reader), new Modifier(offset, result.alignment));
+            main = null;
         }
         if (main != null &&
-                collector.address.stream().noneMatch(a -> a != result.address) &&
-                collector.register.stream().noneMatch(r -> r != result.register)) {
+                collector.address.stream().allMatch(a -> a == result.address) &&
+                collector.register.stream().allMatch(r -> r == result.register)) {
             return main;
         }
         if (main == null && collector.address.isEmpty() && collector.register.isEmpty()) {
@@ -808,9 +802,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             final Result left = x.getLeft().accept(this);
             final Result right = x.getRight().accept(this);
             final IntBinaryOp kind = x.getKind();
-            if (left != null && left.address == null && left.register == null && left.alignment.isEmpty() &&
-                    right != null && right.address == null && right.register == null && right.alignment.isEmpty() &&
-                    kind != IntBinaryOp.RSHIFT) {
+            if (left != null && left.isConstant() && right != null && right.isConstant()) {
                 // TODO: Make sure that the type of normalization does not break this code.
                 //  Maybe always do signed normalization?
                 final BigInteger result = kind.apply(left.offset, right.offset, x.getType().getBitWidth());
