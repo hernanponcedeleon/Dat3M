@@ -180,7 +180,7 @@ public class RefinementSolver extends ModelChecker {
 
         // ------------------------ Preprocessing / Analysis ------------------------
 
-        // TODO: This is a reasonable transformation for all solvers, however,
+        // TODO: This is a reasonable transformation for all methods (eager/lazy), however,
         //  our current processing pipelines (WmmProcessor/ProgramProcessor) are unaware of the property
         //  so we cannot perform property-aware transformation in those pipelines right now.
         removeFlaggedAxiomsIfNotNeeded(task);
@@ -544,7 +544,7 @@ public class RefinementSolver extends ModelChecker {
     }
 
     private static void removeFlaggedAxiomsIfNotNeeded(VerificationTask task) {
-        // We remove flagged axioms if we not check for them.
+        // We remove flagged axioms if we do not check for them.
         if (!task.getProperty().contains(Property.CAT_SPEC)) {
             List.copyOf(task.getMemoryModel().getAxioms()).stream()
                     .filter(Axiom::isFlagged)
@@ -553,12 +553,15 @@ public class RefinementSolver extends ModelChecker {
     }
 
     /*
-    The constraints/relations of the Wmm can be categorised into positive and negative,
-    depending on whether the number of negations applied to the constraint/relation is even (=positive)
-    or odd (=negative).
-    A relation can be both negative and positive if it is used multiple times,
-    once with odd negations and once with even negations.
-    It can also be neither, if the relation is dead (i.e., irrelevant for all axioms).
+        The constraints/relations of the Wmm can be categorised into positive and negative,
+        depending on whether the number of negations applied to the constraint/relation is even (=positive)
+        or odd (=negative).
+        Negations come from negated axioms (~empty(r)), RHS of differences (c = a \ b), or
+        complementation (Y = ~X). Complementation is just a difference: ~X = _ \ X, so there is no special
+        treatment required.
+        A relation can be both negative and positive if it is used multiple times,
+        once with odd negations and once with even negations.
+        It can also be neither, if the relation is dead (i.e., irrelevant for all axioms).
      */
     private record PolaritySeparator(Set<Constraint> positives, Set<Constraint> negatives) { }
 
@@ -605,13 +608,54 @@ public class RefinementSolver extends ModelChecker {
     }
 
     /*
-        This pass rewrites the memory model so that no positive constraints appear on the rhs-side of a difference.
-        Suppose "r = a \ b" where r and a are negative and b is positive.
+        This pass rewrites the memory model so that no non-negative constraints appear on the RHS of a difference.
+        Consider "r = a \ b" where b is non-negative (note that r and a must be non-positive then).
         For example, this is the case if there is a constraint "~empty(r)"
         We rewrite the model to
-            let b`= free()
+            let b'= free()
             let r = a \ b' // b' gets cut, but it is effectively a base relation so this causes no large encoding.
-            empty (r & b) // b is now in a positive position and thus not need to get cut
+            empty (r & b) // b is now in a positive position and thus not need to get cut.
+
+        We claim that this model is equisatisfiable to the original memory model.
+        To understand this intuitively, it is helpful so think of the fresh b' as the original b but with "some slack".
+        We will argue that the best choice for b' is precisely b.
+        Any larger choice for b' will make r smaller, but since r is non-positive this reduces the chances
+        of satisfying negated axioms (e.g., if "~empty(r)" is true for some small r, then it is also true for all larger r).
+        On the other hand, if b' is chosen too small, then r gets so large that it violates "empty(r & b)".
+        We prove this formally:
+
+        "NEW => ORIGINAL":
+        Suppose M' is a consistent execution of the new memory model.
+        Then from "let r = a \ b'" it follows that M'(r) \subseteq M'(a).
+        Furthermore, from "empty (r & b)" it follows that M'(r) \subseteq ~M'(b).
+        Combining both, we get M'(r) \subseteq M'(a) & ~M'(b) = M'(a) \ M'(b)
+        Now consider an execution M of the original memory model that matches with M' on the base relations
+        (modulo b' which does not exist in the original model).
+        Then M(a) = M'(a) and M(b) = M'(b), so that M'(r) \subseteq M'(a) \ M'(b) = M(a) \ M(b) = M(r).
+        So the original memory model has a potentially larger interpretation for r (M'(r) \subseteq M(r)).
+        Since r is non-positive, we know that a larger relation satisfies more axioms (e.g.,
+        if r' is non-empty/non-acyclic/non-irreflexive, then the larger r will also satisfy these).
+        So M is a consistent execution of the original memory model.
+
+        "NEW <= ORIGINAL":
+        Suppose M is a consistent execution of the original model.
+        Then we can construct M' that matches with M on all common base relations but also sets M'(b') := M(b).
+        It is clear that M' now matches on all derived relations with M and so it satisfies the same axioms
+        and thus is also consistent.
+
+        NOTE: We argued about consistency only, but the same reasoning also applies to violation of flagged axioms,
+        i.e., the difference between "~empty(r)" and "flag ~empty(r)" is irrelevant for the argumentation.
+
+        NOTE 2: This rewriting is always possible.
+
+        NOTE 3: There is a minor caveat in the new memory model.
+        If an execution under the original memory model violates, e.g., "flag ~empty(r)" with multiple edges {e1, ..., ek},
+        then for the same execution the new memory model could report only a subset of those violations.
+        The reason is that the new memory model has a some slack in the choice of b':
+        it will choose b' such "flag ~empty(r)" holds (i.e., we have a violation), but it will not guarantee to
+        make the choice in such a way that it maximizes the number of violations.
+        If we want to get all violations of an execution, we could take the found execution (under the new memory model)
+        and simply recompute it under the original memory model, giving us the precise violations.
      */
     private void instrumentPolaritySeparation(Wmm wmm) {
         final PolaritySeparator separator = computePolaritySeparator(wmm);
@@ -623,7 +667,7 @@ public class RefinementSolver extends ModelChecker {
         final Map<Relation, Relation> replacements = new HashMap<>();
         int counter = 0;
         for (Difference diff : negDiff) {
-            // r = a \ b where r and a are negative and b is positive.
+            // r = a \ b where r and a are non-positive and b is non-negative.
             final Relation r = diff.getDefinedRelation();
             final Relation a = diff.getMinuend();
             final Relation b = diff.getSubtrahend();
