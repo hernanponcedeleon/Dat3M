@@ -612,6 +612,7 @@ public class RefinementSolver extends ModelChecker {
         Consider "r = a \ b" where b is non-negative (note that r and a must be non-positive then).
         For example, this is the case if there is a constraint "~empty(r)"
         We rewrite the model to
+
             let b'= free()
             let r = a \ b' // b' gets cut, but it is effectively a base relation so this causes no large encoding.
             empty (r & b) // b is now in a positive position and thus not need to get cut.
@@ -622,23 +623,32 @@ public class RefinementSolver extends ModelChecker {
         Any larger choice for b' will make r smaller, but since r is non-positive this reduces the chances
         of satisfying negated axioms (e.g., if "~empty(r)" is true for some small r, then it is also true for all larger r).
         On the other hand, if b' is chosen too small, then r gets so large that it violates "empty(r & b)".
-        We prove this formally:
+
+        We prove this formally. Towards this, we reason about executions M which are to be understood
+        as an interpretation of the relations of the memory model.
+        So, e.g., M(rf) is the value of rf (=the concrete binary relation) in the execution M.
 
         "NEW => ORIGINAL":
-        Suppose M' is a consistent execution of the new memory model.
-        Then from "let r = a \ b'" it follows that M'(r) \subseteq M'(a).
-        Furthermore, from "empty (r & b)" it follows that M'(r) \subseteq ~M'(b).
-        Combining both, we get M'(r) \subseteq M'(a) & ~M'(b) = M'(a) \ M'(b)
-        Now consider an execution M of the original memory model that matches with M' on the base relations
+        Suppose M' is a consistent execution under the new memory model.
+        Then from "let r = a \ b'" it follows that
+            M'(r) \subseteq M'(a).
+        Furthermore, from "empty (r & b)" it follows that
+            M'(r) \subseteq ~M'(b).
+        Combining both, we get
+            M'(r) \subseteq (M'(a) & ~M'(b)) = (M'(a) \ M'(b)).
+        Now consider an execution M under the original memory model that matches with M' on the base relations
         (modulo b' which does not exist in the original model).
-        Then M(a) = M'(a) and M(b) = M'(b), so that M'(r) \subseteq M'(a) \ M'(b) = M(a) \ M(b) = M(r).
+        Since both models agree on all base relations except b', they also agree on all derived relations
+        that are independent of b'.
+        In particular, since a and b are independent of b', we have M(a) = M'(a) and M(b) = M'(b), so that
+            M'(r) \subseteq (M'(a) \ M'(b)) = (M(a) \ M(b)) = M(r).
         So the original memory model has a potentially larger interpretation for r (M'(r) \subseteq M(r)).
         Since r is non-positive, we know that a larger relation satisfies more axioms (e.g.,
         if r' is non-empty/non-acyclic/non-irreflexive, then the larger r will also satisfy these).
-        So M is a consistent execution of the original memory model.
+        So M is a consistent execution under the original memory model.
 
         "NEW <= ORIGINAL":
-        Suppose M is a consistent execution of the original model.
+        Suppose M is a consistent execution under the original model.
         Then we can construct M' that matches with M on all common base relations but also sets M'(b') := M(b).
         It is clear that M' now matches on all derived relations with M and so it satisfies the same axioms
         and thus is also consistent.
@@ -651,7 +661,7 @@ public class RefinementSolver extends ModelChecker {
         NOTE 3: There is a minor caveat in the new memory model.
         If an execution under the original memory model violates, e.g., "flag ~empty(r)" with multiple edges {e1, ..., ek},
         then for the same execution the new memory model could report only a subset of those violations.
-        The reason is that the new memory model has a some slack in the choice of b':
+        The reason is that the SMT solver has some slack in the choice of b':
         it will choose b' such "flag ~empty(r)" holds (i.e., we have a violation), but it will not guarantee to
         make the choice in such a way that it maximizes the number of violations.
         If we want to get all violations of an execution, we could take the found execution (under the new memory model)
