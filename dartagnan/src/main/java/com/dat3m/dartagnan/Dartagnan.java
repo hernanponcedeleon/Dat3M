@@ -81,7 +81,7 @@ public class Dartagnan extends BaseOptions {
 
         if (Arrays.asList(args).contains("--version")) {
             MavenXpp3Reader reader = new MavenXpp3Reader();
-            System.out.println(String.format("Dartagnan v%s (%s)", reader.read(new FileReader("pom.xml")).getVersion(),
+            System.out.println(String.format("Dartagnan v%s (%s)", reader.read(new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml")).getVersion(),
                     getGitId()));
             return;
         }
