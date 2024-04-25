@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -41,6 +42,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
+import java.io.FileReader;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -51,7 +53,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
+import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
@@ -74,6 +76,13 @@ public class Dartagnan extends BaseOptions {
 
         if (Arrays.asList(args).contains("--help")) {
             collectOptions();
+            return;
+        }
+
+        if (Arrays.asList(args).contains("--version")) {
+            MavenXpp3Reader reader = new MavenXpp3Reader();
+            System.out.println(String.format("Dartagnan v%s (%s)", reader.read(new FileReader("pom.xml")).getVersion(),
+                    getGitId()));
             return;
         }
 
