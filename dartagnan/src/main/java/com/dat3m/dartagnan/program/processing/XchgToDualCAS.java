@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.EventVisitor;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +72,7 @@ public class XchgToDualCAS implements ProgramProcessor {
 
             Load load = newRMWLoadExclusiveWithMo(resultRegister, address, mo);
             Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, mo);
+            Event optionalRelFenceAfter = newFence(mo);
 
             Label end = newLabel("Xchg_end");
             CondJump jump = newJumpUnless(expressions.makeNEQ(resultRegister, e.getValue()), end);
@@ -79,7 +81,7 @@ public class XchgToDualCAS implements ProgramProcessor {
                     load,
                     jump,
                     store,
-                    // TODO potentially add F[REL] if the xchg requires release semantics
+                    optionalRelFenceAfter,
                     end
             );
         }
