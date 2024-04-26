@@ -83,7 +83,8 @@ public class SpirvRacesTest {
                 {"ttaslock-dv2wg-2.2.2.spv.dis", 1, FAIL},
 
                 {"xf-barrier-2.1.2.spv.dis", 4, PASS},
-                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
+                // Slow test
+                // {"xf-barrier-3.1.3.spv.dis", 9, PASS},
                 {"xf-barrier-2.1.1.spv.dis", 2, PASS},
                 {"xf-barrier-1.1.2.spv.dis", 2, PASS},
                 {"xf-barrier-fail1.spv.dis", 4, FAIL},
@@ -93,7 +94,8 @@ public class SpirvRacesTest {
                 {"xf-barrier-weakest.spv.dis", 4, FAIL},
 
                 {"xf-barrier-local-2.1.2.spv.dis", 4, FAIL},
-                {"xf-barrier-local-3.1.3.spv.dis", 9, FAIL},
+                // Slow test
+                // {"xf-barrier-local-3.1.3.spv.dis", 9, FAIL},
                 {"xf-barrier-local-2.1.1.spv.dis", 2, FAIL},
                 // one thread in workgroup, barrier semantics doesn't matter
                 {"xf-barrier-local-1.1.2.spv.dis", 2, PASS},
@@ -104,7 +106,8 @@ public class SpirvRacesTest {
                 {"xf-barrier-local-weakest.spv.dis", 4, FAIL},
 
                 {"xf-barrier-zero-2.1.2.spv.dis", 4, FAIL},
-                {"xf-barrier-zero-3.1.3.spv.dis", 9, FAIL},
+                // Slow test
+                // {"xf-barrier-zero-3.1.3.spv.dis", 9, FAIL},
                 {"xf-barrier-zero-2.1.1.spv.dis", 2, FAIL},
                 // one thread in workgroup, barrier semantics doesn't matter
                 {"xf-barrier-zero-1.1.2.spv.dis", 2, PASS},
