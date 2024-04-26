@@ -1,0 +1,46 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 28
+; Schema: 0
+               OpCapability Shader
+         %18 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %16 "foo" %gl_GlobalInvocationID %13 %5
+               OpSource OpenCL_C 200
+         %19 = OpString "foo"
+         %20 = OpString " __kernel"
+               OpMemberDecorate %_struct_3 0 Offset 0
+               OpDecorate %_struct_3 Block
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %8 SpecId 0
+               OpDecorate %9 SpecId 1
+               OpDecorate %10 SpecId 2
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+  %_struct_3 = OpTypeStruct %v3uint
+%_ptr_PushConstant__struct_3 = OpTypePointer PushConstant %_struct_3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+          %8 = OpSpecConstant %uint 1
+          %9 = OpSpecConstant %uint 1
+         %10 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %8 %9 %10
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+       %void = OpTypeVoid
+         %15 = OpTypeFunction %void
+     %uint_0 = OpConstant %uint 0
+    %uint_12 = OpConstant %uint 12
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+          %5 = OpVariable %_ptr_PushConstant__struct_3 PushConstant
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %13 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %16 = OpFunction %void Pure %15
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %24 = OpExtInst %void %18 PushConstantRegionOffset %uint_0 %uint_12
+         %22 = OpExtInst %void %18 Kernel %16 %19 %uint_0 %uint_0 %20
+         %27 = OpExtInst %void %18 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2

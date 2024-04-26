@@ -1,0 +1,41 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 25
+; Schema: 0
+               OpCapability Shader
+               OpCapability VariablePointersStorageBuffer
+         %18 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %11 "foo" %8
+               OpSource OpenCL_C 200
+         %19 = OpString "foo"
+         %20 = OpString " kernel"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+         %14 = OpConstantNull %_ptr_StorageBuffer_uint
+     %uint_1 = OpConstant %uint 1
+    %uint_80 = OpConstant %uint 80
+     %uint_0 = OpConstant %uint 0
+     %uint_2 = OpConstant %uint 2
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %11 = OpFunction %void None %10
+         %12 = OpLabel
+         %17 = OpAtomicIIncrement %uint %14 %uint_1 %uint_80
+               OpReturn
+               OpFunctionEnd
+         %22 = OpExtInst %void %18 Kernel %11 %19 %uint_0 %uint_0 %20
+         %24 = OpExtInst %void %18 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2
