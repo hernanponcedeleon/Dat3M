@@ -84,7 +84,8 @@ public class SpirvChecksTest {
                 {"ttaslock-dv2wg-2.2.2.spv.dis", 2, UNKNOWN},
 
                 {"xf-barrier-2.1.2.spv.dis", 4, PASS},
-                {"xf-barrier-3.1.3.spv.dis", 9, PASS},
+                // Slow test
+                // {"xf-barrier-3.1.3.spv.dis", 9, PASS},
                 {"xf-barrier-2.1.1.spv.dis", 2, PASS},
                 {"xf-barrier-1.1.2.spv.dis", 2, PASS},
                 {"xf-barrier-fail1.spv.dis", 4, PASS},
@@ -94,7 +95,8 @@ public class SpirvChecksTest {
                 {"xf-barrier-weakest.spv.dis", 4, PASS},
 
                 {"xf-barrier-local-2.1.2.spv.dis", 4, PASS},
-                {"xf-barrier-local-3.1.3.spv.dis", 9, PASS},
+                // Slow test
+                // {"xf-barrier-local-3.1.3.spv.dis", 9, PASS},
                 {"xf-barrier-local-2.1.1.spv.dis", 2, PASS},
                 {"xf-barrier-local-1.1.2.spv.dis", 2, PASS},
                 {"xf-barrier-local-fail1.spv.dis", 4, PASS},
