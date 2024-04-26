@@ -25,9 +25,11 @@ import java.util.stream.Collectors;
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_SYMMETRIC_LEARNING;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-// The CoreReasoner transforms base reasons of the CAATSolver to core reason of the WMMSolver.
+// The CoreReasoner transforms base reasons of the CAATSolver to core reasons of the WMMSolver.
 public class CoreReasoner {
 
+    // An upper bound on the number of reasons computed per iteration,
+    // This is mostly used to limit "reason explosion" for highly symmetric benchmarks.
     private final static int MAX_NUM_COMPUTED_REASONS = 1000;
 
     public enum SymmetricLearning { NONE, FULL }
@@ -61,7 +63,8 @@ public class CoreReasoner {
                 HashBiMap.create(baseReasons.getNumberOfCubes());
         for (Conjunction<CAATLiteral> baseReason : baseReasons.getCubes()) {
             final Conjunction<CoreLiteral> coreReason = toCoreReasonNoSymmetry(baseReason);
-            if (!base2core.containsValue(coreReason)) {
+            if (!coreReason.isFalse() && !base2core.containsValue(coreReason)) {
+                // NOTE: We only add productive base reasons whose core reasons are not FALSE.
                 base2core.put(baseReason, coreReason);
             }
         }
@@ -108,11 +111,12 @@ public class CoreReasoner {
         }
 
         // Now we can reduce all computed (symmetric) reasons.
-        return orbit.stream().map(this::reduce).map(Conjunction::new).collect(Collectors.toSet());
+        return orbit.stream().map(this::reduce).filter(Objects::nonNull).map(Conjunction::new).collect(Collectors.toSet());
     }
 
     private Conjunction<CoreLiteral> toCoreReasonNoSymmetry(Conjunction<CAATLiteral> baseReason) {
-        return new Conjunction<>(reduce(toUnreducedCoreReason(baseReason, executionGraph.getDomain())));
+        List<CoreLiteral> reduced = reduce(toUnreducedCoreReason(baseReason, executionGraph.getDomain()));
+        return reduced == null ? Conjunction.FALSE() : new Conjunction<>(reduced);
     }
 
     private List<CoreLiteral> getPermuted(List<CoreLiteral> reason, Function<Event, Event> perm) {
@@ -156,6 +160,7 @@ public class CoreReasoner {
 
     // Reduce a core reason by applying knowledge about the semantics of its literals
     // (relation analysis / base semantics / control-flow information etc.)
+    // This may return NULL, if our knowledge tells us that this is impossible to happen.
     private List<CoreLiteral> reduce(List<CoreLiteral> reason) {
         final List<CoreLiteral> simplified = new ArrayList<>();
         for (CoreLiteral lit : reason) {
@@ -165,18 +170,27 @@ public class CoreReasoner {
                 final Event e1 = relLiteral.getSource();
                 final Event e2 = relLiteral.getTarget();
                 final Relation rel = relLiteral.getRelation();
-                if (relLiteral.isPositive() && ra.getKnowledge(rel).getMustSet().contains(e1, e2)) {
+                final RelationAnalysis.Knowledge k = ra.getKnowledge(rel);
+
+                if (relLiteral.isPositive() && k.getMustSet().contains(e1, e2)) {
                     addExecReason(e1, e2, simplified);
-                } else if (relLiteral.isNegative() && !ra.getKnowledge(rel).getMaySet().contains(e1, e2)) {
-                    // Negated literal is always true, no need to remember it.
+                } else if (!k.getMaySet().contains(e1, e2)) {
+                    if (lit.isPositive()) {
+                        // Positive literal is never true, so the whole reason is impossible.
+                        // We return NULL to indicate this.
+                        return null;
+                    } else {
+                        // Negated literal is always true, no need to remember it / do anything.
+                    }
                 } else {
-                    String name = rel.getName().orElse(null);
+                    final String name = rel.getName().orElse(null);
                     if (RF.equals(name) || CO.equals(name) || executionGraph.getCutRelations().contains(rel)) {
                         simplified.add(lit);
                     } else if (LOC.equals(name)) {
                         simplified.add(new AddressLiteral(e1, e2, lit.isPositive()));
                     } else {
-                        throw new UnsupportedOperationException(String.format("Literals of type %s are not supported.", rel));
+                        final String errorMsg = String.format("Literals of type %s are not supported.", rel);
+                        throw new UnsupportedOperationException(errorMsg);
                     }
                 }
             }
@@ -221,6 +235,7 @@ public class CoreReasoner {
     // =============================================================================================
 
     // Computes a list of generators for the symmetry group of threads.
+    // NOTE We always add the identity as generator, although it is unnecessary.
     private List<Function<Event, Event>> computeSymmetryGenerators(
             ThreadSymmetry symm, SymmetricLearning learningOption) {
         final Set<? extends EquivalenceClass<Thread>> symmClasses = symm.getNonTrivialClasses();
