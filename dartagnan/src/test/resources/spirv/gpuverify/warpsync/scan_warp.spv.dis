@@ -1,0 +1,120 @@
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 98
+; Schema: 0
+               OpCapability Shader
+         %88 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %17 "scan" %gl_LocalInvocationID %10 %14
+               OpSource OpenCL_C 200
+         %89 = OpString "scan"
+         %90 = OpString " __kernel"
+         %92 = OpString "A"
+               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %11 SpecId 3
+               OpDecorate %5 SpecId 0
+               OpDecorate %6 SpecId 1
+               OpDecorate %7 SpecId 2
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+          %5 = OpSpecConstant %uint 1
+          %6 = OpSpecConstant %uint 1
+          %7 = OpSpecConstant %uint 1
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %5 %6 %7
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+         %11 = OpSpecConstant %uint 1
+%_arr_uint_11 = OpTypeArray %uint %11
+%_ptr_Workgroup__arr_uint_11 = OpTypePointer Workgroup %_arr_uint_11
+       %void = OpTypeVoid
+         %16 = OpTypeFunction %void
+%_ptr_Input_uint = OpTypePointer Input %uint
+     %uint_0 = OpConstant %uint 0
+    %uint_31 = OpConstant %uint 31
+       %bool = OpTypeBool
+%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
+%uint_4294967295 = OpConstant %uint 4294967295
+     %uint_1 = OpConstant %uint 1
+%uint_4294967294 = OpConstant %uint 4294967294
+     %uint_3 = OpConstant %uint 3
+%uint_4294967292 = OpConstant %uint 4294967292
+     %uint_7 = OpConstant %uint 7
+%uint_4294967288 = OpConstant %uint 4294967288
+    %uint_15 = OpConstant %uint 15
+%uint_4294967280 = OpConstant %uint 4294967280
+     %uint_4 = OpConstant %uint 4
+     %uint_2 = OpConstant %uint 2
+%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %10 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %14 = OpVariable %_ptr_Workgroup__arr_uint_11 Workgroup
+         %17 = OpFunction %void None %16
+         %18 = OpLabel
+         %21 = OpAccessChain %_ptr_Input_uint %gl_LocalInvocationID %uint_0
+         %22 = OpLoad %uint %21
+         %24 = OpBitwiseAnd %uint %22 %uint_31
+         %26 = OpINotEqual %bool %24 %uint_0
+               OpSelectionMerge %87 None
+               OpBranchConditional %26 %29 %87
+         %29 = OpLabel
+         %31 = OpAccessChain %_ptr_Workgroup_uint %14 %22
+         %33 = OpIAdd %uint %22 %uint_4294967295
+         %34 = OpAccessChain %_ptr_Workgroup_uint %14 %33
+         %35 = OpLoad %uint %34
+         %36 = OpLoad %uint %31
+         %37 = OpIAdd %uint %36 %35
+               OpStore %31 %37
+         %39 = OpINotEqual %bool %24 %uint_1
+               OpSelectionMerge %85 None
+               OpBranchConditional %39 %42 %85
+         %42 = OpLabel
+         %44 = OpIAdd %uint %22 %uint_4294967294
+         %45 = OpAccessChain %_ptr_Workgroup_uint %14 %44
+         %46 = OpLoad %uint %45
+         %47 = OpIAdd %uint %37 %46
+               OpStore %31 %47
+         %49 = OpUGreaterThan %bool %24 %uint_3
+               OpSelectionMerge %83 None
+               OpBranchConditional %49 %52 %83
+         %52 = OpLabel
+         %54 = OpIAdd %uint %22 %uint_4294967292
+         %55 = OpAccessChain %_ptr_Workgroup_uint %14 %54
+         %56 = OpLoad %uint %55
+         %57 = OpIAdd %uint %47 %56
+               OpStore %31 %57
+         %59 = OpUGreaterThan %bool %24 %uint_7
+               OpSelectionMerge %81 None
+               OpBranchConditional %59 %62 %81
+         %62 = OpLabel
+         %64 = OpIAdd %uint %22 %uint_4294967288
+         %65 = OpAccessChain %_ptr_Workgroup_uint %14 %64
+         %66 = OpLoad %uint %65
+         %67 = OpIAdd %uint %57 %66
+               OpStore %31 %67
+         %69 = OpUGreaterThan %bool %24 %uint_15
+               OpSelectionMerge %79 None
+               OpBranchConditional %69 %72 %79
+         %72 = OpLabel
+         %74 = OpIAdd %uint %22 %uint_4294967280
+         %75 = OpAccessChain %_ptr_Workgroup_uint %14 %74
+         %76 = OpLoad %uint %75
+         %77 = OpIAdd %uint %67 %76
+               OpStore %31 %77
+               OpBranch %79
+         %79 = OpLabel
+               OpBranch %81
+         %81 = OpLabel
+               OpBranch %83
+         %83 = OpLabel
+               OpBranch %85
+         %85 = OpLabel
+               OpBranch %87
+         %87 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %91 = OpExtInst %void %88 Kernel %17 %89 %uint_1 %uint_0 %90
+         %93 = OpExtInst %void %88 ArgumentInfo %92
+         %95 = OpExtInst %void %88 ArgumentWorkgroup %91 %uint_0 %uint_3 %uint_4 %93
+         %97 = OpExtInst %void %88 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2
