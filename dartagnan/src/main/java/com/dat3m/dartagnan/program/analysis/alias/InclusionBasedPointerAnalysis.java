@@ -655,12 +655,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // assert left and right each consist of pairwise indivisible positives
         final List<Integer> result = new ArrayList<>();
         for (final Integer i : left) {
-            if (!right.contains(i) && hasNoDivisorsInList(i, right)) {
+            if (hasNoDivisorsInList(i, right, true)) {
                 result.add(i);
             }
         }
         for (final Integer j : right) {
-            if (hasNoDivisorsInList(j, left)) {
+            if (hasNoDivisorsInList(j, left, false)) {
                 result.add(j);
             }
         }
@@ -668,9 +668,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Checks if value is no multiple of any element in the list.
-    private static boolean hasNoDivisorsInList(int value, List<Integer> candidates) {
+    private static boolean hasNoDivisorsInList(int value, List<Integer> candidates, boolean strict) {
         for (final Integer candidate : candidates) {
-            if (value % candidate == 0) {
+            if ((strict || value < candidate) && value % candidate == 0) {
                 return false;
             }
         }
