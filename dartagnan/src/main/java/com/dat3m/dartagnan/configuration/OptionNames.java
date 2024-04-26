@@ -41,6 +41,7 @@ public class OptionNames {
     public static final String DYNAMIC_SPINLOOP_DETECTION = "program.processing.spinloops";
     public static final String PROPAGATE_COPY_ASSIGNMENTS = "program.processing.propagateCopyAssignments";
     public static final String REMOVE_ASSERTION_OF_TYPE = "program.processing.skipAssertionsOfType";
+    public static final String XCHG_TO_DUAL_CAS = "program.processing.xchgToDualCAS";
 
     // Program Property Options
     public static final String ALIAS_METHOD = "program.analysis.alias";

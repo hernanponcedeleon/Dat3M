@@ -42,6 +42,11 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean dynamicSpinLoopDetection = true;
 
+    @Option(name = XCHG_TO_DUAL_CAS,
+            description = "Converts xchg(X,V) to r=load(X); if (r!=V) goto end; store(X,V); end.",
+            secure = true)
+    private boolean transformXchg = false;
+
     // =================== Debugging options ===================
 
     @Option(name = PRINT_PROGRAM_BEFORE_PROCESSING,
@@ -95,6 +100,7 @@ public class ProcessingManager implements ProgramProcessor {
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),
+                transformXchg ? XchgToDualCAS.newInstance() : null,
                 Compilation.fromConfig(config), // We keep compilation global for now
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
