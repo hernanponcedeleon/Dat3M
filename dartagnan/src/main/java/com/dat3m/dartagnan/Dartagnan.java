@@ -74,6 +74,8 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
+        initGitInfo();
+
         if (Arrays.asList(args).contains("--help")) {
             collectOptions();
             return;
@@ -87,7 +89,7 @@ public class Dartagnan extends BaseOptions {
             return;
         }
 
-        CreateGitInfo();
+        logGitInfo();
 
         String[] argKeyword = Arrays.stream(args)
                 .filter(s -> s.startsWith("-"))
