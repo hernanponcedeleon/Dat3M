@@ -119,7 +119,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         logger.debug("variable count: {}", analysis.totalVariables);
         logger.debug("replacement count: {}", analysis.totalReplacements);
         logger.debug("alignment sizes: {}", analysis.totalAlignmentSizes);
-        logger.debug("addInto: {} successes vs {} fails", analysis.succeededAddInto, analysis.failedAddInto);
+        logger.debug("addIncludeEdge: {} successes vs {} fails", analysis.succeededAddInto, analysis.failedAddInto);
         return analysis;
     }
 
@@ -438,30 +438,26 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Also detects and eliminates cycles, assuming that the graph was already closed transitively.
     // Also closes the inclusion relation transitively on the left.
     private void addInclude(Variable variable, IncludeEdge includeEdge) {
-        // When adding a self-loop, try to accelerate it immediately: 'v -+1> v' means 'v -+1x> v'.
-        final IncludeEdge edge = tryAccelerateEdge(includeEdge, variable);
-        if (!addInto(variable.includes, edge)) {
+        final IncludeEdge edge = tryInsertIncludeEdge(variable, includeEdge);
+        if (edge == null) {
             return;
         }
-        final Variable v1 = includeEdge.source;
-        v1.seeAlso.add(variable);
         final List<IncludeEdge> edges = queue.computeIfAbsent(variable, k -> new ArrayList<>());
         if (edges.isEmpty()) {
             logger.trace("enqueue {}", variable);
         }
         edges.add(edge);
-        // 'variable includes v1' and 'v1 includes v2' implies 'variable includes v2'.
-        // Cases of 'variable == v2' or 'v1 == v2' require recursion.
+        // 'variable includes edge.source' and 'edge.source includes v' implies 'variable includes v'.
+        // Cases of 'v == variable' or 'v == edge.source' require recursion.
         final var stack = new Stack<IncludeEdge>();
         stack.push(edge);
         while (!stack.empty()) {
             final IncludeEdge e = stack.pop();
             for (final IncludeEdge edgeBefore : List.copyOf(e.source.includes)) {
-                final IncludeEdge joinedEdge = tryAccelerateEdge(compose(edgeBefore, e.modifier), variable);
-                if (addInto(variable.includes, joinedEdge)) {
-                    edgeBefore.source.seeAlso.add(variable);
+                final IncludeEdge joinedEdge = tryInsertIncludeEdge(variable, compose(edgeBefore, e.modifier));
+                if (joinedEdge != null) {
                     edges.add(joinedEdge);
-                    if (edgeBefore.source == v1 || edgeBefore.source == variable) {
+                    if (edgeBefore.source == edge.source || edgeBefore.source == variable) {
                         stack.push(joinedEdge);
                     }
                 }
@@ -469,11 +465,26 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    // Called before adding an 'include' edge.  For self-loops, promotes the static modifier to a dynamic modifier.
-    private static IncludeEdge tryAccelerateEdge(IncludeEdge edge, Variable v2) {
-        // FIXME if 0+[1]x is not able to include -1, then self-loops will not terminate
-        // therefore, negative edge.offset get passed as-is into join.
-        return v2 != edge.source ? edge : new IncludeEdge(v2, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
+    // Tries to insert an element into a set of edges.
+    // If the edge is already covered by the set, this operation has no effect and returns false.
+    // If the edge is inserted, any existing elements that are covered by it are removed to form a set of minimal elements.
+    private IncludeEdge tryInsertIncludeEdge(Variable variable, IncludeEdge edge) {
+        // Try to accelerate edge.
+        // Negative offsets get passed as-is, as to disable the assumption of non-negative indexes.
+        final IncludeEdge element = variable != edge.source ? edge :
+                new IncludeEdge(variable, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
+        //NOTE The Stream API is too costly here
+        for (final IncludeEdge o : variable.includes) {
+            if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
+                failedAddInto++;
+                return null;
+            }
+        }
+        variable.includes.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
+        variable.includes.add(element);
+        element.source.seeAlso.add(variable);
+        succeededAddInto++;
+        return element;
     }
 
     // Called when a placeholder variable for a register writer is to be replaced by the proper variable.
@@ -605,23 +616,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         final int divisor = left == 0 ? right : right == 0 ? left : IntMath.gcd(left, right);
         final boolean nonNegativeIndexes = left == 0 ? offset <= 0 : right != 0 || offset >= 0;
         return nonNegativeIndexes && offset % divisor == 0;
-    }
-
-    // Tries to insert an element into a set of edges.
-    // If the edge is already covered by the set, this operation has no effect and returns false.
-    // If the edge is inserted, any existing elements that are covered by it are removed to form a set of minimal elements.
-    private boolean addInto(List<IncludeEdge> set, IncludeEdge element) {
-        //NOTE The Stream API is too costly here
-        for (final IncludeEdge o : set) {
-            if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
-                failedAddInto++;
-                return false;
-            }
-        }
-        set.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
-        set.add(element);
-        succeededAddInto++;
-        return true;
     }
 
     // Computes the greatest common divisor of the absolute values of the operands.
