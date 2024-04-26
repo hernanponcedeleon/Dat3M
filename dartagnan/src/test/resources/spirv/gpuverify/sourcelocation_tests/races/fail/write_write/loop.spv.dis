@@ -14,7 +14,7 @@
          %69 = OpString "p"
                OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
                OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
-               OpDecorate %11 SpecId 3
+               OpDecorate %11 SpecId 6
                OpDecorate %5 SpecId 0
                OpDecorate %6 SpecId 1
                OpDecorate %7 SpecId 2
