@@ -27,12 +27,12 @@ public class GitInfo {
     }
 
     public static void logGitInfo() {
-        logger.info("Git branch: " + properties.getProperty("git.branch"));
-        logger.info("Git commit ID: " + properties.getProperty("git.commit.id"));
+        logger.info("Git branch: " + properties.getProperty("git.branch", "unknown"));
+        logger.info("Git commit ID: " + properties.getProperty("git.commit.id", "unknown"));
     }
 
     public static String getGitId() {
-        return properties.getProperty("git.commit.id");
+        return properties.getProperty("git.commit.id", "unknown");
     }
 
 }
