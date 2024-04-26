@@ -1,0 +1,129 @@
+; @Input: %13 = {{0, 0, 0, 0, 0, 0, 0, 0, 0}}
+; @Input: %14 = {{0, 0, 0, 0, 0, 0, 0, 0, 0}}
+; @Config: 3, 1, 1
+; SPIR-V
+; Version: 1.6
+; Generator: Google Clspv; 0
+; Bound: 102
+; Schema: 0
+               OpCapability Shader
+               OpCapability Int64
+         %81 = OpExtInstImport "NonSemantic.ClspvReflection.5"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %25 "definitions" %8 %13 %14 %18 %22
+               OpSource OpenCL_C 200
+         %82 = OpString "definitions"
+         %83 = OpString " kernel"
+         %86 = OpString "I"
+         %90 = OpString "J"
+         %94 = OpString "G"
+         %98 = OpString "H"
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               OpDecorate %_runtimearr_ulong ArrayStride 8
+               OpMemberDecorate %_struct_11 0 Offset 0
+               OpDecorate %_struct_11 Block
+               OpDecorate %13 DescriptorSet 0
+               OpDecorate %13 Binding 0
+               OpDecorate %14 DescriptorSet 0
+               OpDecorate %14 Binding 1
+               OpDecorate %15 SpecId 3
+               OpDecorate %19 SpecId 4
+               OpDecorate %2 SpecId 0
+               OpDecorate %3 SpecId 1
+               OpDecorate %4 SpecId 2
+       %uint = OpTypeInt 32 0
+          %2 = OpSpecConstant %uint 1
+          %3 = OpSpecConstant %uint 1
+          %4 = OpSpecConstant %uint 1
+     %v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpSpecConstantComposite %v3uint %2 %3 %4
+%_ptr_Private_v3uint = OpTypePointer Private %v3uint
+      %ulong = OpTypeInt 64 0
+%_runtimearr_ulong = OpTypeRuntimeArray %ulong
+ %_struct_11 = OpTypeStruct %_runtimearr_ulong
+%_ptr_StorageBuffer__struct_11 = OpTypePointer StorageBuffer %_struct_11
+         %15 = OpSpecConstant %uint 1
+%_arr_ulong_15 = OpTypeArray %ulong %15
+%_ptr_Workgroup__arr_ulong_15 = OpTypePointer Workgroup %_arr_ulong_15
+         %19 = OpSpecConstant %uint 1
+%_arr_ulong_19 = OpTypeArray %ulong %19
+%_ptr_Workgroup__arr_ulong_19 = OpTypePointer Workgroup %_arr_ulong_19
+       %void = OpTypeVoid
+         %24 = OpTypeFunction %void
+%_ptr_Workgroup_ulong = OpTypePointer Workgroup %ulong
+     %uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer_ulong = OpTypePointer StorageBuffer %ulong
+     %uint_1 = OpConstant %uint 1
+    %uint_80 = OpConstant %uint 80
+   %ulong_10 = OpConstant %ulong 10
+     %uint_4 = OpConstant %uint 4
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_8 = OpConstant %uint 8
+          %8 = OpVariable %_ptr_Private_v3uint Private %gl_WorkGroupSize
+         %13 = OpVariable %_ptr_StorageBuffer__struct_11 StorageBuffer
+         %14 = OpVariable %_ptr_StorageBuffer__struct_11 StorageBuffer
+         %18 = OpVariable %_ptr_Workgroup__arr_ulong_15 Workgroup
+         %22 = OpVariable %_ptr_Workgroup__arr_ulong_19 Workgroup
+         %25 = OpFunction %void None %24
+         %26 = OpLabel
+         %29 = OpAccessChain %_ptr_Workgroup_ulong %18 %uint_0
+         %30 = OpAccessChain %_ptr_Workgroup_ulong %22 %uint_0
+         %32 = OpAccessChain %_ptr_StorageBuffer_ulong %13 %uint_0 %uint_0
+         %33 = OpAccessChain %_ptr_StorageBuffer_ulong %14 %uint_0 %uint_0
+         %37 = OpAtomicIAdd %ulong %29 %uint_1 %uint_80 %ulong_10
+         %38 = OpAtomicISub %ulong %29 %uint_1 %uint_80 %ulong_10
+         %39 = OpAtomicExchange %ulong %29 %uint_1 %uint_80 %ulong_10
+         %40 = OpAtomicSMin %ulong %29 %uint_1 %uint_80 %ulong_10
+         %41 = OpAtomicSMax %ulong %29 %uint_1 %uint_80 %ulong_10
+         %42 = OpAtomicAnd %ulong %29 %uint_1 %uint_80 %ulong_10
+         %43 = OpAtomicOr %ulong %29 %uint_1 %uint_80 %ulong_10
+         %44 = OpAtomicXor %ulong %29 %uint_1 %uint_80 %ulong_10
+         %45 = OpAtomicIIncrement %ulong %29 %uint_1 %uint_80
+         %46 = OpAtomicIDecrement %ulong %29 %uint_1 %uint_80
+         %47 = OpAtomicCompareExchange %ulong %29 %uint_1 %uint_80 %uint_80 %ulong_10 %ulong_10
+         %48 = OpAtomicIAdd %ulong %30 %uint_1 %uint_80 %ulong_10
+         %49 = OpAtomicISub %ulong %30 %uint_1 %uint_80 %ulong_10
+         %50 = OpAtomicExchange %ulong %30 %uint_1 %uint_80 %ulong_10
+         %51 = OpAtomicUMin %ulong %30 %uint_1 %uint_80 %ulong_10
+         %52 = OpAtomicUMax %ulong %30 %uint_1 %uint_80 %ulong_10
+         %53 = OpAtomicAnd %ulong %30 %uint_1 %uint_80 %ulong_10
+         %54 = OpAtomicOr %ulong %30 %uint_1 %uint_80 %ulong_10
+         %55 = OpAtomicXor %ulong %30 %uint_1 %uint_80 %ulong_10
+         %56 = OpAtomicIIncrement %ulong %30 %uint_1 %uint_80
+         %57 = OpAtomicIDecrement %ulong %30 %uint_1 %uint_80
+         %58 = OpAtomicCompareExchange %ulong %30 %uint_1 %uint_80 %uint_80 %ulong_10 %ulong_10
+         %59 = OpAtomicIAdd %ulong %32 %uint_1 %uint_80 %ulong_10
+         %60 = OpAtomicISub %ulong %32 %uint_1 %uint_80 %ulong_10
+         %61 = OpAtomicExchange %ulong %32 %uint_1 %uint_80 %ulong_10
+         %62 = OpAtomicSMin %ulong %32 %uint_1 %uint_80 %ulong_10
+         %63 = OpAtomicSMax %ulong %32 %uint_1 %uint_80 %ulong_10
+         %64 = OpAtomicAnd %ulong %32 %uint_1 %uint_80 %ulong_10
+         %65 = OpAtomicOr %ulong %32 %uint_1 %uint_80 %ulong_10
+         %66 = OpAtomicXor %ulong %32 %uint_1 %uint_80 %ulong_10
+         %67 = OpAtomicIIncrement %ulong %32 %uint_1 %uint_80
+         %68 = OpAtomicIDecrement %ulong %32 %uint_1 %uint_80
+         %69 = OpAtomicCompareExchange %ulong %32 %uint_1 %uint_80 %uint_80 %ulong_10 %ulong_10
+         %70 = OpAtomicIAdd %ulong %33 %uint_1 %uint_80 %ulong_10
+         %71 = OpAtomicISub %ulong %33 %uint_1 %uint_80 %ulong_10
+         %72 = OpAtomicExchange %ulong %33 %uint_1 %uint_80 %ulong_10
+         %73 = OpAtomicUMin %ulong %33 %uint_1 %uint_80 %ulong_10
+         %74 = OpAtomicUMax %ulong %33 %uint_1 %uint_80 %ulong_10
+         %75 = OpAtomicAnd %ulong %33 %uint_1 %uint_80 %ulong_10
+         %76 = OpAtomicOr %ulong %33 %uint_1 %uint_80 %ulong_10
+         %77 = OpAtomicXor %ulong %33 %uint_1 %uint_80 %ulong_10
+         %78 = OpAtomicIIncrement %ulong %33 %uint_1 %uint_80
+         %79 = OpAtomicIDecrement %ulong %33 %uint_1 %uint_80
+         %80 = OpAtomicCompareExchange %ulong %33 %uint_1 %uint_80 %uint_80 %ulong_10 %ulong_10
+               OpReturn
+               OpFunctionEnd
+         %85 = OpExtInst %void %81 Kernel %25 %82 %uint_4 %uint_0 %83
+         %87 = OpExtInst %void %81 ArgumentInfo %86
+         %89 = OpExtInst %void %81 ArgumentStorageBuffer %85 %uint_2 %uint_0 %uint_0 %87
+         %91 = OpExtInst %void %81 ArgumentInfo %90
+         %93 = OpExtInst %void %81 ArgumentStorageBuffer %85 %uint_3 %uint_0 %uint_1 %91
+         %95 = OpExtInst %void %81 ArgumentInfo %94
+         %97 = OpExtInst %void %81 ArgumentWorkgroup %85 %uint_0 %uint_3 %uint_8 %95
+         %99 = OpExtInst %void %81 ArgumentInfo %98
+        %100 = OpExtInst %void %81 ArgumentWorkgroup %85 %uint_1 %uint_4 %uint_8 %99
+        %101 = OpExtInst %void %81 SpecConstantWorkgroupSize %uint_0 %uint_1 %uint_2
