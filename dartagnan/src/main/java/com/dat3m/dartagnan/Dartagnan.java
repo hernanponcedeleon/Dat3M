@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -41,6 +42,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
+import java.io.FileReader;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -51,7 +53,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
+import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
@@ -72,12 +74,22 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
+        initGitInfo();
+
         if (Arrays.asList(args).contains("--help")) {
             collectOptions();
             return;
         }
 
-        CreateGitInfo();
+        if (Arrays.asList(args).contains("--version")) {
+            final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
+            final FileReader fileReader = new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml");
+            final String version = String.format("%s (commit %s)", mvnReader.read(fileReader).getVersion(), getGitId());
+            System.out.println(version);
+            return;
+        }
+
+        logGitInfo();
 
         String[] argKeyword = Arrays.stream(args)
                 .filter(s -> s.startsWith("-"))

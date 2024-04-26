@@ -1,14 +1,12 @@
 #!/bin/bash
 
-version=4.0.0
-
 if [ $# -eq 0 ]; then
     echo "No input file supplied"
     exit 0
 fi
 
 if [ $1 == "-v" ] || [ $1 == "--version" ]; then
-    echo $version
+    cmd="java -jar dartagnan/target/dartagnan.jar --version"
 else
     if [ $1 == "-witness" ]; then
         witness="--validate="$2
@@ -35,6 +33,6 @@ else
         skip_assertions_of_type=""
     fi
     
-    cmd="java -jar svcomp/target/svcomp.jar --method=assume --encoding.integers=true $skip_assertions_of_type --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
-    $cmd
+    cmd="java -jar svcomp/target/svcomp.jar --method=eager --encoding.integers=true $skip_assertions_of_type --svcomp.step=5 --svcomp.umax=27 cat/svcomp.cat --svcomp.property="$propertypath" "$programpath" "$witness
 fi
+$cmd
