@@ -842,9 +842,15 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
         @Override
         public Result visitIntUnaryExpression(IntUnaryExpr x) {
+            if (x.getKind() != IntUnaryOp.MINUS) {
+                return null;
+            }
             final Result result = x.getOperand().accept(this);
-            return result == null ? null : x.getKind() != IntUnaryOp.MINUS ? result :
-                    new Result(null, null, result.offset.negate(), result.alignment.isEmpty() ? TOP : result.alignment);
+            final var alignment = new ArrayList<Integer>();
+            for (final Integer a : result.alignment) {
+                alignment.add(-Math.abs(a));
+            }
+            return new Result(null, null, result.offset.negate(), alignment);
         }
 
         @Override
