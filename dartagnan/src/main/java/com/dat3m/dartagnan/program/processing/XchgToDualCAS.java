@@ -10,6 +10,8 @@ import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmXchg;
+
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,19 +72,24 @@ public class XchgToDualCAS implements ProgramProcessor {
             Expression address = e.getAddress();
             String mo = e.getMo();
 
-            Load load = newRMWLoadExclusiveWithMo(resultRegister, address, mo);
-            Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, mo);
-            Event optionalRelFenceAfter = newFence(mo);
+            Load load = newRMWLoadExclusiveWithMo(resultRegister, address, Tag.C11.loadMO(mo));
+            Store store = newRMWStoreExclusiveWithMo(address, e.getValue(), true, Tag.C11.storeMO(mo));
+            Store dummyStore = newRMWStoreExclusiveWithMo(address, e.getValue(), true, Tag.C11.storeMO(mo));
+            dummyStore.addTags(Tag.NO_READ);
 
-            Label end = newLabel("Xchg_end");
-            CondJump jump = newJumpUnless(expressions.makeNEQ(resultRegister, e.getValue()), end);
+            Label endL = newLabel("Xchg_end");
+            Label elseL = newLabel("Xchg_else");
+            CondJump jumpToElse = newJump(expressions.makeEQ(resultRegister, e.getValue()), elseL);
+            CondJump jumpToEnd = newGoto(endL);
 
             return eventSequence(
                     load,
-                    jump,
+                    jumpToElse,
                     store,
-                    optionalRelFenceAfter,
-                    end
+                    jumpToEnd,
+                    elseL,
+                    dummyStore,
+                    endL
             );
         }
    }

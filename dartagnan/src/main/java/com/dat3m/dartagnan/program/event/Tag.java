@@ -34,6 +34,7 @@ public final class Tag {
     // Some events should not be optimized (e.g. fake dependencies) or deleted (e.g. bounds)
     public static final String NOOPT            = "__NOOPT";
     public static final String STARTLOAD        = "__STARTLOAD";
+    public static final String NO_READ          = "__NO_READ";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
@@ -135,6 +136,24 @@ public final class Tag {
                 default:
                     throw new UnsupportedOperationException("The memory order is not recognized");
             }
+        }
+
+        public static String loadMO(String mo) {
+            return switch (mo) {
+                case MO_ACQUIRE ->  MO_ACQUIRE;
+                case MO_ACQUIRE_RELEASE ->  MO_ACQUIRE;
+                case MO_SC -> MO_SC;
+                default -> MO_RELAXED;
+            };
+        }
+
+        public static String storeMO(String mo) {
+            return switch (mo) {
+                case MO_RELEASE ->  MO_RELEASE;
+                case MO_ACQUIRE_RELEASE ->  MO_RELEASE;
+                case MO_SC -> MO_SC;
+                default -> MO_RELAXED;
+            };
         }
 
     }

@@ -94,7 +94,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
         Event cur = loop.getStart();
         do {
-            if (cur.hasTag(Tag.WRITE) || (cur instanceof FunctionCall call &&
+            if ((cur.hasTag(Tag.WRITE) && !cur.hasTag(Tag.NO_READ))  || (cur instanceof FunctionCall call &&
                     (!call.isDirectCall()
                             || !call.getCalledFunction().isIntrinsic()
                             || call.getCalledFunction().getIntrinsicInfo().writesMemory()))) {
