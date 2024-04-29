@@ -811,7 +811,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     }
                     if (left == null || right == null) {
                         final Result factor = left == null ? right : left;
-                        yield new Result(null, null, BigInteger.ZERO, compose(factor.alignment, factor.offset.intValue()));
+                        yield new Result(null, null, BigInteger.ZERO,
+                                factor.register != null ? TOP : compose(factor.alignment, factor.offset.intValue()));
                     }
                     final List<Integer> leftAlignment = mul(compose(left.alignment, left.register), right.offset.intValue());
                     final List<Integer> rightAlignment = mul(compose(right.alignment, right.register), left.offset.intValue());
