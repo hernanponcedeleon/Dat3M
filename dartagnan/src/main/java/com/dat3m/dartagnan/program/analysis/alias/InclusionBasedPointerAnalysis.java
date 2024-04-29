@@ -811,8 +811,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     }
                     if (left == null || right == null) {
                         final Result factor = left == null ? right : left;
-                        yield new Result(null, null, BigInteger.ZERO,
-                                factor.register != null ? TOP : compose(factor.alignment, factor.offset.intValue()));
+                        if (factor.register != null) {
+                            yield null;
+                        }
+                        final List<Integer> alignment = compose(factor.alignment, factor.offset.intValue());
+                        yield new Result(null, null, BigInteger.ZERO, alignment);
                     }
                     final List<Integer> leftAlignment = mul(compose(left.alignment, left.register), right.offset.intValue());
                     final List<Integer> rightAlignment = mul(compose(right.alignment, right.register), left.offset.intValue());
@@ -846,6 +849,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 return null;
             }
             final Result result = x.getOperand().accept(this);
+            if (result.address != null || result.register != null) {
+                return null;
+            }
             final var alignment = new ArrayList<Integer>();
             for (final Integer a : result.alignment) {
                 alignment.add(-Math.abs(a));
