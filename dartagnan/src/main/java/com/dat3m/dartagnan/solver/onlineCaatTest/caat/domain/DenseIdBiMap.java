@@ -11,7 +11,8 @@ import java.util.*;
 public class DenseIdBiMap<T> {
 
     private final Map<T, Integer> objToIdMap;
-    private T[] idToObjMap;
+    private List<T> idToObjMap;
+    private final ArrayList<Integer> backtrackPoints;
 
     @SuppressWarnings("unchecked")
     private DenseIdBiMap(int expectedMaxId, Map<T, Integer> objToIdMap) {
@@ -19,7 +20,14 @@ public class DenseIdBiMap<T> {
         Preconditions.checkNotNull(objToIdMap);
 
         this.objToIdMap = objToIdMap;
-        this.idToObjMap = (T[])(new Object[expectedMaxId]);
+        this.idToObjMap = new ArrayList<>(expectedMaxId);
+        this.backtrackPoints = new ArrayList<>(expectedMaxId);
+    }
+
+    public DenseIdBiMap() {
+        this.objToIdMap = new HashMap<>();
+        this.idToObjMap = new ArrayList<>();
+        this.backtrackPoints = new ArrayList<>();
     }
 
     public static <V> DenseIdBiMap<V> createHashBased(int expectedMaxId) {
@@ -34,17 +42,39 @@ public class DenseIdBiMap<T> {
         return objToIdMap.keySet();
     }
 
+    public int push() {
+        int level = size();
+        backtrackPoints.add(level);
+        return level;
+    }
+
     public int addObject(T obj) {
         final int nextId = size();
         if (objToIdMap.putIfAbsent(obj, nextId) == null) {
-            if (nextId >= idToObjMap.length) {
-                idToObjMap = Arrays.copyOf(idToObjMap, idToObjMap.length * 2);
+            idToObjMap.add(obj);
+            if (size() != idToObjMap.size()) {
+                int i = 5;
             }
-            idToObjMap[nextId] = obj;
+            assert(idToObjMap.get(nextId).equals(obj));
             return nextId;
         } else {
             return -1;
         }
+    }
+
+    public boolean removeObjectsFromTop(int number) {
+        if (number > backtrackPoints.size() || number <= 0) {
+            return false;
+        }
+        for (int i = 0; i < number; i++) {
+            int level = backtrackPoints.remove(backtrackPoints.size() - 1);
+            for(int size = size() - 1; size >= level; size--) {
+                T obj = getObject(size);
+                objToIdMap.remove(obj);
+            }
+            idToObjMap = idToObjMap.subList(0, level);
+        }
+        return true;
     }
 
     public int getId(Object obj) {
@@ -55,7 +85,7 @@ public class DenseIdBiMap<T> {
     public T getObject(int id) {
         Preconditions.checkArgument(id >= 0, "id must be positive.");
         Preconditions.checkArgument(id < size(), "id must be less than size.");
-        return idToObjMap[id];
+        return idToObjMap.get(id);
     }
 
     public int size() {
@@ -63,7 +93,7 @@ public class DenseIdBiMap<T> {
     }
 
     public void clear() {
-        Arrays.fill(idToObjMap, 0, size(), null);
+        idToObjMap.clear();
         objToIdMap.clear();
     }
 
