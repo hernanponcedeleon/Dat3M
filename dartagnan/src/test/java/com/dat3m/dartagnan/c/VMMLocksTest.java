@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -18,36 +17,35 @@ import java.util.EnumSet;
 
 import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.PASS;
-import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 import static com.dat3m.dartagnan.configuration.Property.*;
 
 @RunWith(Parameterized.class)
-public class LibvsyncTest extends AbstractCTest {
+public class VMMLocksTest extends AbstractCTest {
 
-    public LibvsyncTest(String name, Arch target, Result expected) {
+    public VMMLocksTest(String name, Arch target, Result expected) {
         super(name, target, expected);
     }
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("libvsync/" + name + "-opt.ll"));
-    }
-
-    @Override
-    protected Configuration getConfiguration(){
-        return Configuration.defaultConfiguration();
+        return Provider.fromSupplier(() -> getTestResourcePath("locks/" + name + ".ll"));
     }
 
     @Override
     protected long getTimeout() {
-        return 300000;
+        return 600000;
     }
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
         return Provider.fromSupplier(() -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC));
+    }
+
+    @Override
+    protected Provider<Integer> getBoundProvider() {
+        return Provider.fromSupplier(() -> 2);
     }
 
     @Override
@@ -58,20 +56,33 @@ public class LibvsyncTest extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock", C11, UNKNOWN},
-                {"mcslock", C11, UNKNOWN},
-                {"rec_mcslock", C11, UNKNOWN},
-                {"rec_spinlock", C11, UNKNOWN},
-                {"rec_ticketlock", C11, UNKNOWN},
-                {"rwlock", C11, UNKNOWN},
-                {"semaphore", C11, UNKNOWN},
-                {"seqcount", C11, PASS},
-                {"seqlock", C11, UNKNOWN},
-                {"ticketlock", C11, UNKNOWN},
-                {"ttaslock", C11, UNKNOWN},
-                {"bounded_mpmc_check_empty", C11, UNKNOWN},
-                {"bounded_mpmc_check_full", C11, UNKNOWN},
-                {"bounded_spsc", C11, UNKNOWN},
+                {"ttas", C11, UNKNOWN},
+                {"ttas-acq2rx", C11, FAIL},
+                {"ttas-rel2rx", C11, FAIL},
+                {"ticketlock", C11, PASS},
+                {"ticketlock-acq2rx", C11, FAIL},
+                {"ticketlock-rel2rx", C11, FAIL},
+                {"mutex", C11, UNKNOWN},
+                {"mutex-acq2rx_futex", C11, FAIL},
+                {"mutex-acq2rx_lock", C11, FAIL},
+                {"mutex-rel2rx_futex", C11, FAIL},
+                {"mutex-rel2rx_unlock", C11, FAIL},
+                {"spinlock", C11, PASS},
+                {"spinlock-acq2rx", C11, FAIL},
+                {"spinlock-rel2rx", C11, FAIL},
+                {"linuxrwlock", C11, UNKNOWN},
+                {"linuxrwlock-acq2rx", C11, FAIL},
+                {"linuxrwlock-rel2rx", C11, FAIL},
+                {"mutex_musl", C11, UNKNOWN},
+                {"mutex_musl-acq2rx_futex", C11, FAIL},
+                {"mutex_musl-acq2rx_lock", C11, FAIL},
+                {"mutex_musl-rel2rx_futex", C11, FAIL},
+                {"mutex_musl-rel2rx_unlock", C11, FAIL},
+                {"seqlock", C11, PASS},
+                {"clh_mutex", C11, UNKNOWN},
+                {"clh_mutex-acq2rx", C11, FAIL},
+                {"ticket_awnsb_mutex", C11, PASS},
+                {"ticket_awnsb_mutex-acq2rx", C11, FAIL},
         });
     }
 
