@@ -60,6 +60,11 @@ public class Graphviz {
         return this;
     }
 
+    public Graphviz addNode(String name, String... attributes) {
+        text.append(String.format("%s [%s]\n", name, String.join(", ", attributes)));
+        return this;
+    }
+
     public Graphviz addEdge(String node1, String node2, String... options) {
         String edge = directed ? "->" : "--";
         if (options == null) {
