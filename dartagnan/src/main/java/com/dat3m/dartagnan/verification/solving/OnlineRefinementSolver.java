@@ -5,11 +5,11 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.*;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.solver.onlineCaat.caat.CAATSolver;
-import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.RefinementModel;
+import com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.RefinementModel;
 import com.dat3m.dartagnan.solver.caat4wmm.WMMSolver;
-import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.coreReasoning.CoreLiteral;
-import com.dat3m.dartagnan.solver.onlineCaat.caat4wmm.OnlineWMMSolver;
+import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.coreReasoning.CoreLiteral;
+import com.dat3m.dartagnan.solver.onlineCaatTest.caat4wmm.OnlineWMMSolver;
 import com.dat3m.dartagnan.utils.logic.DNF;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -43,8 +43,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BASELINE;
-import static com.dat3m.dartagnan.solver.onlineCaat.caat.CAATSolver.Status.CONSISTENT;
-import static com.dat3m.dartagnan.solver.onlineCaat.caat.CAATSolver.Status.INCONSISTENT;
+import static com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver.Status.CONSISTENT;
+import static com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver.Status.INCONSISTENT;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
