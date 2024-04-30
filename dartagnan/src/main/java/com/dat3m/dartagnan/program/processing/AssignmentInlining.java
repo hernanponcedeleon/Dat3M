@@ -15,6 +15,16 @@ import com.dat3m.dartagnan.utils.DominatorTree;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+    This pass performs the following inlining of assignments:
+
+          r = someExpr;      =====>       r = someExpr;
+          RegReader(r);      =====>       RegReader(someExpr); // uses "someExpr" directly
+
+    The inlined assignments are dead and can be eliminated by dead assignment eliminations.
+    To avoid duplication of "someExpr", the pass only inlines assignments if the assigned register is used only once.
+    To achieve this, the pass scans the code twice: once to collect usage statistics and once to perform the inlining.
+ */
 public class AssignmentInlining implements FunctionProcessor {
 
     private AssignmentInlining() { }
@@ -31,9 +41,11 @@ public class AssignmentInlining implements FunctionProcessor {
 
         final Processor processor = new Processor(function);
 
+        // Scan for usages of locally assigned registers.
         processor.setMode(Processor.Mode.SCAN);
         function.getEvents().forEach(e -> e.accept(processor));
 
+        // Perform inlining using the information gathered above.
         processor.setMode(Processor.Mode.REPLACE);
         function.getEvents().forEach(e -> e.accept(processor));
     }
