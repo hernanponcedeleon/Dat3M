@@ -38,7 +38,7 @@ public class ProcessingManager implements ProgramProcessor {
     private boolean performDce = true;
 
     @Option(name = ASSIGNMENT_INLINING,
-            description = "Performs inlining of assignments to avoid intermediary variables.",
+            description = "Performs inlining of assignments that are used only once to avoid intermediary variables.",
             secure = true)
     private boolean performAssignmentInlining = true;
 
@@ -117,7 +117,6 @@ public class ProcessingManager implements ProgramProcessor {
                                 removeDeadJumps
                         ), Target.FUNCTIONS, true
                 ),
-                DebugPrint.withHeader("After flattening", Printer.Mode.ALL),
                 ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
