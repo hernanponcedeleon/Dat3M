@@ -32,7 +32,7 @@ public class MiscellaneousTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("miscellaneous/" + name + ".ll"));
+        return () -> getTestResourcePath("miscellaneous/" + name + ".ll");
     }
 
     @Override

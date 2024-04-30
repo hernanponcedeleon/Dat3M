@@ -28,7 +28,7 @@ public class IMMLocksTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("locks/" + name + ".ll"));
+        return () -> getTestResourcePath("locks/" + name + ".ll");
     }
 
     @Override
