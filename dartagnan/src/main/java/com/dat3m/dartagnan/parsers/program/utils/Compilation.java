@@ -33,7 +33,7 @@ public class Compilation {
         return new File(outputFileName);
     }
 
-    public static File applyLlvmPasses(File file) throws Exception {
+    public static File applyLlvmPasses(File file) throws IOException {
         final String outputFileName = getOutputName(file, "-opt.ll");
         ArrayList<String> cmd = new ArrayList<>();
         cmd.add("opt");
@@ -45,7 +45,11 @@ public class Compilation {
         cmd.add("-S");
         cmd.add("-o");
         cmd.add(outputFileName);
-        runCmd(cmd);
+        try {
+            runCmd(cmd);
+        } catch (Exception e) {
+            logger.warn("Could not apply llvm optimization passes. Is opt properly installed in your system?");
+        }
         return new File(outputFileName);
     }
 
