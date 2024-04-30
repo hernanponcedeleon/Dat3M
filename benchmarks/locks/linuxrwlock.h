@@ -10,6 +10,15 @@
 #else
 #define mo_unlock memory_order_release
 #endif
+// VMM does not preserve certain dependencies, thus we need stronger
+// orderings than for other models like ARM8, RISCV and IMM
+#ifdef VMM
+#define mo_read_lock memory_order_acquire
+#define mo_write_lock memory_order_acquire
+#else
+#define mo_read_lock memory_order_relaxed
+#define mo_write_lock memory_order_relaxed
+#endif
 
 #define RW_LOCK_BIAS            0x00100000
 
@@ -31,7 +40,7 @@ static inline void read_lock(rwlock_t *rw)
 {
     int priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, mo_lock);
     while (priorvalue <= 0) {
-        atomic_fetch_add_explicit(&rw->lock, 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&rw->lock, 1, mo_read_lock);
         while (atomic_load_explicit(&rw->lock, memory_order_relaxed) <= 0);
         priorvalue = atomic_fetch_sub_explicit(&rw->lock, 1, memory_order_acquire);
     }
@@ -41,7 +50,7 @@ static inline void write_lock(rwlock_t *rw)
 {
     int priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_acquire);
     while (priorvalue != RW_LOCK_BIAS) {
-        atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_relaxed);
+        atomic_fetch_add_explicit(&rw->lock, RW_LOCK_BIAS, mo_write_lock);
         while (atomic_load_explicit(&rw->lock, memory_order_relaxed) != RW_LOCK_BIAS);
         priorvalue = atomic_fetch_sub_explicit(&rw->lock, RW_LOCK_BIAS, memory_order_acquire);
     }
