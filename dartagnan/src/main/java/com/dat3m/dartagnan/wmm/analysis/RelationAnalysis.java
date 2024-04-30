@@ -802,7 +802,7 @@ public class RelationAnalysis {
             List<Load> loadEvents = program.getThreadEvents(Load.class);
             for (Store e1 : program.getThreadEvents(Store.class)) {
                 for (Load e2 : loadEvents) {
-                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2) && !e2.hasTag(Tag.NO_READ)) {
+                    if (alias.mayAlias(e1, e2) && !exec.areMutuallyExclusive(e1, e2) && !e1.hasTag(Tag.NO_READ)) {
                         may.add(e1, e2);
                     }
                 }
