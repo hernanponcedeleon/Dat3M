@@ -647,6 +647,7 @@ public class ProgramBuilderSpv {
     }
 
     public void setThreadGrid(List<Integer> threadGrid) {
+        logger.info("Using the following thread grid: " + threadGrid.get(0) + "." + threadGrid.get(2));
         if (threadGrid.size() != 3) {
             throw new ParsingException("Thread grid must have 3 dimensions");
         }

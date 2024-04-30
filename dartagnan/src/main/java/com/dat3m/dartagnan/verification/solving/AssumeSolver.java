@@ -38,6 +38,9 @@ public class AssumeSolver extends ModelChecker {
     }
 
     private void run() throws InterruptedException, SolverException, InvalidConfigurationException {
+        long startTime = System.currentTimeMillis();
+        logger.info("Verifying program \\texttt{" + task.getProgram().getName() + "}");
+
         Wmm memoryModel = task.getMemoryModel();
         Context analysisContext = Context.create();
         Configuration config = task.getConfig();
@@ -88,6 +91,9 @@ public class AssumeSolver extends ModelChecker {
 
         // For Safety specs, we have SAT=FAIL, but for reachability specs, we have SAT=PASS
         res = Property.getCombinedType(task.getProperty(), task) == Property.Type.SAFETY ? res : res.invert();
-        logger.info("Verification finished with result " + res);
+        long endTime = System.currentTimeMillis();
+        assert(res.equals(PASS) || res.equals(FAIL));
+        logger.info("Verification finished with result " + (res.equals(PASS) ? "\\cmark" : "\\xmark"));
+        logger.info("Verification time " + (endTime - startTime));
     }
 }
