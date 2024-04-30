@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.visualization.Graphviz;
+import com.dat3m.dartagnan.verification.Context;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -32,21 +33,15 @@ public interface AliasAnalysis {
 
     boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b);
 
-    static AliasAnalysis fromConfig(Program program, Configuration config) throws InvalidConfigurationException {
+    static AliasAnalysis fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         Config c = new Config(config);
-        logger.info("Selected alias analysis: " + c.method);
-        AliasAnalysis a;
+        logger.info("Selected alias analysis: {}", c.method);
         long t0 = System.currentTimeMillis();
-        switch (c.method) {
-            case FIELD_SENSITIVE:
-                a = FieldSensitiveAndersen.fromConfig(program, config);
-                break;
-            case FIELD_INSENSITIVE:
-                a = AndersenAliasAnalysis.fromConfig(program, config);
-                break;
-            default:
-                throw new UnsupportedOperationException("Alias method not recognized");
-        }
+        AliasAnalysis a = switch (c.method) {
+            case FIELD_SENSITIVE -> FieldSensitiveAndersen.fromConfig(program, config);
+            case FIELD_INSENSITIVE -> AndersenAliasAnalysis.fromConfig(program, config);
+            case FULL -> InclusionBasedPointerAnalysis.fromConfig(program, analysisContext, c);
+        };
         a = new CombinedAliasAnalysis(a, EqualityAliasAnalysis.fromConfig(program, config));
         if (Arch.supportsVirtualAddressing(program.getArch())) {
             a = VirtualAliasAnalysis.wrap(a);
@@ -64,7 +59,7 @@ public interface AliasAnalysis {
     final class Config {
         @Option(name = ALIAS_METHOD,
                 description = "General type of analysis that approximates the 'loc' relationship between memory events.")
-        private Alias method = Alias.FIELD_SENSITIVE;
+        private Alias method = Alias.getDefault();
 
         @Option(name = ALIAS_GRAPHVIZ,
                 description = "If 'true', stores the results of the alias analysis as a PNG image." +
@@ -74,14 +69,22 @@ public interface AliasAnalysis {
         @Option(name = ALIAS_GRAPHVIZ_SPLIT_BY_THREAD,
                 description = "Controls which event sets are represented by nodes in the graph output." +
                         " If 'true', nodes represent events of the same thread and source location." +
-                        " If 'false', nodes represent events of just the same source location." + " Requires '" +
-                        ALIAS_GRAPHVIZ + "=true'." + " Defaults to 'false'.", secure = true)
+                        " If 'false', nodes represent events of just the same source location." +
+                        " Requires '" + ALIAS_GRAPHVIZ + "=true'." +
+                        " Defaults to 'false'.", secure = true)
         private boolean graphvizSplitByThread;
 
         @Option(name = ALIAS_GRAPHVIZ_SHOW_ALL,
-                description = "If 'true', the graph representation contains even initializations." + " Requires '" +
-                        ALIAS_GRAPHVIZ + "=true'." + " Defaults to 'false'.", secure = true)
+                description = "If 'true', the graph representation contains even initializations." +
+                        " Requires '" + ALIAS_GRAPHVIZ + "=true'." +
+                        " Defaults to 'false'.", secure = true)
         private boolean graphvizShowAll;
+
+        @Option(name = ALIAS_GRAPHVIZ_INTERNAL,
+                description = "If 'true' and supported, the graph shows an internal representation." +
+                        " Requires '" + ALIAS_GRAPHVIZ + "=true'." +
+                        " Defaults to 'false'.", secure = true)
+        boolean graphvizInternal;
 
         private Config(Configuration config) throws InvalidConfigurationException {
             config.inject(this);
@@ -107,9 +110,19 @@ public interface AliasAnalysis {
         public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
             return a1.mayAlias(a, b) && a2.mayAlias(a, b);
         }
+
+        @Override
+        public Graphviz getGraphVisualization() {
+            return a1.getGraphVisualization();
+        }
     }
 
-    private void generateGraph(Program program, Config configuration) {
+    //this should be protected
+    default Graphviz getGraphVisualization() {
+        return null;
+    }
+
+    private Graphviz defaultGraph(Program program, Config configuration) {
         // Nodes represent sets of events.
         // A solid line marks the existence of events that must alias.
         // A dashed line marks the existence of events that may alias.
@@ -144,7 +157,12 @@ public interface AliasAnalysis {
         graphviz.addEdges(mustGraph);
         graphviz.end();
         graphviz.end();
+        return graphviz;
+    }
 
+    private void generateGraph(Program program, Config configuration) {
+        final Graphviz internalGraph = configuration.graphvizInternal ? getGraphVisualization() : null;
+        final Graphviz graphviz = internalGraph != null ? internalGraph : defaultGraph(program, configuration);
         // Generates the .dot file and convert into the .png file.
         String programName = program.getName();
         String programBase = programName.substring(0, programName.lastIndexOf('.'));

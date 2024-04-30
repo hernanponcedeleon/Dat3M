@@ -27,7 +27,7 @@ public class CLKMMTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("lkmm/" + name + ".ll"));
+        return () -> getTestResourcePath("lkmm/" + name + ".ll");
     }
 
     @Override
