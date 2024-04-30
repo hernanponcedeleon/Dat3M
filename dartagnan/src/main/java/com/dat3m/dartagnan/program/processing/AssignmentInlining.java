@@ -35,7 +35,8 @@ public class AssignmentInlining implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        if (!function.hasBody()) {
+        if (!function.hasBody()
+                /*|| function.getProgram().getFormat() == Program.SourceLanguage.LITMUS */) {
             return;
         }
 
@@ -72,7 +73,10 @@ public class AssignmentInlining implements FunctionProcessor {
                 if (mode == Mode.SCAN) {
                     usageCounter.compute(lastAssignment, (k, v) -> v == null ? 1 : v + 1);
                     return reg;
-                } else if (usageCounter.get(lastAssignment) == 1
+                } else if (
+                        // The default case is awkward, but it can happen for locals of the form "r = f(r)"
+                        // which do not allow for substituting r for f(r) in later usages.
+                        usageCounter.getOrDefault(lastAssignment, 0) == 1
                         && preDominatorTree.isDominatedBy(curEvent, lastAssignment)) {
                     assert mode == Mode.REPLACE;
                     return lastAssignment.getExpr();
