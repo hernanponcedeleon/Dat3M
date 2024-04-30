@@ -10,7 +10,7 @@ import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
 import com.dat3m.dartagnan.utils.rules.RequestShutdownOnError;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Rule;
 import org.junit.Test;
@@ -122,15 +122,15 @@ public abstract class AbstractCompilationTest {
             .around(prover2Provider);
 
     @Test
-    public void testIncremental() throws Exception {
+    public void testAssume() throws Exception {
     	if(task1Provider.get().getProgram().getThreadEvents().stream().noneMatch(AbstractCompilationTest::isRcuOrSrcu)) {
-            IncrementalSolver s1 = IncrementalSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
+            AssumeSolver s1 = AssumeSolver.run(context1Provider.get(), prover1Provider.get(), task1Provider.get());
             if(!s1.hasModel()) {
                 // We found no model showing a specific behaviour (either positively or negatively),
                 // so the compiled code should also not exhibit that behaviour, unless we
                 // know the compilation is broken
                 boolean compilationIsBroken = getCompilationBreakers().contains(path);
-                IncrementalSolver s2 = IncrementalSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
+                AssumeSolver s2 = AssumeSolver.run(context2Provider.get(), prover2Provider.get(), task2Provider.get());
                 assertEquals(compilationIsBroken, s2.hasModel());
             }
         }

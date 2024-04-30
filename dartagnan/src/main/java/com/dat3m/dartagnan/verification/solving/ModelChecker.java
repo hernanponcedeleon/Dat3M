@@ -34,8 +34,7 @@ import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.utils.Result.PASS;
+import static com.dat3m.dartagnan.utils.Result.*;
 import static java.lang.Boolean.FALSE;
 
 public abstract class ModelChecker {
@@ -58,7 +57,8 @@ public abstract class ModelChecker {
         final Property.Type propType = Property.getCombinedType(context.getTask().getProperty(), context.getTask());
         final boolean hasViolationWitnesses = res == FAIL && propType == Property.Type.SAFETY;
         final boolean hasPositiveWitnesses = res == PASS && propType == Property.Type.REACHABILITY;
-        return (hasViolationWitnesses || hasPositiveWitnesses);
+        final boolean hasReachedBounds = res == UNKNOWN && propType == Property.Type.SAFETY;
+        return (hasViolationWitnesses || hasPositiveWitnesses || hasReachedBounds);
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class ModelChecker {
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
         analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(Dependency.class, Dependency.fromConfig(program, analysisContext, config));
-        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, config));
+        analysisContext.register(AliasAnalysis.class, AliasAnalysis.fromConfig(program, analysisContext, config));
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
         for(Thread thread : program.getThreads()) {
             for(Event e : thread.getEvents()) {

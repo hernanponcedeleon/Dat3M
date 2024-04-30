@@ -24,11 +24,11 @@ empty rmw & (fre;coe)
 
 (* global ordering against OOTA*)
 
-let bob = po;[W & REL] | [R & ACQ];po | po;[F] | [F];po | [W & REL];po-loc;[W]                  (* barrier order *)
-let deps = data | ctrl | addr;(po?) | casdep | [R & RMW];po                                     (* syntactic dependencies *)
-let ppo = [R];(deps | rfi)+;[W]                                                                 (* preserved program order *)
-let detour = (coe;rfe) & po                                                                     (* detour *)
-let psc = [F & SC];hb;eco;hb;[F & SC]                                                           (* partial SC fence order *)
+let bob = po;[W & (REL | SC)] | [R & (ACQ | SC)];po | po;[F] | [F];po | [W & (REL | SC)];po-loc;[W]                                 (* barrier order *)
+let deps = data | ctrl | addr;(po?) | casdep | [R & RMW];po                                                                         (* syntactic dependencies *)
+let ppo = [R];(deps | rfi)+;[W]                                                                                                     (* preserved program order *)
+let detour = (coe;rfe) & po                                                                                                         (* detour *)
+let psc = [F & SC];hb;eco;hb;[F & SC]                                                                                               (* partial SC fence order *)
 
 (* GenMC guarantees SC for IMM similar to how it is done in RC11 *)
 let pol = po \ loc

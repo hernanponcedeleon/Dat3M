@@ -28,6 +28,7 @@ import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -41,6 +42,7 @@ import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
 
 import java.io.File;
+import java.io.FileReader;
 import java.math.BigInteger;
 import java.util.*;
 
@@ -51,7 +53,7 @@ import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 import static com.dat3m.dartagnan.configuration.OptionNames.TARGET;
 import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
-import static com.dat3m.dartagnan.utils.GitInfo.CreateGitInfo;
+import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
@@ -72,12 +74,22 @@ public class Dartagnan extends BaseOptions {
 
     public static void main(String[] args) throws Exception {
 
+        initGitInfo();
+
         if (Arrays.asList(args).contains("--help")) {
             collectOptions();
             return;
         }
 
-        CreateGitInfo();
+        if (Arrays.asList(args).contains("--version")) {
+            final MavenXpp3Reader mvnReader = new MavenXpp3Reader();
+            final FileReader fileReader = new FileReader(System.getenv("DAT3M_HOME") + "/pom.xml");
+            final String version = String.format("%s (commit %s)", mvnReader.read(fileReader).getVersion(), getGitId());
+            System.out.println(version);
+            return;
+        }
+
+        logGitInfo();
 
         String[] argKeyword = Arrays.stream(args)
                 .filter(s -> s.startsWith("-"))
@@ -154,18 +166,10 @@ public class Dartagnan extends BaseOptions {
                 } else {
                     // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
                     switch (o.getMethod()) {
-                        case TWO:
-                            try (ProverEnvironment prover2 = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-                                modelChecker = TwoSolvers.run(ctx, prover, prover2, task);
-                            }
-                            break;
-                        case INCREMENTAL:
-                            modelChecker = IncrementalSolver.run(ctx, prover, task);
-                            break;
-                        case ASSUME:
+                        case EAGER:
                             modelChecker = AssumeSolver.run(ctx, prover, task);
                             break;
-                        case CAAT:
+                        case LAZY:
                             modelChecker = RefinementSolver.run(ctx, prover, task);
                             break;
                         default:
@@ -216,7 +220,8 @@ public class Dartagnan extends BaseOptions {
         // ------------------ Generate Witness, if possible ------------------
         final EnumSet<Property> properties = task.getProperty();
         if (task.getProgram().getFormat().equals(SourceLanguage.LLVM) && modelChecker.hasModel()
-                && properties.contains(PROGRAM_SPEC) && properties.size() == 1) {
+                && properties.contains(PROGRAM_SPEC) && properties.size() == 1
+                && modelChecker.getResult() != UNKNOWN) {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
                         modelChecker.getResult(), summary);
@@ -244,9 +249,8 @@ public class Dartagnan extends BaseOptions {
         StringBuilder summary = new StringBuilder();
 
         if (p.getFormat() != SourceLanguage.LITMUS) {
+            final SyntacticContextAnalysis synContext = newInstance(p);
             if (hasViolations) {
-
-                final SyntacticContextAnalysis synContext = newInstance(p);
                 printWarningIfThreadStartFailed(p, encCtx, prover);
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     summary.append("===== Program specification violation found =====\n");
@@ -302,6 +306,19 @@ public class Dartagnan extends BaseOptions {
                     // because it is the only property that got encoded.
                     summary.append("Program specification witness found.").append("\n");
                 }
+            } else if (result == UNKNOWN && modelChecker.hasModel()) {
+                // We reached unrolling bounds.
+                summary.append("=========== Not fully unrolled loops ============\n");
+                for (Event ev : p.getThreadEventsWithAllTags(Tag.BOUND)) {
+                    final boolean isReached = TRUE.equals(model.evaluate(encCtx.execution(ev)));
+                    if (isReached) {
+                        summary
+                                .append("\t")
+                                .append(synContext.getSourceLocationWithContext(ev, true))
+                                .append("\n");
+                    }
+                }
+                summary.append("=================================================\n");
             }
             summary.append(result).append("\n");
         } else {

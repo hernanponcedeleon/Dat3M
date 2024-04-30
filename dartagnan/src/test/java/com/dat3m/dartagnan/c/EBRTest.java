@@ -28,7 +28,7 @@ public class EBRTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("smr/" + name + ".ll"));
+        return () -> getTestResourcePath("smr/" + name + ".ll");
     }
 
     @Override
@@ -38,7 +38,7 @@ public class EBRTest extends AbstractCTest {
 
     @Override
     protected Provider<Solvers> getSolverProvider() {
-        return Provider.fromSupplier(() -> Solvers.YICES2);
+        return () -> Solvers.YICES2;
     }
 
     @Override

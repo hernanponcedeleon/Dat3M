@@ -259,7 +259,7 @@ public class ExecutionGraph {
         } else if (relClass == Internal.class) {
             graph = new InternalGraph();
         } else if (relClass == Fences.class) {
-            graph = new FenceGraph(((Fences) rel.getDefinition()).getFilter());
+            throw new UnsupportedOperationException("fencerel is not supported in CAAT.");
         } else if (relClass == SetIdentity.class) {
             SetPredicate set = getOrCreateSetFromFilter(((SetIdentity) rel.getDefinition()).getFilter());
             graph = new SetIdentityGraph(set);

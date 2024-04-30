@@ -320,9 +320,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
                     scope = (SpecialMdTupleNode) metadataSymbolTable.get(scope.<MdReference>getField("scope").orElseThrow().mdName());
                 }
                 assert scope.nodeType() == SpecialMdTupleNode.Type.DIFile;
+                // https://llvm.org/docs/LangRef.html#difile suggests that "file" and "directory" 
+                // are mandatory fields and thus the ElseThrow
                 final String filename = scope.<MdGenericValue<String>>getField("filename").orElseThrow().value();
                 final String directory = scope.<MdGenericValue<String>>getField("directory").orElseThrow().value();
-                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line").orElseThrow().value().intValue();
+                // Field "line" is optional. When missing we assume value 0
+                final int lineNumber = diLocationNode.<MdGenericValue<BigInteger>>getField("line")
+                        .orElse(new MdGenericValue<BigInteger>(BigInteger.ZERO)).value().intValue();
                 metadata.add(new SourceLocation((directory + "/" + filename).intern(), lineNumber));
             }
         }
@@ -1291,12 +1295,22 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return pointerType;
     }
 
-    private boolean parseBoolean(TerminalNode node) {
-        return Boolean.parseBoolean(node.getText());
-    }
-
     private BigInteger parseBigInteger(TerminalNode node) {
-        return new BigInteger(node.getText());
+        final String nodeString = node.getText();
+        final int radix;
+        final String valueString;
+        // Hexa numbers are used for floating point in llvm.
+        // Prefix "u" is used to force interpreting them as hexa ints
+        // https://stackoverflow.com/questions/16310509/is-it-possible-to-specify-a-hexadecimal-number-in-llvm-ir-code
+        if (nodeString.startsWith("u0x")) {
+           radix = 16;
+           // Get rid of u0x prefix
+           valueString = nodeString.substring(3);
+        } else {
+           radix = 10;
+           valueString = nodeString;
+        }
+        return new BigInteger(valueString, radix);
     }
 
     private String parseQuotedString(TerminalNode node) {

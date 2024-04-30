@@ -15,37 +15,23 @@ import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 public class ApplicationTest {
 
     @Test
-    public void Two() throws Exception {
-        Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                TWO.asStringOption(),
-                Solvers.Z3.toString()));
-    }
-
-    @Test
     public void Assume() throws Exception {
         Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                ASSUME.asStringOption(),
-                Solvers.Z3.toString()));
-    }
-
-    @Test
-    public void Incremental() throws Exception {
-        Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                INCREMENTAL.asStringOption(),
+                EAGER.asStringOption(),
                 Solvers.Z3.toString()));
     }
 
     @Test
     public void CAAT() throws Exception {
         Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                CAAT.asStringOption(),
+                LAZY.asStringOption(),
                 Solvers.Z3.toString()));
     }
 
     @Test
     public void Races() throws Exception {
         Dartagnan.main(createAndFillOptions(DATARACEFREEDOM.asStringOption(),
-                ASSUME.asStringOption(),
+                EAGER.asStringOption(),
                 Solvers.Z3.toString()));
     }
 
@@ -92,7 +78,7 @@ public class ApplicationTest {
     @Test(expected = InvalidConfigurationException.class)
     public void UnsupportedAnalysis() throws Exception {
         Dartagnan.main(createAndFillOptions("unsupported-analysis",
-                ASSUME.asStringOption(),
+                EAGER.asStringOption(),
                 Solvers.Z3.toString()));
     }
 
@@ -106,7 +92,7 @@ public class ApplicationTest {
     @Test(expected = InvalidConfigurationException.class)
     public void UnsupportedSolver() throws Exception {
         Dartagnan.main(createAndFillOptions(PROGRAM_SPEC.asStringOption(),
-                ASSUME.asStringOption(),
+                EAGER.asStringOption(),
                 "unsupported-solver"));
     }
 

@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.function.Predicate;
@@ -100,9 +99,6 @@ public class SyntacticContextAnalysis {
         }
     }
 
-    // We use this enum to track loop nesting
-    private enum LoopMarkerTypes {START, INC, END}
-
     // ============================================================================
 
     private final Map<Event, Info> infoMap = new HashMap<>();
@@ -128,6 +124,19 @@ public class SyntacticContextAnalysis {
         return new SyntacticContextAnalysis();
     }
 
+    public String getSourceLocationWithContext(Event e, boolean addGlobalId) {
+        final StringBuilder builder = new StringBuilder();
+        final String ctx = makeContextString(this.getContextInfo(e).getContextStack(), " -> ");
+        if (addGlobalId) {
+            builder.append("E").append(e.getGlobalId()).append(": \t");
+        }
+        builder
+                .append(ctx.isEmpty() ? ctx : ctx + " -> ")
+                .append(getSourceLocationString(e));
+
+        return builder.toString();
+    }
+
     // ============================================================================
     // ============================== Analysis logic ==============================
     // ============================================================================
@@ -138,7 +147,7 @@ public class SyntacticContextAnalysis {
     }
 
     private void run(Thread thread, LoopAnalysis loops) {
-        final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = getLoopMarkerTypesMap(thread, loops);
+        final Map<Event, LoopAnalysis.LoopIterationInfo> loopMarkerTypesMap = getLoopMarkerTypesMap(thread, loops);
 
         Stack<Context> curContextStack = new Stack<>();
         curContextStack.push(new ThreadContext(thread));
@@ -161,32 +170,31 @@ public class SyntacticContextAnalysis {
                 } while (!topCallCtx.funCallMarker.getFunctionName().equals(retMarker.getFunctionName()));
             }
 
-            if (loopMarkerTypesMap.containsKey(ev)) {
-                switch (loopMarkerTypesMap.get(ev)) {
-                    case START -> curContextStack.push(new LoopContext(ev, 1));
-                    case INC -> {
-                        assert curContextStack.peek() instanceof LoopContext;
-                        int iterNum = ((LoopContext) curContextStack.pop()).iterationNumber;
-                        curContextStack.push(new LoopContext(ev, iterNum + 1));
-                    }
-                    case END -> {
-                        assert curContextStack.peek() instanceof LoopContext;
-                        curContextStack.pop();
-                    }
+            final LoopAnalysis.LoopIterationInfo iteration = loopMarkerTypesMap.get(ev);
+            if (iteration != null) {
+                final boolean start = ev == iteration.getIterationStart();
+                final boolean end = ev == iteration.getIterationEnd();
+                assert start || end;
+                if (start) {
+                    curContextStack.push(new LoopContext(ev, iteration.getIterationNumber()));
+                }
+                if (end) {
+                    assert curContextStack.peek() instanceof LoopContext c &&
+                            c.loopMarker == iteration.getIterationStart() &&
+                            c.iterationNumber == iteration.getIterationNumber();
+                    curContextStack.pop();
                 }
             }
         }
     }
 
-    private Map<Event, LoopMarkerTypes> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
-        final Map<Event, LoopMarkerTypes> loopMarkerTypesMap = new HashMap<>();
+    private Map<Event, LoopAnalysis.LoopIterationInfo> getLoopMarkerTypesMap(Thread thread, LoopAnalysis loopAnalysis) {
+        final Map<Event, LoopAnalysis.LoopIterationInfo> loopMarkerTypesMap = new HashMap<>();
         for (LoopAnalysis.LoopInfo loop : loopAnalysis.getLoopsOfFunction(thread)) {
-            final List<LoopAnalysis.LoopIterationInfo> iterations = loop.iterations();
-
-            loopMarkerTypesMap.put(iterations.get(0).getIterationStart(), LoopMarkerTypes.START);
-            iterations.subList(1, iterations.size())
-                    .forEach(iter -> loopMarkerTypesMap.put(iter.getIterationStart(), LoopMarkerTypes.INC));
-            loopMarkerTypesMap.put(iterations.get(iterations.size() - 1).getIterationEnd(), LoopMarkerTypes.END);
+            for (LoopAnalysis.LoopIterationInfo iteration : loop.iterations()) {
+                loopMarkerTypesMap.put(iteration.getIterationStart(), iteration);
+                loopMarkerTypesMap.put(iteration.getIterationEnd(), iteration);
+            }
         }
         return loopMarkerTypesMap;
     }

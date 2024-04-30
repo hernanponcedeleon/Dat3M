@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.verification.Context;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -34,7 +36,10 @@ public final class Dependency {
     private final HashMap<Event, Map<Register, State>> map = new HashMap<>();
     private final Map<Register, State> finalWriters = new HashMap<>();
 
-    private Dependency() {
+    private final Supplier<SyntacticContextAnalysis> synCtx;
+
+    private Dependency(Program program) {
+        synCtx = Suppliers.memoize(() -> SyntacticContextAnalysis.newInstance(program));
     }
 
     /**
@@ -51,7 +56,7 @@ public final class Dependency {
     public static Dependency fromConfig(Program program, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         logger.info("Analyze dependencies");
         ExecutionAnalysis exec = analysisContext.requires(ExecutionAnalysis.class);
-        Dependency result = new Dependency();
+        Dependency result = new Dependency(program);
         for (Thread t : program.getThreads()) {
             result.process(t, exec);
         }
@@ -126,10 +131,9 @@ public final class Dependency {
                     } else {
                         writers = process(event, state, register, exec);
                         if (!writers.initialized) {
-                            logger.warn("Uninitialized register {} read by event {} of thread {}",
-                                    register,
-                                    event,
-                                    thread.getId());
+                            logger.warn("Uninitialized register {} read by event {}\n {}",
+                                    register, event,
+                                    synCtx.get().getSourceLocationWithContext(event, true));
                         }
                     }
                     result.put(register, writers);
@@ -142,7 +146,7 @@ public final class Dependency {
                 if (event.cfImpliesExec()) {
                     state.removeIf(e -> e.register.equals(register));
                 }
-                state.add(new Writer(register, event));
+                state.add(new Writer(register, rw));
             }
             //copy state, if branching
             if (event instanceof CondJump jump) {
@@ -166,18 +170,18 @@ public final class Dependency {
     }
 
     private static State process(Event reader, Set<Writer> state, Register register, ExecutionAnalysis exec) {
-        List<Event> candidates = state.stream()
+        List<RegWriter> candidates = state.stream()
                 .filter(e -> e.register.equals(register))
                 .map(e -> e.event)
                 .filter(e -> reader == null || !exec.areMutuallyExclusive(reader, e))
-                .collect(toList());
+                .toList();
         //NOTE if candidates is empty, the reader is unreachable
-        List<Event> mays = candidates.stream()
+        List<RegWriter> mays = candidates.stream()
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparingInt(Event::getGlobalId))
                 .collect(Collectors.toCollection(ArrayList::new));
         int end = mays.size();
-        List<Event> musts = range(0, end)
+        List<RegWriter> musts = range(0, end)
                 .filter(i -> mays.subList(i + 1, end).stream().allMatch(j -> exec.areMutuallyExclusive(mays.get(i), j)))
                 .mapToObj(mays::get)
                 .collect(toList());
@@ -186,9 +190,9 @@ public final class Dependency {
 
     private static final class Writer {
         final Register register;
-        final Event event;
+        final RegWriter event;
 
-        Writer(Register r, Event e) {
+        Writer(Register r, RegWriter e) {
             register = checkNotNull(r);
             event = e;
         }
@@ -222,15 +226,15 @@ public final class Dependency {
          * Complete, but unsound, program-ordered list of direct providers for the register:
          * If there is a program execution where an event of the program was the latest writer, that event is contained in this list.
          */
-        public final List<Event> may;
+        public final List<RegWriter> may;
 
         /**
          * Sound, but incomplete, program-ordered list of direct providers with no overwriting event in between:
          * Each event in this list will be the latest writer in any execution that contains that event.
          */
-        public final List<Event> must;
+        public final List<RegWriter> must;
 
-        private State(boolean initialized, List<Event> may, List<Event> must) {
+        private State(boolean initialized, List<RegWriter> may, List<RegWriter> must) {
             verify(new HashSet<>(may).containsAll(must), "Each must-writer must also be a may-writer.");
             verify(may.isEmpty() || must.contains(may.get(may.size() - 1)), "The last may-writer must also be a must-writer.");
             this.initialized = initialized;

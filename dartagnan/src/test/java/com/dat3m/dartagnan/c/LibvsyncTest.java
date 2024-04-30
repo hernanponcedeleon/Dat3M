@@ -16,11 +16,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.Arch.IMM;
+import static com.dat3m.dartagnan.configuration.Arch.C11;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.PASS;
 import static com.dat3m.dartagnan.utils.Result.UNKNOWN;
 import static org.junit.Assert.assertEquals;
+import static com.dat3m.dartagnan.configuration.Property.*;
 
 @RunWith(Parameterized.class)
 public class LibvsyncTest extends AbstractCTest {
@@ -31,12 +32,7 @@ public class LibvsyncTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("libvsync/" + name + "-opt.ll"));
-    }
-
-    @Override
-    protected long getTimeout() {
-        return 300000;
+        return () -> getTestResourcePath("libvsync/" + name + "-opt.ll");
     }
 
     @Override
@@ -45,32 +41,37 @@ public class LibvsyncTest extends AbstractCTest {
     }
 
     @Override
+    protected long getTimeout() {
+        return 300000;
+    }
+
+    @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC, Property.LIVENESS));
+        return () -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC);
     }
 
     @Override
     protected Provider<Wmm> getWmmProvider() {
-        return Providers.createWmmFromArch(() -> IMM);
+        return Providers.createWmmFromName(() -> "vmm");
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"caslock", IMM, UNKNOWN},
-                {"mcslock", IMM, UNKNOWN},
-                {"rec_mcslock", IMM, UNKNOWN},
-                {"rec_spinlock", IMM, UNKNOWN},
-                {"rec_ticketlock", IMM, UNKNOWN},
-                {"rwlock", IMM, UNKNOWN},
-                {"semaphore", IMM, UNKNOWN},
-                {"seqcount", IMM, PASS},
-                {"seqlock", IMM, UNKNOWN},
-                {"ticketlock", IMM, UNKNOWN},
-                {"ttaslock", IMM, UNKNOWN},
-                {"bounded_mpmc_check_empty", IMM, UNKNOWN},
-                {"bounded_mpmc_check_full", IMM, UNKNOWN},
-                {"bounded_spsc", IMM, UNKNOWN},
+                {"caslock", C11, UNKNOWN},
+                {"mcslock", C11, UNKNOWN},
+                {"rec_mcslock", C11, UNKNOWN},
+                {"rec_spinlock", C11, UNKNOWN},
+                {"rec_ticketlock", C11, UNKNOWN},
+                {"rwlock", C11, UNKNOWN},
+                {"semaphore", C11, UNKNOWN},
+                {"seqcount", C11, PASS},
+                {"seqlock", C11, UNKNOWN},
+                {"ticketlock", C11, UNKNOWN},
+                {"ttaslock", C11, UNKNOWN},
+                {"bounded_mpmc_check_empty", C11, UNKNOWN},
+                {"bounded_mpmc_check_full", C11, UNKNOWN},
+                {"bounded_spsc", C11, UNKNOWN},
         });
     }
 

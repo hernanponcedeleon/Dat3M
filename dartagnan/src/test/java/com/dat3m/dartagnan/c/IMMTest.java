@@ -29,7 +29,7 @@ public class IMMTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("imm/" + name + ".ll"));
+        return () -> getTestResourcePath("imm/" + name + ".ll");
     }
 
     @Override
@@ -57,7 +57,7 @@ public class IMMTest extends AbstractCTest {
                 {"paper-E3.9", IMM, PASS},
                 {"paper-E3.10", IMM, PASS},
                 {"paper-R2", IMM, PASS},
-                // IMM from the paper returns PASS in the test bewow.
+                // IMM from the paper returns PASS in the test below.
                 // But since we follow the sw definition of RC11, the
                 // expected result is FAIL (confirmed by genMC) 
                 {"paper-R2-alt", IMM, FAIL},
