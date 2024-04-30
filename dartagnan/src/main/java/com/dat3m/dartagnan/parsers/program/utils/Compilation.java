@@ -48,7 +48,8 @@ public class Compilation {
         try {
             runCmd(cmd);
         } catch (Exception e) {
-            logger.warn("Could not apply llvm optimization passes. Is opt properly installed in your system?");
+            logger.warn("Failed to run opt (llvm optimizations). Continuing without optimizations.");
+            return file;
         }
         return new File(outputFileName);
     }
