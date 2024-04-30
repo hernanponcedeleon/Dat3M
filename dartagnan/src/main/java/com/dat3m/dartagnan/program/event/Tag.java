@@ -137,6 +137,23 @@ public final class Tag {
             }
         }
 
+        public static String loadMO(String mo) {
+            return switch (mo) {
+                case MO_ACQUIRE         -> MO_ACQUIRE;
+                case MO_ACQUIRE_RELEASE -> MO_ACQUIRE;
+                case MO_SC              -> MO_SC;
+                default                 -> MO_RELAXED;
+            };
+        }
+
+        public static String storeMO(String mo) {
+            return switch (mo) {
+                case MO_RELEASE         -> MO_RELEASE;
+                case MO_ACQUIRE_RELEASE -> MO_RELEASE;
+                case MO_SC              -> MO_SC;
+                default                 -> MO_RELAXED;
+            };
+        }
     }
 
     // =============================================================================================
