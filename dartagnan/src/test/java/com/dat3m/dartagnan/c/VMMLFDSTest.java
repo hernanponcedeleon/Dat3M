@@ -30,7 +30,7 @@ public class VMMLFDSTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("lfds/" + name + ".ll"));
+        return () -> getTestResourcePath("lfds/" + name + ".ll");
     }
 
     @Override
@@ -40,12 +40,12 @@ public class VMMLFDSTest extends AbstractCTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC));
+        return () -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC);
     }
 
     @Override
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 2);
+        return () -> 2;
     }
 
     @Override

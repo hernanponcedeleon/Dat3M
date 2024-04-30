@@ -32,7 +32,7 @@ public class LibvsyncTest extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath("libvsync/" + name + "-opt.ll"));
+        return () -> getTestResourcePath("libvsync/" + name + "-opt.ll");
     }
 
     @Override
@@ -47,7 +47,7 @@ public class LibvsyncTest extends AbstractCTest {
 
     @Override
     protected Provider<EnumSet<Property>> getPropertyProvider() {
-        return Provider.fromSupplier(() -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC));
+        return () -> EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC);
     }
 
     @Override

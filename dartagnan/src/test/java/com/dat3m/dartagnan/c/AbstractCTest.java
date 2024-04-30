@@ -47,15 +47,15 @@ public abstract class AbstractCTest {
     }
 
     protected Provider<String> getProgramPathProvider() {
-        return Provider.fromSupplier(() -> getTestResourcePath(name + ".ll"));
+        return () -> getTestResourcePath(name + ".ll");
     }
 
     protected Provider<Integer> getBoundProvider() {
-        return Provider.fromSupplier(() -> 1);
+        return () -> 1;
     }
 
     protected Provider<Solvers> getSolverProvider() {
-        return Provider.fromSupplier(() -> Solvers.Z3);
+        return () -> Solvers.Z3;
     }
 
     protected Provider<Wmm> getWmmProvider() {
