@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprSimplifier;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -65,6 +66,9 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
     @Override
     public void run(Function func) {
+        if (!func.hasBody() || func.getProgram().getFormat() == Program.SourceLanguage.LITMUS) {
+            return;
+        }
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
                 : (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral);

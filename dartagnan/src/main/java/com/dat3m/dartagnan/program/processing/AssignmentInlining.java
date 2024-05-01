@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
@@ -35,8 +36,7 @@ public class AssignmentInlining implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        if (!function.hasBody()
-                /*|| function.getProgram().getFormat() == Program.SourceLanguage.LITMUS */) {
+        if (!function.hasBody() || function.getProgram().getFormat() == Program.SourceLanguage.LITMUS ) {
             return;
         }
 
