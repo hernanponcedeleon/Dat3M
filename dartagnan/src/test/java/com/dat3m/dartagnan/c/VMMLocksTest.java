@@ -70,7 +70,10 @@ public class VMMLocksTest extends AbstractCTest {
                 {"spinlock", C11, PASS},
                 {"spinlock-acq2rx", C11, FAIL},
                 {"spinlock-rel2rx", C11, FAIL},
-                {"linuxrwlock", C11, UNKNOWN},
+                // VMM requires stronger orderings than hardware models (including IMM)
+                {"linuxrwlock", C11, FAIL},
+                // This one uses the correct orderings for VMM
+                {"linuxrwlock-vmm", C11, UNKNOWN},
                 {"linuxrwlock-acq2rx", C11, FAIL},
                 {"linuxrwlock-rel2rx", C11, FAIL},
                 {"mutex_musl", C11, UNKNOWN},
