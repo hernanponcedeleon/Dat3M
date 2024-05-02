@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.solver.onlineCaatTest.Decoder;
 import com.dat3m.dartagnan.solver.onlineCaatTest.EdgeInfo;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.CAATSolver;
+import com.dat3m.dartagnan.solver.onlineCaatTest.caat.domain.Domain;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.domain.GenericDomain;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.Edge;
 import com.dat3m.dartagnan.solver.onlineCaatTest.caat.predicates.relationGraphs.base.SimpleGraph;
@@ -56,6 +57,8 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     private final Deque<BooleanFormula> knownValues = new ArrayDeque<>();
     private final Map<BooleanFormula, Boolean> partialModel = new HashMap<>();
     private final Set<BooleanFormula> trueValues = new HashSet<>();
+    private final GenericDomain<Event> domain = new GenericDomain<>();
+
 
     @Override
     public void initializeWithBackend(PropagatorBackend backend) {
@@ -71,16 +74,20 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     @Override
     public void onPush() {
         backtrackPoints.push(knownValues.size());
+        domain.push();
         //System.out.println("Pushed: " + backtrackPoints.size());
     }
 
     @Override
     public void onPop(int numLevels) {
         int backtrackTo = 0;
-        while (numLevels > 0) {
+        int popLevels = numLevels;
+        while (popLevels > 0) {
             backtrackTo = backtrackPoints.pop();
-            numLevels--;
+            popLevels--;
         }
+
+        domain.resetElements(numLevels);
 
         while (knownValues.size() > backtrackTo) {
             final BooleanFormula revertedAssignment = knownValues.pop();
@@ -98,6 +105,13 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
         partialModel.put(expr, value);
         if (value) {
             trueValues.add(expr);
+
+            Decoder.Info info = decoder.decode(expr);
+            for (Event event : info.events()) {
+                if (event.hasTag(Tag.VISIBLE)) {
+                    domain.addElement(event);
+                }
+            }
         }
 
         progressPropagation();
@@ -149,17 +163,13 @@ public class OnlineWMMSolver extends AbstractUserPropagator {
     }
 
     private void initModel() {
-        List<Event> executedEvents = new ArrayList<>();
         List<EdgeInfo> edges = new ArrayList<>();
         for (BooleanFormula assigned : trueValues) {
             Decoder.Info info = decoder.decode(assigned);
-            executedEvents.addAll(info.events());
             edges.addAll(info.edges());
         }
 
         // Init domain
-        executedEvents.removeIf(e -> !e.hasTag(Tag.VISIBLE));
-        GenericDomain<Event> domain = new GenericDomain<>(executedEvents);
         executionGraph.initializeToDomain(domain);
 
         // Setup base relation graphs

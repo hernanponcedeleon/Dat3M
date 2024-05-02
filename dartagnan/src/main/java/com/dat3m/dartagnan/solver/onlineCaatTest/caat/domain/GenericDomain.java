@@ -20,7 +20,6 @@ public class GenericDomain<T> implements Domain<T> {
         domainMap = new DenseIdBiMap<>();
     }
 
-    @Override
     public boolean resetElements(int clusterNum) {
         return domainMap.removeObjectsFromTop(clusterNum);
     }
@@ -35,13 +34,10 @@ public class GenericDomain<T> implements Domain<T> {
         return domainMap.size();
     }
 
-    @Override
     public int push() { return domainMap.push(); }
 
-    @Override
     public int addElement(T el) { return domainMap.addObject(el); }
 
-    @Override
     public boolean addAll(Collection<T> els) {
         for (T el : els) {
             if (addElement(el) < 0) {
