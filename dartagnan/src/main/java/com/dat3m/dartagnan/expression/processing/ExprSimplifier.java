@@ -274,9 +274,17 @@ public class ExprSimplifier extends ExprTransformer {
                 return falseCase;
             }
         }
+
         if (trueCase instanceof BoolLiteral tLit && falseCase instanceof BoolLiteral fLit) {
-            if (aggressive && tLit.getValue() == fLit.getValue()) {
-                return tLit;
+            if (tLit.getValue() == fLit.getValue()) {
+                if (aggressive || cond.getRegs().isEmpty()) {
+                    return tLit;
+                } else if (tLit.getValue()) {
+                    return expressions.makeBoolBinary(cond, BoolBinaryOp.OR, expressions.makeTrue());
+                } else {
+                    return expressions.makeBoolBinary(cond, BoolBinaryOp.AND, expressions.makeFalse());
+                }
+
             }
 
             if (tLit.getValue()) {
