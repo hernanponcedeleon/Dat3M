@@ -92,7 +92,7 @@ public class ExprSimplifier extends ExprTransformer {
 
             if (lit.getValue() == neutralValue) {
                 return left;
-            } else if (aggressive || left.getRegs().isEmpty()) {
+            } else if (isPotentiallyEliminable(left)) {
                 return expressions.makeValue(absorbingValue);
             }
         }
@@ -243,7 +243,7 @@ public class ExprSimplifier extends ExprTransformer {
                 return left;
             }
 
-            if (lit.isZero() && op == IntBinaryOp.MUL && (aggressive || left.getRegs().isEmpty())) {
+            if (lit.isZero() && op == IntBinaryOp.MUL && isPotentiallyEliminable(left)) {
                 return expressions.makeZero(expr.getType());
             }
         }
@@ -267,17 +267,17 @@ public class ExprSimplifier extends ExprTransformer {
 
         // ------- Operations with constants -------
         if (cond instanceof BoolLiteral lit) {
-            if (lit.getValue() && (aggressive || falseCase.getRegs().isEmpty())) {
+            if (lit.getValue() && isPotentiallyEliminable(falseCase)) {
                 return trueCase;
             }
-            if (!lit.getValue() && (aggressive || trueCase.getRegs().isEmpty())) {
+            if (!lit.getValue() && isPotentiallyEliminable(trueCase)) {
                 return falseCase;
             }
         }
 
         if (trueCase instanceof BoolLiteral tLit && falseCase instanceof BoolLiteral fLit) {
             if (tLit.getValue() == fLit.getValue()) {
-                if (aggressive || cond.getRegs().isEmpty()) {
+                if (isPotentiallyEliminable(cond)) {
                     return tLit;
                 } else if (tLit.getValue()) {
                     return expressions.makeBoolBinary(cond, BoolBinaryOp.OR, expressions.makeTrue());
@@ -311,5 +311,13 @@ public class ExprSimplifier extends ExprTransformer {
         }
 
         return expressions.makeExtract(expr.getFieldIndex(), inner);
+    }
+
+    // =================================== Helper methods ===================================
+
+    // An expression is potentially eliminable if it either carries no dependencies
+    // or we are in aggressive mode.
+    private boolean isPotentiallyEliminable(Expression expr) {
+        return aggressive || expr.getRegs().isEmpty();
     }
 }
