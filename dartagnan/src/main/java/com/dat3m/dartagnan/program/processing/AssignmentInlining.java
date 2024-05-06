@@ -36,7 +36,7 @@ public class AssignmentInlining implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        if (!function.hasBody() || function.getProgram().getFormat() == Program.SourceLanguage.LITMUS ) {
+        if (!function.hasBody() || function.getProgram().getFormat() == Program.SourceLanguage.LITMUS) {
             return;
         }
 
@@ -101,11 +101,14 @@ public class AssignmentInlining implements FunctionProcessor {
             if (e instanceof RegReader reader) {
                 reader.transformExpressions(substitutor);
             }
-            if (e instanceof Local local) {
-                lastAssignments.put(local.getResultRegister(), local);
-            }
+
             if (e instanceof RegWriter writer) {
+                lastAssignments.remove(writer.getResultRegister());
                 lastAssignments.values().removeIf(l -> l.getExpr().getRegs().contains(writer.getResultRegister()));
+            }
+
+            if (e instanceof Local local && !local.getExpr().getRegs().contains(local.getResultRegister())) {
+                lastAssignments.put(local.getResultRegister(), local);
             }
             return null;
         }
