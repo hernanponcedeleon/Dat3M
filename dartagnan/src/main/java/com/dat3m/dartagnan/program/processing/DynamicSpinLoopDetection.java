@@ -74,7 +74,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
 
     private void collectSideEffects(LoopData loop) {
         // Loop shape is: loopStart -> Calling intrinsic __VERIFIER_spin_start -> #__VERIFIER_spin_start
-        if (loop.getStart().getSuccessors().get(2) instanceof SpinStart) {
+        if (loop.getStart().getSuccessor().getSuccessor() instanceof SpinStart) {
             // A user-placed annotation guarantees absence of side effects.
 
             // This checks assumes the following implementation of await_while
