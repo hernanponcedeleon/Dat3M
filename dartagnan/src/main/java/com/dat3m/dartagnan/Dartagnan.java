@@ -55,6 +55,8 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
+import static com.dat3m.dartagnan.witness.WitnessType.generateGraphviz;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -180,7 +182,7 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (modelChecker.hasModel() && o.generateGraphviz()) {
+                if (modelChecker.hasModel() && generateGraphviz(o.getWitnessType())) {
                     final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                     m.initialize(prover.getModel());
                     final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
@@ -199,8 +201,8 @@ public class Dartagnan extends BaseOptions {
                 System.out.print(summary);
                 System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
-                if (!o.runValidator()) {
-                    // We only generate witnesses if we are not validating one.
+                // We only generate witnesses if we are not validating one.
+                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary);
                 }
             }
@@ -225,10 +227,7 @@ public class Dartagnan extends BaseOptions {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
                         modelChecker.getResult(), summary);
-                if (w.canBeBuilt()) {
-                    // We can only write witnesses if the path to the original C file was given.
-                    w.build().write();
-                }
+                w.build().write();
             } catch (InvalidConfigurationException e) {
                 logger.warn(e.getMessage());
             }

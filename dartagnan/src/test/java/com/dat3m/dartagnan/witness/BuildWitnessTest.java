@@ -23,7 +23,7 @@ import java.io.File;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
-import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
+import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static org.junit.Assert.assertFalse;
@@ -35,7 +35,7 @@ public class BuildWitnessTest {
     public void BuildWriteEncode() throws Exception {
 
         Configuration config = Configuration.builder().
-                setOption(WITNESS_ORIGINAL_PROGRAM_PATH, getTestResourcePath("witness/lazy01-for-witness.ll")).
+                setOption(WITNESS, "graphml").
                 setOption(BOUND, "1").
                 build();
 

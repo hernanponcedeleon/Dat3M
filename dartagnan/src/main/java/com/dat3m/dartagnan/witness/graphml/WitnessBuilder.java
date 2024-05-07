@@ -47,14 +47,10 @@ public class WitnessBuilder {
     // =========================== Configurables ===========================
 
     @Option(
-            name=WITNESS_ORIGINAL_PROGRAM_PATH,
-            description="Path to the original C file (for which to create a witness).",
-            secure=true)
+            name = WITNESS_ORIGINAL_PROGRAM_PATH,
+            description = "Path to the original C file (for which to create a witness).",
+            secure = true)
     private String originalProgramFilePath;
-
-    public boolean canBeBuilt() {
-        return originalProgramFilePath != null;
-    }
 
     // =====================================================================
 
@@ -75,13 +71,13 @@ public class WitnessBuilder {
     }
 
     private static String getLtlPropertyFromSummary(String summary) {
-        if(summary.contains("integer overflow")) {
+        if (summary.contains("integer overflow")) {
             return "CHECK( init(main()), LTL(G ! overflow))";
         }
-        if(summary.contains("invalid dereference")) {
+        if (summary.contains("invalid dereference")) {
             return "CHECK( init(main()), LTL(G valid-deref))";
         }
-        if(summary.contains("user assertion")) {
+        if (summary.contains("user assertion")) {
             return "CHECK( init(main()), LTL(G ! call(reach_error())))";
         }
         throw new UnsupportedOperationException("Violation found for unsupported property");
@@ -136,7 +132,7 @@ public class WitnessBuilder {
         List<MemoryCoreEvent> creates = new ArrayList<>();
         for (Thread thread : program.getThreads()) {
             List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
-            if(spawned.size() == 2) {
+            if (spawned.size() == 2) {
                 creates.add(spawned.get(1));
             }
         }
