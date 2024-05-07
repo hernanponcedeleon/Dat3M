@@ -191,11 +191,19 @@ public final class Tag {
         public static final String AFTER_UNLOCK_LOCK        = "After-unlock-lock";
 
         public static String loadMO(String mo) {
-            return mo.equals(MO_ACQUIRE) ? MO_ACQUIRE : MO_ONCE;
+            return switch (mo) {
+                case MO_ACQUIRE         -> MO_ACQUIRE;
+                case MO_MB              -> MO_MB;
+                default                 -> MO_ONCE;
+            };
         }
 
         public static String storeMO(String mo) {
-            return mo.equals(MO_RELEASE) ? MO_RELEASE : MO_ONCE;
+            return switch (mo) {
+                case MO_RELEASE         -> MO_RELEASE;
+                case MO_MB              -> MO_MB;
+                default                 -> MO_ONCE;
+            };
         }
 
         // NOTE: The order below needs to be in sync with /include/lkmm.h 
