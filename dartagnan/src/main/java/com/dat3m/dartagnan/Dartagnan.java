@@ -21,6 +21,7 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.solving.*;
+import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -193,7 +194,7 @@ public class Dartagnan extends BaseOptions {
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                             (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
-                            synContext);
+                            synContext, o.getWitnessType().equals(WitnessType.PNG));
                 }
 
                 long endTime = System.currentTimeMillis();
