@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.witness;
+package com.dat3m.dartagnan.witness.graphml;
 
 import java.util.SortedMap;
 import java.util.TreeMap;

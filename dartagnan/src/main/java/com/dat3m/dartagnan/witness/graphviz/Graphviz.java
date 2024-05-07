@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.visualization;
+package com.dat3m.dartagnan.witness.graphviz;
 
 
 import java.io.File;

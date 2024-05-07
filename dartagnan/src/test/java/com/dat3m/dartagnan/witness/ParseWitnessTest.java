@@ -1,6 +1,10 @@
 package com.dat3m.dartagnan.witness;
 
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
+import com.dat3m.dartagnan.witness.graphml.Edge;
+import com.dat3m.dartagnan.witness.graphml.Node;
+import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
+
 import org.junit.Test;
 
 import java.io.File;

@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.witness;
+package com.dat3m.dartagnan.witness.graphml;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.witness.graphml.EdgeAttributes.*;
+import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.valueOf;
 
