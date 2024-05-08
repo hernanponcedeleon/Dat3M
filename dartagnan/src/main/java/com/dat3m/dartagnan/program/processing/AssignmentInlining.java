@@ -3,13 +3,9 @@ package com.dat3m.dartagnan.program.processing;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventVisitor;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.RegWriter;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.utils.DominatorTree;
 
@@ -36,7 +32,7 @@ public class AssignmentInlining implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
-        if (!function.hasBody() || function.getProgram().getFormat() == Program.SourceLanguage.LITMUS) {
+        if (!function.hasBody()) {
             return;
         }
 
@@ -77,7 +73,9 @@ public class AssignmentInlining implements FunctionProcessor {
                         // The default case is awkward, but it can happen for locals of the form "r = f(r)"
                         // which do not allow for substituting r for f(r) in later usages.
                         usageCounter.getOrDefault(lastAssignment, 0) == 1
-                        && preDominatorTree.isDominatedBy(curEvent, lastAssignment)) {
+                        && preDominatorTree.isDominatedBy(curEvent, lastAssignment)
+                        && !curEvent.hasTag(Tag.NOOPT)
+                ) {
                     assert mode == Mode.REPLACE;
                     return lastAssignment.getExpr();
                 }
