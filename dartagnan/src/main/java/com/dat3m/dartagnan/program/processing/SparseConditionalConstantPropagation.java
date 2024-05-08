@@ -65,6 +65,9 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
 
     @Override
     public void run(Function func) {
+        if (!func.hasBody()) {
+            return;
+        }
         final Predicate<Expression> checkDoPropagate = propagateCopyAssignments
                 ? (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral || expr instanceof Register)
                 : (expr -> expr instanceof MemoryObject || expr instanceof IntLiteral || expr instanceof BoolLiteral);
@@ -91,61 +94,64 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
                 isTraversingDeadBranch = false;
             }
 
-            if (!isTraversingDeadBranch) {
-                if (cur instanceof Label) {
-                    // If we enter a loop, we remove all registers in the propagationMap that
-                    // are touched by the loop body.
-                    final LoopAnalysis.LoopIterationInfo loop = loops.stream()
-                            .filter(l -> l.getIterationStart() == cur).findFirst().orElse(null);
-                    if (loop != null) {
-                        for (Event e : loop.computeBody()) {
-                            if (e instanceof RegWriter writer) {
-                                propagationMap.remove(writer.getResultRegister());
-                            }
+            if (isTraversingDeadBranch) {
+                // We are in dead code, so avoid propagation
+                continue;
+            }
+
+            if (cur instanceof Label) {
+                // If we enter a loop, we remove all registers in the propagationMap that
+                // are touched by the loop body.
+                final LoopAnalysis.LoopIterationInfo loop = loops.stream()
+                        .filter(l -> l.getIterationStart() == cur).findFirst().orElse(null);
+                if (loop != null) {
+                    for (Event e : loop.computeBody()) {
+                        if (e instanceof RegWriter writer) {
+                            propagationMap.remove(writer.getResultRegister());
                         }
                     }
                 }
+            }
 
-                // Update event with propagation data
-                propagator.propagationMap = propagationMap;
-                if (cur instanceof RegReader regReader) {
-                    regReader.transformExpressions(propagator);
-                }
-                reachableEvents.add(cur);
+            // Update event with propagation data
+            propagator.propagationMap = propagationMap;
+            if (cur instanceof RegReader regReader && !cur.hasTag(Tag.NOOPT)) {
+                regReader.transformExpressions(propagator);
+            }
+            reachableEvents.add(cur);
 
-                // Invalidate outdated propagation data
-                if (cur instanceof RegWriter rw) {
-                    propagationMap.remove(rw.getResultRegister());
-                    if (propagateCopyAssignments) {
-                        propagationMap.values().removeIf(expr -> expr.getRegs().contains(rw.getResultRegister()));
-                    }
+            // Invalidate outdated propagation data
+            if (cur instanceof RegWriter rw) {
+                propagationMap.remove(rw.getResultRegister());
+                if (propagateCopyAssignments) {
+                    propagationMap.values().removeIf(expr -> expr.getRegs().contains(rw.getResultRegister()));
                 }
+            }
 
-                // Add new propagation data
-                if (cur instanceof Local local) {
-                    final Expression expr = local.getExpr();
-                    final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
-                    propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
-                }
+            // Add new propagation data
+            if (cur instanceof Local local) {
+                final Expression expr = local.getExpr();
+                final Expression valueToPropagate = checkDoPropagate.test(expr) ? expr : null;
+                propagationMap.compute(local.getResultRegister(), (k, v) -> valueToPropagate);
+            }
 
-                if (cur instanceof CondJump jump) {
-                    if (jump.isDead()) {
-                        // We consider dead jumps as not-reachable, so they get deleted.
-                        reachableEvents.remove(jump);
-                    } else {
-                        // Join current map with label-associated map
-                        final Label target = jump.getLabel();
-                        final Map<Register, Expression> finalPropagationMap = propagationMap;
-                        inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
-                                : join(v, finalPropagationMap));
-                    }
+            if (cur instanceof CondJump jump) {
+                if (jump.isDead()) {
+                    // We consider dead jumps as not-reachable, so they get deleted.
+                    reachableEvents.remove(jump);
+                } else {
+                    // Join current map with label-associated map
+                    final Label target = jump.getLabel();
+                    final Map<Register, Expression> finalPropagationMap = propagationMap;
+                    inflowMap.compute(target, (k, v) -> v == null ? new HashMap<>(finalPropagationMap)
+                            : join(v, finalPropagationMap));
                 }
+            }
 
-                if (IRHelper.isAlwaysBranching(cur)) {
-                    // The current instruction is branching, so there is no direct flow to the next event
-                    isTraversingDeadBranch = true;
-                    propagationMap.clear();
-                }
+            if (IRHelper.isAlwaysBranching(cur)) {
+                // The current instruction is branching, so there is no direct flow to the next event
+                isTraversingDeadBranch = true;
+                propagationMap.clear();
             }
 
         }
