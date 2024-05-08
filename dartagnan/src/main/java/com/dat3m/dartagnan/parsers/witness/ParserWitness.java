@@ -4,7 +4,8 @@ import com.dat3m.dartagnan.parsers.XMLLexer;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.exception.AbortErrorListener;
 import com.dat3m.dartagnan.parsers.witness.visitors.VisitorXML;
-import com.dat3m.dartagnan.witness.WitnessGraph;
+import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
+
 import org.antlr.v4.runtime.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

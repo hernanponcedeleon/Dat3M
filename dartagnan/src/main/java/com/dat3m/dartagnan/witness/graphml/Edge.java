@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.witness;
+package com.dat3m.dartagnan.witness.graphml;
 
 public class Edge extends ElemWithAttributes implements Comparable<Edge> {
 

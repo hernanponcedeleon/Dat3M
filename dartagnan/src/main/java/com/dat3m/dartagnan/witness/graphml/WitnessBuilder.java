@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.witness;
+package com.dat3m.dartagnan.witness.graphml;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_ORIGINAL_PROGRAM_PATH;
 import static com.dat3m.dartagnan.utils.Result.FAIL;
-import static com.dat3m.dartagnan.witness.EdgeAttributes.*;
-import static com.dat3m.dartagnan.witness.GraphAttributes.*;
+import static com.dat3m.dartagnan.witness.graphml.EdgeAttributes.*;
+import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.valueOf;
 
@@ -75,13 +75,13 @@ public class WitnessBuilder {
     }
 
     private static String getLtlPropertyFromSummary(String summary) {
-        if(summary.contains("integer overflow")) {
+        if (summary.contains("integer overflow")) {
             return "CHECK( init(main()), LTL(G ! overflow))";
         }
-        if(summary.contains("invalid dereference")) {
+        if (summary.contains("invalid dereference")) {
             return "CHECK( init(main()), LTL(G valid-deref))";
         }
-        if(summary.contains("user assertion")) {
+        if (summary.contains("user assertion")) {
             return "CHECK( init(main()), LTL(G ! call(reach_error())))";
         }
         throw new UnsupportedOperationException("Violation found for unsupported property");
@@ -136,7 +136,7 @@ public class WitnessBuilder {
         List<MemoryCoreEvent> creates = new ArrayList<>();
         for (Thread thread : program.getThreads()) {
             List<MemoryCoreEvent> spawned = thread.getSpawningEvents();
-            if(spawned.size() == 2) {
+            if (spawned.size() == 2) {
                 creates.add(spawned.get(1));
             }
         }

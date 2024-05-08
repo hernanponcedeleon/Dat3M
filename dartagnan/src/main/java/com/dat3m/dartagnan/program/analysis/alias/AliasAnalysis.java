@@ -8,8 +8,9 @@ import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.utils.Utils;
-import com.dat3m.dartagnan.utils.visualization.Graphviz;
 import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.witness.graphviz.Graphviz;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;

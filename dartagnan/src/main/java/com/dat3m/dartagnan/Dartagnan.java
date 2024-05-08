@@ -21,8 +21,8 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.solving.*;
-import com.dat3m.dartagnan.witness.WitnessBuilder;
-import com.dat3m.dartagnan.witness.WitnessGraph;
+import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
+import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.google.common.collect.ImmutableSet;
@@ -40,7 +40,6 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
-
 import java.io.File;
 import java.io.FileReader;
 import java.math.BigInteger;
@@ -55,7 +54,8 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.utils.visualization.ExecutionGraphVisualizer.generateGraphvizFile;
+import static com.dat3m.dartagnan.witness.WitnessType.*;
+import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
@@ -180,7 +180,7 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (modelChecker.hasModel() && o.generateGraphviz()) {
+                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                     m.initialize(prover.getModel());
                     final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
@@ -191,7 +191,7 @@ public class Dartagnan extends BaseOptions {
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                             (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
-                            synContext);
+                            synContext, o.getWitnessType().convertToPng());
                 }
 
                 long endTime = System.currentTimeMillis();
@@ -199,8 +199,8 @@ public class Dartagnan extends BaseOptions {
                 System.out.print(summary);
                 System.out.println("Total verification time: " + Utils.toTimeString(endTime - startTime));
 
-                if (!o.runValidator()) {
-                    // We only generate witnesses if we are not validating one.
+                // We only generate witnesses if we are not validating one.
+                if (o.getWitnessType().equals(GRAPHML) && !o.runValidator()) {
                     generateWitnessIfAble(task, prover, modelChecker, summary);
                 }
             }
@@ -226,7 +226,6 @@ public class Dartagnan extends BaseOptions {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
                         modelChecker.getResult(), summary);
                 if (w.canBeBuilt()) {
-                    // We can only write witnesses if the path to the original C file was given.
                     w.build().write();
                 }
             } catch (InvalidConfigurationException e) {

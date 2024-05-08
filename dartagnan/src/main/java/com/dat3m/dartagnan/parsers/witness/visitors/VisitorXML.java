@@ -1,16 +1,16 @@
 package com.dat3m.dartagnan.parsers.witness.visitors;
 
+import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.WITNESSTYPE;
+
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.parsers.XMLParser;
 import com.dat3m.dartagnan.parsers.XMLParser.ElementContext;
+import com.dat3m.dartagnan.witness.graphml.Edge;
+import com.dat3m.dartagnan.witness.graphml.ElemWithAttributes;
+import com.dat3m.dartagnan.witness.graphml.Node;
+import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.parsers.XMLParserBaseVisitor;
-import com.dat3m.dartagnan.witness.Edge;
-import com.dat3m.dartagnan.witness.ElemWithAttributes;
-import com.dat3m.dartagnan.witness.Node;
-import com.dat3m.dartagnan.witness.WitnessGraph;
-
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
-import static com.dat3m.dartagnan.witness.GraphAttributes.WITNESSTYPE;
 
 public class VisitorXML extends XMLParserBaseVisitor<Object> {
 

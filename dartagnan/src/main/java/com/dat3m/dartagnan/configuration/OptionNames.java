@@ -11,6 +11,7 @@ public class OptionNames {
     public static final String TIMEOUT = "timeout";
     public static final String VALIDATE = "validate";
     public static final String COVERAGE = "coverage";
+    public static final String WITNESS = "witness";
 
     // Modeling Options
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
@@ -65,7 +66,6 @@ public class OptionNames {
 
     // Witness Options
     public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
-    public static final String WITNESS_GRAPHVIZ = "witness.graphviz";
 
     // SVCOMP Options
     public static final String PROPERTYPATH = "svcomp.property";

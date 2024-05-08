@@ -20,7 +20,7 @@ import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.witness.WitnessGraph;
+import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
 import com.dat3m.dartagnan.wmm.Definition;
 import com.dat3m.dartagnan.wmm.Relation;

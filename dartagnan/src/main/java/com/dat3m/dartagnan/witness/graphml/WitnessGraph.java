@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.witness;
+package com.dat3m.dartagnan.witness.graphml;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Program;
@@ -17,10 +17,10 @@ import java.io.IOException;
 import java.util.*;
 
 import static com.dat3m.dartagnan.GlobalSettings.getOrCreateOutputDirectory;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PRODUCER;
-import static com.dat3m.dartagnan.witness.GraphAttributes.PROGRAMFILE;
-import static com.dat3m.dartagnan.witness.NodeAttributes.ENTRY;
-import static com.dat3m.dartagnan.witness.NodeAttributes.VIOLATION;
+import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.PRODUCER;
+import static com.dat3m.dartagnan.witness.graphml.GraphAttributes.PROGRAMFILE;
+import static com.dat3m.dartagnan.witness.graphml.NodeAttributes.ENTRY;
+import static com.dat3m.dartagnan.witness.graphml.NodeAttributes.VIOLATION;
 
 public class WitnessGraph extends ElemWithAttributes {
 

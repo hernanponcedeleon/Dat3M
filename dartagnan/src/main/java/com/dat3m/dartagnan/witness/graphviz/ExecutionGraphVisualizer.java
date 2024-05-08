@@ -1,4 +1,4 @@
-package com.dat3m.dartagnan.utils.visualization;
+package com.dat3m.dartagnan.witness.graphviz;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.program.Register;
@@ -9,6 +9,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -227,7 +228,8 @@ public class ExecutionGraphVisualizer {
     public static void generateGraphvizFile(ExecutionModel model, int iterationCount,
                                             BiPredicate<EventData, EventData> rfFilter, BiPredicate<EventData, EventData> frFilter,
                                             BiPredicate<EventData, EventData> coFilter, String directoryName, String fileNameBase,
-                                            SyntacticContextAnalysis synContext) {
+                                            SyntacticContextAnalysis synContext,
+                                            boolean convert) {
         File fileVio = new File(directoryName + fileNameBase + ".dot");
         fileVio.getParentFile().mkdirs();
         try (FileWriter writer = new FileWriter(fileVio)) {
@@ -240,9 +242,19 @@ public class ExecutionGraphVisualizer {
                     .generateGraphOfExecutionModel(writer, "Iteration " + iterationCount, model);
 
             writer.flush();
-            Graphviz.convert(fileVio);
+            if (convert) {
+                Graphviz.convert(fileVio);
+            }
         } catch (Exception e) {
             logger.error(e);
         }
+    }
+
+    public static void generateGraphvizFile(ExecutionModel model, int iterationCount,
+            BiPredicate<EventData, EventData> rfFilter, BiPredicate<EventData, EventData> frFilter,
+            BiPredicate<EventData, EventData> coFilter, String directoryName, String fileNameBase,
+            SyntacticContextAnalysis synContext) {
+        generateGraphvizFile(model, iterationCount, rfFilter, frFilter, coFilter, directoryName, fileNameBase,
+                synContext, true);
     }
 }
