@@ -225,7 +225,9 @@ public class Dartagnan extends BaseOptions {
             try {
                 WitnessBuilder w = WitnessBuilder.of(modelChecker.getEncodingContext(), prover,
                         modelChecker.getResult(), summary);
-                w.build().write();
+                if (w.canBeBuilt()) {
+                    w.build().write();
+                }
             } catch (InvalidConfigurationException e) {
                 logger.warn(e.getMessage());
             }

@@ -52,6 +52,10 @@ public class WitnessBuilder {
             secure=true)
     private String originalProgramFilePath;
 
+    public boolean canBeBuilt() {
+        return originalProgramFilePath != null;
+    }
+
     // =====================================================================
 
     private final Map<Event, Integer> eventThreadMap = new HashMap<>();
