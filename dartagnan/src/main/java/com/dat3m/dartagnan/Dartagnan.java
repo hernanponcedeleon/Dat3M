@@ -56,8 +56,7 @@ import static com.dat3m.dartagnan.configuration.Property.*;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
 import static com.dat3m.dartagnan.utils.GitInfo.*;
 import static com.dat3m.dartagnan.utils.Result.*;
-import static com.dat3m.dartagnan.witness.WitnessType.GRAPHML;
-import static com.dat3m.dartagnan.witness.WitnessType.generateGraphviz;
+import static com.dat3m.dartagnan.witness.WitnessType.*;
 import static com.dat3m.dartagnan.witness.graphviz.ExecutionGraphVisualizer.generateGraphvizFile;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -194,7 +193,7 @@ public class Dartagnan extends BaseOptions {
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                             (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
-                            synContext, o.getWitnessType().equals(WitnessType.PNG));
+                            synContext, convertToPng(o.getWitnessType()));
                 }
 
                 long endTime = System.currentTimeMillis();

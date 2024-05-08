@@ -11,6 +11,7 @@ public class OptionNames {
     public static final String TIMEOUT = "timeout";
     public static final String VALIDATE = "validate";
     public static final String COVERAGE = "coverage";
+    public static final String WITNESS = "witness";
 
     // Modeling Options
     public static final String THREAD_CREATE_ALWAYS_SUCCEEDS = "modeling.threadCreateAlwaysSucceeds";
@@ -63,7 +64,6 @@ public class OptionNames {
     public static final String PHANTOM_REFERENCES = "solver.z3.usePhantomReferences";
 
     // Witness Options
-    public static final String WITNESS = "witness";
     public static final String WITNESS_ORIGINAL_PROGRAM_PATH = "witness.originalProgramFilePath";
 
     // SVCOMP Options

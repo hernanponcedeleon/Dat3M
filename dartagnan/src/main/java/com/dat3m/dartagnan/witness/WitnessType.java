@@ -12,4 +12,9 @@ public enum WitnessType implements OptionInterface {
     public static boolean generateGraphviz(WitnessType type) {
         return type.equals(DOT) || type.equals(PNG);
     }
+
+    public static boolean convertToPng(WitnessType type) {
+        return type.equals(PNG);
+    }
+
 }
