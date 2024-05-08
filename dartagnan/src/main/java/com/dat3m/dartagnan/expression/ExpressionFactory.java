@@ -366,6 +366,8 @@ public final class ExpressionFactory {
             return makeIntBinary(x, intOp, y);
         } else if (op instanceof FloatBinaryOp floatOp) {
             return makeFloatBinary(x, floatOp, y);
+        } else if (op instanceof IntCmpOp cmpOp) {
+            return makeCompare(x, cmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
     }
