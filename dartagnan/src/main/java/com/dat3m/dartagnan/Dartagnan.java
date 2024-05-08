@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.VerificationTask.VerificationTaskBuilder;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import com.dat3m.dartagnan.verification.solving.*;
-import com.dat3m.dartagnan.witness.WitnessType;
 import com.dat3m.dartagnan.witness.graphml.WitnessBuilder;
 import com.dat3m.dartagnan.witness.graphml.WitnessGraph;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -41,7 +40,6 @@ import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
 import org.sosy_lab.java_smt.api.SolverException;
-
 import java.io.File;
 import java.io.FileReader;
 import java.math.BigInteger;
@@ -182,7 +180,7 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (modelChecker.hasModel() && generateGraphviz(o.getWitnessType())) {
+                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
                     m.initialize(prover.getModel());
                     final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
@@ -193,7 +191,7 @@ public class Dartagnan extends BaseOptions {
                     // CO edges only give ordering information which is known if the pair is also in PO
                     generateGraphvizFile(m, 1, (x, y) -> true, (x, y) -> !x.getThread().equals(y.getThread()),
                             (x, y) -> !x.getThread().equals(y.getThread()), getOrCreateOutputDirectory() + "/", name,
-                            synContext, convertToPng(o.getWitnessType()));
+                            synContext, o.getWitnessType().convertToPng());
                 }
 
                 long endTime = System.currentTimeMillis();
