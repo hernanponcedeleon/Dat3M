@@ -65,20 +65,22 @@ public class VisitorLKMM extends VisitorBase {
         Label success = newLabel("CAS_success");
         Label end = newLabel("CAS_end");
         Register dummy = e.getFunction().newRegister(resultRegister.getType());
-        Load casLoad;
+        Load loadFail = newCoreLoad(dummy, address, Tag.Linux.MO_ONCE);
+        loadFail.addTags(Tag.RMW);
+        Load loadSuccess;
         return eventSequence(
                 newValueFunctionCall(havocRegister,nondetBoolFunction,List.of()),
                 newJump(expressions.makeBooleanCast(havocRegister), success),
                 // Cas failure branch
-                newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
+                loadFail,
                 newAssume(expressions.makeNEQ(dummy, cmp)),
                 newGoto(end),
                 success,
                 // CAS success branch
                 mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
-                casLoad = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
+                loadSuccess = newRMWLoadWithMo(dummy, address, Tag.Linux.loadMO(mo)),
                 newAssume(expressions.makeEQ(dummy, cmp)),
-                newRMWStoreWithMo(casLoad, address, e.getStoreValue(), Tag.Linux.storeMO(mo)),
+                newRMWStoreWithMo(loadSuccess, address, e.getStoreValue(), Tag.Linux.storeMO(mo)),
                 mo.equals(Tag.Linux.MO_MB) ? newCoreMemoryBarrier() : null,
                 end,
                 newLocal(resultRegister, dummy)
