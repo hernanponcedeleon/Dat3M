@@ -9,13 +9,12 @@ import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.specification.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 import static com.google.common.base.Preconditions.checkState;
 
-public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<AbstractAssert> {
+public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
 
     private final ProgramBuilder programBuilder;
     private final ExpressionFactory expressions;
@@ -28,19 +27,19 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
     }
 
     @Override
-    public AbstractAssert visitAssertionFilter(LitmusAssertionsParser.AssertionFilterContext ctx) {
+    public Expression visitAssertionFilter(LitmusAssertionsParser.AssertionFilterContext ctx) {
         programBuilder.setAssertFilter(ctx.assertion().accept(this));
         return null;
     }
 
     @Override
-    public AbstractAssert visitAssertionList(LitmusAssertionsParser.AssertionListContext ctx){
-        AbstractAssert ass = ctx.assertion().accept(this);
-        if(ctx.AssertionNot() != null) {
+    public Expression visitAssertionList(LitmusAssertionsParser.AssertionListContext ctx) {
+        Expression ass = ctx.assertion().accept(this);
+        if (ctx.AssertionNot() != null) {
             programBuilder.setAssert(NOT_EXISTS, ass);
-        } else if(ctx.AssertionExists() != null || ctx.AssertionFinal() != null){
+        } else if (ctx.AssertionExists() != null || ctx.AssertionFinal() != null) {
             programBuilder.setAssert(EXISTS, ass);
-        } else if(ctx.AssertionForall() != null){
+        } else if (ctx.AssertionForall() != null) {
             programBuilder.setAssert(FORALL, ass);
         } else {
             throw new ParsingException("Unrecognised assertion type");
@@ -49,39 +48,39 @@ public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Abstrac
     }
 
     @Override
-    public AbstractAssert visitAssertionParenthesis(LitmusAssertionsParser.AssertionParenthesisContext ctx){
+    public Expression visitAssertionParenthesis(LitmusAssertionsParser.AssertionParenthesisContext ctx) {
         return ctx.assertion().accept(this);
     }
 
     @Override
-    public AbstractAssert visitAssertionNot(LitmusAssertionsParser.AssertionNotContext ctx){
-        return new AssertNot(ctx.assertion().accept(this));
+    public Expression visitAssertionNot(LitmusAssertionsParser.AssertionNotContext ctx) {
+        return expressions.makeNot(ctx.assertion().accept(this));
     }
 
     @Override
-    public AbstractAssert visitAssertionAnd(LitmusAssertionsParser.AssertionAndContext ctx){
-        return new AssertCompositeAnd(ctx.assertion(0).accept(this), ctx.assertion(1).accept(this));
+    public Expression visitAssertionAnd(LitmusAssertionsParser.AssertionAndContext ctx) {
+        return expressions.makeAnd(ctx.assertion(0).accept(this), ctx.assertion(1).accept(this));
     }
 
     @Override
-    public AbstractAssert visitAssertionOr(LitmusAssertionsParser.AssertionOrContext ctx){
-        return new AssertCompositeOr(ctx.assertion(0).accept(this), ctx.assertion(1).accept(this));
+    public Expression visitAssertionOr(LitmusAssertionsParser.AssertionOrContext ctx) {
+        return expressions.makeOr(ctx.assertion(0).accept(this), ctx.assertion(1).accept(this));
     }
 
     @Override
-    public AbstractAssert visitAssertionBasic(LitmusAssertionsParser.AssertionBasicContext ctx){
-        Expression expr1 = acceptAssertionValue(ctx.assertionValue(0),false);
-        Expression expr2 = acceptAssertionValue(ctx.assertionValue(1),true);
-        return new AssertBasic(expr1, ctx.assertionCompare().op, expr2);
+    public Expression visitAssertionBasic(LitmusAssertionsParser.AssertionBasicContext ctx) {
+        Expression expr1 = acceptAssertionValue(ctx.assertionValue(0), false);
+        Expression expr2 = acceptAssertionValue(ctx.assertionValue(1), true);
+        return expressions.makeIntCmp(expr1, ctx.assertionCompare().op, expr2);
     }
 
     private Expression acceptAssertionValue(LitmusAssertionsParser.AssertionValueContext ctx, boolean right) {
-        if(ctx.constant() != null) {
+        if (ctx.constant() != null) {
             return expressions.parseValue(ctx.constant().getText(), archType);
         }
         String name = ctx.varName().getText();
-        if(ctx.threadId() != null) {
-            return programBuilder.getOrErrorRegister(ctx.threadId().id,name);
+        if (ctx.threadId() != null) {
+            return programBuilder.getOrErrorRegister(ctx.threadId().id, name);
         }
         MemoryObject base = programBuilder.getMemoryObject(name);
         checkState(base != null, "uninitialized location %s", name);

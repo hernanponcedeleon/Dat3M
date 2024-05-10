@@ -12,7 +12,6 @@ import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.RelationNameRepository;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -250,13 +249,12 @@ public class PropertyEncoder implements Encoder {
 
     private TrackableFormula encodeProgramSpecification() {
         logger.info("Encoding program specification");
-        final AbstractAssert spec = program.getSpecification();
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
         BooleanFormula encoding = switch (program.getSpecificationType()) {
-            case EXISTS, NOT_EXISTS -> spec.encode(context);
-            case FORALL -> bmgr.not(spec.encode(context));
+            case EXISTS, NOT_EXISTS -> context.encodeFinalExpressionAsBoolean(program.getSpecification());
+            case FORALL -> bmgr.not(context.encodeFinalExpressionAsBoolean(program.getSpecification()));
             case ASSERT -> {
                 // User-placed assertions inside C code.
                 List<BooleanFormula> assertionsHold = new ArrayList<>();

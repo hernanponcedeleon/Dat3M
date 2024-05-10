@@ -20,7 +20,6 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Iterables;
@@ -100,11 +99,11 @@ public class ProgramBuilder {
         return expressions;
     }
 
-    public void setAssert(Program.SpecificationType type, AbstractAssert ass) {
+    public void setAssert(Program.SpecificationType type, Expression ass) {
         program.setSpecification(type, ass);
     }
 
-    public void setAssertFilter(AbstractAssert ass) {
+    public void setAssertFilter(Expression ass) {
         program.setFilterSpecification(ass);
     }
 

@@ -128,6 +128,10 @@ public final class EncodingContext {
         return new ExpressionEncoder(this, null).encode(expression);
     }
 
+    public BooleanFormula encodeFinalExpressionAsBoolean(Expression expression) {
+        return new ExpressionEncoder(this, null).encodeAsBoolean(expression);
+    }
+
     public BooleanFormula encodeExpressionAsBooleanAt(Expression expression, Event event) {
         return new ExpressionEncoder(this, event).encodeAsBoolean(expression);
     }

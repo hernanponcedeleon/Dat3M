@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -23,8 +22,8 @@ public class Program {
 
     private String name;
     private SpecificationType specificationType = SpecificationType.ASSERT;
-    private AbstractAssert spec;
-    private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
+    private Expression spec;
+    private Expression filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
@@ -92,20 +91,20 @@ public class Program {
         return SpecificationType.EXISTS.equals(specificationType);
     }
 
-    public AbstractAssert getSpecification() {
+    public Expression getSpecification() {
         return spec;
     }
 
-    public void setSpecification(SpecificationType type, AbstractAssert spec) {
+    public void setSpecification(SpecificationType type, Expression spec) {
         this.specificationType = type;
         this.spec = spec;
     }
 
-    public AbstractAssert getFilterSpecification() {
+    public Expression getFilterSpecification() {
         return filterSpec;
     }
 
-    public void setFilterSpecification(AbstractAssert spec) {
+    public void setFilterSpecification(Expression spec) {
         this.filterSpec = spec;
     }
 
