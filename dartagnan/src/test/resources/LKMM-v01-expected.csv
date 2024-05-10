@@ -4941,6 +4941,10 @@ litmus/LKMM/manual/plain/strong-vis.litmus,0
 litmus/LKMM/manual/rcu/C-rcu-link-after-rf.litmus,1
 litmus/LKMM/manual/rcu/C-rcu-link-after.litmus,1
 litmus/LKMM/manual/rcu/C-rcu-link-before.litmus,1
+litmus/LKMM/tree/cmpxchg-fail-ordered-1.litmus,0
+litmus/LKMM/tree/cmpxchg-fail-ordered-2.litmus,0
+litmus/LKMM/tree/cmpxchg-fail-unordered-1.litmus,1
+litmus/LKMM/tree/cmpxchg-fail-unordered-2.litmus,1
 litmus/LKMM/tree/CoRR+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoRW+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoWR+poonceonce+Once.litmus,0

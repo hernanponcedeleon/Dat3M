@@ -5066,6 +5066,10 @@ litmus/LKMM/manual/srcu/C-SRCU-LB-42R-A.litmus,0
 litmus/LKMM/manual/srcu/C-SRCU-misnest-not.litmus,1
 litmus/LKMM/manual/srcu/C-SRCU-misnest.litmus,1
 litmus/LKMM/manual/srcu/C-SRCU2-LB-split.litmus,0
+litmus/LKMM/tree/cmpxchg-fail-ordered-1.litmus,0
+litmus/LKMM/tree/cmpxchg-fail-ordered-2.litmus,0
+litmus/LKMM/tree/cmpxchg-fail-unordered-1.litmus,1
+litmus/LKMM/tree/cmpxchg-fail-unordered-2.litmus,1
 litmus/LKMM/tree/CoRR+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoRW+poonceonce+Once.litmus,0
 litmus/LKMM/tree/CoWR+poonceonce+Once.litmus,0
