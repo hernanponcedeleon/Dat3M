@@ -5,25 +5,54 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsBaseVisitor;
+import com.dat3m.dartagnan.parsers.LitmusAssertionsLexer;
 import com.dat3m.dartagnan.parsers.LitmusAssertionsParser;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 import static com.google.common.base.Preconditions.checkState;
 
-public class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
+class VisitorLitmusAssertions extends LitmusAssertionsBaseVisitor<Expression> {
 
     private final ProgramBuilder programBuilder;
     private final ExpressionFactory expressions;
     private final IntegerType archType;
 
-    public VisitorLitmusAssertions(ProgramBuilder programBuilder) {
+    private VisitorLitmusAssertions(ProgramBuilder programBuilder) {
         this.programBuilder = programBuilder;
         this.expressions = programBuilder.getExpressionFactory();
         this.archType = programBuilder.getTypeFactory().getArchType();
+    }
+
+    static void parseAssertions(
+            ProgramBuilder programBuilder,
+            ParserRuleContext listContext,
+            ParserRuleContext filterContext) {
+        parseAssertions(programBuilder, listContext, false);
+        parseAssertions(programBuilder, filterContext, true);
+    }
+
+    private static void parseAssertions(ProgramBuilder programBuilder, ParserRuleContext ctx, boolean filter) {
+        if (ctx == null) {
+            return;
+        }
+        int a = ctx.getStart().getStartIndex();
+        int b = ctx.getStop().getStopIndex();
+        String text = ctx.getStart().getInputStream().getText(new Interval(a, b));
+        CharStream charStream = CharStreams.fromString(text);
+        LitmusAssertionsLexer lexer = new LitmusAssertionsLexer(charStream);
+        CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+        LitmusAssertionsParser parser = new LitmusAssertionsParser(tokenStream);
+        ParserRuleContext parserEntryPoint = filter ? parser.assertionFilter() : parser.assertionList();
+        parserEntryPoint.accept(new VisitorLitmusAssertions(programBuilder));
     }
 
     @Override
