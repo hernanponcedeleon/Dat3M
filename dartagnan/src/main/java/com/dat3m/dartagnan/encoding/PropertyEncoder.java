@@ -254,24 +254,23 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
-        final BooleanFormula encoding;
-        final BooleanFormula trackingLiteral;
-        switch (program.getSpecificationType()) {
-            case FORALL:
-                encoding = bmgr.not(spec.encode(context));
-                trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
-                break;
-            case NOT_EXISTS:
-                encoding = spec.encode(context);
-                trackingLiteral = bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
-                break;
-            case EXISTS:
-                encoding = spec.encode(context);
-                trackingLiteral = PROGRAM_SPEC.getSMTVariable(context);
-                break;
-            default:
-                throw new IllegalStateException("Unrecognized program specification: " + program.getSpecificationType() + " " + spec);
-        }
+        BooleanFormula encoding = switch (program.getSpecificationType()) {
+            case EXISTS, NOT_EXISTS -> spec.encode(context);
+            case FORALL -> bmgr.not(spec.encode(context));
+            case ASSERT -> {
+                // User-placed assertions inside C code.
+                List<BooleanFormula> assertionsHold = new ArrayList<>();
+                for (Assert assertion : program.getThreadEvents(Assert.class)) {
+                    assertionsHold.add(bmgr.implication(context.execution(assertion),
+                            context.encodeExpressionAsBooleanAt(assertion.getExpression(), assertion)));
+                }
+                yield bmgr.not(bmgr.and(assertionsHold));
+            }
+        };
+        BooleanFormula trackingLiteral = switch (program.getSpecificationType()) {
+            case FORALL, NOT_EXISTS, ASSERT -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
+            case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
+        };
         return new TrackableFormula(trackingLiteral, encoding);
     }
 

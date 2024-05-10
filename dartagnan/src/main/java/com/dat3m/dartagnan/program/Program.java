@@ -19,10 +19,10 @@ public class Program {
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
-    public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS }
+    public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
 
     private String name;
-    private SpecificationType specificationType;
+    private SpecificationType specificationType = SpecificationType.ASSERT;
     private AbstractAssert spec;
     private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;

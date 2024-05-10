@@ -349,14 +349,12 @@ public class Dartagnan extends BaseOptions {
                 // We have a positive witness or no violations, then the program must be ok.
                 // NOTE: We also treat the UNKNOWN case as positive, assuming that
                 // looping litmus tests are unusual.
-                summary.append("Condition ").append(p.getSpecificationType())
-                        .append(" ").append(p.getSpecification()).append("\n");
+                printSpecification(summary, p);
                 summary.append("Ok").append("\n");
             } else if (hasViolations) {
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     // Program spec violated
-                    summary.append("Condition ").append(p.getSpecificationType())
-                            .append(" ").append(p.getSpecification()).append("\n");
+                    printSpecification(summary, p);
                     summary.append("No").append("\n");
                 } else {
                     final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
@@ -378,8 +376,7 @@ public class Dartagnan extends BaseOptions {
                     summary.append(result).append("\n");
                 } else if (task.getProperty().contains(PROGRAM_SPEC)) {
                     // ... which can be good or bad (no witness = bad, not violation = good)
-                    summary.append("Condition ").append(p.getSpecificationType())
-                            .append(" ").append(p.getSpecification()).append("\n");
+                    printSpecification(summary, p);
                     summary.append(result == PASS ? "Ok" : "No").append("\n");
                 }
             }
@@ -399,5 +396,19 @@ public class Dartagnan extends BaseOptions {
                 break;
             }
         }
+    }
+
+    private static void printSpecification(StringBuilder sb, Program program) {
+        sb.append("Condition ").append(program.getSpecificationType()).append(" ");
+        boolean init = false;
+        if (program.getSpecification() != null) {
+            sb.append(program.getSpecification());
+            init = true;
+        }
+        for (Assert assertion : program.getThreadEvents(Assert.class)) {
+            sb.append(init ? " && " : "").append(assertion.getExpression()).append("%").append(assertion.getGlobalId());
+            init = true;
+        }
+        sb.append("\n");
     }
 }
