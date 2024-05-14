@@ -62,7 +62,7 @@ public class ThreadCreation implements ProgramProcessor {
             description = "Calling pthread_create is guaranteed to succeed.",
             secure = true,
             toUppercase = true)
-    private boolean forceStart = false;
+    private boolean forceStart = true;
 
     private final Compilation compiler;
 
