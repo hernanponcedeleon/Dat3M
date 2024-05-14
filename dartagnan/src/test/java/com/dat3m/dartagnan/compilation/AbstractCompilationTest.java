@@ -71,6 +71,9 @@ public abstract class AbstractCompilationTest {
     protected Provider<Wmm> getTargetWmmProvider() {
         return Providers.createWmmFromArch(getTargetProvider());
     }
+    protected Provider<EnumSet<Property>> getPropertyProvider() {
+        return Provider.fromSupplier(() -> EnumSet.of(Property.PROGRAM_SPEC));
+    }
     protected long getTimeout() { return 10000; }
     // List of tests that are known to show bugs in the compilation scheme and thus the expected result should be FAIL instead of PASS
     protected List<String> getCompilationBreakers() { return emptyList(); }
@@ -90,7 +93,7 @@ public abstract class AbstractCompilationTest {
     protected final Provider<Program> program2Provider = Providers.createProgramFromPath(filePathProvider);
     protected final Provider<Wmm> wmm1Provider = getSourceWmmProvider();
     protected final Provider<Wmm> wmm2Provider = getTargetWmmProvider();
-    protected final Provider<EnumSet<Property>> propertyProvider = Provider.fromSupplier(Property::getDefault);
+    protected final Provider<EnumSet<Property>> propertyProvider = getPropertyProvider();
     protected final Provider<Configuration> configProvider = getConfigurationProvider();
     protected final Provider<VerificationTask> task1Provider = Providers.createTask(program1Provider, wmm1Provider, propertyProvider, sourceProvider, () -> 1, configProvider);
     protected final Provider<VerificationTask> task2Provider = Providers.createTask(program2Provider, wmm2Provider, propertyProvider, targetProvider,  () -> 1, configProvider);
