@@ -104,7 +104,8 @@ public class PropertyEncoder implements Encoder {
         if (specType == Property.Type.MIXED) {
             final String error = String.format(
                     "The set of properties %s are of mixed type (safety and reachability properties). " +
-                            "Cannot encode mixed properties into a single SMT-query.", properties);
+                            "Cannot encode mixed properties into a single SMT-query. Please select a different set of properties.",
+                    properties);
             throw new IllegalArgumentException(error);
         }
 
