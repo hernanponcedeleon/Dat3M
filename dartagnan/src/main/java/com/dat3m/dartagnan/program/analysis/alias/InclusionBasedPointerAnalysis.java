@@ -187,6 +187,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
         }
+        // Skip if all addresses are static
+        if (addressVariables.values().stream().noneMatch(v -> v.base.object == null)) {
+            queue.clear();
+        }
         // Fixed-point computation:
         while (!queue.isEmpty()) {
             //TODO replace with removeFirst() when using java 21 or newer
