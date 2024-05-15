@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -99,7 +100,7 @@ public class BranchTest {
             VerificationTask task = VerificationTask.builder()
                     .withSolverTimeout(60)
                     .withTarget(Arch.LKMM)
-                    .build(program, wmm, Property.getDefault());
+                    .build(program, wmm, EnumSet.of(Property.PROGRAM_SPEC));
             AssumeSolver s = AssumeSolver.run(ctx, prover, task);
             assertEquals(expected, s.getResult());
         } catch (Exception e) {

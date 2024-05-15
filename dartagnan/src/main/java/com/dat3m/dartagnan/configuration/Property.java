@@ -67,7 +67,7 @@ public enum Property implements OptionInterface {
     // ------------------------- Static -------------------------
 
     public static EnumSet<Property> getDefault() {
-        return EnumSet.of(PROGRAM_SPEC);
+        return EnumSet.of(PROGRAM_SPEC, LIVENESS, CAT_SPEC);
     }
 
     // Used to decide the order shown by the selector in the UI

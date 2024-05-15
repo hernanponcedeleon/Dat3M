@@ -102,6 +102,7 @@ The target architecture is supposed to match (this is responsibility of the user
 
 Further options can be specified using `--<option>=<value>`. Common options include:
 - `bound`: unrolling bound for the BMC (default is 1).
+- `property`: the properties to be checked. Possible values are `program_spec` (e.g, safety properties as program assertions), `liveness` (i.e., all spinloops terminate), `cat_spec` (e.g., [data races as specified in the cat file](https://github.com/hernanponcedeleon/Dat3M/blob/master/cat/rc11.cat#L34-L39)). Default is `program_spec,cat_spec,liveness`.
 - `solver`: specifies which SMT solver to use as a backend. Since we use [JavaSMT](https://github.com/sosy-lab/java-smt), several SMT solvers are supported depending on the OS and the used SMT logic (default is Z3).
 - `method`: specifies which solving method to use. Option `lazy` (the default one) uses a customized solver for memory consistency. Option `eager` solves a monolithic formula using SMT solving. 
 
