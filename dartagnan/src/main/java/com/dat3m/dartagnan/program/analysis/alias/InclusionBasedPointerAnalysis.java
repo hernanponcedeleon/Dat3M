@@ -994,7 +994,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Red edges connect address variables to stored value variables.
     // Green-labeled nodes represent memory objects.
     // Red-labeled nodes are address variables that do not include any memory objects (probably a bug).
-    // Blue-labeled nodes are variables where transitivity is broken (certainly a bug).
     private void generateGraph() {
         final Set<Variable> seen = new HashSet<>(objectVariables.values());
         for (Set<Variable> news = seen; !news.isEmpty();) {
@@ -1036,15 +1035,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 problematic.add("\"" + a.base.name + "\"");
             }
         }
-        final Set<String> transitionBlocker = new HashSet<>();
-        for (final Set<String> outSet : map.values()) {
-            for (final String v2 : outSet) {
-                if (!outSet.containsAll(map.getOrDefault(v2, Set.of()))) {
-                    transitionBlocker.add(v2);
-                }
-            }
-        }
-        problematic.removeAll(transitionBlocker);
         graphviz = new Graphviz();
         graphviz.beginDigraph("internal alias");
         for (final Variable v : objectVariables.values()) {
@@ -1052,9 +1042,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final String v : problematic) {
             graphviz.addNode(v, "fontcolor=red");
-        }
-        for (final String v : transitionBlocker) {
-            graphviz.addNode(v, "fontcolor=blue");
         }
         graphviz.beginSubgraph("inclusion");
         graphviz.setEdgeAttributes("color=grey");
