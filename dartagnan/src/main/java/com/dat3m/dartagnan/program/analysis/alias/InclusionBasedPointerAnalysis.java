@@ -115,6 +115,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private int cyclesFastCulled;
     private int cyclesSlowCulled;
     private int cyclesDetected;
+    private int addIncludeCulled;
 
     // ================================ Construction ================================
 
@@ -127,6 +128,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 analysis.totalReplacements);
         logger.debug("alignment sizes: {}",
                 analysis.totalAlignmentSizes);
+        logger.debug("addInclude: {} culled",
+                analysis.addIncludeCulled);
         logger.debug("addInto: {} successes vs {} fails",
                 analysis.succeededAddInto,
                 analysis.failedAddInto);
@@ -200,10 +203,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final MemoryCoreEvent memoryEvent : program.getThreadEvents(MemoryCoreEvent.class)) {
             processMemoryEvent(memoryEvent);
-        }
-        // Skip if all addresses are static
-        if (addressVariables.values().stream().noneMatch(v -> v.base.object == null)) {
-            queue.clear();
         }
         // Fixed-point computation:
         while (!queue.isEmpty()) {
@@ -297,7 +296,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    // Closes the "includes" relation transitively and tests for new communications.
+    // Propagates the pointer sets and tests for new communications.
     private void algorithm(Variable variable, List<IncludeEdge> edges) {
         logger.trace("{} includes {}", variable, edges);
         verify(variable.object == null, "Trying to add include edge to object %s.", variable);
@@ -457,11 +456,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Inserts a single inclusion relationship into the graph.
-    // Also detects and eliminates cycles, assuming that the graph was already closed transitively.
-    // Also closes the inclusion relation transitively on the left.
+    // Any cycle closed by this edge will eventually be detected and resolved.
     private void addInclude(Variable variable, IncludeEdge edge) {
         // Fast culling with false negatives
         if (variable.includes.contains(edge)) {
+            addIncludeCulled++;
             return;
         }
         tryInsertIncludeEdge(variable, edge);
@@ -475,6 +474,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
+    // Subroutine, when a
     private void tryInsertIncludeEdge(Variable variable, IncludeEdge edge) {
         if (!addInto(variable.includes, edge)) {
             return;
@@ -506,19 +506,22 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Slow check
         Set<Variable> includerSet = new HashSet<>(List.of(variable));
         {
-            Queue<Variable> queue = new LinkedList<>(List.of(variable));
+            List<Variable> queue = new ArrayList<>(List.of(variable));
             while (!queue.isEmpty()) {
-                Variable current = queue.poll();
-                for (Variable v : current.seeAlso) {
-                    // Culling
-                    if (includerSet.contains(v)) {
-                        continue;
-                    }
-                    // Try to find some include edge, as 'seeAlso' also indicates store and load edges.
-                    for (IncludeEdge i : v.includes) {
-                        if (i.source == current && includerSet.add(v)) {
-                            queue.add(v);
-                            break;
+                List<Variable> currentList = queue;
+                queue = new ArrayList<>();
+                for (Variable current : currentList) {
+                    for (Variable v : current.seeAlso) {
+                        // Culling
+                        if (includerSet.contains(v)) {
+                            continue;
+                        }
+                        // Try to find some include edge, as 'seeAlso' also indicates store and load edges.
+                        for (IncludeEdge i : v.includes) {
+                            if (i.source == current && includerSet.add(v)) {
+                                queue.add(v);
+                                break;
+                            }
                         }
                     }
                 }
