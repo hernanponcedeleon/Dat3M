@@ -316,6 +316,16 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 }
             }
         }
+        for (final IncludeEdge edgeAfter : edges) {
+            if (edgeAfter.source.object != null) {
+                continue;
+            }
+            for (final IncludeEdge edge : List.copyOf(edgeAfter.source.includes)) {
+                if (edge.source.object != null) {
+                    addInclude(variable, compose(edge, edgeAfter.modifier));
+                }
+            }
+        }
         // memory communication
         // X <stores- A <- variable -> B -loads> Y   ==>   X -> Y (if overlapping modifiers)
         // Note that variable -> variable can be implied here
