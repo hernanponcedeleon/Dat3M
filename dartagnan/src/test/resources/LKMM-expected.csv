@@ -4570,7 +4570,9 @@ litmus/LKMM/manual/extra/rel-seq/C-rel-seq4.litmus,1
 litmus/LKMM/manual/kernel/after-unlock-lock-same-cpu.litmus,0
 litmus/LKMM/manual/kernel/after-unlock-lock-same-lock-variable.litmus,0
 litmus/LKMM/manual/kernel/C-2+2W+o-r+o-r.litmus,1
+litmus/LKMM/manual/kernel/C-2+2W+o-sync-o+o-sync-o,0
 litmus/LKMM/manual/kernel/C-2+2W+o-wmb-o+o-wmb-o.litmus,1
+litmus/LKMM/manual/kernel/C-2+2W+rl-o-rul+o-sync-o+rl-o-rul+o-sync-o.litmus,0
 litmus/LKMM/manual/kernel/C-AlanStern-WRC+o-unlock+lock-o.litmus,0
 litmus/LKMM/manual/kernel/C-BoqunFeng-membarrier.litmus,0
 litmus/LKMM/manual/kernel/C-DavidlohrBueso-sem.litmus,1
@@ -4583,6 +4585,7 @@ litmus/LKMM/manual/kernel/C-IngoMolnar-After.litmus,1
 litmus/LKMM/manual/kernel/C-IngoMolnar.litmus,0
 litmus/LKMM/manual/kernel/C-ISA2+l-o-o-ul+l-o-o-ul+o-mb-o.litmus,0
 litmus/LKMM/manual/kernel/C-ISA2+o-mb-o+l-o-o-ul+l-o-o-ul.litmus,0
+litmus/LKMM/manual/kernel/C-Jakub-listen.litmus,0
 litmus/LKMM/manual/kernel/C-JanStancek-rwsem.litmus,1
 litmus/LKMM/manual/kernel/C-LB+l-o-o-ul+l-o-o-ul+o-mb-o.litmus,0
 litmus/LKMM/manual/kernel/C-LB+l-o-ul-l-o-ul+o-mb-o.litmus,0

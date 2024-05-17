@@ -7,7 +7,7 @@ P0(int *x, int *y, spinlock_t *a, spinlock_t *b)
 	spin_lock(a);
 	int r0 = READ_ONCE(*x);
 	spin_unlock(a);
-	spin_lock(z);
+	spin_lock(b);
 	WRITE_ONCE(*y,1);
 	spin_unlock(b);
 }
