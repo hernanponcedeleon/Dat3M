@@ -530,7 +530,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return List.of();
         }
         cyclesDetected++;
-        // Collect all cyclic paths
+        // Collect all cyclic paths.
+        // Use 'set' for performance.
+        Set<IncludeEdge> set = new HashSet<>();
         List<IncludeEdge> edges = new ArrayList<>();
         {
             List<IncludeEdge> queue = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
@@ -542,7 +544,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     for (IncludeEdge i : current.source.includes) {
                         if (edge.source != i.source && includerSet.contains(i.source)) {
                             IncludeEdge joinedEdge = compose(i, current.modifier);
-                            if (addInto(edges, joinedEdge)) {
+                            if (set.add(joinedEdge) && addInto(edges, joinedEdge)) {
                                 queue.add(joinedEdge);
                             }
                         }
