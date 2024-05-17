@@ -533,7 +533,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         // Collect all cyclic paths.
         // Use 'set' for performance.
         Set<IncludeEdge> set = new HashSet<>();
-        List<IncludeEdge> edges = new ArrayList<>();
+        Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
         {
             List<IncludeEdge> queue = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
             // Since cycles are detected lazily, we need a bound for cycle lengths.
@@ -544,7 +544,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     for (IncludeEdge i : current.source.includes) {
                         if (edge.source != i.source && includerSet.contains(i.source)) {
                             IncludeEdge joinedEdge = compose(i, current.modifier);
-                            if (set.add(joinedEdge) && addInto(edges, joinedEdge)) {
+                            if (set.add(joinedEdge) && addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge)) {
                                 queue.add(joinedEdge);
                             }
                         }
@@ -552,8 +552,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 }
             }
         }
-        assert edges.stream().anyMatch(e -> e.source == variable);
-        return edges;
+        List<IncludeEdge> result = new ArrayList<>();
+        edges.values().forEach(result::addAll);
+        assert result.stream().anyMatch(e -> e.source == variable);
+        return result;
     }
 
     private boolean equalsPointerSet(Variable left, Variable right) {
