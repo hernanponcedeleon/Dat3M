@@ -3,32 +3,28 @@ grammar Spirv;
 options { tokenVocab = SpirvLexer; }
 
 spv : spvHeaders spvInstructions EOF;
+spvInstructions : op*;
 
+// Header
 spvHeaders : spvHeader*;
-
 spvHeader
-    : inputHeader
-    | outputHeader
-    | configHeader
+    :   inputHeader
+    |   outputHeader
+    |   configHeader
     ;
 
-inputHeader   : ModeHeader_Input ModeHeader_Colon initList?;
-outputHeader  : ModeHeader_Output ModeHeader_Colon assertionList?;
-configHeader  : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
-
+inputHeader : ModeHeader_Input ModeHeader_Colon initList?;
+outputHeader : ModeHeader_Output ModeHeader_Colon assertionList?;
+configHeader : ModeHeader_Config ModeHeader_Colon literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger ModeHeader_Comma literanHeaderUnsignedInteger;
 initList : init (ModeHeader_Comma init)*;
-
 init : varName ModeHeader_Equal initValue;
-
 initValue
     :   initCollectionValue
     |   initBaseValue
     ;
 
 initCollectionValue : ModeHeader_LBrace initValues ModeHeader_RBrace;
-
 initValues : initValue (ModeHeader_Comma initValue)*;
-
 assertionList
     :   ModeHeader_AssertionExists assertion ModeHeader_Comma?
     |   ModeHeader_AssertionNot ModeHeader_AssertionExists assertion ModeHeader_Comma?
@@ -44,10 +40,7 @@ assertion
     |   assertionBasic
     ;
 
-assertionBasic
-    :   assertionValue assertionCompare assertionValue
-    ;
-
+assertionBasic : assertionValue assertionCompare assertionValue;
 assertionCompare
     :   ModeHeader_EqualEqual
     |   ModeHeader_NotEqual
@@ -62,17 +55,10 @@ assertionValue
     |   initBaseValue
     ;
 
-indexValue
-    :   ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket
-    ;
+indexValue : ModeHeader_LBracket ModeHeader_PositiveInteger ModeHeader_RBracket;
+varName : idResult;
 
-varName
-    :    idResult
-    ;
-
-
-spvInstructions : op*;
-
+// Operations
 op
     :   opAbsISubINTEL
     |   opAbsUSubINTEL
