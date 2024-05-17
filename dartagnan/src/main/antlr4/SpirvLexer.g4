@@ -1694,36 +1694,31 @@ ModeExt_NewLine : [\n]+ -> popMode, skip;
 
 mode ModeHeader;
 
-ModeHeader_Input    : 'Input';
-ModeHeader_Output   : 'Output';
-ModeHeader_Config   : 'Config';
-
-ModeHeader_Id       : '%' [A-Za-z0-9_]+ -> type(Id);
-
-ModeHeader_AssertionExists     : 'exists';
-ModeHeader_AssertionForall     : 'forall';
-ModeHeader_AssertionNot        : 'not';
-ModeHeader_AssertionAnd        : 'and';
-ModeHeader_AssertionOr         : 'or';
-
-ModeHeader_Equal               : '=';
-ModeHeader_EqualEqual          : '==';
-ModeHeader_NotEqual            : '!=';
-ModeHeader_Less                : '<';
-ModeHeader_Greater             : '>';
-ModeHeader_LessEqual           : '<=';
-ModeHeader_GreaterEqual        : '>=';
-ModeHeader_LBracket            : '[';
-ModeHeader_RBracket            : ']';
-ModeHeader_LPar                : '(';
-ModeHeader_RPar                : ')';
-ModeHeader_LBrace              : '{';
-ModeHeader_RBrace              : '}';
-ModeHeader_Colon               : ':';
-ModeHeader_Comma               : ',';
-
-ModeHeader_PositiveInteger     : [0-9]+;
-ModeHeader_NegativeInteger     : '-' [0-9]+;
-
-ModeHeader_Whitespace          : [ \t\r]+ -> skip;
-ModeHeader_NewLine             : [\n]+ -> popMode, skip;
+ModeHeader_Input : 'Input';
+ModeHeader_Output : 'Output';
+ModeHeader_Config : 'Config';
+ModeHeader_Id : '%' [A-Za-z0-9_]+ -> type(Id);
+ModeHeader_AssertionExists : 'exists';
+ModeHeader_AssertionForall : 'forall';
+ModeHeader_AssertionNot : 'not';
+ModeHeader_AssertionAnd : 'and';
+ModeHeader_AssertionOr : 'or';
+ModeHeader_Equal : '=';
+ModeHeader_EqualEqual : '==';
+ModeHeader_NotEqual : '!=';
+ModeHeader_Less : '<';
+ModeHeader_Greater : '>';
+ModeHeader_LessEqual : '<=';
+ModeHeader_GreaterEqual : '>=';
+ModeHeader_LBracket : '[';
+ModeHeader_RBracket : ']';
+ModeHeader_LPar : '(';
+ModeHeader_RPar : ')';
+ModeHeader_LBrace : '{';
+ModeHeader_RBrace : '}';
+ModeHeader_Colon : ':';
+ModeHeader_Comma : ',';
+ModeHeader_PositiveInteger : [0-9]+;
+ModeHeader_NegativeInteger : '-' [0-9]+;
+ModeHeader_Whitespace : [ \t\r]+ -> skip;
+ModeHeader_NewLine : [\n]+ -> popMode, skip;
