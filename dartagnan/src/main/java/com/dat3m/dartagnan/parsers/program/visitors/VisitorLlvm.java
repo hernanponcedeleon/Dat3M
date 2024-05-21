@@ -394,8 +394,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
                 block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
+                logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
             } else {
-                visitChildren(ctx);
+                ctx.inlineAsm().accept(this);
             }
             return resultRegister;
         }
