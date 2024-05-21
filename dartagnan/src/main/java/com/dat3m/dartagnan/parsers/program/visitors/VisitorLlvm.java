@@ -530,8 +530,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "fence rw,r" -> RISCV.newRWRFence();
             case "fence rw,w" -> RISCV.newRWWFence();
             case "fence rw,rw" -> RISCV.newRWRWFence();
-            case "fence tso" -> RISCV.newTSOFence();
-            case "fence i" -> RISCV.newIFence();
+            case "fence tso" -> RISCV.newTsoFence();
+            case "fence i" -> RISCV.newSynchronizeFence();
             default -> throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
         };
         block.events.add(fence);
