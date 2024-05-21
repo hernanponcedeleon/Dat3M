@@ -394,6 +394,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
                 block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
+            } else {
+                visitChildren(ctx);
             }
             return resultRegister;
         }
@@ -496,6 +498,21 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitFenceInst(FenceInstContext ctx) {
         final String mo = parseMemoryOrder(ctx.atomicOrdering());
         block.events.add(Llvm.newFence(mo));
+        return null;
+    }
+
+    @Override 
+    public Expression visitInlineAsm(InlineAsmContext ctx) {
+        final String asm = parseQuotedString(ctx.StringLit(0));
+        final Event fence = switch(asm) {
+            case "mfence" -> X86.newMemoryFence();
+            default -> null;
+        };
+        if(fence != null) {
+            block.events.add(fence);
+        } else {
+            logger.warn("Encountered unsupported inline assembly: " + asm);
+        }
         return null;
     }
 
