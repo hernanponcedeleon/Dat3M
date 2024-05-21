@@ -505,6 +505,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitInlineAsm(InlineAsmContext ctx) {
         final String asm = parseQuotedString(ctx.StringLit(0));
         final Event fence = switch(asm) {
+            // Compiler barrier, do nothing
+            // TODO update when we add support for interrupts
+            case "" -> null;
             // X86
             case "mfence" -> X86.newMemoryFence();
             // Aarch64
@@ -534,7 +537,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             case "fence i" -> RISCV.newSynchronizeFence();
             default -> throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
         };
-        block.events.add(fence);
+        if(fence != null) {
+            block.events.add(fence);
+        }
         return null;
     }
 
