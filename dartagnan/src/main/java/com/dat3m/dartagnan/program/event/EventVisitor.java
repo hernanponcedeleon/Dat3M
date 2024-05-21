@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.event;
 
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -76,9 +75,6 @@ public interface EventVisitor<T> {
 
     // ------------------ TSO Events ------------------
     default T visitTSOXchg(TSOXchg e) { return visitMemEvent(e); }
-
-    // ------------------ LISA Events ------------------
-    default T visitLISARMW(LISARMW e) { return visitMemEvent(e); }
 
     // ------------------ C-Atomic Events ------------------
     default T visitAtomicCmpXchg(AtomicCmpXchg e) { return visitMemEvent(e); }

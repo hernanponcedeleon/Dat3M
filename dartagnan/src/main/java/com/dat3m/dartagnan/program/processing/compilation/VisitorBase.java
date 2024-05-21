@@ -10,7 +10,6 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
@@ -132,21 +131,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitTSOXchg(TSOXchg e) {
         throw error(e);
-    }
-
-    @Override
-    public List<Event> visitLISARMW(LISARMW e) {
-        Register resultRegister = e.getResultRegister();
-        Expression address = e.getAddress();
-        String mo = e.getMo();
-        Register dummyReg = e.getFunction().newRegister(resultRegister.getType());
-        Load load = newRMWLoadWithMo(dummyReg, address, mo);
-        RMWStore store = newRMWStoreWithMo(load, address, e.getValue(), mo);
-        return eventSequence(
-                load,
-                store,
-                newLocal(resultRegister, dummyReg)
-        );
     }
 
     @Override
