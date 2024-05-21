@@ -1,8 +1,0 @@
-LISA 2+2W+mfence-rmws
-{}
- P0            | P1          ;
- w[] x 2       | w[] y 2     ;
- f[MFENCE]     | f[MFENCE]   ;
- mov r0 1      | mov r0 1    ;
- rmw[] r0 r0 y | rmw[] r0 r0 x ;
-forall 0:r0=2 /\ y=1 /\ (1:r0=0 /\ x=2 \/ 1:r0=2 /\ x=1) \/ 0:r0=0 /\ 1:r0=2 /\ x=1 /\ y=2
