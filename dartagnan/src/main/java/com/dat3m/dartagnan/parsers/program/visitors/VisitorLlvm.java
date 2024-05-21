@@ -505,14 +505,36 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitInlineAsm(InlineAsmContext ctx) {
         final String asm = parseQuotedString(ctx.StringLit(0));
         final Event fence = switch(asm) {
+            // X86
             case "mfence" -> X86.newMemoryFence();
-            default -> null;
+            // Aarch64
+            case "dmb sy" -> AArch64.DMB.newSYBarrier();
+            case "dmb ish" -> AArch64.DMB.newISHBarrier();
+            case "dmb ishld" -> AArch64.DMB.newISHLDBarrier();
+            case "dmb ishst" -> AArch64.DMB.newISHSTBarrier();
+            case "dsb sy" -> AArch64.DSB.newSYBarrier();
+            case "dsb ish" -> AArch64.DSB.newISHBarrier();
+            case "dsb ishld" -> AArch64.DSB.newISHLDBarrier();
+            case "dsb ishst" -> AArch64.DSB.newISHSTBarrier();
+            // PPC
+            case "isync" -> Power.newISyncBarrier();
+            case "sync" -> Power.newSyncBarrier();
+            case "lwsync" -> Power.newLwSyncBarrier();
+            // RISCV
+            case "fence r,r" -> RISCV.newRRFence();
+            case "fence r,w" -> RISCV.newRWFence();
+            case "fence r,rw" -> RISCV.newRRWFence();
+            case "fence w,r" -> RISCV.newWRFence();
+            case "fence w,w" -> RISCV.newWWFence();
+            case "fence w,rw" -> RISCV.newWRWFence();
+            case "fence rw,r" -> RISCV.newRWRFence();
+            case "fence rw,w" -> RISCV.newRWWFence();
+            case "fence rw,rw" -> RISCV.newRWRWFence();
+            case "fence tso" -> RISCV.newTSOFence();
+            case "fence i" -> RISCV.newIFence();
+            default -> throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
         };
-        if(fence != null) {
-            block.events.add(fence);
-        } else {
-            logger.warn("Encountered unsupported inline assembly: " + asm);
-        }
+        block.events.add(fence);
         return null;
     }
 
