@@ -506,9 +506,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         {
             List<Variable> queue = new ArrayList<>(List.of(variable));
             while (!queue.isEmpty()) {
-                List<Variable> currentList = queue;
-                queue = new ArrayList<>();
-                for (Variable current : currentList) {
+                List<Variable> next = new ArrayList<>();
+                for (Variable current : queue) {
                     for (Variable v : current.seeAlso) {
                         // Culling
                         if (includerSet.contains(v)) {
@@ -517,12 +516,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                         // Try to find some include edge, as 'seeAlso' also indicates store and load edges.
                         for (IncludeEdge i : v.includes) {
                             if (i.source == current && includerSet.add(v)) {
-                                queue.add(v);
+                                next.add(v);
                                 break;
                             }
                         }
                     }
                 }
+                queue = next;
             }
         }
         if (!includerSet.contains(edge.source)) {
@@ -531,25 +531,25 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         cyclesDetected++;
         // Collect all cyclic paths.
-        // Use 'set' for performance.
-        Set<IncludeEdge> set = new HashSet<>();
         Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
         {
+            // Use 'set' for performance.
+            Set<IncludeEdge> set = new HashSet<>();
             List<IncludeEdge> queue = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
             // Since cycles are detected lazily, we need a bound for cycle lengths.
             for (int length = 0; !queue.isEmpty() && length < includerSet.size(); length++) {
-                List<IncludeEdge> previous = queue;
-                queue = new ArrayList<>();
-                for (IncludeEdge current : previous) {
+                List<IncludeEdge> next = new ArrayList<>();
+                for (IncludeEdge current : queue) {
                     for (IncludeEdge i : current.source.includes) {
                         if (edge.source != i.source && includerSet.contains(i.source)) {
                             IncludeEdge joinedEdge = compose(i, current.modifier);
                             if (set.add(joinedEdge) && addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge)) {
-                                queue.add(joinedEdge);
+                                next.add(joinedEdge);
                             }
                         }
                     }
                 }
+                queue = next;
             }
         }
         List<IncludeEdge> result = new ArrayList<>();
