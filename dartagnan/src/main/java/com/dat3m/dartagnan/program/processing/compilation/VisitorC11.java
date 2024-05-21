@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -14,6 +15,7 @@ import com.dat3m.dartagnan.program.event.lang.llvm.*;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 
 import java.util.List;
+import java.util.Collections;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.google.common.base.Verify.verify;
@@ -28,6 +30,33 @@ public class VisitorC11 extends VisitorBase {
     @Override
     public List<Event> visitStore(Store e) {
         return tagList(eventSequence(e));
+    }
+
+    @Override
+    public List<Event> visitLocal(Local e) {
+        if(e.getExpr() instanceof ITEExpr ite) {
+            Register resultRegister = e.getResultRegister();
+            Expression cond = ite.getCondition();
+
+            Local localPass = newLocal(resultRegister, ite.getTrueCase());
+            Label end = newLabel("ITE_end");
+            CondJump gotoEnd = newGoto(end);
+
+            Local localFail = newLocal(resultRegister, ite.getFalseCase());
+            Label fail = newLabel("ITE_fail");
+            CondJump branchToFail = newJump(expressions.makeNot(cond), fail);
+
+            return eventSequence(
+                branchToFail,
+                localPass,
+                gotoEnd,
+                fail,
+                localFail,
+                end
+            );
+        } else {
+            return Collections.singletonList(e);
+        }
     }
 
     // =============================================================================================
