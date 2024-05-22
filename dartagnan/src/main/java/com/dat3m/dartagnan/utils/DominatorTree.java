@@ -139,6 +139,8 @@ public final class DominatorTree<TNode> {
         return immDom;
     }
 
+    // Returns the closest common dominator for two nodes.
+    // This dominator represents the intersection of the dominator sets of the nodes.
     private TNode intersect(TNode a, TNode b, Map<TNode, TNode> immDom, Comparator<? super TNode> reversePostOrder) {
         while (a != b) {
             if (reversePostOrder.compare(a, b) < 0) {
@@ -151,17 +153,19 @@ public final class DominatorTree<TNode> {
     }
 
     private Map<TNode, List<TNode>> computePredecessorMap(TNode root, Function<TNode, ? extends Iterable<? extends TNode>> successors) {
-        Set<TNode> processed = new HashSet<>();
         Map<TNode, List<TNode>> predecessorMap = new HashMap<>();
         Deque<TNode> workqueue = new ArrayDeque<>();
+        // Contains all nodes that are already processed (= previously contained in the workqueue)
+        // or that are about to be processed (= currently contained in the workqueue)
+        Set<TNode> processedOrProcessing = new HashSet<>();
 
         workqueue.add(root);
+        processedOrProcessing.add(root);
         while (!workqueue.isEmpty()) {
             final TNode cur = workqueue.remove();
-            processed.add(cur);
             for (TNode succ : successors.apply(cur)) {
                 predecessorMap.computeIfAbsent(succ, key -> new ArrayList<>()).add(cur);
-                if (!processed.contains(succ)) {
+                if (processedOrProcessing.add(succ)) {
                     workqueue.add(succ);
                 }
             }
