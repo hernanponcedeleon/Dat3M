@@ -993,7 +993,7 @@ opGetKernelMaxNumSubgroups : idResult Equals Op (GetKernelMaxNumSubgroups idResu
 // Extension Operations
 opExtension : Op Extension nameLiteralString;
 opExtInstImport : idResult Equals Op (ExtInstImport  | SpecConstantOp  ExtInstImport) nameLiteralString;
-opExtInst : idResult Equals Op (ExtInst idResultType | SpecConstantOp idResultType ExtInst) set instruction operand*;
+opExtInst : idResult Equals Op (ExtInst idResultType | SpecConstantOp idResultType ExtInst) set instruction;
 
 // Function Operations
 opFunction : idResult Equals Op (Function idResultType | SpecConstantOp idResultType Function) functionControl functionType;
@@ -1099,8 +1099,8 @@ opVariable : idResult Equals Op (Variable idResultType | SpecConstantOp idResult
 opImageTexelPointer : idResult Equals Op (ImageTexelPointer idResultType | SpecConstantOp idResultType ImageTexelPointer) image coordinate sample;
 opLoad : idResult Equals Op (Load idResultType | SpecConstantOp idResultType Load) pointer memoryAccess?;
 opStore : Op Store pointer object memoryAccess?;
-opCopyMemory : Op CopyMemory targetIdRef sourceIdRef memoryAccess? memoryAccess?;
-opCopyMemorySized : Op CopyMemorySized targetIdRef sourceIdRef sizeIdRef memoryAccess? memoryAccess?;
+opCopyMemory : Op CopyMemory targetIdRef sourceIdRef (memoryAccess memoryAccess?)?;
+opCopyMemorySized : Op CopyMemorySized targetIdRef sourceIdRef sizeIdRef (memoryAccess memoryAccess?)?;
 opAccessChain : idResult Equals Op (AccessChain idResultType | SpecConstantOp idResultType AccessChain) base indexesIdRef*;
 opInBoundsAccessChain : idResult Equals Op (InBoundsAccessChain idResultType | SpecConstantOp idResultType InBoundsAccessChain) base indexesIdRef*;
 opPtrAccessChain : idResult Equals Op (PtrAccessChain idResultType | SpecConstantOp idResultType PtrAccessChain) base element indexesIdRef*;
@@ -1282,7 +1282,7 @@ opHitObjectGetRayTMinNV : idResult Equals Op (HitObjectGetRayTMinNV idResultType
 opHitObjectIsEmptyNV : idResult Equals Op (HitObjectIsEmptyNV idResultType | SpecConstantOp idResultType HitObjectIsEmptyNV) hitObject;
 opHitObjectIsHitNV : idResult Equals Op (HitObjectIsHitNV idResultType | SpecConstantOp idResultType HitObjectIsHitNV) hitObject;
 opHitObjectIsMissNV : idResult Equals Op (HitObjectIsMissNV idResultType | SpecConstantOp idResultType HitObjectIsMissNV) hitObject;
-opReorderThreadWithHitObjectNV : Op ReorderThreadWithHitObjectNV hitObject hint? bits?;
+opReorderThreadWithHitObjectNV : Op ReorderThreadWithHitObjectNV hitObject (hint bits?)?;
 opReorderThreadWithHintNV : Op ReorderThreadWithHintNV hint bits;
 opEmitMeshTasksEXT : Op EmitMeshTasksEXT groupCountX groupCountY groupCountZ payload?;
 opSetMeshOutputsEXT : Op SetMeshOutputsEXT vertexCountIdRef primitiveCountIdRef;
@@ -1356,7 +1356,7 @@ opTypeMatrix : idResult Equals Op (TypeMatrix  | SpecConstantOp  TypeMatrix) col
 opTypeImage : idResult Equals Op (TypeImage  | SpecConstantOp  TypeImage) sampledType dim depthLiteralInteger arrayed mS sampled imageFormat accessQualifier?;
 opTypeSampler : idResult Equals Op (TypeSampler  | SpecConstantOp  TypeSampler);
 opTypeSampledImage : idResult Equals Op (TypeSampledImage  | SpecConstantOp  TypeSampledImage) imageType;
-opTypeArray : idResult Equals Op (TypeArray  | SpecConstantOp  TypeArray) elementType length;
+opTypeArray : idResult Equals Op (TypeArray  | SpecConstantOp  TypeArray) elementType lengthIdRef;
 opTypeRuntimeArray : idResult Equals Op (TypeRuntimeArray  | SpecConstantOp  TypeRuntimeArray) elementType;
 opTypeStruct : idResult Equals Op (TypeStruct  | SpecConstantOp  TypeStruct) memberType*;
 opTypeOpaque : idResult Equals Op (TypeOpaque  | SpecConstantOp  TypeOpaque) theNameOfTheOpaqueType;
@@ -1376,7 +1376,7 @@ opTypeHitObjectNV : idResult Equals Op (TypeHitObjectNV  | SpecConstantOp  TypeH
 opTypeAccelerationStructureNV : idResult Equals Op (TypeAccelerationStructureNV  | SpecConstantOp  TypeAccelerationStructureNV);
 opTypeAccelerationStructureKHR : idResult Equals Op (TypeAccelerationStructureKHR  | SpecConstantOp  TypeAccelerationStructureKHR);
 opTypeCooperativeMatrixNV : idResult Equals Op (TypeCooperativeMatrixNV  | SpecConstantOp  TypeCooperativeMatrixNV) componentType execution rows columns;
-opTypeBufferSurfaceINTEL : idResult Equals Op (TypeBufferSurfaceINTEL  | SpecConstantOp  TypeBufferSurfaceINTEL) accessQualifier;
+opTypeBufferSurfaceINTEL : idResult Equals Op (TypeBufferSurfaceINTEL  | SpecConstantOp  TypeBufferSurfaceINTEL) accessQualifierAccessQualifier;
 opTypeStructContinuedINTEL : Op TypeStructContinuedINTEL memberType*;
 
 // exclude Operations
@@ -1550,34 +1550,300 @@ opArbitraryFloatPowNINTEL : idResult Equals Op (ArbitraryFloatPowNINTEL idResult
 opAliasDomainDeclINTEL : idResult Equals Op (AliasDomainDeclINTEL  | SpecConstantOp  AliasDomainDeclINTEL) nameIdRef?;
 opAliasScopeDeclINTEL : idResult Equals Op (AliasScopeDeclINTEL  | SpecConstantOp  AliasScopeDeclINTEL) aliasDomain nameIdRef?;
 opAliasScopeListDeclINTEL : idResult Equals Op (AliasScopeListDeclINTEL  | SpecConstantOp  AliasScopeListDeclINTEL) aliasScope*;
-opFixedSqrtINTEL : idResult Equals Op (FixedSqrtINTEL idResultType | SpecConstantOp idResultType FixedSqrtINTEL) inputType input s i rI q o;
-opFixedRecipINTEL : idResult Equals Op (FixedRecipINTEL idResultType | SpecConstantOp idResultType FixedRecipINTEL) inputType input s i rI q o;
-opFixedRsqrtINTEL : idResult Equals Op (FixedRsqrtINTEL idResultType | SpecConstantOp idResultType FixedRsqrtINTEL) inputType input s i rI q o;
-opFixedSinINTEL : idResult Equals Op (FixedSinINTEL idResultType | SpecConstantOp idResultType FixedSinINTEL) inputType input s i rI q o;
-opFixedCosINTEL : idResult Equals Op (FixedCosINTEL idResultType | SpecConstantOp idResultType FixedCosINTEL) inputType input s i rI q o;
-opFixedSinCosINTEL : idResult Equals Op (FixedSinCosINTEL idResultType | SpecConstantOp idResultType FixedSinCosINTEL) inputType input s i rI q o;
-opFixedSinPiINTEL : idResult Equals Op (FixedSinPiINTEL idResultType | SpecConstantOp idResultType FixedSinPiINTEL) inputType input s i rI q o;
-opFixedCosPiINTEL : idResult Equals Op (FixedCosPiINTEL idResultType | SpecConstantOp idResultType FixedCosPiINTEL) inputType input s i rI q o;
-opFixedSinCosPiINTEL : idResult Equals Op (FixedSinCosPiINTEL idResultType | SpecConstantOp idResultType FixedSinCosPiINTEL) inputType input s i rI q o;
-opFixedLogINTEL : idResult Equals Op (FixedLogINTEL idResultType | SpecConstantOp idResultType FixedLogINTEL) inputType input s i rI q o;
-opFixedExpINTEL : idResult Equals Op (FixedExpINTEL idResultType | SpecConstantOp idResultType FixedExpINTEL) inputType input s i rI q o;
+opFixedSqrtINTEL : idResult Equals Op (FixedSqrtINTEL idResultType | SpecConstantOp idResultType FixedSqrtINTEL) inputType input s iLiteralInteger rI q o;
+opFixedRecipINTEL : idResult Equals Op (FixedRecipINTEL idResultType | SpecConstantOp idResultType FixedRecipINTEL) inputType input s iLiteralInteger rI q o;
+opFixedRsqrtINTEL : idResult Equals Op (FixedRsqrtINTEL idResultType | SpecConstantOp idResultType FixedRsqrtINTEL) inputType input s iLiteralInteger rI q o;
+opFixedSinINTEL : idResult Equals Op (FixedSinINTEL idResultType | SpecConstantOp idResultType FixedSinINTEL) inputType input s iLiteralInteger rI q o;
+opFixedCosINTEL : idResult Equals Op (FixedCosINTEL idResultType | SpecConstantOp idResultType FixedCosINTEL) inputType input s iLiteralInteger rI q o;
+opFixedSinCosINTEL : idResult Equals Op (FixedSinCosINTEL idResultType | SpecConstantOp idResultType FixedSinCosINTEL) inputType input s iLiteralInteger rI q o;
+opFixedSinPiINTEL : idResult Equals Op (FixedSinPiINTEL idResultType | SpecConstantOp idResultType FixedSinPiINTEL) inputType input s iLiteralInteger rI q o;
+opFixedCosPiINTEL : idResult Equals Op (FixedCosPiINTEL idResultType | SpecConstantOp idResultType FixedCosPiINTEL) inputType input s iLiteralInteger rI q o;
+opFixedSinCosPiINTEL : idResult Equals Op (FixedSinCosPiINTEL idResultType | SpecConstantOp idResultType FixedSinCosPiINTEL) inputType input s iLiteralInteger rI q o;
+opFixedLogINTEL : idResult Equals Op (FixedLogINTEL idResultType | SpecConstantOp idResultType FixedLogINTEL) inputType input s iLiteralInteger rI q o;
+opFixedExpINTEL : idResult Equals Op (FixedExpINTEL idResultType | SpecConstantOp idResultType FixedExpINTEL) inputType input s iLiteralInteger rI q o;
 opPtrCastToCrossWorkgroupINTEL : idResult Equals Op (PtrCastToCrossWorkgroupINTEL idResultType | SpecConstantOp idResultType PtrCastToCrossWorkgroupINTEL) pointer;
 opCrossWorkgroupCastToPtrINTEL : idResult Equals Op (CrossWorkgroupCastToPtrINTEL idResultType | SpecConstantOp idResultType CrossWorkgroupCastToPtrINTEL) pointer;
+
+// Extensions
+literalExtInstInteger
+    :   clspvReflection
+    |   glsl
+    ;
+
+
+// Extension clspvReflection
+clspvReflection
+    :   argumentInfo
+    |   argumentPodPushConstant
+    |   argumentPodStorageBuffer
+    |   argumentPodUniform
+    |   argumentPointerPushConstant
+    |   argumentPointerUniform
+    |   argumentSampledImage
+    |   argumentSampler
+    |   argumentStorageBuffer
+    |   argumentStorageImage
+    |   argumentStorageTexelBuffer
+    |   argumentUniform
+    |   argumentUniformTexelBuffer
+    |   argumentWorkgroup
+    |   constantDataPointerPushConstant
+    |   constantDataStorageBuffer
+    |   constantDataUniform
+    |   imageArgumentInfoChannelDataTypePushConstant
+    |   imageArgumentInfoChannelDataTypeUniform
+    |   imageArgumentInfoChannelOrderPushConstant
+    |   imageArgumentInfoChannelOrderUniform
+    |   kernel
+    |   literalSampler
+    |   normalizedSamplerMaskPushConstant
+    |   printfBufferPointerPushConstant
+    |   printfBufferStorageBuffer
+    |   printfInfo
+    |   programScopeVariablePointerPushConstant
+    |   programScopeVariablePointerRelocation
+    |   programScopeVariablesStorageBuffer
+    |   propertyRequiredWorkgroupSize
+    |   pushConstantEnqueuedLocalSize
+    |   pushConstantGlobalOffset
+    |   pushConstantGlobalSize
+    |   pushConstantNumWorkgroups
+    |   pushConstantRegionGroupOffset
+    |   pushConstantRegionOffset
+    |   specConstantGlobalOffset
+    |   specConstantSubgroupMaxSize
+    |   specConstantWorkDim
+    |   specConstantWorkgroupSize
+    ;
+
+kernel : ModeExt_Kernel kernelIdRef nameIdRef (numArguments (flags attributes?)?)?;
+argumentInfo : ModeExt_ArgumentInfo nameIdRef (typeName (addressQualifier (accessQualifierIdRef typeQualifier?)?)?)?;
+argumentStorageBuffer : ModeExt_ArgumentStorageBuffer decl ordinal descriptorSetIdRef binding argInfo?;
+argumentUniform : ModeExt_ArgumentUniform decl ordinal descriptorSetIdRef binding argInfo?;
+argumentPodStorageBuffer : ModeExt_ArgumentPodStorageBuffer decl ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
+argumentPodUniform : ModeExt_ArgumentPodUniform decl ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
+argumentPodPushConstant : ModeExt_ArgumentPodPushConstant decl ordinal offsetIdRef sizeIdRef argInfo?;
+argumentSampledImage : ModeExt_ArgumentSampledImage decl ordinal descriptorSetIdRef binding argInfo?;
+argumentStorageImage : ModeExt_ArgumentStorageImage decl ordinal descriptorSetIdRef binding argInfo?;
+argumentSampler : ModeExt_ArgumentSampler decl ordinal descriptorSetIdRef binding argInfo?;
+argumentWorkgroup : ModeExt_ArgumentWorkgroup decl ordinal specId elemSize argInfo?;
+specConstantWorkgroupSize : ModeExt_SpecConstantWorkgroupSize x y z;
+specConstantGlobalOffset : ModeExt_SpecConstantGlobalOffset x y z;
+specConstantWorkDim : ModeExt_SpecConstantWorkDim dimIdRef;
+pushConstantGlobalOffset : ModeExt_PushConstantGlobalOffset offsetIdRef sizeIdRef;
+pushConstantEnqueuedLocalSize : ModeExt_PushConstantEnqueuedLocalSize offsetIdRef sizeIdRef;
+pushConstantGlobalSize : ModeExt_PushConstantGlobalSize offsetIdRef sizeIdRef;
+pushConstantRegionOffset : ModeExt_PushConstantRegionOffset offsetIdRef sizeIdRef;
+pushConstantNumWorkgroups : ModeExt_PushConstantNumWorkgroups offsetIdRef sizeIdRef;
+pushConstantRegionGroupOffset : ModeExt_PushConstantRegionGroupOffset offsetIdRef sizeIdRef;
+constantDataStorageBuffer : ModeExt_ConstantDataStorageBuffer descriptorSetIdRef binding data;
+constantDataUniform : ModeExt_ConstantDataUniform descriptorSetIdRef binding data;
+literalSampler : ModeExt_LiteralSampler descriptorSetIdRef binding mask;
+propertyRequiredWorkgroupSize : ModeExt_PropertyRequiredWorkgroupSize kernelIdRef x y z;
+specConstantSubgroupMaxSize : ModeExt_SpecConstantSubgroupMaxSize sizeIdRef;
+argumentPointerPushConstant : ModeExt_ArgumentPointerPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef argInfo?;
+argumentPointerUniform : ModeExt_ArgumentPointerUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef argInfo?;
+programScopeVariablesStorageBuffer : ModeExt_ProgramScopeVariablesStorageBuffer descriptorSetIdRef binding data;
+programScopeVariablePointerRelocation : ModeExt_ProgramScopeVariablePointerRelocation objectOffset pointerOffset pointerSize;
+imageArgumentInfoChannelOrderPushConstant : ModeExt_ImageArgumentInfoChannelOrderPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
+imageArgumentInfoChannelDataTypePushConstant : ModeExt_ImageArgumentInfoChannelDataTypePushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
+imageArgumentInfoChannelOrderUniform : ModeExt_ImageArgumentInfoChannelOrderUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef;
+imageArgumentInfoChannelDataTypeUniform : ModeExt_ImageArgumentInfoChannelDataTypeUniform kernelIdRef ordinal descriptorSetIdRef binding offsetIdRef sizeIdRef;
+argumentStorageTexelBuffer : ModeExt_ArgumentStorageTexelBuffer decl ordinal descriptorSetIdRef binding argInfo?;
+argumentUniformTexelBuffer : ModeExt_ArgumentUniformTexelBuffer decl ordinal descriptorSetIdRef binding argInfo?;
+constantDataPointerPushConstant : ModeExt_ConstantDataPointerPushConstant offsetIdRef sizeIdRef data;
+programScopeVariablePointerPushConstant : ModeExt_ProgramScopeVariablePointerPushConstant offsetIdRef sizeIdRef data;
+printfInfo : ModeExt_PrintfInfo printfID formatString argumentSizes*;
+printfBufferStorageBuffer : ModeExt_PrintfBufferStorageBuffer descriptorSetIdRef binding bufferSize;
+printfBufferPointerPushConstant : ModeExt_PrintfBufferPointerPushConstant offsetIdRef sizeIdRef bufferSize;
+normalizedSamplerMaskPushConstant : ModeExt_NormalizedSamplerMaskPushConstant kernelIdRef ordinal offsetIdRef sizeIdRef;
+
+// Extension glsl
+glsl
+    :   acos
+    |   acosh
+    |   asin
+    |   asinh
+    |   atan
+    |   atan2
+    |   atanh
+    |   ceil
+    |   cos
+    |   cosh
+    |   cross
+    |   degrees
+    |   determinant
+    |   distance
+    |   exp
+    |   exp2
+    |   fAbs
+    |   fClamp
+    |   fMax
+    |   fMin
+    |   fMix
+    |   fSign
+    |   faceForward
+    |   findILsb
+    |   findSMsb
+    |   findUMsb
+    |   floor
+    |   fma
+    |   fract
+    |   frexp
+    |   frexpStruct
+    |   iMix
+    |   interpolateAtCentroid
+    |   interpolateAtOffset
+    |   interpolateAtSample
+    |   inverseSqrt
+    |   ldexp
+    |   length
+    |   log
+    |   log2
+    |   matrixInverse
+    |   modf
+    |   modfStruct
+    |   nClamp
+    |   nMax
+    |   nMin
+    |   normalize
+    |   packDouble2x32
+    |   packHalf2x16
+    |   packSnorm2x16
+    |   packSnorm4x8
+    |   packUnorm2x16
+    |   packUnorm4x8
+    |   pow
+    |   radians
+    |   reflect
+    |   refract
+    |   round
+    |   roundEven
+    |   sAbs
+    |   sClamp
+    |   sMax
+    |   sMin
+    |   sSign
+    |   sin
+    |   sinh
+    |   smoothStep
+    |   sqrt
+    |   step
+    |   tan
+    |   tanh
+    |   trunc
+    |   uClamp
+    |   uMax
+    |   uMin
+    |   unpackDouble2x32
+    |   unpackHalf2x16
+    |   unpackSnorm2x16
+    |   unpackSnorm4x8
+    |   unpackUnorm2x16
+    |   unpackUnorm4x8
+    ;
+
+round : ModeExt_Round x;
+roundEven : ModeExt_RoundEven x;
+trunc : ModeExt_Trunc x;
+fAbs : ModeExt_FAbs x;
+sAbs : ModeExt_SAbs x;
+fSign : ModeExt_FSign x;
+sSign : ModeExt_SSign x;
+floor : ModeExt_Floor x;
+ceil : ModeExt_Ceil x;
+fract : ModeExt_Fract x;
+radians : ModeExt_Radians degreesIdRef;
+degrees : ModeExt_Degrees radiansIdRef;
+sin : ModeExt_Sin x;
+cos : ModeExt_Cos x;
+tan : ModeExt_Tan x;
+asin : ModeExt_Asin x;
+acos : ModeExt_Acos x;
+atan : ModeExt_Atan y;
+sinh : ModeExt_Sinh x;
+cosh : ModeExt_Cosh x;
+tanh : ModeExt_Tanh x;
+asinh : ModeExt_Asinh x;
+acosh : ModeExt_Acosh x;
+atanh : ModeExt_Atanh x;
+atan2 : ModeExt_Atan2 y x;
+pow : ModeExt_Pow x y;
+exp : ModeExt_Exp x;
+log : ModeExt_Log x;
+exp2 : ModeExt_Exp2 x;
+log2 : ModeExt_Log2 x;
+sqrt : ModeExt_Sqrt x;
+inverseSqrt : ModeExt_InverseSqrt x;
+determinant : ModeExt_Determinant x;
+matrixInverse : ModeExt_MatrixInverse x;
+modf : ModeExt_Modf x iIdRef;
+modfStruct : ModeExt_ModfStruct x;
+fMin : ModeExt_FMin x y;
+uMin : ModeExt_UMin x y;
+sMin : ModeExt_SMin x y;
+fMax : ModeExt_FMax x y;
+uMax : ModeExt_UMax x y;
+sMax : ModeExt_SMax x y;
+fClamp : ModeExt_FClamp x minVal maxVal;
+uClamp : ModeExt_UClamp x minVal maxVal;
+sClamp : ModeExt_SClamp x minVal maxVal;
+fMix : ModeExt_FMix x y a;
+iMix : ModeExt_IMix x y a;
+step : ModeExt_Step edge x;
+smoothStep : ModeExt_SmoothStep edge0 edge1 x;
+fma : ModeExt_Fma a b c;
+frexp : ModeExt_Frexp x expIdRef;
+frexpStruct : ModeExt_FrexpStruct x;
+ldexp : ModeExt_Ldexp x expIdRef;
+packSnorm4x8 : ModeExt_PackSnorm4x8 v;
+packUnorm4x8 : ModeExt_PackUnorm4x8 v;
+packSnorm2x16 : ModeExt_PackSnorm2x16 v;
+packUnorm2x16 : ModeExt_PackUnorm2x16 v;
+packHalf2x16 : ModeExt_PackHalf2x16 v;
+packDouble2x32 : ModeExt_PackDouble2x32 v;
+unpackSnorm2x16 : ModeExt_UnpackSnorm2x16 p;
+unpackUnorm2x16 : ModeExt_UnpackUnorm2x16 p;
+unpackHalf2x16 : ModeExt_UnpackHalf2x16 v;
+unpackSnorm4x8 : ModeExt_UnpackSnorm4x8 p;
+unpackUnorm4x8 : ModeExt_UnpackUnorm4x8 p;
+unpackDouble2x32 : ModeExt_UnpackDouble2x32 v;
+length : ModeExt_Length x;
+distance : ModeExt_Distance p0 p1;
+cross : ModeExt_Cross x y;
+normalize : ModeExt_Normalize x;
+faceForward : ModeExt_FaceForward nIdRef iIdRef nref;
+reflect : ModeExt_Reflect iIdRef nIdRef;
+refract : ModeExt_Refract iIdRef nIdRef eta;
+findILsb : ModeExt_FindILsb valueIdRef;
+findSMsb : ModeExt_FindSMsb valueIdRef;
+findUMsb : ModeExt_FindUMsb valueIdRef;
+interpolateAtCentroid : ModeExt_InterpolateAtCentroid interpolant;
+interpolateAtSample : ModeExt_InterpolateAtSample interpolant sample;
+interpolateAtOffset : ModeExt_InterpolateAtOffset interpolant offsetIdRef;
+nMin : ModeExt_NMin x y;
+nMax : ModeExt_NMax x y;
+nClamp : ModeExt_NClamp x minVal maxVal;
 
 // Alias types
 a : idRef;
 accel : idRef;
 accelerationStructure : idRef;
 access : hostAccessQualifier;
+accessQualifierAccessQualifier : accessQualifier;
+accessQualifierIdRef : idRef;
 accumulator : idRef;
+addressQualifier : idRef;
 addressWidth : literalInteger;
 aliasDomain : idRef;
 aliasScope : idRef;
 aliasingScopesList : idRef;
 alignmentIdRef : idRef;
 alignmentLiteralInteger : literalInteger;
+argInfo : idRef;
 argument : idRef;
 argument0 : idRef;
+argumentSizes : idRef;
 arrayMember : literalInteger;
 arrayStride : literalInteger;
 arrayed : literalInteger;
@@ -1587,6 +1853,7 @@ asmTarget : literalString;
 asmType : idRef;
 attachment : idRef;
 attachmentIndex : literalInteger;
+attributes : idRef;
 b : idRef;
 bFloat16Value : idRef;
 backwardReferenceFieldPolarity : idRef;
@@ -1597,6 +1864,7 @@ barrierCount : literalInteger;
 barycentric : idRef;
 base : idRef;
 bidirectionalWeight : idRef;
+binding : idRef;
 bindingPoint : literalInteger;
 bitWidth : literalInteger;
 bits : idRef;
@@ -1605,6 +1873,7 @@ blockSize : idRef;
 boxSize : idRef;
 branchWeights : literalInteger;
 bufferLocationID : literalInteger;
+bufferSize : idRef;
 bwdRefImage : idRef;
 bwdRefOffset : idRef;
 byteOffset : literalInteger;
@@ -1649,24 +1918,34 @@ cycles : literalInteger;
 d : idRef;
 data : idRef;
 dataWidth : literalInteger;
+decl : idRef;
 decorationGroup : idRef;
 default : idRef;
+degreesIdRef : idRef;
 delta : idRef;
 depthLiteralInteger : literalInteger;
-descriptorSet : literalInteger;
+descriptorSetIdRef : idRef;
+descriptorSetLiteralInteger : literalInteger;
 destination : idRef;
+dimIdRef : idRef;
 direction : idRef;
 directionCost : idRef;
 dualRef : idRef;
+edge : idRef;
+edge0 : idRef;
+edge1 : idRef;
+elemSize : idRef;
 element : idRef;
 elementType : idRef;
 enable : literalInteger;
 enableSubnormals : literalInteger;
 entryPoint : idRef;
 equal : idMemorySemantics;
+eta : idRef;
 event : idRef;
 eventsList : idRef;
 execution : idScope;
+expIdRef : idRef;
 expectedValue : idRef;
 extension : literalString;
 falseLabel : idRef;
@@ -1677,6 +1956,7 @@ flags : idRef;
 floatValue : idRef;
 floating : fPRoundingMode;
 forceKey : literalInteger;
+formatString : idRef;
 forwardReferenceFieldPolarity : idRef;
 fragmentIndex : idRef;
 fromSign : literalInteger;
@@ -1699,7 +1979,8 @@ hitObject : idRef;
 hitObjectAttribute : idRef;
 hitObjectAttributes : idRef;
 hitT : idRef;
-i : literalInteger;
+iIdRef : idRef;
+iLiteralInteger : literalInteger;
 iOPipeID : literalInteger;
 id : idRef;
 image : idRef;
@@ -1720,11 +2001,13 @@ instanceId : idRef;
 instruction : literalExtInstInteger;
 integerValue : idRef;
 interface : idRef;
+interpolant : idRef;
 intersection : idRef;
 intraNeighbourAvailabilty : idRef;
 invocationId : idRef;
 invocations : literalInteger;
 invoke : idRef;
+kernelIdRef : idRef;
 kind : literalInteger;
 latency : literalInteger;
 latencyLabel : literalInteger;
@@ -1732,7 +2015,7 @@ leftEdgeChromaPixels : idRef;
 leftEdgeLumaPixels : idRef;
 leftMatrix : idRef;
 lenght : idRef;
-length : idRef;
+lengthIdRef : idRef;
 levelOfDetail : idRef;
 line : literalInteger;
 localId : idRef;
@@ -1759,6 +2042,7 @@ maxByteOffsetLiteralInteger : literalInteger;
 maxError : literalFloat;
 maxMotionVectorCount : idRef;
 maxNumberOfPayloads : idRef;
+maxVal : idRef;
 maximumCopies : literalInteger;
 maximumReplicates : literalInteger;
 member : literalInteger;
@@ -1770,20 +2054,24 @@ memoryType : literalString;
 mergeBlock : idRef;
 mergeKey : literalString;
 mergeType : literalString;
+minVal : idRef;
 minorShapes : idRef;
 missIndex : idRef;
 modeExecutionMode : executionMode;
 modeLiteralInteger : literalInteger;
 motionVectors : idRef;
 mout : literalInteger;
-n : literalInteger;
 nDRange : idRef;
+nIdRef : idRef;
+nLiteralInteger : literalInteger;
 nameIdRef : idRef;
 nameLiteralString : literalString;
 namedBarrier : idRef;
 next : idRef;
 nodeIndex : idRef;
 nodeName : literalString;
+nref : idRef;
+numArguments : idRef;
 numElements : idRef;
 numEvents : idRef;
 numPackets : idRef;
@@ -1793,14 +2081,18 @@ o : literalInteger;
 object : idRef;
 object1 : idRef;
 object2 : idRef;
+objectOffset : idRef;
 offsetIdRef : idRef;
 offsetLiteralInteger : literalInteger;
 operand : idRef;
 operand1 : idRef;
 operand2 : idRef;
 operation : groupOperation;
+ordinal : idRef;
 origin : idRef;
 p : idRef;
+p0 : idRef;
+p1 : idRef;
 packedCostCenterDelta : idRef;
 packedCostTable : idRef;
 packedIndices : idRef;
@@ -1828,6 +2120,8 @@ pipe : idRef;
 pipeStorage : idRef;
 pixelResolution : idRef;
 pointer : idRef;
+pointerOffset : idRef;
+pointerSize : idRef;
 pointerType : idRef;
 predicate : idRef;
 prefetcherSizeInBytes : literalInteger;
@@ -1836,6 +2130,7 @@ primitiveCountIdRef : idRef;
 primitiveCountLiteralInteger : literalInteger;
 primitiveId : idRef;
 primitiveIndex : idRef;
+printfID : idRef;
 process : literalString;
 profilingInfo : idRef;
 propagate : literalInteger;
@@ -1846,6 +2141,7 @@ qp : idRef;
 qualifier : accessQualifier;
 queue : idRef;
 rI : literalInteger;
+radiansIdRef : idRef;
 rayDirection : idRef;
 rayFlagsIdRef : idRef;
 rayOrigin : idRef;
@@ -1904,6 +2200,7 @@ sliceType : idRef;
 sourceFieldPolarity : idRef;
 sourceIdRef : idRef;
 sourceLiteralString : literalString;
+specId : idRef;
 specializationConstantID : literalInteger;
 srcCoord : idRef;
 srcImage : idRef;
@@ -1941,6 +2238,8 @@ time : idRef;
 trigger : initializationModeQualifier;
 trueLabel : idRef;
 type : idRef;
+typeName : idRef;
+typeQualifier : idRef;
 unequal : idMemorySemantics;
 unsignedValue : idRef;
 upperEdgeChromaPixels : idRef;
@@ -1950,6 +2249,7 @@ upperLeftCornerLumaPixel : idRef;
 upperRightEdgeLumaPixels : idRef;
 use : idRef;
 userType : literalString;
+v : idRef;
 valueIdRef : idRef;
 valueLiteralContextDependentNumber : literalContextDependentNumber;
 valueLiteralInteger : literalInteger;
@@ -1980,6 +2280,7 @@ y : idRef;
 ySizeHint : idRef;
 ySizeIdRef : idRef;
 ySizeLiteralInteger : literalInteger;
+z : idRef;
 zSizeHint : idRef;
 zSizeIdRef : idRef;
 zSizeLiteralInteger : literalInteger;
@@ -2449,7 +2750,7 @@ decoration
     |   ConduitKernelArgumentINTEL
     |   Constant
     |   CounterBuffer counterBuffer
-    |   DescriptorSet descriptorSet
+    |   DescriptorSet descriptorSetLiteralInteger
     |   DontStaticallyCoalesceINTEL
     |   DoublepumpINTEL
     |   ExplicitInterpAMD
@@ -2531,7 +2832,7 @@ decoration
     |   RestrictPointer
     |   RestrictPointerEXT
     |   RowMajor
-    |   SIMTCallINTEL n
+    |   SIMTCallINTEL nLiteralInteger
     |   Sample
     |   SaturatedConversion
     |   SecondaryViewportRelativeNV offsetLiteralInteger
@@ -3124,12 +3425,11 @@ storeCacheControl
 pairIdRefIdRef : idRef idRef;
 pairIdRefLiteralInteger : idRef literalInteger;
 pairLiteralIntegerIdRef : literalInteger idRef;
-literalContextDependentNumber : LiteralUnsignedInteger | LiteralInteger | LiteralFloat;
-literalExtInstInteger : LiteralExtInstInteger;
+literalContextDependentNumber : LiteralInteger | LiteralFloat;
 literanHeaderUnsignedInteger : ModeHeader_PositiveInteger;
 initBaseValue : ModeHeader_NegativeInteger | ModeHeader_PositiveInteger;
 literalFloat : LiteralFloat;
-literalInteger : LiteralUnsignedInteger | LiteralInteger;
+literalInteger : LiteralInteger;
 literalString : LiteralString;
 idMemorySemantics : Id;
 idRef : Id;

@@ -66,7 +66,7 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String id = ctx.idResult().getText();
         String elementTypeName = ctx.elementType().getText();
         Type elementType = builder.getType(elementTypeName);
-        String lengthValueName = ctx.length().getText();
+        String lengthValueName = ctx.lengthIdRef().getText();
         Expression lengthExpr = builder.getExpression(lengthValueName);
         if (lengthExpr != null) {
             if (lengthExpr instanceof IValue iValue) {
