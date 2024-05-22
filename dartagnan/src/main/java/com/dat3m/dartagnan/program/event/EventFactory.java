@@ -469,6 +469,14 @@ public class EventFactory {
             public static GenericVisibleEvent newISHBarrier() {
                 return newFence("DMB.ISH");
             }
+
+            public static GenericVisibleEvent newISHLDBarrier() {
+                return newFence("DMB.ISHLD");
+            }
+
+            public static GenericVisibleEvent newISHSTBarrier() {
+                return newFence("DMB.ISHST");
+            }
         }
 
         public static class DSB {
@@ -492,7 +500,7 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newISHSTBarrier() {
-                return newFence("DMB.ISHST");
+                return newFence("DSB.ISHST");
             }
 
         }
