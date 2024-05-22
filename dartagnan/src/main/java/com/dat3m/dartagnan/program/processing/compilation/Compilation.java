@@ -53,6 +53,12 @@ public class Compilation implements ProgramProcessor {
             toUppercase = true)
     private PowerScheme cToPowerScheme = LEADING_SYNC;
 
+    @Option(name = ITE_TO_JUMPS,
+            description = "Converts ITE local instructions into branches.",
+            secure = true,
+            toUppercase = true)
+            private boolean iteToJumps = false;
+
     // =====================================================================
 
     private VisitorBase compiler;
@@ -117,7 +123,7 @@ public class Compilation implements ProgramProcessor {
 
     private VisitorBase getCompiler() {
         return switch (target) {
-            case C11 -> new VisitorC11();
+            case C11 -> new VisitorC11(iteToJumps);
             case LKMM -> new VisitorLKMM();
             case TSO -> new VisitorTso();
             case POWER -> new VisitorPower(useRC11Scheme, cToPowerScheme);

@@ -22,6 +22,12 @@ import static com.google.common.base.Verify.verify;
 
 public class VisitorC11 extends VisitorBase {
 
+    private final boolean iteToJumps;
+
+    protected VisitorC11(boolean iteToJumps) {
+        this.iteToJumps = iteToJumps;
+    }
+
     @Override
     public List<Event> visitLoad(Load e) {
         return tagList(eventSequence(e));
@@ -34,7 +40,7 @@ public class VisitorC11 extends VisitorBase {
 
     @Override
     public List<Event> visitLocal(Local e) {
-        if(e.getExpr() instanceof ITEExpr ite) {
+        if(iteToJumps && e.getExpr() instanceof ITEExpr ite) {
             Register resultRegister = e.getResultRegister();
             Expression cond = ite.getCondition();
 
