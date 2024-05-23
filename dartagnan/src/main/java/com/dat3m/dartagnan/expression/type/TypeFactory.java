@@ -100,12 +100,13 @@ public final class TypeFactory {
                 int size = getMemorySizeInBytes(fieldType);
                 //FIXME: We assume for now that a small type's (<= 8 byte) alignment coincides with its size.
                 // For all larger types, we assume 8 byte alignment
-                int alignment = Math.min(size, 8);
-                if (size != 0) {
-                    int padding = (-aggregateSize) % alignment;
-                    padding = padding < 0 ? padding + alignment : padding;
-                    aggregateSize += size + padding;
+                // The 8-byte assumption is incorrect for Spir-V PushConstants
+                // (works fine with AccessChain, but will be a problem with pointer arithmetics)
+                int suffix = size % 8;
+                if (suffix > 0) {
+                    size += (8 - suffix);
                 }
+                aggregateSize += size;
             }
             sizeInBytes = aggregateSize;
         } else if (type instanceof IntegerType integerType) {

@@ -1,4 +1,5 @@
 ; @Input: %14 = {0, 0, 0, 0, 0, 0, 0, 0}
+; @Input: %11 = 8
 ; @Config: 8, 1, 1
 ; SPIR-V
 ; Version: 1.6
@@ -15,7 +16,7 @@
          %39 = OpString "a"
                OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
                OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
-               OpDecorate %11 SpecId 8
+               OpDecorate %11 SpecId 3
                OpDecorate %5 SpecId 0
                OpDecorate %6 SpecId 1
                OpDecorate %7 SpecId 2

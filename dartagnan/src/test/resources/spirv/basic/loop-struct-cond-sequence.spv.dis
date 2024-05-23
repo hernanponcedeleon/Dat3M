@@ -5,7 +5,6 @@
 ; Version: 1.0
 ; Schema: 0
                        OpCapability Shader
-                %ext = OpExtInstImport "GLSL.std.450"
                        OpMemoryModel Logical GLSL450
                        OpEntryPoint GLCompute %main "main" %ids
                        OpSource GLSL 450

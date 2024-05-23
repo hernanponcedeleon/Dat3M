@@ -113,7 +113,10 @@ public class SpirvAssertionsTest {
                 {"cmpxchg-reg-reg.spv.dis", 1, PASS},
                 {"memory-scopes.spv.dis", 1, PASS},
                 {"rmw-extremum-true.spv.dis", 1, PASS},
-                {"rmw-extremum-false.spv.dis", 1, FAIL}
+                {"rmw-extremum-false.spv.dis", 1, FAIL},
+                {"push-constants.spv.dis", 1, PASS},
+                {"push-constants-pod.spv.dis", 1, PASS},
+                {"push-constant-mixed.spv.dis", 1, PASS}
         });
     }
 

@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.event.core.Skip;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -16,7 +17,7 @@ public class ProgramBuilderTest {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
 
-    private final ProgramBuilderSpv builder = new ProgramBuilderSpv();
+    private final ProgramBuilderSpv builder = new ProgramBuilderSpv(List.of(1, 1, 1, 1), Map.of());
 
     @Test
     public void testAddEventOutsideFunction() {

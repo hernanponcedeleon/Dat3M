@@ -24,7 +24,6 @@ public class SpirvHeaderSingleTest {
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
     private final String spvBody = """
                           OpCapability Shader
-                   %ext = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint GLCompute %main "main"
                           OpSource GLSL 450
@@ -178,7 +177,6 @@ public class SpirvHeaderSingleTest {
         String wholeSpv = """
                     ; @ Output: forall (%v4[0]==1 and %v4[1]==2 and %v4[2]==3)
                     OpCapability Shader
-                       %ext = OpExtInstImport "GLSL.std.450"
                               OpMemoryModel Logical GLSL450
                               OpEntryPoint GLCompute %main "main"
                               OpSource GLSL 450
@@ -233,7 +231,6 @@ public class SpirvHeaderSingleTest {
         String wholeSpv = """
                     ; @ Output: forall (1==%v4[0] and 2==%v4[1] and 3==%v4[2])
                     OpCapability Shader
-                       %ext = OpExtInstImport "GLSL.std.450"
                               OpMemoryModel Logical GLSL450
                               OpEntryPoint GLCompute %main "main"
                               OpSource GLSL 450
@@ -289,7 +286,6 @@ public class SpirvHeaderSingleTest {
                 ; @Input: %v4 = {{0, 0}, {0}}
                 ; @Output: forall (%v4[0][0]==1 and %v4[0][1]==2 and %v4[1][0]==3)
                                OpCapability Shader
-                        %ext = OpExtInstImport "GLSL.std.450"
                                OpMemoryModel Logical GLSL450
                                OpEntryPoint GLCompute %main "main"
                                OpSource GLSL 450
@@ -349,7 +345,6 @@ public class SpirvHeaderSingleTest {
                     ; @Input: %v4 = {{0, 0}, {0}}
                     ; @ Output: forall (1==%v4[0][0] and 2==%v4[0][1] and 3==%v4[1][0])
                               OpCapability Shader
-                       %ext = OpExtInstImport "GLSL.std.450"
                               OpMemoryModel Logical GLSL450
                               OpEntryPoint GLCompute %main "main"
                               OpSource GLSL 450
@@ -467,7 +462,6 @@ public class SpirvHeaderSingleTest {
             ; @Input: %v4 = {0, 0, 0}
             ; @Output: forall (%v4[0]==1 and %v4[1]==2 and %v4[2]==3)
                            OpCapability Shader
-                    %ext = OpExtInstImport "GLSL.std.450"
                            OpMemoryModel Logical GLSL450
                            OpEntryPoint GLCompute %main "main"
                            OpSource GLSL 450
@@ -540,7 +534,6 @@ public class SpirvHeaderSingleTest {
         ; @Input: %var = {{0}}
         ; @Output: forall (<<ast>>)
                        OpCapability Shader
-                %ext = OpExtInstImport "GLSL.std.450"
                        OpMemoryModel Logical GLSL450
                        OpEntryPoint GLCompute %main "main"
                        OpSource GLSL 450
