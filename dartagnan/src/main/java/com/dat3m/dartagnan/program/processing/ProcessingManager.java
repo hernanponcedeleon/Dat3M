@@ -85,6 +85,9 @@ public class ProcessingManager implements ProgramProcessor {
         final FunctionProcessor removeDeadJumps = RemoveDeadCondJumps.fromConfig(config);
         programProcessors.addAll(Arrays.asList(
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
+                ProgramProcessor.fromFunctionProcessor(
+                    NormalizeLoops.newInstance(), Target.FUNCTIONS, true
+                ),
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
                 NaiveDevirtualisation.newInstance(),
