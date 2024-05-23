@@ -394,6 +394,9 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             //FIXME ignore side effects of inline assembly
             if (resultRegister != null) {
                 block.events.add(newLocal(resultRegister, program.newConstant(returnType)));
+                logger.warn(String.format("Interpreting inline assembly as an unconstrained value:  %s.", ctx.inlineAsm().getText()));
+            } else {
+                ctx.inlineAsm().accept(this);
             }
             return resultRegister;
         }
@@ -496,6 +499,48 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitFenceInst(FenceInstContext ctx) {
         final String mo = parseMemoryOrder(ctx.atomicOrdering());
         block.events.add(Llvm.newFence(mo));
+        return null;
+    }
+
+    @Override 
+    public Expression visitInlineAsm(InlineAsmContext ctx) {
+        final String asm = parseQuotedString(ctx.StringLit(0));
+        final Event fence = switch(asm) {
+            // Compiler barrier, do nothing
+            // TODO update when we add support for interrupts
+            case "" -> null;
+            // X86
+            case "mfence" -> X86.newMemoryFence();
+            // Aarch64
+            case "dmb sy" -> AArch64.DMB.newSYBarrier();
+            case "dmb ish" -> AArch64.DMB.newISHBarrier();
+            case "dmb ishld" -> AArch64.DMB.newISHLDBarrier();
+            case "dmb ishst" -> AArch64.DMB.newISHSTBarrier();
+            case "dsb sy" -> AArch64.DSB.newSYBarrier();
+            case "dsb ish" -> AArch64.DSB.newISHBarrier();
+            case "dsb ishld" -> AArch64.DSB.newISHLDBarrier();
+            case "dsb ishst" -> AArch64.DSB.newISHSTBarrier();
+            // PPC
+            case "isync" -> Power.newISyncBarrier();
+            case "sync" -> Power.newSyncBarrier();
+            case "lwsync" -> Power.newLwSyncBarrier();
+            // RISCV
+            case "fence r,r" -> RISCV.newRRFence();
+            case "fence r,w" -> RISCV.newRWFence();
+            case "fence r,rw" -> RISCV.newRRWFence();
+            case "fence w,r" -> RISCV.newWRFence();
+            case "fence w,w" -> RISCV.newWWFence();
+            case "fence w,rw" -> RISCV.newWRWFence();
+            case "fence rw,r" -> RISCV.newRWRFence();
+            case "fence rw,w" -> RISCV.newRWWFence();
+            case "fence rw,rw" -> RISCV.newRWRWFence();
+            case "fence tso" -> RISCV.newTsoFence();
+            case "fence i" -> RISCV.newSynchronizeFence();
+            default -> throw new ParsingException(String.format("Encountered unsupported inline assembly:  %s.", asm));
+        };
+        if(fence != null) {
+            block.events.add(fence);
+        }
         return null;
     }
 

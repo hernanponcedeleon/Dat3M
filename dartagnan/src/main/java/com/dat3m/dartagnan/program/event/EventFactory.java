@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
-import com.dat3m.dartagnan.program.event.arch.lisa.LISARMW;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomCAS;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomExch;
 import com.dat3m.dartagnan.program.event.arch.ptx.PTXAtomOp;
@@ -470,6 +469,14 @@ public class EventFactory {
             public static GenericVisibleEvent newISHBarrier() {
                 return newFence("DMB.ISH");
             }
+
+            public static GenericVisibleEvent newISHLDBarrier() {
+                return newFence("DMB.ISHLD");
+            }
+
+            public static GenericVisibleEvent newISHSTBarrier() {
+                return newFence("DMB.ISHST");
+            }
         }
 
         public static class DSB {
@@ -493,7 +500,7 @@ public class EventFactory {
             }
 
             public static GenericVisibleEvent newISHSTBarrier() {
-                return newFence("DMB.ISHST");
+                return newFence("DSB.ISHST");
             }
 
         }
@@ -647,19 +654,6 @@ public class EventFactory {
             return newFence("Fence.i");
         }
     }
-
-    // =============================================================================================
-    // =========================================== LISA ============================================
-    // =============================================================================================
-    public static class LISA {
-        private LISA() {
-        }
-
-        public static LISARMW newRMW(Expression address, Register register, Expression value, String mo) {
-            return new LISARMW(register, address, value, mo);
-        }
-    }
-
 
     // =============================================================================================
     // =========================================== Power ===========================================

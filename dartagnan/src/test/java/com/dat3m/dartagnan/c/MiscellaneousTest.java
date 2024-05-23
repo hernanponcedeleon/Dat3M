@@ -66,6 +66,9 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"propagatableSideEffects", ARM8, FAIL, 1},
                 {"SB-RMW", TSO, PASS, 1},
                 {"SB-RMW", IMM, PASS, 1},
+                {"SB-asm-mfences", TSO, PASS, 1},
+                {"SB-asm-lwsync+sync", POWER, FAIL, 1},
+                {"SB-asm-syncs", POWER, PASS, 1},
                 {"MP_atomic_bool", IMM, PASS, 1},
                 {"MP_atomic_bool_weak", IMM, FAIL, 1},
                 {"nondet_loop", IMM, FAIL, 1},
@@ -81,7 +84,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"thread_id", IMM, PASS, 1},
                 {"funcPtrInStaticMemory", IMM, PASS, 1},
                 {"verifierAssert", ARM8, FAIL, 1},
-                {"uninitRead", IMM, FAIL, 1}
+                {"uninitRead", IMM, FAIL, 1},
+                {"multipleBackJumps", IMM, UNKNOWN, 1}
         });
     }
 
