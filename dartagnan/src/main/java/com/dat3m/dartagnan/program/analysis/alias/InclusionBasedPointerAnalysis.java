@@ -78,7 +78,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private final Supplier<SyntacticContextAnalysis> synContext;
 
     // When a variable gains an includes-edge, it is added to this queue for later processing.
-    private final LinkedHashMap<Variable, List<IncludeEdge>> queue = new LinkedHashMap<>();
+    // For lazy cycle detection, it is grouped by the absolute value of IncludeEdge.modifier.offset.
+    private final TreeMap<Integer, LinkedHashMap<Variable, List<IncludeEdge>>> queue = new TreeMap<>();
 
     // Maps memory events to variables representing their pointer set.
     private final Map<MemoryCoreEvent, DerivedVariable> addressVariables = new HashMap<>();
@@ -110,16 +111,29 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private int failedAddInto = 0;
     // Count times a piece of new information was added to the graph.
     private int succeededAddInto = 0;
+    // Count cycle checks, which can result in fast or slow rejects, or accepts.
+    private int cyclesFastCulled;
+    private int cyclesSlowCulled;
+    private int cyclesDetected;
 
     // ================================ Construction ================================
 
     public static InclusionBasedPointerAnalysis fromConfig(Program program, Context analysisContext, AliasAnalysis.Config config) {
         final var analysis = new InclusionBasedPointerAnalysis(program, analysisContext.requires(Dependency.class));
         analysis.run(program, config);
-        logger.debug("variable count: {}", analysis.totalVariables);
-        logger.debug("replacement count: {}", analysis.totalReplacements);
-        logger.debug("alignment sizes: {}", analysis.totalAlignmentSizes);
-        logger.debug("addIncludeEdge: {} successes vs {} fails", analysis.succeededAddInto, analysis.failedAddInto);
+        logger.debug("variable count: {}",
+                analysis.totalVariables);
+        logger.debug("replacement count: {}",
+                analysis.totalReplacements);
+        logger.debug("alignment sizes: {}",
+                analysis.totalAlignmentSizes);
+        logger.debug("addInto: {} successes vs {} fails",
+                analysis.succeededAddInto,
+                analysis.failedAddInto);
+        logger.debug("cycles: {} detected vs {} fast-culled vs {} slow-culled",
+                analysis.cyclesDetected,
+                analysis.cyclesFastCulled,
+                analysis.cyclesSlowCulled);
         return analysis;
     }
 
@@ -189,11 +203,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         // Fixed-point computation:
         while (!queue.isEmpty()) {
-            //TODO replace with removeFirst() when using java 21 or newer
-            final Variable variable = queue.keySet().iterator().next();
-            final List<IncludeEdge> edges = queue.remove(variable);
-            logger.trace("dequeue {}", variable);
-            algorithm(variable, edges);
+            final Map.Entry<Integer, LinkedHashMap<Variable, List<IncludeEdge>>> q = queue.pollFirstEntry();
+            logger.trace("dequeue level={}", q.getKey());
+            for (final Map.Entry<Variable, List<IncludeEdge>> e : q.getValue().entrySet()) {
+                algorithm(e.getKey(), e.getValue());
+            }
         }
         if (configuration.graphvizInternal) {
             generateGraph();
@@ -279,14 +293,36 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
     }
 
-    // Closes the "includes" relation transitively and tests for new communications.
+    // Propagates the pointer sets and tests for new communications.
     private void algorithm(Variable variable, List<IncludeEdge> edges) {
         logger.trace("{} includes {}", variable, edges);
-        // 'A -> variable -> B' implies 'A -> B'.
-        for (final Variable user : List.copyOf(variable.seeAlso)) {
-            for (final IncludeEdge edgeAfter : user.includes.stream().filter(e -> e.source == variable).toList()) {
-                for (final IncludeEdge edge : edges) {
-                    addInclude(user, compose(edge, edgeAfter.modifier));
+        verify(variable.object == null, "Trying to add include edge to object %s.", variable);
+        // Propagate pointer sets.
+        final List<IncludeEdge> pointers = edges.stream().filter(e -> e.source.object != null).toList();
+        if (!pointers.isEmpty()) {
+            for (final Variable user : List.copyOf(variable.seeAlso)) {
+                for (final IncludeEdge edgeAfter : user.includes.stream().filter(e -> e.source == variable).toList()) {
+                    for (final IncludeEdge edge : pointers) {
+                        addInclude(user, compose(edge, edgeAfter.modifier));
+                    }
+                    // In a cycle, variable gets an accelerating self-loop.
+                    for (final IncludeEdge cycleEdge : detectCycles(user, edgeAfter)) {
+                        if (cycleEdge.source == user) {
+                            final Modifier composed = compose(cycleEdge.modifier, edgeAfter.modifier);
+                            final var accelerated = new Modifier(0, compose(composed.alignment, composed.offset));
+                            addInclude(user, new IncludeEdge(user, accelerated));
+                        }
+                    }
+                }
+            }
+        }
+        for (final IncludeEdge edgeAfter : edges) {
+            if (edgeAfter.source.object != null) {
+                continue;
+            }
+            for (final IncludeEdge edge : List.copyOf(edgeAfter.source.includes)) {
+                if (edge.source.object != null) {
+                    addInclude(variable, compose(edge, edgeAfter.modifier));
                 }
             }
         }
@@ -435,56 +471,128 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     // Inserts a single inclusion relationship into the graph.
-    // Also detects and eliminates cycles, assuming that the graph was already closed transitively.
-    // Also closes the inclusion relation transitively on the left.
-    private void addInclude(Variable variable, IncludeEdge includeEdge) {
-        final IncludeEdge edge = tryInsertIncludeEdge(variable, includeEdge);
-        if (edge == null) {
+    // Any cycle closed by this edge will eventually be detected and resolved.
+    private void addInclude(Variable variable, IncludeEdge edge) {
+        if (!addInto(variable.includes, edge)) {
             return;
         }
-        final List<IncludeEdge> edges = queue.computeIfAbsent(variable, k -> new ArrayList<>());
+        edge.source.seeAlso.add(variable);
+        final int level = Math.abs(edge.modifier.offset);
+        // enqueue the new edge
+        final List<IncludeEdge> edges = queue.computeIfAbsent(level, k -> new LinkedHashMap<>())
+                .computeIfAbsent(variable, k -> new ArrayList<>());
         if (edges.isEmpty()) {
-            logger.trace("enqueue {}", variable);
+            logger.trace("enqueue level={} variable={}", level, variable);
         }
         edges.add(edge);
-        // 'variable includes edge.source' and 'edge.source includes v' implies 'variable includes v'.
-        // Cases of 'v == variable' or 'v == edge.source' require recursion.
-        final var stack = new Stack<IncludeEdge>();
-        stack.push(edge);
-        while (!stack.empty()) {
-            final IncludeEdge e = stack.pop();
-            for (final IncludeEdge edgeBefore : List.copyOf(e.source.includes)) {
-                final IncludeEdge joinedEdge = tryInsertIncludeEdge(variable, compose(edgeBefore, e.modifier));
-                if (joinedEdge != null) {
-                    edges.add(joinedEdge);
-                    if (edgeBefore.source == edge.source || edgeBefore.source == variable) {
-                        stack.push(joinedEdge);
+    }
+
+    // Tries to detect cycles when a new edge is to be added.
+    // Called when a pointer propagates from variable to successor, due to an inclusion edge.
+    private List<IncludeEdge> detectCycles(Variable variable, IncludeEdge edge) {
+        // Fast check for cycles of length 1.
+        if (edge.source == variable) {
+            return List.of(edge);
+        }
+        // Fast check with lazy cycle detection:
+        // Eventually, any cycle will have a 'new' edge, where the pointer sets are equal.
+        // Therefore, we wait for this, instead of trying to immediately detect the cycle.
+        if (!equalsPointerSet(variable, edge.source)) {
+            cyclesFastCulled++;
+            return List.of();
+        }
+        // Slow check
+        final Set<Variable> includerSet = getIncluderSet(variable);
+        if (!includerSet.contains(edge.source)) {
+            cyclesSlowCulled++;
+            return List.of();
+        }
+        cyclesDetected++;
+        final List<IncludeEdge> result = getAllCyclicPaths(edge, includerSet);
+        assert result.stream().anyMatch(e -> e.source == variable);
+        return result;
+    }
+
+    private boolean equalsPointerSet(Variable left, Variable right) {
+        // TODO hashing: each variable gets a hash code for its pointer set.
+        return includesPointerSet(left, right) && includesPointerSet(right, left);
+    }
+
+    private boolean includesPointerSet(Variable variable1, Variable variable2) {
+        for (final IncludeEdge i : variable1.includes) {
+            if (i.source.object != null && !variable2.includes.contains(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Set<Variable> getIncluderSet(Variable variable) {
+        final Set<Variable> result = new HashSet<>(List.of(variable));
+        List<Variable> worklist = new ArrayList<>(List.of(variable));
+        while (!worklist.isEmpty()) {
+            final List<Variable> next = new ArrayList<>();
+            for (final Variable current : worklist) {
+                for (final Variable v : current.seeAlso) {
+                    // Culling
+                    if (result.contains(v)) {
+                        continue;
+                    }
+                    // Try to find some include edge, as 'seeAlso' also indicates store and load edges.
+                    for (final IncludeEdge i : v.includes) {
+                        if (i.source == current && result.add(v)) {
+                            next.add(v);
+                            break;
+                        }
                     }
                 }
             }
+            worklist = next;
         }
+        return result;
     }
 
-    // Tries to insert an element into a set of edges.
-    // If the edge is already covered by the set, this operation has no effect and returns false.
-    // If the edge is inserted, any existing elements that are covered by it are removed to form a set of minimal elements.
-    private IncludeEdge tryInsertIncludeEdge(Variable variable, IncludeEdge edge) {
-        // Try to accelerate edge.
-        // Negative offsets get passed as-is, as to disable the assumption of non-negative indexes.
-        final IncludeEdge element = variable != edge.source ? edge :
-                new IncludeEdge(variable, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
+    private List<IncludeEdge> getAllCyclicPaths(IncludeEdge edge, Set<Variable> includerSet) {
+        final Map<Variable, List<IncludeEdge>> edges = new HashMap<>();
+        // Use 'set' for performance.
+        final Set<IncludeEdge> set = new HashSet<>();
+        List<IncludeEdge> worklist = new ArrayList<>(List.of(new IncludeEdge(edge.source, TRIVIAL_MODIFIER)));
+        // Since cycles are detected lazily, we need a bound for cycle lengths.
+        for (int length = 0; length < includerSet.size(); length++) {
+            if (worklist.isEmpty()) {
+                break;
+            }
+            final List<IncludeEdge> next = new ArrayList<>();
+            for (final IncludeEdge current : worklist) {
+                for (final IncludeEdge i : current.source.includes) {
+                    if (edge.source != i.source && includerSet.contains(i.source)) {
+                        final IncludeEdge joinedEdge = compose(i, current.modifier);
+                        if (set.add(joinedEdge) &&
+                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge)) {
+                            next.add(joinedEdge);
+                        }
+                    }
+                }
+            }
+            worklist = next;
+        }
+        final List<IncludeEdge> result = new ArrayList<>();
+        edges.values().forEach(result::addAll);
+        return result;
+    }
+
+    private boolean addInto(List<IncludeEdge> list, IncludeEdge element) {
         //NOTE The Stream API is too costly here
-        for (final IncludeEdge o : variable.includes) {
+        for (final IncludeEdge o : list) {
             if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
                 failedAddInto++;
-                return null;
+                return false;
             }
         }
-        variable.includes.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
-        variable.includes.add(element);
-        element.source.seeAlso.add(variable);
         succeededAddInto++;
-        return element;
+        list.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
+        list.add(element);
+        return true;
     }
 
     // Called when a placeholder variable for a register writer is to be replaced by the proper variable.
@@ -897,7 +1005,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Red edges connect address variables to stored value variables.
     // Green-labeled nodes represent memory objects.
     // Red-labeled nodes are address variables that do not include any memory objects (probably a bug).
-    // Blue-labeled nodes are variables where transitivity is broken (certainly a bug).
     private void generateGraph() {
         final Set<Variable> seen = new HashSet<>(objectVariables.values());
         for (Set<Variable> news = seen; !news.isEmpty();) {
@@ -939,15 +1046,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 problematic.add("\"" + a.base.name + "\"");
             }
         }
-        final Set<String> transitionBlocker = new HashSet<>();
-        for (final Set<String> outSet : map.values()) {
-            for (final String v2 : outSet) {
-                if (!outSet.containsAll(map.getOrDefault(v2, Set.of()))) {
-                    transitionBlocker.add(v2);
-                }
-            }
-        }
-        problematic.removeAll(transitionBlocker);
         graphviz = new Graphviz();
         graphviz.beginDigraph("internal alias");
         for (final Variable v : objectVariables.values()) {
@@ -955,9 +1053,6 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
         for (final String v : problematic) {
             graphviz.addNode(v, "fontcolor=red");
-        }
-        for (final String v : transitionBlocker) {
-            graphviz.addNode(v, "fontcolor=blue");
         }
         graphviz.beginSubgraph("inclusion");
         graphviz.setEdgeAttributes("color=grey");
