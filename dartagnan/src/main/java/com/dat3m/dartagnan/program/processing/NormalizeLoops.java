@@ -48,7 +48,14 @@ public class NormalizeLoops implements FunctionProcessor {
                     .sorted()
                     .toList();
 
-            if (backJumps.size() > 1) {
+            // LoopFormVerification requires a unique and unconditional backjump
+            if (backJumps.size() > 0) {
+
+                // We can skip if already satisfied
+                if (backJumps.size() == 1 && backJumps.get(0).isGoto()) {
+                    return;
+                }
+
                 final CondJump last = backJumps.get(backJumps.size() - 1);
 
                 final Label forwardLabel = EventFactory.newLabel("__repeatLoop_#" + counter);
