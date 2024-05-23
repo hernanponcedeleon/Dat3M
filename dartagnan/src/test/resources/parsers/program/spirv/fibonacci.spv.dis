@@ -6,7 +6,6 @@
 ; Bound: 72
 ; Schema: 0
                OpCapability Shader
-          %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationID
                OpExecutionMode %main LocalSize 1 1 1

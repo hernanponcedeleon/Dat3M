@@ -2,6 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
@@ -14,14 +16,10 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.MemoryTra
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.RegisterTransformer;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventUser;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.core.utils.RegReader;
-import com.dat3m.dartagnan.program.event.core.utils.RegWriter;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -44,7 +42,7 @@ public class ProgramBuilderSpv {
     private static final Logger logger = LogManager.getLogger(ProgramBuilderSpv.class);
 
     private final HelperTags helperTags = new HelperTags();
-    private final HelperDecorations helperDecorations = new HelperDecorations();
+    private final HelperDecorations helperDecorations;
     private final Map<String, Type> types = new HashMap<>();
     private final Map<String, String> pointedTypes = new HashMap<>();
     private final Map<String, Type> variableTypes = new HashMap<>();
@@ -58,16 +56,36 @@ public class ProgramBuilderSpv {
     private final Map<Label, Map<Register, String>> phiDefinitions = new HashMap<>();
     private final Map<Label, Label> cfDefinitions = new HashMap<>();
     private final Set<String> specConstants = new HashSet<>();
-    private final Map<String, Expression> inputs = new HashMap<>();
+    private final List<Integer> threadGrid;
+    private final Map<String, Expression> inputs;
     private final Program program;
     protected Function currentFunction;
-    private List<Integer> threadGrid = List.of(1, 1, 1);
     private String entryPointId;
     private int nextFunctionId = 0;
     private Set<String> nextOps;
 
-    public ProgramBuilderSpv() {
+    public ProgramBuilderSpv(List<Integer> threadGrid, Map<String, Expression> inputs) {
+        validateThreadGrid(threadGrid);
+        this.threadGrid = threadGrid;
+        this.inputs = inputs;
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
+        this.helperDecorations = new HelperDecorations(threadGrid);
+    }
+
+    private void validateThreadGrid(List<Integer> threadGrid) {
+        if (threadGrid.size() != 4) {
+            throw new ParsingException("Thread grid must have 4 dimensions");
+        }
+        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
+            throw new ParsingException("Thread grid dimensions must be positive");
+        }
+        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
+            throw new ParsingException("Thread grid dimensions must be less than 128");
+        }
+    }
+
+    public List<Integer> getThreadGrid() {
+        return threadGrid;
     }
 
     public Set<String> getNextOps() {
@@ -227,7 +245,7 @@ public class ProgramBuilderSpv {
     }
 
     public MemoryObject allocateMemory(int bytes) {
-        return program.getMemory().allocate(bytes, true);
+        return program.getMemory().allocate(bytes);
     }
 
     public MemoryObject allocateMemoryVirtual(int bytes) {
@@ -302,6 +320,15 @@ public class ProgramBuilderSpv {
         return type;
     }
 
+    public List<MemoryObject> getVariablesWithStorageClass(String storageClass) {
+        return registerClasses.entrySet().stream()
+                .filter(e -> e.getValue().equals(storageClass))
+                .map(e -> getExpression(e.getKey()))
+                .filter(MemoryObject.class::isInstance)
+                .map(e -> (MemoryObject)e)
+                .toList();
+    }
+
     public String getExpressionStorageClass(String name) {
         String storageClass = registerClasses.get(name);
         if (storageClass == null) {
@@ -316,6 +343,14 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Overlapping blocks with back jump in label '%s'", label.getName());
         }
         return getOrCreateLabel(id);
+    }
+
+    public int getExpressionAsConstInteger(String id) {
+        Expression expression = getExpression(id);
+        if (expression instanceof IntLiteral iExpr) {
+            return iExpr.getValueAsInt();
+        }
+        throw new ParsingException("Expression '%s' is not an integer constant", id);
     }
 
     public Expression getExpression(String name) {
@@ -343,13 +378,6 @@ public class ProgramBuilderSpv {
             return inputs.get(id);
         }
         throw new ParsingException("Reference to undefined input variable '%s'", id);
-    }
-
-    public void addInput(String name, Expression value) {
-        if (inputs.containsKey(name)) {
-            throw new ParsingException("Duplicated definition '%s'", name);
-        }
-        inputs.put(name, value);
     }
 
     public boolean isSpecConstant(String id) {
@@ -644,28 +672,8 @@ public class ProgramBuilderSpv {
 
     public MemoryObject getMemoryObject(String id) {
         return program.getMemory().getObjects().stream()
-                .filter(o -> o.getCVar().equals(id))
+                .filter(o -> o.getName().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new ParsingException("Undefined memory object '%s'", id));
-    }
-
-    public void setThreadGrid(List<Integer> threadGrid) {
-        if (threadGrid.size() != 3) {
-            throw new ParsingException("Thread grid must have 3 dimensions");
-        }
-        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
-            throw new ParsingException("Thread grid dimensions must be positive");
-        }
-        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
-            throw new ParsingException("Thread grid dimensions must be less than 128");
-        }
-        this.threadGrid = threadGrid;
-        BuiltIn builtIn = new BuiltIn(threadGrid.get(0), threadGrid.get(1), threadGrid.get(2), 1);
-        helperDecorations.addDecorationIfAbsent(DecorationType.BUILT_IN, builtIn);
-    }
-
-    public void addBuiltInDecorationIfAbsent() {
-        BuiltIn builtIn = new BuiltIn(this.threadGrid.get(0), this.threadGrid.get(1), this.threadGrid.get(2), 1);
-        helperDecorations.addDecorationIfAbsent(DecorationType.BUILT_IN, builtIn);
     }
 }

@@ -32,12 +32,11 @@ public class BuiltIn implements Decoration {
     private final List<Integer> threadId;
     private final Map<String, String> mapping;
 
-    public BuiltIn(int sgSize, int wgSize, int qfSize, int dvSize) {
-        if (sgSize <= 0 || wgSize <= 0 || qfSize <= 0 || dvSize <= 0) {
-            throw new ParsingException("Illegal BuiltIn size ('%d', '%d', '%d', '%d')",
-                    sgSize, wgSize, qfSize, dvSize);
+    public BuiltIn(List<Integer> grid) {
+        if (grid.size() != 4 || grid.stream().anyMatch(x -> x <= 0)) {
+            throw new ParsingException("Illegal BuiltIn size (%s)", grid);
         }
-        this.grid = List.of(sgSize, wgSize, qfSize, dvSize);
+        this.grid = grid;
         this.threadId =  new ArrayList<>(Stream.generate(() -> 0)
                 .limit(GRID_SIZE).toList());
         this.mapping = new HashMap<>();

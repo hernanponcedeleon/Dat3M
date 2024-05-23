@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -29,8 +30,7 @@ public class VisitorOpsMemoryTest {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
-
-    private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
 
     @Test
     public void testLoad() {
@@ -234,22 +234,20 @@ public class VisitorOpsMemoryTest {
                 %v4 = OpVariable %struct_ptr Uniform
                 """;
 
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 32);
-        builder.mockVectorType("%v3int", "%int", 3);
-        builder.mockAggregateType("%struct", "%bool", "%int", "%v3int");
-
         IntegerType archType = TYPE_FACTORY.getArchType();
         Expression i1 = EXPR_FACTORY.makeValue(1, archType);
         Expression i2 = EXPR_FACTORY.makeValue(7890, archType);
         List<Expression> iValues = Stream.of(1, 2, 3).map(i -> (Expression) EXPR_FACTORY.makeValue(i, archType)).toList();
         Expression i3 = EXPR_FACTORY.makeArray(archType, iValues, true);
         Expression i4 = EXPR_FACTORY.makeConstruct(List.of(i1, i2, i3));
+        Map<String, Expression> inputVariables = Map.of("%v1", i1, "%v2", i2, "%v3", i3, "%v4", i4);
 
-        builder.addInput("%v1", i1);
-        builder.addInput("%v2", i2);
-        builder.addInput("%v3", i3);
-        builder.addInput("%v4", i4);
+        builder = new MockProgramBuilderSpv(inputVariables);
+
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%int", 32);
+        builder.mockVectorType("%v3int", "%int", 3);
+        builder.mockAggregateType("%struct", "%bool", "%int", "%v3int");
 
         doTestInitializedVariable(input);
     }
@@ -310,15 +308,6 @@ public class VisitorOpsMemoryTest {
                 %v3 = OpVariable %v3_ptr Uniform
                 """;
 
-        IntegerType iType = builder.mockIntType("%int", 32);
-        builder.mockVectorType("%ra", "%int", -1);
-        builder.mockVectorType("%v3ra", "%ra", 3);
-        builder.mockAggregateType("%s1i1ra", "%int", "%ra");
-
-        builder.mockPtrType("%v1_ptr", "%ra", "Uniform");
-        builder.mockPtrType("%v2_ptr", "%v3ra", "Uniform");
-        builder.mockPtrType("%v3_ptr", "%s1i1ra", "Uniform");
-
         IntegerType archType = TYPE_FACTORY.getArchType();
         Type aType = TYPE_FACTORY.getArrayType(archType, 2);
 
@@ -335,10 +324,18 @@ public class VisitorOpsMemoryTest {
 
         Expression a3a = EXPR_FACTORY.makeArray(aType, List.of(a1, a2, a3), true);
         Expression s = EXPR_FACTORY.makeConstruct(List.of(i1, a1));
+        Map<String, Expression> inputVariables = Map.of("%v1", a1, "%v2", a3a, "%v3", s);
 
-        builder.addInput("%v1", a1);
-        builder.addInput("%v2", a3a);
-        builder.addInput("%v3", s);
+        builder = new MockProgramBuilderSpv(inputVariables);
+
+        IntegerType iType = builder.mockIntType("%int", 32);
+        builder.mockVectorType("%ra", "%int", -1);
+        builder.mockVectorType("%v3ra", "%ra", 3);
+        builder.mockAggregateType("%s1i1ra", "%int", "%ra");
+
+        builder.mockPtrType("%v1_ptr", "%ra", "Uniform");
+        builder.mockPtrType("%v2_ptr", "%v3ra", "Uniform");
+        builder.mockPtrType("%v3_ptr", "%s1i1ra", "Uniform");
 
         // when
         parse(input);
@@ -407,20 +404,21 @@ public class VisitorOpsMemoryTest {
                 %v2 = OpVariable %v2_ptr Uniform
                 """;
 
-        IntegerType iType = builder.mockIntType("%int", 64);
+        IntegerType archType = TYPE_FACTORY.getArchType();
+        Expression i1 = EXPR_FACTORY.makeValue(1, archType);
+        Expression i2 = EXPR_FACTORY.makeValue(2, archType);
+        Expression i3 = EXPR_FACTORY.makeValue(3, archType);
+
+        Expression a1 = EXPR_FACTORY.makeArray(archType, List.of(i1, i2), true);
+        Expression a2 = EXPR_FACTORY.makeArray(archType, List.of(i1, i2, i3), true);
+        Map<String, Expression> inputVariables = Map.of("%v1", a1, "%v2", a2);
+
+        builder = new MockProgramBuilderSpv(inputVariables);
+
+        builder.mockIntType("%int", 64);
         builder.mockVectorType("%ra", "%int", -1);
         builder.mockPtrType("%v1_ptr", "%ra", "Uniform");
         builder.mockPtrType("%v2_ptr", "%ra", "Uniform");
-
-        Expression i1 = EXPR_FACTORY.makeValue(1, iType);
-        Expression i2 = EXPR_FACTORY.makeValue(2, iType);
-        Expression i3 = EXPR_FACTORY.makeValue(3, iType);
-
-        Expression a1 = EXPR_FACTORY.makeArray(iType, List.of(i1, i2), true);
-        Expression a2 = EXPR_FACTORY.makeArray(iType, List.of(i1, i2, i3), true);
-
-        builder.addInput("%v1", a1);
-        builder.addInput("%v2", a2);
 
         // when
         parse(input);
@@ -444,6 +442,7 @@ public class VisitorOpsMemoryTest {
     public void testUninitializedRuntimeVariable() {
         // given
         String input = "%v = OpVariable %arr_ptr Uniform";
+
         builder.mockIntType("%int", 32);
         builder.mockVectorType("%arr", "%int", -1);
         builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
@@ -501,15 +500,16 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%v = OpVariable %i_ptr Uniform";
 
-        IntegerType iType = builder.mockIntType("%int", 32);
+        IntegerType archType = TYPE_FACTORY.getArchType();
+        Expression i1 = EXPR_FACTORY.makeValue(1, archType);
+        Expression i2 = EXPR_FACTORY.makeValue(2, archType);
+        Expression a = EXPR_FACTORY.makeArray(archType, List.of(i1, i2), true);
+
+        builder = new MockProgramBuilderSpv(Map.of("%v", a));
+
+        builder.mockIntType("%int", 32);
         builder.mockVectorType("%v2i", "%int", 2);
         builder.mockPtrType("%i_ptr", "%int", "Uniform");
-
-        Expression i1 = EXPR_FACTORY.makeValue(1, iType);
-        Expression i2 = EXPR_FACTORY.makeValue(2, iType);
-        Expression a = EXPR_FACTORY.makeArray(iType, List.of(i1, i2), true);
-
-        builder.addInput("%v", a);
 
         try {
             // when
@@ -518,7 +518,7 @@ public class VisitorOpsMemoryTest {
         } catch (ParsingException e) {
             // then
             assertEquals("Mismatching value type for variable '%v', " +
-                    "expected 'bv32' but received '[2 x bv32]'", e.getMessage());
+                    "expected 'bv32' but received '[2 x bv64]'", e.getMessage());
         }
     }
 
@@ -591,11 +591,13 @@ public class VisitorOpsMemoryTest {
         // given
         String input = "%v = OpVariable %i_ptr Uniform %i_const";
 
-        IntegerType iType = builder.mockIntType("%int", 32);
-        builder.mockPtrType("%i_ptr", "%int", "Uniform");
+        IntegerType archType = TYPE_FACTORY.getArchType();
+        Expression v = EXPR_FACTORY.makeValue(2, archType);
 
+        builder = new MockProgramBuilderSpv(Map.of("%v", v));
+        builder.mockIntType("%int", 32);
+        builder.mockPtrType("%i_ptr", "%int", "Uniform");
         builder.mockConstant("%i_const", "%int", 1);
-        builder.addInput("%v", EXPR_FACTORY.makeValue(2, iType));
 
         try {
             // when

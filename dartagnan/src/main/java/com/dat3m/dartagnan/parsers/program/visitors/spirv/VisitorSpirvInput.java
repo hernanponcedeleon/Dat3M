@@ -6,20 +6,24 @@ import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
-    private final ProgramBuilderSpv builder;
 
-    public VisitorSpirvInput(ProgramBuilderSpv builder) {
-        this.builder = builder;
+    private final Map<String, Expression> inputs = new HashMap<>();
+
+    public Map<String, Expression> getInputs() {
+        return inputs;
     }
 
     @Override
     public Expression visitInit(SpirvParser.InitContext ctx) {
         String varName = ctx.varName().getText();
         Expression expr = visit(ctx.initValue());
-        builder.addInput(varName, expr);
+        addInput(varName, expr);
         return null;
     }
 
@@ -38,5 +42,12 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
         return EXPR_FACTORY.makeConstruct(ctx.initValues().initValue().stream()
                 .map(this::visitInitValue)
                 .toList());
+    }
+
+    private void addInput(String name, Expression value) {
+        if (inputs.containsKey(name)) {
+            throw new ParsingException("Duplicated definition '%s'", name);
+        }
+        inputs.put(name, value);
     }
 }

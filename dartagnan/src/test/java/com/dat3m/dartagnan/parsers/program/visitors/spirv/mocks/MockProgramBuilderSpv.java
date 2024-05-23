@@ -14,6 +14,7 @@ import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,8 +24,15 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
 
     public MockProgramBuilderSpv() {
-        super();
-        this.addBuiltInDecorationIfAbsent();
+        super(List.of(1, 1, 1, 1), Map.of());
+    }
+
+    public MockProgramBuilderSpv(Map<String, Expression> input) {
+        super(List.of(1, 1, 1, 1), input);
+    }
+
+    public MockProgramBuilderSpv(List<Integer> grid, Map<String, Expression> input) {
+        super(grid, input);
     }
 
     @Override
@@ -105,11 +113,13 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     }
 
     public MemoryObject mockVariable(String id, String typeId) {
-        int bytes = TYPE_FACTORY.getMemorySizeInBytes(getType(typeId));
+        Type pointedType = getPointedType(typeId);
+        int bytes = TYPE_FACTORY.getMemorySizeInBytes(pointedType);
         MemoryObject memObj = allocateMemory(bytes);
         memObj.setCVar(id);
         addExpression(id, memObj);
         addStorageClassForExpr(id, typeId);
+        addVariableType(id, pointedType);
         return memObj;
     }
 

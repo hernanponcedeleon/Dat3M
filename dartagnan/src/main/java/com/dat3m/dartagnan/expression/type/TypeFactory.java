@@ -130,9 +130,6 @@ public final class TypeFactory {
                     decomposition.put(entry.getKey() + offset, entry.getValue());
                 }
             }
-        } else if (type instanceof BooleanType) {
-            // TODO: We assume 1 byte alignment
-            return 1;
         } else {
             // Primitive type
             decomposition.put(0, type);

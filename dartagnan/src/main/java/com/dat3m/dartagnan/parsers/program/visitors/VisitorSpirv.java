@@ -15,9 +15,9 @@ import java.util.*;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
-    private final ProgramBuilderSpv builder = new ProgramBuilderSpv();
     private final Map<String, SpirvBaseVisitor<?>> visitors = new HashMap<>();
     private VisitorOpsConstant specConstantVisitor;
+    private ProgramBuilderSpv builder;
 
     static String parseOpName(SpirvParser.OpContext ctx) {
         ParseTree innerCtx = ctx.getChild(0);
@@ -92,47 +92,39 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
-        List<SpirvParser.OutputHeaderContext> outputHeaders = new ArrayList<>();
-        for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
-            if (header.outputHeader() != null) {
-                outputHeaders.add(header.outputHeader());
-            } else {
-                this.visit(header);
-            }
-        }
-        builder.addBuiltInDecorationIfAbsent();
+        this.builder = createBuilder(ctx);
         this.initializeVisitors();
         this.specConstantVisitor = getSpecConstantVisitor();
         visitSpvInstructions(ctx.spvInstructions());
-        for (SpirvParser.OutputHeaderContext outputHeader : outputHeaders) {
-            visitOutputHeader(outputHeader);
-        }
+        visitSpvHeaders(ctx.spvHeaders());
         return builder.build();
     }
 
-    @Override
-    public Program visitInputHeader(SpirvParser.InputHeaderContext ctx) {
-        if (ctx.initList() != null) {
-            new VisitorSpirvInput(builder).visitInitList(ctx.initList());
+    private ProgramBuilderSpv createBuilder(SpirvParser.SpvContext ctx) {
+        List<Integer> threadGrid = List.of(1, 1, 1, 1);
+        VisitorSpirvInput visitor = new VisitorSpirvInput();
+        for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
+            if (header.inputHeader() != null && header.inputHeader().initList() != null) {
+                visitor.visitInitList(header.inputHeader().initList());
+            }
+            if (header.configHeader() != null) {
+                int threadAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(0).getText());
+                int subGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(1).getText());
+                int workGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(2).getText());
+                threadGrid = List.of(threadAmount, subGroupAmount, workGroupAmount, 1);
+            }
         }
-        return null;
+        return new ProgramBuilderSpv(threadGrid, visitor.getInputs());
     }
 
     @Override
-    public Program visitOutputHeader(SpirvParser.OutputHeaderContext ctx) {
-        if (ctx.assertionList() != null) {
-            new VisitorSpirvOutput(builder).visitAssertionList(ctx.assertionList());
+    public Program visitSpvHeaders(SpirvParser.SpvHeadersContext ctx) {
+        VisitorSpirvOutput visitor = new VisitorSpirvOutput(builder);
+        for (SpirvParser.SpvHeaderContext header : ctx.spvHeader()) {
+            if (header.outputHeader() != null && header.outputHeader().assertionList() != null) {
+                visitor.visitAssertionList(header.outputHeader().assertionList());
+            }
         }
-        return null;
-    }
-
-    @Override
-    public Program visitConfigHeader(SpirvParser.ConfigHeaderContext ctx) {
-        int threadAmount = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(0).getText());
-        int subGroupAmount = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(1).getText());
-        int workGroupAmount = Integer.parseInt(ctx.literanHeaderUnsignedInteger().get(2).getText());
-        List<Integer> threadGrid = List.of(threadAmount, subGroupAmount, workGroupAmount);
-        builder.setThreadGrid(threadGrid);
         return null;
     }
 

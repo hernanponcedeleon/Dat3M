@@ -11,7 +11,6 @@ import org.junit.runners.Parameterized;
 public abstract class AbstractSpirvHeaderTest {
     protected final String spvBody = """
                           OpCapability Shader
-                   %ext = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint GLCompute %main "main"
                           OpSource GLSL 450

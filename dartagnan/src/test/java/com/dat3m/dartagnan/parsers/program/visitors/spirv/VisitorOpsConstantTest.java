@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
@@ -20,7 +21,7 @@ import static org.junit.Assert.fail;
 public class VisitorOpsConstantTest {
 
     private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
-    private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
 
     @Test
     public void testOpConstantBool() {
@@ -676,6 +677,161 @@ public class VisitorOpsConstantTest {
         builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f", "1");
         builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t", "0");
         builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%i", "2");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression f = FACTORY.makeFalse();
+        Expression t = FACTORY.makeTrue();
+        Expression i = FACTORY.makeValue(1, iType);
+
+        assertEquals(f, data.get("%f"));
+        assertEquals(t, data.get("%t"));
+        assertEquals(i, data.get("%i"));
+
+        assertEquals(FACTORY.makeConstruct(List.of(f, t, i)), data.get("%s"));
+    }
+
+    @Test
+    public void testSpecConstantFalseInput() {
+        // given
+        String input = """
+                %f1 = OpSpecConstantFalse %bool
+                %f2 = OpSpecConstantFalse %bool
+                %f3 = OpSpecConstantFalse %bool
+                %f4 = OpSpecConstantFalse %bool
+                %f5 = OpSpecConstantFalse %bool
+                %b5v = OpSpecConstantComposite %bool5v %f1 %f2 %f3 %f4 %f5
+                """;
+
+        IntegerType archType = TypeFactory.getInstance().getArchType();
+        Expression zero = FACTORY.makeValue(0, archType);
+        Expression one = FACTORY.makeValue(1, archType);
+        builder = new MockProgramBuilderSpv(
+                Map.of("%f2", zero, "%f3", one, "%f4", zero, "%f5", one));
+
+        BooleanType bType = builder.mockBoolType("%bool");
+        builder.mockVectorType("%bool5v", "%bool", 5);
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f4", "1");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%f5", "0");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression f1 = FACTORY.makeFalse();
+        Expression f2 = FACTORY.makeFalse();
+        Expression f3 = FACTORY.makeTrue();
+        Expression f4 = FACTORY.makeFalse();
+        Expression f5 = FACTORY.makeTrue();
+
+        assertEquals(f1, data.get("%f1"));
+        assertEquals(f2, data.get("%f2"));
+        assertEquals(f3, data.get("%f3"));
+        assertEquals(f4, data.get("%f4"));
+
+        assertEquals(FACTORY.makeArray(bType, List.of(f1, f2, f3, f4, f5), true),
+                data.get("%b5v"));
+    }
+
+    @Test
+    public void testSpecConstantTrueInput() {
+        // given
+        String input = """
+                %t1 = OpSpecConstantTrue %bool
+                %t2 = OpSpecConstantTrue %bool
+                %t3 = OpSpecConstantTrue %bool
+                %t4 = OpSpecConstantTrue %bool
+                %t5 = OpSpecConstantTrue %bool
+                %b5v = OpSpecConstantComposite %bool5v %t1 %t2 %t3 %t4 %t5
+                """;
+
+        IntegerType archType = TypeFactory.getInstance().getArchType();
+        Expression zero = FACTORY.makeValue(0, archType);
+        Expression one = FACTORY.makeValue(1, archType);
+        builder = new MockProgramBuilderSpv(
+                Map.of("%t2", one, "%t3", zero, "%t4", one, "%t5", zero));
+
+        BooleanType bType = builder.mockBoolType("%bool");
+        builder.mockVectorType("%bool5v", "%bool", 5);
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t4", "0");
+        builder.getDecoration(DecorationType.SPEC_ID).addDecoration("%t5", "1");
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression t1 = FACTORY.makeTrue();
+        Expression t2 = FACTORY.makeTrue();
+        Expression t3 = FACTORY.makeFalse();
+        Expression t4 = FACTORY.makeTrue();
+        Expression t5 = FACTORY.makeFalse();
+
+        assertEquals(t1, data.get("%t1"));
+        assertEquals(t2, data.get("%t2"));
+        assertEquals(t3, data.get("%t3"));
+        assertEquals(t4, data.get("%t4"));
+        assertEquals(t5, data.get("%t5"));
+
+        assertEquals(FACTORY.makeArray(bType, List.of(t1, t2, t3, t4, t5), true),
+                data.get("%b5v"));
+    }
+
+    @Test
+    public void testSpecConstantInput() {
+        // given
+        String input = """
+                %i1 = OpSpecConstant %int 1
+                %i2 = OpSpecConstant %int 2
+                %i3 = OpSpecConstant %int 3
+                %i3v = OpSpecConstantComposite %int3v %i1 %i2 %i3
+                """;
+
+        IntegerType archType = TypeFactory.getInstance().getArchType();
+        Expression eleven = FACTORY.makeValue(11, archType);
+        Expression three = FACTORY.makeValue(3, archType);
+        builder = new MockProgramBuilderSpv(
+                Map.of("%i1", eleven, "%i3", three));
+
+        IntegerType iType = builder.mockIntType("%int", 64);
+        builder.mockVectorType("%int3v", "%int", 3);
+
+        // when
+        Map<String, Expression> data = parseConstants(input);
+
+        // then
+        Expression i1 = FACTORY.makeValue(11, iType);
+        Expression i2 = FACTORY.makeValue(2, iType);
+        Expression i3 = FACTORY.makeValue(3, iType);
+
+        assertEquals(i1, data.get("%i1"));
+        assertEquals(i2, data.get("%i2"));
+        assertEquals(i3, data.get("%i3"));
+
+        assertEquals(FACTORY.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
+    }
+
+    @Test
+    public void testInputNotSpecConstant() {
+        // given
+        String input = """
+                %f = OpConstantFalse %bool
+                %t = OpConstantTrue %bool
+                %i = OpConstant %int 1
+                %s = OpConstantComposite %struct %f %t %i
+                """;
+
+        IntegerType archType = TypeFactory.getInstance().getArchType();
+        Expression zero = FACTORY.makeValue(0, archType);
+        Expression one = FACTORY.makeValue(1, archType);
+        Expression two = FACTORY.makeValue(2, archType);
+        builder = new MockProgramBuilderSpv(
+                Map.of("%f", one, "%t", zero, "%i", two));
+
+        builder.mockBoolType("%bool");
+        IntegerType iType = builder.mockIntType("%int", 64);
+        builder.mockAggregateType("%struct", "%bool", "%bool", "%int");
 
         // when
         Map<String, Expression> data = parseConstants(input);

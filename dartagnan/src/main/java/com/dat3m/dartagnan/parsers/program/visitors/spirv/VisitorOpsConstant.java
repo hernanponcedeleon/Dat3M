@@ -3,6 +3,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -60,15 +62,30 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         return builder.addConstant(id, makeConstant(type, value));
     }
 
+    private Expression makeConstant(Type type, String value) {
+        if (type instanceof IntegerType iType) {
+            long intValue = Long.parseLong(value);
+            return FACTORY.makeValue(intValue, iType);
+        }
+        throw new ParsingException("Illegal constant type '%s'", type);
+    }
+
     @Override
     public Expression visitOpSpecConstant(SpirvParser.OpSpecConstantContext ctx) {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
-        String value = specIdDecorator.getValue(id);
-        if (value == null) {
-            value = ctx.valueLiteralContextDependentNumber().getText();
+        if (type instanceof IntegerType iType) {
+            Integer input = getInputValue(id);
+            if (input != null) {
+                return builder.addSpecConstant(id, FACTORY.makeValue(input, iType));
+            }
+            String value = specIdDecorator.getValue(id);
+            if (value == null) {
+                value = ctx.valueLiteralContextDependentNumber().getText();
+            }
+            return builder.addSpecConstant(id, FACTORY.makeValue(Long.parseLong(value), iType));
         }
-        return builder.addSpecConstant(id, makeConstant(type, value));
+        throw new ParsingException("Illegal constant type '%s'", type);
     }
 
     @Override
@@ -125,9 +142,14 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     }
 
     private Expression makeBooleanSpecConstant(String id, boolean value) {
-        String decoration = specIdDecorator.getValue(id);
-        if (decoration != null) {
-            value = !"0".equals(decoration);
+        Integer input = getInputValue(id);
+        if (input != null) {
+            value = input != 0;
+        } else {
+            String decoration = specIdDecorator.getValue(id);
+            if (decoration != null) {
+                value = !"0".equals(decoration);
+            }
         }
         if (value) {
             return FACTORY.makeTrue();
@@ -135,12 +157,16 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         return FACTORY.makeFalse();
     }
 
-    private Expression makeConstant(Type type, String value) {
-        if (type instanceof IntegerType iType) {
-            long intValue = Long.parseLong(value);
-            return FACTORY.makeValue(intValue, iType);
+    private Integer getInputValue(String id) {
+        if (builder.hasInput(id)) {
+            Expression expr = builder.getInput(id);
+            if (expr instanceof IntLiteral iExpr) {
+                return iExpr.getValueAsInt();
+            }
+            throw new ParsingException("Unexpected input for SpecConstant '%s', " +
+                    "expected integer but received '%s'", id, expr.getType());
         }
-        throw new ParsingException("Illegal constant type '%s'", type);
+        return null;
     }
 
     private Expression makeConstantComposite(String id, Type type, List<String> elementIds) {

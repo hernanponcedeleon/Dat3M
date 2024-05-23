@@ -41,7 +41,6 @@ public class VisitorOpsAnnotation extends SpirvBaseVisitor<Void> {
     public Set<String> getSupportedOps() {
         return Set.of(
                 "OpDecorate",
-                "OpExtInstImport",
                 "OpMemberDecorate"
         );
     }
