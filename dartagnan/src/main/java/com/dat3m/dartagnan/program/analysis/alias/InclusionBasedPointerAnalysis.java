@@ -107,10 +107,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private int totalVariables = 0;
     // Count variable substitutions.
     private int totalReplacements = 0;
-    // Count new edges already covered by existing ones.
-    private int failedAddInto = 0;
     // Count times a piece of new information was added to the graph.
-    private int succeededAddInto = 0;
+    private int addIntoGraphSucceesses, addIntoGraphFails, addIntoCyclesSuccesses, addIntoCyclesFails;
     // Count cycle checks, which can result in fast or slow rejects, or accepts.
     private int cyclesFastCulled;
     private int cyclesSlowCulled;
@@ -127,9 +125,12 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 analysis.totalReplacements);
         logger.debug("alignment sizes: {}",
                 analysis.totalAlignmentSizes);
-        logger.debug("addInto: {} successes vs {} fails",
-                analysis.succeededAddInto,
-                analysis.failedAddInto);
+        logger.debug("addInto graph: {} successes vs {} fails",
+                analysis.addIntoGraphSucceesses,
+                analysis.addIntoGraphFails);
+        logger.debug("addInto for cycle detection: {} successes vs {} fails",
+                analysis.addIntoCyclesSuccesses,
+                analysis.addIntoCyclesFails);
         logger.debug("cycles: {} detected vs {} fast-culled vs {} slow-culled",
                 analysis.cyclesDetected,
                 analysis.cyclesFastCulled,
@@ -473,7 +474,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Inserts a single inclusion relationship into the graph.
     // Any cycle closed by this edge will eventually be detected and resolved.
     private void addInclude(Variable variable, IncludeEdge edge) {
-        if (!addInto(variable.includes, edge)) {
+        if (!addInto(variable.includes, edge, true)) {
             return;
         }
         edge.source.seeAlso.add(variable);
@@ -568,7 +569,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     if (edge.source != i.source && includerSet.contains(i.source)) {
                         final IncludeEdge joinedEdge = compose(i, current.modifier);
                         if (set.add(joinedEdge) &&
-                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge)) {
+                                addInto(edges.computeIfAbsent(i.source, k -> new ArrayList<>()), joinedEdge, false)) {
                             next.add(joinedEdge);
                         }
                     }
@@ -581,15 +582,23 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         return result;
     }
 
-    private boolean addInto(List<IncludeEdge> list, IncludeEdge element) {
+    private boolean addInto(List<IncludeEdge> list, IncludeEdge element, boolean isGraphModification) {
         //NOTE The Stream API is too costly here
         for (final IncludeEdge o : list) {
             if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
-                failedAddInto++;
+                if(isGraphModification) {
+                    addIntoGraphFails++;
+                } else {
+                    addIntoCyclesFails++;
+                }
                 return false;
             }
         }
-        succeededAddInto++;
+        if(isGraphModification) {
+            addIntoGraphSucceesses++;
+        } else {
+            addIntoCyclesSuccesses++;
+        }
         list.removeIf(o -> element.source.equals(o.source) && includes(element.modifier, o.modifier));
         list.add(element);
         return true;
