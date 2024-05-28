@@ -1,18 +1,16 @@
 package com.dat3m.ui.editor;
 
 import com.google.common.collect.ImmutableMap;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
-
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-
 import java.awt.*;
 
 public class EditorsPane {
 
     private final ImmutableMap<EditorCode, Editor> editors = ImmutableMap.of(
-            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), "litmus", "c", "ll"),
+            EditorCode.PROGRAM, new Editor(EditorCode.PROGRAM, new RSyntaxTextArea(), "litmus", "c", "bpl", "ll"),
             EditorCode.TARGET_MM, new Editor(EditorCode.TARGET_MM, new RSyntaxTextArea(), "cat")
     );
 

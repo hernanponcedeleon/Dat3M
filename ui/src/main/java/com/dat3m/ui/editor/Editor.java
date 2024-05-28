@@ -1,23 +1,22 @@
 package com.dat3m.ui.editor;
 
 import com.google.common.collect.ImmutableSet;
-
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.io.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.dat3m.ui.utils.Utils.showError;
 import static java.lang.System.getProperty;
@@ -64,6 +63,22 @@ public class Editor extends RTextScrollPane implements ActionListener {
         TitledBorder border = createTitledBorder(code.toString());
         border.setTitleJustification(TitledBorder.CENTER);
         setBorder(border);
+
+        editorPane.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.isControlDown() && e.getKeyChar() == '+') {
+                    changeFontSize(1);
+                } else if (e.isControlDown() && e.getKeyChar() == '-') {
+                    changeFontSize(-1);
+                }
+            }
+        });
+    }
+
+    private void changeFontSize(int change) {
+        Font scaledFont = new Font(Font.DIALOG, Font.PLAIN, editorPane.getFont().getSize() + change);
+        editorPane.setFont(scaledFont);
     }
 
     public void addActionListener(ActionListener actionListener){
