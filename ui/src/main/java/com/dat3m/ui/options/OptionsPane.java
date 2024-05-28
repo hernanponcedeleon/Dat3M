@@ -40,6 +40,7 @@ public class OptionsPane extends JPanel implements ActionListener {
     private final TimeoutField timeoutField;
 
     private final JTextField cflagsField;
+    private final JTextField configField;
 
     private final JButton testButton;
     private final JButton clearButton;
@@ -72,6 +73,9 @@ public class OptionsPane extends JPanel implements ActionListener {
         cflagsField = new JTextField();
         cflagsField.setColumns(20);
 
+        configField = new JTextField();
+        configField.setColumns(20);
+
         testButton = new TestButton();
         clearButton = new ClearButton();
 
@@ -84,7 +88,7 @@ public class OptionsPane extends JPanel implements ActionListener {
 
     private void bindListeners() {
         // optionsPane needs to listen to options to clean the console
-        // Alias and Mode do not change the result and thus we don't listen to them
+        // Alias and Mode do not change the result, and thus we don't listen to them
         targetPane.addActionListener(this);
         boundField.addActionListener(this);
         timeoutField.addActionListener(this);
@@ -104,12 +108,13 @@ public class OptionsPane extends JPanel implements ActionListener {
         int bound = Integer.parseInt(boundField.getText());
         int timeout = Integer.parseInt(timeoutField.getText());
         boolean showViolationGraph = showViolationField.isSelected();
-        String cflags = cflagsField.getText();
+        String cflags = cflagsField.getText().strip();
+        String config = configField.getText().strip();
         Arch target = (Arch) targetPane.getSelectedItem();
         Method method = (Method) methodPane.getSelectedItem();
         Solvers solver = (Solvers) solverPane.getSelectedItem();
         EnumSet<Property> properties = EnumSet.of((Property) propertyPane.getSelectedItem());
-        return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, properties);
+        return new UiOptions(target, method, bound, solver, timeout, showViolationGraph, cflags, config, properties);
     }
 
     private void mkGrid() {
@@ -132,6 +137,10 @@ public class OptionsPane extends JPanel implements ActionListener {
         cflagsPane.add(new JLabel("CFLAGS: "));
         cflagsPane.add(cflagsField);
 
+        JPanel configPane = new JPanel(new FlowLayout(LEFT));
+        configPane.add(new JLabel("Config:  "));
+        configPane.add(configField);
+
         JPanel showViolationPane = new JPanel(new FlowLayout(LEFT));
         showViolationPane.add(new JLabel("Show violation graph"));
         showViolationPane.add(showViolationField);
@@ -141,7 +150,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = {targetPane, methodPane, solverPane, propertyPane, boundsPane, showViolationPane, cflagsPane, testButton, clearButton, graphPane, scrollConsole};
+        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, boundsPane, showViolationPane, cflagsPane,
+                configPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);

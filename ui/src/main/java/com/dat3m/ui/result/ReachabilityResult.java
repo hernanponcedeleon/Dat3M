@@ -53,58 +53,62 @@ public class ReachabilityResult {
     }
 
     private void run() {
-        if (validate()) {
+        if (!validate()) {
+            return;
+        }
 
-            ShutdownManager sdm = ShutdownManager.create();
-            Thread t = new Thread(() -> {
-                try {
-                    if (options.timeout() > 0) {
-                        // Converts timeout from secs to millisecs
-                        Thread.sleep(1000L * options.timeout());
-                        sdm.requestShutdown("Shutdown Request");
-                    }
-                } catch (InterruptedException e) {
-                    // Verification ended, nothing to be done.
-                }
-            });
-
+        final ShutdownManager sdm = ShutdownManager.create();
+        final Thread t = new Thread(() -> {
             try {
-                ModelChecker modelChecker;
-                Arch arch = program.getArch() != null ? program.getArch() : options.target();
-                VerificationTask task = VerificationTask.builder()
-                        .withBound(options.bound())
-                        .withSolverTimeout(options.timeout())
-                        .withTarget(arch)
-                        .build(program, wmm, options.properties());
-
-                t.start();
-                Configuration config = Configuration.builder()
-                        .setOption(PHANTOM_REFERENCES, "true")
-                        .build();
-                try (SolverContext ctx = SolverContextFactory.createSolverContext(
-                        config,
-                        BasicLogManager.create(config),
-                        sdm.getNotifier(),
-                        options.solver());
-                     ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-
-                    modelChecker = switch (options.method()) {
-                        case EAGER -> AssumeSolver.run(ctx, prover, task);
-                        case LAZY -> RefinementSolver.run(ctx, prover, task);
-                    };
-                    // Verification ended, we can interrupt the timeout Thread
-                    t.interrupt();
-                    verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
-
-                    if (modelChecker.hasModel()) {
-                        violationModel = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
-                    }
+                if (options.timeout() > 0) {
+                    // Converts timeout from secs to millisecs
+                    Thread.sleep(1000L * options.timeout());
+                    sdm.requestShutdown("Shutdown Request");
                 }
             } catch (InterruptedException e) {
-                verdict = "TIMEOUT";
-            } catch (Exception e) {
-                verdict = "ERROR: " + e.getMessage();
+                // Verification ended, nothing to be done.
             }
+        });
+
+        try {
+            final Arch arch = program.getArch() != null ? program.getArch() : options.target();
+            final Configuration config = options.config().isEmpty() ?
+                    Configuration.defaultConfiguration() :
+                    Configuration.fromCmdLineArguments(options.config().split(" "));
+            final VerificationTask task = VerificationTask.builder()
+                    .withConfig(config)
+                    .withBound(options.bound())
+                    .withSolverTimeout(options.timeout())
+                    .withTarget(arch)
+                    .build(program, wmm, options.properties());
+
+            t.start();
+            final Configuration solverConfig = Configuration.builder()
+                    .setOption(PHANTOM_REFERENCES, "true")
+                    .build();
+            try (SolverContext ctx = SolverContextFactory.createSolverContext(
+                    solverConfig,
+                    BasicLogManager.create(solverConfig),
+                    sdm.getNotifier(),
+                    options.solver());
+                 ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+
+                final ModelChecker modelChecker; modelChecker = switch (options.method()) {
+                    case EAGER -> AssumeSolver.run(ctx, prover, task);
+                    case LAZY -> RefinementSolver.run(ctx, prover, task);
+                };
+                // Verification ended, we can interrupt the timeout Thread
+                t.interrupt();
+                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
+
+                if (modelChecker.hasModel()) {
+                    violationModel = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
+                }
+            }
+        } catch (InterruptedException e) {
+            verdict = "TIMEOUT";
+        } catch (Exception e) {
+            verdict = "ERROR: " + e;
         }
     }
 

@@ -8,7 +8,7 @@ import org.sosy_lab.java_smt.SolverContextFactory.Solvers;
 import java.util.EnumSet;
 
 public record UiOptions(Arch target, Method method, int bound, Solvers solver, int timeout, boolean showViolationGraph,
-                        String cflags, EnumSet<Property> properties) {
+                        String cflags, String config, EnumSet<Property> properties) {
 
 
 }
