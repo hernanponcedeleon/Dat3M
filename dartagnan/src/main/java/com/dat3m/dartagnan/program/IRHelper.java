@@ -5,8 +5,11 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.google.common.base.Preconditions;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class IRHelper {
@@ -23,6 +26,22 @@ public class IRHelper {
             }
         }
         return nonDeleted;
+    }
+
+    public static List<Event> getEventsFromTo(Event from, Event to) {
+        Preconditions.checkArgument(from.getFunction() == to.getFunction());
+        final List<Event> events = new ArrayList<>();
+        Event cur = from;
+        do {
+            events.add(cur);
+            if (cur == to) {
+                break;
+            }
+            cur = cur.getSuccessor();
+        } while (cur != null);
+        assert cur != null;
+
+        return events;
     }
 
     /*
