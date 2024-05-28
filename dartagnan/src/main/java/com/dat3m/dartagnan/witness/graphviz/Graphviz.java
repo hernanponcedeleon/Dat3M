@@ -96,11 +96,13 @@ public class Graphviz {
      * @throws IOException          The program is not installed, or the directory of {@code dotFile} does not exist.
      * @throws InterruptedException The current thread is interrupted while waiting for the command to finish.
      */
-    public static void convert(File dotFile) throws IOException, InterruptedException {
-        String fileName = dotFile.getName();
-        String fileNameBase = fileName.substring(0, fileName.lastIndexOf('.'));
+    public static File convert(File dotFile) throws IOException, InterruptedException {
+        final String dotFileName = dotFile.getName();
+        final String pngFileName = dotFileName.substring(0, dotFileName.lastIndexOf('.')) + ".png";
         Process p = new ProcessBuilder().directory(dotFile.getParentFile())
-                .command("dot", "-Tpng", fileName, "-o", fileNameBase + ".png").start();
+                .command("dot", "-Tpng", dotFileName, "-o", pngFileName).start();
         p.waitFor(1000, TimeUnit.MILLISECONDS);
+
+        return new File(dotFile.getParentFile(), pngFileName);
     }
 }
