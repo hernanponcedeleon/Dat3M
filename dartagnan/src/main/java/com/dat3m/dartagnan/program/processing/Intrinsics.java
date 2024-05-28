@@ -209,6 +209,7 @@ public class Intrinsics {
         LKMM_FENCE("__LKMM_FENCE", false, false, false, true, Intrinsics::handleLKMMIntrinsic),
         // --------------------------- Misc ---------------------------
         STD_MEMCPY("memcpy", true, true, true, false, Intrinsics::inlineMemCpy),
+        STD_MEMCPYS("memcpy_s", true, true, true, false, Intrinsics::inlineMemCpyS),
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
@@ -1323,6 +1324,58 @@ public class Intrinsics {
         if (call instanceof ValueFunctionCall valueCall) {
             // std.memcpy returns the destination address, llvm.memcpy has no return value
             replacement.add(EventFactory.newLocal(valueCall.getResultRegister(), dest));
+        }
+
+        return replacement;
+    }
+
+    private List<Event> inlineMemCpyS(FunctionCall call) {
+        final Function caller = call.getFunction();
+        final Expression dest = call.getArguments().get(0);
+        final Expression destsz = call.getArguments().get(1);
+        final Expression src = call.getArguments().get(2);
+        final Expression countExpr = call.getArguments().get(3);
+
+        if (!(countExpr instanceof IntLiteral countValue)) {
+            final String error = "Cannot handle memcpy_s with dynamic count argument: " + call;
+            throw new UnsupportedOperationException(error);
+        }
+        final int count = countValue.getValueAsInt();
+
+        // Runtime checks
+        final Expression nullExpr = expressions.makeZero(types.getArchType());
+        final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
+        final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
+        final Expression countGtDestsz = expressions.makeGT(countExpr, destsz, false);
+        final Expression overlap = expressions.makeOr(
+                expressions.makeGTE(expressions.makeAdd(src, countExpr), dest, false),
+                expressions.makeGTE(expressions.makeAdd(dest, countExpr), src, false));
+
+        // Runtime full condition
+        final Expression c1 = expressions.makeOr(destIsNull, srcIsNull);
+        final Expression c2 = expressions.makeOr(c1, countGtDestsz);
+        final Expression c3 = expressions.makeOr(c2, overlap);
+        final Expression value = expressions.makeITE(c3, expressions.makeZero(types.getArchType()), reg);
+
+        final List<Event> replacement = new ArrayList<>(2 * count + 1);
+        for (int i = 0; i < count; i++) {
+            final Expression offset = expressions.makeValue(i, types.getArchType());
+            final Expression srcAddr = expressions.makeAdd(src, offset);
+            final Expression destAddr = expressions.makeAdd(dest, offset);
+            // FIXME: We have no other choice but to load ptr-sized chunks for now
+            final Register reg = caller.getOrNewRegister("__memcpy_s_" + i, types.getArchType());
+
+            replacement.addAll(List.of(
+                    EventFactory.newLoad(reg, srcAddr),
+                    EventFactory.newStore(destAddr, value)
+            ));
+        }
+        if (call instanceof ValueFunctionCall valueCall) {
+            // Returns zero on success and non-zero value on error
+            Register resultRegister = valueCall.getResultRegister();
+            final Expression ok = expressions.makeZero((IntegerType)resultRegister.getType());
+            final Expression error = expressions.makeOne((IntegerType)resultRegister.getType());
+            replacement.add(EventFactory.newLocal(resultRegister, expressions.makeITE(c3, ok, error)));
         }
 
         return replacement;
