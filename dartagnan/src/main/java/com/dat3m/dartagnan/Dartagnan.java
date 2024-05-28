@@ -187,7 +187,7 @@ public class Dartagnan extends BaseOptions {
                 // Verification ended, we can interrupt the timeout Thread
                 t.interrupt();
 
-                if (modelChecker.hasModel()) {
+                if (modelChecker.hasModel() && o.getWitnessType().generateGraphviz()) {
                     generateExecutionGraphFile(task, prover, modelChecker, o.getWitnessType());
                 }
 
