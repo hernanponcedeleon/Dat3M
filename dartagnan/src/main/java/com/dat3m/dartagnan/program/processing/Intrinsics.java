@@ -1375,7 +1375,7 @@ public class Intrinsics {
             Register resultRegister = valueCall.getResultRegister();
             final Expression ok = expressions.makeZero((IntegerType)resultRegister.getType());
             final Expression error = expressions.makeOne((IntegerType)resultRegister.getType());
-            replacement.add(EventFactory.newLocal(resultRegister, expressions.makeITE(c3, ok, error)));
+            replacement.add(EventFactory.newLocal(resultRegister, expressions.makeITE(c3, error, ok)));
         }
 
         return replacement;
