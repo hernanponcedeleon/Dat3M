@@ -11,6 +11,7 @@ import com.dat3m.ui.listener.EditorListener;
 import com.dat3m.ui.options.OptionsPane;
 import com.dat3m.ui.options.utils.ControlCode;
 import com.dat3m.ui.result.ReachabilityResult;
+import com.dat3m.ui.utils.ImageLabel;
 import com.dat3m.ui.utils.UiOptions;
 import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.Token;
@@ -19,6 +20,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 import static com.dat3m.ui.utils.Utils.showError;
 import static javax.swing.BorderFactory.createEmptyBorder;
@@ -93,7 +96,9 @@ public class Dat3M extends JFrame implements ActionListener {
         // Generate scroll pane with image of violation
         final ImageIcon imageIcon = new ImageIcon(filePath);
         imageIcon.getImage().flush(); // Flush the caches for otherwise we might show a previously loaded file!!!
-        final JScrollPane scrollPane = new JScrollPane(new JLabel(imageIcon));
+
+        final ImageLabel imgLabel = new ImageLabel(imageIcon);
+        final JScrollPane scrollPane = new JScrollPane(imgLabel);
 
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -104,6 +109,17 @@ public class Dat3M extends JFrame implements ActionListener {
         final int x = (screenSize.width - imageFrame.getSize().width) / 2;
         final int y = (screenSize.height - imageFrame.getSize().height) / 2;
         final int extraFrameSize = 100;
+
+        imageFrame.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyChar() == '+') {
+                    imgLabel.zoom(1.05);
+                } else if (e.getKeyChar() == '-') {
+                    imgLabel.zoom(0.95);
+                }
+            }
+        });
 
         imageFrame.setSize(imageIcon.getIconWidth() + extraFrameSize, imageIcon.getIconHeight() + extraFrameSize);
         imageFrame.getContentPane().add(scrollPane);
