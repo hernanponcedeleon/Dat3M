@@ -1355,7 +1355,6 @@ public class Intrinsics {
         final Expression c1 = expressions.makeOr(destIsNull, srcIsNull);
         final Expression c2 = expressions.makeOr(c1, countGtDestsz);
         final Expression c3 = expressions.makeOr(c2, overlap);
-        final Expression value = expressions.makeITE(c3, expressions.makeZero(types.getArchType()), reg);
 
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
         for (int i = 0; i < count; i++) {
@@ -1364,6 +1363,7 @@ public class Intrinsics {
             final Expression destAddr = expressions.makeAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
             final Register reg = caller.getOrNewRegister("__memcpy_s_" + i, types.getArchType());
+            final Expression value = expressions.makeITE(c3, expressions.makeZero(types.getArchType()), reg);
 
             replacement.addAll(List.of(
                     EventFactory.newLoad(reg, srcAddr),
