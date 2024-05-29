@@ -4,16 +4,16 @@ import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.program.Function;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
-import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.*;
+import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadCreate;
@@ -22,11 +22,9 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
-import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -264,31 +262,9 @@ public class ThreadCreation implements ProgramProcessor {
         for (Register reg : function.getRegisters()) {
             registerReplacement.put(reg, thread.getOrNewRegister(reg.getName(), reg.getType()));
         }
-        final ExpressionVisitor<Expression> regSubstituter = new ExprTransformer() {
-            @Override
-            public Expression visitRegister(Register reg) {
-                return Preconditions.checkNotNull(registerReplacement.get(reg));
-            }
-        };
 
         // ------------------- Copy, update, and append the function body to the thread -------------------
-        final List<Event> body = new ArrayList<>();
-        final Map<Event, Event> copyMap = new HashMap<>();
-        function.getEvents().forEach(e -> body.add(copyMap.computeIfAbsent(e, Event::getCopy)));
-        for (Event copy : body) {
-            if (copy instanceof EventUser user) {
-                user.updateReferences(copyMap);
-            }
-            if (copy instanceof RegReader reader) {
-                reader.transformExpressions(regSubstituter);
-            }
-            if (copy instanceof LlvmCmpXchg xchg) {
-                xchg.setStructRegister(0, registerReplacement.get(xchg.getStructRegister(0)));
-                xchg.setStructRegister(1, registerReplacement.get(xchg.getStructRegister(1)));
-            } else if (copy instanceof RegWriter regWriter) {
-                regWriter.setResultRegister(registerReplacement.get(regWriter.getResultRegister()));
-            }
-        }
+        final List<Event> body = IRHelper.copyPath(function.getEntry(), function.getExit(), new HashMap<>(), registerReplacement);
         thread.getEntry().insertAfter(body);
 
         // ------------------- Add end & return label -------------------

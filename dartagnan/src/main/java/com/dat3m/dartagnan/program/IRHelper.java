@@ -1,16 +1,19 @@
 package com.dat3m.dartagnan.program;
 
+import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.EventUser;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.lang.llvm.LlvmCmpXchg;
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class IRHelper {
 
@@ -42,6 +45,44 @@ public class IRHelper {
         assert cur != null;
 
         return events;
+    }
+
+    public static List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext,
+                                       Map<Register, Register> regReplacement) {
+        final List<Event> copies = new ArrayList<>();
+
+        Event cur = from;
+        while (cur != null && !cur.equals(until)) {
+            final Event copy = cur.getCopy();
+            copies.add(copy);
+            copyContext.put(cur, copy);
+            cur = cur.getSuccessor();
+        }
+
+        final ExprTransformer regSubstitutor = new ExprTransformer() {
+            @Override
+            public Expression visitRegister(Register reg) {
+                return regReplacement.getOrDefault(reg, reg);
+            }
+        };
+
+        for (Event copy : copies) {
+            if (copy instanceof EventUser user) {
+                user.updateReferences(copyContext);
+            }
+            if (copy instanceof RegReader reader) {
+                reader.transformExpressions(regSubstitutor);
+            }
+            if (copy instanceof LlvmCmpXchg xchg) {
+                xchg.setStructRegister(0, regReplacement.get(xchg.getStructRegister(0)));
+                xchg.setStructRegister(1, regReplacement.get(xchg.getStructRegister(1)));
+            } else if (copy instanceof RegWriter regWriter) {
+                regWriter.setResultRegister(regReplacement.get(regWriter.getResultRegister()));
+            }
+
+        }
+
+        return copies;
     }
 
     /*

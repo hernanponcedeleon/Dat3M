@@ -2,11 +2,11 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.program.Function;
+import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.EventUser;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -17,7 +17,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.BOUND;
 
@@ -150,7 +153,7 @@ public class LoopUnrolling implements ProgramProcessor {
 
             } else {
                 final Map<Event, Event> copyCtx = new HashMap<>();
-                final List<Event> copies = copyPath(loopBegin, loopBackJump, copyCtx);
+                final List<Event> copies = IRHelper.copyPath(loopBegin, loopBackJump, copyCtx, Map.of());
 
                 // Insert copy of the loop
                 loopBegin.getPredecessor().insertAfter(copies);
@@ -168,23 +171,6 @@ public class LoopUnrolling implements ProgramProcessor {
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
         }
-    }
-
-    private List<Event> copyPath(Event from, Event until, Map<Event, Event> copyContext) {
-        final List<Event> copies = new ArrayList<>();
-
-        Event cur = from;
-        while(cur != null && !cur.equals(until)){
-            final Event copy = cur.getCopy();
-            copies.add(copy);
-            copyContext.put(cur, copy);
-            cur = cur.getSuccessor();
-        }
-
-        copies.stream()
-                .filter(EventUser.class::isInstance).map(EventUser.class::cast)
-                .forEach(e -> e.updateReferences(copyContext));
-        return copies;
     }
 
     private Event newBoundEvent(Function func) {
