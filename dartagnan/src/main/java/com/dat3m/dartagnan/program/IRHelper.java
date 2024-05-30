@@ -74,10 +74,10 @@ public class IRHelper {
                 reader.transformExpressions(regSubstitutor);
             }
             if (copy instanceof LlvmCmpXchg xchg) {
-                xchg.setStructRegister(0, regReplacement.get(xchg.getStructRegister(0)));
-                xchg.setStructRegister(1, regReplacement.get(xchg.getStructRegister(1)));
+                xchg.setStructRegister(0, (Register)xchg.getStructRegister(0).accept(regSubstitutor));
+                xchg.setStructRegister(1, (Register)xchg.getStructRegister(1).accept(regSubstitutor));
             } else if (copy instanceof RegWriter regWriter) {
-                regWriter.setResultRegister(regReplacement.get(regWriter.getResultRegister()));
+                regWriter.setResultRegister((Register) regWriter.getResultRegister().accept(regSubstitutor));
             }
 
         }
