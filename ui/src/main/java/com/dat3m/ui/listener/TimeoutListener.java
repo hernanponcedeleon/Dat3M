@@ -53,7 +53,7 @@ public class TimeoutListener implements KeyListener, FocusListener {
 
     @Override
     public void focusGained(FocusEvent arg0) {
-        // Nothing t be done here
+        // Nothing to be done here
     }
 
     @Override

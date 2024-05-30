@@ -83,7 +83,7 @@ public class Dat3M extends JFrame implements ActionListener {
             runTest();
             if (testResult != null) {
                 optionsPane.getConsolePane().setText(testResult.getVerdict());
-                if (optionsPane.getOptions().showViolationGraph() && testResult.hasViolationModel()) {
+                if (optionsPane.getOptions().showWitness() && testResult.hasWitness()) {
                     showViolation(testResult);
                 }
             }
@@ -91,7 +91,7 @@ public class Dat3M extends JFrame implements ActionListener {
     }
 
     private void showViolation(ReachabilityResult testResult) {
-        final String filePath = testResult.getViolationModelFile().getAbsolutePath();
+        final String filePath = testResult.getWitnessFile().getAbsolutePath();
 
         // Generate scroll pane with image of violation
         final ImageIcon imageIcon = new ImageIcon(filePath);
@@ -110,6 +110,7 @@ public class Dat3M extends JFrame implements ActionListener {
         final int y = (screenSize.height - imageFrame.getSize().height) / 2;
         final int extraFrameSize = 100;
 
+        // Add zoomability to the witness
         imageFrame.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -142,6 +143,7 @@ public class Dat3M extends JFrame implements ActionListener {
                     programEditor.getLoadedPath(),
                     format,
                     options.cflags());
+            program.setName("dat3mUI");
             try {
                 final Wmm targetModel = new ParserCat().parse(editorsPane.getEditor(EditorCode.TARGET_MM).getEditorPane().getText());
                 testResult = new ReachabilityResult(program, targetModel, options);

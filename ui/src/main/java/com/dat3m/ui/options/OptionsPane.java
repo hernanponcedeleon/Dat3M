@@ -142,7 +142,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         configPane.add(configField);
 
         JPanel showViolationPane = new JPanel(new FlowLayout(LEFT));
-        showViolationPane.add(new JLabel("Show violation graph"));
+        showViolationPane.add(new JLabel("Show witness graph"));
         showViolationPane.add(showViolationField);
 
         // Inner borders

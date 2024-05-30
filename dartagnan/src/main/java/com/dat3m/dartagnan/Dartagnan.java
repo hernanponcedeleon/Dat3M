@@ -172,16 +172,10 @@ public class Dartagnan extends BaseOptions {
                     modelChecker = DataRaceSolver.run(ctx, prover, task);
                 } else {
                     // Property is either PROGRAM_SPEC, LIVENESS, or CAT_SPEC
-                    switch (o.getMethod()) {
-                        case EAGER:
-                            modelChecker = AssumeSolver.run(ctx, prover, task);
-                            break;
-                        case LAZY:
-                            modelChecker = RefinementSolver.run(ctx, prover, task);
-                            break;
-                        default:
-                            throw new InvalidConfigurationException("unsupported method " + o.getMethod());
-                    }
+                    modelChecker = switch (o.getMethod()) {
+                        case EAGER -> AssumeSolver.run(ctx, prover, task);
+                        case LAZY -> RefinementSolver.run(ctx, prover, task);
+                    };
                 }
 
                 // Verification ended, we can interrupt the timeout Thread
@@ -220,7 +214,10 @@ public class Dartagnan extends BaseOptions {
         final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
         m.initialize(prover.getModel());
         final SyntacticContextAnalysis synContext = newInstance(task.getProgram());
-        final String name = task.getProgram().getName().substring(0, task.getProgram().getName().lastIndexOf('.'));
+        final String progName = task.getProgram().getName();
+        final int fileSuffixIndex = progName.lastIndexOf('.');
+        final String name = progName.isEmpty() ? "unnamed_program" :
+                (fileSuffixIndex == - 1) ? progName : progName.substring(0, fileSuffixIndex);
         // RF edges give both ordering and data flow information, thus even when the pair is in PO
         // we get some data flow information by observing the edge
         // FR edges only give ordering information which is known if the pair is also in PO

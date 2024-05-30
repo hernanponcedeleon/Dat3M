@@ -30,7 +30,7 @@ public class ReachabilityResult {
     private final UiOptions options;
 
     private String verdict;
-    private File violationModel;
+    private File witnessFile;
 
 
     public ReachabilityResult(Program program, Wmm wmm, UiOptions options) {
@@ -44,12 +44,12 @@ public class ReachabilityResult {
         return verdict;
     }
 
-    public boolean hasViolationModel() {
-        return violationModel != null;
+    public boolean hasWitness() {
+        return witnessFile != null;
     }
 
-    public File getViolationModelFile() {
-        return violationModel;
+    public File getWitnessFile() {
+        return witnessFile;
     }
 
     private void run() {
@@ -102,7 +102,7 @@ public class ReachabilityResult {
                 verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
 
                 if (modelChecker.hasModel()) {
-                    violationModel = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
+                    witnessFile = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
                 }
             }
         } catch (InterruptedException e) {
