@@ -94,3 +94,7 @@ litmus/VULKAN/Manual/PC-bar-acq-rel-priv.litmus,0
 litmus/VULKAN/Manual/PC-bar-atom.litmus,1
 litmus/VULKAN/Manual/PC-bar-nonpriv.litmus,0
 litmus/VULKAN/Manual/OOTA.litmus,1
+litmus/VULKAN/Manual/counter-atomic.litmus,1
+litmus/VULKAN/Manual/counter-atomic-load.litmus,1
+litmus/VULKAN/Manual/counter-non-atomic.litmus,1
+litmus/VULKAN/Manual/counter-non-atomic-load.litmus,1
