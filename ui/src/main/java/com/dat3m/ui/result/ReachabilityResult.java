@@ -3,6 +3,7 @@ package com.dat3m.ui.result;
 import com.dat3m.dartagnan.Dartagnan;
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.ModelChecker;
@@ -101,7 +102,7 @@ public class ReachabilityResult {
                 t.interrupt();
                 verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
 
-                if (modelChecker.hasModel()) {
+                if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
                     witnessFile = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
                 }
             }

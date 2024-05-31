@@ -209,7 +209,7 @@ public class Dartagnan extends BaseOptions {
     public static File generateExecutionGraphFile(VerificationTask task, ProverEnvironment prover, ModelChecker modelChecker,
                                                   WitnessType witnessType)
             throws InvalidConfigurationException, SolverException, IOException {
-        Preconditions.checkArgument(modelChecker.hasModel(), "No model to generate.");
+        Preconditions.checkArgument(modelChecker.hasModel(), "No execution graph to generate.");
 
         final ExecutionModel m = ExecutionModel.withContext(modelChecker.getEncodingContext());
         m.initialize(prover.getModel());

@@ -138,7 +138,7 @@ public class OptionsPane extends JPanel implements ActionListener {
         cflagsPane.add(cflagsField);
 
         JPanel configPane = new JPanel(new FlowLayout(LEFT));
-        configPane.add(new JLabel("Config:  "));
+        configPane.add(new JLabel("Extra options: "));
         configPane.add(configField);
 
         JPanel showViolationPane = new JPanel(new FlowLayout(LEFT));
@@ -150,8 +150,8 @@ public class OptionsPane extends JPanel implements ActionListener {
 
         JSplitPane graphPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         graphPane.setDividerSize(0);
-        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, boundsPane, showViolationPane, cflagsPane,
-                configPane, testButton, clearButton, graphPane, scrollConsole };
+        JComponent[] panes = { targetPane, methodPane, solverPane, propertyPane, boundsPane, showViolationPane, configPane,
+                cflagsPane, testButton, clearButton, graphPane, scrollConsole };
         Iterator<JComponent> it = Arrays.asList(panes).iterator();
         JComponent current = iconPane;
         current.setBorder(emptyBorder);
