@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -225,7 +224,7 @@ public class ExecutionGraphVisualizer {
         graphviz.addEdge(eventToNode(a), eventToNode(b), options);
     }
 
-    public static void generateGraphvizFile(ExecutionModel model, int iterationCount,
+    public static File generateGraphvizFile(ExecutionModel model, int iterationCount,
                                             BiPredicate<EventData, EventData> rfFilter, BiPredicate<EventData, EventData> frFilter,
                                             BiPredicate<EventData, EventData> coFilter, String directoryName, String fileNameBase,
                                             SyntacticContextAnalysis synContext,
@@ -243,11 +242,14 @@ public class ExecutionGraphVisualizer {
 
             writer.flush();
             if (convert) {
-                Graphviz.convert(fileVio);
+                fileVio = Graphviz.convert(fileVio);
             }
+            return fileVio;
         } catch (Exception e) {
             logger.error(e);
         }
+
+        return null;
     }
 
     public static void generateGraphvizFile(ExecutionModel model, int iterationCount,

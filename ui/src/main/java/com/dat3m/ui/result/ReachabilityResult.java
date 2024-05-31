@@ -1,12 +1,15 @@
 package com.dat3m.ui.result;
 
 import com.dat3m.dartagnan.Dartagnan;
-import com.dat3m.dartagnan.program.Program;
-import com.dat3m.dartagnan.verification.VerificationTask;
-import com.dat3m.dartagnan.verification.solving.*;
-import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.utils.Result;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.verification.solving.RefinementSolver;
+import com.dat3m.dartagnan.witness.WitnessType;
+import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.ui.utils.UiOptions;
 import com.dat3m.ui.utils.Utils;
 import org.sosy_lab.common.ShutdownManager;
@@ -16,6 +19,9 @@ import org.sosy_lab.java_smt.SolverContextFactory;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverContext;
 import org.sosy_lab.java_smt.api.SolverContext.ProverOptions;
+
+import java.io.File;
+
 import static com.dat3m.dartagnan.configuration.OptionNames.PHANTOM_REFERENCES;
 
 public class ReachabilityResult {
@@ -25,78 +31,91 @@ public class ReachabilityResult {
     private final UiOptions options;
 
     private String verdict;
+    private File witnessFile;
 
-    public ReachabilityResult(Program program, Wmm wmm, UiOptions options){
+
+    public ReachabilityResult(Program program, Wmm wmm, UiOptions options) {
         this.program = program;
         this.wmm = wmm;
         this.options = options;
         run();
     }
 
-    public String getVerdict(){
+    public String getVerdict() {
         return verdict;
     }
 
-    private void run(){
-        if(validate()){
+    public boolean hasWitness() {
+        return witnessFile != null;
+    }
 
-            ShutdownManager sdm = ShutdownManager.create();
-        	Thread t = new Thread(() -> {
-    			try {
-    				if(options.getTimeout() > 0) {
-    					// Converts timeout from secs to millisecs
-    					Thread.sleep(1000L * options.getTimeout());
-    					sdm.requestShutdown("Shutdown Request");
-    				}
-    			} catch (InterruptedException e) {
-    				// Verification ended, nothing to be done.
-    			}});
+    public File getWitnessFile() {
+        return witnessFile;
+    }
 
+    private void run() {
+        if (!validate()) {
+            return;
+        }
+
+        final ShutdownManager sdm = ShutdownManager.create();
+        final Thread t = new Thread(() -> {
             try {
-                ModelChecker modelChecker;
-                Arch arch = program.getArch() != null ? program.getArch() : options.getTarget();
-                VerificationTask task = VerificationTask.builder()
-                        .withBound(options.getBound())
-                        .withSolverTimeout(options.getTimeout())
-                        .withTarget(arch)
-                        .build(program, wmm, Property.getDefault());
-
-            	t.start();
-                Configuration config = Configuration.builder()
-                		.setOption(PHANTOM_REFERENCES, "true")
-                		.build();
-				try (SolverContext ctx = SolverContextFactory.createSolverContext(
-                        config,
-                        BasicLogManager.create(config),
-                        sdm.getNotifier(),
-                        options.getSolver());
-                     ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
-
-                    switch (options.getMethod()) {
-                        case EAGER:
-                            modelChecker = AssumeSolver.run(ctx, prover, task);
-                            break;
-                        case LAZY:
-                            modelChecker = RefinementSolver.run(ctx, prover, task);
-                            break;
-                        default:
-                            throw new IllegalArgumentException("method " + options.getMethod());
-                    }
-                    // Verification ended, we can interrupt the timeout Thread
-                    t.interrupt();
-                    verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
+                if (options.timeout() > 0) {
+                    // Converts timeout from secs to millisecs
+                    Thread.sleep(1000L * options.timeout());
+                    sdm.requestShutdown("Shutdown Request");
                 }
-            } catch (InterruptedException e){
-            	verdict = "TIMEOUT";
-            } catch (Exception e) {
-            	verdict = "ERROR: " + e.getMessage();
+            } catch (InterruptedException e) {
+                // Verification ended, nothing to be done.
             }
+        });
+
+        try {
+            final Arch arch = program.getArch() != null ? program.getArch() : options.target();
+            final Configuration config = options.config().isEmpty() ?
+                    Configuration.defaultConfiguration() :
+                    Configuration.fromCmdLineArguments(options.config().split(" "));
+            final VerificationTask task = VerificationTask.builder()
+                    .withConfig(config)
+                    .withBound(options.bound())
+                    .withSolverTimeout(options.timeout())
+                    .withTarget(arch)
+                    .build(program, wmm, options.properties());
+
+            t.start();
+            final Configuration solverConfig = Configuration.builder()
+                    .setOption(PHANTOM_REFERENCES, "true")
+                    .build();
+            try (SolverContext ctx = SolverContextFactory.createSolverContext(
+                    solverConfig,
+                    BasicLogManager.create(solverConfig),
+                    sdm.getNotifier(),
+                    options.solver());
+                 ProverEnvironment prover = ctx.newProverEnvironment(ProverOptions.GENERATE_MODELS)) {
+
+                final ModelChecker modelChecker; modelChecker = switch (options.method()) {
+                    case EAGER -> AssumeSolver.run(ctx, prover, task);
+                    case LAZY -> RefinementSolver.run(ctx, prover, task);
+                };
+                // Verification ended, we can interrupt the timeout Thread
+                t.interrupt();
+                verdict = Dartagnan.generateResultSummary(task, prover, modelChecker);
+
+                if (modelChecker.hasModel() && modelChecker.getResult() != Result.UNKNOWN) {
+                    witnessFile = Dartagnan.generateExecutionGraphFile(task, prover, modelChecker, WitnessType.PNG);
+                }
+            }
+        } catch (InterruptedException e) {
+            verdict = "TIMEOUT";
+        } catch (Exception e) {
+            verdict = "ERROR: " + e;
         }
     }
 
-    private boolean validate(){
-        Arch target = program.getArch() == null ? options.getTarget() : program.getArch();
-        if(target == null) {
+    private boolean validate() {
+        Arch target = program.getArch() == null ? options.target() : program.getArch();
+        if (target == null) {
             Utils.showError("Missing target architecture.");
             return false;
         }
