@@ -15,8 +15,10 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.ExecutionStatus;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
@@ -1329,7 +1331,10 @@ public class Intrinsics {
         return replacement;
     }
 
+    // https://en.cppreference.com/w/c/string/byte/memcpy
     private List<Event> inlineMemCpyS(FunctionCall call) {
+        // Cast guaranteed to success by the return type of memcpy_s
+        final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
         final Expression destszExpr = call.getArguments().get(1);
@@ -1353,58 +1358,77 @@ public class Intrinsics {
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
         // We assume RSIZE_MAX = 2^64-1
         final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), types.getArchType());
-        final Expression gtMax = expressions.makeOr(
-                expressions.makeGT(countExpr, rsize_max, false),
-                expressions.makeGT(destszExpr, rsize_max, false));
+        final Expression invalidDestsz = expressions.makeGT(
+                expressions.makeCast(destszExpr, types.getArchType()), rsize_max, false);
+        final Expression countGtMax = expressions.makeGT(
+                expressions.makeCast(countExpr, types.getArchType()), rsize_max, false);
         final Expression countGtdestszExpr = expressions.makeGT(countExpr, destszExpr, false);
-        final Expression overlap = expressions.makeOr(
-                expressions.makeGTE(expressions.makeAdd(src, countExpr), dest, false),
-                expressions.makeGTE(expressions.makeAdd(dest, countExpr), src, false));
+        final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
+        // src and dest are pointers (int64), count is usually interpreted as int32, thus the cast
+        final Expression countExprCast = expressions.makeCast(countExpr, types.getArchType());
+        final Expression overlap = expressions.makeAnd(
+                expressions.makeGTE(expressions.makeAdd(src, countExprCast), dest, false),
+                expressions.makeGTE(expressions.makeAdd(dest, countExprCast), src, false));
 
-        // Runtime full condition
-        final Expression c1 = expressions.makeOr(destIsNull, srcIsNull);
-        final Expression c2 = expressions.makeOr(c1, gtMax);
-        final Expression c3 = expressions.makeOr(c2, countGtdestszExpr);
-        final Expression c4 = expressions.makeOr(c3, overlap);
+        final List<Event> replacement = new ArrayList<>();
+        
+        Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
+        Label check2 = EventFactory.newLabel("__memcpy_s_check_2");
+        Label success = EventFactory.newLabel("__memcpy_s_success");
+        Label end = EventFactory.newLabel("__memcpy_s_end");
 
-        final List<Event> replacement = new ArrayList<>(2 * count + 1);
+        // dest == NULL or destsz > RSIZE_MAX ----> return error > 0
+        final Expression c1 = expressions.makeOr(destIsNull, invalidDestsz);
+        CondJump skipE1 = EventFactory.newJump(expressions.makeNot(c1), check2);
+        CondJump skipRest1 = EventFactory.newGoto(end);
+        Local retError1 = EventFactory.newLocal(resultRegister, expressions.makeOne((IntegerType)resultRegister.getType()));        
+        replacement.addAll(List.of(
+            check1,
+            skipE1,
+            retError1,
+            skipRest1));
+
+        // dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
+        // ----> return error > 0 and zero out [dest, dest+destsz)
+        // The first two are guaranteed by not matching c1
+        final Expression c2 = expressions.makeOr(srcIsNull, invalidCount);
+        final Expression c3 = expressions.makeOr(c2, overlap);
+        CondJump skipE2 = EventFactory.newJump(expressions.makeNot(c3), success);
+        CondJump skipRest2 = EventFactory.newGoto(end);
+        Local retError2 = EventFactory.newLocal(resultRegister, expressions.makeOne((IntegerType)resultRegister.getType()));        
+        replacement.addAll(List.of(
+            check2,
+            skipE2));
+        for (int i = 0; i < destsz; i++) {
+            final Expression offset = expressions.makeValue(i, types.getArchType());
+            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression value = expressions.makeZero(types.getArchType());
+            replacement.addAll(List.of(
+                EventFactory.newStore(destAddr, value)
+            ));
+        }
+        replacement.addAll(List.of(
+            retError2,
+            skipRest2));
+
+        // Else ----> return error = 0 and do the actual copy
+        Local retSuccess = EventFactory.newLocal(resultRegister, expressions.makeZero((IntegerType)resultRegister.getType()));
+        replacement.add(success);        
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression srcAddr = expressions.makeAdd(src, offset);
             final Expression destAddr = expressions.makeAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_s_" + i, types.getArchType());
-            // We should zero out the entire destination range [dest, dest+destsz)
-            // Here we handle [dest, dest+count), the remaining are handled by the loop below
-            final Expression value = expressions.makeITE(c4, expressions.makeZero(types.getArchType()), reg);
+            final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 
             replacement.addAll(List.of(
                     EventFactory.newLoad(reg, srcAddr),
-                    EventFactory.newStore(destAddr, value)
+                    EventFactory.newStore(destAddr, reg)
             ));
         }
-        // Handle the case destszExpr > count
-        // If any of the conditions hold, we zeroed the address.
-        // Otherwise we copy the same value from dest to dest
-        for (int i = count; i < destsz; i++) {
-            final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
-            // FIXME: We have no other choice but to load ptr-sized chunks for now
-            final Register reg = caller.getOrNewRegister("__memcpy_s_" + i, types.getArchType());
-            final Expression value = expressions.makeITE(c4, expressions.makeZero(types.getArchType()), reg);
-
-            replacement.addAll(List.of(
-                    EventFactory.newLoad(reg, destAddr),
-                    EventFactory.newStore(destAddr, value)
-            ));
-        }
-        if (call instanceof ValueFunctionCall valueCall) {
-            // Returns zero on success and non-zero value on error
-            Register resultRegister = valueCall.getResultRegister();
-            final Expression ok = expressions.makeZero((IntegerType)resultRegister.getType());
-            final Expression error = expressions.makeOne((IntegerType)resultRegister.getType());
-            replacement.add(EventFactory.newLocal(resultRegister, expressions.makeITE(c4, error, ok)));
-        }
+        replacement.addAll(List.of(
+            retSuccess,
+            end));
 
         return replacement;
     }
