@@ -1358,17 +1358,13 @@ public class Intrinsics {
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
         // We assume RSIZE_MAX = 2^64-1
         final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), types.getArchType());
-        final Expression invalidDestsz = expressions.makeGT(
-                expressions.makeCast(destszExpr, types.getArchType()), rsize_max, false);
-        final Expression countGtMax = expressions.makeGT(
-                expressions.makeCast(countExpr, types.getArchType()), rsize_max, false);
+        final Expression invalidDestsz = expressions.makeGT(destszExpr, rsize_max, false);
+        final Expression countGtMax = expressions.makeGT(countExpr, rsize_max, false);
         final Expression countGtdestszExpr = expressions.makeGT(countExpr, destszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
-        // src and dest are pointers (int64), count is usually interpreted as int32, thus the cast
-        final Expression countExprCast = expressions.makeCast(countExpr, types.getArchType());
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGTE(expressions.makeAdd(src, countExprCast), dest, false),
-                expressions.makeGTE(expressions.makeAdd(dest, countExprCast), src, false));
+                expressions.makeGTE(expressions.makeAdd(src, countExpr), dest, false),
+                expressions.makeGTE(expressions.makeAdd(dest, countExpr), src, false));
 
         final List<Event> replacement = new ArrayList<>();
         
