@@ -1337,12 +1337,11 @@ public class Intrinsics {
         final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
-        // This parameter has type rsize_t/size_t which we model as types.getArchType(), thus the cast
-        final Expression destszExpr = expressions.makeCast(call.getArguments().get(1), types.getArchType());
+        final Expression destszExpr = call.getArguments().get(1);
         final Expression src = call.getArguments().get(2);
-        // This parameter has type rsize_t/size_t which we model as types.getArchType(), thus the cast
-        final Expression countExpr = expressions.makeCast(call.getArguments().get(3), types.getArchType());
+        final Expression countExpr = call.getArguments().get(3);
 
+        // TODO remove these two checks once we support dynamically-sized memcpy
         if (!(countExpr instanceof IntLiteral countValue)) {
             final String error = "Cannot handle memcpy_s with dynamic count argument: " + call;
             throw new UnsupportedOperationException(error);
@@ -1358,15 +1357,20 @@ public class Intrinsics {
         final Expression nullExpr = expressions.makeZero(types.getArchType());
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
+
         // We assume RSIZE_MAX = 2^64-1
         final Expression rsize_max = expressions.makeValue(BigInteger.ONE.shiftLeft(64).subtract(BigInteger.ONE), types.getArchType());
-        final Expression invalidDestsz = expressions.makeGT(destszExpr, rsize_max, false);
-        final Expression countGtMax = expressions.makeGT(countExpr, rsize_max, false);
-        final Expression countGtdestszExpr = expressions.makeGT(countExpr, destszExpr, false);
+        // These parameters have type rsize_t/size_t which we model as types.getArchType(), thus the cast
+        final Expression castDestszExpr = expressions.makeCast(destszExpr, types.getArchType());
+        final Expression castCountExpr = expressions.makeCast(countExpr, types.getArchType());
+
+        final Expression invalidDestsz = expressions.makeGT(castDestszExpr, rsize_max, false);
+        final Expression countGtMax = expressions.makeGT(castCountExpr, rsize_max, false);
+        final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGT(expressions.makeAdd(src, countExpr), dest, false),
-                expressions.makeGT(expressions.makeAdd(dest, countExpr), src, false));
+                expressions.makeGT(expressions.makeAdd(src, castCountExpr), dest, false),
+                expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
 
         final List<Event> replacement = new ArrayList<>();
         
@@ -1375,28 +1379,32 @@ public class Intrinsics {
         Label success = EventFactory.newLabel("__memcpy_s_success");
         Label end = EventFactory.newLabel("__memcpy_s_end");
 
-        // dest == NULL or destsz > RSIZE_MAX ----> return error > 0
-        final Expression c1 = expressions.makeOr(destIsNull, invalidDestsz);
-        CondJump skipE1 = EventFactory.newJump(expressions.makeNot(c1), check2);
+        Expression errorCodeFail = expressions.makeOne((IntegerType)resultRegister.getType());
+        Expression errorCodeSuccess = expressions.makeZero((IntegerType)resultRegister.getType());
+
+        // Condition 1: dest == NULL or destsz > RSIZE_MAX ----> return error > 0
+        final Expression cond1 = expressions.makeOr(destIsNull, invalidDestsz);
+        CondJump skipE1 = EventFactory.newJump(expressions.makeNot(cond1), check2);
         CondJump skipRest1 = EventFactory.newGoto(end);
-        Local retError1 = EventFactory.newLocal(resultRegister, expressions.makeOne((IntegerType)resultRegister.getType()));        
+        Local retError1 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
             check1,
             skipE1,
             retError1,
-            skipRest1));
+            skipRest1
+        ));
 
-        // dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
+        // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
         // ----> return error > 0 and zero out [dest, dest+destsz)
         // The first two are guaranteed by not matching c1
-        final Expression c2 = expressions.makeOr(srcIsNull, invalidCount);
-        final Expression c3 = expressions.makeOr(c2, overlap);
-        CondJump skipE2 = EventFactory.newJump(expressions.makeNot(c3), success);
+        final Expression cond2 = expressions.makeOr(expressions.makeOr(srcIsNull, invalidCount), overlap);
+        CondJump skipE2 = EventFactory.newJump(expressions.makeNot(cond2), success);
         CondJump skipRest2 = EventFactory.newGoto(end);
-        Local retError2 = EventFactory.newLocal(resultRegister, expressions.makeOne((IntegerType)resultRegister.getType()));        
+        Local retError2 = EventFactory.newLocal(resultRegister, errorCodeFail);
         replacement.addAll(List.of(
             check2,
-            skipE2));
+            skipE2
+        ));
         for (int i = 0; i < destsz; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeAdd(dest, offset);
@@ -1407,10 +1415,11 @@ public class Intrinsics {
         }
         replacement.addAll(List.of(
             retError2,
-            skipRest2));
+            skipRest2
+        ));
 
         // Else ----> return error = 0 and do the actual copy
-        Local retSuccess = EventFactory.newLocal(resultRegister, expressions.makeZero((IntegerType)resultRegister.getType()));
+        Local retSuccess = EventFactory.newLocal(resultRegister, errorCodeSuccess);
         replacement.add(success);        
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
@@ -1426,7 +1435,8 @@ public class Intrinsics {
         }
         replacement.addAll(List.of(
             retSuccess,
-            end));
+            end
+        ));
 
         return replacement;
     }

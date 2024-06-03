@@ -1,6 +1,14 @@
 #include <assert.h>
 #include <stddef.h>
-#include <string.h>
+
+#ifdef __STDC_LIB_EXT1__
+    #define __STDC_WANT_LIB_EXT1__ 1
+    #include <string.h>
+#else
+    #define rsize_t size_t
+    #define errno_t int
+    extern errno_t memcpy_s( void *restrict dest, rsize_t destsz, const void *restrict src, rsize_t count );
+#endif
 
 int main()
 {
@@ -32,7 +40,6 @@ int main()
     assert(b[2] == 7);
     b[0] = 5;
     b[1] = 6;
-    b[2] = 7;
 
     // Overlapping src and dest
     ret = memcpy_s(b, 3*sizeof(int), b, 3*sizeof(int));
