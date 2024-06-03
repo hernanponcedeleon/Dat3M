@@ -1396,7 +1396,7 @@ public class Intrinsics {
 
         // Condition 2: dest != NULL && destsz <= RSIZE_MAX && (src == NULL || count > destsz || overlap(src, dest)) 
         // ----> return error > 0 and zero out [dest, dest+destsz)
-        // The first two are guaranteed by not matching c1
+        // The first two are guaranteed by not matching cond1
         final Expression cond2 = expressions.makeOr(expressions.makeOr(srcIsNull, invalidCount), overlap);
         CondJump skipE2 = EventFactory.newJump(expressions.makeNot(cond2), success);
         CondJump skipRest2 = EventFactory.newGoto(end);
@@ -1408,10 +1408,10 @@ public class Intrinsics {
         for (int i = 0; i < destsz; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
             final Expression destAddr = expressions.makeAdd(dest, offset);
-            final Expression value = expressions.makeZero(types.getArchType());
-            replacement.addAll(List.of(
-                EventFactory.newStore(destAddr, value)
-            ));
+            final Expression zero = expressions.makeZero(types.getArchType());
+            replacement.add(
+                EventFactory.newStore(destAddr, zero)
+            );
         }
         replacement.addAll(List.of(
             retError2,
