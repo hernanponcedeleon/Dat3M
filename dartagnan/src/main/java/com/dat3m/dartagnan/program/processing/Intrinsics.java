@@ -1337,9 +1337,11 @@ public class Intrinsics {
         final Register resultRegister = ((ValueFunctionCall)call).getResultRegister();
         final Function caller = call.getFunction();
         final Expression dest = call.getArguments().get(0);
-        final Expression destszExpr = call.getArguments().get(1);
+        // This parameter has type rsize_t/size_t which we model as types.getArchType(), thus the cast
+        final Expression destszExpr = expressions.makeCast(call.getArguments().get(1), types.getArchType());
         final Expression src = call.getArguments().get(2);
-        final Expression countExpr = call.getArguments().get(3);
+        // This parameter has type rsize_t/size_t which we model as types.getArchType(), thus the cast
+        final Expression countExpr = expressions.makeCast(call.getArguments().get(3), types.getArchType());
 
         if (!(countExpr instanceof IntLiteral countValue)) {
             final String error = "Cannot handle memcpy_s with dynamic count argument: " + call;
@@ -1363,8 +1365,8 @@ public class Intrinsics {
         final Expression countGtdestszExpr = expressions.makeGT(countExpr, destszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGTE(expressions.makeAdd(src, countExpr), dest, false),
-                expressions.makeGTE(expressions.makeAdd(dest, countExpr), src, false));
+                expressions.makeGT(expressions.makeAdd(src, countExpr), dest, false),
+                expressions.makeGT(expressions.makeAdd(dest, countExpr), src, false));
 
         final List<Event> replacement = new ArrayList<>();
         
