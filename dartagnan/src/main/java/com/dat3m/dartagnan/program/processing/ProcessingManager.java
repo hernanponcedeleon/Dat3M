@@ -98,10 +98,10 @@ public class ProcessingManager implements ProgramProcessor {
                                 UnreachableCodeElimination.fromConfig(config),
                                 ComplexBlockSplitting.newInstance(),
                                 BranchReordering.fromConfig(config),
-                                Simplifier.fromConfig(config)
+                                Simplifier.fromConfig(config),
+                                RegisterDecomposition.newInstance()
                         ), Target.FUNCTIONS, true
                 ),
-                RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
                 LoopFormVerification.fromConfig(config),
