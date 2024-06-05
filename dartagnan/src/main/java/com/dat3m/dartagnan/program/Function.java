@@ -6,6 +6,8 @@ import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.processing.Intrinsics;
@@ -149,6 +151,16 @@ public class Function implements LeafExpression {
         }
     }
 
+    public void append(List<Event> events) {
+        if (events.isEmpty()) {
+            return;
+        } else if (exit == null) {
+            append(events.get(0));
+            events = events.subList(1, events.size());
+        }
+        exit.insertAfter(events);
+    }
+
     public void updateExit(Event event){
         exit = event;
         Event next;
@@ -178,6 +190,24 @@ public class Function implements LeafExpression {
                             label.getName(), this);
                     throw new MalformedProgramException(error);
                 }
+            }
+
+            final Set<Register> registers = new HashSet<>(getRegisters());
+            if (ev instanceof RegReader reader) {
+                reader.getRegisterReads().stream()
+                        .filter(read -> !registers.contains(read.register())).findFirst().ifPresent(read -> {
+                            final String error = String.format("Event %s of function %s reads from external register %s of" +
+                                            "function %s .", reader, this, read.register(), read.register().getFunction()
+                            );
+                            throw new MalformedProgramException(error);
+                        });
+            }
+
+            if (ev instanceof RegWriter writer && !registers.contains(writer.getResultRegister())) {
+                final String error = String.format("Event %s of function %s writes to external register %s fo function %s",
+                        writer, this, writer.getResultRegister(), writer.getResultRegister().getFunction()
+                );
+                throw new MalformedProgramException(error);
             }
         }
     }
