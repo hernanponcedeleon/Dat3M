@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.program.Program;
+import com.dat3m.dartagnan.program.analysis.simulation.SimulationChecker;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.utils.printer.Printer;
 import org.sosy_lab.common.configuration.Configuration;
@@ -100,7 +101,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 BranchReordering.fromConfig(config),
                                 Simplifier.fromConfig(config),
                                 RegisterDecomposition.newInstance()
-                        ), Target.FUNCTIONS, true
+                        ), Target.ALL, true
                 ),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
@@ -109,6 +110,9 @@ public class ProcessingManager implements ProgramProcessor {
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
+                // TODO: TEST
+                ProgramProcessor.fromFunctionProcessor(new SimulationChecker()::test, Target.FUNCTIONS, false),
+                // TODO: TEST
                 dynamicSpinLoopDetection ? DynamicSpinLoopDetection.fromConfig(config) : null,
                 LoopUnrolling.fromConfig(config), // We keep unrolling global for now
                 printAfterUnrolling ? DebugPrint.withHeader("After loop unrolling", Printer.Mode.ALL) : null,
@@ -118,7 +122,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 sccp,
                                 dce,
                                 removeDeadJumps
-                        ), Target.FUNCTIONS, true
+                        ), Target.ALL, true
                 ),
                 ThreadCreation.fromConfig(config),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,

@@ -28,26 +28,46 @@ import java.util.Set;
            These are "inputs" from the surrounding context.
        (2) Memory references: the memory objects referenced within the snippet (e.g. for loading/storing).
        (3) Program constants: the program constants referenced within the snippet.
-       (4) Output registers (for each exit point) are the registers that are (potentially) live in the context after
+       (4) Output registers at an exit are the registers that are (potentially) live in the context after
            taking that exit.
  */
 public class FunctionSnippet {
-    final Function function;
-    final Event start;
-    final Event end;
+    private final Event start;
+    private final Event end;
 
-    final Set<Register> inputRegisters = new HashSet<>();
-    final Set<MemoryObject> memoryReferences = new HashSet<>();
-    final Set<NonDetValue> programConstants = new HashSet<>();
-    // The keys are either jumps or the unique <end> event.
-    final Map<CondJump, Set<Register>> liveRegsAtJumpExit = new HashMap<>();
-    final Set<Register> liveRegsAtRegularExit = new HashSet<>();
+    private final Set<Register> registers = new HashSet<>();
+    private final Set<Register> inputRegisters = new HashSet<>();
+    private final Set<MemoryObject> memoryReferences = new HashSet<>();
+    private final Set<NonDetValue> programConstants = new HashSet<>();
+    // TODO: Add return/abort exits (Note: aborts have no live regs, returns have only the returned expression as live)
+    private final Map<CondJump, Set<Register>> liveRegsAtJumpExit = new HashMap<>();
+    private final Set<Register> liveRegsAtRegularExit = new HashSet<>();
 
-    private FunctionSnippet(Function function, Event start, Event end) {
-        this.function = function;
+    private FunctionSnippet(Event start, Event end) {
         this.start = start;
         this.end = end;
     }
+
+    public Event getStart() { return start; }
+    public Event getEnd() { return end; }
+
+    public Function getFunction() { return start.getFunction(); }
+
+    public Set<Register> getRegisters() { return registers; }
+    public Set<Register> getInputRegisters() { return inputRegisters; }
+    public Set<MemoryObject> getMemoryReferences() { return memoryReferences; }
+    public Set<NonDetValue> getProgramConstants() { return programConstants; }
+
+    public Set<Register> getLiveRegsAtRegularExit() { return liveRegsAtRegularExit; }
+    public Map<CondJump, Set<Register>> getLiveRegsAtJumpExitMap() { return liveRegsAtJumpExit; }
+
+    public Set<Register> getAllLiveRegsOnExit() {
+        final Set<Register> regs = new HashSet<>(liveRegsAtRegularExit);
+        liveRegsAtJumpExit.values().forEach(regs::addAll);
+        return regs;
+    }
+
+    // ===========================================================================================
 
     public static FunctionSnippet computeSnippet(Event start, Event end) {
         Preconditions.checkArgument(start.getFunction() == end.getFunction() && start.getFunction() != null);
@@ -85,9 +105,6 @@ public class FunctionSnippet {
         for (Event e : body) {
             if (e instanceof RegReader reader) {
                 reader.transformExpressions(exprInspector);
-                for (Register.Read read : reader.getRegisterReads()) {
-                    readRegisters.add(read.register());
-                }
             }
 
             if (e instanceof RegWriter writer) {
@@ -100,19 +117,21 @@ public class FunctionSnippet {
         }
 
         // ------- Create snippet and populate -------
-        final FunctionSnippet snippet = new FunctionSnippet(func, start, end);
+        final FunctionSnippet snippet = new FunctionSnippet(start, end);
+        snippet.registers.addAll(readRegisters);
+        snippet.registers.addAll(writtenRegisters);
+        snippet.memoryReferences.addAll(memoryReferences);
+        snippet.programConstants.addAll(programConstants);
         snippet.inputRegisters.addAll(Sets.intersection(readRegisters, liveRegsAnalysis.getLiveRegistersAt(start)));
         for (CondJump exitJump : exitJumps) {
             // TODO: This set may contain registers that are never written to on any path to that exit
-            //  as long as they are written to somewhere in the snippet.
+            //  as long as they are written to somewhere in the snippet. We could be more precise maybe.
             final Set<Register> liveOnExit = Sets.intersection(writtenRegisters, liveRegsAnalysis.getLiveRegistersAt(exitJump.getLabel()));
             snippet.liveRegsAtJumpExit.put(exitJump, liveOnExit);
         }
         if (!IRHelper.isAlwaysBranching(end) && end.getSuccessor() != null) {
             snippet.liveRegsAtRegularExit.addAll(liveRegsAnalysis.getLiveRegistersAt(end.getSuccessor()));
         }
-        snippet.memoryReferences.addAll(memoryReferences);
-        snippet.programConstants.addAll(programConstants);
 
         return snippet;
     }

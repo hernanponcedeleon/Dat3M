@@ -87,7 +87,7 @@ public class LoopUnrolling implements ProgramProcessor {
         unrollLoopsInFunction(function, bound);
     }
 
-    private void unrollLoopsInFunction(Function func, int defaultBound) {
+    public void unrollLoopsInFunction(Function func, int defaultBound) {
         if (!func.hasBody()) {
             return;
         }
@@ -125,7 +125,7 @@ public class LoopUnrolling implements ProgramProcessor {
         return loopBoundsMap;
     }
 
-    private void unrollLoop(CondJump loopBackJump, int bound) {
+    public void unrollLoop(CondJump loopBackJump, int bound) {
         final Label loopBegin = loopBackJump.getLabel();
         Preconditions.checkArgument(bound >= 1, "Positive unrolling bound expected.");
         Preconditions.checkArgument(loopBegin.getGlobalId() < loopBackJump.getGlobalId(),

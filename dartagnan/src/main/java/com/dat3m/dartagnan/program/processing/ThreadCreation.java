@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
@@ -85,7 +84,9 @@ public class ThreadCreation implements ProgramProcessor {
 
         final Optional<Function> main = program.getFunctionByName("main");
         if (main.isEmpty()) {
-            throw new MalformedProgramException("Program contains no main function");
+            // TODO: Enable
+            //throw new MalformedProgramException("Program contains no main function");
+            return;
         }
 
         // NOTE: We start from id = 0 which overlaps with existing function ids.
