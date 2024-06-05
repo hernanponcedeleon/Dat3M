@@ -140,6 +140,13 @@ public class IRHelper {
         return copy;
     }
 
+    public static Set<Register> collectWrittenRegisters(List<Event> events) {
+        final Set<Register> regs = new HashSet<>();
+        events.stream().filter(RegWriter.class::isInstance).map(RegWriter.class::cast)
+                .forEach(writer -> regs.add(writer.getResultRegister()));
+        return regs;
+    }
+
     public static Set<MemoryObject> collectMemoryObjects(List<Event> events) {
         final Set<MemoryObject> set = new HashSet<>();
         final ExpressionInspector collector = new ExpressionInspector() {
@@ -166,5 +173,13 @@ public class IRHelper {
         events.stream().filter(RegReader.class::isInstance).map(RegReader.class::cast)
                 .forEach(reader -> reader.transformExpressions(collector));
         return set;
+    }
+
+    public static Map<Register, Register> copyOverRegisters(Iterable<Register> toCopy, Function to) {
+        final Map<Register, Register> registerMap = new HashMap<>();
+        for (Register reg : toCopy) {
+            registerMap.put(reg, to.getOrNewRegister(reg.getName(), reg.getType()));
+        }
+        return registerMap;
     }
 }
