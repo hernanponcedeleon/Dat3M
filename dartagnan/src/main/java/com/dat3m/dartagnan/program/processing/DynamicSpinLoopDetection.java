@@ -233,7 +233,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         @Override
         public String toString() {
             return String.format("(%d: %s) --to--> (%d: %s)",
-                    getStart().getGlobalId(), getStart(), getEnd().getGlobalId(), getEnd());
+                    getStart().getLocalId(), getStart(), getEnd().getLocalId(), getEnd());
         }
     }
 
