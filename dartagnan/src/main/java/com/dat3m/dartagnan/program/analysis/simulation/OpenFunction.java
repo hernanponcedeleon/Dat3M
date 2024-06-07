@@ -17,6 +17,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.google.common.collect.Iterables;
@@ -59,7 +61,7 @@ public class OpenFunction {
     public final Function getFunction() { return func; }
     public final List<ExitBlock> getExitBlocks() { return exitBlocks; }
 
-    public OpenFunction constructLoopBoundedCopy(int bound) {
+    public OpenFunction constructLoopBoundedCopy(int bound /*, boolean allowEarlyTerminate*/) {
         final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(func).getLoopsOfFunction(func);
         if (loops.isEmpty()) {
             return this;
@@ -120,7 +122,15 @@ public class OpenFunction {
         extendedFunc.append(bodyCopy);
         extendedFunc.append(EventFactory.newStringAnnotation("------ End body ------"));
 
-        // ------------- Unroll loop & Replace bound event by special exit -------------
+        // TODO: The loop bounded copies must be able to end their simulation early rather than
+        //  going to the next iteration.
+        //  Reason: Say f1 has B=3 and f2 has B=4 and f2 performs an execution that reaches the bound.
+        //  Then f1 must perform 3 iterations to also reach the bound, however, it may be the case that
+        //  3 iterations cannot simulate 4 while 2 could (i.e., we have some oscillation).
+        //  Ideally, we would just add a non-deterministic termination jump at the loop end, right before unrolling
+        //  However, this is not so easy...
+
+        // ------------- Unroll loop & replace bound event by special exit -------------
         final LoopUnrolling unrolling = LoopUnrolling.newInstance();
         int id = 0;
         for (Event e : extendedFunc.getEvents()) {
@@ -131,12 +141,23 @@ public class OpenFunction {
         assert loopBound.hasTag(Tag.BOUND);
         loopBound.replaceBy(EventFactory.newGoto(loopingExit.exitLabel()));
 
+        for (Event e : extendedFunc.getEvents()) {
+            e.setGlobalId(id++);
+        }
+
         // ------------- Add output code (exit blocks + return) -------------
         appendOutputCode(extendedFunc, newOutputRegs, newExits);
 
         return new OpenFunction(extendedFunc);
     }
 
+    public static OpenFunction fromSnippet(Event start, Event end) {
+        return fromSnippet(FunctionSnippet.computeSnippet(start, end));
+    }
+
+    /*
+        Constructs, from a function snippet, an isolated function representing the snippet's behaviour.
+     */
     public static OpenFunction fromSnippet(FunctionSnippet snippet) {
         final TypeFactory types = TypeFactory.getInstance();
 
@@ -185,6 +206,7 @@ public class OpenFunction {
         // --------------- Copy over body ---------------
         func.append(EventFactory.newStringAnnotation("------ Begin body ------"));
         final List<Event> bodyCopy = IRHelper.copyPath(snippet.getStart(), snippet.getEnd().getSuccessor(), exitUpdateMap, registerMap);
+        checkForUnsupportedCode(bodyCopy);
         func.getExit().insertAfter(bodyCopy);
         func.append(EventFactory.newStringAnnotation("------ End body ------"));
 
@@ -192,6 +214,8 @@ public class OpenFunction {
         //  AbortIf: Exit with all variables dead
         //  Return: Exit with only return expression live.
         // TODO 2: Handle non-inlined function calls properly
+
+
 
         // ------------- Add output code (exit blocks + return) -------------
         appendOutputCode(func, Lists.transform(snipOutputRegs, registerMap::get), exitBlocks);
@@ -205,6 +229,15 @@ public class OpenFunction {
     // ------------------------------------------------------------------------------------------------
     // Utility
 
+    private static void checkForUnsupportedCode(List<Event> events) {
+        for (Event e : events) {
+            if (e instanceof FunctionCall || e instanceof AbortIf || e instanceof Return) {
+                final String error = String.format("Cannot handle event type '%s': %s", e.getClass().getSimpleName(), e);
+                throw new UnsupportedOperationException(error);
+            }
+        }
+    }
+
     private static void appendOutputCode(Function func, List<Register> totalOutputRegs, List<ExitBlock> exits) {
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final Label retLabel = makeReturnLabel();
@@ -213,13 +246,13 @@ public class OpenFunction {
         );
 
         for (ExitBlock exit : exits) {
-            func.append(constructExitCode(func, exit, totalOutputRegs, retLabel));
+            func.append(constructExitBlockCode(func, exit, totalOutputRegs, retLabel));
         }
         func.append(retLabel);
         func.append(EventFactory.newFunctionReturn(newReturnExpr));
     }
 
-    private static List<Event> constructExitCode(Function func, ExitBlock exit, List<Register> totalOutputRegs, Label retLabel) {
+    private static List<Event> constructExitBlockCode(Function func, ExitBlock exit, List<Register> totalOutputRegs, Label retLabel) {
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final List<Event> body = new ArrayList<>();
         body.add(exit.exitLabel());

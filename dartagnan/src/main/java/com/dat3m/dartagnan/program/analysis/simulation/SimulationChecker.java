@@ -1,5 +1,9 @@
 package com.dat3m.dartagnan.program.analysis.simulation;
 
+import com.dat3m.dartagnan.configuration.Property;
+import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.encoding.ProgramEncoder;
+import com.dat3m.dartagnan.encoding.WmmEncoder;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -11,19 +15,31 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
-import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.EventFactory;
-import com.dat3m.dartagnan.program.event.RegReader;
-import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.*;
+import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
+import com.dat3m.dartagnan.verification.Context;
+import com.dat3m.dartagnan.verification.VerificationTask;
+import com.dat3m.dartagnan.verification.solving.ModelChecker;
+import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.RelationNameRepository;
+import com.dat3m.dartagnan.wmm.Wmm;
+import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.visitors.DefaultFormulaVisitor;
+import org.sosy_lab.java_smt.api.visitors.FormulaVisitor;
+import org.sosy_lab.java_smt.api.visitors.TraversalProcess;
 
 import java.util.*;
 
@@ -52,16 +68,15 @@ public class SimulationChecker {
         for (LoopAnalysis.LoopInfo loop : loops) {
             assert !loop.isUnrolled();
             final LoopAnalysis.LoopIterationInfo loopBody = loop.iterations().get(0);
-            List<Event> body = IRHelper.getEventsFromTo(loopBody.getIterationStart(), loopBody.getIterationEnd());
-            FunctionSnippet snippet = FunctionSnippet.computeSnippet(loopBody.getIterationStart(), loopBody.getIterationEnd());
-            final OpenFunction func = OpenFunction.fromSnippet(snippet);
+            final OpenFunction func = OpenFunction.fromSnippet(loopBody.getIterationStart(), loopBody.getIterationEnd());
             f.getProgram().addFunction(func.getFunction());
             IdReassignment.newInstance().run(f.getProgram());
 
-            final OpenFunction f1 = func.constructLoopBoundedCopy(2);
-            final OpenFunction f2 = func.constructLoopBoundedCopy(3);
+            final OpenFunction f1 = func.constructLoopBoundedCopy(5);
+            final OpenFunction f2 = func.constructLoopBoundedCopy(6);
 
-            canSimulate(f1.getFunction(), f2.getFunction());
+            // TODO: Invert parameters
+            canSimulate(f2.getFunction(), f1.getFunction());
         }
     }
 
@@ -75,12 +90,12 @@ public class SimulationChecker {
         final Program commonProg = constructCommonProgram(f, g, Program.SourceLanguage.LLVM);
         final SimulationCheck check = generateThreads(commonProg);
         process(check);
+        try {
+            generateEncoding(check);
+        } catch (InvalidConfigurationException e) {
+            throw new RuntimeException(e);
+        }
 
-
-        final List<Event> fBody = check.source.getEvents();
-        final List<Event> gBody = check.simulator.getEvents();
-
-        int i = 5;
         /*
             Plan:
             (1) We construct a program that contains f and g:
@@ -111,7 +126,8 @@ public class SimulationChecker {
     }
 
     /*
-        Construct a program that contains both f and g.
+        Construct a program that contains both f and g, including all their referenced memory objects and program constants
+        NOTE: Currently does not copy over referenced functions (if f/g still have function class inside).
      */
     private Program constructCommonProgram(Function f, Function g, Program.SourceLanguage sourceLang) {
         final Set<MemoryObject> memObjs = new HashSet<>();
@@ -233,6 +249,7 @@ public class SimulationChecker {
     private void process(SimulationCheck check) {
         // TODO: TEST CODE
         final Program program = check.program;
+        //check.source.getEntry().insertAfter(EventFactory.newAssume(program.getConstants().stream().findFirst().get()));
         try {
             IdReassignment.newInstance().run(program);
             ProcessingManager.fromConfig(Configuration.defaultConfiguration()).run(program);
@@ -241,6 +258,8 @@ public class SimulationChecker {
         }
 
         assert program.getThreads().size() == 2;
+        // Undo copy-propagated assignments `__input#i <- nondetValue#i` to the input variables to generate
+        // a normalized form
         for (Thread thread : program.getThreads()) {
             final Map<Expression, Expression> replacementMap = new HashMap<>();
             final Set<Event> inputLocals = new HashSet<>();
@@ -264,7 +283,232 @@ public class SimulationChecker {
         }
     }
 
+    private void generateEncoding(SimulationCheck check) throws InvalidConfigurationException {
+        // ----------------- Construct bare-bones Wmm and verification task -----------------
+        final List<String> importantRelations = List.of(
+                RelationNameRepository.DATA,
+                RelationNameRepository.CTRL,
+                RelationNameRepository.ADDR,
+                RelationNameRepository.IDDTRANS,
+                RelationNameRepository.PO
+        );
+        final Wmm wmm = new Wmm();
+        wmm.removeDefinition(wmm.getRelation(RelationNameRepository.RF));
+        wmm.deleteRelation(wmm.getRelation(RelationNameRepository.RF));
+        wmm.removeDefinition(wmm.getRelation(RelationNameRepository.CO));
+        wmm.deleteRelation(wmm.getRelation(RelationNameRepository.CO));
+        for (String importantRel : importantRelations) {
+            final Relation rel = wmm.getOrCreatePredefinedRelation(importantRel);
+            wmm.addConstraint(new ForceEncodeAxiom(rel));
+        }
+        final VerificationTask task = VerificationTask.builder()
+                .build(check.program, wmm, EnumSet.noneOf(Property.class));
 
+        // ----------------- Perform analyses -----------------
+        final Configuration config = Configuration.defaultConfiguration();
+        final Context analysisContext = Context.create();
+        ModelChecker.performStaticProgramAnalyses(task, analysisContext, config);
+        ModelChecker.performStaticWmmAnalyses(task, analysisContext, config);
+
+        // ----------------- Generate encoding -----------------
+        try (SolverContext solverContext = SolverContextFactory.createSolverContext(SolverContextFactory.Solvers.Z3);
+                ProverEnvironment prover = solverContext.newProverEnvironment(SolverContext.ProverOptions.GENERATE_MODELS)) {
+
+            final EncodingContext ctx = EncodingContext.of(task, analysisContext, solverContext.getFormulaManager());
+            final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+            final WmmEncoder wmmEncoder = WmmEncoder.withContext(ctx);
+
+
+            // --------------------------- Program encodings ------------------------------------
+            final ProgramEncoder programEncoder = ProgramEncoder.withContext(ctx);
+            final BooleanFormula srcProgEnc = bmgr.and(
+                    programEncoder.encodeThreadCF(check.source),
+                    programEncoder.encodeThreadDataFlow(check.source)
+            );
+            final BooleanFormula simProgEnc = bmgr.and(
+                    programEncoder.encodeThreadCF(check.simulator),
+                    programEncoder.encodeThreadDataFlow(check.simulator)
+            );
+            final BooleanFormula commonProgEnc = bmgr.and(programEncoder.encodeConstants(), programEncoder.encodeMemory());
+
+            // -------------------------- Wmm encodings ------------------------------------------
+            final BooleanFormula wmmEnc = ctx.getFormulaManager().simplify(wmmEncoder.encodeRelations());
+            final List<BooleanFormula> srcWmmEnc = new ArrayList<>();
+            final List<BooleanFormula> simWmmEnc = new ArrayList<>();
+            separateWmmConstraints(check, ctx, wmmEnc, srcWmmEnc, simWmmEnc);
+
+            final BooleanFormula sourceEnc = bmgr.and(srcProgEnc, bmgr.and(srcWmmEnc));
+            final BooleanFormula simulatorEnc = bmgr.and(simProgEnc, bmgr.and(simWmmEnc));
+
+            // We add the common variables to the src
+            final Set<Formula> srcVars = extractVariables(sourceEnc, ctx.getFormulaManager());
+            srcVars.addAll(extractVariables(commonProgEnc, ctx.getFormulaManager()));
+            check.source.getEvents(Load.class).forEach(m -> {
+                    srcVars.add(ctx.value(m));
+            });
+
+            final Set<Formula> simVars = new HashSet<>(Sets.difference(
+                    extractVariables(simulatorEnc, ctx.getFormulaManager()),
+                    srcVars
+            ));
+            check.simulator.getEvents(Load.class).forEach(m -> {
+                simVars.add(ctx.value(m));
+            });
+
+            final Set<NonDetValue> srcConsts = IRHelper.collectProgramConstants(check.source.getEvents());
+            for (NonDetValue progConst : check.program.getConstants()) {
+                final Formula exprForm = ctx.encodeFinalExpression(progConst);
+                if (srcConsts.contains(progConst)) {
+                    srcVars.add(exprForm);
+                    simVars.remove(exprForm);
+                } else {
+                    simVars.add(exprForm);
+                }
+            }
+
+
+            // --------------------------- Generate encoding ------------------------------------
+            final QuantifiedFormulaManager qfm = ctx.getFormulaManager().getQuantifiedFormulaManager();
+            final BooleanFormula matchingEnc = constructMatchingEncoding(check, ctx);
+            final Set<Formula> matchingVars = extractVariables(matchingEnc, ctx.getFormulaManager());
+            final Set<Formula> matchSrc = new HashSet<>();
+            final Set<Formula> matchSim = new HashSet<>();
+            for (Formula formula : matchingVars) {
+                if (srcVars.contains(formula)) {
+                    matchSrc.add(formula);
+                } else {
+                    assert simVars.contains(formula);
+                    matchSim.add(formula);
+                }
+            }
+            // Inverted check:
+            // Exists sourceVars: IsSrcExec(sourceVars) /\ (forall simVars: !IsSimExec(simVars))
+            final BooleanFormula enc = bmgr.and(
+                    bmgr.and(commonProgEnc, sourceEnc),
+                    qfm.forall(new ArrayList<>(simVars), bmgr.not(bmgr.and(simulatorEnc, matchingEnc)))
+            );
+
+
+            prover.addConstraint(enc);
+            boolean canSimulate = prover.isUnsat();
+
+            final List<Event> srcBody = check.source.getEvents();
+            final List<Event> simBody = check.simulator.getEvents();
+            Model model = !canSimulate ? prover.getModel() : null;
+
+            int i = 5;
+        } catch (InterruptedException | SolverException e) {
+            throw new RuntimeException(e);
+        }
+
+
+    }
+
+    private static void separateWmmConstraints(SimulationCheck check, EncodingContext ctx, BooleanFormula wmmEnc,
+                                               List<BooleanFormula> srcWmmEnc, List<BooleanFormula> simWmmEnc) {
+        ctx.getFormulaManager().visitRecursively(wmmEnc, new DefaultFormulaVisitor<TraversalProcess>() {
+            @Override
+            protected TraversalProcess visitDefault(Formula formula) {
+                return null;
+            }
+
+            @Override
+            public TraversalProcess visitFunction(Formula f, List<Formula> args, FunctionDeclaration<?> functionDeclaration) {
+                if (functionDeclaration.getKind() != FunctionDeclarationKind.AND) {
+                    return TraversalProcess.SKIP;
+                }
+
+                for (Formula arg : args) {
+                    final List<Boolean> belongsToSimulator = new ArrayList<>();
+                    final FormulaVisitor<TraversalProcess> scanner = new DefaultFormulaVisitor<TraversalProcess>() {
+                        @Override
+                        protected TraversalProcess visitDefault(Formula formula) {
+                            return TraversalProcess.CONTINUE;
+                        }
+
+                        final CharMatcher matcher = CharMatcher.inRange('0', '9').or(CharMatcher.is(','))
+                                .precomputed();
+
+                        @Override
+                        public TraversalProcess visitFreeVariable(Formula f, String name) {
+                            final String numString = matcher.retainFrom(name);
+                            if (numString.isEmpty()) {
+                                return TraversalProcess.CONTINUE;
+                            }
+
+                            final String[] evRefs = numString.split(",");
+                            final List<Integer> events = Arrays.stream(evRefs).map(Integer::parseInt).toList();
+                            if (events.stream().noneMatch(e -> e <= check.source.getExit().getGlobalId())) {
+                                belongsToSimulator.add(true);
+                                return TraversalProcess.ABORT;
+                            } else {
+                                return TraversalProcess.CONTINUE;
+                            }
+                        }
+                    };
+                    ctx.getFormulaManager().visitRecursively(arg, scanner);
+                    if (belongsToSimulator.isEmpty()) {
+                        srcWmmEnc.add((BooleanFormula) arg);
+                    } else {
+                        simWmmEnc.add((BooleanFormula) arg);
+                    }
+                }
+                return TraversalProcess.ABORT;
+            }
+        });
+    }
+
+    private BooleanFormula constructMatchingEncoding(SimulationCheck check, EncodingContext ctx) {
+
+        final BooleanFormulaManager bmgr = ctx.getBooleanFormulaManager();
+        final List<BooleanFormula> enc = new ArrayList<>();
+
+        // ----- Match loads -----
+        for (Load load : check.simulator.getEvents(Load.class)) {
+            final List<BooleanFormula> matchings = new ArrayList<>();
+            final Formula loadVal = ctx.value(load);
+            for (Load srcLoad : check.source.getEvents(Load.class)) {
+                matchings.add(bmgr.and(
+                        ctx.execution(srcLoad),
+                        ctx.sameAddress(load, srcLoad),
+                        ctx.equal(loadVal, ctx.value(srcLoad))
+                ));
+            }
+            enc.add(bmgr.implication(ctx.execution(load), bmgr.or(matchings)));
+        }
+        // ----- Match output -----
+        for (RegWriter writer : check.source.getEvents(RegWriter.class)) {
+            if (!writer.getResultRegister().getName().contains("__output")) {
+                continue;
+            }
+
+            final RegWriter simulatingWriter = check.simulator.getEvents(RegWriter.class).stream().filter(w ->
+                    w.getResultRegister().getName().equals(writer.getResultRegister().getName()
+            )).findFirst().orElseThrow();
+
+            enc.add(ctx.equal(ctx.result(writer), ctx.result(simulatingWriter)));
+        }
+
+        return bmgr.and(enc);
+    }
+
+
+    private Set<Formula> extractVariables(Formula formula, FormulaManager fmgr) {
+        final Set<Formula> vars = new HashSet<>();
+        fmgr.visitRecursively(formula, new DefaultFormulaVisitor<TraversalProcess>() {
+            @Override
+            protected TraversalProcess visitDefault(Formula formula) {
+                return TraversalProcess.CONTINUE;
+            }
+
+            @Override
+            public TraversalProcess visitFreeVariable(Formula f, String name) {
+                vars.add(f);
+                return TraversalProcess.CONTINUE;
+            }
+        });
+        return vars;
+    }
 
     private class SimulationCheck {
 
@@ -280,7 +524,6 @@ public class SimulationChecker {
             this.simulator = simulator;
             this.inputConstants = inputConstants;
         }
-        //private final List<String> outputRegNames;
 
     }
 
