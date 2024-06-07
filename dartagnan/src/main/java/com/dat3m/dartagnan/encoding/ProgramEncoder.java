@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
+import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
@@ -25,10 +26,8 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
@@ -75,7 +74,8 @@ public class ProgramEncoder implements Encoder {
                 encodeControlFlow(),
                 encodeFinalRegisterValues(),
                 encodeFilter(),
-                encodeDependencies());
+                encodeRegisterDataflow()
+        );
     }
 
     public BooleanFormula encodeConstants() {
@@ -97,15 +97,26 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow");
 
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        List<BooleanFormula> enc = new ArrayList<>();
-        for(Thread t : context.getTask().getProgram().getThreads()){
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final List<BooleanFormula> enc = new ArrayList<>();
+        for(Thread t : context.getTask().getProgram().getThreads()) {
             enc.add(encodeThreadCF(t));
         }
         return bmgr.and(enc);
     }
 
-    private BooleanFormula encodeThreadCF(Thread thread) {
+    public BooleanFormula encodeRegisterDataflow() {
+        logger.info("Encoding register dataflow");
+
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final List<BooleanFormula> enc = new ArrayList<>();
+        for(Thread t : context.getTask().getProgram().getThreads()) {
+            enc.add(encodeThreadDataFlow(t));
+        }
+        return bmgr.and(enc);
+    }
+
+    public BooleanFormula encodeThreadCF(Thread thread) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ThreadStart startEvent = thread.getEntry();
         final List<BooleanFormula> enc = new ArrayList<>();
@@ -137,6 +148,45 @@ public class ProgramEncoder implements Encoder {
             enc.add(bmgr.equivalence(context.controlFlow(e), cfCond));
             enc.add(e.encodeExec(context));
             pred = e;
+        }
+        return bmgr.and(enc);
+    }
+
+    public BooleanFormula encodeThreadDataFlow(Thread thread) {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        List<BooleanFormula> enc = new ArrayList<>();
+        for (RegReader reader : thread.getEvents(RegReader.class)) {
+            final Set<Register> regs = reader.getRegisterReads().stream().map(Register.Read::register).collect(Collectors.toSet());
+            for (Register reg : regs) {
+                final Formula value = context.encodeExpressionAt(reg, reader);
+                final Dependency.State state = dep.of(reader, reg);
+                List<BooleanFormula> overwrite = new ArrayList<>();
+                for(RegWriter writer : reverse(state.may)) {
+                    BooleanFormula edge;
+                    if(state.must.contains(writer)) {
+                        if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {
+                            // This special case is important. Usually, we encode "dep => regValue = regWriterResult"
+                            // By getting rid of the guard "dep" in this special case, we end up with an unconditional
+                            // "regValue = regWriterResult", which allows the solver to eliminate one of the variables
+                            // in preprocessing.
+                            assert state.may.size() == 1;
+                            edge = bmgr.makeTrue();
+                        } else {
+                            edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
+                        }
+                    } else {
+                        edge = context.dependency(writer, reader);
+                        enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
+                    }
+                    enc.add(bmgr.implication(edge, context.equal(value, context.result(writer))));
+                    overwrite.add(context.execution(writer));
+                }
+                if(initializeRegisters && !state.initialized) {
+                    overwrite.add(bmgr.not(context.controlFlow(reader)));
+                    overwrite.add(context.equalZero(value));
+                    enc.add(bmgr.or(overwrite));
+                }
+            }
         }
         return bmgr.and(enc);
     }
@@ -196,54 +246,6 @@ public class ProgramEncoder implements Encoder {
         }
 
         return memObj2Addr;
-    }
-
-    /**
-     * @return
-     * Describes that for each pair of events, if the reader uses the result of the writer,
-     * then the value the reader gets from the register is exactly the value that the writer computed.
-     * Also, the reader may only use the value of the latest writer that is executed.
-     * Also, if no fitting writer is executed, the reader uses 0.
-     */
-    public BooleanFormula encodeDependencies() {
-        logger.info("Encoding dependencies");
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        List<BooleanFormula> enc = new ArrayList<>();
-        for(Map.Entry<Event,Map<Register, Dependency.State>> e : dep.getAll()) {
-            final Event reader = e.getKey();
-            for(Map.Entry<Register, Dependency.State> r : e.getValue().entrySet()) {
-                final Formula value = context.encodeExpressionAt(r.getKey(), reader);
-                final Dependency.State state = r.getValue();
-                List<BooleanFormula> overwrite = new ArrayList<>();
-                for(Event writer : reverse(state.may)) {
-                    assert writer instanceof RegWriter;
-                    BooleanFormula edge;
-                    if(state.must.contains(writer)) {
-                        if (exec.isImplied(reader, writer) && reader.cfImpliesExec()) {
-                            // This special case is important. Usually, we encode "dep => regValue = regWriterResult"
-                            // By getting rid of the guard "dep" in this special case, we end up with an unconditional
-                            // "regValue = regWriterResult", which allows the solver to eliminate one of the variables
-                            // in preprocessing.
-                            assert state.may.size() == 1;
-                            edge = bmgr.makeTrue();
-                        } else {
-                            edge = bmgr.and(context.execution(writer), context.controlFlow(reader));
-                        }
-                    } else {
-                        edge = context.dependency(writer, reader);
-                        enc.add(bmgr.equivalence(edge, bmgr.and(context.execution(writer), context.controlFlow(reader), bmgr.not(bmgr.or(overwrite)))));
-                    }
-                    enc.add(bmgr.implication(edge, context.equal(value, context.result((RegWriter) writer))));
-                    overwrite.add(context.execution(writer));
-                }
-                if(initializeRegisters && !state.initialized) {
-                    overwrite.add(bmgr.not(context.controlFlow(reader)));
-                    overwrite.add(context.equalZero(value));
-                    enc.add(bmgr.or(overwrite));
-                }
-            }
-        }
-        return bmgr.and(enc);
     }
 
     public BooleanFormula encodeFilter() {
