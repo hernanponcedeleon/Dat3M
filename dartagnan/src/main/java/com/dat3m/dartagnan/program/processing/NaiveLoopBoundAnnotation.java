@@ -70,7 +70,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
 
             // If this is a loop, NormalizeLoops guarantees a unique backjump
             if (backJumps.size() != 1) {
-                return;
+                continue;
             }
 
             final Event pred = label.getPredecessor();
