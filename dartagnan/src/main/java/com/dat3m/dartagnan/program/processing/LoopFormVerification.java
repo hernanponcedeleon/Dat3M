@@ -41,7 +41,7 @@ public class LoopFormVerification implements ProgramProcessor {
     @Override
     public void run(Program program) {
         final int numberOfLoops = Stream.concat(program.getThreads().stream(), program.getFunctions().stream())
-                .mapToInt(f -> checkAndCountLoops(f, Event::getGlobalId)).sum();
+                .mapToInt(f -> checkAndCountLoops(f, Event::getLocalId)).sum();
         logger.info("Detected {} loops in the program.", numberOfLoops);
     }
 

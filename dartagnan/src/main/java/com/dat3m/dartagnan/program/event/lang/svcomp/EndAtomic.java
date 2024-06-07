@@ -52,12 +52,12 @@ public class EndAtomic extends AbstractEvent implements EventUser {
 
     private void findEnclosedEvents(BranchEquivalence eq) {
         enclosedEvents = new ArrayList<>();
-        if (eq.areMutuallyExclusive(begin, this) || this.getGlobalId() < begin.getGlobalId()) {
-            logger.warn("BeginAtomic" + begin.getGlobalId() + "can't reach EndAtomic " + this.getGlobalId());
+        if (eq.areMutuallyExclusive(begin, this) || this.getLocalId() < begin.getLocalId()) {
+            logger.warn("BeginAtomic" + begin.getLocalId() + "can't reach EndAtomic " + this.getLocalId());
         }
 
         Event e = begin.getSuccessor();
-        while (e.getGlobalId() < this.getGlobalId()) {
+        while (e.getLocalId() < this.getLocalId()) {
             if (!eq.areMutuallyExclusive(begin, e)) {
                 if (!eq.isImplied(e, begin)) {
                     logger.warn(e + " is inside atomic block but can be reached from the outside");
