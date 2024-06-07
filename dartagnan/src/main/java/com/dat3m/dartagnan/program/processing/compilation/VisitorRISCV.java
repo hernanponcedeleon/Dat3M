@@ -234,7 +234,7 @@ class VisitorRISCV extends VisitorBase {
         CondJump gotoCasEnd = newGoto(casEnd);
         Load loadValue = newRMWLoadExclusiveWithMo(regValue, address, Tag.RISCV.extractLoadMoFromCMo(mo));
         Store storeValue = RISCV.newRMWStoreConditional(address, value, Tag.RISCV.extractStoreMoFromCMo(mo), e.isStrong());
-        Register statusReg = e.getFunction().newRegister("status(" + e.getGlobalId() + ")", types.getBooleanType());
+        Register statusReg = e.getFunction().newRegister("status(" + e.getLocalId() + ")", types.getBooleanType());
         // We normally make the following two events optional.
         // Here we make them mandatory to guarantee correct dependencies.
         ExecutionStatus execStatus = newExecutionStatusWithDependencyTracking(statusReg, storeValue);

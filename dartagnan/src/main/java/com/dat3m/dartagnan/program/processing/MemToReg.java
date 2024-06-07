@@ -258,8 +258,8 @@ public class MemToReg implements FunctionProcessor {
 
         @Override
         public Label visitLabel(Label label) {
-            final int globalId = label.getGlobalId();
-            final boolean looping = label.getJumpSet().stream().anyMatch(jump -> globalId < jump.getGlobalId());
+            final int localId = label.getLocalId();
+            final boolean looping = label.getJumpSet().stream().anyMatch(jump -> localId < jump.getLocalId());
             final Map<Object, AddressOffset> restoredState = looping ? jumps.get(label) : jumps.remove(label);
             if (restoredState != null) {
                 if (dead) {
@@ -284,7 +284,7 @@ public class MemToReg implements FunctionProcessor {
             // Give up on every address used in the condition.
             publishRegisters(jump.getGuard().getRegs());
             final Label label = jump.getLabel();
-            final boolean looping = label.getGlobalId() < jump.getGlobalId();
+            final boolean looping = label.getLocalId() < jump.getLocalId();
             final boolean isGoto = jump.isGoto();
             assert !looping || jumps.containsKey(label);
             // Prepare the current state for continuing from the label.

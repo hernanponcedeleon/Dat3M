@@ -44,33 +44,30 @@ public class NormalizeLoops implements FunctionProcessor {
         int counter = 0;
         for (Label label : function.getEvents(Label.class)) {
             final List<CondJump> backJumps = label.getJumpSet().stream()
-                    .filter(j -> j.getGlobalId() > label.getGlobalId())
+                    .filter(j -> j.getLocalId() > label.getLocalId())
                     .sorted()
                     .toList();
 
             // LoopFormVerification requires a unique and unconditional backjump
-            if (backJumps.size() > 0) {
-
-                // We can skip if already satisfied
-                if (backJumps.size() == 1 && backJumps.get(0).isGoto()) {
-                    return;
-                }
-
-                final CondJump last = backJumps.get(backJumps.size() - 1);
-
-                final Label forwardLabel = EventFactory.newLabel("__repeatLoop_#" + counter);
-                final CondJump gotoRepeat = EventFactory.newGoto(label);
-
-                final Label breakLabel = EventFactory.newLabel("__breakLoop_#" + counter);
-                final CondJump gotoBreak = EventFactory.newGoto(breakLabel);
-
-                last.insertAfter(List.of(gotoBreak, forwardLabel, gotoRepeat, breakLabel));
-
-                for(CondJump j : backJumps) {
-                    j.updateReferences(Map.of(j.getLabel(), forwardLabel));
-                }
+            if (backJumps.isEmpty() || (backJumps.size() == 1 && backJumps.get(0).isGoto())) {
+                continue;
             }
+
+            final CondJump last = backJumps.get(backJumps.size() - 1);
+
+            final Label forwardLabel = EventFactory.newLabel("__repeatLoop_#" + counter);
+            final CondJump gotoRepeat = EventFactory.newGoto(label);
+
+            final Label breakLabel = EventFactory.newLabel("__breakLoop_#" + counter);
+            final CondJump gotoBreak = EventFactory.newGoto(breakLabel);
+
+            last.insertAfter(List.of(gotoBreak, forwardLabel, gotoRepeat, breakLabel));
+
+            for(CondJump j : backJumps) {
+                j.updateReferences(Map.of(j.getLabel(), forwardLabel));
+            }
+
+            counter++;
         }
-        counter++;
     }
 }
