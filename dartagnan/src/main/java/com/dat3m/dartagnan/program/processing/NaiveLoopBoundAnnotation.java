@@ -18,6 +18,8 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.RegReader;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.utils.DominatorTree;
 
 import java.math.BigInteger;
@@ -59,7 +61,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
 
         final LiveRegistersAnalysis liveAnalysis = LiveRegistersAnalysis.forFunction(function);
-        final UseDefAnalysis useDegAnalysis = UseDefAnalysis.forFunction(function);
+        final UseDefAnalysis useDefAnalysis = UseDefAnalysis.forFunction(function);
         final DominatorTree<Event> preDominatorTree = DominatorAnalysis.computePreDominatorTree(function.getEntry(), function.getExit());
 
         for (Label label : function.getEvents(Label.class)) {
@@ -96,13 +98,13 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                     // The exit condition is dependent on the counting register.
                     && nNext instanceof CondJump continueJump && nnNext instanceof CondJump exitJump
                     && exitJump.getLabel().equals(exit)
-                    && useDegAnalysis.getDefs(continueJump, ite.getResultRegister()).contains(ite)
+                    && useDefAnalysis.getDefs(continueJump, ite.getResultRegister()).contains(ite)
                     // There is a single increment to the register and that increment dominates the
                     // loop backjump (this gives the step size).
-                    && getLoopBodyIncs(label, backJump, init.getResultRegister()).count() == 1
+                    && getLoopBodyCountIncs(label, backJump, init.getResultRegister(), useDefAnalysis).count() == 1
                     // The call to get() is guaranteed to succeed by the check above
                     && preDominatorTree.isDominatedBy(backJump,
-                            getLoopBodyIncs(label, backJump, init.getResultRegister()).findAny().get())
+                        getLoopBodyCountIncs(label, backJump, init.getResultRegister(), useDefAnalysis).findAny().get())
             ) {
                 final Expression boundExpr = expressions.makeValue(
                         // We use C-I+1 for i < C and C-I+2 for i <= C
@@ -113,11 +115,17 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
     }
 
-    private Stream<Event> getLoopBodyIncs(Label header, CondJump backJump, Register reg) {
+    private Stream<Event> getLoopBodyCountIncs(Label header, CondJump backJump, Register reg,
+            UseDefAnalysis useDefAnalysis) {
         return header.getSuccessors().stream()
                 .filter(e -> e instanceof Local inc && inc.getExpr() instanceof IntBinaryExpr incExpr
                         && incExpr.getLeft().equals(reg)
                         && incExpr.getKind().equals(IntBinaryOp.ADD)
-                        && inc.getGlobalId() < backJump.getGlobalId());
+                        && inc.getGlobalId() < backJump.getGlobalId()
+                        && e.getSuccessors().stream()
+                                .anyMatch(s -> s instanceof RegReader reader && s instanceof RegWriter writer
+                                        && s.getGlobalId() < backJump.getGlobalId()
+                                        && useDefAnalysis.getDefs(reader, inc.getResultRegister()).contains(inc)
+                                        && writer.getResultRegister().equals(reg)));
     }
 }
