@@ -271,9 +271,8 @@ public final class EncodingContext {
         if (formula instanceof BitvectorFormula f) {
             int formulaLength = bvmgr.getLength(f);
             // FIXME: Signedness may be wrong here.
-            return formulaLength >= length ?
-                    bvmgr.extract(f, length - 1, 0)
-                    : bvmgr.extend(f, length - formulaLength, false);
+            return formulaLength == length ? f : formulaLength > length ?
+                    bvmgr.extract(f, length - 1, 0) : bvmgr.extend(f, length - formulaLength, false);
         }
         if (formula instanceof BooleanFormula f) {
             BitvectorFormula zero = bvmgr.makeBitvector(length, 0);

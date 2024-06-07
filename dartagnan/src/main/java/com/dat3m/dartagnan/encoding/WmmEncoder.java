@@ -110,7 +110,7 @@ public class WmmEncoder implements Encoder {
         Wmm memoryModel = context.getTask().getMemoryModel();
         final DependencyGraph<Relation> depGraph = DependencyGraph.from(
                 Iterables.concat(
-                        Iterables.transform(Wmm.ANARCHIC_CORE_RELATIONS, memoryModel::getRelation), // base relations
+                        Iterables.filter(Iterables.transform(Wmm.ANARCHIC_CORE_RELATIONS, memoryModel::getRelation), Objects::nonNull), // base relations
                         Iterables.transform(memoryModel.getAxioms(), Axiom::getRelation) // axiom relations
                 )
         );

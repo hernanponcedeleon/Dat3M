@@ -144,13 +144,15 @@ public class RelationAnalysis {
             summary.append("\t#may-edges removed (extended): ").append(mayCount - a.countMaySet()).append("\n");
             summary.append("\t#must-edges added (extended): ").append(a.countMustSet() - mustCount).append("\n");
         }
+        summary.append("\ttotal #must|may|exclusive edges: ")
+                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.mutex.size()).append("\n");
         verify(a.enableMustSets || a.knowledgeMap.values().stream().allMatch(k -> k.must.isEmpty()));
         Knowledge rf = a.knowledgeMap.get(task.getMemoryModel().getRelation(RF));
         Knowledge co = a.knowledgeMap.get(task.getMemoryModel().getRelation(CO));
-        summary.append("\ttotal #must|may|exclusive edges: ")
-                .append(a.countMustSet()).append("|").append(a.countMaySet()).append("|").append(a.mutex.size()).append("\n");
-        summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
-        summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
+        if (rf != null && co != null) {
+            summary.append("\t#must|may rf edges: ").append(rf.must.size()).append("|").append(rf.may.size()).append("\n");
+            summary.append("\t#must|may co edges: ").append(co.must.size()).append("|").append(co.may.size()).append("\n");
+        }
         summary.append("===========================================");
         logger.info(summary);
         return a;
