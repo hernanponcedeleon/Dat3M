@@ -49,7 +49,7 @@ public class MiscellaneousTest extends AbstractCTest {
     protected Provider<Configuration> getConfigurationProvider() {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
-            if (!name.equals("pthread")) {
+            if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz")) {
                 builder.setOption(OptionNames.USE_INTEGERS, "true");
             }
             if (name.equals("recursion")) {
@@ -87,7 +87,9 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"uninitRead", IMM, FAIL, 1},
                 {"multipleBackJumps", IMM, UNKNOWN, 1},
                 {"memcpy_s", IMM, PASS, 1},
-                {"offsetof", IMM, PASS, 1}
+                {"offsetof", IMM, PASS, 1},
+                {"ctlz", IMM, PASS, 1},
+                {"cttz", IMM, PASS, 1}
         });
     }
 
