@@ -190,7 +190,7 @@ public class Intrinsics {
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
                 "llvm.sadd.with.overflow", "llvm.ssub.with.overflow", "llvm.smul.with.overflow",
-                "llvm.ctlz", "llvm.ctpop"),
+                "llvm.ctlz", "llvm.cttz", "llvm.ctpop"),
                 false, false, true, true, Intrinsics::handleLLVMIntrinsic),
         LLVM_ASSUME("llvm.assume", false, false, true, true, Intrinsics::inlineLLVMAssume),
         LLVM_META(List.of("llvm.stacksave", "llvm.stackrestore", "llvm.lifetime"), false, false, true, true, Intrinsics::inlineAsZero),
@@ -930,6 +930,8 @@ public class Intrinsics {
 
         if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
+        } else if (name.startsWith("llvm.cttz")) {
+            return inlineLLVMCtlz(valueCall);
         } else if (name.startsWith("llvm.ctpop")) {
             return inlineLLVMCtpop(valueCall);
         } else if (name.contains("add.sat")) {
@@ -977,6 +979,23 @@ public class Intrinsics {
         checkArgument(input.getType().equals(type),
                 "Return type %s of \"llvm.ctlz\" must match argument type %s.", type, input.getType());
         final Expression resultExpression = expressions.makeCTLZ(input);
+        final Event assignment = EventFactory.newLocal(resultReg, resultExpression);
+        return List.of(assignment);
+    }
+
+    private List<Event> inlineLLVMCttz(ValueFunctionCall call) {
+        //see https://llvm.org/docs/LangRef.html#llvm-cttz-intrinsic
+        checkArgument(call.getArguments().size() == 2,
+                "Expected 2 parameters for \"llvm.cttz\", got %s.", call.getArguments().size());
+        final Expression input = call.getArguments().get(0);
+        // TODO: Handle the second parameter as well
+        final Register resultReg = call.getResultRegister();
+        final Type type = resultReg.getType();
+        checkArgument(resultReg.getType() instanceof IntegerType,
+                "Non-integer %s type for \"llvm.cttz\".", type);
+        checkArgument(input.getType().equals(type),
+                "Return type %s of \"llvm.cttz\" must match argument type %s.", type, input.getType());
+        final Expression resultExpression = expressions.makeCTTZ(input);
         final Event assignment = EventFactory.newLocal(resultReg, resultExpression);
         return List.of(assignment);
     }

@@ -205,4 +205,16 @@ public class IntegerHelper {
         return BigInteger.valueOf(leadingZeroes);
     }
 
+    public static BigInteger cttz(BigInteger x, int bitWidth) {
+        int trailingZeroes = 0;
+        for (int i = 0; i < bitWidth; i++) {
+            if (!x.testBit(i)) {
+                trailingZeroes++;
+            } else {
+                break;
+            }
+        }
+        return BigInteger.valueOf(trailingZeroes);
+    }
+
 }
