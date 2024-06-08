@@ -72,26 +72,24 @@ public class SimulationChecker {
             f.getProgram().addFunction(func.getFunction());
             IdReassignment.newInstance().run(f.getProgram());
 
-            final OpenFunction f1 = func.constructLoopBoundedCopy(5);
-            final OpenFunction f2 = func.constructLoopBoundedCopy(6);
-
-            // TODO: Invert parameters
-            canSimulate(f2.getFunction(), f1.getFunction());
+            final OpenFunction src = func.constructLoopBoundedCopy(6);
+            final OpenFunction sim = func.constructLoopBoundedCopy(5);
+            canSimulate(src.getFunction(), sim.getFunction());
         }
     }
 
-    // Checks if "g <= f": For every (open/partial) execution of g with input I, there is a (open/partial) execution of f
-    // on the same input I that (i) produces the same return values and (ii) is at least as consistent as g's execution.
-    public boolean canSimulate(Function f, Function g) {
-        if (!f.getFunctionType().equals(g.getFunctionType())) {
+    // Checks if "src <= sim": For every execution of src with input I, there is an execution of sim
+    // on the same input I that (i) produces the same return values and (ii) is at least as consistent as src's execution.
+    public boolean canSimulate(Function src, Function sim) {
+        if (!src.getFunctionType().equals(sim.getFunctionType())) {
             return false;
         }
 
-        final Program commonProg = constructCommonProgram(f, g, Program.SourceLanguage.LLVM);
+        final Program commonProg = constructCommonProgram(src, sim, Program.SourceLanguage.LLVM);
         final SimulationCheck check = generateThreads(commonProg);
         process(check);
         try {
-            generateEncoding(check);
+            check(check);
         } catch (InvalidConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -175,73 +173,73 @@ public class SimulationChecker {
     }
 
     private SimulationCheck generateThreads(Program program) {
-        final Function f = program.getFunctions().get(0);
-        final Function g = program.getFunctions().get(1);
+        final Function src = program.getFunctions().get(0);
+        final Function sim = program.getFunctions().get(1);
 
         final TypeFactory types = TypeFactory.getInstance();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final FunctionType threadType = types.getFunctionType(types.getVoidType(), List.of());
 
-        final Thread fThread = new Thread(f.getName() + "_source", threadType, List.of(),
+        final Thread srcThread = new Thread(src.getName() + "_src", threadType, List.of(),
                 0, EventFactory.newThreadStart(null)
         );
-        final Thread gThread = new Thread(g.getName() + "_simulator", threadType, List.of(),
+        final Thread simThread = new Thread(sim.getName() + "_sim", threadType, List.of(),
                 1, EventFactory.newThreadStart(null)
         );
 
         final List<NonDetValue> inputConstants = new ArrayList<>();
-        final List<Register> fInputRegs = new ArrayList<>();
-        final List<Register> gInputRegs = new ArrayList<>();
-        for (Type inputType : f.getFunctionType().getParameterTypes()) {
+        final List<Register> srcInputRegs = new ArrayList<>();
+        final List<Register> simInputRegs = new ArrayList<>();
+        for (Type inputType : src.getFunctionType().getParameterTypes()) {
             final int id =  inputConstants.size();
-            final Register fInputReg = fThread.newRegister("__input" + id, inputType);
-            final Register gInputReg = gThread.newRegister("__input" + id, inputType);
+            final Register srcInputReg = srcThread.newRegister("__input" + id, inputType);
+            final Register simInputReg = simThread.newRegister("__input" + id, inputType);
             final NonDetValue inputConstant = (NonDetValue) program.newConstant(inputType);
 
-            fInputRegs.add(fInputReg);
-            final Event fAssign = EventFactory.newLocal(fInputReg, inputConstant);
-            fAssign.addTags(Tag.NOOPT);
-            fThread.append(fAssign);
+            srcInputRegs.add(srcInputReg);
+            final Event srcAssign = EventFactory.newLocal(srcInputReg, inputConstant);
+            srcAssign.addTags(Tag.NOOPT);
+            srcThread.append(srcAssign);
 
-            gInputRegs.add(gInputReg);
-            final Event gAssign = EventFactory.newLocal(gInputReg, inputConstant);
-            gAssign.addTags(Tag.NOOPT);
-            gThread.append(gAssign);
+            simInputRegs.add(simInputReg);
+            final Event simAssign = EventFactory.newLocal(simInputReg, inputConstant);
+            simAssign.addTags(Tag.NOOPT);
+            simThread.append(simAssign);
 
             inputConstants.add(inputConstant);
         }
 
-        final Register fCallResultReg = fThread.newRegister("__callResult", f.getFunctionType().getReturnType());
-        final Register gCallResultReg = gThread.newRegister("__callResult", g.getFunctionType().getReturnType());
-        fThread.append(EventFactory.newValueFunctionCall(fCallResultReg, f, Lists.transform(fInputRegs, reg -> reg)));
-        gThread.append(EventFactory.newValueFunctionCall(gCallResultReg, g, Lists.transform(gInputRegs, reg -> reg)));
+        final Register srcCallResultReg = srcThread.newRegister("__callResult", src.getFunctionType().getReturnType());
+        final Register simCallResultReg = simThread.newRegister("__callResult", sim.getFunctionType().getReturnType());
+        srcThread.append(EventFactory.newValueFunctionCall(srcCallResultReg, src, Lists.transform(srcInputRegs, reg -> reg)));
+        simThread.append(EventFactory.newValueFunctionCall(simCallResultReg, sim, Lists.transform(simInputRegs, reg -> reg)));
 
         //TODO: Extend to non-aggregate types
-        final AggregateType resultType = (AggregateType) f.getFunctionType().getReturnType();
+        final AggregateType resultType = (AggregateType) src.getFunctionType().getReturnType();
         int nextId = 0;
         for (Type outputType : resultType.getDirectFields()) {
             final int id = nextId++;
-            final Register fOutputReg = fThread.newRegister("__output" + id, outputType);
-            final Register gOutputReg = gThread.newRegister("__output" + id, outputType);
+            final Register srcOutputReg = srcThread.newRegister("__output" + id, outputType);
+            final Register simOutputReg = simThread.newRegister("__output" + id, outputType);
 
-            final Event fAssign = EventFactory.newLocal(fOutputReg, exprs.makeExtract(id, fCallResultReg));
-            fAssign.addTags(Tag.NOOPT);
-            fThread.append(fAssign);
+            final Event srcAssign = EventFactory.newLocal(srcOutputReg, exprs.makeExtract(id, srcCallResultReg));
+            srcAssign.addTags(Tag.NOOPT);
+            srcThread.append(srcAssign);
 
-            final Event gAssign = EventFactory.newLocal(gOutputReg, exprs.makeExtract(id, gCallResultReg));
-            gAssign.addTags(Tag.NOOPT);
-            gThread.append(gAssign);
+            final Event simAssign = EventFactory.newLocal(simOutputReg, exprs.makeExtract(id, simCallResultReg));
+            simAssign.addTags(Tag.NOOPT);
+            simThread.append(simAssign);
         }
         // TODO: Maybe add a dummy event that uses all output registers, so we do not have to mark them as NOOPT?
 
         // TODO: Check if really necessary
-        fThread.append(EventFactory.newLabel("END_OF_T"));
-        gThread.append(EventFactory.newLabel("END_OF_T"));
+        srcThread.append(EventFactory.newLabel("END_OF_T"));
+        simThread.append(EventFactory.newLabel("END_OF_T"));
 
-        program.addThread(fThread);
-        program.addThread(gThread);
+        program.addThread(srcThread);
+        program.addThread(simThread);
 
-        final SimulationCheck check = new SimulationCheck(program, fThread, gThread, inputConstants);
+        final SimulationCheck check = new SimulationCheck(program, srcThread, simThread, inputConstants);
         return check;
 
     }
@@ -283,7 +281,7 @@ public class SimulationChecker {
         }
     }
 
-    private void generateEncoding(SimulationCheck check) throws InvalidConfigurationException {
+    private boolean check(SimulationCheck check) throws InvalidConfigurationException {
         // ----------------- Construct bare-bones Wmm and verification task -----------------
         final List<String> importantRelations = List.of(
                 RelationNameRepository.DATA,
@@ -381,8 +379,9 @@ public class SimulationChecker {
                     matchSim.add(formula);
                 }
             }
-            // Inverted check:
-            // Exists sourceVars: IsSrcExec(sourceVars) /\ (forall simVars: !IsSimExec(simVars))
+            // Check:
+            // Exists commonVars, srcVars: IsSrcExec(commonVars, srcVars)
+            //   /\ (forall simVars: !(IsSimExec(commonVars, simVars) /\ match(srcVars, simVars))
             final BooleanFormula enc = bmgr.and(
                     bmgr.and(commonProgEnc, sourceEnc),
                     qfm.forall(new ArrayList<>(simVars), bmgr.not(bmgr.and(simulatorEnc, matchingEnc)))
@@ -392,16 +391,15 @@ public class SimulationChecker {
             prover.addConstraint(enc);
             boolean canSimulate = prover.isUnsat();
 
+            // TODO: Test code
             final List<Event> srcBody = check.source.getEvents();
             final List<Event> simBody = check.simulator.getEvents();
             Model model = !canSimulate ? prover.getModel() : null;
 
-            int i = 5;
+            return canSimulate;
         } catch (InterruptedException | SolverException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     private static void separateWmmConstraints(SimulationCheck check, EncodingContext ctx, BooleanFormula wmmEnc,
