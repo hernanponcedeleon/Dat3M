@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
 import org.apache.logging.log4j.LogManager;
@@ -81,9 +82,8 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         Map<Register, Expression> propagationMap = new HashMap<>();
         boolean isTraversingDeadBranch = false;
 
-        final List<LoopAnalysis.LoopIterationInfo> loops = LoopAnalysis.onFunction(func).getLoopsOfFunction(func)
-                .stream().filter(info -> !info.isUnrolled())
-                .map(info -> info.iterations().get(0)).toList();
+        final List<LoopAnalysis.LoopIterationInfo> loops = LoopAnalysis.onFunction(func, false)
+                .getLoopsOfFunction(func).stream().map(info -> info.iterations().get(0)).toList();
 
         final ConstantPropagator propagator = new ConstantPropagator();
         for (Event cur : func.getEvents()) {
@@ -159,7 +159,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         // ---------- Remove dead code ----------
         final Set<Event> toBeDeleted = new HashSet<>();
         for (Event e : func.getEvents()) {
-            if (reachableEvents.contains(e) || (e instanceof Label && e.hasTag(Tag.NOOPT))) {
+            if (reachableEvents.contains(e) || ((e instanceof Label || e instanceof AbortIf) && e.hasTag(Tag.NOOPT))) {
                 //FIXME: The second check is just to avoid deleting loop-related labels (especially
                 // the loop end marker) because those are used to find unrolled loops.
                 // There should be better ways that do not retain such dead code: for example,

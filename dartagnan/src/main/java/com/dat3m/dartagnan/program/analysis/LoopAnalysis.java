@@ -75,9 +75,9 @@ public class LoopAnalysis {
         return loopAnalysis;
     }
 
-    public static LoopAnalysis onFunction(Function function) {
+    public static LoopAnalysis onFunction(Function function, boolean lookForUnrolledLoops) {
         final LoopAnalysis loopAnalysis = new LoopAnalysis();
-        loopAnalysis.run(function);
+        loopAnalysis.run(function, lookForUnrolledLoops);
         return loopAnalysis;
     }
 
@@ -91,10 +91,9 @@ public class LoopAnalysis {
                 .forEach(t -> this.func2LoopsMap.put(t, loopFindingAlgo.apply(t)));
     }
 
-    private void run(Function function) {
-        final Program program = function.getProgram();
+    private void run(Function function, boolean lookForUnrolledLoops) {
         final java.util.function.Function<Function, ImmutableList<LoopInfo>> loopFindingAlgo =
-                program.isUnrolled() ? this::findUnrolledLoopsInFunction : this::findLoopsInFunction;
+                lookForUnrolledLoops ? this::findUnrolledLoopsInFunction : this::findLoopsInFunction;
 
         this.func2LoopsMap.put(function, loopFindingAlgo.apply(function));
     }

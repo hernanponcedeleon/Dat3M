@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -62,7 +63,7 @@ public class OpenFunction {
     public final List<ExitBlock> getExitBlocks() { return exitBlocks; }
 
     public OpenFunction constructLoopBoundedCopy(int bound /*, boolean allowEarlyTerminate*/) {
-        final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(func).getLoopsOfFunction(func);
+        final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(func, false).getLoopsOfFunction(func);
         if (loops.isEmpty()) {
             return this;
         }
@@ -131,22 +132,19 @@ public class OpenFunction {
         //  However, this is not so easy...
 
         // ------------- Unroll loop & replace bound event by special exit -------------
+        IdReassignment.newInstance().run(extendedFunc);
         final LoopUnrolling unrolling = LoopUnrolling.newInstance();
-        int id = 0;
-        for (Event e : extendedFunc.getEvents()) {
-            e.setGlobalId(id++);
-        }
         unrolling.unrollLoopsInFunction(extendedFunc, bound);
         final Event loopBound = extendedFunc.getExit().getPredecessor();
         assert loopBound.hasTag(Tag.BOUND);
         loopBound.replaceBy(EventFactory.newGoto(loopingExit.exitLabel()));
 
-        for (Event e : extendedFunc.getEvents()) {
-            e.setGlobalId(id++);
-        }
-
         // ------------- Add output code (exit blocks + return) -------------
         appendOutputCode(extendedFunc, newOutputRegs, newExits);
+        IdReassignment.newInstance().run(extendedFunc);
+
+        final OpenFunction openFunction = new OpenFunction(extendedFunc);
+        openFunction.exitBlocks.addAll(newExits);
 
         return new OpenFunction(extendedFunc);
     }
@@ -219,6 +217,7 @@ public class OpenFunction {
 
         // ------------- Add output code (exit blocks + return) -------------
         appendOutputCode(func, Lists.transform(snipOutputRegs, registerMap::get), exitBlocks);
+        IdReassignment.newInstance().run(func);
 
         final OpenFunction openFunction = new OpenFunction(func);
         openFunction.exitBlocks.addAll(exitBlocks);
@@ -231,7 +230,8 @@ public class OpenFunction {
 
     private static void checkForUnsupportedCode(List<Event> events) {
         for (Event e : events) {
-            if (e instanceof FunctionCall || e instanceof AbortIf || e instanceof Return) {
+            if ((e instanceof FunctionCall call && !(call.isDirectCall() && call.getCalledFunction().isIntrinsic())
+                    || e instanceof AbortIf || e instanceof Return)) {
                 final String error = String.format("Cannot handle event type '%s': %s", e.getClass().getSimpleName(), e);
                 throw new UnsupportedOperationException(error);
             }

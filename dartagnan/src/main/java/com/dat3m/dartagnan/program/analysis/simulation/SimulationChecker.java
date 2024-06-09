@@ -63,14 +63,12 @@ import java.util.*;
 public class SimulationChecker {
 
     public void test(Function f) {
-        List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(f).getLoopsOfFunction(f);
+        List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(f, false).getLoopsOfFunction(f);
 
         for (LoopAnalysis.LoopInfo loop : loops) {
             assert !loop.isUnrolled();
             final LoopAnalysis.LoopIterationInfo loopBody = loop.iterations().get(0);
             final OpenFunction func = OpenFunction.fromSnippet(loopBody.getIterationStart(), loopBody.getIterationEnd());
-            f.getProgram().addFunction(func.getFunction());
-            IdReassignment.newInstance().run(f.getProgram());
 
             final OpenFunction src = func.constructLoopBoundedCopy(6);
             final OpenFunction sim = func.constructLoopBoundedCopy(5);
@@ -392,9 +390,9 @@ public class SimulationChecker {
             boolean canSimulate = prover.isUnsat();
 
             // TODO: Test code
-            final List<Event> srcBody = check.source.getEvents();
+            /*final List<Event> srcBody = check.source.getEvents();
             final List<Event> simBody = check.simulator.getEvents();
-            Model model = !canSimulate ? prover.getModel() : null;
+            Model model = !canSimulate ? prover.getModel() : null;*/
 
             return canSimulate;
         } catch (InterruptedException | SolverException e) {
