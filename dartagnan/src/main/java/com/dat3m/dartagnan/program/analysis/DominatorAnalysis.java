@@ -18,14 +18,14 @@ public class DominatorAnalysis {
     public static DominatorTree<Event> computePreDominatorTree(Event from, Event to) {
         Preconditions.checkArgument(from.getFunction() == to.getFunction(),
                 "Cannot compute dominator tree between events of different functions.");
-        final Predicate<Event> isInRange = (e -> from.getGlobalId() <= e.getGlobalId() && e.getGlobalId() <= to.getGlobalId());
+        final Predicate<Event> isInRange = (e -> from.getLocalId() <= e.getLocalId() && e.getLocalId() <= to.getLocalId());
         return new DominatorTree<>(from, e -> Iterables.filter(getSuccessors(e), isInRange));
     }
 
     public static DominatorTree<Event> computePostDominatorTree(Event from, Event to) {
         Preconditions.checkArgument(from.getFunction() == to.getFunction(),
                 "Cannot compute dominator tree between events of different functions.");
-        final Predicate<Event> isInRange = (e -> from.getGlobalId() <= e.getGlobalId() && e.getGlobalId() <= to.getGlobalId());
+        final Predicate<Event> isInRange = (e -> from.getLocalId() <= e.getLocalId() && e.getLocalId() <= to.getLocalId());
         return new DominatorTree<>(to, e -> Iterables.filter(getPredecessors(e), isInRange));
     }
 

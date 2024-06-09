@@ -240,13 +240,28 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             case CTLZ -> {
                 if (inner instanceof BitvectorFormula bv) {
                     BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-                    // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) ? 63 : 64)
+                    // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) == 1 ? 63 : 64)
                     int bvLength = bvmgr.getLength(bv);
                     BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
                     BitvectorFormula enc = bvmgr.makeBitvector(bvLength, bvLength);
-                    for(int i = bvmgr.getLength(bv) - 1; i >= 0; i--) {
+                    for(int i = bvLength - 1; i >= 0; i--) {
                         BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
                         BitvectorFormula bvbit = bvmgr.extract(bv, bvLength - (i + 1), bvLength - (i + 1));
+                        enc = booleanFormulaManager.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, enc);
+                    }
+                    return enc;
+                }
+            }
+            case CTTZ -> {
+                if (inner instanceof BitvectorFormula bv) {
+                    BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                    // enc = extract(bv, 0, 0) == 1 ? 0 : (extract(bv, 1, 1) == 1 ? 1 : extract ... extract(bv, 63, 63) == 1? 63 : 64)
+                    int bvLength = bvmgr.getLength(bv);
+                    BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
+                    BitvectorFormula enc = bvmgr.makeBitvector(bvLength, bvLength);
+                    for(int i = bvLength - 1; i >= 0; i--) {
+                        BitvectorFormula bvi = bvmgr.makeBitvector(bvLength, i);
+                        BitvectorFormula bvbit = bvmgr.extract(bv, i, i);
                         enc = booleanFormulaManager.ifThenElse(bvmgr.equal(bvbit, bv1), bvi, enc);
                     }
                     return enc;

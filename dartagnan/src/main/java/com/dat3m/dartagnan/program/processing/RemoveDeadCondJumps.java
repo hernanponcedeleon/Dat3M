@@ -102,7 +102,7 @@ public class RemoveDeadCondJumps implements FunctionProcessor {
                     label.getJumpSet().forEach(Event::tryDelete);
                 }
                 if (!cur.tryDelete()) {
-                    logger.warn("Failed to delete event: {}:   {}", cur.getGlobalId(), cur);
+                    logger.warn("Failed to delete event: {}:   {}", cur.getLocalId(), cur);
                 }
             }
             if (cur instanceof CondJump jump && jump.isGoto()) {
