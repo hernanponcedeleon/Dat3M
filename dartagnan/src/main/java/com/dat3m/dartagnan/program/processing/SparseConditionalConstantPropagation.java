@@ -170,7 +170,7 @@ public class SparseConditionalConstantPropagation implements FunctionProcessor {
         }
         final Set<Event> failedToDelete = IRHelper.bulkDelete(toBeDeleted);
         for (Event e : failedToDelete) {
-            logger.warn("Failed to delete unreachable event: {}:   {}", e.getGlobalId(), e);
+            logger.warn("Failed to delete unreachable event: {}:   {}", e.getLocalId(), e);
         }
     }
 

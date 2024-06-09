@@ -9,27 +9,27 @@ public class IconHelper {
 
     private static Map<IconCode, Map<Integer, ImageIcon>> data = new HashMap<>();
 
-    public static ImageIcon getIcon(IconCode code){
+    public static ImageIcon getIcon(IconCode code) {
         return getIcon(code, -1);
     }
 
-    public static ImageIcon getIcon(IconCode code, int height){
+    public static ImageIcon getIcon(IconCode code, int height) {
         data.putIfAbsent(code, new HashMap<>());
         Map<Integer, ImageIcon> heightMap = data.get(code);
         height = Math.max(-1, height);
-        if(!heightMap.containsKey(height)){
+        if (!heightMap.containsKey(height)) {
             heightMap.put(height, mkIcon(code, height));
         }
         return heightMap.get(height);
     }
 
-    private static ImageIcon mkIcon(IconCode code, int height){
+    private static ImageIcon mkIcon(IconCode code, int height) {
         ImageIcon origImage = new ImageIcon(code.getPath(), code.toString());
-        if(height == -1){
+        if (height == -1) {
             return origImage;
         }
 
-        if(height > origImage.getIconHeight()){
+        if (height > origImage.getIconHeight()) {
             System.err.println("Warning: scaling image large its original size might degrade image quality");
         }
 

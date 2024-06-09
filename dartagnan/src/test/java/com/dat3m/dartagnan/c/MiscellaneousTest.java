@@ -85,7 +85,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"funcPtrInStaticMemory", IMM, PASS, 1},
                 {"verifierAssert", ARM8, FAIL, 1},
                 {"uninitRead", IMM, FAIL, 1},
-                {"multipleBackJumps", IMM, UNKNOWN, 1}
+                {"multipleBackJumps", IMM, UNKNOWN, 1},
+                {"memcpy_s", IMM, PASS, 1}
         });
     }
 

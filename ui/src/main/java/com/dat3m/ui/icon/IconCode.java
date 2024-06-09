@@ -5,31 +5,24 @@ import com.dat3m.ui.Dat3M;
 import java.net.URL;
 
 public enum IconCode {
-
     DAT3M, DARTAGNAN;
 
     @Override
-    public String toString(){
-        switch(this){
-            case DAT3M:
-                return "Dat3M";
-            case DARTAGNAN:
-                return "Dartagnan";
-        }
-        return super.toString();
+    public String toString() {
+        return switch (this) {
+            case DAT3M -> "Dat3M";
+            case DARTAGNAN -> "Dartagnan";
+        };
     }
 
-    public URL getPath(){
-        switch(this){
-            case DAT3M:
-                return getResource("/dat3m.png");
-            case DARTAGNAN:
-                return getResource("/dartagnan.jpg");
-        }
-        throw new RuntimeException("Illegal IconCode option");
+    public URL getPath() {
+        return switch (this) {
+            case DAT3M -> getResource("/dat3m.png");
+            case DARTAGNAN -> getResource("/dartagnan.jpg");
+        };
     }
 
-    private URL getResource(String filename){
+    private URL getResource(String filename) {
         return Dat3M.class.getResource(filename);
     }
 }

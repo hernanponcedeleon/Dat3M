@@ -122,6 +122,10 @@ public final class ExpressionFactory {
         return makeIntUnary(IntUnaryOp.CTLZ, operand);
     }
 
+    public Expression makeCTTZ(Expression operand) {
+        return makeIntUnary(IntUnaryOp.CTTZ, operand);
+    }
+
     public Expression makeAdd(Expression leftOperand, Expression rightOperand) {
         return makeIntBinary(leftOperand, IntBinaryOp.ADD, rightOperand);
     }
