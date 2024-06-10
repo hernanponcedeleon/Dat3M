@@ -192,10 +192,10 @@ public class ExecutionGraphVisualizer {
         for (Map.Entry<MemoryObject, BigInteger> entry : objToAddrMap.entrySet()) {
             final BigInteger nextObjAddr = entry.getValue();
             if (nextObjAddr.compareTo(address) >= 0) {
-                obj = entry.getKey();
-                objAddress = nextObjAddr;
                 break;
             }
+            obj = entry.getKey();
+            objAddress = nextObjAddr;
         }
 
         if (obj == null) {
