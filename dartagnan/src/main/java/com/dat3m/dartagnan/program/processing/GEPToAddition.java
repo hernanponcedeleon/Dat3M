@@ -77,10 +77,7 @@ public class GEPToAddition implements ProgramProcessor {
                 }
                 final int value = constant.getValueAsInt();
                 type = aggregateType.getDirectFields().get(value);
-                int o = 0;
-                for (final Type elementType : aggregateType.getDirectFields().subList(0, value)) {
-                    o += types.getMemorySizeInBytes(elementType);
-                }
+                int o = TypeFactory.getInstance().getOffsetInBytes(aggregateType, value);
                 result = expressions.makeAdd(result, expressions.makeValue(o, archType));
             }
             return result;
