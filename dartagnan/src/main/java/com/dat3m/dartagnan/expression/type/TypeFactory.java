@@ -2,10 +2,7 @@ package com.dat3m.dartagnan.expression.type;
 
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.utils.Normalizer;
-import com.google.common.base.Preconditions;
-import com.google.common.math.IntMath;
 
-import java.math.RoundingMode;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -87,57 +84,14 @@ public final class TypeFactory {
     }
 
     public int getMemorySizeInBytes(Type type) {
-        final int sizeInBytes;
-        if (type instanceof ArrayType arrayType) {
-            sizeInBytes = arrayType.getNumElements() * getMemorySizeInBytes(arrayType.getElementType());
-        } else if (type instanceof AggregateType aggregateType) {
-            int aggregateSize = 0;
-            for (Type fieldType : aggregateType.getDirectFields()) {
-                int size = getMemorySizeInBytes(fieldType);
-                //FIXME: We assume for now that a small type's (<= 8 byte) alignment coincides with its size.
-                // For all larger types, we assume 8 byte alignment
-                int alignment = Math.min(size, 8);
-                if (size != 0) {
-                    int padding = (-aggregateSize) % alignment;
-                    padding = padding < 0 ? padding + alignment : padding;
-                    aggregateSize += size + padding;
-                }
-            }
-            sizeInBytes = aggregateSize;
-        } else if (type instanceof IntegerType integerType) {
-            sizeInBytes = IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
-        } else if (type instanceof FloatType floatType) {
-            sizeInBytes = IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
-        } else {
-            throw new UnsupportedOperationException("Cannot compute the size of " + type);
-        }
-        return sizeInBytes;
+        return TypeLayout.of(type).totalSizeInBytes();
+    }
+
+    public int getMemorySizeInBits(Type type) {
+        return getMemorySizeInBytes(type) * 8;
     }
 
     public int getOffsetInBytes(Type type, int index) {
-        final int offsetInBytes;
-        if (type instanceof ArrayType arrayType) {
-            offsetInBytes = index * getMemorySizeInBytes(arrayType.getElementType());
-        } else if (type instanceof AggregateType aggregateType) {
-            final List<Type> fields = aggregateType.getDirectFields();
-            Preconditions.checkArgument(index < fields.size());
-            int offset = 0;
-            for (Type fieldType : aggregateType.getDirectFields().subList(0, index + 1)) {
-                int size = getMemorySizeInBytes(fieldType);
-                //FIXME: We assume for now that a small type's (<= 8 byte) alignment coincides with its size.
-                // For all larger types, we assume 8 byte alignment
-                int alignment = Math.min(size, 8);
-                if (size != 0) {
-                    int padding = (-offset) % alignment;
-                    padding = padding < 0 ? padding + alignment : padding;
-                    offset += size + padding;
-                }
-            }
-            offset -= getMemorySizeInBytes(fields.get(index));
-            offsetInBytes = offset;
-        } else {
-            throw new UnsupportedOperationException("Cannot index into type " + type);
-        }
-        return offsetInBytes;
+        return TypeOffset.of(type, index).offset();
     }
 }
