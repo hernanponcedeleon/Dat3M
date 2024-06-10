@@ -22,7 +22,7 @@ public record TypeOffset(Type type, int offset) {
             Preconditions.checkArgument(index < fields.size());
             final TypeLayout prefixLayout = TypeLayout.of(fields.subList(0, index));
             final TypeLayout fieldLayout = TypeLayout.of(fields.get(index));
-            final int offset = paddedSize(prefixLayout.totalSizeInBytes(), fieldLayout.alignment());
+            final int offset = paddedSize(prefixLayout.unpaddedSize(), fieldLayout.alignment());
             return new TypeOffset(fields.get(index), offset);
         } else {
             final String error = String.format("Cannot compute offset of index %d into type %s.", index, type);
