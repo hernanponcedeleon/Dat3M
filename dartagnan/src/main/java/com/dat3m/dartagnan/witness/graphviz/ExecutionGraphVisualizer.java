@@ -191,7 +191,7 @@ public class ExecutionGraphVisualizer {
         BigInteger objAddress = null;
         for (Map.Entry<MemoryObject, BigInteger> entry : objToAddrMap.entrySet()) {
             final BigInteger nextObjAddr = entry.getValue();
-            if (nextObjAddr.compareTo(address) >= 0) {
+            if (nextObjAddr.compareTo(address) > 0) {
                 break;
             }
             obj = entry.getKey();
@@ -199,11 +199,12 @@ public class ExecutionGraphVisualizer {
         }
 
         if (obj == null) {
-            return address + "[OOB]";
+            return address + " [OOB]";
         } else if (address.equals(objAddress)) {
             return obj.toString();
         } else {
-            return String.format("%s + %s", obj, address.subtract(objAddress));
+            final boolean isOOB = address.compareTo(objAddress.add(BigInteger.valueOf(obj.size()))) >= 0;
+            return String.format("%s + %s%s", obj, address.subtract(objAddress), isOOB ? " [OOB]" : "");
         }
     }
 
