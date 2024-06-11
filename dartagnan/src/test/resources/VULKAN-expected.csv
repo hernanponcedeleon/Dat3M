@@ -102,3 +102,14 @@ litmus/VULKAN/Manual/counter-atomic.litmus,1
 litmus/VULKAN/Manual/counter-atomic-load.litmus,1
 litmus/VULKAN/Manual/counter-non-atomic.litmus,0
 litmus/VULKAN/Manual/counter-non-atomic-load.litmus,1
+litmus/VULKAN/Manual/CoWaWa-RaRa.litmus,0
+litmus/VULKAN/Manual/CoWaWa-RaR.litmus,0
+litmus/VULKAN/Manual/CoWWa-RaRa.litmus,1
+litmus/VULKAN/Manual/CoWWa-RaR.litmus,0
+litmus/VULKAN/Manual/Co-barrier-WaW-RR.litmus,0
+litmus/VULKAN/Manual/Co-barrier-WaWa-RR.litmus,0
+litmus/VULKAN/Manual/Co-barrier-WW-RaR.litmus,0
+litmus/VULKAN/Manual/Co-barrier-WW-RaRa.litmus,1
+litmus/VULKAN/Manual/Co-barrier-WW-RR.litmus,0
+litmus/VULKAN/Manual/Co-barrier-WW-RRa.litmus,1
+litmus/VULKAN/Manual/Co-barrier-WWa-RR.litmus,0
