@@ -219,7 +219,7 @@ public final class EncodingContext {
         //TODO match this with the actual type stored at the memory address
         // (we do not know and guess the arch type right now)
         TypeFactory types = TypeFactory.getInstance();
-        int archSize = types.getMemorySizeInBytes(types.getArchType()) * 8;
+        final int archSize = types.getMemorySizeInBits(types.getArchType());
         return formulaManager.getBitvectorFormulaManager().makeVariable(archSize, name);
     }
 
