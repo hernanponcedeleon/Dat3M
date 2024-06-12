@@ -1,12 +1,10 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.model.EventData;
 import com.dat3m.dartagnan.verification.model.ExecutionModel;
 import org.apache.logging.log4j.LogManager;
@@ -17,9 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiPredicate;
 
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -38,7 +34,7 @@ public class ExecutionGraphVisualizer {
     private BiPredicate<EventData, EventData> rfFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> frFilter = (x, y) -> true;
     private BiPredicate<EventData, EventData> coFilter = (x, y) -> true;
-    private final Map<BigInteger, Expression> addresses = new HashMap<>();
+    private final LinkedHashMap<MemoryObject, BigInteger> objToAddrMap = new LinkedHashMap<>();
 
     public ExecutionGraphVisualizer() {
         this.graphviz = new Graphviz();
@@ -66,15 +62,7 @@ public class ExecutionGraphVisualizer {
     }
 
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModel model) throws IOException {
-        for (EventData data : model.getEventList()) {
-            if (data.isMemoryEvent()) {
-                MemoryCoreEvent m = (MemoryCoreEvent) data.getEvent();
-                Expression addr = m.getAddress();
-                if (!(addr instanceof Register)) {
-                    addresses.putIfAbsent(data.getAccessedAddress(), addr);
-                }
-            }
-        }
+        computeAddressMap(model);
         graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addAllThreadPos(model);
@@ -83,6 +71,16 @@ public class ExecutionGraphVisualizer {
         addCoherence(model);
         graphviz.end();
         graphviz.generateOutput(writer);
+    }
+
+    private void computeAddressMap(ExecutionModel model) {
+        final Map<MemoryObject, BigInteger> memLayout = model.getMemoryLayoutMap();
+        final List<MemoryObject> objs = new ArrayList<>(memLayout.keySet());
+        objs.sort(Comparator.comparing(memLayout::get));
+
+        for (MemoryObject obj : objs) {
+            objToAddrMap.put(obj, memLayout.get(obj));
+        }
     }
 
     private boolean ignore(EventData e) {
@@ -188,18 +186,36 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
+    private String getAddressString(BigInteger address) {
+        MemoryObject obj = null;
+        BigInteger objAddress = null;
+        for (Map.Entry<MemoryObject, BigInteger> entry : objToAddrMap.entrySet()) {
+            final BigInteger nextObjAddr = entry.getValue();
+            if (nextObjAddr.compareTo(address) > 0) {
+                break;
+            }
+            obj = entry.getKey();
+            objAddress = nextObjAddr;
+        }
+
+        if (obj == null) {
+            return address + " [OOB]";
+        } else if (address.equals(objAddress)) {
+            return obj.toString();
+        } else {
+            final boolean isOOB = address.compareTo(objAddress.add(BigInteger.valueOf(obj.size()))) >= 0;
+            return String.format("%s + %s%s", obj, address.subtract(objAddress), isOOB ? " [OOB]" : "");
+        }
+    }
 
     private String eventToNode(EventData e) {
         if (e.isInit()) {
-            return String.format("\"I(%s, %d)\"", addresses.get(e.getAccessedAddress()), e.getValue());
+            return String.format("\"I(%s, %d)\"", getAddressString(e.getAccessedAddress()), e.getValue());
         }
         // We have MemEvent + Fence
         String tag = e.getEvent().toString();
         if (e.isMemoryEvent()) {
-            Object address = addresses.get(e.getAccessedAddress());
-            if (address == null) {
-                address = e.getAccessedAddress();
-            }
+            String address = getAddressString(e.getAccessedAddress());
             BigInteger value = e.getValue();
             MemoryOrder mo = e.getEvent().getMetadata(MemoryOrder.class);
             String moString = mo == null ? "" : ", " + mo.value();

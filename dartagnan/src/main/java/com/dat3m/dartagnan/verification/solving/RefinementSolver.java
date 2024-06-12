@@ -47,10 +47,10 @@ import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.java_smt.api.*;
 
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.GlobalSettings.REFINEMENT_GENERATE_GRAPHVIZ_DEBUG_FILES;
@@ -241,7 +241,7 @@ public class RefinementSolver extends ModelChecker {
         if (smtStatus == SMTStatus.UNKNOWN) {
             // Refinement got no result (should not be able to happen), so we cannot proceed further.
             logger.warn("Refinement procedure was inconclusive. Trying to find reason of inconclusiveness.");
-            analyzeInconclusiveness(task, propertyTrace, analysisContext);
+            analyzeInconclusiveness(task, analysisContext, solver.getExecution());
             throw new RuntimeException("Terminated verification due to inconclusiveness (bug?).");
         }
 
@@ -312,7 +312,7 @@ public class RefinementSolver extends ModelChecker {
         logger.info("Verification finished with result " + res);
     }
 
-    private void analyzeInconclusiveness(VerificationTask task, RefinementTrace propertyTrace, Context analysisContext) {
+    private void analyzeInconclusiveness(VerificationTask task, Context analysisContext, ExecutionModel model) {
         final AliasAnalysis alias = analysisContext.get(AliasAnalysis.class);
         if (alias == null) {
             return;
@@ -322,41 +322,35 @@ public class RefinementSolver extends ModelChecker {
             synContext = newInstance(task.getProgram());
         }
 
-        final DNF<CoreLiteral> lastReasons = propertyTrace.getFinalIteration().inconsistencyReasons;
-        for (Conjunction<CoreLiteral> reason : lastReasons.getCubes()) {
-            for (CoreLiteral literal : reason.getLiterals()) {
-                if (literal instanceof RelLiteral relLit && doesViolateAliasingRules(relLit, alias)) {
-                    final Event e1 = relLit.getSource();
-                    final Event e2 = relLit.getTarget();
+        final Map<BigInteger, Set<EventData>> addr2Events = new HashMap<>();
+        model.getAddressReadsMap().forEach((addr, reads) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(reads));
+        model.getAddressWritesMap().forEach((addr, writes) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).addAll(writes));
+        model.getAddressInitMap().forEach((addr, init) -> addr2Events.computeIfAbsent(addr, key -> new HashSet<>()).add(init));
 
-                    final StringBuilder builder = new StringBuilder();
-                    builder.append("Found unexpected aliasing between:\n");
-                    builder.append("\t")
-                            .append(synContext.getSourceLocationWithContext(e1, true))
-                            .append("\n")
-                            .append("AND\n")
-                            .append("\t")
-                            .append(synContext.getSourceLocationWithContext(e2, true))
-                            .append("\n");
-                    builder.append("Possible out-of-bounds access in source code or error in alias analysis.");
+        for (Set<EventData> sameLocEvents : addr2Events.values()) {
+            final List<EventData> events = sameLocEvents.stream().sorted().toList();
 
-                    logger.warn(builder.toString());
-                    return;
+            for (int i = 0; i < events.size() - 1; i++) {
+                for (int j = i + 1; j < events.size(); j++) {
+                    final MemoryCoreEvent e1 = (MemoryCoreEvent) events.get(i).getEvent();
+                    final MemoryCoreEvent e2 = (MemoryCoreEvent) events.get(j).getEvent();
+                    if (!alias.mayAlias(e1, e2)) {
+                        final StringBuilder builder = new StringBuilder();
+                        builder.append("Found unexpected aliasing between:\n");
+                        builder.append("\t")
+                                .append(synContext.getSourceLocationWithContext(e1, true))
+                                .append("\n")
+                                .append("AND\n")
+                                .append("\t")
+                                .append(synContext.getSourceLocationWithContext(e2, true))
+                                .append("\n");
+                        builder.append("Possible out-of-bounds access in source code or error in alias analysis.");
+
+                        logger.warn(builder.toString());
+                        return;
+                    }
                 }
             }
-        }
-    }
-
-    private boolean doesViolateAliasingRules(RelLiteral lit, AliasAnalysis alias) {
-        final Predicate<Relation> isMemRel = r -> r.getDefinition() instanceof ReadFrom
-                || r.getDefinition() instanceof Coherence;
-
-        if (lit.isPositive() && isMemRel.test(lit.getRelation())) {
-            final MemoryCoreEvent e1 = (MemoryCoreEvent) lit.getSource();
-            final MemoryCoreEvent e2 = (MemoryCoreEvent) lit.getTarget();
-            return !alias.mayAlias(e1, e2);
-        } else {
-            return false;
         }
     }
 
