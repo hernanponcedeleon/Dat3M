@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -22,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -185,7 +183,7 @@ public class Intrinsics {
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                 "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                 "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
-                false, false, true, false, Intrinsics::inlineNonDet),
+                false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
@@ -288,8 +286,6 @@ public class Intrinsics {
     }
 
     private void markIntrinsics(Program program) {
-        declareNondetBool(program);
-
         final var missingSymbols = new TreeSet<String>();
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
@@ -303,15 +299,6 @@ public class Intrinsics {
         if (!missingSymbols.isEmpty()) {
             throw new UnsupportedOperationException(
                     missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")));
-        }
-    }
-
-    private void declareNondetBool(Program program) {
-        // used by VisitorLKMM
-        if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
-            final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
-            //TODO this id will not be unique
-            program.addFunction(new Function("__VERIFIER_nondet_bool", type, List.of(), 0, null));
         }
     }
 
@@ -1278,38 +1265,41 @@ public class Intrinsics {
 
     private List<Event> inlineNonDet(FunctionCall call) {
         assert call.isDirectCall() && call instanceof ValueFunctionCall;
-        final Program program = call.getFunction().getProgram();
-        Register register = ((ValueFunctionCall) call).getResultRegister();
-        String name = call.getCalledFunction().getName();
+        final Register result = getResultRegister(call);
+        final String name = call.getCalledFunction().getName();
         final String separator = "nondet_";
-        int index = name.indexOf(separator);
+        final int index = name.indexOf(separator);
         assert index > -1;
-        String suffix = name.substring(index + separator.length());
+        final String suffix = name.substring(index + separator.length());
 
-        // Nondeterministic booleans
+        final Type nonDetType;
+        final boolean signed;
         if (suffix.equals("bool")) {
-            final Expression value = program.newConstant(types.getBooleanType());
-            final Expression cast = expressions.makeCast(value, register.getType());
-            return List.of(EventFactory.newLocal(register, cast));
+            // Nondeterministic booleans
+            signed = false;
+            nonDetType = types.getBooleanType();
+        } else {
+            // Nondeterministic integers
+            final int bits = switch (suffix) {
+                case "long", "ulong" -> 64;
+                case "int", "uint", "unsigned_int" -> 32;
+                case "short", "ushort", "unsigned_short" -> 16;
+                case "char", "uchar" -> 8;
+                default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
+            };
+
+            signed = switch (suffix) {
+                case "int", "short", "long", "char" -> true;
+                default -> false;
+            };
+            nonDetType = types.getIntegerType(bits);
         }
 
-        // Nondeterministic integers
-        boolean signed = switch (suffix) {
-            case "int", "short", "long", "char" -> true;
-            default -> false;
-        };
-
-        final int bits = switch (suffix) {
-            case "long", "ulong" -> 64;
-            case "int", "uint", "unsigned_int" -> 32;
-            case "short", "ushort", "unsigned_short" -> 16;
-            case "char", "uchar" -> 8;
-            default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
-        };
-
-        final NonDetValue value = (NonDetValue) call.getFunction().getProgram().newConstant(types.getIntegerType(bits));
-        value.setIsSigned(signed);
-        return List.of(EventFactory.newLocal(register, expressions.makeCast(value, register.getType(), signed)));
+        final Register nonDetReg = call.getFunction().getOrNewRegister("__r_nondet_" + suffix, nonDetType);
+        return List.of(
+                EventFactory.Svcomp.newSignedNonDetChoice(nonDetReg, signed),
+                EventFactory.newLocal(result, expressions.makeCast(nonDetReg, result.getType(), signed))
+        );
     }
 
     //FIXME: The following support for memcpy, memcmp, and memset is unsound

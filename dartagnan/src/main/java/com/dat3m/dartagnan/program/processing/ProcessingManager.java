@@ -121,6 +121,7 @@ public class ProcessingManager implements ProgramProcessor {
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
+                ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
                 ProgramProcessor.fromFunctionProcessor(
