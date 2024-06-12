@@ -331,7 +331,7 @@ public class RefinementSolver extends ModelChecker {
             final List<EventData> events = sameLocEvents.stream().sorted().toList();
 
             for (int i = 0; i < events.size() - 1; i++) {
-                for (int j = 1; j < events.size(); j++) {
+                for (int j = i + 1; j < events.size(); j++) {
                     final MemoryCoreEvent e1 = (MemoryCoreEvent) events.get(i).getEvent();
                     final MemoryCoreEvent e2 = (MemoryCoreEvent) events.get(j).getEvent();
                     if (!alias.mayAlias(e1, e2)) {
