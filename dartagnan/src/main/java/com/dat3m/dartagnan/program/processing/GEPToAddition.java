@@ -7,10 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -75,13 +72,9 @@ public class GEPToAddition implements ProgramProcessor {
                     throw new MalformedProgramException(
                             String.format("Non-constant field index %s for aggregate of type %s.", offset, type));
                 }
-                final int value = constant.getValueAsInt();
-                type = aggregateType.getDirectFields().get(value);
-                int o = 0;
-                for (final Type elementType : aggregateType.getDirectFields().subList(0, value)) {
-                    o += types.getMemorySizeInBytes(elementType);
-                }
-                result = expressions.makeAdd(result, expressions.makeValue(o, archType));
+                final TypeOffset typeOffset = TypeOffset.of(aggregateType, constant.getValueAsInt());
+                type = typeOffset.type();
+                result = expressions.makeAdd(result, expressions.makeValue(typeOffset.offset(), archType));
             }
             return result;
         }
