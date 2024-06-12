@@ -20,6 +20,7 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.Return;
+import com.dat3m.dartagnan.program.event.lang.svcomp.NonDetChoice;
 import com.dat3m.dartagnan.program.processing.IdReassignment;
 import com.dat3m.dartagnan.program.processing.LoopUnrolling;
 import com.google.common.collect.Iterables;
@@ -115,12 +116,21 @@ public class OpenFunction {
         );
         newExits.add(loopingExit);
 
+        // ----- Early repeat
+        final Register earlyExitChoiceReg = extendedFunc.newRegister("__early_exit", types.getBooleanType());
+        final Event earlyExitChoice = new NonDetChoice(earlyExitChoiceReg);
+        final CondJump earlyExitJump = EventFactory.newJump(earlyExitChoiceReg, loopingExit.exitLabel());
+
         // ------------- Copy body up to loop backjump -------------
         // TODO: Extend to cases where the loop backjump is not the final piece of code in the main body.
         //  For this, we need to copy up to the first exit block.
         final List<Event> bodyCopy = IRHelper.copyPath(func.getEntry(),
                 loopIter.getIterationEnd().getSuccessor(), copyMap, registerMap);
         extendedFunc.append(bodyCopy);
+        extendedFunc.getExit().getPredecessor().insertAfter(List.of(
+                earlyExitChoice,
+                earlyExitJump
+        ));
         extendedFunc.append(EventFactory.newStringAnnotation("------ End body ------"));
 
         // TODO: The loop bounded copies must be able to end their simulation early rather than

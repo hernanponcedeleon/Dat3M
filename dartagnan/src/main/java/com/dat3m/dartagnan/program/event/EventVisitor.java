@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.event.lang.pthread.Lock;
 import com.dat3m.dartagnan.program.event.lang.pthread.Unlock;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
+import com.dat3m.dartagnan.program.event.lang.svcomp.NonDetChoice;
 
 public interface EventVisitor<T> {
 
@@ -93,6 +94,7 @@ public interface EventVisitor<T> {
     default T visitLlvmFence(LlvmFence e) { return visitEvent(e); }
 
     // ------------------ SVCOMP Events ------------------
+    default T visitNonDetChoice(NonDetChoice e) { return visitEvent(e); }
     default T visitBeginAtomic(BeginAtomic e) { return visitEvent(e); }
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
 

@@ -15,6 +15,7 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
+import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
@@ -32,7 +33,12 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.axiom.ForceEncodeAxiom;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.java_smt.SolverContextFactory;
@@ -62,17 +68,47 @@ import java.util.*;
 
 public class SimulationChecker {
 
+    private static class NoLogging implements AutoCloseable {
+
+        private final Map<? extends Logger, Level> loggerStateSnapshot;
+
+        public NoLogging() {
+            var logContext = LogManager.getContext(false);
+            Collection<Logger> allLoggers = (Collection<Logger>) logContext.getLoggerRegistry().getLoggers();
+            allLoggers = new ArrayList<>(allLoggers);
+            allLoggers.add(LogManager.getRootLogger());
+            loggerStateSnapshot = Maps.toMap(allLoggers, Logger::getLevel);
+
+            allLoggers.forEach(logger -> Configurator.setLevel(logger, Level.OFF));
+        }
+
+
+        @Override
+        public void close() {
+            loggerStateSnapshot.forEach(Configurator::setLevel);
+        }
+    }
+
+
     public void test(Function f) {
-        List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(f, false).getLoopsOfFunction(f);
 
-        for (LoopAnalysis.LoopInfo loop : loops) {
-            assert !loop.isUnrolled();
-            final LoopAnalysis.LoopIterationInfo loopBody = loop.iterations().get(0);
-            final OpenFunction func = OpenFunction.fromSnippet(loopBody.getIterationStart(), loopBody.getIterationEnd());
+        try (NoLogging ignored = new NoLogging()) {
+            List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(f, false).getLoopsOfFunction(f);
+            for (LoopAnalysis.LoopInfo loop : loops) {
+                assert !loop.isUnrolled();
+                final LoopAnalysis.LoopIterationInfo loopBody = loop.iterations().get(0);
+                final OpenFunction func = OpenFunction.fromSnippet(loopBody.getIterationStart(), loopBody.getIterationEnd());
 
-            final OpenFunction src = func.constructLoopBoundedCopy(6);
-            final OpenFunction sim = func.constructLoopBoundedCopy(5);
-            canSimulate(src.getFunction(), sim.getFunction());
+                System.out.println("====== Checking boundedness of loop " + SyntacticContextAnalysis.getSourceLocationString(loopBody.getIterationStart()));
+                for (int k = 1; k < 6; k++) {
+                    final OpenFunction src = func.constructLoopBoundedCopy(k + 1);
+                    final OpenFunction sim = func.constructLoopBoundedCopy(k);
+                    if (canSimulate(src.getFunction(), sim.getFunction())) {
+                        System.out.println("SUCCESS: " + k + "-bounded");
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -87,7 +123,7 @@ public class SimulationChecker {
         final SimulationCheck check = generateThreads(commonProg);
         process(check);
         try {
-            check(check);
+            return check(check);
         } catch (InvalidConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -117,8 +153,6 @@ public class SimulationChecker {
                     -- Whenever two g-events are related by po/dep, then so must the matching events in f.
                     -- Whenever input/output regs in g are related by idd, then so must the input/output regs in f must be matched
          */
-
-        return false;
     }
 
     /*
@@ -385,15 +419,15 @@ public class SimulationChecker {
                     qfm.forall(new ArrayList<>(simVars), bmgr.not(bmgr.and(simulatorEnc, matchingEnc)))
             );
 
+            // TODO: Test code
+            final List<Event> srcBody = check.source.getEvents();
+            final List<Event> simBody = check.simulator.getEvents();
 
             prover.addConstraint(enc);
             boolean canSimulate = prover.isUnsat();
 
-            // TODO: Test code
-            /*final List<Event> srcBody = check.source.getEvents();
-            final List<Event> simBody = check.simulator.getEvents();
-            Model model = !canSimulate ? prover.getModel() : null;*/
-
+            Model model = !canSimulate ? prover.getModel() : null;
+            int i = 5;
             return canSimulate;
         } catch (InterruptedException | SolverException e) {
             throw new RuntimeException(e);
