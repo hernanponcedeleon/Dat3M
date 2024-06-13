@@ -473,7 +473,11 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
 
     // Inserts a single inclusion relationship into the graph.
     // Any cycle closed by this edge will eventually be detected and resolved.
-    private void addInclude(Variable variable, IncludeEdge edge) {
+    private void addInclude(Variable variable, IncludeEdge includeEdge) {
+        // accelerate for self-loops.
+        // this is necessary besides lazy cycle detection, because it handles cycles of length 1.
+        // LCD uses the edge that triggered the detection, which is not always the self-loop.
+        final IncludeEdge edge = tryAccelerate(variable, includeEdge);
         if (!addInto(variable.includes, edge, true)) {
             return;
         }
@@ -486,6 +490,13 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             logger.trace("enqueue level={} variable={}", level, variable);
         }
         edges.add(edge);
+    }
+
+    private IncludeEdge tryAccelerate(Variable variable, IncludeEdge edge) {
+        if (edge.source != variable) {
+            return edge;
+        }
+        return new IncludeEdge(edge.source, new Modifier(0, compose(edge.modifier.alignment, edge.modifier.offset)));
     }
 
     // Tries to detect cycles when a new edge is to be added.
@@ -586,7 +597,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         //NOTE The Stream API is too costly here
         for (final IncludeEdge o : list) {
             if (element.source.equals(o.source) && includes(o.modifier, element.modifier)) {
-                if(isGraphModification) {
+                if (isGraphModification) {
                     addIntoGraphFails++;
                 } else {
                     addIntoCyclesFails++;
@@ -594,7 +605,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                 return false;
             }
         }
-        if(isGraphModification) {
+        if (isGraphModification) {
             addIntoGraphSucceesses++;
         } else {
             addIntoCyclesSuccesses++;
@@ -691,7 +702,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     return false;
                 }
             }
-            return offset % alignment == 0;
+            return offset % alignment == 0 && offset >= 0;
         }
         // Case of multiple dynamic indexes with pairwise indivisible alignments.
         final int gcd = IntMath.gcd(reduceGCD(right.alignment), Math.abs(offset));
