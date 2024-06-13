@@ -2,18 +2,17 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.arch.StoreExclusive;
 import com.dat3m.dartagnan.program.event.arch.tso.TSOXchg;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.RMWStore;
 import com.dat3m.dartagnan.program.event.lang.linux.*;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmLoad;
 import com.dat3m.dartagnan.program.event.lang.llvm.LlvmStore;
@@ -35,14 +34,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     protected VisitorBase() { }
 
-    protected Event newTerminator(Expression guard) {
-        if (funcToBeCompiled instanceof Thread thread) {
-            return newJump(guard, (Label)thread.getExit());
-        } else {
-            return newAbortIf(guard);
-        }
-    }
-
     @Override
     public List<Event> visitEvent(Event e) {
         return Collections.singletonList(e);
@@ -57,33 +48,35 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
+        Type type = types.getBooleanType();
         Register dummy = e.getFunction().newRegister(type);
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
+        Expression one = expressions.makeOne((IntegerType) e.getAccessType());
         String mo = e.getMo();
 
         Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
+        Label spinLoopHead = newLabel("__spinloop_head");
         return eventSequence(
+                spinLoopHead,
                 rmwLoad,
-                newTerminator(expressions.makeNEQ(dummy, zero)),
+                newJump(dummy, spinLoopHead),
                 newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
+        Type type = types.getBooleanType();
         Register dummy = e.getFunction().newRegister(type);
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
+        Expression zero = expressions.makeZero((IntegerType) e.getAccessType());
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
+        Label spinLoopHead = newLabel("__spinloop_head");
         return eventSequence(
+                spinLoopHead,
                 rmwLoad,
-                newTerminator(expressions.makeNEQ(dummy, one)),
+                newJump(expressions.makeNot(dummy), spinLoopHead),
                 newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
     }

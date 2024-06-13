@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -202,15 +203,18 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
-        Register dummy = e.getFunction().newRegister(e.getAccessType());
-        Expression nonzeroDummy = expressions.makeBooleanCast(dummy);
+        Type type = types.getBooleanType();
+        Register dummy = e.getFunction().newRegister(type);
 
         Load lockRead = newLockRead(dummy, e.getLock());
+        Label spinLoopHead = newLabel("__spinloop_head");
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
-                newAssume(expressions.makeNot(nonzeroDummy)) :
-                newTerminator(nonzeroDummy);
+                newAssume(expressions.makeNot(dummy)) :
+                newJump(dummy, spinLoopHead);
+
         return eventSequence(
+                spinLoopHead,
                 lockRead,
                 checkLockValue,
                 newLockWrite(lockRead, e.getLock())
