@@ -918,7 +918,7 @@ public class Intrinsics {
         if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
         } else if (name.startsWith("llvm.cttz")) {
-            return inlineLLVMCtlz(valueCall);
+            return inlineLLVMCttz(valueCall);
         } else if (name.startsWith("llvm.ctpop")) {
             return inlineLLVMCtpop(valueCall);
         } else if (name.contains("add.sat")) {
