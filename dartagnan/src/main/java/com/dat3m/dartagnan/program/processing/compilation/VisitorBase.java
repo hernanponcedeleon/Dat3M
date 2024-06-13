@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -48,9 +47,10 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
         Register dummy = e.getFunction().newRegister(type);
-        Expression one = expressions.makeOne((IntegerType) e.getAccessType());
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         String mo = e.getMo();
 
         Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
@@ -58,25 +58,24 @@ class VisitorBase implements EventVisitor<List<Event>> {
         return eventSequence(
                 spinLoopHead,
                 rmwLoad,
-                newJump(dummy, spinLoopHead),
+                newJump(expressions.makeNEQ(dummy, zero), spinLoopHead),
                 newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
         Register dummy = e.getFunction().newRegister(type);
-        Expression zero = expressions.makeZero((IntegerType) e.getAccessType());
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
-        Label spinLoopHead = newLabel("__spinloop_head");
         return eventSequence(
-                spinLoopHead,
                 rmwLoad,
-                newJump(expressions.makeNot(dummy), spinLoopHead),
+                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
                 newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
     }
