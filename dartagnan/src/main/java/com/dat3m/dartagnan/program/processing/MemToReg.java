@@ -204,8 +204,9 @@ public class MemToReg implements FunctionProcessor {
             assert addressExpression == null || addressExpression.register != null;
             final AddressOffset addressBase = addressExpression == null ? null : state.get(addressExpression.register);
             final var address = addressBase == null ? null : addressBase.increase(addressExpression.offset);
+            final boolean isDeletable = load.getUsers().isEmpty();
             // If too complex, treat like global address.
-            if (addressExpression == null) {
+            if (addressExpression == null || !isDeletable) {
                 publishRegisters(load.getAddress().getRegs());
             }
             final var value = address == null ? null : state.get(address);
@@ -227,12 +228,13 @@ public class MemToReg implements FunctionProcessor {
             final RegisterOffset valueExpression = matchGEP(store.getMemValue());
             assert valueExpression == null || valueExpression.register != null;
             final AddressOffset value = valueExpression == null ? null : state.get(valueExpression.register);
+            final boolean isDeletable = store.getUsers().isEmpty();
             // On complex address expression, give up on any address that could contribute here.
-            if (addressExpression == null) {
+            if (addressExpression == null || !isDeletable) {
                 publishRegisters(store.getAddress().getRegs());
             }
             // On ambiguous address, give up on any address that could be stored here.
-            if (address == null || valueExpression == null) {
+            if (address == null || valueExpression == null || !isDeletable) {
                 publishRegisters(store.getMemValue().getRegs());
             }
             update(accesses, store, address);
