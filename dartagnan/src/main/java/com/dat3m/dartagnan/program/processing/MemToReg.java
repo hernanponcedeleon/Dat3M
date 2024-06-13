@@ -6,12 +6,12 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
+import com.google.common.collect.Maps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.Configuration;
@@ -73,36 +73,37 @@ public class MemToReg implements FunctionProcessor {
     private void promoteAll(Function function, Matcher matcher) {
         final ExpressionFactory expressions = ExpressionFactory.getInstance();
         // Replace every unmarked address.
-        final var replacingRegisters = new HashMap<RegWriter, List<Register>>();
+        final HashMap<RegWriter, Map<Integer, Register>> replacingRegisters = new HashMap<>();
         for (final Alloc allocation : function.getEvents(Alloc.class)) {
             if (matcher.reachabilityGraph.containsKey(allocation)) {
-                final List<Type> registerTypes = getPrimitiveReplacementTypes(allocation);
+                final Map<Integer, Type> registerTypes = getPrimitiveReplacementTypes(allocation);
                 if (registerTypes != null) {
-                    replacingRegisters.put(allocation, registerTypes.stream().map(function::newRegister).toList());
+                    replacingRegisters.put(allocation, new HashMap<>(Maps.transformValues(registerTypes, function::newRegister)));
                     boolean deleted = allocation.tryDelete();
                     assert deleted : "Allocation cannot be removed, probably because it has remaining users.";
                 }
             }
         }
+
         int loadCount = 0, storeCount = 0;
         // Replace all loads and stores to replaceable storage.
         for (final Map.Entry<MemoryEvent, AddressOffset> entry : matcher.accesses.entrySet()) {
             final MemoryEvent event = entry.getKey();
             final AddressOffset access = entry.getValue();
-            final List<Register> registers = access == null ? null : replacingRegisters.get(access.base);
-            if (registers == null || access.offset < 0 || access.offset >= registers.size()) {
+            final Map<Integer, Register> registers = access == null ? null : replacingRegisters.get(access.base);
+            if (registers == null || !registers.containsKey((int)access.offset)) {
                 continue;
             }
+
+            final Register memreg = registers.get((int)access.offset);
             if (event instanceof Load load) {
                 final Register reg = load.getResultRegister();
                 assert load.getUsers().isEmpty();
-                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(registers.get((int)access.offset), reg.getType())));
+                load.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(memreg, reg.getType())));
                 loadCount++;
-            }
-            if (event instanceof Store store) {
-                final Register reg = registers.get((int)access.offset);
+            } else if (event instanceof Store store) {
                 assert store.getUsers().isEmpty();
-                store.replaceBy(EventFactory.newLocal(reg, expressions.makeCast(store.getMemValue(), reg.getType())));
+                store.replaceBy(EventFactory.newLocal(memreg, expressions.makeCast(store.getMemValue(), memreg.getType())));
                 storeCount++;
             }
         }
@@ -118,26 +119,13 @@ public class MemToReg implements FunctionProcessor {
         }
     }
 
-    private List<Type> getPrimitiveReplacementTypes(Alloc allocation) {
+    private Map<Integer, Type> getPrimitiveReplacementTypes(Alloc allocation) {
         if (!(allocation.getArraySize() instanceof IntLiteral sizeExpression)) {
             return null;
         }
+        final TypeFactory typeFactory = TypeFactory.getInstance();
         final int size = sizeExpression.getValueAsInt();
-        if (size != 1) {
-            //TODO arrays
-            return null;
-        }
-        final List<Type> replacementTypes = new ArrayList<>();
-        final Type type = allocation.getAllocationType();
-        //TODO PointerType
-        if (type instanceof IntegerType || type instanceof BooleanType) {
-            replacementTypes.add(type);
-        } else {
-            //TODO aggregate types
-            return null;
-        }
-        //TODO check for mixed-size accesses
-        return replacementTypes;
+        return typeFactory.decomposeIntoPrimitives(typeFactory.getArrayType(allocation.getAllocationType(), size));
     }
 
     // Invariant: base != null

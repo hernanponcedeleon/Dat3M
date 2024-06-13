@@ -3,7 +3,9 @@ package com.dat3m.dartagnan.expression.type;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.utils.Normalizer;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -93,5 +95,41 @@ public final class TypeFactory {
 
     public int getOffsetInBytes(Type type, int index) {
         return TypeOffset.of(type, index).offset();
+    }
+
+    public Map<Integer, Type> decomposeIntoPrimitives(Type type) {
+        final Map<Integer, Type> decomposition = new LinkedHashMap<>();
+        if (type instanceof ArrayType arrayType) {
+            final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(arrayType.getElementType());
+            if (!arrayType.hasKnownNumElements() || innerDecomposition == null) {
+                return null;
+            }
+
+            final int size = getMemorySizeInBytes(arrayType.getElementType());
+            for (int i = 0; i < arrayType.getNumElements(); i++) {
+                final int offset = i * size;
+                for (Map.Entry<Integer, Type> entry : innerDecomposition.entrySet()) {
+                    decomposition.put(entry.getKey() + offset, entry.getValue());
+                }
+            }
+        } else if (type instanceof AggregateType aggregateType) {
+            final List<Type> fields = aggregateType.getDirectFields();
+            for (int i = 0; i < fields.size(); i++) {
+                final int offset = getOffsetInBytes(aggregateType, i);
+                final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(fields.get(i));
+                if (innerDecomposition == null) {
+                    return null;
+                }
+
+                for (Map.Entry<Integer, Type> entry : innerDecomposition.entrySet()) {
+                    decomposition.put(entry.getKey() + offset, entry.getValue());
+                }
+            }
+        } else {
+            // Primitive type
+            decomposition.put(0, type);
+        }
+
+        return decomposition;
     }
 }
