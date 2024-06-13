@@ -1,10 +1,8 @@
 package com.dat3m.dartagnan.program.processing.compilation;
 
-import com.dat3m.dartagnan.exception.MalformedProgramException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
@@ -30,15 +28,14 @@ public class VisitorLKMM extends VisitorBase {
         Expression cmp = e.getCmp();
         Expression address = e.getAddress();
         Expression unexpected = expressions.makeNEQ(dummy, cmp);
-        Function nondetBoolFunction = getNondetBoolFunction(e);
-        Register havocRegister = e.getFunction().newRegister(nondetBoolFunction.getFunctionType().getReturnType());
+        Register havocRegister = e.getFunction().getOrNewRegister("__guess", types.getBooleanType());
 
         Label success = newLabel("RMW_success");
         Label end = newLabel("RMW_end");
         Load rmwLoad;
         return eventSequence(
-                newValueFunctionCall(havocRegister,nondetBoolFunction,List.of()),
-                newJump(expressions.makeBooleanCast(havocRegister), success),
+                EventFactory.Svcomp.newNonDetChoice(havocRegister),
+                newJump(havocRegister, success),
                 newCoreLoad(dummy, address, Tag.Linux.MO_ONCE),
                 newAssume(expressions.makeEQ(dummy, cmp)),
                 newGoto(end),
@@ -59,8 +56,7 @@ public class VisitorLKMM extends VisitorBase {
         Expression cmp = e.getExpectedValue();
         Expression address = e.getAddress();
         String mo = e.getMo();
-        Function nondetBoolFunction = getNondetBoolFunction(e);
-        Register havocRegister = e.getFunction().newRegister(nondetBoolFunction.getFunctionType().getReturnType());
+        Register havocRegister = e.getFunction().getOrNewRegister("__guess", types.getBooleanType());
 
         Label success = newLabel("CAS_success");
         Label end = newLabel("CAS_end");
@@ -69,8 +65,8 @@ public class VisitorLKMM extends VisitorBase {
         loadFail.addTags(Tag.RMW);
         Load loadSuccess;
         return eventSequence(
-                newValueFunctionCall(havocRegister,nondetBoolFunction,List.of()),
-                newJump(expressions.makeBooleanCast(havocRegister), success),
+                EventFactory.Svcomp.newNonDetChoice(havocRegister),
+                newJump(havocRegister, success),
                 // Cas failure branch
                 loadFail,
                 newAssume(expressions.makeNEQ(dummy, cmp)),
@@ -259,11 +255,6 @@ public class VisitorLKMM extends VisitorBase {
         RMWStore lockWrite = newRMWStoreWithMo(lockRead, lockAddr, one, Tag.Linux.MO_ONCE);
         lockWrite.addTags(Tag.Linux.LOCK_WRITE);
         return lockWrite;
-    }
-
-    private static Function getNondetBoolFunction(Event e) {
-        return e.getFunction().getProgram().getFunctionByName("__VERIFIER_nondet_bool")
-                .orElseThrow(() -> new MalformedProgramException("Undeclared function \"__VERIFIER_nondet_bool\""));
     }
 
 }
