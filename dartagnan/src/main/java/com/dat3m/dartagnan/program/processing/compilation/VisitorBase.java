@@ -75,7 +75,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
         return eventSequence(
                 rmwLoad,
-                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
+                newAssert(expressions.makeNEQ(dummy, one), "Unlocking an already unlocked mutex"),
                 newRMWStoreWithMo(rmwLoad, address, zero, mo)
         );
     }

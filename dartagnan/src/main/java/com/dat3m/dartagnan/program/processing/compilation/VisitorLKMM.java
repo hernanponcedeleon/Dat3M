@@ -206,14 +206,13 @@ public class VisitorLKMM extends VisitorBase {
         IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
         Register dummy = e.getFunction().newRegister(type);
         Expression nonzeroDummy = expressions.makeBooleanCast(dummy);
-        Expression zero = expressions.makeZero(type);
 
         Load lockRead = newLockRead(dummy, e.getLock());
         Label spinLoopHead = newLabel("__spinloop_head");
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
         Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
                 newAssume(expressions.makeNot(nonzeroDummy)) :
-                newJump(expressions.makeNEQ(dummy, zero), spinLoopHead);
+                newJump(nonzeroDummy, spinLoopHead);
 
         return eventSequence(
                 spinLoopHead,
