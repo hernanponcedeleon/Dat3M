@@ -272,18 +272,17 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
             assert constant instanceof ConstructExpr;
             final ConstructExpr constArray = (ConstructExpr) constant;
             final List<Expression> arrayElements = constArray.getOperands();
-            final int stepSize = types.getMemorySizeInBytes(arrayType.getElementType());
             for (int i = 0; i < arrayElements.size(); i++) {
-                setInitialMemoryFromConstant(memObj, offset + i * stepSize, arrayElements.get(i));
+                final int innerOffset = types.getOffsetInBytes(arrayType, i);
+                setInitialMemoryFromConstant(memObj, offset + innerOffset, arrayElements.get(i));
             }
-        } else if (constant.getType() instanceof AggregateType) {
+        } else if (constant.getType() instanceof AggregateType aggregateType) {
             assert constant instanceof ConstructExpr;
             final ConstructExpr constStruct = (ConstructExpr) constant;
             final List<Expression> structElements = constStruct.getOperands();
-            int currentOffset = offset;
-            for (Expression structElement : structElements) {
-                setInitialMemoryFromConstant(memObj, currentOffset, structElement);
-                currentOffset += types.getMemorySizeInBytes(structElement.getType());
+            for (int i = 0; i < structElements.size(); i++) {
+                int innerOffset = types.getOffsetInBytes(aggregateType, i);
+                setInitialMemoryFromConstant(memObj, offset + innerOffset, structElements.get(i));
             }
         } else if (constant.getType() instanceof IntegerType) {
             memObj.setInitialValue(offset, constant);

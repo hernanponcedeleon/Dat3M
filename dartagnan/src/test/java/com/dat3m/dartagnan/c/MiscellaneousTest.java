@@ -87,7 +87,8 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"uninitRead", IMM, FAIL, 1},
                 {"multipleBackJumps", IMM, UNKNOWN, 1},
                 {"memcpy_s", IMM, PASS, 1},
-                {"staticLoops", IMM, PASS, 1}
+                {"staticLoops", IMM, PASS, 1},
+                {"offsetof", IMM, PASS, 1}
         });
     }
 
