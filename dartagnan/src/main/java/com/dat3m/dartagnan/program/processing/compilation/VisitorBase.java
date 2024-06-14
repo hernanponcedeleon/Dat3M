@@ -2,7 +2,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
@@ -47,36 +47,38 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
+        // We implement this as a caslocks
+        Type type = types.getBooleanType();
         Register dummy = e.getFunction().newRegister(type);
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
+        Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load rmwLoad = newRMWLoadWithMo(dummy, e.getAddress(), mo);
         Label spinLoopHead = newLabel("__spinloop_head");
+        Label spinLoopEnd = newLabel("__spinloop_end");
+        Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
+
         return eventSequence(
                 spinLoopHead,
                 rmwLoad,
-                newJump(expressions.makeNEQ(dummy, zero), spinLoopHead),
-                newRMWStoreWithMo(rmwLoad, e.getAddress(), one, mo)
+                newJump(expressions.makeNot(dummy), spinLoopEnd),
+                newGoto(spinLoopHead),
+                spinLoopEnd,
+                newRMWStoreWithMo(rmwLoad, address, expressions.makeTrue(), mo)
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
+        Type type = types.getBooleanType();
         Register dummy = e.getFunction().newRegister(type);
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
         Expression address = e.getAddress();
         String mo = e.getMo();
 
         Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
         return eventSequence(
                 rmwLoad,
-                newAssert(expressions.makeNEQ(dummy, one), "Unlocking an already unlocked mutex"),
-                newRMWStoreWithMo(rmwLoad, address, zero, mo)
+                newAssert(dummy, "Unlocking an already unlocked mutex"),
+                newRMWStoreWithMo(rmwLoad, address, expressions.makeFalse(), mo)
         );
     }
 
