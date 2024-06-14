@@ -51,38 +51,24 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        // We implement this as a caslocks
         IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
-
-        Label spinLoopHead = newLabel("__spinloop_head");
-        Label spinLoopEnd = newLabel("__spinloop_end");
-        // Nothing is needed to guarantee acquire semantics in TSO.
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
+        // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         Load load = newRMWLoad(dummy, e.getAddress());
-
         return eventSequence(
-                spinLoopHead,
                 load,
-                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
-                newGoto(spinLoopHead),
-                spinLoopEnd,
-                newRMWStore(load, e.getAddress(), one)
+                newAssume(expressions.makeEQ(dummy, expressions.makeZero(type))),
+                newRMWStore(load, e.getAddress(), expressions.makeOne(type))
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
-
         return eventSequence(
-                newLoad(dummy, e.getAddress()),
-                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
-                newStore(e.getAddress(), zero),
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())),
                 X86.newMemoryFence()
         );
     }

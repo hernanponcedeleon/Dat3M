@@ -48,7 +48,6 @@ class VisitorBase implements EventVisitor<List<Event>> {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        // We implement this as a caslocks
         IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
@@ -56,16 +55,16 @@ class VisitorBase implements EventVisitor<List<Event>> {
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Label spinLoopHead = newLabel("__spinloop_head");
-        Label spinLoopEnd = newLabel("__spinloop_end");
         Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
 
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
+        // assumes. With this we miss a ctrl dependency, but this does not matter
+        // because the load is SC.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         return eventSequence(
-                spinLoopHead,
                 rmwLoad,
-                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
-                newGoto(spinLoopHead),
-                spinLoopEnd,
+                newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreWithMo(rmwLoad, address, one, mo)
         );
     }

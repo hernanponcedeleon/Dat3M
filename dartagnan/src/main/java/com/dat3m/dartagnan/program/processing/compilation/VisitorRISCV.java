@@ -61,39 +61,28 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        // We implement this as a caslocks
         IntegerType type = (IntegerType)e.getAccessType();
+        Register dummy = e.getFunction().newRegister(type);
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
-
-        Label spinLoopHead = newLabel("__spinloop_head");
-        Label spinLoopEnd = newLabel("__spinloop_end");
-
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
+        // assumes. With this we miss a ctrl dependency, but this does not matter
+        // because of the fence.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         return eventSequence(
-                spinLoopHead,
                 newRMWLoadExclusive(dummy, e.getAddress()),
-                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
-                newGoto(spinLoopHead),
-                spinLoopEnd,
+                newAssume(expressions.makeEQ(dummy, zero)),
                 newRMWStoreExclusive(e.getAddress(), one, true),
-                // TODO do we need the fence in the precense of ctrl dependency?
                 RISCV.newRRWFence()
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
-
         return eventSequence(
-                newLoad(dummy, e.getAddress()),
-                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), zero)
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()))
         );
     }
 

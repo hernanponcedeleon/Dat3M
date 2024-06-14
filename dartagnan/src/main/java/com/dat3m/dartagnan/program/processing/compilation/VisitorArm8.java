@@ -57,36 +57,26 @@ class VisitorArm8 extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        // We implement this as a caslocks
         IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
         Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
-
-        Label spinLoopHead = newLabel("__spinloop_head");
-        Label spinLoopEnd = newLabel("__spinloop_end");
-
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
+        // assumes. With this we miss a ctrl dependency, but this does not matter
+        // because the load is an acquire one.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         return eventSequence(
-            spinLoopHead,
-            newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ARMv8.MO_ACQ),
-            newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
-            newGoto(spinLoopHead),
-            spinLoopEnd,
-            newRMWStoreExclusive(e.getAddress(), one, true)
-    );
+                newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ARMv8.MO_ACQ),
+                newAssume(expressions.makeEQ(dummy, zero)),
+                newRMWStoreExclusive(e.getAddress(), one, true)
+        );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
-
         return eventSequence(
-                newLoad(dummy, e.getAddress()),
-                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
-                newStoreWithMo(e.getAddress(), zero, ARMv8.MO_REL)
+                newStoreWithMo(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType()), ARMv8.MO_REL)
         );
     }
 

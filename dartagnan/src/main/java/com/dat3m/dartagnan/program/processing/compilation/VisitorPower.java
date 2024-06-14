@@ -53,24 +53,18 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        // We implement this as a caslocks
-        IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
+        IntegerType type = (IntegerType) e.getAccessType();
         Register dummy = e.getFunction().newRegister(type);
-
-        Label spinLoopHead = newLabel("__spinloop_head");
-        Label spinLoopEnd = newLabel("__spinloop_end");
         Label label = newLabel("FakeDep");
-
+        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
+        // use assumes. The fake control dependency + isync guarantee acquire semantics.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         return eventSequence(
-                spinLoopHead,
                 newRMWLoadExclusive(dummy, e.getAddress()),
-                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
-                newGoto(spinLoopHead),
-                spinLoopEnd,
-                Power.newRMWStoreConditional(e.getAddress(), one, true),
-                // Fake dependency + isync to guarantee acquire semantics
+                newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),
+                Power.newRMWStoreConditional(e.getAddress(), expressions.makeOne(type), true),
+                // Fake dependency to guarantee acquire semantics
                 newFakeCtrlDep(dummy, label),
                 label,
                 Power.newISyncBarrier());
@@ -78,16 +72,9 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
-        Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
-
         return eventSequence(
-                newLoad(dummy, e.getAddress()),
-                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), zero));
+                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())));
     }
 
     // =============================================================================================
