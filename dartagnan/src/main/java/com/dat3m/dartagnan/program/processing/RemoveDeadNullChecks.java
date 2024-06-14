@@ -46,7 +46,12 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
         POS;
 
         static Sign meet(Sign a, Sign b) {
-            return a.compareTo(b) >= 0 ? b : a;
+            if (a == UNKNOWN || b == UNKNOWN) {
+                return UNKNOWN;
+            } else if (a == NON_NEG || b == NON_NEG) {
+                return NON_NEG;
+            }
+            return POS;
         }
     }
 
@@ -76,7 +81,7 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
             if (cmp.getRight() instanceof IntLiteral lit && lit.isZero() && cmp.getLeft().accept(signChecker) == Sign.POS) {
                 // Simplify "expr cop 0" if <expr> is known to be positive.
                 final IntCmpOp op = cmp.getKind();
-                final boolean valueOnNonNull = op == NEQ || op == GT || op == GTE || op == UGT || op == UGTE;
+                final boolean valueOnNonNull = (op == NEQ || op == GT || op == GTE || op == UGT || op == UGTE);
                 return ExpressionFactory.getInstance().makeValue(valueOnNonNull);
             }
             return cmp;
@@ -148,9 +153,9 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
 
             // --- Both subexpressions are (at least) non-negative ---
             final IntBinaryOp op = expr.getKind();
-            if (leftSign == Sign.POS && op == ADD) {
+            if ((leftSign == Sign.POS || rightSign == Sign.POS) && op == ADD) {
                 return Sign.POS;
-            } else if (op == MUL || op == UREM || op == SUB) {
+            } else if (op == MUL || op == UREM || op == UDIV) {
                 return Sign.NON_NEG;
             }
             // TODO: We can add more cases for precision, but the above already works quite well
