@@ -41,7 +41,7 @@ class VisitorBase implements EventVisitor<List<Event>> {
     @Override
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), e.getMo())
+                newStoreWithMo(e.getAddress(), expressions.makeFalse(), e.getMo())
         );
     }
 
