@@ -51,7 +51,7 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), e.getMemValue(), ARMv8.MO_REL)
+                newStoreWithMo(e.getAddress(), expressions.makeFalse(), ARMv8.MO_REL)
         );
     }
 

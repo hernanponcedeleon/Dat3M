@@ -48,7 +48,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), e.getMemValue()));
+                newStore(e.getAddress(), expressions.makeFalse()));
     }
 
     @Override

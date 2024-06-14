@@ -3,7 +3,6 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -44,7 +43,7 @@ class VisitorTso extends VisitorBase {
 
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                newStore(e.getAddress(), e.getMemValue()),
+                newStore(e.getAddress(), expressions.makeFalse()),
                 X86.newMemoryFence()
         );
     }
