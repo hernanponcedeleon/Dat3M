@@ -129,7 +129,10 @@ public class ProcessingManager implements ProgramProcessor {
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
                 ProgramProcessor.fromFunctionProcessor(
-                        MemToReg.fromConfig(config), Target.THREADS, true
+                        FunctionProcessor.chain(
+                                RemoveDeadNullChecks.newInstance(),
+                                MemToReg.fromConfig(config)
+                        ), Target.THREADS, true
                 ),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(

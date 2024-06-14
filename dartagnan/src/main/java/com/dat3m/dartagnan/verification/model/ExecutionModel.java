@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
 import com.dat3m.dartagnan.program.event.lang.svcomp.EndAtomic;
 import com.dat3m.dartagnan.program.filter.Filter;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Wmm;
@@ -53,6 +54,7 @@ public class ExecutionModel {
     // The event list is sorted lexicographically by (threadID, cID)
     private final ArrayList<EventData> eventList;
     private final ArrayList<Thread> threadList;
+    private final Map<MemoryObject, BigInteger> memoryLayoutMap;
     private final Map<Thread, List<EventData>> threadEventsMap;
     private final Map<Thread, List<List<EventData>>> atomicBlocksMap;
     private final Map<EventData, EventData> readWriteMap;
@@ -72,6 +74,7 @@ public class ExecutionModel {
     // The following are a read-only views which get passed to the outside
     private List<EventData> eventListView;
     private List<Thread> threadListView;
+    private Map<MemoryObject, BigInteger> memoryLayoutMapView;
     private Map<Thread, List<EventData>> threadEventsMapView;
     private Map<Thread, List<List<EventData>>> atomicBlocksMapView;
     private Map<EventData, EventData> readWriteMapView;
@@ -93,6 +96,7 @@ public class ExecutionModel {
         eventList = new ArrayList<>(100);
         threadList = new ArrayList<>(getProgram().getThreads().size());
         threadEventsMap = new HashMap<>(getProgram().getThreads().size() * 4/3, 0.75f);
+        memoryLayoutMap = new HashMap<>();
         atomicBlocksMap = new HashMap<>();
         readWriteMap = new HashMap<>();
         writeReadsMap = new HashMap<>();
@@ -116,6 +120,7 @@ public class ExecutionModel {
     private void createViews() {
         eventListView = Collections.unmodifiableList(eventList);
         threadListView = Collections.unmodifiableList(threadList);
+        memoryLayoutMapView = Collections.unmodifiableMap(memoryLayoutMap);
         threadEventsMapView = Collections.unmodifiableMap(threadEventsMap);
         atomicBlocksMapView = Collections.unmodifiableMap(atomicBlocksMap);
         readWriteMapView = Collections.unmodifiableMap(readWriteMap);
@@ -166,7 +171,8 @@ public class ExecutionModel {
     public List<Thread> getThreads() {
         return threadListView;
     }
-    
+
+    public Map<MemoryObject, BigInteger> getMemoryLayoutMap() { return memoryLayoutMapView; }
     public Map<Thread, List<EventData>> getThreadEventsMap() {
         return threadEventsMapView;
     }
@@ -218,12 +224,13 @@ public class ExecutionModel {
     public void initialize(Model model, Filter eventFilter, boolean extractCoherences) {
         // We populate here, instead of on construction,
         // to reuse allocated data structures (since these data structures already adapted
-        // their capacity in previous iterations and thus we should have less overhead in future populations)
+        // their capacity in previous iterations, and thus we should have less overhead in future populations)
         // However, for all intents and purposes, this serves as a constructor.
         this.model = model;
         this.eventFilter = eventFilter;
         this.extractCoherences = extractCoherences;
         extractEventsFromModel();
+        extractMemoryLayout();
         extractReadsFrom();
         coherenceMap.clear();
         if (extractCoherences) {
@@ -483,6 +490,17 @@ public class ExecutionModel {
     }
 
     // ===================================================
+
+    private void extractMemoryLayout() {
+        memoryLayoutMap.clear();
+        for (MemoryObject obj : getProgram().getMemory().getObjects()) {
+            final boolean isAllocated = obj.isStaticallyAllocated() || isTrue(encodingContext.execution(obj.getAllocationSite()));
+            if (isAllocated) {
+                final BigInteger address = (BigInteger) model.evaluate(encodingContext.encodeFinalExpression(obj));
+                memoryLayoutMap.put(obj, address);
+            }
+        }
+    }
 
     private void extractReadsFrom() {
         final EncodingContext.EdgeEncoder rf = encodingContext.edge(encodingContext.getTask().getMemoryModel().getRelation(RF));

@@ -9,15 +9,20 @@ import com.google.common.base.Preconditions;
 public class NonDetChoice extends AbstractEvent implements RegWriter {
 
     protected Register register;
+    protected boolean isSigned;
 
-    public NonDetChoice(Register register) {
+    public NonDetChoice(Register register, boolean isSigned) {
         this.register = Preconditions.checkNotNull(register);
+        this.isSigned = isSigned;
     }
 
     protected NonDetChoice(NonDetChoice other) {
         super(other);
         this.register = other.register;
+        this.isSigned = other.isSigned;
     }
+
+    public boolean isSigned() { return isSigned; }
 
     @Override
     protected String defaultString() {
