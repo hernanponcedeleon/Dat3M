@@ -62,7 +62,9 @@ class VisitorRISCV extends VisitorBase {
     @Override
     public List<Event> visitLock(Lock e) {
         // We implement this as a caslocks
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         Label spinLoopHead = newLabel("__spinloop_head");
@@ -71,10 +73,10 @@ class VisitorRISCV extends VisitorBase {
         return eventSequence(
                 spinLoopHead,
                 newRMWLoadExclusive(dummy, e.getAddress()),
-                newJump(expressions.makeNot(dummy), spinLoopEnd),
+                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
                 newGoto(spinLoopHead),
                 spinLoopEnd,
-                newRMWStoreExclusive(e.getAddress(), expressions.makeTrue(), true),
+                newRMWStoreExclusive(e.getAddress(), one, true),
                 // TODO do we need the fence in the precense of ctrl dependency?
                 RISCV.newRRWFence()
         );
@@ -82,14 +84,16 @@ class VisitorRISCV extends VisitorBase {
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         return eventSequence(
                 newLoad(dummy, e.getAddress()),
-                newAssert(dummy, "Unlocking an already unlocked mutex"),
+                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
                 RISCV.newRWWFence(),
-                newStore(e.getAddress(), expressions.makeFalse())
+                newStore(e.getAddress(), zero)
         );
     }
 

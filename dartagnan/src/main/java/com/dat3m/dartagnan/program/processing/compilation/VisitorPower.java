@@ -48,13 +48,15 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeFalse()));
+                newStore(e.getAddress(), e.getMemValue()));
     }
 
     @Override
     public List<Event> visitLock(Lock e) {
         // We implement this as a caslocks
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         Label spinLoopHead = newLabel("__spinloop_head");
@@ -64,10 +66,10 @@ public class VisitorPower extends VisitorBase {
         return eventSequence(
                 spinLoopHead,
                 newRMWLoadExclusive(dummy, e.getAddress()),
-                newJump(expressions.makeNot(dummy), spinLoopEnd),
+                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
                 newGoto(spinLoopHead),
                 spinLoopEnd,
-                Power.newRMWStoreConditional(e.getAddress(), expressions.makeTrue(), true),
+                Power.newRMWStoreConditional(e.getAddress(), one, true),
                 // Fake dependency + isync to guarantee acquire semantics
                 newFakeCtrlDep(dummy, label),
                 label,
@@ -76,14 +78,16 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         return eventSequence(
                 newLoad(dummy, e.getAddress()),
-                newAssert(dummy, "Unlocking an already unlocked mutex"),
+                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeFalse()));
+                newStore(e.getAddress(), zero));
     }
 
     // =============================================================================================

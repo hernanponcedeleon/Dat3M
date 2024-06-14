@@ -51,14 +51,16 @@ class VisitorArm8 extends VisitorBase {
     @Override
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                newStoreWithMo(e.getAddress(), expressions.makeFalse(), ARMv8.MO_REL)
+                newStoreWithMo(e.getAddress(), e.getMemValue(), ARMv8.MO_REL)
         );
     }
 
     @Override
     public List<Event> visitLock(Lock e) {
         // We implement this as a caslocks
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         Label spinLoopHead = newLabel("__spinloop_head");
@@ -67,22 +69,24 @@ class VisitorArm8 extends VisitorBase {
         return eventSequence(
             spinLoopHead,
             newRMWLoadExclusiveWithMo(dummy, e.getAddress(), ARMv8.MO_ACQ),
-            newJump(expressions.makeNot(dummy), spinLoopEnd),
+            newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
             newGoto(spinLoopHead),
             spinLoopEnd,
-            newRMWStoreExclusive(e.getAddress(), expressions.makeTrue(), true)
+            newRMWStoreExclusive(e.getAddress(), one, true)
     );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         return eventSequence(
                 newLoad(dummy, e.getAddress()),
-                newAssert(dummy, "Unlocking an already unlocked mutex"),
-                newStoreWithMo(e.getAddress(), expressions.makeFalse(), ARMv8.MO_REL)
+                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
+                newStoreWithMo(e.getAddress(), zero, ARMv8.MO_REL)
         );
     }
 

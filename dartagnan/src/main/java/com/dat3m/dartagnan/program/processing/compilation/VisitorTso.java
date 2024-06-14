@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.program.processing.compilation;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
@@ -43,7 +44,7 @@ class VisitorTso extends VisitorBase {
 
     public List<Event> visitInitLock(InitLock e) {
         return eventSequence(
-                newStore(e.getAddress(), expressions.makeFalse()),
+                newStore(e.getAddress(), e.getMemValue()),
                 X86.newMemoryFence()
         );
     }
@@ -51,7 +52,9 @@ class VisitorTso extends VisitorBase {
     @Override
     public List<Event> visitLock(Lock e) {
         // We implement this as a caslocks
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         Label spinLoopHead = newLabel("__spinloop_head");
@@ -62,22 +65,24 @@ class VisitorTso extends VisitorBase {
         return eventSequence(
                 spinLoopHead,
                 load,
-                newJump(expressions.makeNot(dummy), spinLoopEnd),
+                newJump(expressions.makeEQ(dummy, zero), spinLoopEnd),
                 newGoto(spinLoopHead),
                 spinLoopEnd,
-                newRMWStore(load, e.getAddress(), expressions.makeTrue())
+                newRMWStore(load, e.getAddress(), one)
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
-        Type type = types.getBooleanType();
+        IntegerType type = (IntegerType)e.getAccessType();
+        Expression zero = expressions.makeZero(type);
+        Expression one = expressions.makeOne(type);
         Register dummy = e.getFunction().newRegister(type);
 
         return eventSequence(
                 newLoad(dummy, e.getAddress()),
-                newAssert(dummy, "Unlocking an already unlocked mutex"),
-                newStore(e.getAddress(), expressions.makeFalse()),
+                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
+                newStore(e.getAddress(), zero),
                 X86.newMemoryFence()
         );
     }
