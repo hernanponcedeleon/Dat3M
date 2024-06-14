@@ -53,16 +53,22 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType) e.getAccessType();
+        // We implement this as a caslocks
+        Type type = types.getBooleanType();
         Register dummy = e.getFunction().newRegister(type);
+
+        Label spinLoopHead = newLabel("__spinloop_head");
+        Label spinLoopEnd = newLabel("__spinloop_end");
         Label label = newLabel("FakeDep");
-        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
-        // use assumes. The fake control dependency + isync guarantee acquire semantics.
+
         return eventSequence(
+                spinLoopHead,
                 newRMWLoadExclusive(dummy, e.getAddress()),
-                newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),
-                Power.newRMWStoreConditional(e.getAddress(), expressions.makeOne(type), true),
-                // Fake dependency to guarantee acquire semantics
+                newJump(expressions.makeNot(dummy), spinLoopEnd),
+                newGoto(spinLoopHead),
+                spinLoopEnd,
+                Power.newRMWStoreConditional(e.getAddress(), expressions.makeTrue(), true),
+                // Fake dependency + isync to guarantee acquire semantics
                 newFakeCtrlDep(dummy, label),
                 label,
                 Power.newISyncBarrier());
@@ -72,7 +78,7 @@ public class VisitorPower extends VisitorBase {
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
                 Power.newLwSyncBarrier(),
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())));
+                newStore(e.getAddress(), expressions.makeFalse()));
     }
 
     // =============================================================================================

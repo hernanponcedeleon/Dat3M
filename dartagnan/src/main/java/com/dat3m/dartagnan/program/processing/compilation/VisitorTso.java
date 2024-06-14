@@ -51,22 +51,29 @@ class VisitorTso extends VisitorBase {
 
     @Override
     public List<Event> visitLock(Lock e) {
-        IntegerType type = (IntegerType)e.getAccessType();
+        // We implement this as a caslocks
+        Type type = types.getBooleanType();
         Register dummy = e.getFunction().newRegister(type);
-        // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
-        // use assumes. Nothing else is needed to guarantee acquire semantics in TSO.
+
+        Label spinLoopHead = newLabel("__spinloop_head");
+        Label spinLoopEnd = newLabel("__spinloop_end");
+        // Nothing is needed to guarantee acquire semantics in TSO.
         Load load = newRMWLoad(dummy, e.getAddress());
+
         return eventSequence(
+                spinLoopHead,
                 load,
-                newAssume(expressions.makeEQ(dummy, expressions.makeZero(type))),
-                newRMWStore(load, e.getAddress(), expressions.makeOne(type))
+                newJump(expressions.makeNot(dummy), spinLoopEnd),
+                newGoto(spinLoopHead),
+                spinLoopEnd,
+                newRMWStore(load, e.getAddress(), expressions.makeTrue())
         );
     }
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
         return eventSequence(
-                newStore(e.getAddress(), expressions.makeZero((IntegerType)e.getAccessType())),
+                newStore(e.getAddress(), expressions.makeFalse()),
                 X86.newMemoryFence()
         );
     }
