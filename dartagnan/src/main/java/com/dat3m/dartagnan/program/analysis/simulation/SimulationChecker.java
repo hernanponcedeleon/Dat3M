@@ -19,6 +19,7 @@ import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Local;
+import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
@@ -91,16 +92,19 @@ public class SimulationChecker {
 
 
     public void test(Function f) {
-
         try (NoLogging ignored = new NoLogging()) {
             List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(f, false).getLoopsOfFunction(f);
             for (LoopAnalysis.LoopInfo loop : loops) {
                 assert !loop.isUnrolled();
                 final LoopAnalysis.LoopIterationInfo loopBody = loop.iterations().get(0);
+                if (loopBody.computeBody().stream().anyMatch(e -> e instanceof FunctionCall)) {
+                    continue;
+                }
                 final OpenFunction func = OpenFunction.fromSnippet(loopBody.getIterationStart(), loopBody.getIterationEnd());
 
+                final long beginTime = System.nanoTime();
                 System.out.println("====== Checking boundedness of loop " + SyntacticContextAnalysis.getSourceLocationString(loopBody.getIterationStart()));
-                for (int k = 1; k < 6; k++) {
+                for (int k = 1; k < 2; k++) {
                     final OpenFunction src = func.constructLoopBoundedCopy(k + 1);
                     final OpenFunction sim = func.constructLoopBoundedCopy(k);
                     if (canSimulate(src.getFunction(), sim.getFunction())) {
@@ -108,6 +112,8 @@ public class SimulationChecker {
                         break;
                     }
                 }
+                final long elapsedTime = (System.nanoTime() - beginTime) / 1_000_000;
+                System.out.println("Runtime (ms): " + elapsedTime);
             }
         }
     }
@@ -279,7 +285,6 @@ public class SimulationChecker {
     private void process(SimulationCheck check) {
         // TODO: TEST CODE
         final Program program = check.program;
-        //check.source.getEntry().insertAfter(EventFactory.newAssume(program.getConstants().stream().findFirst().get()));
         try {
             IdReassignment.newInstance().run(program);
             ProcessingManager.fromConfig(Configuration.defaultConfiguration()).run(program);
