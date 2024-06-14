@@ -590,12 +590,14 @@ public class Intrinsics {
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_init
+        //TODO use attributes
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression attributes = call.getArguments().get(1);
-        final String lockName = lockAddress.toString();
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Expression unlocked = expressions.makeZero(type);
         return List.of(
-                EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes),
+                EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
                 assignSuccess(errorRegister)
         );
     }
@@ -612,11 +614,25 @@ public class Intrinsics {
     private List<Event> inlinePthreadMutexLock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_lock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Register oldValueRegister = call.getFunction().newRegister(type);
+        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final String lockName = lockAddress.toString();
+        final Expression locked = expressions.makeOne(type);
+        final Expression unlocked = expressions.makeZero(type);
+        final Expression fail = expressions.makeNot(successRegister);
+        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
+        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
+        // We implement this as a caslocks
         return List.of(
-                EventFactory.Pthread.newLock(lockName, lockAddress),
-                assignSuccess(errorRegister)
+                spinLoopHead,
+                EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true),
+                EventFactory.newJump(successRegister, spinLoopEnd),
+                EventFactory.newGoto(spinLoopHead),
+                spinLoopEnd,
+                EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
         );
     }
 
@@ -624,12 +640,13 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        // We currently use archType in InitLock, Lock and Unlock.
-        final Register oldValueRegister = call.getFunction().newRegister(types.getArchType());
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Register oldValueRegister = call.getFunction().newRegister(type);
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression locked = expressions.makeOne(types.getArchType());
-        final Expression unlocked = expressions.makeZero(types.getArchType());
+        final Expression locked = expressions.makeOne(type);
+        final Expression unlocked = expressions.makeZero(type);
         final Expression fail = expressions.makeNot(successRegister);
         return List.of(
                 EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE),
@@ -640,10 +657,16 @@ public class Intrinsics {
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_unlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Register oldValueRegister = call.getFunction().newRegister(type);
         final Expression lockAddress = call.getArguments().get(0);
-        final String lockName = lockAddress.toString();
+        final Expression locked = expressions.makeOne(type);
+        final Expression unlocked = expressions.makeZero(type);
         return List.of(
-                EventFactory.Pthread.newUnlock(lockName, lockAddress),
+                EventFactory.Llvm.newLoad(oldValueRegister, lockAddress, Tag.C11.MO_RELAXED),
+                EventFactory.newAssert(expressions.makeEQ(oldValueRegister, locked), "Unlocking an already unlocked mutex"),
+                EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
                 assignSuccess(errorRegister)
         );
     }
