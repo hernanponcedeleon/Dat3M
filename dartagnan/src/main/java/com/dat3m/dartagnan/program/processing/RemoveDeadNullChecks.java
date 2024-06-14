@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventVisitor;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -15,9 +16,12 @@ import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.*;
@@ -33,9 +37,12 @@ import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
       - Some operations (like addition) preserve positiveness.
 
     TODO: The pass is very naive: it globally assigns a signedness to registers rather than per program point.
+    TODO 2: This pass only runs correctly on unrolled code and will skip functions with loops.
  */
 public class RemoveDeadNullChecks implements FunctionProcessor {
 
+    private final static Logger logger = LogManager.getLogger(RemoveDeadNullChecks.class)
+;
     private RemoveDeadNullChecks() { }
 
     public static RemoveDeadNullChecks newInstance() { return new RemoveDeadNullChecks(); }
@@ -57,6 +64,11 @@ public class RemoveDeadNullChecks implements FunctionProcessor {
 
     @Override
     public void run(Function function) {
+        final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function).getLoopsOfFunction(function);
+        if (loops.stream().anyMatch(loop -> !loop.isUnrolled())) {
+            logger.warn("Skipping null check deletion on function with loops: {}", function);
+            return;
+        }
 
         // Collects signs of registers.
         final SignChecker signChecker = new SignChecker();
