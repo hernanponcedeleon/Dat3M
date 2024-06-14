@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -399,10 +400,10 @@ public class Dartagnan extends BaseOptions {
     }
 
     private static void printSpecification(StringBuilder sb, Program program) {
-        sb.append("Condition ").append(program.getSpecificationType()).append(" ");
+        sb.append("Condition ").append(program.getSpecificationType().toString().toLowerCase()).append(" ");
         boolean init = false;
         if (program.getSpecification() != null) {
-            sb.append(program.getSpecification());
+            sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
             init = true;
         }
         for (Assert assertion : program.getThreadEvents(Assert.class)) {

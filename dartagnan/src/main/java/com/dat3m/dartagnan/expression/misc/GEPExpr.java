@@ -13,7 +13,6 @@ import com.google.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other> {
 
@@ -51,10 +50,5 @@ public final class GEPExpr extends NaryExpressionBase<Type, ExpressionKind.Other
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitGEPExpression(this);
-    }
-
-    @Override
-    public String toString() {
-        return operands.stream().map(Object::toString).collect(Collectors.joining(", ", "GEP(", ")"));
     }
 }

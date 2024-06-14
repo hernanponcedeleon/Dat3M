@@ -34,11 +34,6 @@ public abstract class BinaryExpressionBase<TType extends Type, TKind extends Exp
     public TKind getKind() { return kind; }
 
     @Override
-    public String toString() {
-        return "(" + left + " " + kind + " " + right + ")";
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(type, kind, left, right);
     }

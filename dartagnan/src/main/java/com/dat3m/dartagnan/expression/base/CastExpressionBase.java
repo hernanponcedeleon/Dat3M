@@ -41,11 +41,6 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
     public ExpressionKind.Other getKind() { return ExpressionKind.Other.CAST; }
 
     @Override
-    public String toString() {
-        return String.format("cast %s to %s", operand, targetType);
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(targetType, operand);
     }
