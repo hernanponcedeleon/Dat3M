@@ -76,7 +76,12 @@ public class VisitorPower extends VisitorBase {
 
     @Override
     public List<Event> visitUnlock(Unlock e) {
+        Type type = types.getBooleanType();
+        Register dummy = e.getFunction().newRegister(type);
+
         return eventSequence(
+                newLoad(dummy, e.getAddress()),
+                newAssert(dummy, "Unlocking an already unlocked mutex"),
                 Power.newLwSyncBarrier(),
                 newStore(e.getAddress(), expressions.makeFalse()));
     }
