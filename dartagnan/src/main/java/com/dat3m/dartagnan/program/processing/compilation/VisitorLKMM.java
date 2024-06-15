@@ -5,9 +5,11 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.Program.SourceLanguage;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
+import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.RMWStore;
@@ -203,23 +205,23 @@ public class VisitorLKMM extends VisitorBase {
 
     @Override
     public List<Event> visitLKMMLock(LKMMLock e) {
+        boolean litmusFormat = e.getFunction().getProgram().getFormat().equals(LITMUS);
         IntegerType type = (IntegerType) e.getAccessType(); // TODO: Boolean should be sufficient
         Register dummy = e.getFunction().newRegister(type);
         Expression zeroDummy = expressions.makeNot(expressions.makeBooleanCast(dummy));
 
         Load lockRead = newLockRead(dummy, e.getLock());
-        Label spinLoopHead = newLabel("__spinloop_head");
-        Label spinLoopEnd = newLabel("__spinloop_end");
+        Label spinLoopHead = litmusFormat ? null : newLabel("__spinloop_head");
+        Label spinLoopEnd = litmusFormat ? null : newLabel("__spinloop_end");
+        CondJump gotoHead = litmusFormat ? null : newGoto(spinLoopHead);
         // In litmus tests, spin locks are guaranteed to succeed, i.e. its read part gets value 0
-        Event checkLockValue = e.getFunction().getProgram().getFormat().equals(LITMUS) ?
-                newAssume(zeroDummy) :
-                newJump(zeroDummy, spinLoopEnd);
+        Event checkLockValue = litmusFormat ? newAssume(zeroDummy) : newJump(zeroDummy, spinLoopEnd);
 
         return eventSequence(
                 spinLoopHead,
                 lockRead,
                 checkLockValue,
-                newGoto(spinLoopHead),
+                gotoHead,
                 spinLoopEnd,
                 newLockWrite(lockRead, e.getLock())
         );
