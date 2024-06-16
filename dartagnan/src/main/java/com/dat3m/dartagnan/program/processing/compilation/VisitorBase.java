@@ -71,16 +71,11 @@ class VisitorBase implements EventVisitor<List<Event>> {
     public List<Event> visitUnlock(Unlock e) {
         IntegerType type = (IntegerType)e.getAccessType();
         Expression zero = expressions.makeZero(type);
-        Expression one = expressions.makeOne(type);
-        Register dummy = e.getFunction().newRegister(type);
         Expression address = e.getAddress();
         String mo = e.getMo();
 
-        Load rmwLoad = newRMWLoadWithMo(dummy, address, mo);
         return eventSequence(
-                rmwLoad,
-                newAssert(expressions.makeEQ(dummy, one), "Unlocking an already unlocked mutex"),
-                newRMWStoreWithMo(rmwLoad, address, zero, mo)
+                newStoreWithMo(address, zero, mo)
         );
     }
 
