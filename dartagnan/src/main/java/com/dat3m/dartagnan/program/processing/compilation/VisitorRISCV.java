@@ -68,6 +68,8 @@ class VisitorRISCV extends VisitorBase {
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can use
         // assumes. With this we miss a ctrl dependency, but this does not matter
         // because of the fence.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress()),
                 newAssume(expressions.makeEQ(dummy, zero)),
