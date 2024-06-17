@@ -102,8 +102,8 @@ public class ProcessingManager implements ProgramProcessor {
                 RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
-                LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
+                LoopFormVerification.fromConfig(config),
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
@@ -120,10 +120,14 @@ public class ProcessingManager implements ProgramProcessor {
                         ), Target.FUNCTIONS, true
                 ),
                 ThreadCreation.fromConfig(config),
+                ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
                 intrinsics.lateInliningPass(),
                 ProgramProcessor.fromFunctionProcessor(
-                        MemToReg.fromConfig(config), Target.THREADS, true
+                        FunctionProcessor.chain(
+                                RemoveDeadNullChecks.newInstance(),
+                                MemToReg.fromConfig(config)
+                        ), Target.THREADS, true
                 ),
                 ProgramProcessor.fromFunctionProcessor(
                         FunctionProcessor.chain(

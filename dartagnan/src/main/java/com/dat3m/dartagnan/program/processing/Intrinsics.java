@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
@@ -22,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.event.functions.FunctionCall;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.lang.svcomp.BeginAtomic;
-import com.dat3m.dartagnan.program.misc.NonDetValue;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -185,7 +183,7 @@ public class Intrinsics {
                 "__VERIFIER_nondet_short", "__VERIFIER_nondet_ushort", "__VERIFIER_nondet_unsigned_short",
                 "__VERIFIER_nondet_long", "__VERIFIER_nondet_ulong",
                 "__VERIFIER_nondet_char", "__VERIFIER_nondet_uchar"),
-                false, false, true, false, Intrinsics::inlineNonDet),
+                false, false, true, true, Intrinsics::inlineNonDet),
         // --------------------------- LLVM ---------------------------
         LLVM(List.of("llvm.smax", "llvm.umax", "llvm.smin", "llvm.umin",
                 "llvm.ssub.sat", "llvm.usub.sat", "llvm.sadd.sat", "llvm.uadd.sat", // TODO: saturated shifts
@@ -288,8 +286,6 @@ public class Intrinsics {
     }
 
     private void markIntrinsics(Program program) {
-        declareNondetBool(program);
-
         final var missingSymbols = new TreeSet<String>();
         for (Function func : program.getFunctions()) {
             if (!func.hasBody()) {
@@ -303,15 +299,6 @@ public class Intrinsics {
         if (!missingSymbols.isEmpty()) {
             throw new UnsupportedOperationException(
                     missingSymbols.stream().collect(Collectors.joining(", ", "Unknown intrinsics ", "")));
-        }
-    }
-
-    private void declareNondetBool(Program program) {
-        // used by VisitorLKMM
-        if (program.getFunctionByName("__VERIFIER_nondet_bool").isEmpty()) {
-            final FunctionType type = types.getFunctionType(types.getBooleanType(), List.of());
-            //TODO this id will not be unique
-            program.addFunction(new Function("__VERIFIER_nondet_bool", type, List.of(), 0, null));
         }
     }
 
@@ -496,6 +483,7 @@ public class Intrinsics {
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         //final Expression condAddress = call.getArguments().get(0);
         final Expression lockAddress = call.getArguments().get(1);
+        // TODO: implement this without lock/unlock events and get rid of them
         return List.of(
                 // Allow other threads to access the condition variable.
                 EventFactory.Pthread.newUnlock(lockAddress.toString(), lockAddress),
@@ -603,12 +591,14 @@ public class Intrinsics {
 
     private List<Event> inlinePthreadMutexInit(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_init
+        //TODO use attributes
         final Register errorRegister = getResultRegisterAndCheckArguments(2, call);
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression attributes = call.getArguments().get(1);
-        final String lockName = lockAddress.toString();
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Expression unlocked = expressions.makeZero(type);
         return List.of(
-                EventFactory.Pthread.newInitLock(lockName, lockAddress, attributes),
+                EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
                 assignSuccess(errorRegister)
         );
     }
@@ -625,11 +615,25 @@ public class Intrinsics {
     private List<Event> inlinePthreadMutexLock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_lock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Register oldValueRegister = call.getFunction().newRegister(type);
+        final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final String lockName = lockAddress.toString();
+        final Expression locked = expressions.makeOne(type);
+        final Expression unlocked = expressions.makeZero(type);
+        final Expression fail = expressions.makeNot(successRegister);
+        final Label spinLoopHead = EventFactory.newLabel("__spinloop_head");
+        final Label spinLoopEnd = EventFactory.newLabel("__spinloop_end");
+        // We implement this as a caslocks
         return List.of(
-                EventFactory.Pthread.newLock(lockName, lockAddress),
-                assignSuccess(errorRegister)
+                spinLoopHead,
+                EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE, true),
+                EventFactory.newJump(successRegister, spinLoopEnd),
+                EventFactory.newGoto(spinLoopHead),
+                spinLoopEnd,
+                EventFactory.newLocal(errorRegister, expressions.makeCast(fail, errorRegister.getType()))
         );
     }
 
@@ -637,12 +641,13 @@ public class Intrinsics {
         //see https://linux.die.net/man/3/pthread_mutex_trylock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
         checkArgument(errorRegister.getType() instanceof IntegerType, "Wrong return type for \"%s\"", call);
-        // We currently use archType in InitLock, Lock and Unlock.
-        final Register oldValueRegister = call.getFunction().newRegister(types.getArchType());
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Register oldValueRegister = call.getFunction().newRegister(type);
         final Register successRegister = call.getFunction().newRegister(types.getBooleanType());
         final Expression lockAddress = call.getArguments().get(0);
-        final Expression locked = expressions.makeOne(types.getArchType());
-        final Expression unlocked = expressions.makeZero(types.getArchType());
+        final Expression locked = expressions.makeOne(type);
+        final Expression unlocked = expressions.makeZero(type);
         final Expression fail = expressions.makeNot(successRegister);
         return List.of(
                 EventFactory.Llvm.newCompareExchange(oldValueRegister, successRegister, lockAddress, unlocked, locked, Tag.C11.MO_ACQUIRE),
@@ -653,10 +658,16 @@ public class Intrinsics {
     private List<Event> inlinePthreadMutexUnlock(FunctionCall call) {
         //see https://linux.die.net/man/3/pthread_mutex_unlock
         final Register errorRegister = getResultRegisterAndCheckArguments(1, call);
+        // FIXME: We currently use bv32 in InitLock, Lock and Unlock.
+        final IntegerType type = types.getIntegerType(32);
+        final Register oldValueRegister = call.getFunction().newRegister(type);
         final Expression lockAddress = call.getArguments().get(0);
-        final String lockName = lockAddress.toString();
+        final Expression locked = expressions.makeOne(type);
+        final Expression unlocked = expressions.makeZero(type);
         return List.of(
-                EventFactory.Pthread.newUnlock(lockName, lockAddress),
+                EventFactory.Llvm.newLoad(oldValueRegister, lockAddress, Tag.C11.MO_RELAXED),
+                EventFactory.newAssert(expressions.makeEQ(oldValueRegister, locked), "Unlocking an already unlocked mutex"),
+                EventFactory.Llvm.newStore(lockAddress, unlocked, Tag.C11.MO_RELEASE),
                 assignSuccess(errorRegister)
         );
     }
@@ -931,7 +942,7 @@ public class Intrinsics {
         if (name.startsWith("llvm.ctlz")) {
             return inlineLLVMCtlz(valueCall);
         } else if (name.startsWith("llvm.cttz")) {
-            return inlineLLVMCtlz(valueCall);
+            return inlineLLVMCttz(valueCall);
         } else if (name.startsWith("llvm.ctpop")) {
             return inlineLLVMCtpop(valueCall);
         } else if (name.contains("add.sat")) {
@@ -1278,38 +1289,41 @@ public class Intrinsics {
 
     private List<Event> inlineNonDet(FunctionCall call) {
         assert call.isDirectCall() && call instanceof ValueFunctionCall;
-        final Program program = call.getFunction().getProgram();
-        Register register = ((ValueFunctionCall) call).getResultRegister();
-        String name = call.getCalledFunction().getName();
+        final Register result = getResultRegister(call);
+        final String name = call.getCalledFunction().getName();
         final String separator = "nondet_";
-        int index = name.indexOf(separator);
+        final int index = name.indexOf(separator);
         assert index > -1;
-        String suffix = name.substring(index + separator.length());
+        final String suffix = name.substring(index + separator.length());
 
-        // Nondeterministic booleans
+        final Type nonDetType;
+        final boolean signed;
         if (suffix.equals("bool")) {
-            final Expression value = program.newConstant(types.getBooleanType());
-            final Expression cast = expressions.makeCast(value, register.getType());
-            return List.of(EventFactory.newLocal(register, cast));
+            // Nondeterministic booleans
+            signed = false;
+            nonDetType = types.getBooleanType();
+        } else {
+            // Nondeterministic integers
+            final int bits = switch (suffix) {
+                case "long", "ulong" -> 64;
+                case "int", "uint", "unsigned_int" -> 32;
+                case "short", "ushort", "unsigned_short" -> 16;
+                case "char", "uchar" -> 8;
+                default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
+            };
+
+            signed = switch (suffix) {
+                case "int", "short", "long", "char" -> true;
+                default -> false;
+            };
+            nonDetType = types.getIntegerType(bits);
         }
 
-        // Nondeterministic integers
-        boolean signed = switch (suffix) {
-            case "int", "short", "long", "char" -> true;
-            default -> false;
-        };
-
-        final int bits = switch (suffix) {
-            case "long", "ulong" -> 64;
-            case "int", "uint", "unsigned_int" -> 32;
-            case "short", "ushort", "unsigned_short" -> 16;
-            case "char", "uchar" -> 8;
-            default -> throw new UnsupportedOperationException(String.format("%s is not supported", call));
-        };
-
-        final NonDetValue value = (NonDetValue) call.getFunction().getProgram().newConstant(types.getIntegerType(bits));
-        value.setIsSigned(signed);
-        return List.of(EventFactory.newLocal(register, expressions.makeCast(value, register.getType(), signed)));
+        final Register nonDetReg = call.getFunction().getOrNewRegister("__r_nondet_" + suffix, nonDetType);
+        return List.of(
+                EventFactory.Svcomp.newSignedNonDetChoice(nonDetReg, signed),
+                EventFactory.newLocal(result, expressions.makeCast(nonDetReg, result.getType(), signed))
+        );
     }
 
     //FIXME: The following support for memcpy, memcmp, and memset is unsound
