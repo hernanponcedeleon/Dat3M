@@ -58,6 +58,8 @@ public class VisitorPower extends VisitorBase {
         Label label = newLabel("FakeDep");
         // We implement locks as spinlocks which are guaranteed to succeed, i.e. we can
         // use assumes. The fake control dependency + isync guarantee acquire semantics.
+        // TODO: Lock events are only used for implementing condvar intrinsic.
+        // If we have an alternative implementation for that, we can get rid of these events.
         return eventSequence(
                 newRMWLoadExclusive(dummy, e.getAddress()),
                 newAssume(expressions.makeNot(expressions.makeBooleanCast(dummy))),

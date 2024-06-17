@@ -104,8 +104,8 @@ public class ProcessingManager implements ProgramProcessor {
                 RegisterDecomposition.newInstance(),
                 RemoveDeadFunctions.newInstance(),
                 printAfterSimplification ? DebugPrint.withHeader("After simplification", Printer.Mode.ALL) : null,
-                LoopFormVerification.fromConfig(config),
                 Compilation.fromConfig(config), // We keep compilation global for now
+                LoopFormVerification.fromConfig(config),
                 printAfterCompilation ? DebugPrint.withHeader("After compilation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(MemToReg.fromConfig(config), Target.FUNCTIONS, true),
                 ProgramProcessor.fromFunctionProcessor(sccp, Target.FUNCTIONS, false),
