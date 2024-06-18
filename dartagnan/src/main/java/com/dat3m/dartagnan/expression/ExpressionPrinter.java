@@ -14,21 +14,22 @@ import java.util.stream.Collectors;
 
 public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
-    private final boolean qualified;
+    private final boolean printRegistersWithFunctionId;
 
     private ExpressionKind kind;
 
-    public ExpressionPrinter(boolean qualified) {
-        this.qualified = qualified;
+    // If not printing in program / global scope, then printing in function / local scope.
+    public ExpressionPrinter(boolean globalScope) {
+        this.printRegistersWithFunctionId = globalScope;
     }
 
     public String visit(Expression expr) {
-        final ExpressionKind kind = this.kind;
+        final ExpressionKind parentKind = this.kind;
         this.kind = expr.getKind();
         final String inner = expr.accept(this);
-        final boolean direct = kind == null || kind == this.kind || expr.getOperands().isEmpty();
+        final boolean direct = parentKind == null || parentKind == this.kind || expr.getOperands().isEmpty();
         final String result = direct ? inner : "(" + inner + ")";
-        this.kind = kind;
+        this.kind = parentKind;
         return result;
     }
 
@@ -93,6 +94,6 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
 
     @Override
     public String visitRegister(Register reg) {
-        return qualified ? reg.getFunction().getId() + ":" + reg.getName() : reg.toString();
+        return printRegistersWithFunctionId ? reg.getFunction().getId() + ":" + reg.getName() : reg.toString();
     }
 }
