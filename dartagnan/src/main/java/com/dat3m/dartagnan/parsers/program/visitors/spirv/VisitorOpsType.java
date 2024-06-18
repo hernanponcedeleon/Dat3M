@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.IValue;
-import com.dat3m.dartagnan.expression.type.Type;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -69,7 +69,7 @@ public class VisitorOpsType extends SpirvBaseVisitor<Type> {
         String lengthValueName = ctx.lengthIdRef().getText();
         Expression lengthExpr = builder.getExpression(lengthValueName);
         if (lengthExpr != null) {
-            if (lengthExpr instanceof IValue iValue) {
+            if (lengthExpr instanceof IntLiteral iValue) {
                 Type type = TYPE_FACTORY.getArrayType(elementType, iValue.getValue().intValue());
                 return builder.addType(id, type);
             }

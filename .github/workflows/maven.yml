@@ -10,9 +10,9 @@ concurrency:
 
 on:
   push:
-    branches: [ master, development, spirv-visitor ]
+    branches: [ master, development, spirv-visitor, spirv ]
   pull_request:
-    branches: [ master, development, spirv-visitor ]
+    branches: [ master, development, spirv-visitor, spirv ]
   workflow_dispatch:
 
 jobs:

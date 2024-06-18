@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.LeafExpression;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.program.Register;
 
@@ -15,7 +16,10 @@ public class RegisterTransformer extends ExprTransformer {
     }
 
     @Override
-    public Expression visit(Register reg) {
-        return mapping.get(reg);
+    public Expression visitLeafExpression(LeafExpression expr) {
+        if (expr instanceof Register reg) {
+            return mapping.get(reg);
+        }
+        return expr;
     }
 }

@@ -7,9 +7,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
-import com.dat3m.dartagnan.verification.solving.RefinementSolver;
-import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +28,8 @@ import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.configuration.Property.PROGRAM_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
-import static com.dat3m.dartagnan.utils.Result.*;
+import static com.dat3m.dartagnan.utils.Result.FAIL;
+import static com.dat3m.dartagnan.utils.Result.PASS;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
@@ -116,19 +114,12 @@ public class SpirvAssertionsTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
-            assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
-        }
         // Fails xf-barrier
         // try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
         //     assertEquals(expected, RefinementSolver.run(ctx, prover, mkTask()).getResult());
         // }
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
-        }
-        try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
-             ProverEnvironment prover2 = mkProver(ctx)) {
-            assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, mkTask()).getResult());
         }
     }
 

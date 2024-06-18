@@ -1,10 +1,11 @@
+package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 import org.junit.Test;
 
@@ -133,7 +134,7 @@ public class VisitorOpsAtomicTest {
         assertEquals(builder.getType("%int"), event.getResultRegister().getType());
         assertEquals(builder.getExpression("%ptr"), event.getAddress());
         assertEquals(builder.getExpression("%value"), event.getOperand());
-        assertEquals(IOpBin.ADD, event.getOperator());
+        assertEquals(IntBinaryOp.ADD, event.getOperator());
         assertEquals(RELAXED, event.getMo());
         assertEquals(Set.of(RELAXED, SEM_UNIFORM, SC_UNIFORM, DEVICE, READ, WRITE, RMW, MEMORY, VISIBLE), event.getTags());
     }

@@ -57,7 +57,7 @@ public class VisitorOpsExtension extends SpirvBaseVisitor<Void> {
         );
     }
 
-    private static String getFirstTokenText(ParseTree ctx) {
+    private String getFirstTokenText(ParseTree ctx) {
         while (!(ctx instanceof TerminalNode)) {
             ctx = ctx.getChild(0);
         }

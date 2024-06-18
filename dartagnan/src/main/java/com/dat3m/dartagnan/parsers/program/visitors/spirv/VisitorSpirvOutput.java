@@ -3,6 +3,9 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
@@ -10,6 +13,10 @@ import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
 
@@ -68,17 +75,17 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         Expression expr1 = acceptAssertionValue(ctx.assertionValue(0));
         Expression expr2 = acceptAssertionValue(ctx.assertionValue(1));
         if (ctx.assertionCompare().ModeHeader_EqualEqual() != null) {
-            return new AssertBasic(expr1, COpBin.EQ, expr2);
+            return new AssertBasic(expr1, EQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_NotEqual() != null) {
-            return new AssertBasic(expr1, COpBin.NEQ, expr2);
+            return new AssertBasic(expr1, NEQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_Less() != null) {
-            return new AssertBasic(expr1, COpBin.LT, expr2);
+            return new AssertBasic(expr1, LT, expr2);
         } else if (ctx.assertionCompare().ModeHeader_LessEqual() != null) {
-            return new AssertBasic(expr1, COpBin.LTE, expr2);
+            return new AssertBasic(expr1, LTE, expr2);
         } else if (ctx.assertionCompare().ModeHeader_Greater() != null) {
-            return new AssertBasic(expr1, COpBin.GT, expr2);
+            return new AssertBasic(expr1, GT, expr2);
         } else if (ctx.assertionCompare().ModeHeader_GreaterEqual() != null) {
-            return new AssertBasic(expr1, COpBin.GTE, expr2);
+            return new AssertBasic(expr1, GTE, expr2);
         } else {
             throw new ParsingException("Unrecognised comparison operator");
         }
@@ -97,7 +104,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         if (base == null) {
             throw new ParsingException("Uninitialized location %s", name);
         }
-        if(ctx.indexValue().isEmpty()) {
+        if (ctx.indexValue().isEmpty()) {
             return new Location(name, base, 0);
         }
         List<Integer> indexes = new ArrayList<>();

@@ -1,6 +1,5 @@
-; @Input: %v1=7, %v2=123
-; @Output: not exists (%v1!=7 or %v2!=123)
-; @Output: forall (%v3==0)
+; @Input: %v1=7, %v2=123, %v3=0
+; @Output: not exists (%v1!=7 or %v2!=123 or %v3!=0)
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0

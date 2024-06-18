@@ -47,8 +47,6 @@ import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.wmm.RelationNameRepository.*;
 
-// TODO:
-
 public class EventFactory {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
@@ -788,7 +786,7 @@ public class EventFactory {
             return new SpirvXchg(register, address, value, scope, tags);
         }
 
-        public static SpirvRmw newSpirvRmw(Register register, Expression address, IOpBin op, Expression value,
+        public static SpirvRmw newSpirvRmw(Register register, Expression address, IntBinaryOp op, Expression value,
                                             String scope, Set<String> tags) {
             return new SpirvRmw(register, address, op, value, scope, tags);
         }

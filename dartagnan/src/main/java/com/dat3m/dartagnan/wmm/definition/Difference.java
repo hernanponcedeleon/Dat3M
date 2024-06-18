@@ -26,8 +26,6 @@ public class Difference extends Definition {
         return List.of(definedRelation, minuend, subtrahend);
     }
 
-    public Relation getSubtrahend() { return complement; }
-
     @Override
     public <T> T accept(Visitor<? extends T> v) {
         return v.visitDifference(this);

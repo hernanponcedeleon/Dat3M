@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.ParserSpirv;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.AssertBasic;
 import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
 import com.dat3m.dartagnan.program.specification.AssertCompositeOr;
@@ -71,9 +70,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getName());
+        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getName());
+        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getName());
     }
 
     @Test
@@ -421,9 +420,9 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getName());
+        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getName());
+        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getName());
     }
 
     @Test
@@ -450,50 +449,46 @@ public class SpirvHeaderSingleTest {
         assertEquals(EXPR_FACTORY.makeValue(2, int64), ast2.getRight());
         assertEquals(EXPR_FACTORY.makeValue(3, int64), ast3.getRight());
 
-        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getCVar());
-        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getCVar());
+        assertEquals("%v1", ((Location) ast1.getLeft()).getMemoryObject().getName());
+        assertEquals("%v2", ((Location) ast2.getLeft()).getMemoryObject().getName());
+        assertEquals("%v3", ((Location) ast3.getLeft()).getMemoryObject().getName());
     }
 
     @Test
     public void testByteWidth() {
         // given
         String wholeSpv = """
-            ; @Input: %v4 = {0, 0, 0}
-            ; @Output: forall (%v4[0]==1 and %v4[1]==2 and %v4[2]==3)
-                           OpCapability Shader
-                           OpMemoryModel Logical GLSL450
-                           OpEntryPoint GLCompute %main "main"
-                           OpSource GLSL 450
-                   %void = OpTypeVoid
-                   %func = OpTypeFunction %void
-                 %uint16 = OpTypeInt 16 0
-                 %uint32 = OpTypeInt 32 0
-                 %uint64 = OpTypeInt 64 0
-
-                     %c0 = OpConstant %uint16 0
-                     %c1 = OpConstant %uint32 1
-                     %c2 = OpConstant %uint64 2
-
-                 %struct = OpTypeStruct %uint16 %uint32 %uint64
-             %ptr_struct = OpTypePointer Uniform %struct
-            
-               %ptr_uint16 = OpTypePointer Uniform %uint16
-               %ptr_uint32 = OpTypePointer Uniform %uint32
-               %ptr_uint64 = OpTypePointer Uniform %uint64
-              
-                    %v4 = OpVariable %ptr_struct Uniform
-                   %main = OpFunction %void None %func
-                  %label = OpLabel
-                    %el0 = OpAccessChain %ptr_uint16 %v4 %c0
-                    %el1 = OpAccessChain %ptr_uint32 %v4 %c1
-                    %el2 = OpAccessChain %ptr_uint64 %v4 %c2
-                           OpStore %el0 %c0
-                           OpStore %el1 %c1
-                           OpStore %el2 %c2
-                           OpReturn
-                           OpFunctionEnd
-                 """;
+                ; @Input: %v4 = {0, 0, 0}
+                ; @Output: forall (%v4[0]==1 and %v4[1]==2 and %v4[2]==3)
+                               OpCapability Shader
+                               OpMemoryModel Logical GLSL450
+                               OpEntryPoint GLCompute %main "main"
+                               OpSource GLSL 450
+                       %void = OpTypeVoid
+                       %func = OpTypeFunction %void
+                     %uint16 = OpTypeInt 16 0
+                     %uint32 = OpTypeInt 32 0
+                     %uint64 = OpTypeInt 64 0
+                         %c0 = OpConstant %uint16 0
+                         %c1 = OpConstant %uint32 1
+                         %c2 = OpConstant %uint64 2
+                     %struct = OpTypeStruct %uint16 %uint32 %uint64
+                 %ptr_struct = OpTypePointer Uniform %struct
+                   %ptr_uint16 = OpTypePointer Uniform %uint16
+                   %ptr_uint32 = OpTypePointer Uniform %uint32
+                   %ptr_uint64 = OpTypePointer Uniform %uint64
+                        %v4 = OpVariable %ptr_struct Uniform
+                       %main = OpFunction %void None %func
+                      %label = OpLabel
+                        %el0 = OpAccessChain %ptr_uint16 %v4 %c0
+                        %el1 = OpAccessChain %ptr_uint32 %v4 %c1
+                        %el2 = OpAccessChain %ptr_uint64 %v4 %c2
+                               OpStore %el0 %c0
+                               OpStore %el1 %c1
+                               OpStore %el2 %c2
+                               OpReturn
+                               OpFunctionEnd
+                     """;
         // when
         Program program = localParse(wholeSpv);
         AssertCompositeAnd ast = (AssertCompositeAnd) program.getSpecification();
@@ -531,24 +526,24 @@ public class SpirvHeaderSingleTest {
 
     private void doTestIllegalVectorIndex(String ast, String error) {
         String input = """
-        ; @Input: %var = {{0}}
-        ; @Output: forall (<<ast>>)
-                       OpCapability Shader
-                       OpMemoryModel Logical GLSL450
-                       OpEntryPoint GLCompute %main "main"
-                       OpSource GLSL 450
-               %void = OpTypeVoid
-               %func = OpTypeFunction %void
-             %uint64 = OpTypeInt 64 0
-            %v1_type = OpTypeVector %uint64 1
-            %v2_type = OpTypeVector %v1_type 1
-           %ptr_type = OpTypePointer Uniform %v2_type
-                %var = OpVariable %ptr_type Uniform
-               %main = OpFunction %void None %func
-              %label = OpLabel
-                       OpReturn
-                       OpFunctionEnd
-             """.replace("<<ast>>", ast);
+                ; @Input: %var = {{0}}
+                ; @Output: forall (<<ast>>)
+                               OpCapability Shader
+                               OpMemoryModel Logical GLSL450
+                               OpEntryPoint GLCompute %main "main"
+                               OpSource GLSL 450
+                       %void = OpTypeVoid
+                       %func = OpTypeFunction %void
+                     %uint64 = OpTypeInt 64 0
+                    %v1_type = OpTypeVector %uint64 1
+                    %v2_type = OpTypeVector %v1_type 1
+                   %ptr_type = OpTypePointer Uniform %v2_type
+                        %var = OpVariable %ptr_type Uniform
+                       %main = OpFunction %void None %func
+                      %label = OpLabel
+                               OpReturn
+                               OpFunctionEnd
+                     """.replace("<<ast>>", ast);
 
         try {
             // when

@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static java.util.Map.entry;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class SpirvHeaderValueTest extends AbstractSpirvHeaderTest {
 
@@ -96,7 +96,7 @@ public class SpirvHeaderValueTest extends AbstractSpirvHeaderTest {
         Program program = parse();
         for (Map.Entry<String, String> entry : values.entrySet()) {
             MemoryObject v = program.getMemory().getObjects().stream()
-                    .filter(o -> o.getCVar().equals(entry.getKey())).findFirst().orElseThrow();
+                    .filter(o -> o.getName().equals(entry.getKey())).findFirst().orElseThrow();
             if (entry.getValue().contains(",")) {
                 String[] values = Arrays.stream(entry.getValue().split(","))
                         .map(String::trim)

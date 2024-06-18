@@ -1,13 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Construction;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.IExprBin;
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
@@ -267,8 +267,8 @@ public class VisitorOpsMemoryTest {
         Expression o1 = EXPR_FACTORY.makeTrue();
         Expression o2 = EXPR_FACTORY.makeValue(7890, iType);
         List<Expression> oValues = Stream.of(1, 2, 3).map(i -> (Expression) EXPR_FACTORY.makeValue(i, iType)).toList();
-        Construction o3 = EXPR_FACTORY.makeArray(iType, oValues, true);
-        Construction o4 = EXPR_FACTORY.makeConstruct(List.of(o1, o2, o3));
+        ConstructExpr o3 = EXPR_FACTORY.makeArray(iType, oValues, true);
+        ConstructExpr o4 = EXPR_FACTORY.makeConstruct(List.of(o1, o2, o3));
 
         MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
         assertNotNull(v1);
@@ -283,7 +283,7 @@ public class VisitorOpsMemoryTest {
         MemoryObject v3 = (MemoryObject) builder.getExpression("%v3");
         assertNotNull(v3);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%v3int")), v3.size());
-        List<Expression> arrElements = o3.getArguments();
+        List<Expression> arrElements = o3.getOperands();
         assertEquals(arrElements.get(0), v3.getInitialValue(0));
         assertEquals(arrElements.get(1), v3.getInitialValue(4));
         assertEquals(arrElements.get(2), v3.getInitialValue(8));
@@ -291,7 +291,7 @@ public class VisitorOpsMemoryTest {
         MemoryObject v4 = (MemoryObject) builder.getExpression("%v4");
         assertNotNull(v4);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%struct")), v4.size());
-        List<Expression> structElements = o4.getArguments();
+        List<Expression> structElements = o4.getOperands();
         assertEquals(structElements.get(0), v4.getInitialValue(0));
         assertEquals(structElements.get(1), v4.getInitialValue(1));
         assertEquals(arrElements.get(0), v4.getInitialValue(5));
@@ -383,7 +383,7 @@ public class VisitorOpsMemoryTest {
         builder.mockVectorType("%i2a", "%int", 2);
         builder.mockPtrType("%ra_ptr", "%ra", "Uniform");
 
-        Construction arr = (Construction) builder.mockConstant("%value", "%i2a", List.of(1, 2));
+        ConstructExpr arr = (ConstructExpr) builder.mockConstant("%value", "%i2a", List.of(1, 2));
 
         // when
         parse(input);
@@ -392,8 +392,8 @@ public class VisitorOpsMemoryTest {
         MemoryObject v = (MemoryObject) builder.getExpression("%v");
         assertNotNull(v);
         assertEquals(TYPE_FACTORY.getMemorySizeInBytes(arr.getType()), v.size());
-        assertEquals(arr.getArguments().get(0), v.getInitialValue(0));
-        assertEquals(arr.getArguments().get(1), v.getInitialValue(4));
+        assertEquals(arr.getOperands().get(0), v.getInitialValue(0));
+        assertEquals(arr.getOperands().get(1), v.getInitialValue(4));
     }
 
     @Test
@@ -639,16 +639,16 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        IExprBin e1 = (IExprBin) builder.getExpression("%element");
+        IntBinaryExpr e1 = (IntBinaryExpr) builder.getExpression("%element");
         assertEquals(TYPE_FACTORY.getArchType(), e1.getType());
-        assertEquals(builder.getExpression("%variable"), e1.getLHS());
+        assertEquals(builder.getExpression("%variable"), e1.getLeft());
 
-        IExprBin e2 = (IExprBin) e1.getRHS();
-        assertEquals(makeOffset(i1, 16), e2.getLHS());
+        IntBinaryExpr e2 = (IntBinaryExpr) e1.getRight();
+        assertEquals(makeOffset(i1, 16), e2.getLeft());
 
-        IExprBin e3 = (IExprBin) e2.getRHS();
-        assertEquals(makeOffset(i0, 8), e3.getLHS());
-        assertEquals(makeOffset(i1, 4), e3.getRHS());
+        IntBinaryExpr e3 = (IntBinaryExpr) e2.getRight();
+        assertEquals(makeOffset(i0, 8), e3.getLeft());
+        assertEquals(makeOffset(i1, 4), e3.getRight());
     }
 
     @Test
@@ -685,13 +685,13 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        IExprBin e1 = (IExprBin) builder.getExpression("%element");
+        IntBinaryExpr e1 = (IntBinaryExpr) builder.getExpression("%element");
         assertEquals(TYPE_FACTORY.getArchType(), e1.getType());
-        assertEquals(builder.getExpression("%variable"), e1.getLHS());
+        assertEquals(builder.getExpression("%variable"), e1.getLeft());
 
-        IExprBin e2 = (IExprBin) e1.getRHS();
-        assertEquals(EXPR_FACTORY.makeValue(15, i64Type), e2.getLHS());
-        assertEquals(EXPR_FACTORY.makeValue(3, i64Type), e2.getRHS());
+        IntBinaryExpr e2 = (IntBinaryExpr) e1.getRight();
+        assertEquals(EXPR_FACTORY.makeValue(15, i64Type), e2.getLeft());
+        assertEquals(EXPR_FACTORY.makeValue(3, i64Type), e2.getRight());
     }
 
     @Test
@@ -720,10 +720,10 @@ public class VisitorOpsMemoryTest {
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
 
         // then
-        IExprBin e = (IExprBin) builder.getExpression("%element");
+        IntBinaryExpr e = (IntBinaryExpr) builder.getExpression("%element");
         assertEquals(TYPE_FACTORY.getArchType(), e.getType());
-        assertEquals(builder.getExpression("%variable"), e.getLHS());
-        assertEquals(makeOffset(register, 4), e.getRHS());
+        assertEquals(builder.getExpression("%variable"), e.getLeft());
+        assertEquals(makeOffset(register, 4), e.getRight());
     }
 
     @Test
@@ -861,7 +861,7 @@ public class VisitorOpsMemoryTest {
     private Expression makeOffset(Expression stepExpr, int stepSize) {
         IntegerType archType = TYPE_FACTORY.getArchType();
         Expression stepCastExpr = EXPR_FACTORY.makeCast(stepExpr, archType);
-        return EXPR_FACTORY.makeMUL(EXPR_FACTORY.makeValue(stepSize, archType), stepCastExpr);
+        return EXPR_FACTORY.makeMul(EXPR_FACTORY.makeValue(stepSize, archType), stepCastExpr);
     }
 
     private void parse(String input) {

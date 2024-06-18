@@ -3,17 +3,15 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.op.IOpBin;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.Type;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
-import com.dat3m.dartagnan.program.event.core.Event;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.lang.spirv.*;
 
 import java.util.Set;
@@ -79,43 +77,43 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpAtomicIIncrement(SpirvParser.OpAtomicIIncrementContext ctx) {
         return visitAtomicOpIncDec(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), IOpBin.ADD);
+                ctx.memory(), ctx.semantics(), IntBinaryOp.ADD);
     }
 
     @Override
     public Event visitOpAtomicIDecrement(SpirvParser.OpAtomicIDecrementContext ctx) {
         return visitAtomicOpIncDec(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), IOpBin.SUB);
+                ctx.memory(), ctx.semantics(), IntBinaryOp.SUB);
     }
 
     @Override
     public Event visitOpAtomicIAdd(SpirvParser.OpAtomicIAddContext ctx) {
         return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IOpBin.ADD);
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.ADD);
     }
 
     @Override
     public Event visitOpAtomicISub(SpirvParser.OpAtomicISubContext ctx) {
         return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IOpBin.SUB);
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.SUB);
     }
 
     @Override
     public Event visitOpAtomicAnd(SpirvParser.OpAtomicAndContext ctx) {
         return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IOpBin.AND);
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.AND);
     }
 
     @Override
     public Event visitOpAtomicOr(SpirvParser.OpAtomicOrContext ctx) {
         return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IOpBin.OR);
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.OR);
     }
 
     @Override
     public Event visitOpAtomicXor(SpirvParser.OpAtomicXorContext ctx) {
         return visitAtomicOp(ctx.idResult(), ctx.idResultType(), ctx.pointer(),
-                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IOpBin.XOR);
+                ctx.memory(), ctx.semantics(), ctx.valueIdRef(), IntBinaryOp.XOR);
     }
 
     @Override
@@ -184,7 +182,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
             SpirvParser.PointerContext ptrCtx,
             SpirvParser.MemoryContext scopeCtx,
             SpirvParser.SemanticsContext tagsCtx,
-            IOpBin op
+            IntBinaryOp op
     ) {
         IntegerType type = getIntegerType(typeCtx.getText());
         Expression value = ExpressionFactory.getInstance().makeOne(type);
@@ -198,7 +196,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
             SpirvParser.MemoryContext scopeCtx,
             SpirvParser.SemanticsContext tagsCtx,
             SpirvParser.ValueIdRefContext valCtx,
-            IOpBin op
+            IntBinaryOp op
     ) {
         Expression value = builder.getExpression(valCtx.getText());
         return visitAtomicOp(idCtx, typeCtx, ptrCtx, scopeCtx, tagsCtx, value, op);
@@ -211,7 +209,7 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
             SpirvParser.MemoryContext scopeCtx,
             SpirvParser.SemanticsContext tagsCtx,
             Expression value,
-            IOpBin op
+            IntBinaryOp op
     ) {
         Register register = builder.addRegister(idCtx.getText(), typeCtx.getText());
         Expression ptr = getPointer(ptrCtx.getText());
