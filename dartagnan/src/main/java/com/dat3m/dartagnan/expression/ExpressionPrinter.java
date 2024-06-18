@@ -71,7 +71,7 @@ public final class ExpressionPrinter implements ExpressionVisitor<String> {
     @Override
     public String visitFloatToIntCastExpression(FloatToIntCast expr) {
         final String opName = expr.isSigned() ? "fptosi" : "fptoui";
-        return String.format("%s %s to %s", opName, expr.getOperand().toString(), expr.getTargetType());
+        return String.format("%s %s to %s", opName, visit(expr.getOperand()), expr.getTargetType());
     }
 
     @Override
