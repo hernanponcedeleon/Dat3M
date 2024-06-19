@@ -46,7 +46,7 @@ public enum Property implements OptionInterface {
     }
 
     public Type getType(VerificationTask context) {
-        if (this == PROGRAM_SPEC && !context.getProgram().getSpecification().isSafetySpec()) {
+        if (this == PROGRAM_SPEC && context.getProgram().hasReachabilitySpecification()) {
             return Type.REACHABILITY;
         } else {
             return Type.SAFETY;

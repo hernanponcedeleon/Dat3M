@@ -37,12 +37,6 @@ public final class IntSizeCast extends CastExpressionBase<IntegerType, IntegerTy
     }
 
     @Override
-    public String toString() {
-        final String opName = isTruncation() ? "trunc" : (preserveSign ? "sext" : "zext");
-        return String.format("%s %s to %s", opName, operand, targetType);
-    }
-
-    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitIntSizeCastExpression(this);
     }

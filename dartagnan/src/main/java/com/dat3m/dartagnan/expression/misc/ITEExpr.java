@@ -28,11 +28,6 @@ public final class ITEExpr extends ExpressionBase<Type> {
         this.falseCase = falseCase;
     }
 
-    @Override
-    public String toString() {
-        return String.format("ITE(%s, %s, %s)", condition, trueCase, falseCase);
-    }
-
     public Expression getCondition() {
         return condition;
     }

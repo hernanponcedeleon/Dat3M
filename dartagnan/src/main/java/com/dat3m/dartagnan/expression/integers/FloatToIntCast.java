@@ -20,12 +20,6 @@ public final class FloatToIntCast extends CastExpressionBase<IntegerType, FloatT
     public boolean isSigned() { return isSigned; }
 
     @Override
-    public String toString() {
-        final String opName = isSigned ? "fptosi" : "fptoui";
-        return String.format("%s %s to %s", opName, operand, targetType);
-    }
-
-    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitFloatToIntCastExpression(this);
     }

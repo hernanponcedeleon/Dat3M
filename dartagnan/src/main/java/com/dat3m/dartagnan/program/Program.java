@@ -9,7 +9,6 @@ import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
 import com.google.common.base.Preconditions;
 
 import java.util.*;
@@ -19,9 +18,12 @@ public class Program {
 
     public enum SourceLanguage { LITMUS, LLVM, SPV }
 
+    public enum SpecificationType { EXISTS, FORALL, NOT_EXISTS, ASSERT }
+
     private String name;
-    private AbstractAssert spec;
-    private AbstractAssert filterSpec; // Acts like "assume" statements, filtering out executions
+    private SpecificationType specificationType = SpecificationType.ASSERT;
+    private Expression spec;
+    private Expression filterSpec; // Acts like "assume" statements, filtering out executions
     private final List<Thread> threads;
     private final List<Function> functions;
     private final List<NonDetValue> constants = new ArrayList<>();
@@ -81,20 +83,28 @@ public class Program {
         return this.memory;
     }
 
-    public AbstractAssert getSpecification() {
+    public SpecificationType getSpecificationType() {
+        return specificationType;
+    }
+
+    public boolean hasReachabilitySpecification() {
+        return SpecificationType.EXISTS.equals(specificationType);
+    }
+
+    public Expression getSpecification() {
         return spec;
     }
 
-    public void setSpecification(AbstractAssert spec) {
+    public void setSpecification(SpecificationType type, Expression spec) {
+        this.specificationType = type;
         this.spec = spec;
     }
 
-    public AbstractAssert getFilterSpecification() {
+    public Expression getFilterSpecification() {
         return filterSpec;
     }
 
-    public void setFilterSpecification(AbstractAssert spec) {
-        Preconditions.checkArgument(spec == null || AbstractAssert.ASSERT_TYPE_FORALL.equals(spec.getType()));
+    public void setFilterSpecification(Expression spec) {
         this.filterSpec = spec;
     }
 

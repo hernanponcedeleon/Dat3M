@@ -10,21 +10,18 @@ import java.util.List;
 import java.util.Objects;
 
 @NoInterface
-public abstract class CastExpressionBase<TTargetType extends Type, TSourceType extends Type> implements CastExpression {
+public abstract class CastExpressionBase<TTargetType extends Type, TSourceType extends Type> extends ExpressionBase<TTargetType>
+        implements CastExpression {
 
-    protected final TTargetType targetType;
     protected final Expression operand;
 
     protected CastExpressionBase(TTargetType targetType, Expression operand) {
-        this.targetType = targetType;
+        super(targetType);
         this.operand = operand;
     }
 
     @Override
-    public TTargetType getTargetType() { return targetType; }
-
-    @Override
-    public TTargetType getType() { return getTargetType(); }
+    public TTargetType getTargetType() { return getType(); }
 
     @Override @SuppressWarnings("unchecked")
     public TSourceType getSourceType() {
@@ -41,13 +38,8 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
     public ExpressionKind.Other getKind() { return ExpressionKind.Other.CAST; }
 
     @Override
-    public String toString() {
-        return String.format("cast %s to %s", operand, targetType);
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(targetType, operand);
+        return Objects.hash(type, operand);
     }
 
     @Override
@@ -59,7 +51,7 @@ public abstract class CastExpressionBase<TTargetType extends Type, TSourceType e
         }
 
         final CastExpression expr = (CastExpression) obj;
-        return this.targetType.equals(expr.getTargetType())
+        return this.type.equals(expr.getTargetType())
                 && this.operand.equals(expr.getOperand());
     }
 }
