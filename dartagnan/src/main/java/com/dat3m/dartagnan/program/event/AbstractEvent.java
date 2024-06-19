@@ -16,7 +16,7 @@ import java.util.*;
 public abstract class AbstractEvent implements Event {
 
     private final MetadataMap metadataMap = new MetadataMap();
-    private final Set<String> tags;
+    private final TagSet tags;
     private final Set<EventUser> currentUsers = new HashSet<>();
     // These ids are dynamically changing during processing.
     private transient int globalId = -1; // (Global) ID within a program
@@ -27,12 +27,12 @@ public abstract class AbstractEvent implements Event {
     private transient AbstractEvent predecessor;
 
     protected AbstractEvent() {
-        tags = new HashSet<>();
+        tags = new TagSet();
     }
 
     protected AbstractEvent(AbstractEvent other) {
         copyAllMetadataFrom(other);
-        this.tags = other.tags; // TODO: Dangerous code! A Copy-on-Write Set should be used (e.g. PersistentSet/Map)
+        this.tags = other.tags.copy();
     }
 
     @Override
