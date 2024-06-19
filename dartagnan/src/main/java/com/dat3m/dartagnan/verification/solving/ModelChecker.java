@@ -9,12 +9,7 @@ import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.*;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.Assert;
 import com.dat3m.dartagnan.program.processing.ProcessingManager;
-import com.dat3m.dartagnan.program.specification.AbstractAssert;
-import com.dat3m.dartagnan.program.specification.AssertCompositeAnd;
-import com.dat3m.dartagnan.program.specification.AssertInline;
-import com.dat3m.dartagnan.program.specification.AssertTrue;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
@@ -29,7 +24,6 @@ import org.sosy_lab.java_smt.api.Model;
 import org.sosy_lab.java_smt.api.ProverEnvironment;
 import org.sosy_lab.java_smt.api.SolverException;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
@@ -70,11 +64,6 @@ public abstract class ModelChecker {
     public static void preprocessProgram(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         Program program = task.getProgram();
         ProcessingManager.fromConfig(config).run(program);
-        // This is used to distinguish between Litmus tests (whose assertions are defined differently)
-        // and C tests.
-        if(program.getFormat() != Program.SourceLanguage.LITMUS) {
-            computeSpecificationFromProgramAssertions(program);
-        }
     }
     public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
         final Wmm memoryModel = task.getMemoryModel();
@@ -118,21 +107,6 @@ public abstract class ModelChecker {
     public static void performStaticWmmAnalyses(VerificationTask task, Context analysisContext, Configuration config) throws InvalidConfigurationException {
         analysisContext.register(WmmAnalysis.class, WmmAnalysis.fromConfig(task.getMemoryModel(), task.getProgram().getArch(), config));
         analysisContext.register(RelationAnalysis.class, RelationAnalysis.fromConfig(task, analysisContext, config));
-    }
-
-    private static void computeSpecificationFromProgramAssertions(Program program) {
-        // We generate a program-spec from the user-placed assertions inside the C code.
-        // For litmus tests, this function should not be called.
-        final List<Assert> assertions = program.getThreadEvents(Assert.class);
-        AbstractAssert spec = new AssertTrue();
-        if(!assertions.isEmpty()) {
-            spec = new AssertInline(assertions.get(0));
-            for(int i = 1; i < assertions.size(); i++) {
-                spec = new AssertCompositeAnd(spec, new AssertInline(assertions.get(i)));
-            }
-        }
-        spec.setType(AbstractAssert.ASSERT_TYPE_FORALL);
-        program.setSpecification(spec);
     }
 
     protected void saveFlaggedPairsOutput(Wmm wmm, WmmEncoder encoder, ProverEnvironment prover, EncodingContext ctx, Program program) throws SolverException {

@@ -42,9 +42,4 @@ public final class ExtractExpr extends UnaryExpressionBase<Type, ExpressionKind.
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitExtractExpression(this);
     }
-
-    @Override
-    public String toString() {
-        return String.format("%s[%d]", operand, index);
-    }
 }
