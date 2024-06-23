@@ -3,6 +3,7 @@ package com.dat3m.dartagnan;
 import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.encoding.EncodingContext;
+import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.parsers.cat.ParserCat;
 import com.dat3m.dartagnan.parsers.program.ProgramParser;
 import com.dat3m.dartagnan.parsers.witness.ParserWitness;
@@ -335,7 +336,7 @@ public class Dartagnan extends BaseOptions {
         } else {
             // Litmus-specific output format that matches with Herd7 (as good as it can)
             if (p.getFilterSpecification() != null) {
-                summary.append("Filter ").append(p.getFilterSpecification().toStringWithType()).append("\n");
+                summary.append("Filter ").append(p.getFilterSpecification()).append("\n");
             }
 
             // NOTE: We cannot produce an output that matches herd7 when checking for both program spec and cat properties.
@@ -349,12 +350,12 @@ public class Dartagnan extends BaseOptions {
                 // We have a positive witness or no violations, then the program must be ok.
                 // NOTE: We also treat the UNKNOWN case as positive, assuming that
                 // looping litmus tests are unusual.
-                summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
+                printSpecification(summary, p);
                 summary.append("Ok").append("\n");
             } else if (hasViolations) {
                 if (props.contains(PROGRAM_SPEC) && FALSE.equals(model.evaluate(PROGRAM_SPEC.getSMTVariable(encCtx)))) {
                     // Program spec violated
-                    summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
+                    printSpecification(summary, p);
                     summary.append("No").append("\n");
                 } else {
                     final List<Axiom> violatedCATSpecs = task.getMemoryModel().getAxioms().stream()
@@ -376,7 +377,7 @@ public class Dartagnan extends BaseOptions {
                     summary.append(result).append("\n");
                 } else if (task.getProperty().contains(PROGRAM_SPEC)) {
                     // ... which can be good or bad (no witness = bad, not violation = good)
-                    summary.append("Condition ").append(p.getSpecification().toStringWithType()).append("\n");
+                    printSpecification(summary, p);
                     summary.append(result == PASS ? "Ok" : "No").append("\n");
                 }
             }
@@ -396,5 +397,19 @@ public class Dartagnan extends BaseOptions {
                 break;
             }
         }
+    }
+
+    private static void printSpecification(StringBuilder sb, Program program) {
+        sb.append("Condition ").append(program.getSpecificationType().toString().toLowerCase()).append(" ");
+        boolean init = false;
+        if (program.getSpecification() != null) {
+            sb.append(new ExpressionPrinter(true).visit(program.getSpecification()));
+            init = true;
+        }
+        for (Assert assertion : program.getThreadEvents(Assert.class)) {
+            sb.append(init ? " && " : "").append(assertion.getExpression()).append("%").append(assertion.getGlobalId());
+            init = true;
+        }
+        sb.append("\n");
     }
 }

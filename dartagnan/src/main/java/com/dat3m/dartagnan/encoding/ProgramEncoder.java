@@ -248,7 +248,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeFilter() {
         return context.getTask().getProgram().getFilterSpecification() != null ?
-                context.getTask().getProgram().getFilterSpecification().encode(context) :
+                context.encodeFinalExpressionAsBoolean(context.getTask().getProgram().getFilterSpecification()) :
                 context.getBooleanFormulaManager().makeTrue();
     }
     

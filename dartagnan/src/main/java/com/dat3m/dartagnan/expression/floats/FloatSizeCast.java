@@ -30,12 +30,6 @@ public final class FloatSizeCast extends CastExpressionBase<FloatType, FloatType
     }
 
     @Override
-    public String toString() {
-        final String opName = isTruncation() ? "trunc" : "ext";
-        return String.format("%s %s to %s", operand, opName, targetType);
-    }
-
-    @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitFloatSizeCastExpression(this);
     }

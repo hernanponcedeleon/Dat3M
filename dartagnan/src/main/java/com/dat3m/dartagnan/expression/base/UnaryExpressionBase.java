@@ -31,11 +31,6 @@ public abstract class UnaryExpressionBase<TType extends Type, TKind extends Expr
     public TKind getKind() { return kind; }
 
     @Override
-    public String toString() {
-        return "(" + kind + operand + ")";
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(type, kind, operand);
     }

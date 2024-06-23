@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.expression.base;
 
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionPrinter;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
 
@@ -17,6 +18,11 @@ public abstract class ExpressionBase<TType extends Type> implements Expression {
 
     @Override
     public TType getType() { return this.type; }
+
+    @Override
+    public String toString() {
+        return new ExpressionPrinter(false).visit(this);
+    }
 
     @Override
     public int hashCode() {
