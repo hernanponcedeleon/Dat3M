@@ -18,13 +18,12 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.utils.DominatorTree;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /*
     This pass adds a loop bound annotation (using bound C+1) to static loops of the form 
@@ -101,10 +100,10 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                     && useDefAnalysis.getDefs(continueJump, ite.getResultRegister()).contains(ite)
                     // There is a single increment to the register and that increment dominates the
                     // loop backjump (this gives the step size).
-                    && getLoopBodyCountIncs(label, backJump, init.getResultRegister(), useDefAnalysis).count() == 1
+                    && getLoopBodyCountInc(label, backJump, init.getResultRegister(), useDefAnalysis) != null
                     // The call to get() is guaranteed to succeed by the check above
                     && preDominatorTree.isDominatedBy(backJump,
-                        getLoopBodyCountIncs(label, backJump, init.getResultRegister(), useDefAnalysis).findAny().get())
+                        getLoopBodyCountInc(label, backJump, init.getResultRegister(), useDefAnalysis))
             ) {
                 final Expression boundExpr = expressions.makeValue(
                         // We use C-I+1 for i < C and C-I+2 for i <= C
@@ -115,17 +114,34 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
     }
 
-    private Stream<Event> getLoopBodyCountIncs(Label header, CondJump backJump, Register reg,
+    private Event getLoopBodyCountInc(Label header, CondJump backJump, Register reg,
             UseDefAnalysis useDefAnalysis) {
-        return header.getSuccessors().stream()
-                .filter(e -> e instanceof Local inc && inc.getExpr() instanceof IntBinaryExpr incExpr
-                        && incExpr.getLeft().equals(reg)
-                        && incExpr.getKind().equals(IntBinaryOp.ADD)
-                        && inc.getGlobalId() < backJump.getGlobalId()
-                        && e.getSuccessors().stream()
-                                .anyMatch(s -> s instanceof RegReader reader && s instanceof RegWriter writer
-                                        && s.getGlobalId() < backJump.getGlobalId()
-                                        && useDefAnalysis.getDefs(reader, inc.getResultRegister()).contains(inc)
-                                        && writer.getResultRegister().equals(reg)));
+
+        List<Event> writers = header.getSuccessors().stream().filter(e -> e instanceof RegWriter writer
+                && writer.getResultRegister().equals(reg) & e.getGlobalId() < backJump.getGlobalId()).toList();
+        // If there is not a single assignment to the count variable, we give up
+        if (writers.size() != 1) {
+            return null;
+        }
+
+        Event current = writers.get(0);
+        // We traverse the UseDef-chain until we find a non-trivial assignment
+        while (current instanceof Local loc && loc.getExpr() instanceof Register target) {
+            writers = new ArrayList<>(useDefAnalysis.getDefs(loc, target));
+            // If there is not a single assignment to the target of the UseDef-chain, we give up
+            if (writers.size() != 1) {
+                return null;
+            }
+            current = writers.get(0);
+        }
+
+        // If the non-trivial assignment has the shape rk <- i + s, we are done
+        if (current instanceof Local loc && loc.getExpr() instanceof IntBinaryExpr intBExpr
+                && intBExpr.getLeft().equals(reg) && intBExpr.getKind().equals(IntBinaryOp.ADD)) {
+            return current;
+        }
+
+        // Otherwise we give up
+        return null;
     }
 }
