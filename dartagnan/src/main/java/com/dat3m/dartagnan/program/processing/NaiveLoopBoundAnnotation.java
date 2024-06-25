@@ -26,16 +26,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
-    This pass adds a loop bound annotation (using bound C+1) to static loops of the form 
+    This pass adds a loop bound annotation to static loops of the form
         
-        for (int i = I; i < C; i++) { Body }
+        for (int i = I; i </<= C; i++) { Body }
     
     which have the following shape in our IR
     
             DUMMY <- I
         Loop:
-            r0 <- DUMMY // Useless, we can ignore
-            r1 <- ITE((DUMMY < C), 1, 0)
+            r0 <- DUMMY
+            r1 <- ITE((DUMMY </<= C), 1, 0)
             if (r1 != 0) then goto Continue
             goto Exit
         Continue:
@@ -44,6 +44,8 @@ import java.util.List;
             DUMMY <- r2
             goto Loop
         Exit:
+
+    TODO: support general step increments
 */
 public class NaiveLoopBoundAnnotation implements FunctionProcessor {
 
@@ -69,66 +71,135 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
                     .sorted()
                     .toList();
 
-            // If this is a loop, NormalizeLoops guarantees a unique backjump
+            // If this is a loop, the NormalizeLoops pass guarantees a unique backjump
             if (backJumps.size() != 1) {
                 continue;
             }
+            final CondJump backJump = backJumps.get(0);
 
             final Event pred = label.getPredecessor();
-            // We ignore the first local event which is useless
-            final Event next = label.getSuccessor().getSuccessor();
-            final Event nNext = next.getSuccessor();
-            final Event nnNext = nNext.getSuccessor();
-            final CondJump backJump = backJumps.get(0);
             final Event exit = backJump.getSuccessor();
 
+            // Find candidate for looping count register.
+            // The loop header should be dominated by the constant assignment to the counter.
             if (pred instanceof Local init && init.getExpr() instanceof IntLiteral initValExpr
-                    // The loop header is dominated by the constant assignment to the counting register.
-                    && preDominatorTree.isDominatedBy(label, init)
-                    // The loop counting register is live at the loop header.
-                    && liveAnalysis.getLiveRegistersAt(label).contains(init.getResultRegister())
-                    // Find the predicate and compute the bound
-                    && next instanceof Local ite && ite.getExpr() instanceof ITEExpr iteExpr
-                    && iteExpr.getCondition() instanceof IntCmpExpr cond
-                    && cond.getLeft().equals(init.getResultRegister())
-                    && (cond.getKind().equals(IntCmpOp.LT) || cond.getKind().equals(IntCmpOp.ULT)
-                            || cond.getKind().equals(IntCmpOp.LTE) || cond.getKind().equals(IntCmpOp.ULTE))
-                    && cond.getRight() instanceof IntLiteral bound
-                    // The exit condition is dependent on the counting register.
-                    && nNext instanceof CondJump continueJump && nnNext instanceof CondJump exitJump
-                    && exitJump.getLabel().equals(exit)
-                    && useDefAnalysis.getDefs(continueJump, ite.getResultRegister()).contains(ite)
-                    // There is a single increment to the register and that increment dominates the
-                    // loop backjump (this gives the step size).
-                    && getLoopBodyCountInc(label, backJump, init.getResultRegister(), useDefAnalysis) != null
-                    // The call to get() is guaranteed to succeed by the check above
-                    && preDominatorTree.isDominatedBy(backJump,
-                        getLoopBodyCountInc(label, backJump, init.getResultRegister(), useDefAnalysis))
-            ) {
-                final Expression boundExpr = expressions.makeValue(
-                        // We use C-I+1 for i < C and C-I+2 for i <= C
-                        BigInteger.valueOf(bound.getValueAsInt() - initValExpr.getValueAsInt() + (cond.getKind().isStrict() ? 1 : 2)),
-                        bound.getType());
-                label.getPredecessor().insertAfter(EventFactory.Svcomp.newLoopBound(boundExpr));
+                    && preDominatorTree.isDominatedBy(label, init)) {
+
+                Register counterReg = init.getResultRegister();
+
+                // Check if the counter is live at the loop header, there is a unique
+                // increment to it, and that increment dominates the loop backjump.
+                Event loopCountInc = getLoopBodyCountInc(label, backJump, counterReg, useDefAnalysis);
+                if (liveAnalysis.getLiveRegistersAt(label).contains(counterReg)
+                        && loopCountInc != null && preDominatorTree.isDominatedBy(backJump, loopCountInc)) {
+
+                    // Loop exit jumps are gotos. We find all conditional jumps that
+                    // skip the goto and thus, are related to the looping condition
+                    List<CondJump> exitRegConds = label.getSuccessors().stream()
+                            .filter(e -> e instanceof CondJump jump && e.getGlobalId() < backJump.getGlobalId()
+                                    && jump.getSuccessor() instanceof CondJump exitJump && exitJump.isGoto()
+                                    && exitJump.getLabel().equals(exit))
+                            .map(CondJump.class::cast).toList();
+
+                    // If there are more than one, we give up
+                    if(exitRegConds.size() != 1) {
+                        continue;
+                    }
+
+                    CondJump exitRegCond = exitRegConds.get(0);
+
+                    // Check if the jump condition has shape r != 0
+                    if (exitRegCond.getGuard() instanceof IntCmpExpr cond && cond.getLeft() instanceof Register iteResultReg
+                            && cond.getKind().equals(IntCmpOp.NEQ) && cond.getRight() instanceof IntLiteral lit
+                            && lit.isZero()) {
+
+                        // Check if there is a unique ITE defining the r from above and bounding the loop.
+                        Expression boundExpr = getLoopBound(label, backJump, iteResultReg, counterReg, initValExpr.getValueAsInt(), useDefAnalysis);
+                        if(boundExpr != null) {
+                            label.getPredecessor().insertAfter(EventFactory.Svcomp.newLoopBound(boundExpr));
+                        }
+                    }
+                }
             }
         }
     }
 
-    // Checks if there is a single increment to the looping count register.
+    // Check if there is a single increment to the looping count register.
     // If there is, it returns the event performing the increment, otherwise it returns null.
     private Event getLoopBodyCountInc(Label header, CondJump backJump, Register loopingCount,
             UseDefAnalysis useDefAnalysis) {
 
         // Find writers to the looping count register within the loop body.
-        List<Event> writers = header.getSuccessors().stream().filter(e -> e instanceof RegWriter writer
-                && writer.getResultRegister().equals(loopingCount) & e.getGlobalId() < backJump.getGlobalId()).toList();
+        List<RegWriter> writers = findWritersInLoop(header, backJump, loopingCount);
         // If there is not a single assignment to the count variable, we give up
         if (writers.size() != 1) {
             return null;
         }
 
-        Event current = writers.get(0);
         // We traverse the UseDef-chain until we find a non-trivial assignment
+        RegWriter writer = chaseUseDefChain(writers.get(0), useDefAnalysis);
+        if(writer == null) {
+            return null;
+        }
+
+        // If the non-trivial assignment has the shape rk <- i + 1, we are done
+        if (writer instanceof Local loc && loc.getExpr() instanceof IntBinaryExpr intBExpr
+                && intBExpr.getLeft().equals(loopingCount) && intBExpr.getKind().equals(IntBinaryOp.ADD)
+                && intBExpr.getRight() instanceof IntLiteral lit
+                && lit.isOne()) {
+            return writer;
+        }
+
+        // Otherwise we give up
+        return null;
+    }
+
+    // Check if there is a single ITE(exitReg < C, 0, 1) computing the exit condition.
+    // If there is, it returns C, otherwise it returns null.
+    private Expression getLoopBound(Label header, CondJump backJump, Register exitReg, Register counterReg, int counterRegInitVal,
+            UseDefAnalysis useDefAnalysis) {
+
+        // Find writers to the looping exit register within the loop body.
+        List<RegWriter> writers = findWritersInLoop(header, backJump, exitReg);
+        // If there is not a single assignment to the exit variable, we give up
+        if (writers.size() != 1) {
+            return null;
+        }
+
+        // We traverse the UseDef-chain until we find a non-trivial assignment
+        RegWriter writer = chaseUseDefChain(writers.get(0), useDefAnalysis);
+        if(writer == null) {
+            return null;
+        }
+
+        // If the non-trivial assignment has the shape rk <- ITE(exitReg < C, 0, 1), we are done
+        if (writer instanceof Local loc && loc.getExpr() instanceof ITEExpr iteExpr
+                && iteExpr.getCondition() instanceof IntCmpExpr cond
+                && cond.getLeft().equals(counterReg)
+                && (cond.getKind().equals(IntCmpOp.LT) || cond.getKind().equals(IntCmpOp.ULT)
+                        || cond.getKind().equals(IntCmpOp.LTE) || cond.getKind().equals(IntCmpOp.ULTE))
+                && cond.getRight() instanceof IntLiteral bound) {
+
+            // We use C-I+1 for exitReg < C and C-I+2 for exitReg <= C
+            return expressions.makeValue(
+                BigInteger.valueOf(bound.getValueAsInt() - counterRegInitVal + (cond.getKind().isStrict() ? 1 : 2)),
+                bound.getType());
+        }
+
+        // Otherwise we give up
+        return null;
+    }
+
+    private List<RegWriter> findWritersInLoop(Event header, Event backJump, Register target) {
+        return header.getSuccessors().stream()
+                .filter(e -> e instanceof RegWriter writer
+                        && writer.getResultRegister().equals(target) & e.getGlobalId() < backJump.getGlobalId())
+                .map(RegWriter.class::cast)
+                .toList();
+    }
+
+    private RegWriter chaseUseDefChain(RegWriter current, UseDefAnalysis useDefAnalysis) {
+        List<RegWriter> writers;
         while (current instanceof Local loc && loc.getExpr() instanceof Register target) {
             writers = new ArrayList<>(useDefAnalysis.getDefs(loc, target));
             // If there is not a single assignment to the target of the UseDef-chain, we give up
@@ -137,14 +208,6 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
             }
             current = writers.get(0);
         }
-
-        // If the non-trivial assignment has the shape rk <- i + s, we are done
-        if (current instanceof Local loc && loc.getExpr() instanceof IntBinaryExpr intBExpr
-                && intBExpr.getLeft().equals(loopingCount) && intBExpr.getKind().equals(IntBinaryOp.ADD)) {
-            return current;
-        }
-
-        // Otherwise we give up
-        return null;
+        return current;
     }
 }
