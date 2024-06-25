@@ -114,11 +114,14 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         }
     }
 
-    private Event getLoopBodyCountInc(Label header, CondJump backJump, Register reg,
+    // Checks if there is a single increment to the looping count register.
+    // If there is, it returns the event performing the increment, otherwise it returns null.
+    private Event getLoopBodyCountInc(Label header, CondJump backJump, Register loopingCount,
             UseDefAnalysis useDefAnalysis) {
 
+        // Find writers to the looping count register within the loop body.
         List<Event> writers = header.getSuccessors().stream().filter(e -> e instanceof RegWriter writer
-                && writer.getResultRegister().equals(reg) & e.getGlobalId() < backJump.getGlobalId()).toList();
+                && writer.getResultRegister().equals(loopingCount) & e.getGlobalId() < backJump.getGlobalId()).toList();
         // If there is not a single assignment to the count variable, we give up
         if (writers.size() != 1) {
             return null;
@@ -137,7 +140,7 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
 
         // If the non-trivial assignment has the shape rk <- i + s, we are done
         if (current instanceof Local loc && loc.getExpr() instanceof IntBinaryExpr intBExpr
-                && intBExpr.getLeft().equals(reg) && intBExpr.getKind().equals(IntBinaryOp.ADD)) {
+                && intBExpr.getLeft().equals(loopingCount) && intBExpr.getKind().equals(IntBinaryOp.ADD)) {
             return current;
         }
 
