@@ -206,7 +206,7 @@ litmus/PTX/Manual/PC-bar-sync-arrive.litmus,1
 litmus/PTX/Manual/PC-bar-sync-sync-1.litmus,1
 litmus/PTX/Manual/PC-bar-sync-sync-2.litmus,1
 litmus/PTX/Manual/PC-bar-sync-sync-3.litmus,1
-litmus/PTX/Manual/PC-bar-sync-sync-4.litmus,1
+litmus/PTX/Manual/PC-bar-sync-sync-4.litmus,0
 litmus/PTX/Memalloy/IRIW1.litmus,1
 litmus/PTX/Memalloy/IRIW2.litmus,1
 litmus/PTX/Memalloy/IRIW_gl_cta.litmus,1

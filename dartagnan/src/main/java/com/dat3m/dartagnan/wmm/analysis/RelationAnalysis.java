@@ -202,10 +202,10 @@ public class RelationAnalysis {
             final MemoryEvent x = (MemoryEvent) e1;
             final MemoryEvent z = (MemoryEvent) e2;
             boolean hasIntermediary = mustOut.getOrDefault(x, Set.of()).stream().anyMatch(y -> y != x && y != z &&
-                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                    (exec.isImplied(y, x) && exec.isImplied(z, y)) &&
                     !k.getMaySet().contains(z, y))
                     || mustIn.getOrDefault(z, Set.of()).stream().anyMatch(y -> y != x && y != z &&
-                    (exec.isImplied(x, y) || exec.isImplied(z, y)) &&
+                    (exec.isImplied(x, y) && exec.isImplied(y, z)) &&
                     !k.getMaySet().contains(y, x));
             if (hasIntermediary) {
                 transCo.add(e1, e2);

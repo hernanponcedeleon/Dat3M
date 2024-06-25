@@ -254,8 +254,8 @@ public class PropertyEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         // We can only perform existential queries to the SMT-engine, so for
         // safety specs we need to query for a violation (= negation of the spec)
-        final BooleanFormula encoding;
         final BooleanFormula trackingLiteral;
+        BooleanFormula encoding;
         switch (spec.getType()) {
             case AbstractAssert.ASSERT_TYPE_FORALL:
                 encoding = bmgr.not(spec.encode(context));
@@ -272,7 +272,21 @@ public class PropertyEncoder implements Encoder {
             default:
                 throw new IllegalStateException("Unrecognized program specification: " + spec.toStringWithType());
         }
+        if (!program.getFormat().equals(LLVM)) {
+            encoding = bmgr.and(encoding, encodeProgramTermination());
+        }
         return new TrackableFormula(trackingLiteral, encoding);
+    }
+
+    private BooleanFormula encodeProgramTermination() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return bmgr.and(program.getThreads().stream()
+                .map(t -> {
+                    BooleanFormula started = context.execution(t.getEntry());
+                    BooleanFormula finished = context.execution(t.getEvents().get(t.getEvents().size() - 1));
+                    return bmgr.equivalence(started, finished);
+                })
+                .toList());
     }
 
     // ======================================================================
@@ -433,8 +447,14 @@ public class PropertyEncoder implements Encoder {
             final Map<Thread, List<SpinIteration>> spinloopsMap =
                     Maps.toMap(program.getThreads(), t -> this.findSpinLoopsInThread(t, loopAnalysis));
             // Compute "stuckness" encoding for all threads
-            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(),
-                    t -> this.generateStucknessEncoding(spinloopsMap.get(t), context));
+
+            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t -> {
+                List<BooleanFormula> stuckAtBarrier = t.getEvents().stream()
+                        .filter(FenceWithId.class::isInstance)
+                        .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
+                        .toList();
+                return bmgr.or(bmgr.or(stuckAtBarrier), this.generateStucknessEncoding(spinloopsMap.get(t), context));
+            });
 
             // Deadlock <=> allStuckOrDone /\ atLeastOneStuck
             BooleanFormula allStuckOrDone = bmgr.makeTrue();

@@ -102,3 +102,7 @@ litmus/VULKAN/Manual/counter-atomic.litmus,1
 litmus/VULKAN/Manual/counter-atomic-load.litmus,1
 litmus/VULKAN/Manual/counter-non-atomic.litmus,0
 litmus/VULKAN/Manual/counter-non-atomic-load.litmus,1
+litmus/VULKAN/Manual/bar-1.litmus,1
+litmus/VULKAN/Manual/bar-2.litmus,1
+litmus/VULKAN/Manual/bar-3.litmus,1
+litmus/VULKAN/Manual/bar-4.litmus,1
