@@ -269,7 +269,21 @@ public class PropertyEncoder implements Encoder {
             case FORALL, NOT_EXISTS, ASSERT -> bmgr.not(PROGRAM_SPEC.getSMTVariable(context));
             case EXISTS -> PROGRAM_SPEC.getSMTVariable(context);
         };
+        if (!program.getFormat().equals(LLVM)) {
+            encoding = bmgr.and(encoding, encodeProgramTermination());
+        }
         return new TrackableFormula(trackingLiteral, encoding);
+    }
+
+    private BooleanFormula encodeProgramTermination() {
+        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        return bmgr.and(program.getThreads().stream()
+                .map(t -> {
+                    BooleanFormula started = context.execution(t.getEntry());
+                    BooleanFormula finished = context.execution(t.getEvents().get(t.getEvents().size() - 1));
+                    return bmgr.equivalence(started, finished);
+                })
+                .toList());
     }
 
     // ======================================================================
@@ -430,8 +444,14 @@ public class PropertyEncoder implements Encoder {
             final Map<Thread, List<SpinIteration>> spinloopsMap =
                     Maps.toMap(program.getThreads(), t -> this.findSpinLoopsInThread(t, loopAnalysis));
             // Compute "stuckness" encoding for all threads
-            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(),
-                    t -> this.generateStucknessEncoding(spinloopsMap.get(t), context));
+
+            final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t -> {
+                List<BooleanFormula> stuckAtBarrier = t.getEvents().stream()
+                        .filter(FenceWithId.class::isInstance)
+                        .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
+                        .toList();
+                return bmgr.or(bmgr.or(stuckAtBarrier), this.generateStucknessEncoding(spinloopsMap.get(t), context));
+            });
 
             // Deadlock <=> allStuckOrDone /\ atLeastOneStuck
             BooleanFormula allStuckOrDone = bmgr.makeTrue();

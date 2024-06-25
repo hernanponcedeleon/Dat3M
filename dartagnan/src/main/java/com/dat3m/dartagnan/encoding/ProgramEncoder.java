@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.ScopeHierarchy;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.Dependency;
@@ -28,13 +29,11 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.INITIALIZE_REGISTERS;
 import static com.google.common.collect.Lists.reverse;
+import static java.util.stream.Collectors.*;
 
 @Options
 public class ProgramEncoder implements Encoder {
@@ -85,19 +84,24 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeControlBarrier() {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        List<Thread> scopedThreads = context.getTask().getProgram().getThreads().stream().filter(Thread::hasScope).toList();
-        for (Thread t1 : scopedThreads) {
-            for (Thread t2 : scopedThreads) {
-                if (t1.getScopeHierarchy().canSyncAtScope(t2.getScopeHierarchy(), Tag.Vulkan.WORK_GROUP)) {
-                    for (FenceWithId f1 : t1.getEvents(FenceWithId.class)) {
-                        for (FenceWithId f2 : t2.getEvents(FenceWithId.class)) {
-                            Expression id1 = f1.getFenceID();
-                            Expression id2 = f2.getFenceID();
-                            BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, f1), context.encodeExpressionAt(id2, f2));
-                            enc = bmgr.and(enc, bmgr.implication(sameId, bmgr.equivalence(context.execution(f1), context.execution(f2))));
-                        }
+        Map<Integer, List<FenceWithId>> groups = context.getTask().getProgram().getThreads().stream()
+                .filter(Thread::hasScope)
+                .collect(groupingBy(this::getWorkgroupId,
+                        flatMapping(t -> t.getEvents(FenceWithId.class).stream(), toList())));
+
+        for (List<FenceWithId> events : groups.values()) {
+            for (FenceWithId e1 : events) {
+                Expression id1 = e1.getFenceID();
+                BooleanFormula allCF = context.controlFlow(e1);
+                for (FenceWithId e2 : events) {
+                    if (!e1.getThread().equals(e2.getThread())) {
+                        Expression id2 = e2.getFenceID();
+                        BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(id2, e2));
+                        BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
+                        allCF = bmgr.and(allCF, cf);
                     }
                 }
+                enc = bmgr.and(enc, bmgr.equivalence(allCF, context.execution(e1)));
             }
         }
         return enc;
@@ -153,6 +157,8 @@ public class ProgramEncoder implements Encoder {
                 BooleanFormula cfCond = context.controlFlow(pred);
                 if (pred instanceof CondJump jump) {
                     cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
+                } else if (pred instanceof FenceWithId) {
+                    cfCond = bmgr.and(cfCond, context.execution(pred));
                 }
 
                 // Control flow via jumps
@@ -316,5 +322,17 @@ public class ProgramEncoder implements Encoder {
             }
         }
         return bmgr.and(enc);
+    }
+
+    private int getWorkgroupId(Thread thread) {
+        ScopeHierarchy hierarchy = thread.getScopeHierarchy();
+        if (hierarchy != null) {
+            int id = hierarchy.getScopeId(Tag.Vulkan.WORK_GROUP);
+            if (id < 0) {
+                id = hierarchy.getScopeId(Tag.PTX.CTA);
+            }
+            return id;
+        }
+        return -1;
     }
 }
