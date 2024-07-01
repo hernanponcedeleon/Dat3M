@@ -2,28 +2,24 @@ package com.dat3m.dartagnan.program.processing;
 
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.DominatorAnalysis;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
+import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.analysis.UseDefAnalysis;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
+import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.utils.DominatorTree;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /*
     This pass adds a loop bound annotation to static loops of the form
@@ -49,8 +45,6 @@ import java.util.List;
 */
 public class NaiveLoopBoundAnnotation implements FunctionProcessor {
 
-    private ExpressionFactory expressions = ExpressionFactory.getInstance();
-
     public static NaiveLoopBoundAnnotation newInstance() {
         return new NaiveLoopBoundAnnotation();
     }
@@ -64,150 +58,151 @@ public class NaiveLoopBoundAnnotation implements FunctionProcessor {
         final LiveRegistersAnalysis liveAnalysis = LiveRegistersAnalysis.forFunction(function);
         final UseDefAnalysis useDefAnalysis = UseDefAnalysis.forFunction(function);
         final DominatorTree<Event> preDominatorTree = DominatorAnalysis.computePreDominatorTree(function.getEntry(), function.getExit());
+        final List<LoopAnalysis.LoopInfo> loops = LoopAnalysis.onFunction(function).getLoopsOfFunction(function);
 
-        for (Label label : function.getEvents(Label.class)) {
-            final List<CondJump> backJumps = label.getJumpSet().stream()
-                    .filter(j -> j.getGlobalId() > label.getGlobalId())
-                    .sorted()
-                    .toList();
+        for (LoopAnalysis.LoopInfo loop : loops) {
+            final List<Event> loopBody = loop.iterations().get(0).computeBody();
+            final Label label = (Label) loopBody.get(0);
+            final Event backJump = loopBody.get(loopBody.size() - 1);
 
-            // If this is a loop, the NormalizeLoops pass guarantees a unique backjump
-            if (backJumps.size() != 1) {
+            // Find candidate for loop counter register. We check for the shape:
+            //      loopCounter <- constant
+            //      loopHeader:
+            // The loop header should be dominated by the constant assignment to the counter.
+            if (!(label.getPredecessor() instanceof Local init && init.getExpr() instanceof IntLiteral initValExpr
+                    && preDominatorTree.isDominatedBy(label, init))) {
                 continue;
             }
-            final CondJump backJump = backJumps.get(0);
+            final Register counterReg = init.getResultRegister();
 
-            final Event pred = label.getPredecessor();
-            final Event exit = backJump.getSuccessor();
+            // Validate that we indeed have found the counter register.
+            final boolean counterIsLive = liveAnalysis.getLiveRegistersAt(label).contains(counterReg);
+            final Event loopCountInc = findUniqueIncrement(loopBody, counterReg, useDefAnalysis, preDominatorTree);
+            final boolean counterIsAlwaysIncremented =
+                    (loopCountInc != null) && preDominatorTree.isDominatedBy(backJump, loopCountInc);
+            if (!(counterIsLive && counterIsAlwaysIncremented)) {
+                // The candidate counter is either not the true loop counter, or
+                // the counter computations are too complex to analyze.
+                continue;
+            }
 
-            // Find candidate for looping count register.
-            // The loop header should be dominated by the constant assignment to the counter.
-            if (pred instanceof Local init && init.getExpr() instanceof IntLiteral initValExpr
-                    && preDominatorTree.isDominatedBy(label, init)) {
+            // Now we look for the loop exit condition.
+            // (1) Find all exiting jumps
+            final List<CondJump> exitingJumps = loopBody.stream().filter(e -> e instanceof CondJump jump &&
+                    jump.getLabel().getLocalId() > backJump.getLocalId()).map(CondJump.class::cast).toList();
 
-                Register counterReg = init.getResultRegister();
-
-                // Check if the counter is live at the loop header, there is a unique
-                // increment to it, and that increment dominates the loop backjump.
-                Event loopCountInc = getLoopBodyCountInc(label, backJump, counterReg, useDefAnalysis);
-                if (liveAnalysis.getLiveRegistersAt(label).contains(counterReg)
-                        && loopCountInc != null && preDominatorTree.isDominatedBy(backJump, loopCountInc)) {
-
-                    // Loop exit jumps are gotos. We find all conditional jumps that
-                    // skip the goto and thus, are related to the looping condition
-                    List<CondJump> exitRegConds = label.getSuccessors().stream()
-                            .filter(e -> e instanceof CondJump jump && e.getGlobalId() < backJump.getGlobalId()
-                                    && jump.getSuccessor() instanceof CondJump exitJump && exitJump.isGoto()
-                                    && exitJump.getLabel().equals(exit))
-                            .map(CondJump.class::cast).toList();
-
-                    // If there are more than one, we give up
-                    if(exitRegConds.size() != 1) {
-                        continue;
-                    }
-
-                    CondJump exitRegCond = exitRegConds.get(0);
-
-                    // Check if the jump condition has shape r != 0
-                    if (exitRegCond.getGuard() instanceof IntCmpExpr cond && cond.getLeft() instanceof Register iteResultReg
-                            && cond.getKind().equals(IntCmpOp.NEQ) && cond.getRight() instanceof IntLiteral lit
-                            && lit.isZero()) {
-
-                        // Check if there is a unique ITE defining the r from above and bounding the loop.
-                        Expression boundExpr = getLoopBound(label, backJump, iteResultReg, counterReg, initValExpr.getValueAsInt(), useDefAnalysis);
-                        if(boundExpr != null) {
-                            label.getPredecessor().insertAfter(EventFactory.Svcomp.newLoopBound(boundExpr));
-                        }
-                    }
+            // (2) Check for each exit whether it is related to the counter variable.
+            // If so, try to deduce a loop bound and annotate the loop.
+            for (CondJump exit : exitingJumps) {
+                // We check for the special shape:
+                //      if (notExit) goto L;
+                //      goto exit;
+                if (!(exit.isGoto() && exit.getPredecessor() instanceof CondJump jump)) {
+                    continue;
+                }
+                final Expression negatedGuard = jump.getGuard();
+                // Now we check for the guard shape "r != 0" (i.e., we exit when r == 0 due to the inversion).
+                if (!(negatedGuard instanceof IntCmpExpr cond
+                        && cond.getLeft() instanceof Register r
+                        && cond.getKind() == IntCmpOp.NEQ
+                        && cond.getRight() instanceof IntLiteral c && c.isZero())) {
+                    continue;
+                }
+                // Now we need to check if r is actually related to the loop counter
+                // Check if there is a unique ITE defining the r from above and bounding the loop.
+                final Expression boundExpr = computeLoopBound(loopBody, r, counterReg,
+                        initValExpr.getValueAsInt(), useDefAnalysis, preDominatorTree);
+                if (boundExpr != null) {
+                    label.getPredecessor().insertAfter(EventFactory.Svcomp.newLoopBound(boundExpr));
+                    break;
                 }
             }
         }
     }
 
-    // Check if there is a single increment to the looping count register.
+    // Check if there is a single increment to the register.
     // If there is, it returns the event performing the increment, otherwise it returns null.
-    private Event getLoopBodyCountInc(Label header, CondJump backJump, Register loopingCount,
-            UseDefAnalysis useDefAnalysis) {
-
-        // Find writers to the looping count register within the loop body.
-        List<RegWriter> writers = findWritersInLoop(header, backJump, loopingCount);
-        // If there is not a single assignment to the count variable, we give up
-        if (writers.size() != 1) {
+    private Event findUniqueIncrement(List<Event> events, Register register,
+                                      UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+        final RegWriter source = findUniqueSource(events, register, useDefAnalysis, preDominatorTree);
+        if (source == null) {
             return null;
         }
-
-        // We traverse the UseDef-chain until we find a non-trivial assignment
-        RegWriter writer = chaseUseDefChain(writers.get(0), useDefAnalysis);
-        if(writer == null) {
+        // We found the non-trivial source. Check that this is indeed the desired increment:
+        // (1) It is an addition operation
+        if (!(source instanceof Local local && local.getExpr() instanceof IntBinaryExpr add && add.getKind() == IntBinaryOp.ADD)) {
             return null;
         }
-
-        // If the non-trivial assignment has the shape rk <- i + 1, we are done
-        if (writer instanceof Local loc && loc.getExpr() instanceof IntBinaryExpr intBExpr
-                && intBExpr.getLeft().equals(loopingCount) && intBExpr.getKind().equals(IntBinaryOp.ADD)
-                && intBExpr.getRight() instanceof IntLiteral lit
-                && lit.isOne()) {
-            return writer;
+        // (2) The addition is a positive increment of the register.
+        if (!(add.getLeft().equals(register) && add.getRight() instanceof IntLiteral c && c.getValue().signum() > 0)) {
+            return null;
         }
-
-        // Otherwise we give up
-        return null;
+        // TODO: return also the increment
+        return local;
     }
 
-    // Check if there is a single ITE(exitReg < C, 0, 1) computing the exit condition.
-    // If there is, it returns C, otherwise it returns null.
-    private Expression getLoopBound(Label header, CondJump backJump, Register exitReg, Register counterReg, int counterRegInitVal,
-            UseDefAnalysis useDefAnalysis) {
+    private Expression computeLoopBound(List<Event> events, Register exitReg, Register counterReg, int counterRegInitVal,
+                                        UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
 
-        // Find writers to the looping exit register within the loop body.
-        List<RegWriter> writers = findWritersInLoop(header, backJump, exitReg);
-        // If there is not a single assignment to the exit variable, we give up
-        if (writers.size() != 1) {
+        final RegWriter exitSource = findUniqueSource(events, exitReg, useDefAnalysis, preDominatorTree);
+        if (exitSource == null) {
             return null;
         }
 
-        // We traverse the UseDef-chain until we find a non-trivial assignment
-        RegWriter writer = chaseUseDefChain(writers.get(0), useDefAnalysis);
-        if(writer == null) {
-            return null;
-        }
-
-        // If the non-trivial assignment has the shape rk <- ITE(exitReg < C, 0, 1), we are done
-        if (writer instanceof Local loc && loc.getExpr() instanceof ITEExpr iteExpr
+        // If the non-trivial assignment has the shape exitCond <- ITE(counter <(=) C, 1, 0), we are done
+        if (!(exitSource instanceof Local local && local.getExpr() instanceof ITEExpr iteExpr
                 && iteExpr.getCondition() instanceof IntCmpExpr cond
                 && cond.getLeft().equals(counterReg)
-                && (cond.getKind().equals(IntCmpOp.LT) || cond.getKind().equals(IntCmpOp.ULT)
-                        || cond.getKind().equals(IntCmpOp.LTE) || cond.getKind().equals(IntCmpOp.ULTE))
-                && cond.getRight() instanceof IntLiteral bound) {
-
-            // We use C-I+1 for exitReg < C and C-I+2 for exitReg <= C
-            return expressions.makeValue(
-                BigInteger.valueOf(bound.getValueAsInt() - counterRegInitVal + (cond.getKind().isStrict() ? 1 : 2)),
-                bound.getType());
+                && cond.getKind().isLessCategory()
+                && cond.getRight() instanceof IntLiteral bound
+                && iteExpr.getTrueCase() instanceof IntLiteral one && one.isOne()
+                && iteExpr.getFalseCase() instanceof IntLiteral zero && zero.isZero())) {
+            return null;
         }
+        // We use C-I+1 for counter < C and C-I+2 for counter <= C
+        final ExpressionFactory expressions = ExpressionFactory.getInstance();
+        final int loopIterations = bound.getValueAsInt() - counterRegInitVal + (cond.getKind().isStrict() ? 1 : 2);
+        return expressions.makeValue(loopIterations, bound.getType());
 
-        // Otherwise we give up
-        return null;
     }
 
-    private List<RegWriter> findWritersInLoop(Event header, Event backJump, Register target) {
-        return header.getSuccessors().stream()
-                .filter(e -> e instanceof RegWriter writer
-                        && writer.getResultRegister().equals(target) & e.getGlobalId() < backJump.getGlobalId())
-                .map(RegWriter.class::cast)
-                .toList();
+    // Finds the unique non-trivial assignment that (possibly indirectly) provides the value of <register>
+    // Returns NULL, if no such unique assignment exists.
+    private RegWriter findUniqueSource(List<Event> events, Register register, UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+        final List<RegWriter> writers = events.stream()
+                .filter(e -> e instanceof RegWriter writer && writer.getResultRegister().equals(register))
+                .map(RegWriter.class::cast).toList();
+
+        if (writers.size() != 1 || !(writers.get(0) instanceof Local assignment)) {
+            // There is no unique writer, or the unique writer is not a simple assignment.
+            return null;
+        }
+        // Since the assignment may go over several trivial copy assignments, we need to traverse
+        // the UseDef-chain until we find a non-trivial assignment.
+        final RegWriter source = chaseUseDefChain(assignment, useDefAnalysis, preDominatorTree);
+        if (!events.contains(source)) {
+            // For the edge case where the source is outside the provided events.
+            return null;
+        }
+        return source;
     }
 
-    private RegWriter chaseUseDefChain(RegWriter current, UseDefAnalysis useDefAnalysis) {
-        List<RegWriter> writers;
-        while (current instanceof Local loc && loc.getExpr() instanceof Register target) {
-            writers = new ArrayList<>(useDefAnalysis.getDefs(loc, target));
-            // If there is not a single assignment to the target of the UseDef-chain, we give up
-            if (writers.size() != 1) {
+    private RegWriter chaseUseDefChain(RegWriter assignment, UseDefAnalysis useDefAnalysis, DominatorTree<Event> preDominatorTree) {
+        RegWriter cur = assignment;
+        while (cur instanceof Local loc && loc.getExpr() instanceof Register reg) {
+            final Set<RegWriter> defs = useDefAnalysis.getDefs(loc, reg);
+            if (defs.size() != 1) {
+                // Multiple assignments (or none): too complex so give up.
                 return null;
             }
-            current = writers.get(0);
+            final RegWriter def = defs.iterator().next();
+            if (!preDominatorTree.isDominatedBy(cur, def)) {
+                // Sanity check that the only def is also dominating its use.
+                // This might not be true if there are accesses to uninitialized registers.
+                return null;
+            }
+            cur = def;
         }
-        return current;
+        return cur;
     }
 }
