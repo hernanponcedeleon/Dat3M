@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +23,8 @@ import java.util.stream.Stream;
     of surrounding loops.
  */
 public class SyntacticContextAnalysis {
+
+    private static final Logger logger = LogManager.getLogger(SyntacticContextAnalysis.class);
 
     // ============================================================================
     // ============================== Helper classes ==============================
@@ -165,8 +169,12 @@ public class SyntacticContextAnalysis {
                     // FIXME: DCE can sometimes delete the end marker of functions if those never return
                     //  (e.g., "reach_error() { abort(0); }").
                     //  Here we try to also pop those calls that have missing markers.
-                    assert curContextStack.peek() instanceof CallContext;
-                    topCallCtx = (CallContext) curContextStack.pop();
+                    if(curContextStack.peek() instanceof CallContext) {
+                        topCallCtx = (CallContext) curContextStack.pop();
+                    } else {
+                        logger.warn("Found a FunCallMarker without a matching FunReturnMarker. Giving up the analysis");
+                        break;
+                    }
                 } while (!topCallCtx.funCallMarker.getFunctionName().equals(retMarker.getFunctionName()));
             }
 
@@ -179,10 +187,14 @@ public class SyntacticContextAnalysis {
                     curContextStack.push(new LoopContext(ev, iteration.getIterationNumber()));
                 }
                 if (end) {
-                    assert curContextStack.peek() instanceof LoopContext c &&
+                    if (curContextStack.peek() instanceof LoopContext c &&
                             c.loopMarker == iteration.getIterationStart() &&
-                            c.iterationNumber == iteration.getIterationNumber();
-                    curContextStack.pop();
+                            c.iterationNumber == iteration.getIterationNumber()) {
+                        curContextStack.pop();
+                    } else {
+                        logger.warn("Found a IterationStart without a matching IterationEnd. Giving up the analysis");
+                        break;
+                    }
                 }
             }
         }
