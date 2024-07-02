@@ -2,8 +2,6 @@ package com.dat3m.dartagnan.expression.integers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
-import java.math.BigInteger;
-
 public enum IntCmpOp implements ExpressionKind {
     EQ, NEQ, GTE, LTE, GT, LT, UGTE, ULTE, UGT, ULT;
 
@@ -67,14 +65,10 @@ public enum IntCmpOp implements ExpressionKind {
         };
     }
 
-    public boolean combine(BigInteger a, BigInteger b){
+    public boolean isLessCategory() {
         return switch (this) {
-            case EQ -> a.compareTo(b) == 0;
-            case NEQ -> a.compareTo(b) != 0;
-            case LT, ULT -> a.compareTo(b) < 0;
-            case LTE, ULTE -> a.compareTo(b) <= 0;
-            case GT, UGT -> a.compareTo(b) > 0;
-            case GTE, UGTE -> a.compareTo(b) >= 0;
+            case LT, LTE, ULTE, ULT -> true;
+            default -> false;
         };
     }
 
