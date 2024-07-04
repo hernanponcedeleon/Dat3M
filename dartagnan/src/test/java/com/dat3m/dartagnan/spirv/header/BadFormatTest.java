@@ -42,21 +42,21 @@ public class BadFormatTest extends AbstractTest {
                 ; @Output: not exists (%v2==123 and %v3==0)
                 ; @Config: 1, 1, 1
                 """,
-                        "Existential assertions can not be used in conjunction with other assertions"},
+                        "Mixed assertion type is not supported"},
                 {"""
                 ; @Input: %v1=7, %v2=123, %v3=0
                 ; @Output: exists (%v1!=7)
                 ; @Output: forall (%v2==123 and %v3==0)
                 ; @Config: 1, 1, 1
                 """,
-                        "Existential assertions can not be used in conjunction with other assertions"},
+                        "Mixed assertion type is not supported"},
                 {"""
                 ; @Input: %v1=7, %v2=123, %v3=0
                 ; @Output: exists (%v1!=7)
                 ; @Output: exists (%v2==123 and %v3==0)
                 ; @Config: 1, 1, 1
                 """,
-                        "Existential assertions can not be used in conjunction with other assertions"},
+                        "Mixed assertion type is not supported"},
         });
     }
 

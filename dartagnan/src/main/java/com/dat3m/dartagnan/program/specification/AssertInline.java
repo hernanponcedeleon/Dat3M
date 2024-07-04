@@ -3,11 +3,11 @@ package com.dat3m.dartagnan.program.specification;
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.core.Assert;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 public class AssertInline extends AbstractAssert {
 
@@ -34,7 +34,12 @@ public class AssertInline extends AbstractAssert {
     }
 
     @Override
-    public List<Register> getRegs() {
-        return new ArrayList<>(assertion.getExpression().getRegs());
+    public Set<Register> getRegisters() {
+        return assertion.getExpression().getRegs();
+    }
+
+    @Override
+    public Set<MemoryObject> getMemoryObjects() {
+        return assertion.getExpression().getMemoryObjects();
     }
 }

@@ -254,12 +254,12 @@ public final class ExpressionFactory {
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
 
-    public ConstructExpr makeConstruct(List<Expression> arguments) {
+    public Expression makeConstruct(List<Expression> arguments) {
         final AggregateType type = types.getAggregateType(arguments.stream().map(Expression::getType).toList());
         return new ConstructExpr(type, arguments);
     }
 
-    public ConstructExpr makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
+    public Expression makeArray(Type elementType, List<Expression> items, boolean fixedSize) {
         final ArrayType type = fixedSize ? types.getArrayType(elementType, items.size()) :
                 types.getArrayType(elementType);
         return new ConstructExpr(type, items);

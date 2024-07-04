@@ -41,10 +41,10 @@ public class DeadAssignmentElimination implements FunctionProcessor {
         final Program program = function.getProgram();
         Set<Register> usedRegs = new HashSet<>();
         if(program.getSpecification() != null) {
-            usedRegs.addAll(program.getSpecification().getRegs());
+            usedRegs.addAll(program.getSpecification().getRegisters());
             // for litmus tests
             if (program.getFilterSpecification() != null) {
-                usedRegs.addAll(program.getFilterSpecification().getRegs());
+                usedRegs.addAll(program.getFilterSpecification().getRegisters());
             }
         }
 

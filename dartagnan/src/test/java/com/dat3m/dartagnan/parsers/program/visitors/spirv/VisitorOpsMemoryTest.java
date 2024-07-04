@@ -267,8 +267,8 @@ public class VisitorOpsMemoryTest {
         Expression o1 = EXPR_FACTORY.makeTrue();
         Expression o2 = EXPR_FACTORY.makeValue(7890, iType);
         List<Expression> oValues = Stream.of(1, 2, 3).map(i -> (Expression) EXPR_FACTORY.makeValue(i, iType)).toList();
-        ConstructExpr o3 = EXPR_FACTORY.makeArray(iType, oValues, true);
-        ConstructExpr o4 = EXPR_FACTORY.makeConstruct(List.of(o1, o2, o3));
+        Expression o3 = EXPR_FACTORY.makeArray(iType, oValues, true);
+        Expression o4 = EXPR_FACTORY.makeConstruct(List.of(o1, o2, o3));
 
         MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
         assertNotNull(v1);

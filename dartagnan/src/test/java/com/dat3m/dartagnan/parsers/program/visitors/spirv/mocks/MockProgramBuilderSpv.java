@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
 import com.dat3m.dartagnan.program.Function;
@@ -92,11 +91,11 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         } else if (type instanceof ArrayType aType) {
             Type elementType = aType.getElementType();
             List<Expression> elements = mockConstantArrayElements(elementType, value);
-            ConstructExpr construction = EXPR_FACTORY.makeArray(elementType, elements, true);
+            Expression construction = EXPR_FACTORY.makeArray(elementType, elements, true);
             return addExpression(id, construction);
         } else if (type instanceof AggregateType) {
             List<Expression> members = ((List<?>) value).stream().map(s -> getExpression((String) s)).toList();
-            ConstructExpr construction = EXPR_FACTORY.makeConstruct(members);
+            Expression construction = EXPR_FACTORY.makeConstruct(members);
             return addExpression(id, construction);
         }
         throw new UnsupportedOperationException("Unsupported mock constant type " + typeId);
