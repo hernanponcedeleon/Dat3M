@@ -11,7 +11,10 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class VisitorSpirv extends SpirvBaseVisitor<Program> {
 
@@ -103,11 +106,16 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     private ProgramBuilderSpv createBuilder(SpirvParser.SpvContext ctx) {
         List<Integer> threadGrid = List.of(1, 1, 1, 1);
         VisitorSpirvInput visitor = new VisitorSpirvInput();
+        boolean hasConfig = false;
         for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
             if (header.inputHeader() != null && header.inputHeader().initList() != null) {
                 visitor.visitInitList(header.inputHeader().initList());
             }
             if (header.configHeader() != null) {
+                if (hasConfig) {
+                    throw new ParsingException("Multiple config headers are not allowed");
+                }
+                hasConfig = true;
                 int threadAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(0).getText());
                 int subGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(1).getText());
                 int workGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(2).getText());
