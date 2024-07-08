@@ -46,6 +46,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class EncodingContext {
 
     private static final Logger logger = LogManager.getLogger(EncodingContext.class);
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final VerificationTask verificationTask;
     private final Context analysisContext;
@@ -220,11 +221,8 @@ public final class EncodingContext {
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
-        //TODO match this with the actual type stored at the memory address
-        // (we do not know and guess the arch type right now)
-        TypeFactory types = TypeFactory.getInstance();
-        final int archSize = types.getMemorySizeInBits(types.getArchType());
-        return formulaManager.getBitvectorFormulaManager().makeVariable(archSize, name);
+        final int size = types.getMemorySizeInBits(base.getInitialValue(offset).getType());
+        return formulaManager.getBitvectorFormulaManager().makeVariable(size, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {

@@ -161,7 +161,6 @@ public class PropertyEncoder implements Encoder {
         return bmgr.and(progSpec.trackingLiteral, progSpec.trackedFormula);
     }
 
-    // TODO: Encode the actual type
     private BooleanFormula encodeLastCoConstraints() {
         final Relation co = memoryModel.getRelation(CO);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();

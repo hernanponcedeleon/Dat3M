@@ -61,7 +61,7 @@ public class AssertTest extends AbstractTest {
 
                 // bit width
                 {"; @Output: forall (%v7[0]==1 and %v7[1]==2 and %v7[2]==3)",
-                        "%v7[0]==bv64(1) && %v7[1]==bv64(2) && %v7[2]==bv64(3)",
+                        "%v7[0]==bv16(1) && %v7[1]==bv32(2) && %v7[2]==bv64(3)",
                         ASSERT_TYPE_FORALL},
 
                 // precedence

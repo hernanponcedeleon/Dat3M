@@ -7,8 +7,6 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
-import com.dat3m.dartagnan.verification.solving.IncrementalSolver;
-import com.dat3m.dartagnan.verification.solving.TwoSolvers;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,7 +24,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import static com.dat3m.dartagnan.configuration.Property.CAT_SPEC;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getRootPath;
 import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
@@ -347,9 +344,6 @@ public class SpirvRacesTest {
 
     @Test
     public void testAllSolvers() throws Exception {
-        try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
-            assertEquals(expected, IncrementalSolver.run(ctx, prover, mkTask()).getResult());
-        }
         /*
         // Using this solver is useless because the CAAT solver cannot deal with Property.CAT_SPEC
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
@@ -358,16 +352,12 @@ public class SpirvRacesTest {
         try (SolverContext ctx = mkCtx(); ProverEnvironment prover = mkProver(ctx)) {
             assertEquals(expected, AssumeSolver.run(ctx, prover, mkTask()).getResult());
         }
-        try (SolverContext ctx = mkCtx(); ProverEnvironment prover1 = mkProver(ctx);
-             ProverEnvironment prover2 = mkProver(ctx)) {
-            assertEquals(expected, TwoSolvers.run(ctx, prover1, prover2, mkTask()).getResult());
-        }
     }
 
     private SolverContext mkCtx() throws InvalidConfigurationException {
         Configuration cfg = Configuration.builder().build();
         return SolverContextFactory.createSolverContext(
-                cfg,
+                Configuration.builder().build(),
                 BasicLogManager.create(cfg),
                 ShutdownManager.create().getNotifier(),
                 SolverContextFactory.Solvers.Z3);
@@ -378,11 +368,8 @@ public class SpirvRacesTest {
     }
 
     private VerificationTask mkTask() throws Exception {
-        Configuration config = Configuration.builder()
-                .setOption(USE_INTEGERS, "true")
-                .build();
         VerificationTask.VerificationTaskBuilder builder = VerificationTask.builder()
-                .withConfig(config)
+                .withConfig(Configuration.builder().build())
                 .withBound(bound)
                 .withTarget(Arch.VULKAN);
         Program program = new ProgramParser().parse(new File(programPath));

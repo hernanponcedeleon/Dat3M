@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
+import static com.dat3m.dartagnan.program.specification.AbstractAssert.*;
 
 public class ProgramBuilderSpv {
 
@@ -134,28 +134,21 @@ public class ProgramBuilderSpv {
         AbstractAssert spec = program.getSpecification();
         if (spec == null) {
             program.setSpecification(ast);
-        } else if (spec.isSafetySpec() && ast.isSafetySpec()) {
-            AbstractAssert result = new AssertCompositeAnd(getAssertForAll(spec), getAssertForAll(ast));
-            result.setType(ASSERT_TYPE_FORALL);
-            program.setSpecification(result);
+        } else if (spec.isSafetySpec() && ast.getType().equals(spec.getType())) {
+            if (ast.getType().equals(ASSERT_TYPE_FORALL)) {
+                AbstractAssert result = new AssertCompositeAnd(spec, ast);
+                result.setType(ASSERT_TYPE_FORALL);
+                program.setSpecification(result);
+            } else if (ast.getType().equals(ASSERT_TYPE_NOT_EXISTS)) {
+                AbstractAssert result = new AssertCompositeOr(spec, ast);
+                result.setType(ASSERT_TYPE_NOT_EXISTS);
+                program.setSpecification(result);
+            } else {
+                throw new ParsingException("Unexpected assertion type " + ast.getType());
+            }
         } else {
-            throw new ParsingException("Existential assertions can not be used in conjunction with other assertions");
+            throw new ParsingException("Mixed assertion type is not supported");
         }
-    }
-
-    private AbstractAssert getAssertForAll(AbstractAssert assertion) {
-        return assertion.getType().equals(ASSERT_TYPE_FORALL) ? assertion : getComplement(assertion);
-    }
-
-    private AbstractAssert getComplement(AbstractAssert assertion) {
-        if (assertion instanceof AssertCompositeAnd andAssertion) {
-            return new AssertCompositeOr(getComplement(andAssertion.getLeft()),
-                    getComplement(andAssertion.getRight()));
-        } else if (assertion instanceof AssertCompositeOr orAssertion) {
-            return new AssertCompositeAnd(getComplement(orAssertion.getLeft()),
-                    getComplement(orAssertion.getRight()));
-        }
-        return new AssertNot(assertion);
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
@@ -268,9 +261,9 @@ public class ProgramBuilderSpv {
         if (types.containsKey(name) || expressions.containsKey(name)) {
             throw new ParsingException("Duplicated definition '%s'", name);
         }
-        if (TypeFactory.getInstance().isPointerType(type)) {
-            throw new ParsingException("Unexpected pointer type '%s'", name);
-        }
+        //if (TypeFactory.getInstance().isPointerType(type)) {
+        //    throw new ParsingException("Unexpected pointer type '%s'", name);
+        //}
         types.put(name, type);
         return type;
     }
@@ -325,7 +318,7 @@ public class ProgramBuilderSpv {
                 .filter(e -> e.getValue().equals(storageClass))
                 .map(e -> getExpression(e.getKey()))
                 .filter(MemoryObject.class::isInstance)
-                .map(e -> (MemoryObject)e)
+                .map(e -> (MemoryObject) e)
                 .toList();
     }
 

@@ -4,17 +4,18 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.base.LiteralExpressionBase;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.memory.Location;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
 import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
@@ -22,10 +23,9 @@ import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TY
 
 public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
 
-    // TODO: Verify that variables in assertions are in the device scope
-
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private final Map<Location, Type> locationTypes = new HashMap<>();
     private final ProgramBuilderSpv builder;
 
     public VisitorSpirvOutput(ProgramBuilderSpv builder) {
@@ -74,6 +74,8 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
     public AbstractAssert visitAssertionBasic(SpirvParser.AssertionBasicContext ctx) {
         Expression expr1 = acceptAssertionValue(ctx.assertionValue(0));
         Expression expr2 = acceptAssertionValue(ctx.assertionValue(1));
+        expr1 = normalize(expr1, expr2);
+        expr2 = normalize(expr2, expr1);
         if (ctx.assertionCompare().ModeHeader_EqualEqual() != null) {
             return new AssertBasic(expr1, EQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_NotEqual() != null) {
@@ -91,6 +93,24 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         }
     }
 
+    private Expression normalize(Expression target, Expression other) {
+        Type targetType = target instanceof Location ? locationTypes.get(target) : target.getType();
+        Type otherType = other instanceof Location ? locationTypes.get(other) : other.getType();
+        if (targetType.equals(otherType)) {
+            return target;
+        }
+        if (target instanceof Location && other instanceof LiteralExpressionBase<?>) {
+            return target;
+        }
+        if (target instanceof IntLiteral iValue && other instanceof Location) {
+            int size = TypeFactory.getInstance().getMemorySizeInBits(otherType);
+            IntegerType type = TypeFactory.getInstance().getIntegerType(size);
+            return new IntLiteral(type, iValue.getValue());
+        }
+        throw new ParsingException("Mismatching type assertions are not supported for %s and %s",
+                target.getClass().getSimpleName(), other.getClass().getSimpleName());
+    }
+
     private Integer acceptIndexValue(SpirvParser.IndexValueContext ctx) {
         return Integer.parseInt(ctx.ModeHeader_PositiveInteger().getText());
     }
@@ -101,22 +121,15 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         }
         String name = ctx.varName().getText();
         MemoryObject base = builder.getMemoryObject(name);
-        if (base == null) {
-            throw new ParsingException("Uninitialized location %s", name);
+        if (base != null) {
+            List<Integer> indexes = ctx.indexValue().stream().map(this::acceptIndexValue).toList();
+            return createLocation(base, indexes);
         }
-        if (ctx.indexValue().isEmpty()) {
-            return new Location(name, base, 0);
-        }
-        List<Integer> indexes = new ArrayList<>();
-        for (SpirvParser.IndexValueContext index : ctx.indexValue()) {
-            indexes.add(acceptIndexValue(index));
-        }
-        int offset = getOffset(name, indexes);
-        String offsetName = name + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        return new Location(offsetName, base, offset);
+        throw new ParsingException("Uninitialized location %s", name);
     }
 
-    private int getOffset(String name, List<Integer> indexes) {
+    private Location createLocation(MemoryObject base, List<Integer> indexes) {
+        String name = base.getName();
         Type type = builder.getVariableType(name);
         int offset = 0;
         for (int index : indexes) {
@@ -136,7 +149,11 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         if (type instanceof ArrayType || type instanceof AggregateType) {
             throw new ParsingException("Illegal assertion for variable '%s', index not deep enough", name);
         }
-        return offset;
+        String offsetName = indexes.isEmpty() ? name :
+                name + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
+        Location location =  new Location(offsetName, base, offset);
+        locationTypes.put(location, type);
+        return location;
     }
 
     private void validateIndex(String name, Type type, int index) {
