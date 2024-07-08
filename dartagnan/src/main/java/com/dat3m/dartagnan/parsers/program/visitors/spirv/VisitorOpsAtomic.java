@@ -229,12 +229,11 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     }
 
     private Expression getPointer(String ptrId) {
-        Expression expression = builder.getExpression(ptrId);
-        Type type = expression.getType();
-        if (TYPE_FACTORY.isPointerType(type)) {
-            return expression;
+        Expression result = builder.getExpression(ptrId);
+        if (builder.getVariableType(ptrId) != null) {
+            return result;
         }
-        throw new ParsingException("Unexpected type at '%s', expected pointer but received '%s'", ptrId, type);
+        throw new ParsingException("Unexpected type at '%s', expected pointer but received '%s'", ptrId, result.getType());
     }
 
     public Set<String> getSupportedOps() {
