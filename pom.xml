@@ -30,15 +30,16 @@
         <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 
         <!-- 3rd party solver versions -->
-        <java-smt.version>4.1.0</java-smt.version>
+        <java-smt.version>5.0.0</java-smt.version>
+        <bitwuzla.version>0.4.0-g4dbf3b1f</bitwuzla.version>
         <boolector.version>3.2.2-g1a89c229</boolector.version>
         <mathsat.version>5.6.10</mathsat.version>
         <cvc4.version>1.8-prerelease-2020-06-24-g7825d8f28</cvc4.version>
         <cvc5.version>1.0.5-g4cb2ab9eb</cvc5.version>
-        <opensmt.version>2.5.2-g7f502169</opensmt.version>
+        <opensmt.version>2.6.0-g2f72cc0e</opensmt.version>
         <yices2-api.version>4.1.0-1-gc58fe5b4</yices2-api.version>
         <yices2.version>2.6.2-396-g194350c1</yices2.version>
-        <z3.version>4.12.2</z3.version>
+        <z3.version>4.12.5</z3.version>
 
         <!-- 3rd party library versions -->
         <antlr.version>4.13.0</antlr.version>
@@ -160,6 +161,15 @@
                     <version>${z3.version}</version>
                     <type>so</type>
                     <classifier>libz3java</classifier>
+                </dependency>
+
+                <!-- Bitwuzla dependencies -->
+                <dependency>
+                    <groupId>org.sosy-lab</groupId>
+                    <artifactId>javasmt-solver-bitwuzla</artifactId>
+                    <version>${bitwuzla.version}</version>
+                    <classifier>libbitwuzlaj</classifier>
+                    <type>so</type>
                 </dependency>
 
                 <!-- MathSAT5 dependencies -->
@@ -335,6 +345,15 @@
                                         <destFileName>libz3.so</destFileName>
                                     </artifactItem>
 
+                                    <!-- Bitwuzla dependencies -->
+                                    <artifactItem>
+                                        <groupId>org.sosy-lab</groupId>
+                                        <artifactId>javasmt-solver-bitwuzla</artifactId>
+                                        <type>so</type>
+                                        <classifier>libbitwuzlaj</classifier>
+                                        <destFileName>libbitwuzlaj.so</destFileName>
+                                    </artifactItem>
+
                                     <!-- MathSAT5 dependencies -->
                                     <artifactItem>
                                         <groupId>org.sosy-lab</groupId>
@@ -344,7 +363,7 @@
                                         <destFileName>libmathsat5j.so</destFileName>
                                     </artifactItem>
 
-                                    <!-- Boolector dependencies -->
+                                        <!-- Boolector dependencies -->
                                     <artifactItem>
                                         <groupId>org.sosy-lab</groupId>
                                         <artifactId>javasmt-solver-boolector</artifactId>
