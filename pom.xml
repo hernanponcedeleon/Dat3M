@@ -370,7 +370,7 @@
                                         <destFileName>libmathsat5j.so</destFileName>
                                     </artifactItem>
 
-                                        <!-- Boolector dependencies -->
+                                    <!-- Boolector dependencies -->
                                     <artifactItem>
                                         <groupId>org.sosy-lab</groupId>
                                         <artifactId>javasmt-solver-boolector</artifactId>
