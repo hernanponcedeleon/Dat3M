@@ -9,8 +9,8 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.specification.*;
 
 import java.util.HashMap;
@@ -120,7 +120,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
             return EXPR_FACTORY.parseValue(ctx.initBaseValue().getText(), TYPE_FACTORY.getArchType());
         }
         String name = ctx.varName().getText();
-        MemoryObject base = builder.getMemoryObject(name);
+        ScopedPointerVariable base = (ScopedPointerVariable) builder.getExpression(name);
         if (base != null) {
             List<Integer> indexes = ctx.indexValue().stream().map(this::acceptIndexValue).toList();
             return createLocation(base, indexes);
@@ -128,12 +128,11 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         throw new ParsingException("Uninitialized location %s", name);
     }
 
-    private Location createLocation(MemoryObject base, List<Integer> indexes) {
-        String name = base.getName();
-        Type type = builder.getVariableType(name);
+    private Location createLocation(ScopedPointerVariable base, List<Integer> indexes) {
+        Type type = base.getInnerType();
         int offset = 0;
         for (int index : indexes) {
-            validateIndex(name, type, index);
+            validateIndex(base.getId(), type, index);
             if (type instanceof ArrayType arrayType) {
                 Type elementType = arrayType.getElementType();
                 int byteWidth = TYPE_FACTORY.getMemorySizeInBytes(elementType);
@@ -147,11 +146,11 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
             }
         }
         if (type instanceof ArrayType || type instanceof AggregateType) {
-            throw new ParsingException("Illegal assertion for variable '%s', index not deep enough", name);
+            throw new ParsingException("Illegal assertion for variable '%s', index not deep enough", base.getId());
         }
-        String offsetName = indexes.isEmpty() ? name :
-                name + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        Location location =  new Location(offsetName, base, offset);
+        String offsetName = indexes.isEmpty() ? base.getId() :
+                base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
+        Location location =  new Location(offsetName, base.getAddress(), offset);
         locationTypes.put(location, type);
         return location;
     }

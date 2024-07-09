@@ -44,6 +44,12 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
+    public ScopedPointerType getScopedPointerType(String scopeId, Type pointedType) {
+        checkNotNull(scopeId);
+        checkNotNull(pointedType);
+        return typeNormalizer.normalize(new ScopedPointerType(scopeId, pointedType));
+    }
+
     public FloatType getFloatType(int mantissaBits, int exponentBits) {
         checkArgument(mantissaBits > 0 && exponentBits > 0,
                 "Cannot construct floating-point type with mantissa %s and exponent %s",
@@ -131,5 +137,53 @@ public final class TypeFactory {
         }
 
         return decomposition;
+    }
+
+    public static boolean isExactType(Type type) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+            return true;
+        }
+        if (type instanceof ArrayType aType) {
+            return aType.hasKnownNumElements() && isExactType(aType.getElementType());
+        }
+        if (type instanceof AggregateType aType) {
+            for (Type elType : aType.getDirectFields()) {
+                if (!isExactType(elType)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        throw new UnsupportedOperationException("Cannot deduce fixed size of type " + type);
+    }
+
+    public static boolean isExactTypeOf(Type exactType, Type genericType) {
+        if (exactType.equals(genericType)) {
+            return true;
+        }
+        if (exactType instanceof AggregateType elExactType && genericType instanceof AggregateType elGenericSizeType) {
+            int size = elExactType.getDirectFields().size();
+            if (size != elGenericSizeType.getDirectFields().size()) {
+                return false;
+            }
+            for (int i = 0; i < size; i++) {
+                if (!isExactTypeOf(elExactType.getDirectFields().get(i), elGenericSizeType.getDirectFields().get(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (exactType instanceof ArrayType elExactType && genericType instanceof ArrayType elGenericType) {
+            int countExact = elExactType.getNumElements();
+            int countGeneric = elGenericType.getNumElements();
+            if (countExact != countGeneric && (countGeneric != -1 || countExact <= 0)) {
+                return false;
+            }
+            return isExactTypeOf(elExactType.getElementType(), elGenericType.getElementType());
+        }
+        if (exactType instanceof ScopedPointerType pExactType && genericType instanceof ScopedPointerType pGenericType) {
+            return isExactTypeOf(pExactType.getPointedType(), pGenericType.getPointedType());
+        }
+        return false;
     }
 }

@@ -4,10 +4,12 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.VoidType;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -40,19 +42,19 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         if (type instanceof FunctionType fType) {
             String returnTypeName = ctx.idResultType().getText();
             Type returnType = builder.getType(returnTypeName);
-            if (returnType.equals(fType.getReturnType())) {
-                currentId = id;
-                currentType = fType;
-                currentArgs = new ArrayList<>();
-                if (currentType.getParameterTypes().isEmpty()) {
-                    createFunction();
-                }
-                return null;
+            if (!returnType.equals(fType.getReturnType())) {
+                throw new ParsingException("Failed to create function '%s'. " +
+                        "Illegal return type: expected %s but received %s",
+                        id, fType.getReturnType().getClass().getSimpleName(),
+                        returnType.getClass().getSimpleName());
             }
-            throw new ParsingException("Failed to create function '%s'. " +
-                    "Illegal return type: expected %s but received %s",
-                    id, fType.getReturnType().getClass().getSimpleName(),
-                    returnType.getClass().getSimpleName());
+            currentId = id;
+            currentType = fType;
+            currentArgs = new ArrayList<>();
+            if (currentType.getParameterTypes().isEmpty()) {
+                createFunction();
+            }
+            return null;
         }
         throw new ParsingException("Failed to create function '%s'. " +
                 "Illegal variable type '%s': expected %s but received %s",
@@ -63,28 +65,29 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
     @Override
     public Void visitOpFunctionParameter(SpirvParser.OpFunctionParameterContext ctx) {
         String id = ctx.idResult().getText();
-        if (currentId != null && currentType != null && currentArgs != null) {
-            String typeName = ctx.idResultType().getText();
-            Type type = builder.getType(typeName);
-            List<Type> argTypes = currentType.getParameterTypes();
-            int idx = currentArgs.size();
-            if (idx < argTypes.size() && type.equals(argTypes.get(idx))) {
-                if (!currentArgs.contains(id)) {
-                    currentArgs.add(id);
-                    builder.addStorageClassForExpr(id, typeName);
-                    if (currentArgs.size() == currentType.getParameterTypes().size()) {
-                        createFunction();
-                    }
-                    return null;
-                }
-                throw new ParsingException("Duplicated parameter id '%s' in function '%s'",
-                        id, currentId);
-            }
+        if (currentId == null || currentType == null || currentArgs == null) {
+            throw new ParsingException("Attempt to declare function parameter '%s' " +
+                    "outside of a function definition", id);
+        }
+        Type type = builder.getType(ctx.idResultType().getText());
+        if (!(type instanceof ScopedPointerType)) {
+            throw new ParsingException("Attempt to use a non-pointer type for parameter '%s " +
+                    "in function '%s'", id, currentId);
+        }
+        List<Type> argTypes = currentType.getParameterTypes();
+        int idx = currentArgs.size();
+        if (idx >= argTypes.size() || !type.equals(argTypes.get(idx))) {
             throw new ParsingException("Mismatching argument type in function '%s' " +
                     "for argument '%s'", currentId, id);
         }
-        throw new ParsingException("Attempt to declare function parameter '%s' " +
-                "outside of a function definition", id);
+        if (currentArgs.contains(id)) {
+            throw new ParsingException("Duplicated parameter id '%s' in function '%s'", id, currentId);
+        }
+        currentArgs.add(id);
+        if (currentArgs.size() == currentType.getParameterTypes().size()) {
+            createFunction();
+        }
+        return null;
     }
 
     @Override
@@ -101,7 +104,11 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         List<Expression> arguments = ctx.argument().stream()
                 .map(a -> builder.getExpression(a.getText())).toList();
         Type returnType = builder.getType(typeId);
-        List<Type> pTypes = arguments.stream().map(Expression::getType).toList();
+        List<Type> pTypes = arguments.stream()
+                .map(e -> e instanceof ScopedPointer pBase
+                        ? TYPE_FACTORY.getScopedPointerType(pBase.getScopeId(), pBase.getInnerType())
+                        : e.getType())
+                .toList();
         FunctionType functionType = TYPE_FACTORY.getFunctionType(builder.getType(typeId), pTypes);
         Function function = builder.getCalledFunction(functionId, functionType);
         Event event;

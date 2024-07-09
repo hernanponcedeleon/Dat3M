@@ -7,6 +7,8 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
+import com.dat3m.dartagnan.program.event.Tag;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -18,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 public class VisitorOpsTypeTest {
 
     private static final TypeFactory FACTORY = TypeFactory.getInstance();
-    private final ProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
 
     @Test
     public void testSupportedTypes() {
@@ -47,18 +49,18 @@ public class VisitorOpsTypeTest {
         Type typeInteger = FACTORY.getIntegerType(16);
         Type typeVector = FACTORY.getArrayType(typeInteger, 10);
         Type typeArray = FACTORY.getArrayType(typeInteger, 20);
-        Type typePointer = FACTORY.getPointerType();
+        Type typePointer = FACTORY.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
         Type typeFunction = FACTORY.getFunctionType(typeVoid, List.of(typePointer, typeInteger));
         Type typeStruct = FACTORY.getAggregateType(List.of(typeInteger, typePointer, typeArray));
 
-        assertEquals(data.get("%void"), typeVoid);
-        assertEquals(data.get("%bool"), typeBoolean);
-        assertEquals(data.get("%int"), typeInteger);
-        assertEquals(data.get("%vector"), typeVector);
-        assertEquals(data.get("%array"), typeArray);
-        assertEquals(data.get("%ptr"), typePointer);
-        assertEquals(data.get("%func"), typeFunction);
-        assertEquals(data.get("%struct"), typeStruct);
+        assertEquals(typeVoid, data.get("%void"));
+        assertEquals(typeBoolean, data.get("%bool"));
+        assertEquals(typeInteger, data.get("%int"));
+        assertEquals(typeVector, data.get("%vector"));
+        assertEquals(typeArray, data.get("%array"));
+        assertEquals(typePointer, data.get("%ptr"));
+        assertEquals(typeFunction, data.get("%func"));
+        assertEquals(typeStruct, data.get("%struct"));
     }
 
     @Test(expected = ParsingException.class)
@@ -100,12 +102,12 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(6, data.size());
 
-        assertEquals(data.get("%uint_8"), FACTORY.getIntegerType(8));
-        assertEquals(data.get("%uint_16"), FACTORY.getIntegerType(16));
-        assertEquals(data.get("%uint_32"), FACTORY.getIntegerType(32));
-        assertEquals(data.get("%int_8"), FACTORY.getIntegerType(8));
-        assertEquals(data.get("%int_16"), FACTORY.getIntegerType(16));
-        assertEquals(data.get("%int_32"), FACTORY.getIntegerType(32));
+        assertEquals(FACTORY.getIntegerType(8), data.get("%uint_8"));
+        assertEquals(FACTORY.getIntegerType(16), data.get("%uint_16"));
+        assertEquals(FACTORY.getIntegerType(32), data.get("%uint_32"));
+        assertEquals(FACTORY.getIntegerType(8), data.get("%int_8"));
+        assertEquals(FACTORY.getIntegerType(16), data.get("%int_16"));
+        assertEquals(FACTORY.getIntegerType(32), data.get("%int_32"));
     }
 
     @Test
@@ -129,10 +131,10 @@ public class VisitorOpsTypeTest {
         Type typeBoolean = FACTORY.getBooleanType();
         Type typeInteger = FACTORY.getIntegerType(32);
 
-        assertEquals(data.get("%vector_bool_5"), FACTORY.getArrayType(typeBoolean, 5));
-        assertEquals(data.get("%vector_bool_10"), FACTORY.getArrayType(typeBoolean, 10));
-        assertEquals(data.get("%vector_int_15"), FACTORY.getArrayType(typeInteger, 15));
-        assertEquals(data.get("%vector_int_20"), FACTORY.getArrayType(typeInteger, 20));
+        assertEquals(FACTORY.getArrayType(typeBoolean, 5), data.get("%vector_bool_5"));
+        assertEquals(FACTORY.getArrayType(typeBoolean, 10), data.get("%vector_bool_10"));
+        assertEquals(FACTORY.getArrayType(typeInteger, 15), data.get("%vector_int_15"));
+        assertEquals(FACTORY.getArrayType(typeInteger, 20), data.get("%vector_int_20"));
     }
 
     @Test
@@ -161,10 +163,10 @@ public class VisitorOpsTypeTest {
         Type typeBoolean = FACTORY.getBooleanType();
         Type typeInteger = FACTORY.getIntegerType(32);
 
-        assertEquals(data.get("%array_bool_5"), FACTORY.getArrayType(typeBoolean, 5));
-        assertEquals(data.get("%array_bool_10"), FACTORY.getArrayType(typeBoolean, 10));
-        assertEquals(data.get("%array_int_15"), FACTORY.getArrayType(typeInteger, 15));
-        assertEquals(data.get("%array_int_20"), FACTORY.getArrayType(typeInteger, 20));
+        assertEquals(FACTORY.getArrayType(typeBoolean, 5), data.get("%array_bool_5"));
+        assertEquals(FACTORY.getArrayType(typeBoolean, 10), data.get("%array_bool_10"));
+        assertEquals(FACTORY.getArrayType(typeInteger, 15), data.get("%array_int_15"));
+        assertEquals(FACTORY.getArrayType(typeInteger, 20), data.get("%array_int_20"));
     }
 
     @Test
@@ -183,12 +185,18 @@ public class VisitorOpsTypeTest {
 
         // then
         assertEquals(5, data.size());
-        assertEquals(data.get("%ptr_input_bool"), FACTORY.getPointerType());
-        assertEquals(builder.getPointedType("%ptr_input_bool"), FACTORY.getBooleanType());
-        assertEquals(data.get("%ptr_input_int"), FACTORY.getPointerType());
-        assertEquals(builder.getPointedType("%ptr_input_int"), FACTORY.getIntegerType(32));
-        assertEquals(data.get("%ptr_workgroup_int"), FACTORY.getPointerType());
-        assertEquals(builder.getPointedType("%ptr_workgroup_int"), FACTORY.getIntegerType(32));
+
+        ScopedPointerType boolPtr = (ScopedPointerType)data.get("%ptr_input_bool");
+        assertEquals(Tag.Spirv.SC_INPUT, boolPtr.getScopeId());
+        assertEquals(builder.getType("%bool"), boolPtr.getPointedType());
+
+        ScopedPointerType inputIntPtr = (ScopedPointerType)data.get("%ptr_input_int");
+        assertEquals(Tag.Spirv.SC_INPUT, inputIntPtr.getScopeId());
+        assertEquals(builder.getType("%int"), inputIntPtr.getPointedType());
+
+        ScopedPointerType workgroupIntPtr = (ScopedPointerType)data.get("%ptr_workgroup_int");
+        assertEquals(Tag.Spirv.SC_WORKGROUP, workgroupIntPtr.getScopeId());
+        assertEquals(builder.getType("%int"), workgroupIntPtr.getPointedType());
     }
 
     @Test(expected = ParsingException.class)
@@ -226,7 +234,7 @@ public class VisitorOpsTypeTest {
         Type typeBoolean = FACTORY.getBooleanType();
         Type typeInteger = FACTORY.getIntegerType(16);
         Type typeArray = FACTORY.getArrayType(typeInteger, 5);
-        Type typePointer = FACTORY.getPointerType();
+        Type typePointer = FACTORY.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
 
         assertEquals(data.get("%f1"), FACTORY.getFunctionType(typeVoid, List.of()));
         assertEquals(data.get("%f2"), FACTORY.getFunctionType(typeBoolean, List.of(typeInteger, typeArray)));
@@ -279,7 +287,7 @@ public class VisitorOpsTypeTest {
         Type typeInteger = FACTORY.getIntegerType(32);
         Type typeArray = FACTORY.getArrayType(typeInteger, 10);
         Type typeStructFirst = FACTORY.getAggregateType(List.of(typeInteger, typeArray));
-        Type typePointer = FACTORY.getPointerType();
+        Type typePointer = FACTORY.getScopedPointerType(Tag.Spirv.SC_INPUT, typeStructFirst);
         Type typeStructSecond = FACTORY.getAggregateType(List.of(typeBoolean, typePointer));
 
         assertEquals(data.get("%s1"), typeStructFirst);

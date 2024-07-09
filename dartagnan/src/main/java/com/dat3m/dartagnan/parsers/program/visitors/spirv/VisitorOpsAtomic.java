@@ -7,7 +7,6 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.program.Register;
@@ -20,7 +19,6 @@ import static com.dat3m.dartagnan.program.event.EventFactory.Spirv.*;
 
 public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private final ProgramBuilderSpv builder;
 
     public VisitorOpsAtomic(ProgramBuilderSpv builder) {
@@ -229,11 +227,13 @@ public class VisitorOpsAtomic extends SpirvBaseVisitor<Event> {
     }
 
     private Expression getPointer(String ptrId) {
+        return builder.getExpression(ptrId);
+        /*
         Expression result = builder.getExpression(ptrId);
-        if (builder.getVariableType(ptrId) != null) {
+        if (result instanceof MemoryObject) {
             return result;
         }
-        throw new ParsingException("Unexpected type at '%s', expected pointer but received '%s'", ptrId, result.getType());
+        throw new ParsingException("Unexpected type at '%s', expected pointer but received '%s'", ptrId, result.getType());*/
     }
 
     public Set<String> getSupportedOps() {

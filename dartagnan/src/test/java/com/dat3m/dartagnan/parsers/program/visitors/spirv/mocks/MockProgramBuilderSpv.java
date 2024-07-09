@@ -8,6 +8,8 @@ import com.dat3m.dartagnan.expression.integers.IntCmpOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.dat3m.dartagnan.expression.type.ScopedPointerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
@@ -55,8 +57,8 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         return (IntegerType) addType(id, TYPE_FACTORY.getIntegerType(bitWidth));
     }
 
-    public IntegerType mockPtrType(String id, String pointedTypeId, String storageClass) {
-        return (IntegerType) addPointerType(id, pointedTypeId, storageClass);
+    public ScopedPointerType mockPtrType(String id, String pointedTypeId, String storageClass) {
+        return (ScopedPointerType) addType(id, TYPE_FACTORY.getScopedPointerType(getStorageClass(storageClass), getType(pointedTypeId)));
     }
 
     public ArrayType mockVectorType(String id, String innerTypeId, int size) {
@@ -114,15 +116,14 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         throw new UnsupportedOperationException("Unsupported mock constant array element type " + elementType);
     }
 
-    public MemoryObject mockVariable(String id, String typeId) {
-        Type pointedType = getPointedType(typeId);
+    public ScopedPointerVariable mockVariable(String id, String typeId) {
+        Type pointedType = ((ScopedPointerType)getType(typeId)).getPointedType();
         int bytes = TYPE_FACTORY.getMemorySizeInBytes(pointedType);
-        MemoryObject memObj = allocateMemory(bytes);
-        memObj.setName(id);
-        addExpression(id, memObj);
-        addStorageClassForExpr(id, typeId);
-        addVariableType(id, pointedType);
-        return memObj;
+        MemoryObject memoryObject = program.getMemory().allocate(bytes);
+        memoryObject.setName(id);
+        ScopedPointerVariable pointer = new ScopedPointerVariable(id, ((ScopedPointerType) getType(typeId)).getScopeId(), ((ScopedPointerType)getType(typeId)).getPointedType(), memoryObject);
+        addExpression(id, pointer);
+        return pointer;
     }
 
     public Expression mockCondition(String left, IntCmpOp kind, String right) {
@@ -167,5 +168,29 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
             return events.get(events.size() - 1);
         }
         return null;
+    }
+
+    public Map<String, Type> getTypes() {
+        return Map.copyOf(types);
+    }
+
+    public Map<String, Expression> getExpressions() {
+        return Map.copyOf(expressions);
+    }
+
+    public List<Label> getBlocks() {
+        return blocks.stream().toList();
+    }
+
+    public Map<Label, Label> getCfDefinition() {
+        return Map.copyOf(cfDefinitions);
+    }
+
+    public Map<Label, Event> getBlockEndEvents() {
+        return Map.copyOf(blockEndEvents);
+    }
+
+    public Set<Function> getForwardFunctions() {
+        return Set.copyOf(forwardFunctions.values());
     }
 }

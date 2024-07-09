@@ -10,8 +10,8 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.ProgramBuilderSpv;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
     private final ProgramBuilderSpv builder;
     private final List<Integer> threadGrid;
-    private MemoryObject pushConstant;
+    private ScopedPointerVariable pushConstant;
     private AggregateType pushConstantType;
     private int pushConstantIndex = 0;
     private int pushConstantOffset = 0;
@@ -30,24 +30,6 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     public VisitorExtensionClspvReflection(ProgramBuilderSpv builder) {
         this.builder = builder;
         this.threadGrid = builder.getThreadGrid();
-    }
-
-    @Override
-    public Set<String> getSupportedInstructions() {
-        return Set.of(
-                "Kernel",
-                "ArgumentInfo",
-                "ArgumentStorageBuffer",
-                "ArgumentWorkgroup",
-                "ArgumentPodPushConstant",
-                "PushConstantGlobalOffset",
-                "PushConstantGlobalSize",
-                "PushConstantEnqueuedLocalSize",
-                "PushConstantNumWorkgroups",
-                "PushConstantRegionOffset",
-                "PushConstantRegionGroupOffset",
-                "SpecConstantWorkgroupSize"
-        );
     }
 
     @Override
@@ -84,7 +66,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     public Void visitArgumentPodPushConstant(SpirvParser.ArgumentPodPushConstantContext ctx) {
         initPushConstant();
         if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'", pushConstant.getName());
+            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'", pushConstant.getId());
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
         int typeSize = TYPE_FACTORY.getMemorySizeInBytes(type);
@@ -97,7 +79,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
         String sizeId = ctx.sizeIdRef().getText();
         if (typeSize != builder.getExpressionAsConstInteger(sizeId)) {
             throw new ParsingException("Unexpected offset in PushConstant '%s' element '%s'",
-                    pushConstant.getName(), pushConstantIndex);
+                    pushConstant.getId(), pushConstantIndex);
         }
         pushConstantOffset += TYPE_FACTORY.getMemorySizeInBytes(type);
         pushConstantIndex++;
@@ -137,17 +119,17 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     // TODO: Better way to identify PushConstant using kernel and arg info
     private void initPushConstant() {
         if (pushConstant == null) {
-            List<MemoryObject> variables = builder.getVariablesWithStorageClass(Tag.Spirv.SC_PUSH_CONSTANT);
+            List<ScopedPointerVariable> variables = builder.getVariablesWithStorageClass(Tag.Spirv.SC_PUSH_CONSTANT);
             if (variables.size() != 1) {
                 throw new ParsingException("Cannot identify PushConstant referenced by CLSPV extension");
             }
             pushConstant = variables.get(0);
-            Type type = builder.getVariableType(pushConstant.getName());
+            Type type = pushConstant.getInnerType();
             if (type instanceof AggregateType agType) {
                 pushConstantType = agType;
             } else {
                 throw new ParsingException("Unexpected type '%s' for PushConstant '%s'",
-                        type, pushConstant.getName());
+                        type, pushConstant.getId());
             }
         }
     }
@@ -155,7 +137,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private Void setPushConstantValue(String decorationId, String sizeId) {
         initPushConstant();
         if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition '%s' in PushConstant '%s'", decorationId, pushConstant.getName());
+            throw new ParsingException("Out of bounds definition '%s' in PushConstant '%s'", decorationId, pushConstant.getId());
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
         int typeSize = TYPE_FACTORY.getMemorySizeInBytes(type);
@@ -176,7 +158,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             }
         }
         throw new ParsingException("Unexpected element type in '%s' at index %s",
-                pushConstant.getName(), pushConstantIndex);
+                pushConstant.getId(), pushConstantIndex);
     }
 
     public List<Integer> getPushConstantValue(String command) {
@@ -190,5 +172,23 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
                     -> List.of(0, 0, 0);
             default -> throw new ParsingException("Unsupported PushConstant command '%s'", command);
         };
+    }
+
+    @Override
+    public Set<String> getSupportedInstructions() {
+        return Set.of(
+                "Kernel",
+                "ArgumentInfo",
+                "ArgumentStorageBuffer",
+                "ArgumentWorkgroup",
+                "ArgumentPodPushConstant",
+                "PushConstantGlobalOffset",
+                "PushConstantGlobalSize",
+                "PushConstantEnqueuedLocalSize",
+                "PushConstantNumWorkgroups",
+                "PushConstantRegionOffset",
+                "PushConstantRegionGroupOffset",
+                "SpecConstantWorkgroupSize"
+        );
     }
 }

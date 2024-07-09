@@ -35,7 +35,7 @@ public class BadFormatTest extends AbstractTest {
                 ; @Output: exists (%undefined!=456)
                 ; @Config: 1, 1, 1
                 """,
-                        "Undefined memory object '%undefined'"},
+                        "Reference to undefined expression '%undefined'"},
                 {"""
                 ; @Input: %v1=7, %v2=123, %v3=0
                 ; @Output: exists (%v1!=7)

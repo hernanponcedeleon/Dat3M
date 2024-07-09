@@ -7,9 +7,11 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuild
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.functions.ValueFunctionCall;
 import com.dat3m.dartagnan.program.event.functions.VoidFunctionCall;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
@@ -20,12 +22,22 @@ public class VisitorOpsFunctionTest {
 
     private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
 
+    @Before
+    public void before() {
+        builder.mockVoidType("%void");
+        builder.mockBoolType("%bool");
+        builder.mockIntType("%int", 64);
+        builder.mockVectorType("%arr", "%int", 4);
+        builder.mockPtrType("%bool_ptr", "%bool", "Uniform");
+        builder.mockPtrType("%int_ptr", "%int", "Uniform");
+        builder.mockPtrType("%arr_ptr", "%arr", "Uniform");
+    }
+
     @Test
     public void testFunctionWithoutParameters() {
         // given
         String input = "%func = OpFunction %void None %void_func";
-        builder.mockVoidType("%void");
-        Type typeFunc = builder.mockFunctionType("%void_func", "%void");
+        Type type = builder.mockFunctionType("%void_func", "%void");
 
         // when
         visit(input);
@@ -33,7 +45,7 @@ public class VisitorOpsFunctionTest {
         // then
         Function function = builder.getCurrentFunction();
         assertEquals("%func", function.getName());
-        assertEquals(typeFunc, function.getFunctionType());
+        assertEquals(type, function.getFunctionType());
         assertTrue(function.getParameterRegisters().isEmpty());
         assertEquals(function, builder.getExpression("%func"));
     }
@@ -43,14 +55,12 @@ public class VisitorOpsFunctionTest {
         // given
         String input = """
                 %func = OpFunction %int None %int_func
-                %param_int = OpFunctionParameter %int
-                %param_ptr = OpFunctionParameter %ptr
-                %param_arr = OpFunctionParameter %arr
+                %param_bool = OpFunctionParameter %bool_ptr
+                %param_int = OpFunctionParameter %int_ptr
+                %param_arr = OpFunctionParameter %arr_ptr
                 """;
-        Type typeInt = builder.mockIntType("%int", 64);
-        Type typePtr = builder.mockPtrType("%ptr", "%int", "Uniform");
-        Type typeArr = builder.mockVectorType("%arr", "%int", 10);
-        Type typeFunction = builder.mockFunctionType("%int_func", "%int", "%int", "%ptr", "%arr");
+
+        Type type = builder.mockFunctionType("%int_func", "%int", "%bool_ptr", "%int_ptr", "%arr_ptr");
 
         // when
         visit(input);
@@ -59,20 +69,20 @@ public class VisitorOpsFunctionTest {
         Function function = builder.getCurrentFunction();
         assertNotNull(function);
         assertEquals("%func", function.getName());
-        assertEquals(typeFunction, function.getFunctionType());
+        assertEquals(type, function.getFunctionType());
 
         List<Register> registers = function.getParameterRegisters();
         assertEquals(3, registers.size());
-        assertEquals("%param_int", registers.get(0).getName());
-        assertEquals(typeInt, registers.get(0).getType());
-        assertEquals("%param_ptr", registers.get(1).getName());
-        assertEquals(typePtr, registers.get(1).getType());
+        assertEquals("%param_bool", registers.get(0).getName());
+        assertEquals(builder.getType("%bool_ptr"), registers.get(0).getType());
+        assertEquals("%param_int", registers.get(1).getName());
+        assertEquals(builder.getType("%int_ptr"), registers.get(1).getType());
         assertEquals("%param_arr", registers.get(2).getName());
-        assertEquals(typeArr, registers.get(2).getType());
+        assertEquals(builder.getType("%arr_ptr"), registers.get(2).getType());
 
         assertEquals(function, builder.getExpression("%func"));
-        assertEquals(registers.get(0), builder.getExpression("%param_int"));
-        assertEquals(registers.get(1), builder.getExpression("%param_ptr"));
+        assertEquals(registers.get(0), builder.getExpression("%param_bool"));
+        assertEquals(registers.get(1), builder.getExpression("%param_int"));
         assertEquals(registers.get(2), builder.getExpression("%param_arr"));
     }
 
@@ -80,7 +90,6 @@ public class VisitorOpsFunctionTest {
     public void testFunctionWithMismatchingType() {
         // given
         String input = "%func = OpFunction %void None %void_func";
-        builder.mockVoidType("%void");
         builder.mockVoidType("%void_func");
 
         // when
@@ -91,7 +100,6 @@ public class VisitorOpsFunctionTest {
     public void testFunctionWithMismatchingReturnType() {
         // given
         String input = "%func = OpFunction %mismatching None %void_func";
-        builder.mockVoidType("%void");
         builder.mockIntType("%mismatching", 64);
         builder.mockFunctionType("%void_func", "%void");
 
@@ -103,9 +111,9 @@ public class VisitorOpsFunctionTest {
     public void testFunctionWithMismatchingParameterTypes() {
         doTestFunctionParameters("""
                         %func = OpFunction %int None %int_func
-                        %param_int = OpFunctionParameter %int
-                        %param_ptr = OpFunctionParameter %ptr
-                        %mismatching = OpFunctionParameter %ptr
+                        %param_bool = OpFunctionParameter %bool_ptr
+                        %param_int = OpFunctionParameter %int_ptr
+                        %mismatching = OpFunctionParameter %int_ptr
                         """,
                 "Mismatching argument type in function '%func' " +
                         "for argument '%mismatching'");
@@ -115,8 +123,8 @@ public class VisitorOpsFunctionTest {
     public void testFunctionWithMissingParameters() {
         doTestFunctionParameters("""
                         %func = OpFunction %int None %int_func
-                        %param_int = OpFunctionParameter %int
-                        %param_ptr = OpFunctionParameter %ptr
+                        %param_bool = OpFunctionParameter %bool_ptr
+                        %param_int = OpFunctionParameter %int_ptr
                         OpFunctionEnd
                         """,
                 "Illegal attempt to exit a function definition");
@@ -126,10 +134,10 @@ public class VisitorOpsFunctionTest {
     public void testFunctionWithExtraParameters() {
         doTestFunctionParameters("""
                         %func = OpFunction %int None %int_func
-                        %param_int = OpFunctionParameter %int
-                        %param_ptr = OpFunctionParameter %ptr
-                        %param_arr = OpFunctionParameter %arr
-                        %extra = OpFunctionParameter %arr
+                        %param_bool = OpFunctionParameter %bool_ptr
+                        %param_int = OpFunctionParameter %int_ptr
+                        %param_arr = OpFunctionParameter %arr_ptr
+                        %extra = OpFunctionParameter %arr_ptr
                         """,
                 "Attempt to declare function parameter '%extra' " +
                         "outside of a function definition");
@@ -140,9 +148,9 @@ public class VisitorOpsFunctionTest {
         // given
         doTestFunctionParameters("""
                         %func = OpFunction %int None %int_func
-                        %param_int = OpFunctionParameter %int
-                        %param_arr = OpFunctionParameter %arr
-                        %param_ptr = OpFunctionParameter %ptr
+                        %param_bool = OpFunctionParameter %bool_ptr
+                        %param_arr = OpFunctionParameter %arr_ptr
+                        %param_int = OpFunctionParameter %int_ptr
                         """,
                 "Mismatching argument type in function '%func' " +
                         "for argument '%param_arr'");
@@ -153,18 +161,16 @@ public class VisitorOpsFunctionTest {
         // given
         doTestFunctionParameters("""
                         %func = OpFunction %int None %int_func
-                        %unique = OpFunctionParameter %int
-                        %duplicated = OpFunctionParameter %ptr
-                        %duplicated = OpFunctionParameter %arr
+                        %unique = OpFunctionParameter %bool_ptr
+                        %duplicated = OpFunctionParameter %int_ptr
+                        %duplicated = OpFunctionParameter %arr_ptr
                         """,
                 "Duplicated parameter id '%duplicated' in function '%func'");
     }
 
     private void doTestFunctionParameters(String input, String error) {
-        builder.mockIntType("%int", 64);
-        builder.mockPtrType("%ptr", "%int", "Uniform");
-        builder.mockVectorType("%arr", "%int", 10);
-        builder.mockFunctionType("%int_func", "%int", "%int", "%ptr", "%arr");
+        // given
+        builder.mockFunctionType("%int_func", "%int", "%bool_ptr", "%int_ptr", "%arr_ptr");
 
         try {
             // when
@@ -183,13 +189,13 @@ public class VisitorOpsFunctionTest {
                 %func = OpFunction %void None %void_func
                 OpFunctionEnd
                 """;
-        builder.mockVoidType("%void");
         builder.mockFunctionType("%void_func", "%void");
+        Event event = new Skip();
         visit(input);
 
         try {
             // when
-            builder.addEvent(new Skip());
+            builder.addEvent(event);
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
@@ -212,22 +218,18 @@ public class VisitorOpsFunctionTest {
         // given
         String input = """
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 OpFunctionEnd
                 %main = OpFunction %void None %main_func
                 %ret = OpFunctionCall %bool %func %arg1 %arg2
                 """;
 
-        builder.mockVoidType("%void");
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%arr", "%int", 4);
         builder.mockFunctionType("%main_func", "%void");
-        builder.mockFunctionType("%bool_func", "%bool", "%int", "%arr");
+        builder.mockFunctionType("%bool_func", "%bool", "%int_ptr", "%arr_ptr");
 
-        Expression arg1 = builder.mockConstant("%arg1", "%int", 1);
-        Expression arg2 = builder.mockConstant("%arg2", "%arr", List.of(1, 2, 3, 4));
+        Expression arg1 = builder.mockVariable("%arg1", "%int_ptr");
+        Expression arg2 = builder.mockVariable("%arg2", "%arr_ptr");
 
         // when
         visit(input);
@@ -253,19 +255,15 @@ public class VisitorOpsFunctionTest {
         // given
         String input = """
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 %ret = OpFunctionCall %bool %func %arg1 %arg2
                 """;
 
-        builder.mockVoidType("%void");
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%arr", "%int", 4);
-        builder.mockFunctionType("%bool_func", "%bool", "%int", "%arr");
+        builder.mockFunctionType("%bool_func", "%bool", "%int_ptr", "%arr_ptr");
 
-        Expression arg1 = builder.mockConstant("%arg1", "%int", 1);
-        Expression arg2 = builder.mockConstant("%arg2", "%arr", List.of(1, 2, 3, 4));
+        Expression arg1 = builder.mockVariable("%arg1", "%int_ptr");
+        Expression arg2 = builder.mockVariable("%arg2", "%arr_ptr");
 
         // when
         visit(input);
@@ -292,19 +290,15 @@ public class VisitorOpsFunctionTest {
                 %ret = OpFunctionCall %bool %func %arg1 %arg2
                 OpFunctionEnd
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 """;
 
-        builder.mockVoidType("%void");
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%arr", "%int", 4);
         builder.mockFunctionType("%main_func", "%void");
-        builder.mockFunctionType("%bool_func", "%bool", "%int", "%arr");
+        builder.mockFunctionType("%bool_func", "%bool", "%int_ptr", "%arr_ptr");
 
-        Expression arg1 = builder.mockConstant("%arg1", "%int", 1);
-        Expression arg2 = builder.mockConstant("%arg2", "%arr", List.of(1, 2, 3, 4));
+        Expression arg1 = builder.mockVariable("%arg1", "%int_ptr");
+        Expression arg2 = builder.mockVariable("%arg2", "%arr_ptr");
 
         // when
         visit(input);
@@ -333,8 +327,8 @@ public class VisitorOpsFunctionTest {
     public void testFunctionCallMismatchingArguments() {
         doTestFunctionCallMismatchingParameters("""
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 OpFunctionEnd
                 %main = OpFunction %void None %main_func
                 %ret = OpFunctionCall %bool %func %arg1 %arg2
@@ -345,8 +339,8 @@ public class VisitorOpsFunctionTest {
     public void testRecursiveFunctionCallMismatchingArguments() {
         doTestFunctionCallMismatchingParameters("""
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 %ret = OpFunctionCall %bool %func %arg1 %arg2
                 """);
     }
@@ -358,8 +352,8 @@ public class VisitorOpsFunctionTest {
                 %ret = OpFunctionCall %bool %func %arg1 %arg2
                 OpFunctionEnd
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 """);
     }
 
@@ -367,8 +361,8 @@ public class VisitorOpsFunctionTest {
     public void testFunctionCallMismatchingReturnType() {
         doTestFunctionCallMismatchingParameters("""
                 %func = OpFunction %bool None %bool_func
-                %param1 = OpFunctionParameter %int
-                %param2 = OpFunctionParameter %arr
+                %param1 = OpFunctionParameter %int_ptr
+                %param2 = OpFunctionParameter %arr_ptr
                 OpFunctionEnd
                 %main = OpFunction %void None %main_func
                 %ret = OpFunctionCall %void %func %arg1 %arg2
@@ -377,14 +371,10 @@ public class VisitorOpsFunctionTest {
 
     private void doTestFunctionCallMismatchingParameters(String input) {
         // given
-        builder.mockVoidType("%void");
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%arr", "%int", 4);
         builder.mockFunctionType("%main_func", "%void");
-        builder.mockFunctionType("%bool_func", "%bool", "%int", "%arr");
-        builder.mockConstant("%arg1", "%int", 1);
-        builder.mockConstant("%arg2", "%int", 2);
+        builder.mockFunctionType("%bool_func", "%bool", "%int_ptr", "%arr_ptr");
+        builder.mockVariable("%arg1", "%int_ptr");
+        builder.mockVariable("%arg2", "%int_ptr");
 
         try {
             // when
@@ -406,14 +396,10 @@ public class VisitorOpsFunctionTest {
                 OpFunctionEnd
                 """;
 
-        builder.mockVoidType("%void");
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
-        builder.mockVectorType("%arr", "%int", 4);
         builder.mockFunctionType("%main_func", "%void");
-        builder.mockFunctionType("%bool_func", "%bool", "%int", "%arr");
-        builder.mockConstant("%arg1", "%int", 1);
-        builder.mockConstant("%arg2", "%arr", List.of(1, 2, 3, 4));
+        builder.mockFunctionType("%bool_func", "%bool", "%int_ptr", "%arr_ptr");
+        builder.mockVariable("%arg1", "%int_ptr");
+        builder.mockVariable("%arg2", "%arr_ptr");
 
         // when
         visit(input);
@@ -430,27 +416,24 @@ public class VisitorOpsFunctionTest {
                 %c13 = OpFunctionCall %int %f3 %a3
                 OpFunctionEnd
                 %f2 = OpFunction %bool None %bool_func
-                %p2 = OpFunctionParameter %bool
+                %p2 = OpFunctionParameter %bool_ptr
                 %c21 = OpFunctionCall %void %f1
                 %c22 = OpFunctionCall %bool %f2 %a2
                 %c23 = OpFunctionCall %int %f3 %a3
                 OpFunctionEnd
                 %f3 = OpFunction %int None %int_func
-                %p3 = OpFunctionParameter %int
+                %p3 = OpFunctionParameter %int_ptr
                 OpFunctionEnd
                 %main = OpFunction %void None %void_func
                 OpFunctionEnd
                 """;
 
-        builder.mockVoidType("%void");
-        builder.mockBoolType("%bool");
-        builder.mockIntType("%int", 64);
         builder.mockFunctionType("%void_func", "%void");
-        builder.mockFunctionType("%bool_func", "%bool", "%bool");
-        builder.mockFunctionType("%int_func", "%int", "%int");
+        builder.mockFunctionType("%bool_func", "%bool", "%bool_ptr");
+        builder.mockFunctionType("%int_func", "%int", "%int_ptr");
 
-        Expression a2 = builder.mockConstant("%a2", "%bool", true);
-        Expression a3 = builder.mockConstant("%a3", "%int", 1);
+        Expression a2 = builder.mockVariable("%a2", "%bool_ptr");
+        Expression a3 = builder.mockVariable("%a3", "%int_ptr");
 
         // when
         visit(input);

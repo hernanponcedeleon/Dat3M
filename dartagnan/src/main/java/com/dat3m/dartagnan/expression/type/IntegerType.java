@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions;
 
 import java.math.BigInteger;
 
-public final class IntegerType implements Type {
+public class IntegerType implements Type {
 
     private final int bitWidth;
 

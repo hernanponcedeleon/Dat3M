@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.extenstions.VisitorExtensionClspvReflection;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,18 +49,18 @@ public class VisitorExtensionClspvReflectionTest {
 
         builder.mockAggregateType("%6x_v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint", "%v3uint");
         builder.mockPtrType("%ptr_6x_v3uint", "%6x_v3uint", "PushConstant");
-        MemoryObject memObj = builder.mockVariable("%var", "%ptr_6x_v3uint");
+        ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_6x_v3uint");
 
         // when
         new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
 
         // then
-        verifyPushConstant(memObj, 0, List.of(0, 0, 0));
-        verifyPushConstant(memObj, 12, List.of(24, 1, 1));
-        verifyPushConstant(memObj, 24, List.of(6, 1, 1));
-        verifyPushConstant(memObj, 36, List.of(4, 1, 1));
-        verifyPushConstant(memObj, 48, List.of(0, 0, 0));
-        verifyPushConstant(memObj, 60, List.of(0, 0, 0));
+        verifyPushConstant(pointer, 0, List.of(0, 0, 0));
+        verifyPushConstant(pointer, 12, List.of(24, 1, 1));
+        verifyPushConstant(pointer, 24, List.of(6, 1, 1));
+        verifyPushConstant(pointer, 36, List.of(4, 1, 1));
+        verifyPushConstant(pointer, 48, List.of(0, 0, 0));
+        verifyPushConstant(pointer, 60, List.of(0, 0, 0));
     }
 
     @Test
@@ -189,13 +189,13 @@ public class VisitorExtensionClspvReflectionTest {
 
         builder.mockAggregateType("%v1uint_v2uint", "%v1uint", "%v2uint");
         builder.mockPtrType("%ptr_v1uint_v2uint", "%v1uint_v2uint", "PushConstant");
-        MemoryObject memObj = builder.mockVariable("%var", "%ptr_v1uint_v2uint");
+        ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_v1uint_v2uint");
 
         // when
         new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
 
         // then
-        assertEquals(12, memObj.size());
+        assertEquals(12, pointer.getAddress().size());
     }
 
     @Test
@@ -209,14 +209,14 @@ public class VisitorExtensionClspvReflectionTest {
 
         builder.mockAggregateType("%v3uint_v1uint", "%v3uint", "%v1uint");
         builder.mockPtrType("%ptr_v3uint_v1uint", "%v3uint_v1uint", "PushConstant");
-        MemoryObject memObj = builder.mockVariable("%var", "%ptr_v3uint_v1uint");
+        ScopedPointerVariable pointer = builder.mockVariable("%var", "%ptr_v3uint_v1uint");
 
         // when
         new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
 
         // then
-        assertEquals(16, memObj.size());
-        verifyPushConstant(memObj, 0, List.of(24, 1, 1));
+        assertEquals(16, pointer.getAddress().size());
+        verifyPushConstant(pointer, 0, List.of(24, 1, 1));
     }
 
     @Test
@@ -370,9 +370,9 @@ public class VisitorExtensionClspvReflectionTest {
         new MockSpirvParser(input).spv().accept(new VisitorExtensionClspvReflection(builder));
     }
 
-    private void verifyPushConstant(MemoryObject memObj, int offset, List<Integer> expected) {
+    private void verifyPushConstant(ScopedPointerVariable pointer, int offset, List<Integer> expected) {
         for (int i = 0; i < expected.size(); i++) {
-            int actual = ((IntLiteral) memObj.getInitialValue(offset + i * 4)).getValueAsInt();
+            int actual = ((IntLiteral) pointer.getAddress().getInitialValue(offset + i * 4)).getValueAsInt();
             assertEquals(expected.get(i).intValue(), actual);
         }
     }

@@ -12,11 +12,12 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvParser;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
 import org.junit.Test;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public class VisitorOpsMemoryTest {
         String input = "%result = OpLoad %int %ptr";
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
+        ScopedPointerVariable pointer = builder.mockVariable("%ptr", "%int_ptr");
 
         // when
         parse(input);
@@ -46,7 +47,7 @@ public class VisitorOpsMemoryTest {
         // then
         Load load = (Load) builder.getLastEvent();
         assertNotNull(load);
-        assertEquals(memObj, load.getAddress());
+        assertEquals(pointer, load.getAddress());
         assertEquals(iType, load.getAccessType());
         assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.SC_UNIFORM,
                         Tag.Spirv.MEM_NON_PRIVATE, Tag.Spirv.DEVICE), load.getTags());
@@ -62,7 +63,7 @@ public class VisitorOpsMemoryTest {
         String input = "%result = OpLoad %int %ptr MakePointerVisible %scope";
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Workgroup");
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
+        ScopedPointerVariable pointer = builder.mockVariable("%ptr", "%int_ptr");
         builder.mockConstant("%scope", "%int", 2);
 
         // when
@@ -71,7 +72,7 @@ public class VisitorOpsMemoryTest {
         // then
         Load load = (Load) builder.getLastEvent();
         assertNotNull(load);
-        assertEquals(memObj, load.getAddress());
+        assertEquals(pointer, load.getAddress());
         assertEquals(iType, load.getAccessType());
         assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.READ, Tag.Spirv.WORKGROUP,
                 Tag.Spirv.MEM_VISIBLE, Tag.Spirv.MEM_NON_PRIVATE,
@@ -108,7 +109,7 @@ public class VisitorOpsMemoryTest {
         String input = "OpStore %ptr %value";
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Uniform");
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
+        ScopedPointerVariable pointer = builder.mockVariable("%ptr", "%int_ptr");
         Expression value = builder.mockConstant("%value", "%int", 123);
 
         // when
@@ -117,7 +118,7 @@ public class VisitorOpsMemoryTest {
         // then
         Store store = (Store) builder.getLastEvent();
         assertNotNull(store);
-        assertEquals(memObj, store.getAddress());
+        assertEquals(pointer, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
         assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.SC_UNIFORM,
@@ -130,7 +131,7 @@ public class VisitorOpsMemoryTest {
         String input = "OpStore %ptr %value MakePointerAvailable %scope";
         IntegerType iType = builder.mockIntType("%int", 32);
         builder.mockPtrType("%int_ptr", "%int", "Workgroup");
-        MemoryObject memObj = builder.mockVariable("%ptr", "%int_ptr");
+        ScopedPointerVariable pointer = builder.mockVariable("%ptr", "%int_ptr");
         Expression value = builder.mockConstant("%value", "%int", 123);
         builder.mockConstant("%scope", "%int", 2);
 
@@ -140,7 +141,7 @@ public class VisitorOpsMemoryTest {
         // then
         Store store = (Store) builder.getLastEvent();
         assertNotNull(store);
-        assertEquals(memObj, store.getAddress());
+        assertEquals(pointer, store.getAddress());
         assertEquals(iType, store.getAccessType());
         assertEquals(value, store.getMemValue());
         assertEquals(Set.of(Tag.VISIBLE, Tag.MEMORY, Tag.WRITE, Tag.Spirv.WORKGROUP,
@@ -197,9 +198,9 @@ public class VisitorOpsMemoryTest {
         // then
         String[] variables = {"%v1", "%v2", "%v3", "%v4"};
         for (int i = 0; i < 4; i++) {
-            MemoryObject memObj = (MemoryObject) builder.getExpression(variables[i]);
-            assertNotNull(memObj);
-            assertEquals(TYPE_FACTORY.getMemorySizeInBytes(types[i]), memObj.size());
+            ScopedPointerVariable pointer = (ScopedPointerVariable) builder.getExpression(variables[i]);
+            assertNotNull(pointer);
+            assertEquals(TYPE_FACTORY.getMemorySizeInBytes(types[i]), pointer.getAddress().size());
         }
     }
 
@@ -270,33 +271,33 @@ public class VisitorOpsMemoryTest {
         Expression o3 = EXPR_FACTORY.makeArray(iType, oValues, true);
         Expression o4 = EXPR_FACTORY.makeConstruct(List.of(o1, o2, o3));
 
-        MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
+        ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%bool")), v1.size());
-        assertEquals(o1, v1.getInitialValue(0));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%bool")), v1.getAddress().size());
+        assertEquals(o1, v1.getAddress().getInitialValue(0));
 
-        MemoryObject v2 = (MemoryObject) builder.getExpression("%v2");
+        ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
         assertNotNull(v2);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%int")), v2.size());
-        assertEquals(o2, v2.getInitialValue(0));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%int")), v2.getAddress().size());
+        assertEquals(o2, v2.getAddress().getInitialValue(0));
 
-        MemoryObject v3 = (MemoryObject) builder.getExpression("%v3");
+        ScopedPointerVariable v3 = (ScopedPointerVariable) builder.getExpression("%v3");
         assertNotNull(v3);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%v3int")), v3.size());
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%v3int")), v3.getAddress().size());
         List<Expression> arrElements = o3.getOperands();
-        assertEquals(arrElements.get(0), v3.getInitialValue(0));
-        assertEquals(arrElements.get(1), v3.getInitialValue(4));
-        assertEquals(arrElements.get(2), v3.getInitialValue(8));
+        assertEquals(arrElements.get(0), v3.getAddress().getInitialValue(0));
+        assertEquals(arrElements.get(1), v3.getAddress().getInitialValue(4));
+        assertEquals(arrElements.get(2), v3.getAddress().getInitialValue(8));
 
-        MemoryObject v4 = (MemoryObject) builder.getExpression("%v4");
+        ScopedPointerVariable v4 = (ScopedPointerVariable) builder.getExpression("%v4");
         assertNotNull(v4);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%struct")), v4.size());
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(builder.getType("%struct")), v4.getAddress().size());
         List<Expression> structElements = o4.getOperands();
-        assertEquals(structElements.get(0), v4.getInitialValue(0));
-        assertEquals(structElements.get(1), v4.getInitialValue(1));
-        assertEquals(arrElements.get(0), v4.getInitialValue(5));
-        assertEquals(arrElements.get(1), v4.getInitialValue(9));
-        assertEquals(arrElements.get(2), v4.getInitialValue(13));
+        assertEquals(structElements.get(0), v4.getAddress().getInitialValue(0));
+        assertEquals(structElements.get(1), v4.getAddress().getInitialValue(1));
+        assertEquals(arrElements.get(0), v4.getAddress().getInitialValue(5));
+        assertEquals(arrElements.get(1), v4.getAddress().getInitialValue(9));
+        assertEquals(arrElements.get(2), v4.getAddress().getInitialValue(13));
     }
 
     @Test
@@ -352,25 +353,25 @@ public class VisitorOpsMemoryTest {
         Type ot2 = TYPE_FACTORY.getArrayType(ot1, 3);
         Type ot3 = TYPE_FACTORY.getAggregateType(List.of(iType, ot1));
 
-        MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot1), v1.size());
-        assertEquals(o1, v1.getInitialValue(0));
-        assertEquals(o2, v1.getInitialValue(4));
+        ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot1), v1.getAddress().size());
+        assertEquals(o1, v1.getAddress().getInitialValue(0));
+        assertEquals(o2, v1.getAddress().getInitialValue(4));
 
-        MemoryObject v2 = (MemoryObject) builder.getExpression("%v2");
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot2), v2.size());
-        assertEquals(o1, v2.getInitialValue(0));
-        assertEquals(o2, v2.getInitialValue(4));
-        assertEquals(o3, v2.getInitialValue(8));
-        assertEquals(o4, v2.getInitialValue(12));
-        assertEquals(o5, v2.getInitialValue(16));
-        assertEquals(o6, v2.getInitialValue(20));
+        ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot2), v2.getAddress().size());
+        assertEquals(o1, v2.getAddress().getInitialValue(0));
+        assertEquals(o2, v2.getAddress().getInitialValue(4));
+        assertEquals(o3, v2.getAddress().getInitialValue(8));
+        assertEquals(o4, v2.getAddress().getInitialValue(12));
+        assertEquals(o5, v2.getAddress().getInitialValue(16));
+        assertEquals(o6, v2.getAddress().getInitialValue(20));
 
-        MemoryObject v3 = (MemoryObject) builder.getExpression("%v3");
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot3), v3.size());
-        assertEquals(o1, v3.getInitialValue(0));
-        assertEquals(o1, v3.getInitialValue(4));
-        assertEquals(o2, v3.getInitialValue(8));
+        ScopedPointerVariable v3 = (ScopedPointerVariable) builder.getExpression("%v3");
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(ot3), v3.getAddress().size());
+        assertEquals(o1, v3.getAddress().getInitialValue(0));
+        assertEquals(o1, v3.getAddress().getInitialValue(4));
+        assertEquals(o2, v3.getAddress().getInitialValue(8));
     }
 
     @Test
@@ -389,11 +390,11 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        MemoryObject v = (MemoryObject) builder.getExpression("%v");
+        ScopedPointerVariable v = (ScopedPointerVariable) builder.getExpression("%v");
         assertNotNull(v);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(arr.getType()), v.size());
-        assertEquals(arr.getOperands().get(0), v.getInitialValue(0));
-        assertEquals(arr.getOperands().get(1), v.getInitialValue(4));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(arr.getType()), v.getAddress().size());
+        assertEquals(arr.getOperands().get(0), v.getAddress().getInitialValue(0));
+        assertEquals(arr.getOperands().get(1), v.getAddress().getInitialValue(4));
     }
 
     @Test
@@ -424,18 +425,18 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        MemoryObject v1 = (MemoryObject) builder.getExpression("%v1");
+        ScopedPointerVariable v1 = (ScopedPointerVariable) builder.getExpression("%v1");
         assertNotNull(v1);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a1.getType()), v1.size());
-        assertEquals(i1, v1.getInitialValue(0));
-        assertEquals(i2, v1.getInitialValue(8));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a1.getType()), v1.getAddress().size());
+        assertEquals(i1, v1.getAddress().getInitialValue(0));
+        assertEquals(i2, v1.getAddress().getInitialValue(8));
 
-        MemoryObject v2 = (MemoryObject) builder.getExpression("%v2");
+        ScopedPointerVariable v2 = (ScopedPointerVariable) builder.getExpression("%v2");
         assertNotNull(v2);
-        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a2.getType()), v2.size());
-        assertEquals(i1, v2.getInitialValue(0));
-        assertEquals(i2, v2.getInitialValue(8));
-        assertEquals(i3, v2.getInitialValue(16));
+        assertEquals(TYPE_FACTORY.getMemorySizeInBytes(a2.getType()), v2.getAddress().size());
+        assertEquals(i1, v2.getAddress().getInitialValue(0));
+        assertEquals(i2, v2.getAddress().getInitialValue(8));
+        assertEquals(i3, v2.getAddress().getInitialValue(16));
     }
 
     @Test
@@ -550,7 +551,7 @@ public class VisitorOpsMemoryTest {
         } catch (ParsingException e) {
             // then
             assertEquals("Mismatching value type for variable '%v', " +
-                    "expected 'bv32' but received 'bool'", e.getMessage());
+                    "expected '[2 x [2 x bv32]]' but received '[2 x [2 x bool]]'", e.getMessage());
         }
     }
 
@@ -582,7 +583,7 @@ public class VisitorOpsMemoryTest {
         } catch (ParsingException e) {
             // then
             assertEquals("Mismatching value type for variable '%v', " +
-                    "expected 'bv16' but received 'bv32'", e.getMessage());
+                    "expected '{ bool, { bool, bv16 } }' but received '{ bool, { bool, bv32 } }'", e.getMessage());
         }
     }
 
@@ -639,16 +640,16 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        IntBinaryExpr e1 = (IntBinaryExpr) builder.getExpression("%element");
+        IntBinaryExpr e1 = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
         assertEquals(TYPE_FACTORY.getArchType(), e1.getType());
-        assertEquals(builder.getExpression("%variable"), e1.getLeft());
+        assertEquals(makeOffset(i1, 4), e1.getRight());
 
-        IntBinaryExpr e2 = (IntBinaryExpr) e1.getRight();
-        assertEquals(makeOffset(i1, 16), e2.getLeft());
+        IntBinaryExpr e2 = (IntBinaryExpr) e1.getLeft();
+        assertEquals(makeOffset(i0, 8), e2.getRight());
 
-        IntBinaryExpr e3 = (IntBinaryExpr) e2.getRight();
-        assertEquals(makeOffset(i0, 8), e3.getLeft());
-        assertEquals(makeOffset(i1, 4), e3.getRight());
+        IntBinaryExpr e3 = (IntBinaryExpr) e2.getLeft();
+        assertEquals(makeOffset(i1, 16), e3.getRight());
+        assertEquals(builder.getExpression("%variable"), e3.getLeft());
     }
 
     @Test
@@ -685,13 +686,12 @@ public class VisitorOpsMemoryTest {
         parse(input);
 
         // then
-        IntBinaryExpr e1 = (IntBinaryExpr) builder.getExpression("%element");
+        IntBinaryExpr e1 = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
         assertEquals(TYPE_FACTORY.getArchType(), e1.getType());
-        assertEquals(builder.getExpression("%variable"), e1.getLeft());
-
-        IntBinaryExpr e2 = (IntBinaryExpr) e1.getRight();
-        assertEquals(EXPR_FACTORY.makeValue(15, i64Type), e2.getLeft());
-        assertEquals(EXPR_FACTORY.makeValue(3, i64Type), e2.getRight());
+        assertEquals(EXPR_FACTORY.makeValue(3, i64Type), e1.getRight());
+        IntBinaryExpr e2 = (IntBinaryExpr) e1.getLeft();
+        assertEquals(EXPR_FACTORY.makeValue(15, i64Type), e2.getRight());
+        assertEquals(builder.getExpression("%variable"), e2.getLeft());
     }
 
     @Test
@@ -720,7 +720,7 @@ public class VisitorOpsMemoryTest {
         new MockSpirvParser(input).spv().accept(new VisitorOpsMemory(builder));
 
         // then
-        IntBinaryExpr e = (IntBinaryExpr) builder.getExpression("%element");
+        IntBinaryExpr e = (IntBinaryExpr) ((ScopedPointer)builder.getExpression("%element")).getAddress();
         assertEquals(TYPE_FACTORY.getArchType(), e.getType());
         assertEquals(builder.getExpression("%variable"), e.getLeft());
         assertEquals(makeOffset(register, 4), e.getRight());
@@ -758,7 +758,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Unsupported non-constant offset in access chain '%element'",
+            assertEquals("Unsupported non-constant index in access chain '%element'",
                     e.getMessage());
         }
     }
@@ -789,7 +789,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Referring to a scalar type in access chain '%element'", e.getMessage());
+            assertEquals("Index is too deep in access chain '%element'", e.getMessage());
         }
     }
 
@@ -820,7 +820,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Invalid value type in access chain '%element', " +
+            assertEquals("Invalid result type in access chain '%element', " +
                     "expected 'bv16' but received 'bv32'", e.getMessage());
         }
     }
@@ -853,7 +853,7 @@ public class VisitorOpsMemoryTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Invalid value type in access chain '%element', " +
+            assertEquals("Invalid result type in access chain '%element', " +
                     "expected 'bv16' but received 'bv32'", e.getMessage());
         }
     }
