@@ -542,7 +542,7 @@ public class VisitorOpsMemoryTest {
         Expression arr1 = expressions.makeArray(bType, List.of(bool, bool), true);
         Expression arr2 = expressions.makeArray(a1Type, List.of(arr1, arr1), true);
 
-        builder.addConstant("%const", arr2);
+        builder.addExpression("%const", arr2);
 
         try {
             // when
@@ -574,7 +574,7 @@ public class VisitorOpsMemoryTest {
         Expression struct1 = expressions.makeConstruct(List.of(bool, int32));
         Expression struct2 = expressions.makeConstruct(List.of(bool, struct1));
 
-        builder.addConstant("%const", struct2);
+        builder.addExpression("%const", struct2);
 
         try {
             // when
@@ -631,10 +631,10 @@ public class VisitorOpsMemoryTest {
         Expression arr2 = expressions.makeArray(v2iType, List.of(arr1, arr1), true);
         Expression arr3 = expressions.makeArray(v2v2iType, List.of(arr2, arr2), true);
 
-        builder.addConstant("%const", arr3);
+        builder.addExpression("%const", arr3);
 
-        Expression i0 = builder.addConstant("%0", expressions.makeValue(0, iType));
-        Expression i1 = builder.addConstant("%1", expressions.makeValue(1, iType));
+        Expression i0 = builder.addExpression("%0", expressions.makeValue(0, iType));
+        Expression i1 = builder.addExpression("%1", expressions.makeValue(1, iType));
 
         // when
         parse(input);
@@ -677,10 +677,10 @@ public class VisitorOpsMemoryTest {
         Expression agg1 = expressions.makeConstruct(List.of(b, i16, i32, i64));
         Expression agg2 = expressions.makeConstruct(List.of(b, i16, i32, i64, agg1));
 
-        builder.addConstant("%const", agg2);
+        builder.addExpression("%const", agg2);
 
-        builder.addConstant("%2", expressions.makeValue(2, i32Type));
-        builder.addConstant("%4", expressions.makeValue(4, i32Type));
+        builder.addExpression("%2", expressions.makeValue(2, i32Type));
+        builder.addExpression("%4", expressions.makeValue(4, i32Type));
 
         // when
         parse(input);
@@ -711,7 +711,7 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(2, i32Type);
         Expression arr = expressions.makeArray(i32Type, List.of(i1, i2), true);
 
-        builder.addConstant("%const", arr);
+        builder.addExpression("%const", arr);
 
         // when
         builder.mockFunctionStart();
@@ -745,7 +745,7 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(2, i32Type);
         Expression arr = expressions.makeConstruct(List.of(i1, i2));
 
-        builder.addConstant("%const", arr);
+        builder.addExpression("%const", arr);
         builder.mockFunctionStart();
         builder.mockLabel();
         builder.mockRegister("%register", "%int32");
@@ -780,8 +780,8 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(2, iType);
         Expression arr = expressions.makeArray(iType, List.of(i1, i2), true);
 
-        builder.addConstant("%const", arr);
-        builder.addConstant("%0", expressions.makeValue(0, iType));
+        builder.addExpression("%const", arr);
+        builder.addExpression("%0", expressions.makeValue(0, iType));
 
         try {
             // when
@@ -811,8 +811,8 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(2, i32Type);
         Expression arr = expressions.makeArray(i32Type, List.of(i1, i2), true);
 
-        builder.addConstant("%const", arr);
-        builder.addConstant("%0", expressions.makeValue(0, i32Type));
+        builder.addExpression("%const", arr);
+        builder.addExpression("%0", expressions.makeValue(0, i32Type));
 
         try {
             // when
@@ -844,8 +844,8 @@ public class VisitorOpsMemoryTest {
         Expression i2 = expressions.makeValue(2, i32Type);
         Expression arr = expressions.makeConstruct(List.of(i1, i2));
 
-        builder.addConstant("%const", arr);
-        builder.addConstant("%1", expressions.makeValue(1, i32Type));
+        builder.addExpression("%const", arr);
+        builder.addExpression("%1", expressions.makeValue(1, i32Type));
 
         try {
             // when

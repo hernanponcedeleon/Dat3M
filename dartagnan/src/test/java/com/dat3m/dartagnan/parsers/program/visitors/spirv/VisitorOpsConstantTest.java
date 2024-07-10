@@ -31,7 +31,7 @@ public class VisitorOpsConstantTest {
                 %b2 = OpConstantTrue %bool
                 %b3 = OpConstantFalse %bool
                 %b4 = OpConstantFalse %bool
-                """, false);
+                """);
     }
 
     @Test
@@ -41,10 +41,10 @@ public class VisitorOpsConstantTest {
                 %b2 = OpSpecConstantTrue %bool
                 %b3 = OpSpecConstantFalse %bool
                 %b4 = OpSpecConstantFalse %bool
-                """, true);
+                """);
     }
 
-    private void doTestOpConstantBool(String input, boolean isSpec) {
+    private void doTestOpConstantBool(String input) {
         // given
         builder.mockBoolType("%bool");
 
@@ -57,10 +57,6 @@ public class VisitorOpsConstantTest {
         assertEquals(expressions.makeTrue(), data.get("%b2"));
         assertEquals(expressions.makeFalse(), data.get("%b3"));
         assertEquals(expressions.makeFalse(), data.get("%b4"));
-
-        for (String id : List.of("%b1", "%b2", "%b3", "%b4")) {
-            assertEquals(isSpec, builder.isSpecConstant(id));
-        }
     }
 
     @Test
@@ -71,7 +67,7 @@ public class VisitorOpsConstantTest {
                 %i3 = OpConstant %int16 10
                 %i4 = OpConstant %int32 10
                 %i5 = OpConstant %int32 20
-                """, false);
+                """);
     }
 
     @Test
@@ -82,10 +78,10 @@ public class VisitorOpsConstantTest {
                 %i3 = OpSpecConstant %int16 10
                 %i4 = OpSpecConstant %int32 10
                 %i5 = OpSpecConstant %int32 20
-                """, true);
+                """);
     }
 
-    private void doTestOpConstant(String input, boolean isSpec) {
+    private void doTestOpConstant(String input) {
         // given
         IntegerType iType16 = builder.mockIntType("%int16", 16);
         IntegerType iType32 = builder.mockIntType("%int32", 32);
@@ -100,10 +96,6 @@ public class VisitorOpsConstantTest {
         assertEquals(expressions.makeValue(10, iType16), data.get("%i3"));
         assertEquals(expressions.makeValue(10, iType32), data.get("%i4"));
         assertEquals(expressions.makeValue(20, iType32), data.get("%i5"));
-
-        for (String id : List.of("%i1", "%i2", "%i3", "%i4", "%i5")) {
-            assertEquals(isSpec, builder.isSpecConstant(id));
-        }
     }
 
     @Test
@@ -113,7 +105,7 @@ public class VisitorOpsConstantTest {
                 %b2 = OpConstantFalse %bool
                 %b3 = OpConstantTrue %bool
                 %b3v = OpConstantComposite %bool3v %b1 %b2 %b3
-                """, false);
+                """);
     }
 
     @Test
@@ -123,10 +115,10 @@ public class VisitorOpsConstantTest {
                 %b2 = OpSpecConstantFalse %bool
                 %b3 = OpSpecConstantTrue %bool
                 %b3v = OpSpecConstantComposite %bool3v %b1 %b2 %b3
-                """, true);
+                """);
     }
 
-    private void doTestOpConstantBoolean(String input, boolean isSpec) {
+    private void doTestOpConstantBoolean(String input) {
         // given
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool3v", "%bool", 3);
@@ -145,10 +137,6 @@ public class VisitorOpsConstantTest {
         assertEquals(bFalse, data.get("%b2"));
         assertEquals(bTrue, data.get("%b3"));
         assertEquals(b3v, data.get("%b3v"));
-
-        for (String id : List.of("%b1", "%b2", "%b3", "%b3v")) {
-            assertEquals(isSpec, builder.isSpecConstant(id));
-        }
     }
 
     @Test
@@ -159,7 +147,7 @@ public class VisitorOpsConstantTest {
                 %i3 = OpConstant %int 17
                 %i4 = OpConstant %int -123
                 %i4v = OpConstantComposite %int4v %i1 %i2 %i3 %i4
-                """, false);
+                """);
     }
 
     @Test
@@ -170,10 +158,10 @@ public class VisitorOpsConstantTest {
                 %i3 = OpSpecConstant %int 17
                 %i4 = OpSpecConstant %int -123
                 %i4v = OpSpecConstantComposite %int4v %i1 %i2 %i3 %i4
-                """, true);
+                """);
     }
 
-    private void doTestOpConstantInteger(String input, boolean isSpec) {
+    private void doTestOpConstantInteger(String input) {
         // given
         IntegerType iType = builder.mockIntType("%int", 64);
         builder.mockVectorType("%int4v", "%int", 4);
@@ -195,10 +183,6 @@ public class VisitorOpsConstantTest {
         assertEquals(i3, data.get("%i3"));
         assertEquals(i4, data.get("%i4"));
         assertEquals(i4v, data.get("%i4v"));
-
-        for (String id : List.of("%i1", "%i2", "%i3", "%i3", "%i4v")) {
-            assertEquals(isSpec, builder.isSpecConstant(id));
-        }
     }
 
     @Test
@@ -207,7 +191,7 @@ public class VisitorOpsConstantTest {
                 %b = OpConstantTrue %bool
                 %i = OpConstant %int 7
                 %s = OpConstantComposite %struct %b %i
-                """, false);
+                """);
     }
 
     @Test
@@ -216,10 +200,10 @@ public class VisitorOpsConstantTest {
                 %b = OpSpecConstantTrue %bool
                 %i = OpSpecConstant %int 7
                 %s = OpSpecConstantComposite %struct %b %i
-                """, true);
+                """);
     }
 
-    private void doTestOpConstantStruct(String input, boolean isSpec) {
+    private void doTestOpConstantStruct(String input) {
         // given
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);
@@ -238,10 +222,6 @@ public class VisitorOpsConstantTest {
         assertEquals(b, data.get("%b"));
         assertEquals(i, data.get("%i"));
         assertEquals(s, data.get("%s"));
-
-        for (String id : List.of("%b", "%i", "%s")) {
-            assertEquals(isSpec, builder.isSpecConstant(id));
-        }
     }
 
     @Test

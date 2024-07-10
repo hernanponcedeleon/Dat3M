@@ -22,10 +22,6 @@ public class SpecId implements Decoration {
         mapping.put(id, params[0]);
     }
 
-    public boolean hasValue(String id) {
-        return mapping.containsKey(id);
-    }
-
     public String getValue(String id) {
         return mapping.get(id);
     }

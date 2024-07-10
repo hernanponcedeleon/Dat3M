@@ -5,29 +5,22 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.DecorationType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperDecorations;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.ThreadCreator;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.MemoryTransformer;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers.RegisterTransformer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.expression.type.ScopedPointerType;
-import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
-import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
-import com.dat3m.dartagnan.program.event.functions.AbortIf;
-import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,8 +30,6 @@ import java.util.stream.IntStream;
 
 import static com.dat3m.dartagnan.program.Program.SpecificationType.FORALL;
 import static com.dat3m.dartagnan.program.Program.SpecificationType.NOT_EXISTS;
-import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
-import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 
 public class ProgramBuilderSpv {
 
@@ -46,7 +37,6 @@ public class ProgramBuilderSpv {
 
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
-    protected final Set<String> specConstants = new HashSet<>();
     protected final Map<String, Function> forwardFunctions = new HashMap<>();
     protected final Map<String, Label> labels = new HashMap<>();
     protected final Deque<Label> blocks = new ArrayDeque<>();
@@ -73,84 +63,49 @@ public class ProgramBuilderSpv {
         this.helperDecorations = new HelperDecorations(threadGrid);
     }
 
-    private void validateThreadGrid(List<Integer> threadGrid) {
-        if (threadGrid.size() != 4) {
-            throw new ParsingException("Thread grid must have 4 dimensions");
-        }
-        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
-            throw new ParsingException("Thread grid dimensions must be positive");
-        }
-        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
-            throw new ParsingException("Thread grid dimensions must be less than 128");
-        }
-    }
-
-    public List<Integer> getThreadGrid() {
-        return threadGrid;
-    }
-
-    public Set<String> getNextOps() {
-        return nextOps;
-    }
-
-    public void setNextOps(Set<String> nextOps) {
-        if (this.nextOps != null) {
-            throw new ParsingException("Illegal attempt to override next ops");
-        }
-        this.nextOps = nextOps;
-    }
-
-    public void clearNextOps() {
-        this.nextOps = null;
-    }
-
     public Program build() {
         validateBeforeBuild();
         preprocessBlocks();
-        Function entry = getEntryPointFunction();
         BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
         Set<ScopedPointerVariable> variables = expressions.values().stream()
                 .filter(ScopedPointerVariable.class::isInstance)
                 .map(v -> (ScopedPointerVariable) v)
                 .collect(Collectors.toSet());
-        MemoryTransformer transformer = new MemoryTransformer(program, builtIn, variables);
-        for (int z = 0; z < threadGrid.get(2); z++) {
-            for (int y = 0; y < threadGrid.get(1); y++) {
-                for (int x = 0; x < threadGrid.get(0); x++) {
-                    program.addThread(createThreadFromFunction(entry, transformer, x, y, z));
-                }
-            }
-        }
-        // TODO: Cleanup local memory, old functions and undefined expressions from local memory
-
+        new ThreadCreator(threadGrid, getEntryPointFunction(), variables, builtIn).create();
         checkSpecification();
         return program;
     }
 
-    public void setEntryPointId(String id) {
-        if (entryPointId != null) {
-            throw new ParsingException("Multiple entry points are not supported");
+    public Type getType(String name) {
+        Type type = types.get(name);
+        if (type == null) {
+            throw new ParsingException("Reference to undefined type '%s'", name);
         }
-        entryPointId = id;
+        return type;
     }
 
-    public void addAssertion(Program.SpecificationType type, Expression expression) {
-        Expression specification = program.getSpecification();
-        if (specification == null) {
-            program.setSpecification(type, expression);
-        } else if (type.equals(program.getSpecificationType())) {
-            if (program.getSpecificationType().equals(FORALL)) {
-                Expression result = ExpressionFactory.getInstance().makeAnd(specification, expression);
-                program.setSpecification(type, result);
-            } else if (program.getSpecificationType().equals(NOT_EXISTS)) {
-                Expression result = ExpressionFactory.getInstance().makeOr(specification, expression);
-                program.setSpecification(type, result);
-            } else {
-                throw new ParsingException("Multiline assertion is not supported for type " + type);
-            }
-        } else {
-            throw new ParsingException("Mixed assertion type is not supported");
+    public Type addType(String name, Type type) {
+        if (types.containsKey(name) || expressions.containsKey(name)) {
+            throw new ParsingException("Duplicated definition '%s'", name);
         }
+        types.put(name, type);
+        return type;
+    }
+
+    public Expression getExpression(String name) {
+        Expression expression = expressions.get(name);
+        if (expression == null) {
+            throw new ParsingException("Reference to undefined expression '%s'", name);
+        }
+        return expression;
+    }
+
+    public Expression addExpression(String name, Expression value) {
+        if (types.containsKey(name) || expressions.containsKey(name)) {
+            throw new ParsingException("Duplicated definition '%s'", name);
+        }
+        expressions.put(name, value);
+        return value;
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
@@ -249,22 +204,6 @@ public class ProgramBuilderSpv {
         return program.newConstant(type);
     }
 
-    public Type getType(String name) {
-        Type type = types.get(name);
-        if (type == null) {
-            throw new ParsingException("Reference to undefined type '%s'", name);
-        }
-        return type;
-    }
-
-    public Type addType(String name, Type type) {
-        if (types.containsKey(name) || expressions.containsKey(name)) {
-            throw new ParsingException("Duplicated definition '%s'", name);
-        }
-        types.put(name, type);
-        return type;
-    }
-
     public List<ScopedPointerVariable> getVariablesWithStorageClass(String storageClass) {
         return expressions.values().stream()
                 .filter(ScopedPointerVariable.class::isInstance)
@@ -301,22 +240,6 @@ public class ProgramBuilderSpv {
         throw new ParsingException("Expression '%s' is not an integer constant", id);
     }
 
-    public Expression getExpression(String name) {
-        Expression expression = expressions.get(name);
-        if (expression == null) {
-            throw new ParsingException("Reference to undefined expression '%s'", name);
-        }
-        return expression;
-    }
-
-    public Expression addExpression(String name, Expression value) {
-        if (types.containsKey(name) || expressions.containsKey(name)) {
-            throw new ParsingException("Duplicated definition '%s'", name);
-        }
-        expressions.put(name, value);
-        return value;
-    }
-
     public boolean hasInput(String id) {
         return inputs.containsKey(id);
     }
@@ -326,19 +249,6 @@ public class ProgramBuilderSpv {
             return inputs.get(id);
         }
         throw new ParsingException("Reference to undefined input variable '%s'", id);
-    }
-
-    public boolean isSpecConstant(String id) {
-        return specConstants.contains(id);
-    }
-
-    public Expression addConstant(String id, Expression expression) {
-        return addExpression(id, expression);
-    }
-
-    public Expression addSpecConstant(String id, Expression expression) {
-        specConstants.add(id);
-        return addExpression(id, expression);
     }
 
     public Register getRegister(String id) {
@@ -394,79 +304,6 @@ public class ProgramBuilderSpv {
         }
         throw new ParsingException("Attempt to reference current function " +
                 "outside of a function definition");
-    }
-
-    private Thread createThreadFromFunction(Function function, MemoryTransformer transformer, int x, int y, int z) {
-        int tid = x + y * threadGrid.get(0) + z * threadGrid.get(0) * threadGrid.get(1);
-        ScopeHierarchy scope = ScopeHierarchyForVulkan(0, z, y);
-        Thread thread = createThread(tid, scope, function);
-        copyEvents(tid, thread, function);
-
-        // Create thread-local variables
-        transformer.setHierarchy(List.of(x, y, z, 0));
-        thread.getEvents(RegReader.class).forEach(reader -> reader.transformExpressions(transformer));
-        return thread;
-    }
-
-    private Thread createThread(int id, ScopeHierarchy scope, Function function) {
-        String name = function.getName();
-        FunctionType type = function.getFunctionType();
-        List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
-        ThreadStart start = EventFactory.newThreadStart(null);
-        Thread thread = new Thread(name, type, args, id, start, scope, Set.of());
-        thread.copyDummyCountFrom(function);
-        return thread;
-    }
-
-    private void copyEvents(int id, Thread thread, Function function) {
-        // ------------------- Copy registers from target function into new thread -------------------
-
-        Map<Register, Register> mapping = function.getRegisters().stream()
-                .collect(Collectors.toMap(r -> r, r -> thread.getOrNewRegister(r.getName(), r.getType())));
-        ExprTransformer transformer = new RegisterTransformer(mapping);
-
-        // ------------------- Copy, update, and append the function body to the thread -------------------
-        List<Event> body = new ArrayList<>();
-        Map<Event, Event> copyMap = new HashMap<>();
-        function.getEvents().forEach(e -> body.add(copyMap.computeIfAbsent(e, Event::getCopy)));
-        for (Event copy : body) {
-            if (copy instanceof EventUser user) {
-                user.updateReferences(copyMap);
-            }
-            if (copy instanceof RegReader reader) {
-                reader.transformExpressions(transformer);
-            }
-            if (copy instanceof RegWriter regWriter) {
-                regWriter.setResultRegister(mapping.get(regWriter.getResultRegister()));
-            }
-        }
-        thread.getEntry().insertAfter(body);
-
-        // ------------------- Add end & return label -------------------
-        final Label threadReturnLabel = EventFactory.newLabel("RETURN_OF_T" + id);
-        final Label threadEnd = EventFactory.newLabel("END_OF_T" + id);
-        thread.append(threadReturnLabel);
-        thread.append(threadEnd);
-
-        // ------------------- Replace AbortIf, Return  -------------------
-        final Register returnRegister = function.hasReturnValue() ?
-                thread.newRegister("__retval", function.getFunctionType().getReturnType()) : null;
-        for (Event e : thread.getEvents()) {
-            if (e instanceof AbortIf abort) {
-                final Event jumpToEnd = EventFactory.newJump(abort.getCondition(), threadEnd);
-                jumpToEnd.addTags(abort.getTags());
-                jumpToEnd.copyAllMetadataFrom(abort);
-                abort.replaceBy(jumpToEnd);
-            } else if (e instanceof Return ret) {
-                final Expression retVal = ret.getValue().orElse(null);
-                final List<Event> replacement = eventSequence(
-                        returnRegister != null ? EventFactory.newLocal(returnRegister, retVal) : null,
-                        EventFactory.newGoto(threadReturnLabel)
-                );
-                replacement.forEach(ev -> ev.copyAllMetadataFrom(e));
-                e.replaceBy(replacement);
-            }
-        }
     }
 
     private void validateBeforeBuild() {
@@ -553,6 +390,9 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Cannot build the program, missing function definition '%s'", entryPointId);
         }
         if (expression instanceof Function function) {
+            if (function.hasReturnValue()) {
+                throw new ParsingException("Entry point function %s is not a void function", entryPointId);
+            }
             return function;
         }
         throw new ParsingException("Entry point expression '%s' must be a function", entryPointId);
@@ -576,5 +416,62 @@ public class ProgramBuilderSpv {
         Label endLabel = getOrCreateLabel(id);
         cfDefinitions.put(label, endLabel);
         return endLabel;
+    }
+
+    private void validateThreadGrid(List<Integer> threadGrid) {
+        if (threadGrid.size() != 4) {
+            throw new ParsingException("Thread grid must have 4 dimensions");
+        }
+        if (threadGrid.stream().anyMatch(i -> i <= 0)) {
+            throw new ParsingException("Thread grid dimensions must be positive");
+        }
+        if (threadGrid.stream().reduce(1, (a, b) -> a * b) > 128) {
+            throw new ParsingException("Thread grid dimensions must be less than 128");
+        }
+    }
+
+    public List<Integer> getThreadGrid() {
+        return threadGrid;
+    }
+
+    public Set<String> getNextOps() {
+        return nextOps;
+    }
+
+    public void setNextOps(Set<String> nextOps) {
+        if (this.nextOps != null) {
+            throw new ParsingException("Illegal attempt to override next ops");
+        }
+        this.nextOps = nextOps;
+    }
+
+    public void clearNextOps() {
+        this.nextOps = null;
+    }
+
+    public void setEntryPointId(String id) {
+        if (entryPointId != null) {
+            throw new ParsingException("Multiple entry points are not supported");
+        }
+        entryPointId = id;
+    }
+
+    public void addAssertion(Program.SpecificationType type, Expression expression) {
+        Expression specification = program.getSpecification();
+        if (specification == null) {
+            program.setSpecification(type, expression);
+        } else if (type.equals(program.getSpecificationType())) {
+            if (program.getSpecificationType().equals(FORALL)) {
+                Expression result = ExpressionFactory.getInstance().makeAnd(specification, expression);
+                program.setSpecification(type, result);
+            } else if (program.getSpecificationType().equals(NOT_EXISTS)) {
+                Expression result = ExpressionFactory.getInstance().makeOr(specification, expression);
+                program.setSpecification(type, result);
+            } else {
+                throw new ParsingException("Multiline assertion is not supported for type " + type);
+            }
+        } else {
+            throw new ParsingException("Mixed assertion type is not supported");
+        }
     }
 }

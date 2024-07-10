@@ -18,6 +18,7 @@ import com.dat3m.dartagnan.program.Register;
 import org.antlr.v4.runtime.RuleContext;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -25,6 +26,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
+    private final Set<String> specConstants = new HashSet<>();
     private final ProgramBuilderSpv builder;
     private final SpecId specIdDecorator;
     private final BuiltIn builtInDecorator;
@@ -37,24 +39,26 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitOpConstantTrue(SpirvParser.OpConstantTrueContext ctx) {
-        return builder.addConstant(ctx.idResult().getText(), expressions.makeTrue());
+        return builder.addExpression(ctx.idResult().getText(), expressions.makeTrue());
     }
 
     @Override
     public Expression visitOpSpecConstantTrue(SpirvParser.OpSpecConstantTrueContext ctx) {
         String id = ctx.idResult().getText();
-        return builder.addSpecConstant(id, makeBooleanSpecConstant(id, true));
+        specConstants.add(id);
+        return builder.addExpression(id, makeBooleanSpecConstant(id, true));
     }
 
     @Override
     public Expression visitOpConstantFalse(SpirvParser.OpConstantFalseContext ctx) {
-        return builder.addConstant(ctx.idResult().getText(), expressions.makeFalse());
+        return builder.addExpression(ctx.idResult().getText(), expressions.makeFalse());
     }
 
     @Override
     public Expression visitOpSpecConstantFalse(SpirvParser.OpSpecConstantFalseContext ctx) {
         String id = ctx.idResult().getText();
-        return builder.addSpecConstant(id, makeBooleanSpecConstant(id, false));
+        specConstants.add(id);
+        return builder.addExpression(id, makeBooleanSpecConstant(id, false));
     }
 
     @Override
@@ -62,7 +66,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
         String value = ctx.valueLiteralContextDependentNumber().getText();
-        return builder.addConstant(id, makeConstant(type, value));
+        return builder.addExpression(id, makeConstant(type, value));
     }
 
     private Expression makeConstant(Type type, String value) {
@@ -80,13 +84,15 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         if (type instanceof IntegerType iType) {
             Integer input = getInputValue(id);
             if (input != null) {
-                return builder.addSpecConstant(id, expressions.makeValue(input, iType));
+                specConstants.add(id);
+                return builder.addExpression(id, expressions.makeValue(input, iType));
             }
             String value = specIdDecorator.getValue(id);
             if (value == null) {
                 value = ctx.valueLiteralContextDependentNumber().getText();
             }
-            return builder.addSpecConstant(id, expressions.makeValue(Long.parseLong(value), iType));
+            specConstants.add(id);
+            return builder.addExpression(id, expressions.makeValue(Long.parseLong(value), iType));
         }
         throw new ParsingException("Illegal constant type '%s'", type);
     }
@@ -97,12 +103,12 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         Type type = builder.getType(ctx.idResultType().getText());
         List<String> elementIds = ctx.constituents().stream().map(RuleContext::getText).toList();
         for (String elementId : elementIds) {
-            if (builder.isSpecConstant(elementId)) {
+            if (specConstants.contains(elementId)) {
                 throw new ParsingException("Reference to spec constant '%s' " +
                         "from base composite constant '%s'", elementId, id);
             }
         }
-        return builder.addConstant(id, makeConstantComposite(id, type, elementIds));
+        return builder.addExpression(id, makeConstantComposite(id, type, elementIds));
     }
 
     @Override
@@ -111,7 +117,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         Type type = builder.getType(ctx.idResultType().getText());
         List<String> elementIds = ctx.constituents().stream().map(RuleContext::getText).toList();
         for (String elementId : elementIds) {
-            if (!builder.isSpecConstant(elementId)) {
+            if (!specConstants.contains(elementId)) {
                 throw new ParsingException("Reference to base constant '%s' " +
                         "from spec composite constant '%s'", elementId, id);
             }
@@ -120,7 +126,8 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         if (value == null) {
             value = makeConstantComposite(id, type, elementIds);
         }
-        return builder.addSpecConstant(id, value);
+        specConstants.add(id);
+        return builder.addExpression(id, value);
     }
 
     @Override

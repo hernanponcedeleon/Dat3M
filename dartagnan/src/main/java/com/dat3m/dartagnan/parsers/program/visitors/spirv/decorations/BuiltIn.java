@@ -20,7 +20,7 @@ public class BuiltIn implements Decoration {
 
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
-    public static final int GRID_SIZE = 4;
+    private static final int GRID_SIZE = 4;
     // grid(0) - number of threads in a subgroup
     // grid(1) - number of subgroups in a local workgroup
     //      assuming sgSize <= wgSize and a flat workgroup

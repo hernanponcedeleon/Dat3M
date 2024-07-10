@@ -12,27 +12,17 @@ public enum DecorationType {
     SPEC_ID;
 
     public static DecorationType fromString(String type) {
-        switch (type) {
-            case "ArrayStride":
-                return ARRAY_STRIDE;
-            case "Binding":
-                return BINDING;
-            case "Block":
-                return BLOCK;
-            case "BufferBlock":
-                return BUFFER_BLOCK;
-            case "BuiltIn":
-                return BUILT_IN;
-            case "Coherent":
-                return COHERENT;
-            case "DescriptorSet":
-                return DESCRIPTOR_SET;
-            case "NoPerspective":
-                return NO_PERSPECTIVE;
-            case "SpecId":
-                return SPEC_ID;
-            default:
-                throw new IllegalArgumentException("Unsupported decoration type " + type);
-        }
+        return switch (type) {
+            case "ArrayStride" -> ARRAY_STRIDE;
+            case "Binding" -> BINDING;
+            case "Block" -> BLOCK;
+            case "BufferBlock" -> BUFFER_BLOCK;
+            case "BuiltIn" -> BUILT_IN;
+            case "Coherent" -> COHERENT;
+            case "DescriptorSet" -> DESCRIPTOR_SET;
+            case "NoPerspective" -> NO_PERSPECTIVE;
+            case "SpecId" -> SPEC_ID;
+            default -> throw new IllegalArgumentException("Unsupported decoration type " + type);
+        };
     }
 }
