@@ -37,7 +37,7 @@
         <cvc4.version>1.8-prerelease-2020-06-24-g7825d8f28</cvc4.version>
         <cvc5.version>1.0.5-g4cb2ab9eb</cvc5.version>
         <opensmt.version>2.6.0-g2f72cc0e</opensmt.version>
-        <yices2-api.version>4.1.0-1-gc58fe5b4</yices2-api.version>
+        <yices2-api.version>4.1.1-734-g3732f7e08</yices2-api.version>
         <yices2.version>2.6.2-396-g194350c1</yices2.version>
         <z3.version>4.12.5</z3.version>
 
