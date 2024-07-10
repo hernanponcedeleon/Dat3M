@@ -4,8 +4,6 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 public class Location extends LeafExpressionBase<Type> {
 

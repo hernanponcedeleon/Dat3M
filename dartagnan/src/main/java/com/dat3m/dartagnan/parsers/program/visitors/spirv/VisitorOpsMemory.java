@@ -83,12 +83,12 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             Type type = pType.getPointedType();
             Expression value = getOpVariableInitialValue(ctx, type);
             if (value != null) {
-                if (!TypeFactory.isExactTypeOf(value.getType(), type)) {
+                if (!TypeFactory.isStaticTypeOf(value.getType(), type)) {
                     throw new ParsingException("Mismatching value type for variable '%s', " +
                             "expected '%s' but received '%s'", id, type, value.getType());
                 }
                 type = value.getType();
-            } else if (!TypeFactory.isExactType(type)) {
+            } else if (!TypeFactory.isStaticType(type)) {
                 throw new ParsingException("Missing initial value for runtime variable '%s'", id);
             } else {
                 value = builder.newUndefinedValue(type);
@@ -188,7 +188,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
                     .map(c -> builder.getExpression(c.getText()))
                     .toList();
             Type exactResultType = HelperAccessChain.getMemberType(id, baseType, indexes);
-            if (!TypeFactory.isExactTypeOf(exactResultType, resultType)) {
+            if (!TypeFactory.isStaticTypeOf(exactResultType, resultType)) {
                 throw new ParsingException("Invalid result type in access chain '%s', " +
                         "expected '%s' but received '%s'", id, resultType, exactResultType);
             }

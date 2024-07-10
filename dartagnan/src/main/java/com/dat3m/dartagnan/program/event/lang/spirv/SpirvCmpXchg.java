@@ -65,7 +65,6 @@ public class SpirvCmpXchg extends RMWCmpXchgBase {
     }
 
     private void validateMemoryOrder() {
-        // TODO: It allows illegal combination eq RELEASE and neq ACQUIRE
         if (mo.equals(RELEASE) || mo.equals(ACQ_REL)) {
             throw new IllegalArgumentException(
                     String.format("%s cannot have unequal memory order '%s'",

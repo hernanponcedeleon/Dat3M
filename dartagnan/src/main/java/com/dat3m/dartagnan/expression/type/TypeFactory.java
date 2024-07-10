@@ -139,50 +139,50 @@ public final class TypeFactory {
         return decomposition;
     }
 
-    public static boolean isExactType(Type type) {
+    public static boolean isStaticType(Type type) {
         if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
             return true;
         }
         if (type instanceof ArrayType aType) {
-            return aType.hasKnownNumElements() && isExactType(aType.getElementType());
+            return aType.hasKnownNumElements() && isStaticType(aType.getElementType());
         }
         if (type instanceof AggregateType aType) {
             for (Type elType : aType.getDirectFields()) {
-                if (!isExactType(elType)) {
+                if (!isStaticType(elType)) {
                     return false;
                 }
             }
             return true;
         }
-        throw new UnsupportedOperationException("Cannot deduce fixed size of type " + type);
+        throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }
 
-    public static boolean isExactTypeOf(Type exactType, Type genericType) {
-        if (exactType.equals(genericType)) {
+    public static boolean isStaticTypeOf(Type staticType, Type genericType) {
+        if (staticType.equals(genericType)) {
             return true;
         }
-        if (exactType instanceof AggregateType elExactType && genericType instanceof AggregateType elGenericSizeType) {
-            int size = elExactType.getDirectFields().size();
-            if (size != elGenericSizeType.getDirectFields().size()) {
+        if (staticType instanceof AggregateType aStaticType && genericType instanceof AggregateType aGenericSizeType) {
+            int size = aStaticType.getDirectFields().size();
+            if (size != aGenericSizeType.getDirectFields().size()) {
                 return false;
             }
             for (int i = 0; i < size; i++) {
-                if (!isExactTypeOf(elExactType.getDirectFields().get(i), elGenericSizeType.getDirectFields().get(i))) {
+                if (!isStaticTypeOf(aStaticType.getDirectFields().get(i), aGenericSizeType.getDirectFields().get(i))) {
                     return false;
                 }
             }
             return true;
         }
-        if (exactType instanceof ArrayType elExactType && genericType instanceof ArrayType elGenericType) {
-            int countExact = elExactType.getNumElements();
-            int countGeneric = elGenericType.getNumElements();
-            if (countExact != countGeneric && (countGeneric != -1 || countExact <= 0)) {
+        if (staticType instanceof ArrayType aStaticType && genericType instanceof ArrayType aGenericType) {
+            int countStatic = aStaticType.getNumElements();
+            int countGeneric = aGenericType.getNumElements();
+            if (countStatic != countGeneric && (countGeneric != -1 || countStatic <= 0)) {
                 return false;
             }
-            return isExactTypeOf(elExactType.getElementType(), elGenericType.getElementType());
+            return isStaticTypeOf(aStaticType.getElementType(), aGenericType.getElementType());
         }
-        if (exactType instanceof ScopedPointerType pExactType && genericType instanceof ScopedPointerType pGenericType) {
-            return isExactTypeOf(pExactType.getPointedType(), pGenericType.getPointedType());
+        if (staticType instanceof ScopedPointerType pStaticType && genericType instanceof ScopedPointerType pGenericType) {
+            return isStaticTypeOf(pStaticType.getPointedType(), pGenericType.getPointedType());
         }
         return false;
     }
