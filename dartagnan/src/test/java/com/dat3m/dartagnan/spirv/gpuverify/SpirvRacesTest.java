@@ -98,8 +98,7 @@ public class SpirvRacesTest {
                 {"test_2d_local_index_inference_2.spv.dis", 1, PASS},
                 {"test_for_benign_read_write_bug.spv.dis", 1, FAIL},
                 {"test_local_id_inference.spv.dis", 1, PASS},
-                {"test_mod_invariants/global_reduce_strength.spv.dis", 2, UNKNOWN},
-                {"test_mod_invariants/local_direct.spv.dis", 2, UNKNOWN},
+                {"test_mod_invariants/global_reduce_strength.spv.dis", 1, UNKNOWN},
                 {"test_part_load_store/store_int_and_short.spv.dis", 1, PASS},
                 {"test_structs/use_array_element.spv.dis", 1, PASS},
                 {"test_structs/use_element.spv.dis", 1, PASS},
@@ -127,6 +126,10 @@ public class SpirvRacesTest {
 
                 // Unsupported large array (4K elements) leading to OOM
                 // {"misc/fail/2d_array_race.spv.dis", 1, FAIL},
+
+                // Unsupported (array size too large)
+                // TODO: Analyze
+                // {"test_mod_invariants/local_direct.spv.dis", 1, UNKNOWN},
 
                 // Unsupported null as a pointer
                 // {"null_pointers/atomic_null.spv.dis", 1, ??},

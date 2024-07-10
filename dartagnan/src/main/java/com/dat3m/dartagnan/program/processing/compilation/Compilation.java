@@ -81,10 +81,11 @@ public class Compilation implements ProgramProcessor {
             logger.warn("Skipped compilation: Program is already compiled to {}", program.getArch());
             return;
         }
+        // TODO: Refactor processors such that compiler is resolved
+        //  based on the source language and target
         if (program.getFormat() == Program.SourceLanguage.SPV) {
             compiler = new VisitorSpirvVulkan();
         }
-
         program.getThreads().forEach(this::run);
         program.getFunctions().forEach(this::run);
         program.setArch(target);
@@ -111,8 +112,6 @@ public class Compilation implements ProgramProcessor {
             deleted properly!
 
      */
-    // TODO: Refactoring. This shouldn't be used from outside,
-    //  and the compiler should be resolved when program is passed
     public List<Event> getCompilationResult(Event toBeCompiled) {
         compiler.funcToBeCompiled = toBeCompiled.getFunction();
         return toBeCompiled.accept(compiler);
