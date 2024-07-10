@@ -100,7 +100,7 @@ public interface EventVisitor<T> {
     default T visitEndAtomic(EndAtomic e) { return visitEvent(e); }
 
     // ------------------ GPU Events ------------------
-    default T visitFenceWithId(FenceWithId e) { return visitEvent(e); }
+    default T visitControlBarrier(ControlBarrier e) { return visitEvent(e); }
     default T visitPtxRedOp(PTXRedOp e) { return visitMemEvent(e); }
     default T visitPtxAtomOp(PTXAtomOp e) { return visitMemEvent(e); }
     default T visitPtxAtomCAS(PTXAtomCAS e) { return visitMemEvent(e); }

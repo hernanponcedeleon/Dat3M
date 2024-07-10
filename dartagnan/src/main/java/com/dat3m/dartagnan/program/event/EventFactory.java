@@ -126,8 +126,8 @@ public class EventFactory {
         return fence;
     }
 
-    public static FenceWithId newFenceWithId(String name, Expression fenceId) {
-        return new FenceWithId(name, fenceId);
+    public static ControlBarrier newControlBarrier(String name, Expression fenceId) {
+        return new ControlBarrier(name, fenceId);
     }
 
     public static Init newInit(MemoryObject base, int offset) {

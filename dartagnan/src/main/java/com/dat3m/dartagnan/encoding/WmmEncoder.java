@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
@@ -627,21 +627,21 @@ public class WmmEncoder implements Encoder {
             EncodingContext.EdgeEncoder encoder = context.edge(rel);
             EventGraph mustSet = ra.getKnowledge(rel).getMustSet();
             encodeSets.get(rel).apply((e1, e2) -> {
-                FenceWithId f1 = (FenceWithId) e1;
-                FenceWithId f2 = (FenceWithId) e2;
+                ControlBarrier b1 = (ControlBarrier) e1;
+                ControlBarrier b2 = (ControlBarrier) e2;
                 BooleanFormula sameId;
                 // If they are in must, they are guaranteed to have the same id
-                if (mustSet.contains(f1, f2)) {
+                if (mustSet.contains(b1, b2)) {
                     sameId = bmgr.makeTrue();
                 } else {
-                    Expression id1 = f1.getFenceID();
-                    Expression id2 = f2.getFenceID();
-                    sameId = context.equal(context.encodeExpressionAt(id1, f1),
-                            context.encodeExpressionAt(id2, f2));
+                    Expression id1 = b1.getId();
+                    Expression id2 = b2.getId();
+                    sameId = context.equal(context.encodeExpressionAt(id1, b1),
+                            context.encodeExpressionAt(id2, b2));
                 }
                 enc.add(bmgr.equivalence(
-                        encoder.encode(f1, f2),
-                        bmgr.and(execution(f1, f2), sameId)));
+                        encoder.encode(b1, b2),
+                        bmgr.and(execution(b1, b2), sameId)));
             });
             return null;
         }

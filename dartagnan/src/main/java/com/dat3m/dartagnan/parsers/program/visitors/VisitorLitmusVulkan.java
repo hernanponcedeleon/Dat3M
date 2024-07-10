@@ -337,24 +337,24 @@ public class VisitorLitmusVulkan extends LitmusVulkanBaseVisitor<Object> {
         String scope = (ctx.scope() != null) ? ctx.scope().content : "";
         List<String> storageClassSemantics = (List<String>) ctx.storageClassSemanticList().accept(this);
         List<String> avvisSemantics = (List<String>) ctx.avvisSemanticList().accept(this);
-        Expression fenceId = (Expression) ctx.value().accept(this);
-        String fenceIdString = ctx.getText().replace(fenceId.toString(), "");
-        Event fence = EventFactory.newFenceWithId(fenceIdString.toLowerCase(), fenceId);
-        fence.addTags(Tag.Vulkan.CBAR);
+        Expression barrierId = (Expression) ctx.value().accept(this);
+        String barrierIdString = ctx.getText().replace(barrierId.toString(), "");
+        Event barrier = EventFactory.newControlBarrier(barrierIdString.toLowerCase(), barrierId);
+        barrier.addTags(Tag.Vulkan.CBAR);
         if (!mo.equals(Tag.Vulkan.ACQUIRE) && !mo.equals(Tag.Vulkan.RELEASE) && !mo.equals(Tag.Vulkan.ACQ_REL)) {
-            fence.removeTags(Tag.FENCE);
+            barrier.removeTags(Tag.FENCE);
         }
         if (!mo.isEmpty()) {
-            fence.addTags(mo);
+            barrier.addTags(mo);
         }
         if (!avvis.isEmpty()) {
-            fence.addTags(avvis);
+            barrier.addTags(avvis);
         }
         if (!scope.isEmpty()) {
-            fence.addTags(scope);
+            barrier.addTags(scope);
         }
-        tagControl(fence, false, mo, avvis, scope, "", storageClassSemantics, avvisSemantics);
-        return programBuilder.addChild(mainThread, fence);
+        tagControl(barrier, false, mo, avvis, scope, "", storageClassSemantics, avvisSemantics);
+        return programBuilder.addChild(mainThread, barrier);
     }
 
     @Override

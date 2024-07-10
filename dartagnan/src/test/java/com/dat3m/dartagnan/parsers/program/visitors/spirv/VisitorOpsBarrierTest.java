@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuild
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.Tag;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import org.junit.Test;
 
@@ -27,7 +27,7 @@ public class VisitorOpsBarrierTest {
         builder.mockConstant("%uint_264", "%uint", 264);
 
         // when
-        FenceWithId event = (FenceWithId) visit(input);
+        ControlBarrier event = (ControlBarrier) visit(input);
 
         // then
         assertEquals(Set.of(Tag.VISIBLE, Tag.FENCE, Tag.Spirv.CONTROL, Tag.Spirv.ACQ_REL,
@@ -43,7 +43,7 @@ public class VisitorOpsBarrierTest {
         builder.mockConstant("%uint_2", "%uint", 2);
 
         // when
-        FenceWithId event = (FenceWithId) visit(input);
+        ControlBarrier event = (ControlBarrier) visit(input);
 
         // then
         assertEquals(Set.of(Tag.VISIBLE, Tag.Spirv.CONTROL, Tag.Spirv.WORKGROUP), event.getTags());

@@ -12,46 +12,46 @@ import org.sosy_lab.java_smt.api.BooleanFormula;
 import java.util.HashSet;
 import java.util.Set;
 
-public class FenceWithId extends GenericVisibleEvent implements RegReader {
-    private Expression fenceID;
+public class ControlBarrier extends GenericVisibleEvent implements RegReader {
+    private Expression id;
 
-    public FenceWithId(String name, Expression fenceID) {
+    public ControlBarrier(String name, Expression id) {
         super(name, Tag.FENCE);
-        this.fenceID = fenceID;
+        this.id = id;
     }
 
-    private FenceWithId(FenceWithId other) {
+    private ControlBarrier(ControlBarrier other) {
         super(other);
-        this.fenceID = other.fenceID;
+        this.id = other.id;
     }
 
-    public Expression getFenceID() {
-        return fenceID;
+    public Expression getId() {
+        return id;
     }
 
     @Override
     public void transformExpressions(ExpressionVisitor<? extends Expression> exprTransformer) {
-        this.fenceID = fenceID.accept(exprTransformer);
+        this.id = id.accept(exprTransformer);
     }
 
     @Override
     public Set<Register.Read> getRegisterReads() {
-        return Register.collectRegisterReads(fenceID, Register.UsageType.OTHER, new HashSet<>());
+        return Register.collectRegisterReads(id, Register.UsageType.OTHER, new HashSet<>());
     }
 
     @Override
     public String defaultString() {
-        return String.format("%s := fence_id[%s]", name, fenceID);
+        return String.format("%s := barrier_id[%s]", name, id);
     }
 
     @Override
-    public FenceWithId getCopy() {
-        return new FenceWithId(this);
+    public ControlBarrier getCopy() {
+        return new ControlBarrier(this);
     }
 
     @Override
     public <T> T accept(EventVisitor<T> visitor) {
-        return visitor.visitFenceWithId(this);
+        return visitor.visitControlBarrier(this);
     }
 
     @Override

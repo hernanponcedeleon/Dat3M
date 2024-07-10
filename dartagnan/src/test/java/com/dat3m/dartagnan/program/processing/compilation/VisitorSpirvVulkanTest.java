@@ -488,7 +488,7 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expected) {
         // given
-        FenceWithId e = EventFactory.newFenceWithId("cbar", mock(Expression.class));
+        ControlBarrier e = EventFactory.newControlBarrier("cbar", mock(Expression.class));
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {
             e.addTags(spvTags);
@@ -497,11 +497,11 @@ public class VisitorSpirvVulkanTest {
         }
 
         // when
-        List<Event> seq = visitor.visitFenceWithId(e);
+        List<Event> seq = visitor.visitControlBarrier(e);
 
         // then
         assertEquals(1, seq.size());
-        FenceWithId barrier = (FenceWithId) seq.get(0);
+        ControlBarrier barrier = (ControlBarrier) seq.get(0);
         Set<String> baseTags = Set.of(Tag.VISIBLE, Tag.Vulkan.CBAR);
         assertEquals(Sets.union(baseTags, expected), barrier.getTags());
     }

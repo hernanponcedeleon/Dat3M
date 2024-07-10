@@ -30,16 +30,16 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
         if (!ctx.execution().getText().equals(ctx.memory().getText())) {
             throw new ParsingException("Unequal scopes in OpControlBarrier are not supported");
         }
-        Expression barId = EXPR_FACTORY.makeValue(nextBarrierId++, barrierIdType);
-        Event fence = EventFactory.newFenceWithId("cbar", barId);
-        fence.addTags(Tag.Spirv.CONTROL);
-        fence.addTags(builder.getScope(ctx.execution().getText()));
+        Expression barrierId = EXPR_FACTORY.makeValue(nextBarrierId++, barrierIdType);
+        Event barrier = EventFactory.newControlBarrier("cbar", barrierId);
+        barrier.addTags(Tag.Spirv.CONTROL);
+        barrier.addTags(builder.getScope(ctx.execution().getText()));
         if (builder.isSemanticsNone(ctx.semantics().getText())) {
-            fence.removeTags(Tag.FENCE);
+            barrier.removeTags(Tag.FENCE);
         } else {
-            fence.addTags(builder.getSemantics(ctx.semantics().getText()));
+            barrier.addTags(builder.getSemantics(ctx.semantics().getText()));
         }
-        return builder.addEvent(fence);
+        return builder.addEvent(barrier);
     }
 
     @Override

@@ -13,7 +13,7 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
@@ -84,18 +84,18 @@ public class ProgramEncoder implements Encoder {
     public BooleanFormula encodeControlBarrier() {
         BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
-        Map<Integer, List<FenceWithId>> groups = context.getTask().getProgram().getThreads().stream()
+        Map<Integer, List<ControlBarrier>> groups = context.getTask().getProgram().getThreads().stream()
                 .filter(Thread::hasScope)
                 .collect(groupingBy(this::getWorkgroupId,
-                        flatMapping(t -> t.getEvents(FenceWithId.class).stream(), toList())));
+                        flatMapping(t -> t.getEvents(ControlBarrier.class).stream(), toList())));
 
-        for (List<FenceWithId> events : groups.values()) {
-            for (FenceWithId e1 : events) {
-                Expression id1 = e1.getFenceID();
+        for (List<ControlBarrier> events : groups.values()) {
+            for (ControlBarrier e1 : events) {
+                Expression id1 = e1.getId();
                 BooleanFormula allCF = context.controlFlow(e1);
-                for (FenceWithId e2 : events) {
+                for (ControlBarrier e2 : events) {
                     if (!e1.getThread().equals(e2.getThread())) {
-                        Expression id2 = e2.getFenceID();
+                        Expression id2 = e2.getId();
                         BooleanFormula sameId = context.equal(context.encodeExpressionAt(id1, e1), context.encodeExpressionAt(id2, e2));
                         BooleanFormula cf = bmgr.or(context.controlFlow(e2), bmgr.not(sameId));
                         allCF = bmgr.and(allCF, cf);
@@ -157,7 +157,7 @@ public class ProgramEncoder implements Encoder {
                 BooleanFormula cfCond = context.controlFlow(pred);
                 if (pred instanceof CondJump jump) {
                     cfCond = bmgr.and(cfCond, bmgr.not(context.jumpCondition(jump)));
-                } else if (pred instanceof FenceWithId) {
+                } else if (pred instanceof ControlBarrier) {
                     cfCond = bmgr.and(cfCond, context.execution(pred));
                 }
 

@@ -450,7 +450,7 @@ public class PropertyEncoder implements Encoder {
             // Compute "stuckness" encoding for all threads
             final Map<Thread, BooleanFormula> isStuckMap = Maps.toMap(program.getThreads(), t -> {
                 List<BooleanFormula> stuckAtBarrier = t.getEvents().stream()
-                        .filter(FenceWithId.class::isInstance)
+                        .filter(ControlBarrier.class::isInstance)
                         .map(e -> bmgr.and(context.controlFlow(e), bmgr.not(context.execution(e))))
                         .toList();
                 return bmgr.or(bmgr.or(stuckAtBarrier), this.generateStucknessEncoding(spinloopsMap.get(t), context));

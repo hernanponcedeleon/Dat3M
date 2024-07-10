@@ -7,7 +7,7 @@ import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanCmpXchg;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMW;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWExtremum;
 import com.dat3m.dartagnan.program.event.arch.vulkan.VulkanRMWOp;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.GenericVisibleEvent;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.Store;
@@ -131,12 +131,12 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
     }
 
     @Override
-    public List<Event> visitFenceWithId(FenceWithId e) {
-        Event fence = EventFactory.newFenceWithId(e.getName(), e.getFenceID());
-        fence.removeTags(fence.getTags());
-        fence.addTags(toVulkanTags(e.getTags()));
-        replaceAcqRelTag(fence, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE);
-        return eventSequence(fence);
+    public List<Event> visitControlBarrier(ControlBarrier e) {
+        Event barrier = EventFactory.newControlBarrier(e.getName(), e.getId());
+        barrier.removeTags(barrier.getTags());
+        barrier.addTags(toVulkanTags(e.getTags()));
+        replaceAcqRelTag(barrier, Tag.Vulkan.ACQUIRE, Tag.Vulkan.RELEASE);
+        return eventSequence(barrier);
     }
 
     private Set<String> toVulkanTags(Set<String> tags) {

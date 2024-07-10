@@ -5,7 +5,7 @@ import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.FenceWithId;
+import com.dat3m.dartagnan.program.event.core.ControlBarrier;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
@@ -144,8 +144,8 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
                     b2.parents.add(branch);
                     return branch;
                 }
-            } else if (succ instanceof FenceWithId fence) {
-                final Branch succBranch = computeBranchDecomposition(fence.getSuccessor(), event2BranchMap, branches);
+            } else if (succ instanceof ControlBarrier barrier) {
+                final Branch succBranch = computeBranchDecomposition(barrier.getSuccessor(), event2BranchMap, branches);
                 branch.children.add(succBranch);
                 succBranch.parents.add(branch);
                 return branch;
@@ -288,7 +288,7 @@ public class BranchEquivalence extends AbstractEquivalence<Event> {
     private boolean isEndingWithControlBarrier(Branch branch) {
         if (!branch.events.isEmpty()) {
             int last = branch.events.size() - 1;
-            return branch.events.get(last) instanceof FenceWithId;
+            return branch.events.get(last) instanceof ControlBarrier;
         }
         return false;
     }
