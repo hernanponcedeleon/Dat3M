@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
 
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
 
@@ -67,7 +67,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return forType(id, typeCtx.getText(), bType -> {
             Expression op1 = getOperandInteger(id, op1Ctx.getText());
             Expression op2 = getOperandInteger(id, op2Ctx.getText());
-            return EXPR_FACTORY.makeBinary(op1, op, op2);
+            return expressions.makeBinary(op1, op, op2);
         });
     }
 
@@ -81,7 +81,7 @@ public class VisitorOpsBits extends SpirvBaseVisitor<Event> {
         return forType(id, typeCtx.getText(), bType -> {
             Expression op1 = getOperandInteger(id, op1Ctx.getText());
             Expression op2 = getOperandInteger(id, op2Ctx.getText());
-            return EXPR_FACTORY.makeBinary(op1, op, op2);
+            return expressions.makeBinary(op1, op, op2);
         });
     }
 

@@ -23,7 +23,7 @@ import static com.dat3m.dartagnan.expression.integers.IntUnaryOp.MINUS;
 
 public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
 
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
 
@@ -71,7 +71,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
         return forType(id, typeCtx.getText(), iType -> {
             Expression left = builder.getExpression(opCtx.getText());
             if (iType.equals(left.getType())) {
-                return EXPR_FACTORY.makeUnary(op, left);
+                return expressions.makeUnary(op, left);
             }
             throw new ParsingException("Illegal definition for '%s', " +
                     "types do not match: '%s' is '%s' and '%s' is '%s'",
@@ -91,7 +91,7 @@ public class VisitorOpsArithmetic extends SpirvBaseVisitor<Event> {
             Expression op1 = builder.getExpression(op1Ctx.getText());
             Expression op2 = builder.getExpression(op2Ctx.getText());
             if (iType.equals(op1.getType()) && op1.getType().equals(op2.getType())) {
-                return EXPR_FACTORY.makeBinary(op1, op, op2);
+                return expressions.makeBinary(op1, op, op2);
             }
             throw new ParsingException("Illegal definition for '%s', " +
                     "types do not match: '%s' is '%s', '%s' is '%s' and '%s' is '%s'",

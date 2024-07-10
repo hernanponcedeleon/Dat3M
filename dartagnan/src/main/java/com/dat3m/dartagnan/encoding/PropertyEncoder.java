@@ -42,7 +42,7 @@ import static com.dat3m.dartagnan.program.Program.SourceLanguage.LLVM;
 public class PropertyEncoder implements Encoder {
 
     private static final Logger logger = LogManager.getLogger(PropertyEncoder.class);
-    private static final TypeFactory typeFactory = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final Program program;
@@ -207,7 +207,7 @@ public class PropertyEncoder implements Encoder {
                         continue;
                     }
                     BooleanFormula sameAddress = context.sameAddress(init, w1);
-                    int size = typeFactory.getMemorySizeInBits(init.getValue().getType());
+                    int size = types.getMemorySizeInBits(init.getValue().getType());
                     Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
                     BooleanFormula sameValue = context.equal(context.value(w1), v2);
                     enc.add(bmgr.implication(bmgr.and(lastCoExpr, sameAddress), sameValue));
@@ -222,7 +222,7 @@ public class PropertyEncoder implements Encoder {
             for (Init init : program.getThreadEvents(Init.class)) {
                 BooleanFormula lastValueEnc = bmgr.makeFalse();
                 BooleanFormula lastStoreExistsEnc = bmgr.makeFalse();
-                int size = typeFactory.getMemorySizeInBits(init.getValue().getType());
+                int size = types.getMemorySizeInBits(init.getValue().getType());
                 Formula v2 = context.lastValue(init.getBase(), init.getOffset(), size);
                 BooleanFormula readFromInit = context.equal(context.value(init), v2);
                 for (Store w : program.getThreadEvents(Store.class)) {

@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final Map<String, Expression> inputs = new HashMap<>();
 
@@ -31,9 +31,9 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitInitBaseValue(SpirvParser.InitBaseValueContext ctx) {
-        IntegerType mockType = TYPE_FACTORY.getArchType();
+        IntegerType mockType = types.getArchType();
         try {
-            return EXPR_FACTORY.makeValue(Long.parseLong(ctx.getText()), mockType);
+            return expressions.makeValue(Long.parseLong(ctx.getText()), mockType);
         } catch (ParsingException e) {
             throw new ParsingException("Unsupported value " + ctx.getText());
         }
@@ -41,7 +41,7 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitInitCollectionValue(SpirvParser.InitCollectionValueContext ctx) {
-        return EXPR_FACTORY.makeConstruct(ctx.initValues().initValue().stream()
+        return expressions.makeConstruct(ctx.initValues().initValue().stream()
                 .map(this::visitInitValue)
                 .toList());
     }

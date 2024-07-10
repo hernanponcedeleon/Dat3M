@@ -20,7 +20,8 @@ import static org.junit.Assert.fail;
 
 public class VisitorOpsConstantTest {
 
-    private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final IntegerType archType = TypeFactory.getInstance().getArchType();
     private MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
 
     @Test
@@ -52,10 +53,10 @@ public class VisitorOpsConstantTest {
 
         // then
         assertEquals(4, data.size());
-        assertEquals(FACTORY.makeTrue(), data.get("%b1"));
-        assertEquals(FACTORY.makeTrue(), data.get("%b2"));
-        assertEquals(FACTORY.makeFalse(), data.get("%b3"));
-        assertEquals(FACTORY.makeFalse(), data.get("%b4"));
+        assertEquals(expressions.makeTrue(), data.get("%b1"));
+        assertEquals(expressions.makeTrue(), data.get("%b2"));
+        assertEquals(expressions.makeFalse(), data.get("%b3"));
+        assertEquals(expressions.makeFalse(), data.get("%b4"));
 
         for (String id : List.of("%b1", "%b2", "%b3", "%b4")) {
             assertEquals(isSpec, builder.isSpecConstant(id));
@@ -94,11 +95,11 @@ public class VisitorOpsConstantTest {
 
         // then
         assertEquals(5, data.size());
-        assertEquals(FACTORY.makeValue(5, iType16), data.get("%i1"));
-        assertEquals(FACTORY.makeValue(5, iType16), data.get("%i2"));
-        assertEquals(FACTORY.makeValue(10, iType16), data.get("%i3"));
-        assertEquals(FACTORY.makeValue(10, iType32), data.get("%i4"));
-        assertEquals(FACTORY.makeValue(20, iType32), data.get("%i5"));
+        assertEquals(expressions.makeValue(5, iType16), data.get("%i1"));
+        assertEquals(expressions.makeValue(5, iType16), data.get("%i2"));
+        assertEquals(expressions.makeValue(10, iType16), data.get("%i3"));
+        assertEquals(expressions.makeValue(10, iType32), data.get("%i4"));
+        assertEquals(expressions.makeValue(20, iType32), data.get("%i5"));
 
         for (String id : List.of("%i1", "%i2", "%i3", "%i4", "%i5")) {
             assertEquals(isSpec, builder.isSpecConstant(id));
@@ -136,9 +137,9 @@ public class VisitorOpsConstantTest {
         // then
         assertEquals(4, data.size());
 
-        Expression bTrue = FACTORY.makeTrue();
-        Expression bFalse = FACTORY.makeFalse();
-        Expression b3v = FACTORY.makeArray(bType, List.of(bTrue, bFalse, bTrue), true);
+        Expression bTrue = expressions.makeTrue();
+        Expression bFalse = expressions.makeFalse();
+        Expression b3v = expressions.makeArray(bType, List.of(bTrue, bFalse, bTrue), true);
 
         assertEquals(bTrue, data.get("%b1"));
         assertEquals(bFalse, data.get("%b2"));
@@ -183,11 +184,11 @@ public class VisitorOpsConstantTest {
         // then
         assertEquals(5, data.size());
 
-        Expression i1 = FACTORY.makeValue(1, iType);
-        Expression i2 = FACTORY.makeValue(0, iType);
-        Expression i3 = FACTORY.makeValue(17, iType);
-        Expression i4 = FACTORY.makeValue(-123, iType);
-        Expression i4v = FACTORY.makeArray(iType, List.of(i1, i2, i3, i4), true);
+        Expression i1 = expressions.makeValue(1, iType);
+        Expression i2 = expressions.makeValue(0, iType);
+        Expression i3 = expressions.makeValue(17, iType);
+        Expression i4 = expressions.makeValue(-123, iType);
+        Expression i4v = expressions.makeArray(iType, List.of(i1, i2, i3, i4), true);
 
         assertEquals(i1, data.get("%i1"));
         assertEquals(i2, data.get("%i2"));
@@ -230,9 +231,9 @@ public class VisitorOpsConstantTest {
         // then
         assertEquals(3, data.size());
 
-        Expression b = FACTORY.makeTrue();
-        Expression i = FACTORY.makeValue(7, iType);
-        Expression s = FACTORY.makeConstruct(List.of(b, i));
+        Expression b = expressions.makeTrue();
+        Expression i = expressions.makeValue(7, iType);
+        Expression s = expressions.makeConstruct(List.of(b, i));
 
         assertEquals(b, data.get("%b"));
         assertEquals(i, data.get("%i"));
@@ -262,10 +263,10 @@ public class VisitorOpsConstantTest {
 
         // then
         assertEquals(4, data.size());
-        assertEquals(FACTORY.makeValue(0, iType16), data.get("%n1"));
-        assertEquals(FACTORY.makeValue(0, iType16), data.get("%n2"));
-        assertEquals(FACTORY.makeValue(0, iType32), data.get("%n3"));
-        assertEquals(FACTORY.makeFalse(), data.get("%n4"));
+        assertEquals(expressions.makeValue(0, iType16), data.get("%n1"));
+        assertEquals(expressions.makeValue(0, iType16), data.get("%n2"));
+        assertEquals(expressions.makeValue(0, iType32), data.get("%n3"));
+        assertEquals(expressions.makeFalse(), data.get("%n4"));
     }
 
     @Test
@@ -288,12 +289,12 @@ public class VisitorOpsConstantTest {
 
         // then
         assertEquals(6, data.size());
-        assertEquals(FACTORY.makeTrue(), data.get("%b1"));
-        assertEquals(FACTORY.makeFalse(), data.get("%b2"));
-        assertEquals(FACTORY.makeFalse(), data.get("%b3"));
-        assertEquals(FACTORY.makeValue(2, iType), data.get("%i1"));
-        assertEquals(FACTORY.makeValue(7, iType), data.get("%i2"));
-        assertEquals(FACTORY.makeValue(0, iType), data.get("%i3"));
+        assertEquals(expressions.makeTrue(), data.get("%b1"));
+        assertEquals(expressions.makeFalse(), data.get("%b2"));
+        assertEquals(expressions.makeFalse(), data.get("%b3"));
+        assertEquals(expressions.makeValue(2, iType), data.get("%i1"));
+        assertEquals(expressions.makeValue(7, iType), data.get("%i2"));
+        assertEquals(expressions.makeValue(0, iType), data.get("%i3"));
     }
 
     @Test
@@ -325,20 +326,20 @@ public class VisitorOpsConstantTest {
         // then
         assertEquals(11, data.size());
 
-        Expression b0 = FACTORY.makeFalse();
-        Expression b1 = FACTORY.makeTrue();
-        Expression b2 = FACTORY.makeTrue();
+        Expression b0 = expressions.makeFalse();
+        Expression b1 = expressions.makeTrue();
+        Expression b2 = expressions.makeTrue();
 
-        Expression i0 = FACTORY.makeValue(0, iType);
-        Expression i1 = FACTORY.makeValue(1, iType);
-        Expression i2 = FACTORY.makeValue(2, iType);
+        Expression i0 = expressions.makeValue(0, iType);
+        Expression i1 = expressions.makeValue(1, iType);
+        Expression i2 = expressions.makeValue(2, iType);
 
-        Expression s0 = FACTORY.makeConstruct(List.of(b0, i0));
-        Expression s1 = FACTORY.makeConstruct(List.of(b1, i1));
-        Expression s2 = FACTORY.makeConstruct(List.of(b2, i2));
+        Expression s0 = expressions.makeConstruct(List.of(b0, i0));
+        Expression s1 = expressions.makeConstruct(List.of(b1, i1));
+        Expression s2 = expressions.makeConstruct(List.of(b2, i2));
 
-        Expression a0 = FACTORY.makeArray(aType, List.of(s1, s2), true);
-        Expression s = FACTORY.makeConstruct(List.of(s0, a0));
+        Expression a0 = expressions.makeArray(aType, List.of(s1, s2), true);
+        Expression s = expressions.makeConstruct(List.of(s0, a0));
 
         assertEquals(b0, data.get("%b0"));
         assertEquals(b1, data.get("%b1"));
@@ -580,17 +581,17 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression f1 = FACTORY.makeTrue();
-        Expression f2 = FACTORY.makeFalse();
-        Expression f3 = FACTORY.makeTrue();
-        Expression f4 = FACTORY.makeFalse();
+        Expression f1 = expressions.makeTrue();
+        Expression f2 = expressions.makeFalse();
+        Expression f3 = expressions.makeTrue();
+        Expression f4 = expressions.makeFalse();
 
         assertEquals(f1, data.get("%f1"));
         assertEquals(f2, data.get("%f2"));
         assertEquals(f3, data.get("%f3"));
         assertEquals(f4, data.get("%f4"));
 
-        assertEquals(FACTORY.makeArray(bType, List.of(f1, f2, f3, f4), true),
+        assertEquals(expressions.makeArray(bType, List.of(f1, f2, f3, f4), true),
                 data.get("%b4v"));
     }
 
@@ -616,17 +617,17 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression t1 = FACTORY.makeFalse();
-        Expression t2 = FACTORY.makeTrue();
-        Expression t3 = FACTORY.makeTrue();
-        Expression t4 = FACTORY.makeTrue();
+        Expression t1 = expressions.makeFalse();
+        Expression t2 = expressions.makeTrue();
+        Expression t3 = expressions.makeTrue();
+        Expression t4 = expressions.makeTrue();
 
         assertEquals(t1, data.get("%t1"));
         assertEquals(t2, data.get("%t2"));
         assertEquals(t3, data.get("%t3"));
         assertEquals(t4, data.get("%t4"));
 
-        assertEquals(FACTORY.makeArray(bType, List.of(t1, t2, t3, t4), true),
+        assertEquals(expressions.makeArray(bType, List.of(t1, t2, t3, t4), true),
                 data.get("%b4v"));
     }
 
@@ -649,15 +650,15 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression i1 = FACTORY.makeValue(11, iType);
-        Expression i2 = FACTORY.makeValue(2, iType);
-        Expression i3 = FACTORY.makeValue(3, iType);
+        Expression i1 = expressions.makeValue(11, iType);
+        Expression i2 = expressions.makeValue(2, iType);
+        Expression i3 = expressions.makeValue(3, iType);
 
         assertEquals(i1, data.get("%i1"));
         assertEquals(i2, data.get("%i2"));
         assertEquals(i3, data.get("%i3"));
 
-        assertEquals(FACTORY.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
+        assertEquals(expressions.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
     }
 
     @Test
@@ -682,15 +683,15 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression f = FACTORY.makeFalse();
-        Expression t = FACTORY.makeTrue();
-        Expression i = FACTORY.makeValue(1, iType);
+        Expression f = expressions.makeFalse();
+        Expression t = expressions.makeTrue();
+        Expression i = expressions.makeValue(1, iType);
 
         assertEquals(f, data.get("%f"));
         assertEquals(t, data.get("%t"));
         assertEquals(i, data.get("%i"));
 
-        assertEquals(FACTORY.makeConstruct(List.of(f, t, i)), data.get("%s"));
+        assertEquals(expressions.makeConstruct(List.of(f, t, i)), data.get("%s"));
     }
 
     @Test
@@ -705,9 +706,8 @@ public class VisitorOpsConstantTest {
                 %b5v = OpSpecConstantComposite %bool5v %f1 %f2 %f3 %f4 %f5
                 """;
 
-        IntegerType archType = TypeFactory.getInstance().getArchType();
-        Expression zero = FACTORY.makeValue(0, archType);
-        Expression one = FACTORY.makeValue(1, archType);
+        Expression zero = expressions.makeValue(0, archType);
+        Expression one = expressions.makeValue(1, archType);
         builder = new MockProgramBuilderSpv(
                 Map.of("%f2", zero, "%f3", one, "%f4", zero, "%f5", one));
 
@@ -720,18 +720,18 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression f1 = FACTORY.makeFalse();
-        Expression f2 = FACTORY.makeFalse();
-        Expression f3 = FACTORY.makeTrue();
-        Expression f4 = FACTORY.makeFalse();
-        Expression f5 = FACTORY.makeTrue();
+        Expression f1 = expressions.makeFalse();
+        Expression f2 = expressions.makeFalse();
+        Expression f3 = expressions.makeTrue();
+        Expression f4 = expressions.makeFalse();
+        Expression f5 = expressions.makeTrue();
 
         assertEquals(f1, data.get("%f1"));
         assertEquals(f2, data.get("%f2"));
         assertEquals(f3, data.get("%f3"));
         assertEquals(f4, data.get("%f4"));
 
-        assertEquals(FACTORY.makeArray(bType, List.of(f1, f2, f3, f4, f5), true),
+        assertEquals(expressions.makeArray(bType, List.of(f1, f2, f3, f4, f5), true),
                 data.get("%b5v"));
     }
 
@@ -747,9 +747,8 @@ public class VisitorOpsConstantTest {
                 %b5v = OpSpecConstantComposite %bool5v %t1 %t2 %t3 %t4 %t5
                 """;
 
-        IntegerType archType = TypeFactory.getInstance().getArchType();
-        Expression zero = FACTORY.makeValue(0, archType);
-        Expression one = FACTORY.makeValue(1, archType);
+        Expression zero = expressions.makeValue(0, archType);
+        Expression one = expressions.makeValue(1, archType);
         builder = new MockProgramBuilderSpv(
                 Map.of("%t2", one, "%t3", zero, "%t4", one, "%t5", zero));
 
@@ -762,11 +761,11 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression t1 = FACTORY.makeTrue();
-        Expression t2 = FACTORY.makeTrue();
-        Expression t3 = FACTORY.makeFalse();
-        Expression t4 = FACTORY.makeTrue();
-        Expression t5 = FACTORY.makeFalse();
+        Expression t1 = expressions.makeTrue();
+        Expression t2 = expressions.makeTrue();
+        Expression t3 = expressions.makeFalse();
+        Expression t4 = expressions.makeTrue();
+        Expression t5 = expressions.makeFalse();
 
         assertEquals(t1, data.get("%t1"));
         assertEquals(t2, data.get("%t2"));
@@ -774,7 +773,7 @@ public class VisitorOpsConstantTest {
         assertEquals(t4, data.get("%t4"));
         assertEquals(t5, data.get("%t5"));
 
-        assertEquals(FACTORY.makeArray(bType, List.of(t1, t2, t3, t4, t5), true),
+        assertEquals(expressions.makeArray(bType, List.of(t1, t2, t3, t4, t5), true),
                 data.get("%b5v"));
     }
 
@@ -788,9 +787,8 @@ public class VisitorOpsConstantTest {
                 %i3v = OpSpecConstantComposite %int3v %i1 %i2 %i3
                 """;
 
-        IntegerType archType = TypeFactory.getInstance().getArchType();
-        Expression eleven = FACTORY.makeValue(11, archType);
-        Expression three = FACTORY.makeValue(3, archType);
+        Expression eleven = expressions.makeValue(11, archType);
+        Expression three = expressions.makeValue(3, archType);
         builder = new MockProgramBuilderSpv(
                 Map.of("%i1", eleven, "%i3", three));
 
@@ -801,15 +799,15 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression i1 = FACTORY.makeValue(11, iType);
-        Expression i2 = FACTORY.makeValue(2, iType);
-        Expression i3 = FACTORY.makeValue(3, iType);
+        Expression i1 = expressions.makeValue(11, iType);
+        Expression i2 = expressions.makeValue(2, iType);
+        Expression i3 = expressions.makeValue(3, iType);
 
         assertEquals(i1, data.get("%i1"));
         assertEquals(i2, data.get("%i2"));
         assertEquals(i3, data.get("%i3"));
 
-        assertEquals(FACTORY.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
+        assertEquals(expressions.makeArray(iType, List.of(i1, i2, i3), true), data.get("%i3v"));
     }
 
     @Test
@@ -822,10 +820,9 @@ public class VisitorOpsConstantTest {
                 %s = OpConstantComposite %struct %f %t %i
                 """;
 
-        IntegerType archType = TypeFactory.getInstance().getArchType();
-        Expression zero = FACTORY.makeValue(0, archType);
-        Expression one = FACTORY.makeValue(1, archType);
-        Expression two = FACTORY.makeValue(2, archType);
+        Expression zero = expressions.makeValue(0, archType);
+        Expression one = expressions.makeValue(1, archType);
+        Expression two = expressions.makeValue(2, archType);
         builder = new MockProgramBuilderSpv(
                 Map.of("%f", one, "%t", zero, "%i", two));
 
@@ -837,15 +834,15 @@ public class VisitorOpsConstantTest {
         Map<String, Expression> data = parseConstants(input);
 
         // then
-        Expression f = FACTORY.makeFalse();
-        Expression t = FACTORY.makeTrue();
-        Expression i = FACTORY.makeValue(1, iType);
+        Expression f = expressions.makeFalse();
+        Expression t = expressions.makeTrue();
+        Expression i = expressions.makeValue(1, iType);
 
         assertEquals(f, data.get("%f"));
         assertEquals(t, data.get("%t"));
         assertEquals(i, data.get("%i"));
 
-        assertEquals(FACTORY.makeConstruct(List.of(f, t, i)), data.get("%s"));
+        assertEquals(expressions.makeConstruct(List.of(f, t, i)), data.get("%s"));
     }
 
     private Map<String, Expression> parseConstants(String input) {

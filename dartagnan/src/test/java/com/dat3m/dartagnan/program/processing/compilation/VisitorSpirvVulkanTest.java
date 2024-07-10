@@ -26,6 +26,10 @@ import static org.mockito.Mockito.mock;
 
 public class VisitorSpirvVulkanTest {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final IntegerType archType = types.getArchType();
+
     private final VisitorSpirvVulkan visitor = new VisitorSpirvVulkan();
 
     @Test
@@ -225,7 +229,7 @@ public class VisitorSpirvVulkanTest {
     private void doTestSpirvXchg(Set<String> spvTags, Set<String> loadTags, Set<String> storeTags) {
         // given
         Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
-        Register register = function.newRegister(TypeFactory.getInstance().getBooleanType());
+        Register register = function.newRegister(types.getBooleanType());
         Expression value = mock(Expression.class);
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
@@ -285,10 +289,9 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvRmw(Set<String> spvTags, Set<String> loadTags, Set<String> storeTags) {
         // given
-        IntegerType type = TypeFactory.getInstance().getArchType();
         Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
-        Register register = function.newRegister(type);
-        Expression value = ExpressionFactory.getInstance().makeValue(1, type);
+        Register register = function.newRegister(archType);
+        Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         String scope = Tag.Spirv.getScopeTag(spvTags);
         SpirvRmw e = EventFactory.Spirv.newSpirvRmw(register, address, IntBinaryOp.ADD, value, scope, spvTags);
@@ -353,11 +356,10 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvCmpXchg(String scope, Set<String> eqTags, Set<String> neqTags, Set<String> loadTags, Set<String> storeTags) {
         // given
-        IntegerType type = TypeFactory.getInstance().getArchType();
         Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
-        Register register = function.newRegister(type);
-        Expression cmp = ExpressionFactory.getInstance().makeValue(0, type);
-        Expression value = ExpressionFactory.getInstance().makeValue(1, type);
+        Register register = function.newRegister(archType);
+        Expression cmp = expressions.makeValue(0, archType);
+        Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         SpirvCmpXchg e = EventFactory.Spirv.newSpirvCmpXchg(register, address, cmp, value, scope, eqTags, neqTags);
         e.setFunction(function);
@@ -399,11 +401,10 @@ public class VisitorSpirvVulkanTest {
 
     private void doTestSpirvCmpXchgIllegal(Set<String> eqTags, Set<String> neqTags, String error) {
         // given
-        IntegerType type = TypeFactory.getInstance().getArchType();
         Function function = new Function("mock", mock(FunctionType.class), List.of(), 0, null);
-        Register register = function.newRegister(type);
-        Expression cmp = ExpressionFactory.getInstance().makeValue(0, type);
-        Expression value = ExpressionFactory.getInstance().makeValue(1, type);
+        Register register = function.newRegister(archType);
+        Expression cmp = expressions.makeValue(0, archType);
+        Expression value = expressions.makeValue(1, archType);
         MemoryObject address = mock(MemoryObject.class);
         SpirvCmpXchg e = EventFactory.Spirv.newSpirvCmpXchg(register,
                 address, cmp, value, Tag.Spirv.WORKGROUP, eqTags, neqTags);

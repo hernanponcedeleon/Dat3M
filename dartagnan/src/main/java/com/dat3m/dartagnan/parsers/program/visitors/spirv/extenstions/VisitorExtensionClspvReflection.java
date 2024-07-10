@@ -18,7 +18,8 @@ import java.util.Set;
 
 public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
     private final List<Integer> threadGrid;
@@ -69,11 +70,11 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'", pushConstant.getId());
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
-        int typeSize = TYPE_FACTORY.getMemorySizeInBytes(type);
+        int typeSize = types.getMemorySizeInBytes(type);
         if (type instanceof AggregateType aType) {
             // TODO: Replace with getMemorySizeInBytes for aggregate type after offset is fixed in TypeFactory
             typeSize = aType.getDirectFields().stream()
-                    .map(TYPE_FACTORY::getMemorySizeInBytes)
+                    .map(types::getMemorySizeInBytes)
                     .reduce(0, Integer::sum);
         }
         String sizeId = ctx.sizeIdRef().getText();
@@ -81,7 +82,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             throw new ParsingException("Unexpected offset in PushConstant '%s' element '%s'",
                     pushConstant.getId(), pushConstantIndex);
         }
-        pushConstantOffset += TYPE_FACTORY.getMemorySizeInBytes(type);
+        pushConstantOffset += types.getMemorySizeInBytes(type);
         pushConstantIndex++;
         return null;
     }
@@ -140,7 +141,7 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
             throw new ParsingException("Out of bounds definition '%s' in PushConstant '%s'", decorationId, pushConstant.getId());
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
-        int typeSize = TYPE_FACTORY.getMemorySizeInBytes(type);
+        int typeSize = types.getMemorySizeInBytes(type);
         int parsedSize = builder.getExpressionAsConstInteger(sizeId);
         if (type instanceof ArrayType aType && aType.getNumElements() == 3 && typeSize == parsedSize) {
             Type elType = aType.getElementType();
@@ -148,9 +149,9 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
                 List<Integer> values = getPushConstantValue(decorationId);
                 int localOffset = 0;
                 for (int value : values) {
-                    Expression elExpr = ExpressionFactory.getInstance().makeValue(value, iType);
+                    Expression elExpr = expressions.makeValue(value, iType);
                     pushConstant.setInitialValue(pushConstantOffset + localOffset, elExpr);
-                    localOffset += TYPE_FACTORY.getMemorySizeInBytes(elExpr.getType());
+                    localOffset += types.getMemorySizeInBytes(elExpr.getType());
                 }
                 pushConstantOffset += localOffset;
                 pushConstantIndex++;

@@ -26,7 +26,7 @@ import java.util.Set;
 
 public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final ProgramBuilderSpv builder;
     private final BuiltIn builtInDecorator;
 
@@ -93,7 +93,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             } else {
                 value = builder.newUndefinedValue(type);
             }
-            int size = TYPE_FACTORY.getMemorySizeInBytes(type);
+            int size = types.getMemorySizeInBytes(type);
             ScopedPointerVariable pointer = builder.allocateMemoryVirtual(id, typeId, type, size);
             setInitialValue(pointer, 0, value);
             builder.addExpression(id, pointer);
@@ -129,7 +129,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
         if (value.getType() instanceof ArrayType aType) {
             ConstructExpr cValue = (ConstructExpr) value;
             List<Expression> elements = cValue.getOperands();
-            int step = TYPE_FACTORY.getMemorySizeInBytes(aType.getElementType());
+            int step = types.getMemorySizeInBytes(aType.getElementType());
             for (int i = 0; i < elements.size(); i++) {
                 setInitialValue(pointer, offset + i * step, elements.get(i));
             }
@@ -139,7 +139,7 @@ public class VisitorOpsMemory extends SpirvBaseVisitor<Event> {
             int currentOffset = offset;
             for (Expression element : elements) {
                 setInitialValue(pointer, currentOffset, element);
-                currentOffset += TYPE_FACTORY.getMemorySizeInBytes(element.getType());
+                currentOffset += types.getMemorySizeInBytes(element.getType());
             }
         } else if (value.getType() instanceof IntegerType) {
             pointer.setInitialValue(offset, value);

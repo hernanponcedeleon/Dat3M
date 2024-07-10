@@ -22,8 +22,8 @@ import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 
 public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     private final Map<Location, Type> locationTypes = new HashMap<>();
     private final ProgramBuilderSpv builder;
 
@@ -54,15 +54,15 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             // TODO:??
             if (ctx.assertionValue() != null) {
                 return ctx.assertionValue().getText().equals("0") ?
-                        EXPR_FACTORY.makeFalse() : EXPR_FACTORY.makeTrue();
+                        expressions.makeFalse() : expressions.makeTrue();
             } else {
                 return ctx.assertion(0).accept(this);
             }
         } else if (ctx.ModeHeader_AssertionAnd() != null) {
-            return EXPR_FACTORY.makeAnd(ctx.assertion(0).accept(this),
+            return expressions.makeAnd(ctx.assertion(0).accept(this),
                     ctx.assertion(1).accept(this));
         } else if (ctx.ModeHeader_AssertionOr() != null) {
-            return EXPR_FACTORY.makeOr(ctx.assertion(0).accept(this),
+            return expressions.makeOr(ctx.assertion(0).accept(this),
                     ctx.assertion(1).accept(this));
         } else if (ctx.assertionBasic() != null) {
             return ctx.assertionBasic().accept(this);
@@ -78,17 +78,17 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
         expr1 = normalize(expr1, expr2);
         expr2 = normalize(expr2, expr1);
         if (ctx.assertionCompare().ModeHeader_EqualEqual() != null) {
-            return EXPR_FACTORY.makeBinary(expr1, EQ, expr2);
+            return expressions.makeBinary(expr1, EQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_NotEqual() != null) {
-            return EXPR_FACTORY.makeBinary(expr1, NEQ, expr2);
+            return expressions.makeBinary(expr1, NEQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_Less() != null) {
-            return EXPR_FACTORY.makeBinary(expr1, LT, expr2);
+            return expressions.makeBinary(expr1, LT, expr2);
         } else if (ctx.assertionCompare().ModeHeader_LessEqual() != null) {
-            return EXPR_FACTORY.makeBinary(expr1, LTE, expr2);
+            return expressions.makeBinary(expr1, LTE, expr2);
         } else if (ctx.assertionCompare().ModeHeader_Greater() != null) {
-            return EXPR_FACTORY.makeBinary(expr1, GT, expr2);
+            return expressions.makeBinary(expr1, GT, expr2);
         } else if (ctx.assertionCompare().ModeHeader_GreaterEqual() != null) {
-            return EXPR_FACTORY.makeBinary(expr1, GTE, expr2);
+            return expressions.makeBinary(expr1, GTE, expr2);
         } else {
             throw new ParsingException("Unrecognised comparison operator");
         }
@@ -104,8 +104,8 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             return target;
         }
         if (target instanceof IntLiteral iValue && other instanceof Location) {
-            int size = TypeFactory.getInstance().getMemorySizeInBits(otherType);
-            IntegerType type = TypeFactory.getInstance().getIntegerType(size);
+            int size = types.getMemorySizeInBits(otherType);
+            IntegerType type = types.getIntegerType(size);
             return new IntLiteral(type, iValue.getValue());
         }
         throw new ParsingException("Mismatching type assertions are not supported for %s and %s",
@@ -118,7 +118,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
 
     private Expression acceptAssertionValue(SpirvParser.AssertionValueContext ctx) {
         if (ctx.initBaseValue() != null) {
-            return EXPR_FACTORY.parseValue(ctx.initBaseValue().getText(), TYPE_FACTORY.getArchType());
+            return expressions.parseValue(ctx.initBaseValue().getText(), types.getArchType());
         }
         String name = ctx.varName().getText();
         ScopedPointerVariable base = (ScopedPointerVariable) builder.getExpression(name);
@@ -136,12 +136,12 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
             validateIndex(base.getId(), type, index);
             if (type instanceof ArrayType arrayType) {
                 Type elementType = arrayType.getElementType();
-                int byteWidth = TYPE_FACTORY.getMemorySizeInBytes(elementType);
+                int byteWidth = types.getMemorySizeInBytes(elementType);
                 offset += index * byteWidth;
                 type = elementType;
             } else if (type instanceof AggregateType aggregateType) {
                 for (int i = 0; i < index; i++) {
-                    offset += TYPE_FACTORY.getMemorySizeInBytes(aggregateType.getDirectFields().get(i));
+                    offset += types.getMemorySizeInBytes(aggregateType.getDirectFields().get(i));
                 }
                 type = aggregateType.getDirectFields().get(index);
             }

@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 public class VisitorOpsTypeTest {
 
-    private static final TypeFactory FACTORY = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
 
     @Test
@@ -44,14 +44,14 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(8, data.size());
 
-        Type typeVoid = FACTORY.getVoidType();
-        Type typeBoolean = FACTORY.getBooleanType();
-        Type typeInteger = FACTORY.getIntegerType(16);
-        Type typeVector = FACTORY.getArrayType(typeInteger, 10);
-        Type typeArray = FACTORY.getArrayType(typeInteger, 20);
-        Type typePointer = FACTORY.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
-        Type typeFunction = FACTORY.getFunctionType(typeVoid, List.of(typePointer, typeInteger));
-        Type typeStruct = FACTORY.getAggregateType(List.of(typeInteger, typePointer, typeArray));
+        Type typeVoid = types.getVoidType();
+        Type typeBoolean = types.getBooleanType();
+        Type typeInteger = types.getIntegerType(16);
+        Type typeVector = types.getArrayType(typeInteger, 10);
+        Type typeArray = types.getArrayType(typeInteger, 20);
+        Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
+        Type typeFunction = types.getFunctionType(typeVoid, List.of(typePointer, typeInteger));
+        Type typeStruct = types.getAggregateType(List.of(typeInteger, typePointer, typeArray));
 
         assertEquals(typeVoid, data.get("%void"));
         assertEquals(typeBoolean, data.get("%bool"));
@@ -102,12 +102,12 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(6, data.size());
 
-        assertEquals(FACTORY.getIntegerType(8), data.get("%uint_8"));
-        assertEquals(FACTORY.getIntegerType(16), data.get("%uint_16"));
-        assertEquals(FACTORY.getIntegerType(32), data.get("%uint_32"));
-        assertEquals(FACTORY.getIntegerType(8), data.get("%int_8"));
-        assertEquals(FACTORY.getIntegerType(16), data.get("%int_16"));
-        assertEquals(FACTORY.getIntegerType(32), data.get("%int_32"));
+        assertEquals(types.getIntegerType(8), data.get("%uint_8"));
+        assertEquals(types.getIntegerType(16), data.get("%uint_16"));
+        assertEquals(types.getIntegerType(32), data.get("%uint_32"));
+        assertEquals(types.getIntegerType(8), data.get("%int_8"));
+        assertEquals(types.getIntegerType(16), data.get("%int_16"));
+        assertEquals(types.getIntegerType(32), data.get("%int_32"));
     }
 
     @Test
@@ -128,13 +128,13 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(6, data.size());
 
-        Type typeBoolean = FACTORY.getBooleanType();
-        Type typeInteger = FACTORY.getIntegerType(32);
+        Type typeBoolean = types.getBooleanType();
+        Type typeInteger = types.getIntegerType(32);
 
-        assertEquals(FACTORY.getArrayType(typeBoolean, 5), data.get("%vector_bool_5"));
-        assertEquals(FACTORY.getArrayType(typeBoolean, 10), data.get("%vector_bool_10"));
-        assertEquals(FACTORY.getArrayType(typeInteger, 15), data.get("%vector_int_15"));
-        assertEquals(FACTORY.getArrayType(typeInteger, 20), data.get("%vector_int_20"));
+        assertEquals(types.getArrayType(typeBoolean, 5), data.get("%vector_bool_5"));
+        assertEquals(types.getArrayType(typeBoolean, 10), data.get("%vector_bool_10"));
+        assertEquals(types.getArrayType(typeInteger, 15), data.get("%vector_int_15"));
+        assertEquals(types.getArrayType(typeInteger, 20), data.get("%vector_int_20"));
     }
 
     @Test
@@ -160,13 +160,13 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(6, data.size());
 
-        Type typeBoolean = FACTORY.getBooleanType();
-        Type typeInteger = FACTORY.getIntegerType(32);
+        Type typeBoolean = types.getBooleanType();
+        Type typeInteger = types.getIntegerType(32);
 
-        assertEquals(FACTORY.getArrayType(typeBoolean, 5), data.get("%array_bool_5"));
-        assertEquals(FACTORY.getArrayType(typeBoolean, 10), data.get("%array_bool_10"));
-        assertEquals(FACTORY.getArrayType(typeInteger, 15), data.get("%array_int_15"));
-        assertEquals(FACTORY.getArrayType(typeInteger, 20), data.get("%array_int_20"));
+        assertEquals(types.getArrayType(typeBoolean, 5), data.get("%array_bool_5"));
+        assertEquals(types.getArrayType(typeBoolean, 10), data.get("%array_bool_10"));
+        assertEquals(types.getArrayType(typeInteger, 15), data.get("%array_int_15"));
+        assertEquals(types.getArrayType(typeInteger, 20), data.get("%array_int_20"));
     }
 
     @Test
@@ -230,15 +230,15 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(8, data.size());
 
-        Type typeVoid = FACTORY.getVoidType();
-        Type typeBoolean = FACTORY.getBooleanType();
-        Type typeInteger = FACTORY.getIntegerType(16);
-        Type typeArray = FACTORY.getArrayType(typeInteger, 5);
-        Type typePointer = FACTORY.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
+        Type typeVoid = types.getVoidType();
+        Type typeBoolean = types.getBooleanType();
+        Type typeInteger = types.getIntegerType(16);
+        Type typeArray = types.getArrayType(typeInteger, 5);
+        Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeInteger);
 
-        assertEquals(data.get("%f1"), FACTORY.getFunctionType(typeVoid, List.of()));
-        assertEquals(data.get("%f2"), FACTORY.getFunctionType(typeBoolean, List.of(typeInteger, typeArray)));
-        assertEquals(data.get("%f3"), FACTORY.getFunctionType(typePointer, List.of(typePointer)));
+        assertEquals(data.get("%f1"), types.getFunctionType(typeVoid, List.of()));
+        assertEquals(data.get("%f2"), types.getFunctionType(typeBoolean, List.of(typeInteger, typeArray)));
+        assertEquals(data.get("%f3"), types.getFunctionType(typePointer, List.of(typePointer)));
     }
 
     @Test(expected = ParsingException.class)
@@ -283,12 +283,12 @@ public class VisitorOpsTypeTest {
         // then
         assertEquals(6, data.size());
 
-        Type typeBoolean = FACTORY.getBooleanType();
-        Type typeInteger = FACTORY.getIntegerType(32);
-        Type typeArray = FACTORY.getArrayType(typeInteger, 10);
-        Type typeStructFirst = FACTORY.getAggregateType(List.of(typeInteger, typeArray));
-        Type typePointer = FACTORY.getScopedPointerType(Tag.Spirv.SC_INPUT, typeStructFirst);
-        Type typeStructSecond = FACTORY.getAggregateType(List.of(typeBoolean, typePointer));
+        Type typeBoolean = types.getBooleanType();
+        Type typeInteger = types.getIntegerType(32);
+        Type typeArray = types.getArrayType(typeInteger, 10);
+        Type typeStructFirst = types.getAggregateType(List.of(typeInteger, typeArray));
+        Type typePointer = types.getScopedPointerType(Tag.Spirv.SC_INPUT, typeStructFirst);
+        Type typeStructSecond = types.getAggregateType(List.of(typeBoolean, typePointer));
 
         assertEquals(data.get("%s1"), typeStructFirst);
         assertEquals(data.get("%s2"), typeStructSecond);
@@ -312,7 +312,7 @@ public class VisitorOpsTypeTest {
     }
 
     private void addIntConstant(String id, int value) {
-        IntegerType type = FACTORY.getArchType();
+        IntegerType type = types.getArchType();
         IntLiteral iValue = new IntLiteral(type, new BigInteger(Integer.toString(value)));
         builder.addExpression(id, iValue);
     }

@@ -20,7 +20,7 @@ import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Bui
 
 public class MemoryTransformer extends ExprTransformer {
 
-    private static final List<String> NAME_PREFIX = List.of("T", "S", "W", "Q");
+    private static final List<String> namePrefixes = List.of("T", "S", "W", "Q");
 
     private final Program program;
     private final BuiltIn builtIn;
@@ -101,6 +101,6 @@ public class MemoryTransformer extends ExprTransformer {
     }
 
     private String makeVariableName(int idx, String base) {
-        return String.format("%s@%s%s", base, NAME_PREFIX.get(idx), builtIn.getGlobalIdAtIndex(idx));
+        return String.format("%s@%s%s", base, namePrefixes.get(idx), builtIn.getGlobalIdAtIndex(idx));
     }
 }

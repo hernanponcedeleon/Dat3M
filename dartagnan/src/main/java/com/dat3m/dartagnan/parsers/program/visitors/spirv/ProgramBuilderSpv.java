@@ -43,7 +43,6 @@ import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
 public class ProgramBuilderSpv {
 
     private static final Logger logger = LogManager.getLogger(ProgramBuilderSpv.class);
-    private static final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
 
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
@@ -141,10 +140,10 @@ public class ProgramBuilderSpv {
             program.setSpecification(type, expression);
         } else if (type.equals(program.getSpecificationType())) {
             if (program.getSpecificationType().equals(FORALL)) {
-                Expression result = expressionFactory.makeAnd(specification, expression);
+                Expression result = ExpressionFactory.getInstance().makeAnd(specification, expression);
                 program.setSpecification(type, result);
             } else if (program.getSpecificationType().equals(NOT_EXISTS)) {
-                Expression result = expressionFactory.makeOr(specification, expression);
+                Expression result = ExpressionFactory.getInstance().makeOr(specification, expression);
                 program.setSpecification(type, result);
             } else {
                 throw new ParsingException("Multiline assertion is not supported for type " + type);
@@ -507,8 +506,12 @@ public class ProgramBuilderSpv {
         if (program.getSpecification() == null) {
             logger.warn("The program has no explicitly defined specification, " +
                     "setting a trivial assertion");
-            program.setSpecification(FORALL, expressionFactory.makeTrue());
+            program.setSpecification(FORALL, ExpressionFactory.getInstance().makeTrue());
         }
+    }
+
+    public void addPhiDefinition(Label label, Register register, String id) {
+        phiDefinitions.computeIfAbsent(label, k -> new HashMap<>()).put(register, id);
     }
 
     private void insertPhiDefinitions(Map<Event, Label> blockEndToLabelMap) {
@@ -573,9 +576,5 @@ public class ProgramBuilderSpv {
         Label endLabel = getOrCreateLabel(id);
         cfDefinitions.put(label, endLabel);
         return endLabel;
-    }
-
-    public Map<Register, String> getPhiDefinitions(Label label) {
-        return phiDefinitions.computeIfAbsent(label, k -> new HashMap<>());
     }
 }

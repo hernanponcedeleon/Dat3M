@@ -18,8 +18,9 @@ import java.util.stream.Stream;
 
 public class BuiltIn implements Decoration {
 
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
     public static final int GRID_SIZE = 4;
-    private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
     // grid(0) - number of threads in a subgroup
     // grid(1) - number of subgroups in a local workgroup
     //      assuming sgSize <= wgSize and a flat workgroup
@@ -82,7 +83,7 @@ public class BuiltIn implements Decoration {
             Expression expression = getDecoration(id, type);
             if (expression instanceof ConstructExpr cExpr) {
                 Type elementType = getArrayElementType(id, type);
-                int size = TypeFactory.getInstance().getMemorySizeInBytes(elementType);
+                int size = types.getMemorySizeInBytes(elementType);
                 memObj.setInitialValue(0, cExpr.getOperands().get(0));
                 memObj.setInitialValue(size, cExpr.getOperands().get(1));
                 memObj.setInitialValue(size * 2, cExpr.getOperands().get(2));
@@ -121,15 +122,15 @@ public class BuiltIn implements Decoration {
     private Expression makeArray(String id, Type type, int a, int b, int c) {
         List<Expression> operands = new ArrayList<>();
         IntegerType elementType = getArrayElementType(id, type);
-        operands.add(FACTORY.makeValue(a, elementType));
-        operands.add(FACTORY.makeValue(b, elementType));
-        operands.add(FACTORY.makeValue(c, elementType));
-        return FACTORY.makeArray(elementType, operands, true);
+        operands.add(expressions.makeValue(a, elementType));
+        operands.add(expressions.makeValue(b, elementType));
+        operands.add(expressions.makeValue(c, elementType));
+        return expressions.makeArray(elementType, operands, true);
     }
 
     private Expression makeScalar(String id, Type type, int a) {
         IntegerType iType = getIntegerType(id, type);
-        return FACTORY.makeValue(a, iType);
+        return expressions.makeValue(a, iType);
     }
 
     private IntegerType getArrayElementType(String id, Type type) {

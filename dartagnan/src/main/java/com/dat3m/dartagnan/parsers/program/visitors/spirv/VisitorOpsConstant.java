@@ -23,7 +23,7 @@ import java.util.Set;
 
 public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
-    private static final ExpressionFactory FACTORY = ExpressionFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
     private final SpecId specIdDecorator;
@@ -37,7 +37,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitOpConstantTrue(SpirvParser.OpConstantTrueContext ctx) {
-        return builder.addConstant(ctx.idResult().getText(), FACTORY.makeTrue());
+        return builder.addConstant(ctx.idResult().getText(), expressions.makeTrue());
     }
 
     @Override
@@ -48,7 +48,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
 
     @Override
     public Expression visitOpConstantFalse(SpirvParser.OpConstantFalseContext ctx) {
-        return builder.addConstant(ctx.idResult().getText(), FACTORY.makeFalse());
+        return builder.addConstant(ctx.idResult().getText(), expressions.makeFalse());
     }
 
     @Override
@@ -68,7 +68,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
     private Expression makeConstant(Type type, String value) {
         if (type instanceof IntegerType iType) {
             long intValue = Long.parseLong(value);
-            return FACTORY.makeValue(intValue, iType);
+            return expressions.makeValue(intValue, iType);
         }
         throw new ParsingException("Illegal constant type '%s'", type);
     }
@@ -80,13 +80,13 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         if (type instanceof IntegerType iType) {
             Integer input = getInputValue(id);
             if (input != null) {
-                return builder.addSpecConstant(id, FACTORY.makeValue(input, iType));
+                return builder.addSpecConstant(id, expressions.makeValue(input, iType));
             }
             String value = specIdDecorator.getValue(id);
             if (value == null) {
                 value = ctx.valueLiteralContextDependentNumber().getText();
             }
-            return builder.addSpecConstant(id, FACTORY.makeValue(Long.parseLong(value), iType));
+            return builder.addSpecConstant(id, expressions.makeValue(Long.parseLong(value), iType));
         }
         throw new ParsingException("Illegal constant type '%s'", type);
     }
@@ -128,11 +128,11 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
         String id = ctx.idResult().getText();
         Type type = builder.getType(ctx.idResultType().getText());
         if (type instanceof BooleanType) {
-            Expression expression = FACTORY.makeFalse();
+            Expression expression = expressions.makeFalse();
             return builder.addExpression(id, expression);
         }
         if (type instanceof IntegerType iType) {
-            Expression expression = FACTORY.makeZero(iType);
+            Expression expression = expressions.makeZero(iType);
             return builder.addExpression(id, expression);
         }
         throw new ParsingException("Illegal NULL constant type '%s'", type);
@@ -155,9 +155,9 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             }
         }
         if (value) {
-            return FACTORY.makeTrue();
+            return expressions.makeTrue();
         }
-        return FACTORY.makeFalse();
+        return expressions.makeFalse();
     }
 
     private Integer getInputValue(String id) {
@@ -198,7 +198,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             }
             elements.add(expression);
         }
-        return ExpressionFactory.getInstance().makeConstruct(elements);
+        return expressions.makeConstruct(elements);
     }
 
     private Expression makeConstantArray(String id, ArrayType type, List<String> elementIds) {
@@ -217,7 +217,7 @@ public class VisitorOpsConstant extends SpirvBaseVisitor<Expression> {
             }
             elements.add(expression);
         }
-        return FACTORY.makeArray(elementType, elements, true);
+        return expressions.makeArray(elementType, elements, true);
     }
 
     public Set<String> getSupportedOps() {

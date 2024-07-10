@@ -16,8 +16,8 @@ import java.util.Set;
 
 public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
 
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
-    private final IntegerType barrierIdType = TypeFactory.getInstance().getArchType();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final ProgramBuilderSpv builder;
     private int nextBarrierId = 0;
 
@@ -30,7 +30,7 @@ public class VisitorOpsBarrier extends SpirvBaseVisitor<Event> {
         if (!ctx.execution().getText().equals(ctx.memory().getText())) {
             throw new ParsingException("Unequal scopes in OpControlBarrier are not supported");
         }
-        Expression barrierId = EXPR_FACTORY.makeValue(nextBarrierId++, barrierIdType);
+        Expression barrierId = expressions.makeValue(nextBarrierId++, archType);
         Event barrier = EventFactory.newControlBarrier("cbar", barrierId);
         barrier.addTags(Tag.Spirv.CONTROL);
         barrier.addTags(builder.getScope(ctx.execution().getText()));

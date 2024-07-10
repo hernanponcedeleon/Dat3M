@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
 
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
 
@@ -59,7 +59,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
                     id, type, op1.getType(), op2.getType());
         }
         if (op1.getType() instanceof IntegerType) {
-            return builder.addEvent(new Local(register, EXPR_FACTORY.makeITE(cond, op1, op2)));
+            return builder.addEvent(new Local(register, expressions.makeITE(cond, op1, op2)));
         }
         throw new ParsingException("Illegal definition for '%s', " +
                 "operands must be integers or arrays of booleans", id);
@@ -123,7 +123,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
         String id = idCtx.getText();
         return forType(id, typeCtx.getText(), bType -> {
             Expression operand = getOperandBoolean(id, opCtx.getText());
-            return EXPR_FACTORY.makeUnary(op, operand);
+            return expressions.makeUnary(op, operand);
         });
     }
 
@@ -137,7 +137,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
         return forType(id, typeCtx.getText(), bType -> {
             Expression op1 = getOperandBoolean(id, op1Ctx.getText());
             Expression op2 = getOperandBoolean(id, op2Ctx.getText());
-            return EXPR_FACTORY.makeBinary(op1, op, op2);
+            return expressions.makeBinary(op1, op, op2);
         });
     }
 
@@ -152,7 +152,7 @@ public class VisitorOpsLogical extends SpirvBaseVisitor<Event> {
             Expression op1 = getOperandInteger(id, op1Ctx.getText());
             Expression op2 = getOperandInteger(id, op2Ctx.getText());
             if (op1.getType().equals(op2.getType())) {
-                return EXPR_FACTORY.makeIntCmp(op1, op, op2);
+                return expressions.makeIntCmp(op1, op, op2);
             }
             throw new ParsingException("Illegal definition for '%s', " +
                     "operands have different types: '%s' is '%s' and '%s' is '%s'",

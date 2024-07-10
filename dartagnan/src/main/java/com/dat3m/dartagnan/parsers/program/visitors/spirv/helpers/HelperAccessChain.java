@@ -17,9 +17,9 @@ import static com.dat3m.dartagnan.expression.integers.IntBinaryOp.MUL;
 
 public class HelperAccessChain {
 
-    private static final TypeFactory typeFactory = TypeFactory.getInstance();
-    private static final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
-    private static final IntegerType archType = typeFactory.getArchType();
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final IntegerType archType = types.getArchType();
 
     private HelperAccessChain(){
     }
@@ -68,11 +68,11 @@ public class HelperAccessChain {
 
     private static Expression getArrayMemberAddress(String id, Expression base, ArrayType type, List<Expression> indexes) {
         Type elementType = type.getElementType();
-        int size = typeFactory.getMemorySizeInBytes(elementType);
-        IntLiteral sizeExpr = expressionFactory.makeValue(size, archType);
-        Expression indexExpr = expressionFactory.makeIntegerCast(indexes.get(0), archType, false);
-        Expression offsetExpr = expressionFactory.makeBinary(sizeExpr, MUL, indexExpr);
-        Expression expression = expressionFactory.makeBinary(base, ADD, offsetExpr);
+        int size = types.getMemorySizeInBytes(elementType);
+        IntLiteral sizeExpr = expressions.makeValue(size, archType);
+        Expression indexExpr = expressions.makeIntegerCast(indexes.get(0), archType, false);
+        Expression offsetExpr = expressions.makeBinary(sizeExpr, MUL, indexExpr);
+        Expression expression = expressions.makeBinary(base, ADD, offsetExpr);
         return getMemberAddress(id, expression, elementType, indexes.subList(1, indexes.size()));
     }
 
@@ -83,10 +83,10 @@ public class HelperAccessChain {
             if (index < type.getDirectFields().size()) {
                 int offset = 0;
                 for (int i = 0; i < index; i++) {
-                    offset += typeFactory.getMemorySizeInBytes(type.getDirectFields().get(i));
+                    offset += types.getMemorySizeInBytes(type.getDirectFields().get(i));
                 }
-                IntLiteral offsetExpr = expressionFactory.makeValue(offset, archType);
-                Expression expression = expressionFactory.makeBinary(base, ADD, offsetExpr);
+                IntLiteral offsetExpr = expressions.makeValue(offset, archType);
+                Expression expression = expressions.makeBinary(base, ADD, offsetExpr);
                 return getMemberAddress(id, expression, type.getDirectFields().get(index), indexes.subList(1, indexes.size()));
             }
             throw new ParsingException("Out of bound index in access chain '%s'", id);

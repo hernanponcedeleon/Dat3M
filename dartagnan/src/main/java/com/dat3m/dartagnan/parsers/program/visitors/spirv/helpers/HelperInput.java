@@ -13,8 +13,8 @@ import java.util.List;
 
 public class HelperInput {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private HelperInput(){
     }
@@ -41,7 +41,7 @@ public class HelperInput {
             for (int i = 0; i < actualSize; i++) {
                 elements.add(castInput(String.format("%s[%d]", id, i), elementType, aValue.getOperands().get(i)));
             }
-            return EXPR_FACTORY.makeArray(elements.get(0).getType(), elements, true);
+            return expressions.makeArray(elements.get(0).getType(), elements, true);
         }
         throw new ParsingException(errorMismatchingType(id, type, value.getType()));
     }
@@ -57,20 +57,20 @@ public class HelperInput {
             for (int i = 0; i < actualSize; i++) {
                 elements.add(castInput(id, type.getDirectFields().get(i), aValue.getOperands().get(i)));
             }
-            return EXPR_FACTORY.makeConstruct(elements);
+            return expressions.makeConstruct(elements);
         }
         throw new ParsingException(errorMismatchingType(id, type, value.getType()));
     }
 
     private static Expression castScalar(String id, Type type, Expression value) {
-        if (value.getType().equals(TYPE_FACTORY.getArchType())) {
+        if (value.getType().equals(types.getArchType())) {
             if (value instanceof IntLiteral iConst) {
                 int iValue = iConst.getValueAsInt();
                 if (type instanceof BooleanType) {
-                    return iValue == 0 ? EXPR_FACTORY.makeFalse() : EXPR_FACTORY.makeTrue();
+                    return iValue == 0 ? expressions.makeFalse() : expressions.makeTrue();
                 }
                 if (type instanceof IntegerType iType) {
-                    return EXPR_FACTORY.makeValue(iValue, iType);
+                    return expressions.makeValue(iValue, iType);
                 }
                 throw new ParsingException("Unexpected element type '%s' for variable '%s'", type, id);
             }

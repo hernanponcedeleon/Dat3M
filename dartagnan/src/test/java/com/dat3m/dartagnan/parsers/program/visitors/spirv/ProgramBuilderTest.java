@@ -15,7 +15,7 @@ import static org.junit.Assert.fail;
 
 public class ProgramBuilderTest {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final ProgramBuilderSpv builder = new ProgramBuilderSpv(List.of(1, 1, 1, 1), Map.of());
 
@@ -26,14 +26,14 @@ public class ProgramBuilderTest {
 
     @Test
     public void testAddEventBeforeBlock() {
-        FunctionType type = TYPE_FACTORY.getFunctionType(TYPE_FACTORY.getVoidType(), List.of());
+        FunctionType type = types.getFunctionType(types.getVoidType(), List.of());
         builder.startFunctionDefinition("test", type, List.of());
         testAddChildError("Attempt to add an event outside a control flow block");
     }
 
     @Test
     public void testAddEventAfterBlock() {
-        FunctionType type = TYPE_FACTORY.getFunctionType(TYPE_FACTORY.getVoidType(), List.of());
+        FunctionType type = types.getFunctionType(types.getVoidType(), List.of());
         builder.startFunctionDefinition("test_func", type, List.of());
         builder.startBlock(builder.getOrCreateLabel("test_label"));
         builder.endBlock(new Skip());

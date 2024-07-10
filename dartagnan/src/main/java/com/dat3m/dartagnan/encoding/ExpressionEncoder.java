@@ -24,7 +24,7 @@ import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
-    private static final TypeFactory typeFactory = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final FormulaManager formulaManager;
@@ -300,7 +300,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visitLocation(Location location) {
         checkState(event == null, "Cannot evaluate %s at event %s.", location, event);
-        int size = typeFactory.getMemorySizeInBits(location.getType());
+        int size = types.getMemorySizeInBits(location.getType());
         return context.lastValue(location.getMemoryObject(), location.getOffset(), size);
     }
 }

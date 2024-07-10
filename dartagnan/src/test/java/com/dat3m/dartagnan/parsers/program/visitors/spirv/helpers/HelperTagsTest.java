@@ -15,8 +15,8 @@ import static org.junit.Assert.fail;
 
 public class HelperTagsTest {
 
-    private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
-    private static final IntegerType TYPE = TypeFactory.getInstance().getArchType();
+    private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
+    private static final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final HelperTags helper = new HelperTags();
 
     @Test
@@ -32,7 +32,7 @@ public class HelperTagsTest {
 
     private void doTestValidScope(int input, String expected) {
         // given
-        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+        Expression expr = expressions.makeValue(input, archType);
 
         // when
         String scope = helper.visitScope("test", expr);
@@ -49,7 +49,7 @@ public class HelperTagsTest {
 
     private void doTestInvalidScope(int input, String error) {
         // given
-        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+        Expression expr = expressions.makeValue(input, archType);
 
         try {
             // when
@@ -92,7 +92,7 @@ public class HelperTagsTest {
 
     public void doTestValidSemantics(int input, Set<String> expected) {
         // given
-        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+        Expression expr = expressions.makeValue(input, archType);
 
         // when
         Set<String> tags = helper.visitIdMemorySemantics("test", expr);
@@ -112,7 +112,7 @@ public class HelperTagsTest {
 
     private void doTestInvalidSemantics(int input, String error) {
         // given
-        Expression expr = EXPR_FACTORY.makeValue(input, TYPE);
+        Expression expr = expressions.makeValue(input, archType);
 
         try {
             // when

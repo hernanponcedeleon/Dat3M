@@ -12,14 +12,13 @@ import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.functions.Return;
 
-import java.util.Map;
 import java.util.Set;
 
 import static com.dat3m.dartagnan.program.event.EventFactory.newFunctionReturn;
 
 public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
     private final ProgramBuilderSpv builder;
     private String continueLabelId;
     private String mergeLabelId;
@@ -37,8 +36,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
         for (SpirvParser.VariableContext vCtx : ctx.variable()) {
             SpirvParser.PairIdRefIdRefContext pCtx = vCtx.pairIdRefIdRef();
             Label event = builder.getOrCreateLabel(pCtx.idRef(1).getText());
-            Map<Register, String> phiDefinitions = builder.getPhiDefinitions(event);
-            phiDefinitions.put(register, pCtx.idRef(0).getText());
+            builder.addPhiDefinition(event, register, pCtx.idRef(0).getText());
         }
         builder.addExpression(id, register);
         return null;
@@ -136,7 +134,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpReturn(SpirvParser.OpReturnContext ctx) {
         Type returnType = builder.getCurrentFunctionType().getReturnType();
-        if (TYPE_FACTORY.getVoidType().equals(returnType)) {
+        if (types.getVoidType().equals(returnType)) {
             Return event = newFunctionReturn(null);
             builder.addEvent(event);
             return builder.endBlock(event);
@@ -148,7 +146,7 @@ public class VisitorOpsControlFlow extends SpirvBaseVisitor<Event> {
     @Override
     public Event visitOpReturnValue(SpirvParser.OpReturnValueContext ctx) {
         Type returnType = builder.getCurrentFunctionType().getReturnType();
-        if (!TYPE_FACTORY.getVoidType().equals(returnType)) {
+        if (!types.getVoidType().equals(returnType)) {
             String valueId = ctx.valueIdRef().getText();
             Expression expression = builder.getExpression(valueId);
             Event event = newFunctionReturn(expression);

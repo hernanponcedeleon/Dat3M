@@ -23,7 +23,7 @@ import static com.dat3m.dartagnan.program.event.EventFactory.newVoidFunctionCall
 
 public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
 
-    private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
+    private static final TypeFactory types = TypeFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
     private String currentId;
@@ -106,10 +106,10 @@ public class VisitorOpsFunction extends SpirvBaseVisitor<Void> {
         Type returnType = builder.getType(typeId);
         List<Type> pTypes = arguments.stream()
                 .map(e -> e instanceof ScopedPointer pBase
-                        ? TYPE_FACTORY.getScopedPointerType(pBase.getScopeId(), pBase.getInnerType())
+                        ? types.getScopedPointerType(pBase.getScopeId(), pBase.getInnerType())
                         : e.getType())
                 .toList();
-        FunctionType functionType = TYPE_FACTORY.getFunctionType(builder.getType(typeId), pTypes);
+        FunctionType functionType = types.getFunctionType(builder.getType(typeId), pTypes);
         Function function = builder.getCalledFunction(functionId, functionType);
         Event event;
         if (returnType instanceof VoidType) {
