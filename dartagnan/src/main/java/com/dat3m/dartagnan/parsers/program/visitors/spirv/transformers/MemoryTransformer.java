@@ -3,19 +3,17 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.transformers;
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.LeafExpression;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.VirtualMemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn.GRID_SIZE;
@@ -26,17 +24,14 @@ public class MemoryTransformer extends ExprTransformer {
 
     private final Program program;
     private final BuiltIn builtIn;
-    private final Map<String, Type> typeMap;
-    private final Map<String, String> storageClassMap;
+    private final Map<MemoryObject, ScopedPointerVariable> pointerMap;
     private final List<Integer> threadId;
     private final List<? extends Map<Expression, Expression>> mappings;
 
-    public MemoryTransformer(Program program, BuiltIn builtIn, Map<String, Type> typeMap,
-                             Map<String, String> storageClassMap) {
+    public MemoryTransformer(Program program, BuiltIn builtIn, Set<ScopedPointerVariable> variables) {
         this.program = program;
         this.builtIn = builtIn;
-        this.typeMap = typeMap;
-        this.storageClassMap = storageClassMap;
+        this.pointerMap = variables.stream().collect(Collectors.toMap((ScopedPointerVariable::getAddress), (v -> v)));
         this.threadId = new ArrayList<>(Stream.generate(() -> 0)
                 .limit(GRID_SIZE).toList());
         this.mappings = Stream.generate(() -> new HashMap<Expression, Expression>())
@@ -62,7 +57,7 @@ public class MemoryTransformer extends ExprTransformer {
     @Override
     public Expression visitLeafExpression(LeafExpression expr) {
         if (expr instanceof MemoryObject memObj) {
-            String storageClass = storageClassMap.get(memObj.getName());
+            String storageClass = pointerMap.get(memObj).getScopeId();
             return switch (storageClass) {
                 case Tag.Spirv.SC_UNIFORM_CONSTANT,
                         Tag.Spirv.SC_UNIFORM,
@@ -99,7 +94,7 @@ public class MemoryTransformer extends ExprTransformer {
                 }
                 copy.setInitialValue(i, initValue);
             }
-            builtIn.decorate(memObj.getName(), copy, typeMap.get(memObj.getName()));
+            builtIn.decorate(memObj.getName(), copy, pointerMap.get(memObj).getInnerType());
             mapping.put(memObj, copy);
         }
         return mapping.getOrDefault(memObj, memObj);

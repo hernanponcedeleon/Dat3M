@@ -106,19 +106,13 @@ public class ProgramBuilderSpv {
     public Program build() {
         validateBeforeBuild();
         preprocessBlocks();
-
         Function entry = getEntryPointFunction();
         BuiltIn builtIn = (BuiltIn) getDecoration(DecorationType.BUILT_IN);
-
-        Map<String, Type> vType = expressions.entrySet().stream()
-                .filter(e -> e.getValue() instanceof ScopedPointerVariable)
-                .collect(Collectors.toMap((Map.Entry::getKey), (e -> ((ScopedPointerVariable)e.getValue()).getInnerType())));
-
-        Map<String, String> stClsMap = expressions.entrySet().stream()
-                .filter(e -> e.getValue() instanceof ScopedPointerVariable)
-                .collect(Collectors.toMap((Map.Entry::getKey), (e -> ((ScopedPointerVariable)e.getValue()).getScopeId())));
-
-        MemoryTransformer transformer = new MemoryTransformer(program, builtIn, vType, stClsMap);
+        Set<ScopedPointerVariable> variables = expressions.values().stream()
+                .filter(ScopedPointerVariable.class::isInstance)
+                .map(v -> (ScopedPointerVariable) v)
+                .collect(Collectors.toSet());
+        MemoryTransformer transformer = new MemoryTransformer(program, builtIn, variables);
         for (int z = 0; z < threadGrid.get(2); z++) {
             for (int y = 0; y < threadGrid.get(1); y++) {
                 for (int x = 0; x < threadGrid.get(0); x++) {
