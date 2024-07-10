@@ -187,8 +187,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case MUL -> bvmgr.multiply(bv1, bv2);
                 case DIV -> bvmgr.divide(bv1, bv2, true);
                 case UDIV -> bvmgr.divide(bv1, bv2, false);
-                case SREM -> bvmgr.modulo(bv1, bv2, true);
-                case UREM -> bvmgr.modulo(bv1, bv2, false);
+                case SREM -> bvmgr.remainder(bv1, bv2, true);
+                case UREM -> bvmgr.remainder(bv1, bv2, false);
                 case AND -> bvmgr.and(bv1, bv2);
                 case OR -> bvmgr.or(bv1, bv2);
                 case XOR -> bvmgr.xor(bv1, bv2);
