@@ -9,19 +9,18 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
+import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.dat3m.dartagnan.program.memory.Location;
-import com.dat3m.dartagnan.program.specification.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.dat3m.dartagnan.expression.integers.IntCmpOp.*;
-import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_FORALL;
-import static com.dat3m.dartagnan.program.specification.AbstractAssert.ASSERT_TYPE_NOT_EXISTS;
+import static com.dat3m.dartagnan.program.Program.SpecificationType.*;
 
-public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
+public class VisitorSpirvOutput extends SpirvBaseVisitor<Expression> {
 
     private static final TypeFactory TYPE_FACTORY = TypeFactory.getInstance();
     private static final ExpressionFactory EXPR_FACTORY = ExpressionFactory.getInstance();
@@ -33,35 +32,37 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
     }
 
     @Override
-    public AbstractAssert visitAssertionList(SpirvParser.AssertionListContext ctx) {
-        AbstractAssert ast = ctx.assertion().accept(this);
+    public Expression visitAssertionList(SpirvParser.AssertionListContext ctx) {
+        Expression expression = ctx.assertion().accept(this);
+        Program.SpecificationType type;
         if (ctx.ModeHeader_AssertionNot() != null) {
-            ast.setType(ASSERT_TYPE_NOT_EXISTS);
+            type = NOT_EXISTS;
         } else if (ctx.ModeHeader_AssertionExists() != null) {
-            ast.setType(AbstractAssert.ASSERT_TYPE_EXISTS);
+            type = EXISTS;
         } else if (ctx.ModeHeader_AssertionForall() != null) {
-            ast.setType(ASSERT_TYPE_FORALL);
+            type = FORALL;
         } else {
             throw new ParsingException("Unrecognised assertion type");
         }
-        builder.addAssertion(ast);
+        builder.addAssertion(type, expression);
         return null;
     }
 
     @Override
-    public AbstractAssert visitAssertion(SpirvParser.AssertionContext ctx) {
+    public Expression visitAssertion(SpirvParser.AssertionContext ctx) {
         if (ctx.ModeHeader_LPar() != null) {
+            // TODO:??
             if (ctx.assertionValue() != null) {
                 return ctx.assertionValue().getText().equals("0") ?
-                        new AssertNot(new AssertTrue()) : new AssertTrue();
+                        EXPR_FACTORY.makeFalse() : EXPR_FACTORY.makeTrue();
             } else {
                 return ctx.assertion(0).accept(this);
             }
         } else if (ctx.ModeHeader_AssertionAnd() != null) {
-            return new AssertCompositeAnd(ctx.assertion(0).accept(this),
+            return EXPR_FACTORY.makeAnd(ctx.assertion(0).accept(this),
                     ctx.assertion(1).accept(this));
         } else if (ctx.ModeHeader_AssertionOr() != null) {
-            return new AssertCompositeOr(ctx.assertion(0).accept(this),
+            return EXPR_FACTORY.makeOr(ctx.assertion(0).accept(this),
                     ctx.assertion(1).accept(this));
         } else if (ctx.assertionBasic() != null) {
             return ctx.assertionBasic().accept(this);
@@ -71,23 +72,23 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
     }
 
     @Override
-    public AbstractAssert visitAssertionBasic(SpirvParser.AssertionBasicContext ctx) {
+    public Expression visitAssertionBasic(SpirvParser.AssertionBasicContext ctx) {
         Expression expr1 = acceptAssertionValue(ctx.assertionValue(0));
         Expression expr2 = acceptAssertionValue(ctx.assertionValue(1));
         expr1 = normalize(expr1, expr2);
         expr2 = normalize(expr2, expr1);
         if (ctx.assertionCompare().ModeHeader_EqualEqual() != null) {
-            return new AssertBasic(expr1, EQ, expr2);
+            return EXPR_FACTORY.makeBinary(expr1, EQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_NotEqual() != null) {
-            return new AssertBasic(expr1, NEQ, expr2);
+            return EXPR_FACTORY.makeBinary(expr1, NEQ, expr2);
         } else if (ctx.assertionCompare().ModeHeader_Less() != null) {
-            return new AssertBasic(expr1, LT, expr2);
+            return EXPR_FACTORY.makeBinary(expr1, LT, expr2);
         } else if (ctx.assertionCompare().ModeHeader_LessEqual() != null) {
-            return new AssertBasic(expr1, LTE, expr2);
+            return EXPR_FACTORY.makeBinary(expr1, LTE, expr2);
         } else if (ctx.assertionCompare().ModeHeader_Greater() != null) {
-            return new AssertBasic(expr1, GT, expr2);
+            return EXPR_FACTORY.makeBinary(expr1, GT, expr2);
         } else if (ctx.assertionCompare().ModeHeader_GreaterEqual() != null) {
-            return new AssertBasic(expr1, GTE, expr2);
+            return EXPR_FACTORY.makeBinary(expr1, GTE, expr2);
         } else {
             throw new ParsingException("Unrecognised comparison operator");
         }
@@ -150,7 +151,7 @@ public class VisitorSpirvOutput extends SpirvBaseVisitor<AbstractAssert> {
         }
         String offsetName = indexes.isEmpty() ? base.getId() :
                 base.getId() + "[" + String.join("][", indexes.stream().map(Object::toString).toArray(String[]::new)) + "]";
-        Location location =  new Location(offsetName, base.getAddress(), offset);
+        Location location =  new Location(offsetName, type, base.getAddress(), offset);
         locationTypes.put(location, type);
         return location;
     }

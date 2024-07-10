@@ -2,6 +2,7 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
@@ -26,7 +27,6 @@ import com.dat3m.dartagnan.program.event.functions.AbortIf;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.specification.*;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,13 +35,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.dat3m.dartagnan.program.Program.SpecificationType.FORALL;
+import static com.dat3m.dartagnan.program.Program.SpecificationType.NOT_EXISTS;
 import static com.dat3m.dartagnan.program.ScopeHierarchy.ScopeHierarchyForVulkan;
 import static com.dat3m.dartagnan.program.event.EventFactory.eventSequence;
-import static com.dat3m.dartagnan.program.specification.AbstractAssert.*;
 
 public class ProgramBuilderSpv {
 
     private static final Logger logger = LogManager.getLogger(ProgramBuilderSpv.class);
+    private static final ExpressionFactory expressionFactory = ExpressionFactory.getInstance();
 
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
@@ -133,21 +135,19 @@ public class ProgramBuilderSpv {
         entryPointId = id;
     }
 
-    public void addAssertion(AbstractAssert ast) {
-        AbstractAssert spec = program.getSpecification();
-        if (spec == null) {
-            program.setSpecification(ast);
-        } else if (spec.isSafetySpec() && ast.getType().equals(spec.getType())) {
-            if (ast.getType().equals(ASSERT_TYPE_FORALL)) {
-                AbstractAssert result = new AssertCompositeAnd(spec, ast);
-                result.setType(ASSERT_TYPE_FORALL);
-                program.setSpecification(result);
-            } else if (ast.getType().equals(ASSERT_TYPE_NOT_EXISTS)) {
-                AbstractAssert result = new AssertCompositeOr(spec, ast);
-                result.setType(ASSERT_TYPE_NOT_EXISTS);
-                program.setSpecification(result);
+    public void addAssertion(Program.SpecificationType type, Expression expression) {
+        Expression specification = program.getSpecification();
+        if (specification == null) {
+            program.setSpecification(type, expression);
+        } else if (type.equals(program.getSpecificationType())) {
+            if (program.getSpecificationType().equals(FORALL)) {
+                Expression result = expressionFactory.makeAnd(specification, expression);
+                program.setSpecification(type, result);
+            } else if (program.getSpecificationType().equals(NOT_EXISTS)) {
+                Expression result = expressionFactory.makeOr(specification, expression);
+                program.setSpecification(type, result);
             } else {
-                throw new ParsingException("Unexpected assertion type " + ast.getType());
+                throw new ParsingException("Multiline assertion is not supported for type " + type);
             }
         } else {
             throw new ParsingException("Mixed assertion type is not supported");
@@ -507,9 +507,7 @@ public class ProgramBuilderSpv {
         if (program.getSpecification() == null) {
             logger.warn("The program has no explicitly defined specification, " +
                     "setting a trivial assertion");
-            AssertTrue ast = new AssertTrue();
-            ast.setType(ASSERT_TYPE_FORALL);
-            program.setSpecification(ast);
+            program.setSpecification(FORALL, expressionFactory.makeTrue());
         }
     }
 

@@ -206,14 +206,14 @@ public class VisitorSpirvVulkan extends VisitorVulkan {
                     Tag.Spirv.SEQ_CST -> Tag.Vulkan.ACQ_REL;
 
             // Scope
-            case Tag.Spirv.INVOCATION -> null;
             case Tag.Spirv.SUBGROUP -> Tag.Vulkan.SUB_GROUP;
             case Tag.Spirv.WORKGROUP -> Tag.Vulkan.WORK_GROUP;
             case Tag.Spirv.QUEUE_FAMILY -> Tag.Vulkan.QUEUE_FAMILY;
             // TODO: Refactoring of the cat model
             //  In the cat file AV/VISSHADER uses device domain,
             //  and device domain is mapped to AV/VISDEVICE
-            case Tag.Spirv.SHADER_CALL,
+            case Tag.Spirv.INVOCATION,
+                    Tag.Spirv.SHADER_CALL,
                     Tag.Spirv.DEVICE,
                     Tag.Spirv.CROSS_DEVICE -> Tag.Vulkan.DEVICE;
 

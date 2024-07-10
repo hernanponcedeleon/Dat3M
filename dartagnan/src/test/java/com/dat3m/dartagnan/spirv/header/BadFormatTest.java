@@ -56,7 +56,7 @@ public class BadFormatTest extends AbstractTest {
                 ; @Output: exists (%v2==123 and %v3==0)
                 ; @Config: 1, 1, 1
                 """,
-                        "Mixed assertion type is not supported"},
+                        "Multiline assertion is not supported for type EXISTS"},
         });
     }
 

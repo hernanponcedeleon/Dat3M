@@ -8,10 +8,12 @@ public final class TagSet extends AbstractSet<String> {
 
     @Override
     public boolean add(String tag) {
-        final int index = Collections.binarySearch(sortedTags, tag);
-        if (index < 0) {
-            sortedTags.add(~index, tag);
-            return true;
+        if (tag != null) {
+            final int index = Collections.binarySearch(sortedTags, tag);
+            if (index < 0) {
+                sortedTags.add(~index, tag);
+                return true;
+            }
         }
         return false;
     }
