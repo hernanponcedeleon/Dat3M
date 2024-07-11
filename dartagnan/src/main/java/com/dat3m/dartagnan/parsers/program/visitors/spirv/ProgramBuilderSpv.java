@@ -4,7 +4,6 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.Decoration;
@@ -230,14 +229,6 @@ public class ProgramBuilderSpv {
             throw new ParsingException("Overlapping blocks with back jump in label '%s'", label.getName());
         }
         return getOrCreateLabel(id);
-    }
-
-    public int getExpressionAsConstInteger(String id) {
-        Expression expression = getExpression(id);
-        if (expression instanceof IntLiteral iExpr) {
-            return iExpr.getValueAsInt();
-        }
-        throw new ParsingException("Expression '%s' is not an integer constant", id);
     }
 
     public boolean hasInput(String id) {

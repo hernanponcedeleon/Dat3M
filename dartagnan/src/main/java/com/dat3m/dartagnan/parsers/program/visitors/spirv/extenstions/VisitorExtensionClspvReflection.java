@@ -4,6 +4,7 @@ import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
@@ -22,7 +23,6 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
     private final ProgramBuilderSpv builder;
-    private final List<Integer> threadGrid;
     private ScopedPointerVariable pushConstant;
     private AggregateType pushConstantType;
     private int pushConstantIndex = 0;
@@ -30,7 +30,6 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
 
     public VisitorExtensionClspvReflection(ProgramBuilderSpv builder) {
         this.builder = builder;
-        this.threadGrid = builder.getThreadGrid();
     }
 
     @Override
@@ -64,30 +63,6 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
     }
 
     @Override
-    public Void visitArgumentPodPushConstant(SpirvParser.ArgumentPodPushConstantContext ctx) {
-        initPushConstant();
-        if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
-            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'", pushConstant.getId());
-        }
-        Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
-        int typeSize = types.getMemorySizeInBytes(type);
-        if (type instanceof AggregateType aType) {
-            // TODO: Replace with getMemorySizeInBytes for aggregate type after offset is fixed in TypeFactory
-            typeSize = aType.getDirectFields().stream()
-                    .map(types::getMemorySizeInBytes)
-                    .reduce(0, Integer::sum);
-        }
-        String sizeId = ctx.sizeIdRef().getText();
-        if (typeSize != builder.getExpressionAsConstInteger(sizeId)) {
-            throw new ParsingException("Unexpected offset in PushConstant '%s' element '%s'",
-                    pushConstant.getId(), pushConstantIndex);
-        }
-        pushConstantOffset += types.getMemorySizeInBytes(type);
-        pushConstantIndex++;
-        return null;
-    }
-
-    @Override
     public Void visitPushConstantGlobalOffset(SpirvParser.PushConstantGlobalOffsetContext ctx) {
         return setPushConstantValue("PushConstantGlobalOffset", ctx.sizeIdRef().getText());
     }
@@ -117,22 +92,21 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
         return setPushConstantValue("PushConstantRegionGroupOffset", ctx.sizeIdRef().getText());
     }
 
-    // TODO: Better way to identify PushConstant using kernel and arg info
-    private void initPushConstant() {
-        if (pushConstant == null) {
-            List<ScopedPointerVariable> variables = builder.getVariablesWithStorageClass(Tag.Spirv.SC_PUSH_CONSTANT);
-            if (variables.size() != 1) {
-                throw new ParsingException("Cannot identify PushConstant referenced by CLSPV extension");
-            }
-            pushConstant = variables.get(0);
-            Type type = pushConstant.getInnerType();
-            if (type instanceof AggregateType agType) {
-                pushConstantType = agType;
-            } else {
-                throw new ParsingException("Unexpected type '%s' for PushConstant '%s'",
-                        type, pushConstant.getId());
-            }
+    @Override
+    public Void visitArgumentPodPushConstant(SpirvParser.ArgumentPodPushConstantContext ctx) {
+        initPushConstant();
+        if (pushConstantIndex >= pushConstantType.getDirectFields().size()) {
+            throw new ParsingException("Out of bounds definition 'ArgumentPodPushConstant' in PushConstant '%s'", pushConstant.getId());
         }
+        Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
+        int typeSize = types.getMemorySizeInBytes(type);
+        if (typeSize != getExpressionAsConstInteger(ctx.sizeIdRef().getText())) {
+            throw new ParsingException("Unexpected offset in PushConstant '%s' element '%s'",
+                    pushConstant.getId(), pushConstantIndex);
+        }
+        pushConstantOffset += typeSize;
+        pushConstantIndex++;
+        return null;
     }
 
     private Void setPushConstantValue(String decorationId, String sizeId) {
@@ -142,8 +116,8 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
         }
         Type type = pushConstantType.getDirectFields().get(pushConstantIndex);
         int typeSize = types.getMemorySizeInBytes(type);
-        int parsedSize = builder.getExpressionAsConstInteger(sizeId);
-        if (type instanceof ArrayType aType && aType.getNumElements() == 3 && typeSize == parsedSize) {
+        int expectedSize = getExpressionAsConstInteger(sizeId);
+        if (type instanceof ArrayType aType && aType.getNumElements() == 3 && typeSize == expectedSize) {
             Type elType = aType.getElementType();
             if (elType instanceof IntegerType iType) {
                 List<Integer> values = getPushConstantValue(decorationId);
@@ -162,17 +136,44 @@ public class VisitorExtensionClspvReflection extends VisitorExtension<Void> {
                 pushConstant.getId(), pushConstantIndex);
     }
 
-    public List<Integer> getPushConstantValue(String command) {
+    private List<Integer> getPushConstantValue(String command) {
+        List<Integer> grid = builder.getThreadGrid();
         return switch (command) {
-            case "PushConstantGlobalSize" -> List.of(threadGrid.get(0) * threadGrid.get(1) * threadGrid.get(2), 1, 1);
-            case "PushConstantEnqueuedLocalSize" -> List.of(threadGrid.get(0) * threadGrid.get(1), 1, 1);
-            case "PushConstantNumWorkgroups" -> List.of(threadGrid.get(2), 1, 1);
+            case "PushConstantGlobalSize" -> List.of(grid.get(0) * grid.get(1) * grid.get(2), 1, 1);
+            case "PushConstantEnqueuedLocalSize" -> List.of(grid.get(0) * grid.get(1), 1, 1);
+            case "PushConstantNumWorkgroups" -> List.of(grid.get(2), 1, 1);
             case "PushConstantGlobalOffset",
                     "PushConstantRegionOffset",
                     "PushConstantRegionGroupOffset"
                     -> List.of(0, 0, 0);
             default -> throw new ParsingException("Unsupported PushConstant command '%s'", command);
         };
+    }
+
+    // TODO: Better way to identify PushConstant using kernel and arg info methods
+    private void initPushConstant() {
+        if (pushConstant == null) {
+            List<ScopedPointerVariable> variables = builder.getVariablesWithStorageClass(Tag.Spirv.SC_PUSH_CONSTANT);
+            if (variables.size() != 1) {
+                throw new ParsingException("Cannot identify PushConstant referenced by CLSPV extension");
+            }
+            pushConstant = variables.get(0);
+            Type type = pushConstant.getInnerType();
+            if (type instanceof AggregateType agType) {
+                pushConstantType = agType;
+            } else {
+                throw new ParsingException("Unexpected type '%s' for PushConstant '%s'",
+                        type, pushConstant.getId());
+            }
+        }
+    }
+
+    private int getExpressionAsConstInteger(String id) {
+        Expression expression = builder.getExpression(id);
+        if (expression instanceof IntLiteral iExpr) {
+            return iExpr.getValueAsInt();
+        }
+        throw new ParsingException("Expression '%s' is not an integer constant", id);
     }
 
     @Override
