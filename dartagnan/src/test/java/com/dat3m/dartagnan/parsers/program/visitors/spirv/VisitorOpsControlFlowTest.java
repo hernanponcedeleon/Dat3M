@@ -1,16 +1,18 @@
 package com.dat3m.dartagnan.parsers.program.visitors.spirv;
 
 import com.dat3m.dartagnan.exception.ParsingException;
-import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
-import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.type.FunctionType;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockHelperControlFlow;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockProgramBuilderSpv;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.mocks.MockSpirvParser;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.core.*;
+import com.dat3m.dartagnan.program.event.core.CondJump;
+import com.dat3m.dartagnan.program.event.core.IfAsJump;
+import com.dat3m.dartagnan.program.event.core.Label;
+import com.dat3m.dartagnan.program.event.core.Skip;
 import com.dat3m.dartagnan.program.event.functions.Return;
 import org.junit.Test;
 
@@ -22,6 +24,7 @@ import static org.junit.Assert.*;
 public class VisitorOpsControlFlowTest {
 
     private final MockProgramBuilderSpv builder = new MockProgramBuilderSpv();
+    private final MockHelperControlFlow helper = (MockHelperControlFlow) builder.getHelperControlFlow();
 
     @Test
     public void testOpPhi() {
@@ -37,13 +40,11 @@ public class VisitorOpsControlFlowTest {
         Register register = builder.getRegister("%phi");
         assertEquals(builder.getType("%int"), register.getType());
 
-        Label label1 = builder.getOrCreateLabel("%label1");
-        Map<Register, String> phi1 = builder.getPhiDefinitions(label1);
+        Map<Register, String> phi1 = helper.getPhiDefinitions("%label1");
         assertEquals(1, phi1.size());
         assertEquals("%value1", phi1.get(register));
 
-        Label label2 = builder.getOrCreateLabel("%label2");
-        Map<Register, String> phi2 = builder.getPhiDefinitions(label2);
+        Map<Register, String> phi2 = helper.getPhiDefinitions("%label2");
         assertEquals(1, phi2.size());
         assertEquals("%value2", phi2.get(register));
     }
@@ -61,21 +62,19 @@ public class VisitorOpsControlFlowTest {
         visit(input);
 
         // then
-        Label label1 = builder.getOrCreateLabel("%label1");
-        Label label2 = builder.getOrCreateLabel("%label2");
-        assertEquals(List.of(label2, label1), builder.getBlocks());
+        assertEquals(List.of("%label2", "%label1"), helper.getBlockStack());
 
         // when
-        builder.endBlock(new Skip());
+        helper.endBlock(new Skip());
 
         // then
-        assertEquals(List.of(label1), builder.getBlocks());
+        assertEquals(List.of("%label1"), helper.getBlockStack());
 
         // when
-        builder.endBlock(new Skip());
+        helper.endBlock(new Skip());
 
         // then
-        assertEquals(List.of(), builder.getBlocks());
+        assertEquals(List.of(), helper.getBlockStack());
     }
 
     @Test
@@ -92,10 +91,10 @@ public class VisitorOpsControlFlowTest {
 
         // then
         Function function = builder.getCurrentFunction();
-        CondJump event = (CondJump) function.getEvents().get(1);
-        assertTrue(((BoolLiteral) (event.getGuard())).getValue());
-        assertEquals(builder.getOrCreateLabel("%label"), event.getLabel());
-        assertTrue(builder.getBlocks().isEmpty());
+        CondJump condJump = (CondJump) function.getEvents().get(1);
+        assertTrue(((BoolLiteral) (condJump.getGuard())).getValue());
+        assertEquals("%label", condJump.getLabel().getName());
+        assertTrue(helper.getBlockStack().isEmpty());
     }
 
     @Test
@@ -116,15 +115,15 @@ public class VisitorOpsControlFlowTest {
         // then
         Function function = builder.getCurrentFunction();
 
-        CondJump event1 = (CondJump) function.getEvents().get(2);
-        assertTrue(((BoolLiteral) (event1.getGuard())).getValue());
-        assertEquals(builder.getOrCreateLabel("%label3"), event1.getLabel());
+        CondJump condJump1 = (CondJump) function.getEvents().get(2);
+        assertTrue(((BoolLiteral) (condJump1.getGuard())).getValue());
+        assertEquals("%label3", condJump1.getLabel().getName());
 
-        CondJump event2 = (CondJump) function.getEvents().get(4);
-        assertTrue(((BoolLiteral) (event2.getGuard())).getValue());
-        assertEquals(builder.getOrCreateLabel("%label2"), event2.getLabel());
+        CondJump condJump2 = (CondJump) function.getEvents().get(4);
+        assertTrue(((BoolLiteral) (condJump2.getGuard())).getValue());
+        assertEquals("%label2", condJump2.getLabel().getName());
 
-        assertEquals(List.of(builder.getOrCreateLabel("%label1")), builder.getBlocks());
+        assertEquals(List.of("%label1"), helper.getBlockStack());
     }
 
     @Test
@@ -157,16 +156,17 @@ public class VisitorOpsControlFlowTest {
         Label label2 = (Label) events.get(4);
         Return ret = (Return) events.get(5);
 
-        Label label2End = builder.getCfDefinition().get(label2);
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label2", ifJump.getLabel().getName());
+        assertEquals("%label2_end", ifJump.getEndIf().getName());
+        assertEquals("%label1", label1.getName());
+        assertEquals("%label2", jump.getLabel().getName());
+        assertEquals("%label2", label2.getName());
 
-        assertEquals(label2, ifJump.getLabel());
-        assertEquals(label2End, ifJump.getEndIf());
         assertTrue(jump.isGoto());
-        assertEquals(label2, jump.getLabel());
-
-        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
-        assertEquals(jump, builder.getBlockEndEvents().get(label1));
-        assertEquals(ret, builder.getBlockEndEvents().get(label2));
+        assertEquals(Map.of("%label2", "%label2_end"), helper.getMergeLabelIds());
+        assertEquals(Map.of("%label0", ifJump, "%label1", jump, "%label2", ret),
+                helper.getLastBlockEvents());
     }
 
     @Test
@@ -208,24 +208,29 @@ public class VisitorOpsControlFlowTest {
         Label label2 = (Label) events.get(8);
         Return ret = (Return) events.get(9);
 
-        Label label2End = builder.getCfDefinition().get(label2);
-        Label label2EndInner = builder.getCfDefinition().get(label2Inner);
-
-        assertEquals(label2, ifJump.getLabel());
-        assertEquals(label2End, ifJump.getEndIf());
-        assertEquals(label2Inner, ifJumpInner.getLabel());
-        assertEquals(label2EndInner, ifJumpInner.getEndIf());
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label2", ifJump.getLabel().getName());
+        assertEquals("%label2_end", ifJump.getEndIf().getName());
+        assertEquals("%label1", label1.getName());
+        assertEquals("%label2_inner", ifJumpInner.getLabel().getName());
+        assertEquals("%label2_inner_end", ifJumpInner.getEndIf().getName());
+        assertEquals("%label1_inner", label1Inner.getName());
+        assertEquals("%label2_inner", jumpInner.getLabel().getName());
+        assertEquals("%label2_inner", label2Inner.getName());
+        assertEquals("%label2", jump.getLabel().getName());
+        assertEquals("%label2", jump.getLabel().getName());
+        assertEquals("%label2", label2.getName());
 
         assertTrue(jump.isGoto());
-        assertEquals(label2, jump.getLabel());
         assertTrue(jumpInner.isGoto());
-        assertEquals(label2Inner, jumpInner.getLabel());
 
-        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
-        assertEquals(ifJumpInner, builder.getBlockEndEvents().get(label1));
-        assertEquals(jumpInner, builder.getBlockEndEvents().get(label1Inner));
-        assertEquals(jump, builder.getBlockEndEvents().get(label2Inner));
-        assertEquals(ret, builder.getBlockEndEvents().get(label2));
+        assertEquals(Map.of(
+                "%label0", ifJump,
+                "%label1", ifJumpInner,
+                "%label1_inner", jumpInner,
+                "%label2_inner", jump,
+                "%label2", ret
+        ), helper.getLastBlockEvents());
     }
 
     @Test
@@ -234,7 +239,7 @@ public class VisitorOpsControlFlowTest {
         String input = """
                 %label0 = OpLabel
                 OpSelectionMerge %label2 None
-                OpBranchConditional %value %label1 %label2
+                OpBranchConditional %value %label1 %label3
                 %label1 = OpLabel
                 OpBranch %label2
                 %label2 = OpLabel
@@ -243,6 +248,8 @@ public class VisitorOpsControlFlowTest {
                 %label1_inner = OpLabel
                 OpBranch %label2_inner
                 %label2_inner = OpLabel
+                OpBranch %label3
+                %label3 = OpLabel
                 OpReturn
                 """;
 
@@ -259,32 +266,42 @@ public class VisitorOpsControlFlowTest {
         Label label0 = (Label) events.get(0);
         IfAsJump ifJump = (IfAsJump) events.get(1);
         Label label1 = (Label) events.get(2);
-        CondJump jump = (CondJump) events.get(3);
+        CondJump jump1 = (CondJump) events.get(3);
         Label label2 = (Label) events.get(4);
         IfAsJump ifJumpInner = (IfAsJump) events.get(5);
         Label label1Inner = (Label) events.get(6);
         CondJump jumpInner = (CondJump) events.get(7);
         Label label2Inner = (Label) events.get(8);
-        Return ret = (Return) events.get(9);
+        CondJump jump2 = (CondJump) events.get(9);
+        Label label3 = (Label) events.get(10);
+        Return ret = (Return) events.get(11);
 
-        Label label2End = builder.getCfDefinition().get(label2);
-        Label label2EndInner = builder.getCfDefinition().get(label2Inner);
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label3", ifJump.getLabel().getName());
+        assertEquals("%label3_end", ifJump.getEndIf().getName());
+        assertEquals("%label2", jump1.getLabel().getName());
+        assertEquals("%label1", label1.getName());
+        assertEquals("%label2", label2.getName());
+        assertEquals("%label2_inner", ifJumpInner.getLabel().getName());
+        assertEquals("%label2_inner_end", ifJumpInner.getEndIf().getName());
+        assertEquals("%label1_inner", label1Inner.getName());
+        assertEquals("%label2_inner", jumpInner.getLabel().getName());
+        assertEquals("%label2_inner", label2Inner.getName());
+        assertEquals("%label3", jump2.getLabel().getName());
+        assertEquals("%label3", label3.getName());
 
-        assertEquals(label2, ifJump.getLabel());
-        assertEquals(label2End, ifJump.getEndIf());
-        assertEquals(label2Inner, ifJumpInner.getLabel());
-        assertEquals(label2EndInner, ifJumpInner.getEndIf());
-
-        assertTrue(jump.isGoto());
-        assertEquals(label2, jump.getLabel());
+        assertTrue(jump1.isGoto());
+        assertTrue(jump2.isGoto());
         assertTrue(jumpInner.isGoto());
-        assertEquals(label2Inner, jumpInner.getLabel());
 
-        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
-        assertEquals(jump, builder.getBlockEndEvents().get(label1));
-        assertEquals(ifJumpInner, builder.getBlockEndEvents().get(label2));
-        assertEquals(jumpInner, builder.getBlockEndEvents().get(label1Inner));
-        assertEquals(ret, builder.getBlockEndEvents().get(label2Inner));
+        assertEquals(Map.of(
+                "%label0", ifJump,
+                "%label1", jump1,
+                "%label2", ifJumpInner,
+                "%label1_inner", jumpInner,
+                "%label2_inner", jump2,
+                "%label3", ret
+        ), helper.getLastBlockEvents());
     }
 
     @Test
@@ -313,13 +330,60 @@ public class VisitorOpsControlFlowTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Overlapping blocks with endpoint in label '%label2'",
-                    e.getMessage());
+            assertEquals("Attempt to redefine label '%label2_end'", e.getMessage());
         }
     }
 
     @Test
-    public void testStructuredLoop() {
+    public void testLoopWithForwardLabels() {
+        // given
+        String input = """
+                        %label0 = OpLabel
+                        OpLoopMerge %label1 %label2 None
+                        OpBranchConditional %value %label1 %label2
+                        %label1 = OpLabel
+                        OpBranch %label2
+                        %label2 = OpLabel
+                        OpReturn
+                        """;
+
+        builder.mockFunctionStart();
+        builder.mockBoolType("%bool");
+        builder.mockRegister("%value", "%bool");
+
+        // when
+        visit(input);
+
+        // then
+        List<Event> events = builder.getCurrentFunction().getEvents();
+
+        Label label0 = (Label) events.get(0);
+        CondJump jump1 = (CondJump) events.get(1);
+        CondJump jump2 = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        CondJump jump3 = (CondJump) events.get(4);
+        Label label2 = (Label) events.get(5);
+        Return ret = (Return) events.get(6);
+
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label1", jump1.getLabel().getName());
+        assertEquals("%label2", jump2.getLabel().getName());
+        assertEquals("%label1", label1.getName());
+        assertEquals("%label2", jump2.getLabel().getName());
+        assertEquals("%label2", label2.getName());
+
+        assertFalse(jump1.isGoto());
+        assertTrue(jump2.isGoto());
+        assertTrue(jump3.isGoto());
+
+        assertTrue(helper.getMergeLabelIds().isEmpty());
+
+        assertEquals(Map.of("%label0", jump1, "%label1", jump3, "%label2", ret),
+                helper.getLastBlockEvents());
+    }
+
+    @Test
+    public void testLoopWithBackwardLabel() {
         // given
         String input = """
                 %label0 = OpLabel
@@ -340,20 +404,23 @@ public class VisitorOpsControlFlowTest {
         List<Event> events = builder.getCurrentFunction().getEvents();
 
         Label label0 = (Label) events.get(0);
-        IfAsJump ifJump = (IfAsJump) events.get(1);
-        CondJump jump = (CondJump) events.get(2);
+        CondJump jump1 = (CondJump) events.get(1);
+        CondJump jump2 = (CondJump) events.get(2);
         Label label1 = (Label) events.get(3);
         Return ret = (Return) events.get(4);
 
-        assertTrue(builder.getCfDefinition().isEmpty());
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label1", jump1.getLabel().getName());
+        assertEquals("%label0", jump2.getLabel().getName());
+        assertEquals("%label1", label1.getName());
 
-        assertEquals(label1, ifJump.getLabel());
-        assertEquals(label1, ifJump.getEndIf());
-        assertTrue(jump.isGoto());
-        assertEquals(label0, jump.getLabel());
+        assertFalse(jump1.isGoto());
+        assertTrue(jump2.isGoto());
 
-        assertEquals(ifJump, builder.getBlockEndEvents().get(label0));
-        assertEquals(ret, builder.getBlockEndEvents().get(label1));
+        assertTrue(helper.getMergeLabelIds().isEmpty());
+
+        assertEquals(Map.of("%label0", jump1, "%label1", ret),
+                helper.getLastBlockEvents());
     }
 
     @Test
@@ -365,7 +432,7 @@ public class VisitorOpsControlFlowTest {
                         %label1 = OpLabel
                         OpReturn
                         """,
-                "Illegal backward jump to label '%label0' " +
+                "Illegal backward jump to '%label0' " +
                         "from a structured branch");
     }
 
@@ -378,55 +445,8 @@ public class VisitorOpsControlFlowTest {
                         %label1 = OpLabel
                         OpReturn
                         """,
-                "Illegal backward jump to label '%label0' " +
+                "Illegal backward jump to '%label0' " +
                         "from a structured branch");
-    }
-
-    @Test
-    public void testLoopMergeBackward() {
-        doTestIllegalStructuredBranch("""
-                        %label2 = OpLabel
-                        OpBranch %label0
-                        %label0 = OpLabel
-                        OpLoopMerge %label2 %label0 None
-                        OpBranchConditional %value1 %label2 %label0
-                        %label1 = OpLabel
-                        OpReturn
-                        """,
-                "Illegal backward jump to label '%label2' " +
-                        "from a structured branch");
-    }
-
-    @Test
-    public void testLoopContinueForward() {
-        doTestIllegalStructuredBranch("""
-                        %label0 = OpLabel
-                        OpLoopMerge %label1 %label2 None
-                        OpBranchConditional %value1 %label1 %label2
-                        %label1 = OpLabel
-                        OpBranch %label2
-                        %label2 = OpLabel
-                        OpReturn
-                        """,
-                "Illegal forward jump to label '%label2' " +
-                        "from a structured loop");
-    }
-
-    @Test
-    public void testStructuredBranchIllegalMergeLabel() {
-        doTestIllegalStructuredBranch("""
-                        %label0 = OpLabel
-                        OpSelectionMerge %label3 None
-                        OpBranchConditional %value1 %label1 %label2
-                        %label1 = OpLabel
-                        OpBranch %label2
-                        %label2 = OpLabel
-                        OpBranch %label3
-                        %label3 = OpLabel
-                        OpReturn
-                        """,
-                "Illegal last label in conditional branch, " +
-                        "expected '%label3' but received '%label2'");
     }
 
     @Test
@@ -444,39 +464,22 @@ public class VisitorOpsControlFlowTest {
     }
 
     @Test
-    public void testOpLoopLabelsIllegalContinueLabel() {
+    public void testLoopMergeWithTwoBackwardLabels() {
         doTestIllegalStructuredBranch("""
-                        %label0 = OpLabel
-                        OpLoopMerge %label1 %label2 None
-                        OpBranchConditional %value1 %label1 %label0
-                        %label1 = OpLabel
-                        OpBranch %label2
                         %label2 = OpLabel
-                        OpReturn
-                        """,
-                "Illegal labels, expected mergeLabel='%label1' " +
-                        "and continueLabel='%label2' but received " +
-                        "mergeLabel='%label1' and continueLabel='%label0'");
-    }
-
-    @Test
-    public void testOpLoopLabelsIllegalMergeLabel() {
-        doTestIllegalStructuredBranch("""
+                        OpBranch %label0
                         %label0 = OpLabel
                         OpLoopMerge %label2 %label0 None
-                        OpBranchConditional %value1 %label1 %label0
+                        OpBranchConditional %value1 %label2 %label0
                         %label1 = OpLabel
-                        OpBranch %label2
-                        %label2 = OpLabel
                         OpReturn
                         """,
-                "Illegal labels, expected mergeLabel='%label2' " +
-                        "and continueLabel='%label0' but received " +
-                        "mergeLabel='%label1' and continueLabel='%label0'");
+                "Unsupported conditional branch " +
+                        "with two backward jumps to '%label2' and '%label0'");
     }
 
     @Test
-    public void testOpLoopLabelsIllegalOrder() {
+    public void testOpLoopIllegalTrueLabel() {
         doTestIllegalStructuredBranch("""
                         %label0 = OpLabel
                         OpLoopMerge %label1 %label0 None
@@ -484,9 +487,7 @@ public class VisitorOpsControlFlowTest {
                         %label1 = OpLabel
                         OpReturn
                         """,
-                "Illegal labels, expected mergeLabel='%label1' " +
-                        "and continueLabel='%label0' but received " +
-                        "mergeLabel='%label0' and continueLabel='%label1'");
+                "Illegal label, expected '%label0' but received '%label1'");
     }
 
     private void doTestIllegalStructuredBranch(String input, String error) {
@@ -510,10 +511,10 @@ public class VisitorOpsControlFlowTest {
         // given
         String input = """
                 %label0 = OpLabel
-                OpBranchConditional %value1 %label2 %label3
+                OpBranchConditional %value1 %label1 %label2
+                %label1 = OpLabel
+                OpBranchConditional %value2 %label2 %label1
                 %label2 = OpLabel
-                OpBranchConditional %value2 %label3 %label1
-                %label3 = OpLabel
                 OpReturn
                 """;
         builder.mockFunctionStart();
@@ -527,23 +528,31 @@ public class VisitorOpsControlFlowTest {
         // then
         List<Event> events = builder.getCurrentFunction().getEvents();
 
-        CondJump event1 = (CondJump) events.get(1);
-        assertEquals("%value1", getGuardRegister(event1).getName());
-        assertEquals(builder.getOrCreateLabel("%label2"), event1.getLabel());
+        Label label0 = (Label) events.get(0);
+        CondJump jump1 = (CondJump) events.get(1);
+        CondJump jump2 = (CondJump) events.get(2);
+        Label label1 = (Label) events.get(3);
+        CondJump jump3 = (CondJump) events.get(4);
+        CondJump jump4 = (CondJump) events.get(5);
+        Label label2 = (Label) events.get(6);
+        Return ret = (Return) events.get(7);
 
-        CondJump event2 = (CondJump) events.get(2);
-        assertEquals("%value1", getGuardRegister(event2).getName());
-        assertEquals(builder.getOrCreateLabel("%label3"), event2.getLabel());
+        assertEquals("%label0", label0.getName());
+        assertEquals("%label1", jump1.getLabel().getName());
+        assertEquals("%label2", jump2.getLabel().getName());
+        assertEquals("%label1", label1.getName());
+        assertEquals("%label2", jump3.getLabel().getName());
+        assertEquals("%label1", jump4.getLabel().getName());
+        assertEquals("%label2", label2.getName());
 
-        CondJump event4 = (CondJump) events.get(4);
-        assertEquals("%value2", getGuardRegister(event4).getName());
-        assertEquals(builder.getOrCreateLabel("%label3"), event4.getLabel());
+        assertFalse(jump1.isGoto());
+        assertTrue(jump2.isGoto());
+        assertFalse(jump3.isGoto());
+        assertTrue(jump4.isGoto());
 
-        CondJump event5 = (CondJump) events.get(5);
-        assertEquals("%value2", getGuardRegister(event5).getName());
-        assertEquals(builder.getOrCreateLabel("%label1"), event5.getLabel());
-
-        assertTrue(builder.getBlocks().isEmpty());
+        assertTrue(helper.getBlockStack().isEmpty());
+        assertEquals(Map.of("%label0", jump1, "%label1", jump3, "%label2", ret),
+                helper.getLastBlockEvents());
     }
 
     @Test
@@ -563,8 +572,7 @@ public class VisitorOpsControlFlowTest {
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
-            assertEquals("Labels of conditional branch cannot be the same",
-                    e.getMessage());
+            assertEquals("Labels of conditional branch cannot be the same", e.getMessage());
         }
     }
 
@@ -604,7 +612,7 @@ public class VisitorOpsControlFlowTest {
         Return event = (Return) function.getEvents().get(1);
         assertNotNull(event);
         assertTrue(event.getValue().isEmpty());
-        assertTrue(builder.getBlocks().isEmpty());
+        assertTrue(helper.getBlockStack().isEmpty());
     }
 
     @Test
@@ -623,7 +631,7 @@ public class VisitorOpsControlFlowTest {
         Function function = builder.getCurrentFunction();
         Return event = (Return) function.getEvents().get(1);
         assertEquals(builder.getExpression("%value"), event.getValue().orElseThrow());
-        assertTrue(builder.getBlocks().isEmpty());
+        assertTrue(helper.getBlockStack().isEmpty());
     }
 
     @Test
@@ -665,17 +673,6 @@ public class VisitorOpsControlFlowTest {
             // then
             assertEquals("Illegal value return for a void function '%func'", e.getMessage());
         }
-    }
-
-    private Register getGuardRegister(CondJump event) {
-        Expression guard = event.getGuard();
-        if (guard instanceof Register register) {
-            return register;
-        }
-        if (guard instanceof BoolUnaryExpr expr) {
-            return (Register) expr.getOperand();
-        }
-        throw new RuntimeException("Unexpected expression type");
     }
 
     private void visit(String text) {

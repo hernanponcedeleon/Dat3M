@@ -25,15 +25,16 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     private static final ExpressionFactory exprFactory = ExpressionFactory.getInstance();
 
     public MockProgramBuilderSpv() {
-        super(List.of(1, 1, 1, 1), Map.of());
+        this(List.of(1, 1, 1, 1), Map.of());
     }
 
     public MockProgramBuilderSpv(Map<String, Expression> input) {
-        super(List.of(1, 1, 1, 1), input);
+        this(List.of(1, 1, 1, 1), input);
     }
 
     public MockProgramBuilderSpv(List<Integer> grid, Map<String, Expression> input) {
         super(grid, input);
+        helperControlFlow = new MockHelperControlFlow(expressions);
     }
 
     @Override
@@ -141,12 +142,13 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
     }
 
     public void mockLabel() {
-        startBlock(new Label("%mock_label"));
+        helperControlFlow.getOrCreateLabel("%mock_label");
+        helperControlFlow.startBlock("%mock_label");
     }
 
     public void mockLabel(String id) {
-        Label label = getOrCreateLabel(id);
-        startBlock(label);
+        Label label = helperControlFlow.getOrCreateLabel(id);
+        helperControlFlow.startBlock(id);
         addEvent(label);
     }
 
@@ -175,23 +177,7 @@ public class MockProgramBuilderSpv extends ProgramBuilderSpv {
         return Map.copyOf(expressions);
     }
 
-    public List<Label> getBlocks() {
-        return blocks.stream().toList();
-    }
-
-    public Map<Label, Label> getCfDefinition() {
-        return Map.copyOf(cfDefinitions);
-    }
-
-    public Map<Label, Event> getBlockEndEvents() {
-        return Map.copyOf(blockEndEvents);
-    }
-
     public Set<Function> getForwardFunctions() {
         return Set.copyOf(forwardFunctions.values());
-    }
-
-    public Map<Register, String> getPhiDefinitions(Label label) {
-        return Map.copyOf(phiDefinitions.computeIfAbsent(label, k -> new HashMap<>()));
     }
 }

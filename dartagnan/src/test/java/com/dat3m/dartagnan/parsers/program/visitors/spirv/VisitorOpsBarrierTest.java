@@ -86,7 +86,7 @@ public class VisitorOpsBarrierTest {
 
     private Event visit(String text) {
         builder.mockFunctionStart();
-        builder.startBlock(builder.getOrCreateLabel("test"));
+        builder.mockLabel("test");
         return new MockSpirvParser(text).spv().spvInstructions().accept(new VisitorOpsBarrier(builder));
     }
 }
