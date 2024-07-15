@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.parsers.program.visitors.spirv.utils;
 
 import com.dat3m.dartagnan.exception.ParsingException;
 import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.parsers.program.visitors.spirv.decorations.BuiltIn;
@@ -17,39 +16,29 @@ import com.dat3m.dartagnan.program.*;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.dat3m.dartagnan.program.Program.SpecificationType.FORALL;
-import static com.dat3m.dartagnan.program.Program.SpecificationType.NOT_EXISTS;
-
 public class ProgramBuilder {
-
-    private static final Logger logger = LogManager.getLogger(ProgramBuilder.class);
 
     protected final Map<String, Type> types = new HashMap<>();
     protected final Map<String, Expression> expressions = new HashMap<>();
+    protected final Map<String, Expression> inputs = new HashMap<>();
     protected final Map<String, Function> forwardFunctions = new HashMap<>();
     protected final ThreadGrid grid;
-    protected final Map<String, Expression> inputs;
-    public final Program program;
-
+    protected final Program program;
     protected Function currentFunction;
     protected String entryPointId;
     protected int nextFunctionId = 0;
     protected Set<String> nextOps;
-
+    protected ControlFlowBuilder cfBuilder = new ControlFlowBuilder(expressions);
     private final HelperTags helperTags = new HelperTags();
     private final HelperDecorations helperDecorations;
-    protected ControlFlowBuilder cfBuilder = new ControlFlowBuilder(expressions);
 
-    public ProgramBuilder(ThreadGrid grid, Map<String, Expression> inputs) {
+    public ProgramBuilder(ThreadGrid grid) {
         this.grid = grid;
-        this.inputs = inputs;
         this.program = new Program(new Memory(), Program.SourceLanguage.SPV);
         this.helperDecorations = new HelperDecorations(grid);
     }
@@ -63,8 +52,54 @@ public class ProgramBuilder {
                 .map(v -> (ScopedPointerVariable) v)
                 .collect(Collectors.toSet());
         new ThreadCreator(grid, getEntryPointFunction(), variables, builtIn).create();
-        checkSpecification();
         return program;
+    }
+
+    public ThreadGrid getThreadGrid() {
+        return grid;
+    }
+
+    public Set<String> getNextOps() {
+        return nextOps;
+    }
+
+    public void setNextOps(Set<String> nextOps) {
+        if (this.nextOps != null) {
+            throw new ParsingException("Illegal attempt to override next ops");
+        }
+        this.nextOps = nextOps;
+    }
+
+    public void clearNextOps() {
+        this.nextOps = null;
+    }
+
+    public void setEntryPointId(String id) {
+        if (entryPointId != null) {
+            throw new ParsingException("Multiple entry points are not supported");
+        }
+        entryPointId = id;
+    }
+
+    public void setSpecification(Program.SpecificationType type, Expression assertion) {
+        if (program.getSpecification() != null) {
+            throw new ParsingException("Attempt to override program specification");
+        }
+        program.setSpecification(type, assertion);
+    }
+
+    public Expression getInput(String id) {
+        if (inputs.containsKey(id)) {
+            return inputs.get(id);
+        }
+        throw new ParsingException("Reference to undefined input variable '%s'", id);
+    }
+
+    public void addInput(String id, Expression value) {
+        if (inputs.containsKey(id)) {
+            throw new ParsingException("Duplicated definition '%s'", id);
+        }
+        inputs.put(id, value);
     }
 
     public Type getType(String name) {
@@ -97,6 +132,21 @@ public class ProgramBuilder {
         }
         expressions.put(name, value);
         return value;
+    }
+
+    public Event addEvent(Event event) {
+        if (currentFunction == null) {
+            throw new ParsingException("Attempt to add an event outside a function definition");
+        }
+        if (!cfBuilder.isInsideBlock()) {
+            throw new ParsingException("Attempt to add an event outside a control flow block");
+        }
+        if (event instanceof RegWriter regWriter) {
+            Register register = regWriter.getResultRegister();
+            addExpression(register.getName(), register);
+        }
+        currentFunction.append(event);
+        return event;
     }
 
     public void startFunctionDefinition(String id, FunctionType type, List<String> args) {
@@ -155,21 +205,6 @@ public class ProgramBuilder {
                 "function type doesn't match the function definition", id);
     }
 
-    public Event addEvent(Event event) {
-        if (currentFunction == null) {
-            throw new ParsingException("Attempt to add an event outside a function definition");
-        }
-        if (!cfBuilder.isInsideBlock()) {
-            throw new ParsingException("Attempt to add an event outside a control flow block");
-        }
-        if (event instanceof RegWriter regWriter) {
-            Register register = regWriter.getResultRegister();
-            addExpression(register.getName(), register);
-        }
-        currentFunction.append(event);
-        return event;
-    }
-
     public ScopedPointerVariable allocateMemoryVirtual(String id, String typeId, Type type, int bytes) {
         MemoryObject memoryObject = program.getMemory().allocateVirtual(bytes, true, null);
         memoryObject.setName(id);
@@ -202,13 +237,6 @@ public class ProgramBuilder {
 
     public boolean hasInput(String id) {
         return inputs.containsKey(id);
-    }
-
-    public Expression getInput(String id) {
-        if (inputs.containsKey(id)) {
-            return inputs.get(id);
-        }
-        throw new ParsingException("Reference to undefined input variable '%s'", id);
     }
 
     public Register getRegister(String id) {
@@ -270,14 +298,6 @@ public class ProgramBuilder {
         }
     }
 
-    private void checkSpecification() {
-        if (program.getSpecification() == null) {
-            logger.warn("The program has no explicitly defined specification, " +
-                    "setting a trivial assertion");
-            program.setSpecification(FORALL, ExpressionFactory.getInstance().makeTrue());
-        }
-    }
-
     private Function getEntryPointFunction() {
         if (entryPointId == null) {
             throw new ParsingException("Cannot build the program, entryPointId is missing");
@@ -301,50 +321,5 @@ public class ProgramBuilder {
 
     public String getCurrentFunctionName() {
         return getCurrentFunctionOrThrowError().getName();
-    }
-
-    public ThreadGrid getThreadGrid() {
-        return grid;
-    }
-
-    public Set<String> getNextOps() {
-        return nextOps;
-    }
-
-    public void setNextOps(Set<String> nextOps) {
-        if (this.nextOps != null) {
-            throw new ParsingException("Illegal attempt to override next ops");
-        }
-        this.nextOps = nextOps;
-    }
-
-    public void clearNextOps() {
-        this.nextOps = null;
-    }
-
-    public void setEntryPointId(String id) {
-        if (entryPointId != null) {
-            throw new ParsingException("Multiple entry points are not supported");
-        }
-        entryPointId = id;
-    }
-
-    public void addAssertion(Program.SpecificationType type, Expression expression) {
-        Expression specification = program.getSpecification();
-        if (specification == null) {
-            program.setSpecification(type, expression);
-        } else if (type.equals(program.getSpecificationType())) {
-            if (program.getSpecificationType().equals(FORALL)) {
-                Expression result = ExpressionFactory.getInstance().makeAnd(specification, expression);
-                program.setSpecification(type, result);
-            } else if (program.getSpecificationType().equals(NOT_EXISTS)) {
-                Expression result = ExpressionFactory.getInstance().makeOr(specification, expression);
-                program.setSpecification(type, result);
-            } else {
-                throw new ParsingException("Multiline assertion is not supported for type " + type);
-            }
-        } else {
-            throw new ParsingException("Mixed assertion type is not supported");
-        }
     }
 }

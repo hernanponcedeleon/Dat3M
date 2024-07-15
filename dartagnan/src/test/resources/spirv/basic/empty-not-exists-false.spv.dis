@@ -1,4 +1,4 @@
-; @Output: not exists (0)
+; @Output: not exists (0 == 1)
 ; @Config: 1, 1, 1
 ; SPIR-V
 ; Version: 1.0

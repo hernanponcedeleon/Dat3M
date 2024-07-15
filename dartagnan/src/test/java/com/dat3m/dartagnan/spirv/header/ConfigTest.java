@@ -53,7 +53,7 @@ public class ConfigTest extends AbstractTest {
         doTestIllegalConfig("; @Config: 100, 100, 100",
                 "Thread grid dimensions must be less than 128");
         doTestIllegalConfig("""
-                        ; @Output: forall (0)
+                        ; @Output: forall (1 == 1)
                         ; @Config: 1, 1, 1
                         ; @Config: 1, 1, 1
                         """,

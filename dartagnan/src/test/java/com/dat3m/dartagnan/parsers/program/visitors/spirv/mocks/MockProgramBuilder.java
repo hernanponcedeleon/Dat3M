@@ -26,15 +26,11 @@ public class MockProgramBuilder extends ProgramBuilder {
     private static final ExpressionFactory exprFactory = ExpressionFactory.getInstance();
 
     public MockProgramBuilder() {
-        this(Map.of());
+        this(new ThreadGrid(1, 1, 1, 1));
     }
 
-    public MockProgramBuilder(Map<String, Expression> input) {
-        this(new ThreadGrid(1, 1, 1, 1), input);
-    }
-
-    public MockProgramBuilder(ThreadGrid grid, Map<String, Expression> input) {
-        super(grid, input);
+    public MockProgramBuilder(ThreadGrid grid) {
+        super(grid);
         cfBuilder = new MockControlFlowBuilder(expressions);
     }
 

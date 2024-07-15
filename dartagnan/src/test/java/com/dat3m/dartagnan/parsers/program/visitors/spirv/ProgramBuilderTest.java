@@ -11,7 +11,6 @@ import com.dat3m.dartagnan.program.event.core.Skip;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -20,7 +19,7 @@ public class ProgramBuilderTest {
 
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    private final ProgramBuilder builder = new ProgramBuilder(new ThreadGrid(1, 1, 1, 1), Map.of());
+    private final ProgramBuilder builder = new ProgramBuilder(new ThreadGrid(1, 1, 1, 1));
     private final ControlFlowBuilder cfBuilder = builder.getHelperControlFlow();
 
     @Test

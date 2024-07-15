@@ -14,6 +14,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,118 +24,15 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
     private VisitorOpsConstant specConstantVisitor;
     private ProgramBuilder builder;
 
-    static String parseOpName(SpirvParser.OpContext ctx) {
-        ParseTree innerCtx = ctx.getChild(0);
-        if ("Op".equals(innerCtx.getChild(0).getText())) {
-            return "Op" + innerCtx.getChild(1).getText();
-        }
-        if ("SpecConstantOp".equals(innerCtx.getChild(3).getText())) {
-            return "Op" + innerCtx.getChild(5).getText();
-        }
-        return "Op" + innerCtx.getChild(3).getText();
-    }
-
-    static boolean isSpecConstantOp(SpirvParser.OpContext ctx) {
-        ParseTree innerCtx = ctx.getChild(0);
-        if ("Op".equals(innerCtx.getChild(0).getText())) {
-            return false;
-        }
-        return "SpecConstantOp".equals(innerCtx.getChild(3).getText());
-    }
-
-    private static Set<Class<?>> getChildVisitors() {
-        return Set.of(
-                VisitorOpsAnnotation.class,
-                VisitorOpsArithmetic.class,
-                VisitorOpsAtomic.class,
-                VisitorOpsBarrier.class,
-                VisitorOpsBits.class,
-                VisitorOpsConstant.class,
-                VisitorOpsControlFlow.class,
-                VisitorOpsDebug.class,
-                VisitorOpsExtension.class,
-                VisitorOpsFunction.class,
-                VisitorOpsLogical.class,
-                VisitorOpsMemory.class,
-                VisitorOpsSetting.class,
-                VisitorOpsType.class
-        );
-    }
-
-    private void initializeVisitors() {
-        for (Class<?> cls : getChildVisitors()) {
-            try {
-                Constructor<?> constructor = cls.getDeclaredConstructor(ProgramBuilder.class);
-                SpirvBaseVisitor<?> visitor = (SpirvBaseVisitor<?>) constructor.newInstance(builder);
-                Method method = cls.getDeclaredMethod("getSupportedOps");
-                Object object = method.invoke(visitor);
-                if (object instanceof Set<?> ops) {
-                    ops.forEach(op -> {
-                        if (visitors.put(op.toString(), visitor) != null) {
-                            throw new IllegalArgumentException("Attempt to redefine visitor for " + op);
-                        }
-                    });
-                } else {
-                    throw new IllegalArgumentException("Illegal supported Ops in " + cls.getName());
-                }
-            } catch (NoSuchMethodException | SecurityException |
-                     InstantiationException | IllegalAccessException |
-                     IllegalArgumentException | InvocationTargetException e) {
-                throw new IllegalArgumentException("Failed to initialize visitor " + cls.getName(), e);
-            }
-        }
-    }
-
-    private VisitorOpsConstant getSpecConstantVisitor() {
-        return visitors.values().stream()
-                .filter(VisitorOpsConstant.class::isInstance)
-                .findFirst()
-                .map(v -> (VisitorOpsConstant) v)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Missing visitor " + VisitorOpsConstant.class.getSimpleName()));
-    }
-
     @Override
     public Program visitSpv(SpirvParser.SpvContext ctx) {
         this.builder = createBuilder(ctx);
         this.initializeVisitors();
         this.specConstantVisitor = getSpecConstantVisitor();
+        ctx.spvHeaders().accept(new VisitorSpirvInput(builder));
         visitSpvInstructions(ctx.spvInstructions());
-        visitSpvHeaders(ctx.spvHeaders());
+        ctx.spvHeaders().accept(new VisitorSpirvOutput(builder));
         return builder.build();
-    }
-
-    private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
-        ThreadGrid grid = new ThreadGrid(1, 1, 1, 1);
-        VisitorSpirvInput visitor = new VisitorSpirvInput();
-        boolean hasConfig = false;
-        for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
-            if (header.inputHeader() != null && header.inputHeader().initList() != null) {
-                visitor.visitInitList(header.inputHeader().initList());
-            }
-            if (header.configHeader() != null) {
-                if (hasConfig) {
-                    throw new ParsingException("Multiple config headers are not allowed");
-                }
-                hasConfig = true;
-                int threadAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(0).getText());
-                int subGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(1).getText());
-                int workGroupAmount = Integer.parseInt(header.configHeader().literanHeaderUnsignedInteger().get(2).getText());
-                grid = new ThreadGrid(threadAmount, subGroupAmount, workGroupAmount, 1);
-            }
-        }
-        return new ProgramBuilder(grid, visitor.getInputs());
-    }
-
-    @Override
-    public Program visitSpvHeaders(SpirvParser.SpvHeadersContext ctx) {
-        VisitorSpirvOutput visitor = new VisitorSpirvOutput(builder);
-        for (SpirvParser.SpvHeaderContext header : ctx.spvHeader()) {
-            if (header.outputHeader() != null && header.outputHeader().assertionList() != null) {
-                visitor.visitAssertionList(header.outputHeader().assertionList());
-            }
-        }
-        return null;
     }
 
     @Override
@@ -166,5 +64,96 @@ public class VisitorSpirv extends SpirvBaseVisitor<Program> {
             }
         }
         return null;
+    }
+
+    private ProgramBuilder createBuilder(SpirvParser.SpvContext ctx) {
+        ThreadGrid grid = new ThreadGrid(1, 1, 1, 1);
+        boolean hasConfig = false;
+        for (SpirvParser.SpvHeaderContext header : ctx.spvHeaders().spvHeader()) {
+            SpirvParser.ConfigHeaderContext cfgCtx = header.configHeader();
+            if (cfgCtx != null) {
+                if (hasConfig) {
+                    throw new ParsingException("Multiple config headers are not allowed");
+                }
+                hasConfig = true;
+                List<SpirvParser.LiteranHeaderUnsignedIntegerContext> literals = cfgCtx.literanHeaderUnsignedInteger();
+                int sg = Integer.parseInt(literals.get(0).getText());
+                int wg = Integer.parseInt(literals.get(1).getText());
+                int qf = Integer.parseInt(literals.get(2).getText());
+                grid = new ThreadGrid(sg, wg, qf, 1);
+            }
+        }
+        return new ProgramBuilder(grid);
+    }
+
+    private void initializeVisitors() {
+        for (Class<?> cls : getChildVisitors()) {
+            try {
+                Constructor<?> constructor = cls.getDeclaredConstructor(ProgramBuilder.class);
+                SpirvBaseVisitor<?> visitor = (SpirvBaseVisitor<?>) constructor.newInstance(builder);
+                Method method = cls.getDeclaredMethod("getSupportedOps");
+                Object object = method.invoke(visitor);
+                if (object instanceof Set<?> ops) {
+                    ops.forEach(op -> {
+                        if (visitors.put(op.toString(), visitor) != null) {
+                            throw new IllegalArgumentException("Attempt to redefine visitor for " + op);
+                        }
+                    });
+                } else {
+                    throw new IllegalArgumentException("Illegal supported Ops in " + cls.getName());
+                }
+            } catch (NoSuchMethodException | SecurityException |
+                     InstantiationException | IllegalAccessException |
+                     IllegalArgumentException | InvocationTargetException e) {
+                throw new IllegalArgumentException("Failed to initialize visitor " + cls.getName(), e);
+            }
+        }
+    }
+
+    String parseOpName(SpirvParser.OpContext ctx) {
+        ParseTree innerCtx = ctx.getChild(0);
+        if ("Op".equals(innerCtx.getChild(0).getText())) {
+            return "Op" + innerCtx.getChild(1).getText();
+        }
+        if ("SpecConstantOp".equals(innerCtx.getChild(3).getText())) {
+            return "Op" + innerCtx.getChild(5).getText();
+        }
+        return "Op" + innerCtx.getChild(3).getText();
+    }
+
+    boolean isSpecConstantOp(SpirvParser.OpContext ctx) {
+        ParseTree innerCtx = ctx.getChild(0);
+        if ("Op".equals(innerCtx.getChild(0).getText())) {
+            return false;
+        }
+        return "SpecConstantOp".equals(innerCtx.getChild(3).getText());
+    }
+
+    private VisitorOpsConstant getSpecConstantVisitor() {
+        return visitors.values().stream()
+                .filter(VisitorOpsConstant.class::isInstance)
+                .findFirst()
+                .map(v -> (VisitorOpsConstant) v)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Missing visitor " + VisitorOpsConstant.class.getSimpleName()));
+    }
+
+    private Set<Class<?>> getChildVisitors() {
+        return Set.of(
+                VisitorOpsAnnotation.class,
+                VisitorOpsArithmetic.class,
+                VisitorOpsAtomic.class,
+                VisitorOpsBarrier.class,
+                VisitorOpsBits.class,
+                VisitorOpsConstant.class,
+                VisitorOpsControlFlow.class,
+                VisitorOpsDebug.class,
+                VisitorOpsExtension.class,
+                VisitorOpsFunction.class,
+                VisitorOpsLogical.class,
+                VisitorOpsMemory.class,
+                VisitorOpsSetting.class,
+                VisitorOpsType.class
+        );
     }
 }

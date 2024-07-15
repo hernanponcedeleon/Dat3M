@@ -688,8 +688,11 @@ public class VisitorOpsConstantTest {
 
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
-        builder = new MockProgramBuilder(
-                Map.of("%f2", zero, "%f3", one, "%f4", zero, "%f5", one));
+        builder = new MockProgramBuilder();
+        builder.addInput("%f2", zero);
+        builder.addInput("%f3", one);
+        builder.addInput("%f4", zero);
+        builder.addInput("%f5", one);
 
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool5v", "%bool", 5);
@@ -729,8 +732,11 @@ public class VisitorOpsConstantTest {
 
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
-        builder = new MockProgramBuilder(
-                Map.of("%t2", one, "%t3", zero, "%t4", one, "%t5", zero));
+        builder = new MockProgramBuilder();
+        builder.addInput("%t2", one);
+        builder.addInput("%t3", zero);
+        builder.addInput("%t4", one);
+        builder.addInput("%t5", zero);
 
         BooleanType bType = builder.mockBoolType("%bool");
         builder.mockVectorType("%bool5v", "%bool", 5);
@@ -769,8 +775,9 @@ public class VisitorOpsConstantTest {
 
         Expression eleven = expressions.makeValue(11, archType);
         Expression three = expressions.makeValue(3, archType);
-        builder = new MockProgramBuilder(
-                Map.of("%i1", eleven, "%i3", three));
+        builder = new MockProgramBuilder();
+        builder.addInput("%i1", eleven);
+        builder.addInput("%i3", three);
 
         IntegerType iType = builder.mockIntType("%int", 64);
         builder.mockVectorType("%int3v", "%int", 3);
@@ -803,8 +810,10 @@ public class VisitorOpsConstantTest {
         Expression zero = expressions.makeValue(0, archType);
         Expression one = expressions.makeValue(1, archType);
         Expression two = expressions.makeValue(2, archType);
-        builder = new MockProgramBuilder(
-                Map.of("%f", one, "%t", zero, "%i", two));
+        builder = new MockProgramBuilder();
+        builder.addInput("%f", one);
+        builder.addInput("%t", zero);
+        builder.addInput("%i", two);
 
         builder.mockBoolType("%bool");
         IntegerType iType = builder.mockIntType("%int", 64);

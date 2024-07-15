@@ -7,25 +7,33 @@ import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.SpirvBaseVisitor;
 import com.dat3m.dartagnan.parsers.SpirvParser;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.dat3m.dartagnan.parsers.program.visitors.spirv.utils.ProgramBuilder;
 
 public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
     private static final TypeFactory types = TypeFactory.getInstance();
     private static final ExpressionFactory expressions = ExpressionFactory.getInstance();
 
-    private final Map<String, Expression> inputs = new HashMap<>();
+    private final ProgramBuilder builder;
 
-    public Map<String, Expression> getInputs() {
-        return inputs;
+    public VisitorSpirvInput(ProgramBuilder builder) {
+        this.builder = builder;
+    }
+
+    @Override
+    public Expression visitSpvHeaders(SpirvParser.SpvHeadersContext ctx) {
+        for (SpirvParser.SpvHeaderContext header : ctx.spvHeader()) {
+            if (header.inputHeader() != null && header.inputHeader().initList() != null) {
+                visitInitList(header.inputHeader().initList());
+            }
+        }
+        return null;
     }
 
     @Override
     public Expression visitInit(SpirvParser.InitContext ctx) {
-        String varName = ctx.varName().getText();
-        Expression expr = visit(ctx.initValue());
-        addInput(varName, expr);
+        String id = ctx.varName().getText();
+        Expression value = visit(ctx.initValue());
+        builder.addInput(id, value);
         return null;
     }
 
@@ -44,12 +52,5 @@ public class VisitorSpirvInput extends SpirvBaseVisitor<Expression> {
         return expressions.makeConstruct(ctx.initValues().initValue().stream()
                 .map(this::visitInitValue)
                 .toList());
-    }
-
-    private void addInput(String name, Expression value) {
-        if (inputs.containsKey(name)) {
-            throw new ParsingException("Duplicated definition '%s'", name);
-        }
-        inputs.put(name, value);
     }
 }

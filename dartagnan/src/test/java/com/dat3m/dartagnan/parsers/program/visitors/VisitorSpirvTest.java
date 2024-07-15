@@ -10,41 +10,28 @@ public class VisitorSpirvTest {
 
     @Test
     public void testParseOpName() {
-        // given
-        String input = "OpStore %ptr %value";
-        SpirvParser.OpContext ctx = new MockSpirvParser(input).op();
-
-        // when
-        String result = VisitorSpirv.parseOpName(ctx);
-
-        // then
-        assertEquals("OpStore", result);
+        doTestParseInstruction("OpStore %ptr %value", "OpStore");
     }
 
     @Test
     public void testParseOpNameRet() {
-        // given
-        String input = "%res = OpLoad %int %ptr";
-        SpirvParser.OpContext ctx = new MockSpirvParser(input).op();
-
-        // when
-        String result = VisitorSpirv.parseOpName(ctx);
-
-        // then
-        assertEquals("OpLoad", result);
+        doTestParseInstruction("%res = OpLoad %int %ptr", "OpLoad");
     }
 
     @Test
     public void testParseOpNameOpSpecConstantOp() {
+        doTestParseInstruction("%res = Op SpecConstantOp %int IMul %value_1 %value_2", "OpIMul");
+    }
+
+    private void doTestParseInstruction(String input, String expected) {
         // given
-        String input = "%res = Op SpecConstantOp %int IMul %value_1 %value_2";
         SpirvParser.OpContext ctx = new MockSpirvParser(input).op();
 
         // when
-        String result = VisitorSpirv.parseOpName(ctx);
+        String result = new VisitorSpirv().parseOpName(ctx);
 
         // then
-        assertEquals("OpIMul", result);
+        assertEquals(expected, result);
     }
 
     @Test
@@ -54,7 +41,7 @@ public class VisitorSpirvTest {
         SpirvParser.OpContext ctx = new MockSpirvParser(input).op();
 
         // when
-        boolean result = VisitorSpirv.isSpecConstantOp(ctx);
+        boolean result = new VisitorSpirv().isSpecConstantOp(ctx);
 
         // then
         assertFalse(result);
@@ -67,7 +54,7 @@ public class VisitorSpirvTest {
         SpirvParser.OpContext ctx = new MockSpirvParser(input).op();
 
         // when
-        boolean result = VisitorSpirv.isSpecConstantOp(ctx);
+        boolean result = new VisitorSpirv().isSpecConstantOp(ctx);
 
         // then
         assertFalse(result);
@@ -80,7 +67,7 @@ public class VisitorSpirvTest {
         SpirvParser.OpContext ctx = new MockSpirvParser(input).op();
 
         // when
-        boolean result = VisitorSpirv.isSpecConstantOp(ctx);
+        boolean result = new VisitorSpirv().isSpecConstantOp(ctx);
 
         // then
         assertTrue(result);

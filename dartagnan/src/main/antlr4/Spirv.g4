@@ -32,15 +32,13 @@ assertionList
     ;
 
 assertion
-    :   ModeHeader_LPar assertionValue ModeHeader_RPar
-    |   ModeHeader_LPar assertion ModeHeader_RPar
-    |   ModeHeader_AssertionNot assertion
-    |   assertion ModeHeader_AssertionAnd assertion
-    |   assertion ModeHeader_AssertionOr assertion
-    |   assertionBasic
+    :   ModeHeader_LPar assertion ModeHeader_RPar       # assertionParenthesis
+    |   ModeHeader_AssertionNot assertion               # assertionNot
+    |   assertion ModeHeader_AssertionAnd assertion     # assertionAnd
+    |   assertion ModeHeader_AssertionOr assertion      # assertionOr
+    |   assertionValue assertionCompare assertionValue  # assertionBasic
     ;
 
-assertionBasic : assertionValue assertionCompare assertionValue;
 assertionCompare
     :   ModeHeader_EqualEqual
     |   ModeHeader_NotEqual
